@@ -1,56 +1,23 @@
-# Modernisation Platform Terraform Module Template 
+# Modernisation Platform Configuration Management
 [![repo standards badge](https://img.shields.io/badge/dynamic/json?color=blue&style=for-the-badge&logo=github&label=MoJ%20Compliant&query=%24.data%5B%3F%28%40.name%20%3D%3D%20%22modernisation-platform-terraform-module-template%22%29%5D.status&url=https%3A%2F%2Foperations-engineering-reports.cloud-platform.service.justice.gov.uk%2Fgithub_repositories)](https://operations-engineering-reports.cloud-platform.service.justice.gov.uk/github_repositories#modernisation-platform-terraform-module-template "Link to report")
 
-## Usage
+## About this repository
 
-```hcl
+This is the Ministry of Justice [Modernisation Platform team](https://github.com/orgs/ministryofjustice/teams/modernisation-platform)'s repository for configuration management of the ec2 infrastructure hosted on the Modernisation Platform.
 
-module "template" {
+Initially, this repository will contain ansible code used by the Digital Studio Operations. However, in the future it will work as a library of configuration code shared within all the teams that use the Modernisation Platform. Other configuration management tools and technologies used within the platform should also be stored in this repository.
 
-  source = "github.com/ministryofjustice/modernisation-platform-terraform-module-template"
+For more information on the Modernisation Platform please see the [user guidance](https://user-guide.modernisation-platform.service.justice.gov.uk).
 
-  tags             = local.tags
-  application_name = local.application_name
+## Repository structure
 
-}
+At the moment, ansible is the only configuration management tool used in this repository and therefore it contains `ansible` directory.
+When a new tool is introduced, a new directory should be created for that tool.
 
-```
-<!--- BEGIN_TF_DOCS --->
+`ansible` directory should store all the ansible code that is common (e.g. roles that can be reused)
 
+`teams` directory should store the code that is team specfic only (e.g. roles that are specific to one team only, ansible playbooks)
 
-<!--- END_TF_DOCS --->
+## How to use this repository
 
-## Looking for issues?
-If you're looking to raise an issue with this module, please create a new issue in the [Modernisation Platform repository](https://github.com/ministryofjustice/modernisation-platform/issues).
-
-<!-- BEGIN_TF_DOCS -->
-## Requirements
-
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.1 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.0 |
-
-## Providers
-
-No providers.
-
-## Modules
-
-No modules.
-
-## Resources
-
-No resources.
-
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_application_name"></a> [application\_name](#input\_application\_name) | Name of application | `string` | n/a | yes |
-| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to be used by all resources | `map(string)` | n/a | yes |
-
-## Outputs
-
-No outputs.
-<!-- END_TF_DOCS -->
+The code in this repository should work as a library and should be called outside of this repository.
