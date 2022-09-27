@@ -1,5 +1,4 @@
 ---
-
 - name: calculate nr_hugepages
   ansible.builtin.shell: |
     memtotal_kb=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
@@ -30,7 +29,7 @@
 - name: set oracle memlock limit
   community.general.pam_limits:
     domain: oracle
-    limit_type: '-'
+    limit_type: "-"
     limit_item: memlock
     value: "{{ oracle_memlock_limit.stdout_lines[0] | int }}"
     use_max: true
