@@ -21,7 +21,21 @@
     mode: 0644
     owner: root
 
+- name: Configure /etc/dhcp/dhclient-eth0.conf
+  ansible.builtin.template:
+    src: dhclient-eth0.conf.j2
+    dest: "/etc/dhcp/dhclient-eth0.conf"
+    mode: 0644
+    owner: root
+  notify:
+    - Restart network
+
 - name: Set hostname
   ansible.builtin.hostname:
     name: "{{ ec2.tags.Name }}"
     use: systemd
+
+- name: Update cloud.cfg
+  ansible.builtin.lineinfile:
+    path: /etc/cloud/cloud.cfg
+    line: "preserve_hostname: true"
