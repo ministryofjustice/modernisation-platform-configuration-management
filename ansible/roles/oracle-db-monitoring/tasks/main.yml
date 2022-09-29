@@ -1,0 +1,52 @@
+- debug:
+    var: ec2.tags.oracle_sids
+
+- name: Get monitoring lists
+  set_fact:
+    oracle_monitoring_list: "{{ ec2.tags.oracle_sids | default([]) }}"
+  when: ec2.tags.oracle_sids is defined
+
+# TODO: check whether this is going to cause an issue with the base image
+- name: Create prometheus sudo privileges
+  copy:
+    content: "prometheus ALL = (oracle) NOPASSWD: /bin/bash -c /opt/script-exporter/*.sh\n"
+    dest: /etc/sudoers.d/prometheus
+    
+# TODO: check whether this is going to cause an issue with the base image - looks like a blank file in the ansible monorepo?
+- name: Install environment variables for systemd unit
+  copy:
+    src: script-exporter.env
+    dest: /opt/script-exporter/script-exporter.env
+    mode: 0400
+    owner: prometheus
+  notify: reload script-exporter
+
+# TODO: check this path and using j2 templates okay
+- name: Install config for script-exporter
+  template:
+    src: config.yml.j2
+    dest: /opt/script-exporter/config.yml
+    mode: 0400
+    owner: prometheus
+  notify: reload script-exporter
+
+# TODO: check that path 
+- name: Install script to be run by script-exporter harness
+  template:
+    src: oracle-health.sh.j2
+    dest: "/opt/script-exporter/oracle-health-{{item}}.sh"
+    mode: 0500
+    owner: oracle
+  loop: "{{ oracle_monitoring_list }}"
+  vars:
+    oracle_sid: "{{ item }}"
+  loop_control:
+    index_var: index
+  notify: reload script-exporter
+
+# TODO: check service is installed in the database image
+- name: Start & Enable Service
+  service:
+    name: script-exporter
+    state: started
+    enabled: yes
