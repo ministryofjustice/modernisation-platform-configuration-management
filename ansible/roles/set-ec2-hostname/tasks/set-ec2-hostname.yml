@@ -34,6 +34,8 @@
   ansible.builtin.hostname:
     name: "{{ ec2.tags.Name }}"
     use: systemd
+  notify:
+    - Restart syslog    
 
 - name: Update cloud.cfg
   ansible.builtin.lineinfile:
