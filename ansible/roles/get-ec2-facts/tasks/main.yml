@@ -1,8 +1,4 @@
-- name: Get EC2 Metadata Facts
-  amazon.aws.ec2_metadata_facts:
-
-- name: Retrieve EC2 Tags
-  amazon.aws.ec2_tag_info:
-    region: "{{ ansible_ec2_placement_region }}"
-    resource: "{{ ansible_ec2_instance_id }}"
-  register: ec2
+---
+- import_tasks: get-ec2-facts.yml
+  tags:
+    - ec2provision
