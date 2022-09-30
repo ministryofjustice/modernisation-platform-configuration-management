@@ -34,6 +34,7 @@
     value: "{{ oracle_memlock_limit.stdout_lines[0] | int }}"
     use_max: true
 
+# TODO: this fails when running locally during provisioning stage
 - name: wait for pages to create
   ansible.builtin.wait_for:
     path: /proc/meminfo
