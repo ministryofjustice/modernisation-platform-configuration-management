@@ -1,13 +1,7 @@
-- debug:
-    var: ec2.tags.oracle_sids
-
-- debug:
-    var: ec2.tags.oracle-sids # which of these works?
-
 - name: Get monitoring lists
   set_fact:
-    oracle_monitoring_list: "{{ ec2.tags.oracle_sids | default([]) }}" # split this by space
-  when: ec2.tags.oracle_sids is defined
+    oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
+  when: ec2.tags['oracle-sids'] is defined
 
 - name: Install config for script-exporter
   template:

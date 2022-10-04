@@ -12,3 +12,10 @@ to debug the "application" tag value.
 - debug:
     var: ec2.tags.application
 ```
+
+Where tags have names that are hyphenated you need to reference them as follows:
+
+```
+- debug:
+    var: ec2.tags['hyphenated-tag-name']
+```
