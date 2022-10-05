@@ -1,4 +1,11 @@
 ---
+- import_tasks: copy-install-files.yml
+  tags:
+    - osw-force-install
+    - ec2provision
+
+# force a reinstall via osw-force-install, otherwise runs via handler
 - import_tasks: install-oracle-secure-web.yml
   tags:
-    - ec2provision
+    - osw-force-install
+    - never
