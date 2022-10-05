@@ -39,12 +39,12 @@
 - name: Update osbws config
   become_user: oracle
   ansible.builtin.lineinfile:
-    path: "{{ oracle_home }}/dbs/osbws.ora"
+    path: "{{ database_home }}/dbs/osbws.ora"
     line: "OSB_WS_BUCKET={{ ansible_aws_ssm_bucket_name }}"
     create: yes
 
 - name: Run test
   become_user: oracle
   shell: |
-    export OSB_WS_PFILE={{ oracle_home }}/dbs/osbws.ora
-    {{ oracle_home }}/bin/sbttest /tmp/foo -libname {{ oracle_home }}/lib/libosbws.so
+    export OSB_WS_PFILE={{ database_home }}/dbs/osbws.ora
+    {{ database_home }}/bin/sbttest /tmp/foo -libname {{ database_home }}/lib/libosbws.so
