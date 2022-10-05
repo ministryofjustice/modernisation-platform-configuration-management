@@ -1,4 +1,4 @@
-Role for installing oracle secure web
+Role for configuring oracle secure web. The installation files are added as part of the AMI build.
 
 Force the installation handler to run by using osw-force-install tag, e.g.
 
