@@ -1,31 +1,5 @@
-- name: Get monitoring tags as a list
-  set_fact:
-    oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
-  when: ec2.tags['oracle-sids'] is defined
-
-- name: Install config for script-exporter
-  template:
-    src: config.yml.j2
-    dest: /opt/script-exporter/config.yml
-    mode: 0400
-    owner: prometheus
-  notify: reload script-exporter
-
-- name: Install script to be run by script-exporter harness
-  template:
-    src: oracle-health.sh.j2
-    dest: "/opt/script-exporter/oracle-health-{{item}}.sh"
-    mode: 0500
-    owner: oracle
-  loop: "{{ oracle_monitoring_list }}"
-  vars:
-    oracle_sid: "{{ item }}"
-  loop_control:
-    index_var: index
-  notify: reload script-exporter
-
-- name: Start & Enable Service
-  service:
-    name: script-exporter
-    state: started
-    enabled: yes
+---
+- import_tasks: install-oracle-db-monitoring.yml
+  tags:
+    - ec2provision
+    - ec2patch
