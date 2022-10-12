@@ -1,7 +1,6 @@
 - name: Get monitoring tags as a list
   set_fact:
     oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
-  when: ec2.tags['oracle-sids'] is defined
 
 - name: Install config for script-exporter
   template:
