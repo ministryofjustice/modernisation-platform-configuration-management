@@ -1,0 +1,6 @@
+---
+- import_tasks: db_restore.yml
+  tags:
+    - ec2provisiondata
+    - never
+  when: ec2.tags['s3-db-restore-dir'] is defined
