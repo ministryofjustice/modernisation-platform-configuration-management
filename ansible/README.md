@@ -15,7 +15,7 @@ tags to identify which roles to run.
 
 ## Running ansible against an EC2 instance post build
 
-A generic [site.yml](/ansible/site.yml) is provided with a dynamic inventories
+A generic [site.yml](/ansible/site.yml) is provided with dynamic inventories
 under [hosts/](/ansible/hosts/) folder. This creates groups based of the following
 tags:
 
