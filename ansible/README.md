@@ -65,5 +65,5 @@ ansible-playbook site.yml --limit bastion
 ansible-playbook site.yml -e "role=node-exporter"
 
 # Run locally (the comma after localhost is important)
-ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_dbx.yml" --check
+ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_db.yml" --check
 ```
