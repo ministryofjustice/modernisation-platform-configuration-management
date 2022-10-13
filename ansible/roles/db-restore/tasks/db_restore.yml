@@ -134,7 +134,7 @@
   become_user: oracle
   environment: "{{ db_env }}"
 
-- name: add database to RAC
+- name: add database to HAS
   ansible.builtin.command: srvctl add database -d {{ db_name }} -o {{ database_home }}
   become_user: oracle
   environment: "{{ db_env }}"
