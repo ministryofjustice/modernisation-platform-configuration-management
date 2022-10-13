@@ -9,6 +9,18 @@
   set_fact:
     db_name: "{{ s3_db_backup_dir.split('_')[0] }}"
 
+- name: get debug info for db_name
+  debug:
+    var: "{{ db_name }}"
+
+- name: set the database backup directory
+  set_fact:
+    db_backup_dir: "/u02/DB_BKP/{{ db_name }}"
+
+- name: set the audit file directory
+  set_fact:
+    audit_file_dir: "/u01/app/oracle/admin/{{ db_name }}/adump"
+
 - name: create directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -21,7 +33,7 @@
     - "{{ db_backup_dir }}"
     - "{{ audit_file_dir }}"
 
-# TODO: use ansible s3 role instead
+# TODO: replace this with the ansible.aws_s3 module
 # uses aws cp instead of aws sync as this requires more permissions
 # and we only need to copy the latest backup once
 - name: copy database backup from s3 bucket # this relies on the remote machine having correct IAM Role assigned
@@ -134,13 +146,13 @@
   become_user: oracle
   environment: "{{ db_env }}"
 
-# NOT REQUIRED AS PART OF AMI BUILD
-# - name: start database
-#   ansible.builtin.command: srvctl start database -d {{ db_name }}
-#   become_user: oracle
-#   environment: "{{ db_env }}"
+- name: start database
+  ansible.builtin.command: srvctl start database -d {{ db_name }}
+  become_user: oracle
+  environment: "{{ db_env }}"
 
-- name: deconfigure oracle HAS
-  ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
-  args:
-    chdir: /u01/app/oracle/product/11.2.0.4/gridhome_1
+# This section will blow everything away so don't run it unless required
+# - name: deconfigure oracle HAS
+#   ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+#   args:
+#     chdir: /u01/app/oracle/product/11.2.0.4/gridhome_1
