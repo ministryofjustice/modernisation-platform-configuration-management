@@ -10,34 +10,25 @@ Please include a README.md for each role.
 ## Using ansible to provision an EC2 instance
 
 Use `user_data` to provide a cloud init or shell script which runs
-ansible. This example [ansible.sh.tftpl](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/modules/ec2_instance/user_data/ansible.sh.tftpl) is a generic approach, which relies on
-tags to identify which roles to run and EC2 specific configuration.
-
-The script:
-
-- installs ansible within a virtual environment
-- clones this repo
-- installs dependencies
-- runs ansible against localhost
-- tidies up
+ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example.  This relies on
+tags to identify which roles to run.
 
 ## Running ansible against an EC2 instance post build
 
-A generic [site.yml](/ansible/site.yml) is provided with a dynamic inventor
-[inventory_aws_ec2.yml](/ansible/inventory_aws_ec2.yml). This creates groups
-based of the following tags
+A generic [site.yml](/ansible/site.yml) is provided with dynamic inventories
+under [hosts/](/ansible/hosts/) folder. This creates groups based of the following
+tags:
 
-- business-unit
 - environment-name
-- application
-- component
-- ami
 - server-type
 
+There are separate inventories depending on whether the EC2 is stood up
+as part of an autoscaling group or as an individual instance. In an autoscaling
+group, all instances will have the same tags, so the instance id is used as the
+hostname rather than the Name tag.
+
 Use tags to differentiate between provisioning and in-life operational
-tasks. The site.yml assumes "ec2provision" tag will be used to signify
-provisioning tasks. And "ec2patch" tag for running ansible against
-existing ec2 instances
+tasks. For example, "ec2provision" and "ec2patch" respectively.
 
 Ansible tasks are executed on ec2 instances via AWS Session Manager, so you must have [awscli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html#cliv2-mac-install-cmd) installed in addition to the Session Manager [plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos-signed). The target ec2 instance must also have [ssm-agent](https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html) installed. You do not need to have an account on the remote ec2 instance in order to connect.
 
@@ -53,7 +44,7 @@ export no_proxy='*'
 
 The Session Manager plugin requires that an S3 bucket is specified as one of the connection variables. Set this within an environment specific variable, for example [group_vars/environment_name_nomis_test.yml](/ansible/group_vars/environment_name_nomis_test.yml)
 
-Define the list of roles to run on each type of server under an server-type specific variable. For example [group_vars/server_type_db_audit.yml](/ansible/group_vars/server_type_db_audit.yml)
+Define the list of roles to run on each type of server under an server-type specific variable. For example [group_vars/server_type_nomis_db.yml](/ansible/group_vars/server_type_nomis_db.yml)
 
 ```
 ---
@@ -65,11 +56,14 @@ Run ansible
 
 ```
 # Run against all hosts in check mode
-ansible-playbook site.yml -i inventory_aws_ec2.yml --check
+ansible-playbook site.yml --check
 
-# Limit to a particular server
-ansible-playbook site.yml -i inventory_aws_ec2.yml --check --limit bastion
+# Limit to a particular host/group
+ansible-playbook site.yml --limit bastion
 
 # Limit to a particular role
-ansible-playbook site.yml -i inventory_aws_ec2.yml --check --limit bastion -e "role=node-exporter"
+ansible-playbook site.yml -e "role=node-exporter"
+
+# Run locally (the comma after localhost is important)
+ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_db.yml" --check
 ```
