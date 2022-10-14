@@ -28,7 +28,7 @@
     - "{{ db_backup_dir }}"
     - "{{ audit_file_dir }}"
 
-# uses aws cp instead of aws sync as this requires more permissions
+# uses aws cp instead of aws sync as this requires more permissions, maybe use ansible.aws.aws_s3 module instead?
 # and we only need to copy the latest backup once
 - name: copy database backup from s3 bucket # this relies on the remote machine having correct IAM Role assigned
   ansible.builtin.command:
