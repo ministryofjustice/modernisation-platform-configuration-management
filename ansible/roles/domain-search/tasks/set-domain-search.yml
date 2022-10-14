@@ -1,0 +1,19 @@
+---
+- name: Fail if get-ec2-facts roles has not been run
+  fail:
+    msg: "Please run get-ec2-facts role to collect tags"
+  when: ec2 is not defined
+
+- name: Fail if dns_zone_internal variable not defined
+  fail:
+    msg: "dns_zone_internal variable must be defined"
+  when: dns_zone_internal is not defined
+
+- name: Configure /etc/dhcp/dhclient-eth0.conf
+  ansible.builtin.template:
+    src: dhclient-eth0.conf.j2
+    dest: "/etc/dhcp/dhclient-eth0.conf"
+    mode: 0644
+    owner: root
+  notify:
+    - Restart network
