@@ -9,10 +9,6 @@
   set_fact:
     db_name: "{{ s3_db_backup_dir.split('_')[0] }}"
 
-- name: get debug info for db_name
-  debug:
-    var: "{{ db_name }}"
-
 - name: set the database backup directory
   set_fact:
     db_backup_dir: "/u02/DB_BKP/{{ db_name }}"
@@ -33,7 +29,6 @@
     - "{{ db_backup_dir }}"
     - "{{ audit_file_dir }}"
 
-# TODO: replace this with the ansible.aws_s3 module
 # uses aws cp instead of aws sync as this requires more permissions
 # and we only need to copy the latest backup once
 - name: copy database backup from s3 bucket # this relies on the remote machine having correct IAM Role assigned
