@@ -1,4 +1,3 @@
-
 ---
 # see README.md for how to specify the database to restore
 - name: get s3 folder where the backup files are stored
@@ -145,7 +144,6 @@
   ansible.builtin.command: srvctl start database -d {{ db_name }}
   become_user: oracle
   environment: "{{ db_env }}"
-
 # This section will blow everything away so don't run it unless required
 # - name: deconfigure oracle HAS
 #   ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
