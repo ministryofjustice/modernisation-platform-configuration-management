@@ -1,4 +1,9 @@
 ---
+- name: Fail if db_backup_s3_bucket_name variable not defined
+  fail:
+    msg: "db_backup_s3_bucket_name variable must be defined"
+  when: db_backup_s3_bucket_name is not defined
+
 # see README.md for how to specify the database to restore
 - name: get s3 folder where the backup files are stored
   set_fact:
@@ -32,7 +37,7 @@
 # and we only need to copy the latest backup once
 - name: copy database backup from s3 bucket # this relies on the remote machine having correct IAM Role assigned
   ansible.builtin.command:
-    cmd: aws s3 cp s3://{{ s3_bucket_with_prefix | quote }}/{{ s3_db_backup_dir | quote}} {{ db_backup_dir | quote }} --recursive
+    cmd: aws s3 cp s3://{{ db_backup_s3_bucket_name | quote }}/{{ s3_db_backup_dir | quote}} {{ db_backup_dir | quote }} --recursive
   become_user: oracle
   environment:
     PATH: "{{ oracle_PATH }}:/usr/local/bin/aws" # https://stackoverflow.com/questions/67687211/ansible-aws-cli-not-working-with-command-or-shell-module
