@@ -4,3 +4,7 @@ scripts:
   - name: oracle_health_check_${sid}
     script: sudo -i -u oracle /home/oracle/oracle-health-${sid}.sh
 %{ endfor ~}
+%{ if script_exporter_fixngo_connection_target is defined ~}
+  - name: fixngo_connection
+    script: sudo -i -u oracle /home/oracle/fixngo-connection.sh
+%{ endif ~}

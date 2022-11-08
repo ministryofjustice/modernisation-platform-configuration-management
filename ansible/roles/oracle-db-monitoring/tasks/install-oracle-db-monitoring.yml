@@ -23,6 +23,15 @@
     index_var: index
   notify: reload script-exporter
 
+- name: Install script to be run by script exported to monitor connection to fixngo
+  template:
+    src: fixngo-monitor.sh.j2
+    dest: "/opt/script-exporter/fixngo-connection.sh"
+    mode: 0500
+    owner: oracle
+  notify: reload script-exporter
+  when: script_exporter_fixngo_connection_target
+
 - name: Start & Enable Service
   service:
     name: script-exporter

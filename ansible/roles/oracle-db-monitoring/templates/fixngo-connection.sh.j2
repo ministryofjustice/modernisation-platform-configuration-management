@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# We need to make sure this is in the path
+export PATH=${PATH}:/usr/local/bin
+
+# the timeout in seconds
+timeout="1" 
+
+# the target ip address - in this case the Oracle OEM server in FixNGo (PCMCL00041) "10.40.0.136"
+target="{{ script_exporter_fixngo_connection_target }}"
+
+# the port to check
+port="4903" 
+
+# to support earlier (pre 7.x) versions of rhel the -G option isn't included, to support later versions the -z flag isn't used.
+connection=$(ncat -vzw "$timeout" "$target" "$port" 2>&1) # the connection attempt
+
+if [[ "${connection}" == *"Connected"* ]]; then
+    exit 0
+else
+    echo "$connection"
+    exit 1
+fi
