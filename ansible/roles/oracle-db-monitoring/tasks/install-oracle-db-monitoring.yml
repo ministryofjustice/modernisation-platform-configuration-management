@@ -1,6 +1,10 @@
-- name: Get monitoring tags as a list
+- name: Get oracle database sids for monitoring as a list from the oracle-sids tag
   set_fact:
     oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
+
+- name: Get the monitoring target for checking the hosts connection to fixngo
+  set_fact:
+    fixngo_connection_target: "{{ ec2.tags['fixngo-connection-target'] }}"
 
 - name: Install config for script-exporter
   template:
@@ -25,12 +29,12 @@
 
 - name: Install script to be run by script exported to monitor connection to fixngo
   template:
-    src: fixngo-monitor.sh.j2
+    src: fixngo-connection.sh.j2
     dest: "/opt/script-exporter/fixngo-connection.sh"
     mode: 0500
     owner: oracle
   notify: reload script-exporter
-  when: script_exporter_fixngo_connection_target
+  when: fixngo_connection_target is defined
 
 - name: Start & Enable Service
   service:
