@@ -26,6 +26,7 @@
   loop_control:
     index_var: index
   notify: reload script-exporter
+  when: oracle_monitoring_list is defined
 
 - name: Install script to be run by script exported to monitor connection to fixngo
   template:

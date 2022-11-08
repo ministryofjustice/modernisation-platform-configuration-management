@@ -3,4 +3,4 @@
   tags:
     - ec2provision
     - ec2patch
-  when: ec2.tags['oracle-sids'] is defined
+  when: ec2.tags['oracle-sids'] is defined or ec2.tags['fixngo-connection-target'] is defined
