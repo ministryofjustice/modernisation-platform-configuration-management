@@ -1,10 +1,9 @@
 scripts:
-%{ for sid in oracle_sids ~}
-#${length(sid)} / ${sid} / ${length(sid)-2}
+{% for sid in oracle_monitoring_list %}
   - name: oracle_health_check_${sid}
     script: sudo -i -u oracle /home/oracle/oracle-health-${sid}.sh
-%{ endfor ~}
-%{ if fixngo_connection_target is defined ~}
+{% endfor %}
+{% if fixngo_connection_target is defined %}
   - name: fixngo_connection
     script: sudo -i -u oracle /home/oracle/fixngo-connection.sh
-%{ endif ~}
+{% endif %}
