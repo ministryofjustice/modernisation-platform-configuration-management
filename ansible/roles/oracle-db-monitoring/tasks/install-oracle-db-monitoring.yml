@@ -5,6 +5,7 @@
 - name: Get the monitoring target for checking the hosts connection to fixngo
   set_fact:
     fixngo_connection_target: "{{ ec2.tags['fixngo-connection-target'] }}"
+  when: ec2.tags['fixngo-connection-target'] is defined
 
 - name: Install config for script-exporter
   template:
