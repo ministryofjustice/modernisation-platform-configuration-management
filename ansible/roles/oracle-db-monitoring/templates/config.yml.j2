@@ -1,7 +1,9 @@
 scripts:
 {% for sid in oracle_monitoring_list %}
-  - name: oracle_health_check_${sid}
-    script: sudo -i -u oracle /home/oracle/oracle-health-${sid}.sh
+{% set sid_truncate_length = ((sid|length) - 2) %}
+{% set sid_truncated = sid|truncate(sid_truncate_length, True, '') -%}
+  - name: oracle_health_check_{{sid_truncated}}
+    script: sudo -i -u oracle /home/oracle/oracle-health-{{sid}}.sh
 {% endfor %}
 {% if fixngo_connection_target is defined %}
   - name: fixngo_connection
