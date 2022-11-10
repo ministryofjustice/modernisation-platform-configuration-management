@@ -42,3 +42,10 @@
     name: script-exporter
     state: started
     enabled: yes
+
+# added a reload to make sure config is loaded
+- name: reload script-exporter
+  service:
+    name: script-exporter
+    enabled: yes
+    state: restarted
