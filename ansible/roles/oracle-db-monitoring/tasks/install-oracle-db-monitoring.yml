@@ -1,6 +1,7 @@
 - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
   set_fact:
     oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
+  when: ec2.tags['oracle-sids'] is defined
 
 - name: Get the monitoring target for checking the hosts connection to fixngo
   set_fact:
