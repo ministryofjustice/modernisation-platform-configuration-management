@@ -69,7 +69,7 @@ oracle_commands() {
     opatch apply -silent
     echo "# running opatch lsinventory"
     opatch lsinventory
-    ddecho "# running opmctl stopall"
+    echo "# running opmctl stopall"
     opmnctl stopall
 
     cd $ORACLE_HOME/forms/lib
