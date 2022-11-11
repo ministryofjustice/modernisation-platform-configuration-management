@@ -49,19 +49,13 @@
   register: rhel6_hostname
   when: ansible_distribution_major_version == '6'
 
+# ansible.builtin.hostname doesn't seem to work on RHEL6
 - name: Set hostname RHEL6
   ansible.builtin.shell: |
     hostname "{{ ec2_hostname_short }}"
   notify:
     - Restart syslog
   when: ansible_distribution_major_version == '6' and rhel6_hostname.stdout != ec2_hostname_short
-
-- name: Set hostname RHEL6
-  ansible.builtin.hostname:
-    name: "{{ ec2_hostname_short }}"
-  notify:
-    - Restart syslog
-  when: ansible_distribution_major_version == '6'
 
 - name: Update cloud.cfg
   ansible.builtin.lineinfile:
