@@ -18,13 +18,13 @@
   set_fact:
     ec2_hostname_fqdn: "{{ ec2.tags.Name }}.{{ dns_zone_internal }}"
     ec2_hostname_short: "{{ ec2.tags.Name }}"
-  when: use_name_as_hostname|bool == true
+  when: ansible_ec2_autoscaling_target_lifecycle_state is not defined
 
 - name: Set hostname to the dns name
   set_fact:
     ec2_hostname_fqdn: "{{ ansible_ec2_hostname }}"
     ec2_hostname_short: "{{ ansible_ec2_hostname.split('.')[0] }}"
-  when: use_name_as_hostname|bool == false
+  when: ansible_ec2_autoscaling_target_lifecycle_state is defined
 
 - name: Configure /etc/hosts
   ansible.builtin.template:
