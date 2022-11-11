@@ -28,6 +28,11 @@ oracle_commands() {
     DB_USERNAME=$(aws ssm get-parameter --name "{{ ssm_parameters_path }}/DB_USERNAME" --with-decryption --query Parameter.Value | tr -d '"')
     DB_PASSWORD=$(aws ssm get-parameter --name "{{ ssm_parameters_path }}/DB_PASSWORD" --with-decryption --query Parameter.Value | tr -d '"')
 
+    if [[ -z $ADMIN_USERNAME || -z $ADMIN_PASSWORD || -z $DB_USERNAME || -z $DB_PASSWORD ]]; then
+      echo "ERROR: failed to get SSM parameters."
+      exit 1
+    fi
+
     echo "# updating configuration"
     # Insert managed server configuration variables for (DB_HOSTNAME is provided as an env var by Terraform)
     sed -i 's/${ADMIN_USERNAME}/'${ADMIN_USERNAME}'/g' /u01/software/forms/configure_only.rsp /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties

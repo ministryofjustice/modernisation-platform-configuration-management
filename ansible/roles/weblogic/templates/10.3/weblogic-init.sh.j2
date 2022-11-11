@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 main() {
   instance_id="{{ ansible_ec2_instance_id }}"
   region="{{ ansible_ec2_placement_region }}"
@@ -9,7 +11,7 @@ main() {
   lifecycle_hook_name="$name-ready-hook" # must match with modernisation-platform-environments/terraform/environments/nomis
   autoscaling_group_name="$name"
 
-  echo "# started
+  echo "# started"
   echo "# vars: instance_id=$instance_id region=$region name=$name oracle_sid=$oracle_sid db_hostname=$db_hostname"
   echo "# vars: lifecycle_hook_name=$lifecycle_hook_name autoscaling_group_name=$autoscaling_group_name"
 
@@ -30,9 +32,12 @@ main() {
   echo "# create nomis_weblogic service"
   chkconfig --add nomis_weblogic
   chkconfig --level 3 nomis_weblogic on
-
+  
   echo "# run weblogic-setup.sh -s $oracle_sid -h $db_hostname"
-  su -c "bash /u01/software/weblogic/weblogic-setup.sh  -s "$oracle_sid" -h $db_hostname" - oracle
+  su -c "/u01/software/weblogic/weblogic-setup.sh  -s $oracle_sid -h $db_hostname" - oracle
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
 
   echo "# setting lifecycle hook to CONTINUE"
   lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"

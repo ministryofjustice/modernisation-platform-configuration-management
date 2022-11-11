@@ -4,17 +4,26 @@
     msg: "Please run get-ec2-facts role to collect tags"
   when: ec2 is not defined
 
+- name: Check required tags
+  set_fact:
+    weblogic_tags: true
+  when:
+  - ec2.tags["Name"] is defined
+  - ec2.tags["oracle-sid"] is defined
+  - ec2.tags["oracle-db-hostname"] is defined
+  - ec2.tags["ssm-parameters-prefix"] is defined
+
 - name: Fail if required tags not found
   fail:
-    msg: "Could not find required tags: Name or oracle-sid or oracle-db-hostname"
-  when: ec2.tags["Name"] is not defined or ec2.tags["oracle-sid"] is not defined or ec2.tags["oracle-db-hostname"] is not defined
+    msg: "Error, please check all required tags are defined"
+  when: weblogic_tags is not defined
 
 - name: Set SSM parameters path fact
   set_fact:
-    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ ec2.tags.Name }}"
+    ssm_parameters_path: '/{{ ec2.tags["ssm-parameters-prefix"] }}{{ ec2.tags["Name"] }}'
 
 - name: Copy installation scripts
-  ansible.builtin.template: 
+  ansible.builtin.template:
     owner: oracle
     group: oinstall
     mode: 0755
