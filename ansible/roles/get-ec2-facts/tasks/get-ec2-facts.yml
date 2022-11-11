@@ -6,3 +6,13 @@
     region: "{{ ansible_ec2_placement_region }}"
     resource: "{{ ansible_ec2_instance_id }}"
   register: ec2
+
+- name: Debug hostvars
+  vars:
+    msg: |
+      {{ hostvars | to_nice_json }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+  tags:
+    - never
+    - debug-hostvars
