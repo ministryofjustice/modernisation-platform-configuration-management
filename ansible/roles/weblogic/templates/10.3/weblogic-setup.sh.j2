@@ -85,31 +85,31 @@ oracle_commands() {
     cd $ORACLE_HOME/reports/lib && /usr/bin/make -f ins_reports.mk install
 
     # Start node manager and weblogic as daemon processes
-    echo "# set WLS env"
+    echo "# set WLS env"
     . $WL_HOME/server/bin/setWLSEnv.sh
-    echo "# startNodeManager"
+    echo "# startNodeManager"
     nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh >>nohup.out 2>&1 &
-    echo "# startWebLogic"
+    echo "# startWebLogic"
     nohup /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/startWebLogic.sh >>nohup.out 2>&1 &
-    echo "# opmnctl startall"
+    echo "# opmnctl startall"
     opmnctl startall
 
     # Check db connection & Compile forms
-    echo "# Compile forms"
+    echo "# Compile forms"
     /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "${DB_NAME}" -p ${DB_PASSWORD}
 
     # Create Managed Servers
     # (i) Autologoff
-    echo "# Create Managed Servers Autologoff"
+    echo "# Create Managed Servers Autologoff"
     java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/autologoff.properties
     # (ii) Create TagSar
-    echo "# Create Managed Servers TagSar"
+    echo "# Create Managed Servers TagSar"
     java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/tagsar.properties
     # (iii) Create HotPage
-    echo "# Create Managed Servers HotPage"
+    echo "# Create Managed Servers HotPage"
     java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/hotpage.properties
 
-    echo "# Cleanup"
+    echo "# Cleanup"
     rm -f /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
 }
 
