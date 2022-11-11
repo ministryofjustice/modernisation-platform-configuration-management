@@ -1,0 +1,30 @@
+---
+- name: Fail if get-ec2-facts roles has not been run
+  fail:
+    msg: "Please run get-ec2-facts role to collect tags"
+  when: ec2 is not defined
+
+- name: Fail if required tags not found
+  fail:
+    msg: "Could not find required tags: Name or oracle-sid or oracle-db-hostname"
+  when: ec2.tags["Name"] is not defined or ec2.tags["oracle-sid"] is not defined or ec2.tags["oracle-db-hostname"] is not defined
+
+- name: Set SSM parameters path fact
+  set_fact:
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ ec2.tags.Name }}"
+
+- name: Copy installation scripts
+  ansible.builtin.template: 
+    owner: oracle
+    group: oinstall
+    mode: 0755
+    src: "10.3/{{ item }}.j2"
+    dest: "/u01/software/weblogic/{{ item }}"
+  loop:
+    - weblogic-setup.sh
+    - weblogic-init.sh
+
+- name: Run installation scripts
+  shell: |
+    cd /u01/software/weblogic/
+    ./weblogic-init.sh
