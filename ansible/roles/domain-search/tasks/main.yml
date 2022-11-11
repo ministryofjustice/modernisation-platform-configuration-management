@@ -3,3 +3,10 @@
   tags:
     - ec2provision
     - ec2patch
+
+# Ensure handlers run before the next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - ec2provision
+    - ec2patch
