@@ -1,6 +1,9 @@
 plugin: amazon.aws.aws_ec2
 regions:
   - eu-west-2
+include_filters:
+  - instance-state-name:
+    - running
 exclude_filters:
   - tag:aws:autoscaling:groupName:
       - "*"
