@@ -94,8 +94,14 @@ oracle_commands() {
     echo "# opmnctl startall"
     opmnctl startall
 
+    # TODO - DELETE THIS
+    echo "# setting lifecycle hook to CONTINUE"
+    lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
+    echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
+    echo "CONTINUE" >> $lifecycle_file
+
     # Check db connection & Compile forms
-    echo "# Compile forms"
+    echo "# Compile forms and check DB connection"
     /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "${DB_NAME}" -p ${DB_PASSWORD}
 
     # Create Managed Servers
