@@ -8,10 +8,10 @@
   set_fact:
     weblogic_tags: true
   when:
-  - ec2.tags["Name"] is defined
-  - ec2.tags["oracle-sid"] is defined
-  - ec2.tags["oracle-db-hostname"] is defined
-  - ec2.tags["ssm-parameters-prefix"] is defined
+    - ec2.tags["Name"] is defined
+    - ec2.tags["oracle-sid"] is defined
+    - ec2.tags["oracle-db-hostname"] is defined
+    - ec2.tags["ssm-parameters-prefix"] is defined
 
 - name: Fail if required tags not found
   fail:
