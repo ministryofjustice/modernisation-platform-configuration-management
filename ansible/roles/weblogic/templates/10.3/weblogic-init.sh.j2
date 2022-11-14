@@ -33,7 +33,7 @@ main() {
   chkconfig --add nomis_weblogic
   chkconfig --level 3 nomis_weblogic on
 
-  #TODO: test -- delete this
+  #TODO: delete following 4 lines once certificate issue resolved
   echo "# setting lifecycle hook to CONTINUE"
   lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
   echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
@@ -45,7 +45,7 @@ main() {
     exit 1
   fi
 
-  #TODO: comment back in
+  #TODO: comment back in following 4 lines once certificate issue resolved
   #echo "# setting lifecycle hook to CONTINUE"
   #lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
   #echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
