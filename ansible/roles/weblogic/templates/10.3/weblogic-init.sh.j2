@@ -32,6 +32,12 @@ main() {
   echo "# create nomis_weblogic service"
   chkconfig --add nomis_weblogic
   chkconfig --level 3 nomis_weblogic on
+
+  #TODO: test -- delete this
+  echo "# setting lifecycle hook to CONTINUE"
+  lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
+  echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
+  echo "CONTINUE" >> $lifecycle_file
   
   echo "# run weblogic-setup.sh -s $oracle_sid -h $db_hostname"
   su -c "/u01/software/weblogic/weblogic-setup.sh  -s $oracle_sid -h $db_hostname" - oracle
@@ -39,10 +45,11 @@ main() {
     exit 1
   fi
 
-  echo "# setting lifecycle hook to CONTINUE"
-  lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
-  echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
-  echo "CONTINUE" >> $lifecycle_file
+  #TODO: comment back in
+  #echo "# setting lifecycle hook to CONTINUE"
+  #lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
+  #echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
+  #echo "CONTINUE" >> $lifecycle_file
 
   echo "# finished"
 }
