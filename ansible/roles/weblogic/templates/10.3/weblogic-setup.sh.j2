@@ -3,6 +3,8 @@
 
 set -e
 
+DB_PORT=1521
+
 USAGE() { echo "Usage: weblogic-setup.sh [-h <DATABASE_HOSTNAME>] [-s <DATABASE_NAME (SID)>] [-p <DATABASE_PORT>]" 1>&2; exit 1; }
 
 while getopts ":h:s:p:n:" OPT; do
@@ -30,6 +32,21 @@ oracle_commands() {
 
     if [[ -z $ADMIN_USERNAME || -z $ADMIN_PASSWORD || -z $DB_USERNAME || -z $DB_PASSWORD ]]; then
       echo "ERROR: failed to get SSM parameters."
+      exit 1
+    fi
+
+    if [[ -z $DB_NAME || -z $DB_HOSTNAME || -z $DB_PORT ]]; then
+      echo "ERROR: DB parameters not set. DB_NAME=$DB_NAME DB_HOSTNAME=$DB_HOSTNAME DB_PORT=$DB_PORT"
+      exit 1
+    fi
+
+    if [[ -z $HOSTNAME ]]; then
+      echo "ERROR: HOSTNAME not set. HOSTNAME=$HOSTNAME"
+      exit 1
+    fi
+
+    if [[ -z $ORACLE_HOME || -z $ORACLE_INSTANCE || -z $DOMAIN_HOME ]]; then
+      echo "ERROR: Oracle variables not set.  ORACLE_HOME=$ORACLE_HOME ORACLE_INSTANCE=$ORACLE_INSTANCE DOMAIN_HOME=$DOMAIN_HOME"
       exit 1
     fi
 
@@ -114,7 +131,7 @@ oracle_commands() {
 }
 
 copy_managed_server_files() {
-    # Move the concfig files into the correct locations (Directory env vars are defined in bash profile)
+    # Move the config files into the correct locations (Directory env vars are defined in bash profile)
     cp -p /u01/software/config/java/*.jar ${ORACLE_HOME}/forms/java
     cp /u01/software/config/jacob-1.14.3-x86.dll ${ORACLE_HOME}/forms/webutil/win32/
     cp /u01/software/config/PRSDK.dll ${ORACLE_HOME}/forms/webutil/win32/
