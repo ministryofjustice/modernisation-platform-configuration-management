@@ -1,8 +1,9 @@
 #!/bin/bash
 # Managed by modernisation-platform-configuration-management/ansible/roles/autoscale-group-hooks
+PATH=$PATH:/usr/local/bin
 lifecycle_action_result=ABANDON
 if [[ -e "/root/.autoscaling-lifecycle-{{ lifecycle_hook_name }}" ]]; then  
   lifecycle_action_result=$(grep -v ^# "/root/.autoscaling-lifecycle-{{ lifecycle_hook_name }}" | head -1)
 fi
-echo "# running: aws autoscaling complete-lifecycle-action --lifecycle-action-result $lifecycle_action_result ..." | logger -p local3.info -t "autoscaling-lifecycle"
+echo "running: aws autoscaling complete-lifecycle-action --lifecycle-action-result $lifecycle_action_result ..." | logger -p local3.info -t "autoscaling-lifecycle"
 aws autoscaling complete-lifecycle-action --lifecycle-action-result "$lifecycle_action_result" --instance-id "{{ ansible_ec2_instance_id }}" --lifecycle-hook-name "{{ ec2.tags['Name'] }}-{{ lifecycle_hook_name }}" --auto-scaling-group-name "{{ ec2.tags['Name'] }}" --region "{{ ansible_ec2_placement_region }}"
