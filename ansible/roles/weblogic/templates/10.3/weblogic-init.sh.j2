@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -eo pipefail
+
+main() {
+  instance_id="{{ ansible_ec2_instance_id }}"
+  region="{{ ansible_ec2_placement_region }}"
+  name="{{ ec2.tags['Name'] }}"
+  oracle_sid="{{ ec2.tags['oracle-sid'] }}"
+  db_hostname="{{ ec2.tags['oracle-db-hostname'] }}"
+  lifecycle_hook_name="$name-ready-hook" # must match with modernisation-platform-environments/terraform/environments/nomis
+  autoscaling_group_name="$name"
+
+  echo "# started"
+  echo "# vars: instance_id=$instance_id region=$region name=$name oracle_sid=$oracle_sid db_hostname=$db_hostname"
+  echo "# vars: lifecycle_hook_name=$lifecycle_hook_name autoscaling_group_name=$autoscaling_group_name"
+
+  if [[ -z $instance_id || -z $region || -z $name ]]; then
+    echo "ERROR: some variables are not set"
+    exit 1
+  fi
+  
+  if [[ -z $oracle_sid || -z $db_hostname ]]; then
+    echo "ERROR: oracle-sid and oracle-db-hostname tags must be set"
+    exit 1
+  fi
+
+  # Make sure /dev/xvdb is mounted to /u01 (fstab working intermittently)
+  echo "# mount -a"
+  mount -a
+
+  echo "# create nomis_weblogic service"
+  chkconfig --add nomis_weblogic
+  chkconfig --level 3 nomis_weblogic on
+
+  #TODO: delete following 4 lines once certificate issue resolved
+  echo "# setting lifecycle hook to CONTINUE"
+  lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
+  echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
+  echo "CONTINUE" >> $lifecycle_file
+  
+  echo "# run weblogic-setup.sh -s $oracle_sid -h $db_hostname"
+  su -c "/u01/software/weblogic/weblogic-setup.sh  -s $oracle_sid -h $db_hostname" - oracle
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+
+  #TODO: comment back in following 4 lines once certificate issue resolved
+  #echo "# setting lifecycle hook to CONTINUE"
+  #lifecycle_file="/root/.autoscaling-lifecycle-ready-hook"
+  #echo "# managed by modernisation-platform-configuration-management/ansible/roles/weblogic" > $lifecycle_file
+  #echo "CONTINUE" >> $lifecycle_file
+
+  echo "# finished"
+}
+
+main 2>&1 | logger -p local3.info -t weblogic-init

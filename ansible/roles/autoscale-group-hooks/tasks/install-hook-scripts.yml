@@ -1,0 +1,36 @@
+---
+- name: Fail if get-ec2-facts roles has not been run
+  fail:
+    msg: "Please run get-ec2-facts role to collect tags"
+  when: ec2 is not defined
+
+- name: Fail if required tags not found
+  fail:
+    msg: "Could not find Name tag value"
+  when: ec2.tags["Name"] is not defined
+
+- name: Copy hook scripts
+  ansible.builtin.template:
+    mode: 0755
+    src: "autoscaling-lifecycle-hook.sh.j2"
+    dest: "/usr/local/bin/autoscaling-lifecycle-{{ lifecycle_hook_name }}.sh"
+  loop: "{{ autoscaling_hook_names }}"
+  loop_control:
+    loop_var: lifecycle_hook_name
+
+# Start crond before adding the reboot cron
+- name: Ensure crond running
+  ansible.builtin.service:
+    name: crond
+    enabled: yes
+    state: started
+
+# Trigger the script on reboot when restoring from a warm pool
+- name: Copy cron file
+  ansible.builtin.template:
+    mode: 0644
+    src: "autoscaling-lifecycle-hook.cron.j2"
+    dest: "/etc/cron.d/autoscaling-lifecycle-{{ lifecycle_hook_name }}.cron"
+  loop: "{{ autoscaling_hook_names }}"
+  loop_control:
+    loop_var: lifecycle_hook_name

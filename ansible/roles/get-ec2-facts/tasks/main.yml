@@ -2,3 +2,13 @@
 - import_tasks: get-ec2-facts.yml
   tags:
     - always
+
+- name: Debug hostvars
+  vars:
+    msg: |
+      {{ hostvars | to_nice_json }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+  tags:
+    - never
+    - debug-hostvars

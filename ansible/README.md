@@ -10,7 +10,7 @@ Please include a README.md for each role.
 ## Using ansible to provision an EC2 instance
 
 Use `user_data` to provide a cloud init or shell script which runs
-ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example.  This relies on
+ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example. This relies on
 tags to identify which roles to run.
 
 ## Running ansible against an EC2 instance post build

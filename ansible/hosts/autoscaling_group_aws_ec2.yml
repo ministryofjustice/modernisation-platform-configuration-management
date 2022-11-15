@@ -4,6 +4,13 @@ regions:
 include_filters:
   - tag:aws:autoscaling:groupName:
       - "*"
+exclude_filters:
+  - instance-state-name:
+      - pending
+      - shutting-down
+      - terminated
+      - stopping
+      - stopped
 hostnames:
   - "instance-id"
 

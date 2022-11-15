@@ -2,4 +2,4 @@
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 
-{{ ansible_default_ipv4.address }} {{ ec2.tags.Name }}.{{ dns_zone_internal }} {{ ec2.tags.Name }}
+{{ ansible_default_ipv4.address }} {{ ec2_hostname_fqdn }} {{ ec2_hostname_short }}
