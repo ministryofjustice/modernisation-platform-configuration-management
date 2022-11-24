@@ -21,6 +21,11 @@ while getopts ":h:s:p:n:" OPT; do
         esac
 done
 
+apply_patch() {
+
+  aws s3 cp s3:///
+}
+
 oracle_commands() {
 
     # Retrieve configuration variables
@@ -101,9 +106,50 @@ oracle_commands() {
     echo "# make -f ins_reports.mk install"
     cd $ORACLE_HOME/reports/lib && /usr/bin/make -f ins_reports.mk install
 
-    # Start node manager and weblogic as daemon processes
+    # Set Weblogic environment
     echo "# set WLS env"
     . $WL_HOME/server/bin/setWLSEnv.sh
+
+    # Undo previous patch
+    echo "# get previous patch ID"
+    cd $WL_HOME/../utils/bsu/
+    patch_code=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+    echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose"
+    ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose
+
+    # Apply latest patch
+    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
+    patch_file="p32832785_1036_Generic"
+    patch_dir="/u01/software/weblogic/patch"
+    patch_code="3NVW"
+    echo "# mkdir -p $patch_dir/$patch_file"
+    mkdir -p "$patch_dir/$patch_file"
+    echo "# aws cp s3://$patch_s3_path/weblogic-software/$patch_file.zip $patch_dir/$patch_file.zip"
+    aws cp "s3://$patch_s3_path/weblogic-software/$patch_file.zip" "$patch_dir/$patch_file.zip"
+    echo "# unzip $patch_file.zip"
+    cd $patch_dir/$patch_file
+    unzip ../$patch_file.zip
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
+
+    # Apply certificate patch
+    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
+    patch_file="p13964737_10360210720_Generic"
+    patch_dir="/u01/software/weblogic/patch"
+    patch_code="UEYM"
+    echo "# mkdir -p $patch_dir/$patch_file"
+    mkdir -p "$patch_dir/$patch_file"
+    echo "# aws cp s3://$patch_s3_path/weblogic-software/$patch_file.zip $patch_dir/$patch_file.zip"
+    aws cp "s3://$patch_s3_path/weblogic-software/$patch_file.zip" "$patch_dir/$patch_file.zip"
+    echo "# unzip $patch_file.zip"
+    cd $patch_dir/$patch_file
+    unzip ../$patch_file.zip
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
+
+    # Start node manager and weblogic as daemon processes
     echo "# startNodeManager"
     nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh >>nohup.out 2>&1 &
     echo "# startWebLogic"
