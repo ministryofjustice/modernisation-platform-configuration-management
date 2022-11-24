@@ -21,11 +21,6 @@ while getopts ":h:s:p:n:" OPT; do
         esac
 done
 
-apply_patch() {
-
-  aws s3 cp s3:///
-}
-
 oracle_commands() {
 
     # Retrieve configuration variables
@@ -124,8 +119,8 @@ oracle_commands() {
     patch_code="3NVW"
     echo "# mkdir -p $patch_dir/$patch_file"
     mkdir -p "$patch_dir/$patch_file"
-    echo "# aws cp s3://$patch_s3_path/weblogic-software/$patch_file.zip $patch_dir/$patch_file.zip"
-    aws cp "s3://$patch_s3_path/weblogic-software/$patch_file.zip" "$patch_dir/$patch_file.zip"
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip"
     echo "# unzip $patch_file.zip"
     cd $patch_dir/$patch_file
     unzip ../$patch_file.zip
@@ -140,8 +135,8 @@ oracle_commands() {
     patch_code="UEYM"
     echo "# mkdir -p $patch_dir/$patch_file"
     mkdir -p "$patch_dir/$patch_file"
-    echo "# aws cp s3://$patch_s3_path/weblogic-software/$patch_file.zip $patch_dir/$patch_file.zip"
-    aws cp "s3://$patch_s3_path/weblogic-software/$patch_file.zip" "$patch_dir/$patch_file.zip"
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip"
     echo "# unzip $patch_file.zip"
     cd $patch_dir/$patch_file
     unzip ../$patch_file.zip
