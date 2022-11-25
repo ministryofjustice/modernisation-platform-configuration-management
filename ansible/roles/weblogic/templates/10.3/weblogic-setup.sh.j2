@@ -81,7 +81,7 @@ oracle_commands() {
     echo "# mkdir -p $patch_dir/$patch_file"
     mkdir -p "$patch_dir/$patch_file"
     echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip" --no-progress
     echo "# unzip $patch_file.zip"
     cd $patch_dir/$patch_file
     unzip ../$patch_file.zip
@@ -97,7 +97,7 @@ oracle_commands() {
     echo "# mkdir -p $patch_dir/$patch_file"
     mkdir -p "$patch_dir/$patch_file"
     echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip" --no-progress
     echo "# unzip $patch_file.zip"
     cd $patch_dir/$patch_file
     unzip ../$patch_file.zip
