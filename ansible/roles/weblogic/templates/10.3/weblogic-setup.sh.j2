@@ -156,6 +156,20 @@ oracle_commands() {
     echo "# moving config files to correct locations"
     copy_managed_server_files
 
+    # Create new cert
+    echo "# create new cert"
+    mkdir ~/key
+    cd ~/key
+    java utils.CertGen -keyfilepass DemoIdentityPassPhrase -certfile democert -keyfile demokey -strength 1024
+    echo "# import private key"
+    java utils.ImportPrivateKey -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase -keyfile demokey.pem -keyfilepass DemoIdentityPassPhrase -certfile democert.pem -alias demoidentity
+    echo "# list keys"
+    keytool -list -v -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase
+    echo "# import cert"
+    keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
+    echo "Update nodemanager.properties"
+    sed -i 's/SecureListener=true/SecureListener=false/g' /u01/app/oracle/Middleware/wlserver_10.3/common/nodemanager/nodemanager.properties
+
     # Apply patches
     echo "# running setDomainEnv.sh"
     . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh
