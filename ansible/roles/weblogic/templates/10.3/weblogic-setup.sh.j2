@@ -62,6 +62,50 @@ oracle_commands() {
     sed -i 's/${DB_USERNAME}/'${DB_USERNAME}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
     sed -i 's/${DB_PASSWORD}/'${DB_PASSWORD}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
 
+    # Set Weblogic environment
+    echo "# set WLS env"
+    . $WL_HOME/server/bin/setWLSEnv.sh
+
+    # Undo previous patch
+    echo "# get previous patch ID"
+    cd $WL_HOME/../utils/bsu/
+    patch_code=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+    echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose"
+    ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose
+
+    # Apply latest patch
+    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
+    patch_file="p32832785_1036_Generic"
+    patch_dir="/u01/software/weblogic/patch"
+    patch_code="3NVW"
+    echo "# mkdir -p $patch_dir/$patch_file"
+    mkdir -p "$patch_dir/$patch_file"
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip --no-progress"
+    echo "# unzip $patch_file.zip"
+    cd $patch_dir/$patch_file
+    unzip ../$patch_file.zip
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
+
+    # Apply certificate patch
+    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
+    patch_file="p13964737_10360210720_Generic"
+    patch_dir="/u01/software/weblogic/patch"
+    patch_code="UEYM"
+    echo "# mkdir -p $patch_dir/$patch_file"
+    mkdir -p "$patch_dir/$patch_file"
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip --no-progress"
+    echo "# unzip $patch_file.zip"
+    cd $patch_dir/$patch_file
+    unzip ../$patch_file.zip
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
+    exit 1
+
     echo "# running /u01/app/oracle/Middleware/forms_home/bin/config.sh"
     yes | bash /u01/app/oracle/Middleware/forms_home/bin/config.sh -silent -response /u01/software/forms/configure_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc
 
@@ -100,49 +144,6 @@ oracle_commands() {
     /usr/bin/make -f ins_forms.mk frmweb_install
     echo "# make -f ins_reports.mk install"
     cd $ORACLE_HOME/reports/lib && /usr/bin/make -f ins_reports.mk install
-
-    # Set Weblogic environment
-    echo "# set WLS env"
-    . $WL_HOME/server/bin/setWLSEnv.sh
-
-    # Undo previous patch
-    echo "# get previous patch ID"
-    cd $WL_HOME/../utils/bsu/
-    patch_code=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
-    echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose"
-    ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose
-
-    # Apply latest patch
-    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
-    patch_file="p32832785_1036_Generic"
-    patch_dir="/u01/software/weblogic/patch"
-    patch_code="3NVW"
-    echo "# mkdir -p $patch_dir/$patch_file"
-    mkdir -p "$patch_dir/$patch_file"
-    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip"
-    echo "# unzip $patch_file.zip"
-    cd $patch_dir/$patch_file
-    unzip ../$patch_file.zip
-    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
-    cd $WL_HOME/../utils/bsu/
-    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
-
-    # Apply certificate patch
-    patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
-    patch_file="p13964737_10360210720_Generic"
-    patch_dir="/u01/software/weblogic/patch"
-    patch_code="UEYM"
-    echo "# mkdir -p $patch_dir/$patch_file"
-    mkdir -p "$patch_dir/$patch_file"
-    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip"
-    echo "# unzip $patch_file.zip"
-    cd $patch_dir/$patch_file
-    unzip ../$patch_file.zip
-    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
-    cd $WL_HOME/../utils/bsu/
-    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
 
     # Start node manager and weblogic as daemon processes
     echo "# startNodeManager"
