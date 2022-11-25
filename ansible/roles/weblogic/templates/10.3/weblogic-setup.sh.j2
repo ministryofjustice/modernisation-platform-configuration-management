@@ -73,6 +73,9 @@ oracle_commands() {
     echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose"
     ./bsu.sh -remove -patchlist=$patch_code -prod_dir=$WL_HOME -verbose
 
+    # Display current patch, both for debug + to introduce a slight delay
+    ./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+
     # Apply latest patch
     patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
     patch_file="p32832785_1036_Generic"
@@ -88,6 +91,9 @@ oracle_commands() {
     echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose"
     cd $WL_HOME/../utils/bsu/
     ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$patch_code  -prod_dir=$WL_HOME -verbose
+
+    # Display current patch, both for debug + to introduce a slight delay
+    ./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
 
     # Apply certificate patch
     patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
