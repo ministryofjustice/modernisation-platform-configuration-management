@@ -62,9 +62,11 @@ oracle_commands() {
     sed -i 's/${DB_USERNAME}/'${DB_USERNAME}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
     sed -i 's/${DB_PASSWORD}/'${DB_PASSWORD}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
 
-    # Undo previous patch
+    # Set WLS environment
     echo "# set WLS env"
     . $WL_HOME/server/bin/setWLSEnv.sh
+
+    # Undo previous patch
     echo "# get previous patch ID"
     cd $WL_HOME/../utils/bsu/
     current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
@@ -80,22 +82,24 @@ oracle_commands() {
 
     # Apply latest patch
     patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
-    patch_file="p32832785_1036_Generic"
-    patch_dir="/u01/software/weblogic/patch"
+    patch_file="p32832785_1036_Generic.zip"
+    patch_dir="$WL_HOME/../utils/bsu/cache_dir"
     target_patch_id="3NVW"
-    echo "# mkdir -p $patch_dir/$patch_file"
-    mkdir -p "$patch_dir/$patch_file"
-    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip" --no-progress
-    echo "# unzip $patch_file.zip"
-    cd $patch_dir/$patch_file
-    unzip ../$patch_file.zip
-    chown oracle:oinstall *
+    if [[ -e $patch_dir ]]; then
+      echo "# rm -rf $patch_dir"
+      rm -rf $patch_dir
+    fi
+    echo "# mkdir -p $patch_dir"
+    mkdir -p "$patch_dir"
+    cd $patch_dir
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file ./$patch_file --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file" "./$patch_file" --no-progress
+    echo "# unzip $patch_file"
+    unzip $patch_file
     echo "# set WLS env"
-    . $WL_HOME/server/bin/setWLSEnv.sh
     cd $WL_HOME/../utils/bsu/
-    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose"
-    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose"
+    ./bsu.sh -install -patch_download_dir=$patch_dir  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose
 
     # Display current patch, both for debug + to introduce a slight delay
     current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
