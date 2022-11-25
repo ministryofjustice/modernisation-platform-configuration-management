@@ -69,15 +69,21 @@ oracle_commands() {
     # Undo previous patch
     echo "# get previous patch ID"
     cd $WL_HOME/../utils/bsu/
-    current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
-    echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$current_patch_id -prod_dir=$WL_HOME -verbose"
-    ./bsu.sh -remove -patchlist=$current_patch_id -prod_dir=$WL_HOME -verbose
-
-    # Display current patch, both for debug + to introduce a slight delay
-    current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
-    if [[ ! -z $current_patch_id ]]; then
-      echo "ERROR: failed to remove previous patch"
+    current_patch_ids=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+    if [[ $(echo "$current_patch_ids" | wc -l) > 1 ]]; then
+      echo "ERROR: Not implemented multiple patches uninstall"
       exit 1
+    fi
+    if [[ ! -z $current_patch_ids ]]; then
+      echo "# Removing previous patch: ./bsu.sh -remove -patchlist=$current_patch_ids -prod_dir=$WL_HOME -verbose"
+      ./bsu.sh -remove -patchlist=$current_patch_ids -prod_dir=$WL_HOME -verbose
+
+      # Display current patch, both for debug + to introduce a slight delay
+      current_patch_ids=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+      if [[ ! -z $current_patch_ids ]]; then
+        echo "ERROR: failed to remove previous patch"
+        exit 1
+      fi
     fi
 
     # Apply latest patch
@@ -96,39 +102,41 @@ oracle_commands() {
     aws s3 cp "s3://$patch_s3_path/$patch_file" "./$patch_file" --no-progress
     echo "# unzip $patch_file"
     unzip $patch_file
-    echo "# set WLS env"
     cd $WL_HOME/../utils/bsu/
-    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose"
-    ./bsu.sh -install -patch_download_dir=$patch_dir  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist=$target_patch_id -prod_dir=$WL_HOME -verbose"
+    ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist=$target_patch_id -prod_dir=$WL_HOME -verbose
 
-    # Display current patch, both for debug + to introduce a slight delay
-    current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
-    if [[ $current_patch_id != $target_patch_id ]]; then
-      echo "ERROR: failed to install patch $current_patch_id, still on $target_patch_id"
+    # Check installed
+    current_patch_ids=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+    if (! echo "$current_patch_ids" | grep $target_patch_id > /dev/null ); then
+      echo ERROR: failed to install patch $target_patch_id. Got: $current_patch_ids
       exit 1
     fi
 
     # Apply certificate patch
     patch_s3_path="ec2-image-builder-nomis20220314103938567000000001/weblogic-software"
-    patch_file="p13964737_10360210720_Generic"
-    patch_dir="/u01/software/weblogic/patch"
+    patch_file="p13964737_10360210720_Generic.zip"
+    patch_dir="$WL_HOME/../utils/bsu/cache_dir"
     target_patch_id="UEYM"
-    echo "# mkdir -p $patch_dir/$patch_file"
-    mkdir -p "$patch_dir/$patch_file"
-    echo "# aws s3 cp s3://$patch_s3_path/$patch_file.zip $patch_dir/$patch_file.zip --no-progress"
-    aws s3 cp "s3://$patch_s3_path/$patch_file.zip" "$patch_dir/$patch_file.zip" --no-progress
-    echo "# unzip $patch_file.zip"
-    cd $patch_dir/$patch_file
-    unzip ../$patch_file.zip
-    chown oracle:oinstall *
-    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose"
+    if [[ -e $patch_dir ]]; then
+      echo "# rm -rf $patch_dir"
+      rm -rf $patch_dir
+    fi
+    echo "# mkdir -p $patch_dir"
+    mkdir -p "$patch_dir"
+    cd $patch_dir
+    echo "# aws s3 cp s3://$patch_s3_path/$patch_file ./$patch_file --no-progress"
+    aws s3 cp "s3://$patch_s3_path/$patch_file" "./$patch_file" --no-progress
+    echo "# unzip $patch_file"
+    unzip $patch_file
     cd $WL_HOME/../utils/bsu/
-    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file  -patchlist=$target_patch_id  -prod_dir=$WL_HOME -verbose
+    echo "# Apply patch: ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist=$target_patch_id -prod_dir=$WL_HOME -verbose"
+    ./bsu.sh -install -patch_download_dir=$patch_dir/$patch_file -patchlist=$target_patch_id -prod_dir=$WL_HOME -verbose
 
-    # Display current patch, both for debug + to introduce a slight delay
-    current_patch_id=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
-    if [[ $current_patch_id != $target_patch_id ]]; then
-      echo "ERROR: failed to install patch $current_patch_id, still on $target_patch_id"
+    # Check installed
+    current_patch_ids=$(./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1)
+    if (! echo "$current_patch_ids" | grep $target_patch_id > /dev/null ); then
+      echo ERROR: failed to install patch $target_patch_id. Got: $current_patch_ids
       exit 1
     fi
 
