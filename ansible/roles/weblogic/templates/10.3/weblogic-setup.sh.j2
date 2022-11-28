@@ -169,6 +169,7 @@ oracle_commands() {
     keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
     echo "Update nodemanager.properties"
     sed -i 's/SecureListener=true/SecureListener=false/g' /u01/app/oracle/Middleware/wlserver_10.3/common/nodemanager/nodemanager.properties
+    sed -i '/<node-manager>/a \      <nm-type>Plain</nm-type>' /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/config.xml
 
     # Apply patches
     echo "# running setDomainEnv.sh"
@@ -207,17 +208,17 @@ oracle_commands() {
 
     # Create Managed Servers
     # (i) Autologoff
-    ##echo "# Create Managed Servers Autologoff"
-    ##java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/autologoff.properties
+    echo "# Create Managed Servers Autologoff"
+    java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/autologoff.properties
     # (ii) Create TagSar
-    ##echo "# Create Managed Servers TagSar"
-    ##java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/tagsar.properties
+    echo "# Create Managed Servers TagSar"
+    java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/tagsar.properties
     # (iii) Create HotPage
-    ##echo "# Create Managed Servers HotPage"
-    ##java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/hotpage.properties
+    echo "# Create Managed Servers HotPage"
+    java weblogic.WLST /u01/software/weblogic/create_managed_app.py -p /u01/software/weblogic/hotpage.properties
 
-    ##echo "# Cleanup"
-    ##rm -f /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
+    echo "# Cleanup"
+    rm -f /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
 }
 
 copy_managed_server_files() {
