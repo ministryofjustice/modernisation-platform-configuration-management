@@ -62,7 +62,7 @@ oracle_commands() {
     sed -i 's/${DB_USERNAME}/'${DB_USERNAME}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
     sed -i 's/${DB_PASSWORD}/'${DB_PASSWORD}'/g' /u01/software/weblogic/tagsar.properties /u01/software/weblogic/hotpage.properties /u01/software/weblogic/autologoff.properties
 
-    # Set WLS environment
+    # Set WLS environment
     echo "# set WLS env"
     . $WL_HOME/server/bin/setWLSEnv.sh
 
@@ -92,10 +92,10 @@ oracle_commands() {
     patch_dir="$WL_HOME/../utils/bsu/cache_dir"
     target_patch_id="3NVW"
     if [[ -e $patch_dir ]]; then
-      echo "# rm -rf $patch_dir"
+      echo "# rm -rf $patch_dir"
       rm -rf $patch_dir
     fi
-    echo "# mkdir -p $patch_dir"
+    echo "# mkdir -p $patch_dir"
     mkdir -p "$patch_dir"
     cd $patch_dir
     echo "# aws s3 cp s3://$patch_s3_path/$patch_file ./$patch_file --no-progress"
@@ -119,10 +119,10 @@ oracle_commands() {
     patch_dir="$WL_HOME/../utils/bsu/cache_dir"
     target_patch_id="UEYM"
     if [[ -e $patch_dir ]]; then
-      echo "# rm -rf $patch_dir"
+      echo "# rm -rf $patch_dir"
       rm -rf $patch_dir
     fi
-    echo "# mkdir -p $patch_dir"
+    echo "# mkdir -p $patch_dir"
     mkdir -p "$patch_dir"
     cd $patch_dir
     echo "# aws s3 cp s3://$patch_s3_path/$patch_file ./$patch_file --no-progress"
