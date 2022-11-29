@@ -202,9 +202,9 @@ oracle_commands() {
     echo "# opmnctl startall"
     opmnctl startall
 
-    # Check db connection & Compile forms
-    echo "# Compile forms and check DB connection"
-    /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "${DB_NAME}" -p ${DB_PASSWORD}
+    # Compile forms
+    echo "# Compile forms: /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e '${DB_HOSTNAME}/${DB_NAME}' -p 'xxxx'"
+    /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "${DB_HOSTNAME}/${DB_NAME}" -p ${DB_PASSWORD}
 
     # Create Managed Servers
     # (i) Autologoff
