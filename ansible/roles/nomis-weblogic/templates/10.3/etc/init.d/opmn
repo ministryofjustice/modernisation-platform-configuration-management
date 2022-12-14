@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# opmn        Start and stop Oracle Process Managed Node services
+#
+# chkconfig: - 77 12
+# description: Oracle Process Managed Node services
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+prog=opmn
+
+start_process() {
+  su - oracle -c "opmnctl startall" | logger -p local3.info -t $prog
+}
+
+wait_process() {
+  sleep 2
+}
+
+get_process_pids() {
+  local process_pids
+  ! process_pids=$(pgrep -u oracle -f "opmn" 2> /dev/null) && return 1
+  for process_pid in $process_pids; do
+    pstree -ap $process_pid  | grep -v '{' | cut -d, -f2 | cut -d\  -f1
+  done
+}
+
+start() {
+        echo -n $"Starting $prog: "
+        if PIDS=$(get_process_pids); then
+          echo -n Already running $PIDS && echo_failure
+          echo
+          return 1
+        fi
+        echo "init.d starting $prog" | logger -p local3.info -t $prog
+        start_process
+        wait_process
+        if ! get_process_pids > /dev/null; then
+          echo_failure
+          RETVAL=1
+        else
+          echo_success
+        fi
+        echo
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Shutting down $prog: "
+        if ! PIDS=$(get_process_pids); then
+          echo -n "process not found" && echo_failure
+          echo
+          return 1
+        fi
+        echo init.d killing $prog $PIDS | logger -p local3.info -t $prog
+        su - oracle -c "opmnctl stopall" | logger -p local3.info -t $prog
+        sleep 2
+        if get_process_pids > /dev/null; then
+          echo_failure
+          RETVAL=1
+        else
+          echo_success
+        fi
+        echo
+        return $RETVAL
+}
+
+status() {
+        echo -n $"Status of $prog: "
+        if ! PIDS=$(get_process_pids); then
+          echo -n "process not found" && echo_failure
+          echo
+          return 1
+        fi
+        echo -n $PIDS && echo_success
+        echo
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        restart
+        ;;
+  status)
+        status
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 3
+esac
+
+exit $?

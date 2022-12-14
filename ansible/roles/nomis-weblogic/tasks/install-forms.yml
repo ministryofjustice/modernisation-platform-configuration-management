@@ -1,0 +1,116 @@
+---
+- name: Create forms directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/software/forms
+    - /u01/app/oracle/Middleware/forms_home
+    - /var/opt/oracle
+
+- name: Copy forms config files
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /var/opt/oracle/oraInst.loc
+
+- name: Check if forms already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/forms_home/inventory
+  register: weblogic_forms_installed_check
+
+- name: Install weblogic server software
+  block:
+    - name: Get forms archives from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "/weblogic-software/forms/{{ item }}"
+        dest: "/u01/software/forms/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - Disk1.tgz
+        - Disk2.tgz
+        - Disk3.tgz
+        - Disk4.tgz
+
+    - name: Extract forms archives
+      ansible.builtin.unarchive:
+        owner: oracle
+        group: oinstall
+        src: "/u01/software/forms/{{ item }}"
+        dest: "/u01/software/forms"
+        remote_src: yes
+      loop:
+        - Disk1.tgz
+        - Disk2.tgz
+        - Disk3.tgz
+        - Disk4.tgz
+      register: forms_archive
+      when: not ansible_check_mode
+
+    - name: Copy install rsp
+      ansible.builtin.template:
+        src: "10.3{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/forms/install_only.rsp
+
+    - name: Run forms installer in background
+      become_user: oracle
+      ansible.builtin.shell: |
+        /u01/software/forms/Disk1/runInstaller -silent -responseFile /u01/software/forms/install_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc
+      register: install_forms
+
+    - name: Get installer tmp dir from installer output
+      set_fact:
+        forms_tmp_install_dir: '{{ install_forms.stdout | regex_search("\/tmp\/[^.]+") }}'
+      failed_when: forms_tmp_install_dir|length == 0
+      when: not ansible_check_mode
+
+    - name: Get installer pids
+      become_user: oracle
+      community.general.pids:
+        pattern: "{{ forms_tmp_install_dir }}.*"
+      register: install_forms_processes
+      when: not ansible_check_mode
+
+    - name: Wait up to 30 mins for installer processes to complete
+      ansible.builtin.wait_for:
+        path: "/proc/{{ item }}/status"
+        state: absent
+        timeout: 1800
+      loop: "{{ install_forms_processes.pids }}"
+      when: not ansible_check_mode
+
+    - name: Remove temporary install directories
+      ansible.builtin.file:
+        path: "/u01/software/forms/{{ item }}"
+        state: absent
+      loop:
+        - Disk1
+        - Disk2
+        - Disk3
+        - Disk4
+
+    - name: Remove temporary install files
+      ansible.builtin.file:
+        path: "/u01/software/forms/{{ item }}"
+        state: absent
+      loop:
+        - install_only.rsp
+        - Disk1.tgz
+        - Disk2.tgz
+        - Disk3.tgz
+        - Disk4.tgz
+
+  # block
+  when: not weblogic_forms_installed_check.stat.exists

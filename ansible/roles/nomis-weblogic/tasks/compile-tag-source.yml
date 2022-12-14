@@ -1,0 +1,35 @@
+---
+- name: Create software directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/tag/utils/scripts
+
+- name: Copy forms scripts
+  ansible.builtin.template:
+    src: "10.3/{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/tag/utils/scripts/formfns.sh
+    - /u01/tag/utils/scripts/doallforms.sh
+
+- name: Compile forms
+  become_user: oracle
+  args:
+    chdir: /u01/tag/utils/scripts
+  ansible.builtin.shell: |
+    set -eo pipefail
+    . ~/.bash_profile
+    . $WL_HOME/server/bin/setWLSEnv.sh
+    main() {
+      echo "# Compile tag forms: /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e '{{ weblogic_db_hostname }}/{{ weblogic_db_name }}' -p 'xxx'"
+      ./doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "{{ weblogic_db_hostname }}/{{ weblogic_db_name }}" -p "{{ weblogic_db_password }}"
+    }
+    main 2>&1 | logger -p local3.info -t ansible-weblogic

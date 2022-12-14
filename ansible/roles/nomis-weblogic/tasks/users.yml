@@ -1,0 +1,24 @@
+---
+- name: Add oinstall
+  ansible.builtin.group:
+    name: oinstall
+    state: present
+    gid: 10001
+
+- name: Add oracle user
+  ansible.builtin.user:
+    name: oracle
+    uid: 10001
+    group: oinstall
+    home: /home/oracle
+    groups: wheel
+    system: yes
+
+- name: Copy oracle bash profile
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/.bash_profile
