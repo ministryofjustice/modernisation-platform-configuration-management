@@ -1,0 +1,112 @@
+---
+- name: Create forms directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/software/forms
+
+- name: Check if forms already configured
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/forms_instance
+  register: weblogic_forms_configured_check
+
+- name: Configure forms
+  block:
+    - name: Copy forms configuration files
+      ansible.builtin.template:
+        src: "10.3{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/forms/configure_only.rsp
+
+    - name: Configure forms which takes approx 20 mins
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "# Configuring forms"
+          yes | bash /u01/app/oracle/Middleware/forms_home/bin/config.sh -silent -response /u01/software/forms/configure_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc || true
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
+
+  always:
+    - name: Remove temporary forms configuration files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/forms/configure_only.rsp
+
+  # block
+  when: not weblogic_forms_configured_check.stat.exists
+
+- name: Create security directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security
+
+# the boot.properties file is automatically updated by the weblogic server
+- name: Copy forms configuration files
+  ansible.builtin.template:
+    src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    force: false
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security/boot.properties
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security/boot.properties
+
+- name: Copy init.d weblogic-server and opmn scripts
+  ansible.builtin.template:
+    src: "10.3/{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+  loop:
+    - /etc/init.d/weblogic-server
+    - /etc/init.d/opmn
+
+- name: Enable weblogic-server and opmn services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - weblogic-server
+    - opmn
+
+- name: Copy init.d weblogic managed server scripts
+  ansible.builtin.template:
+    src: "10.3/etc/init.d/weblogic-managed-server"
+    dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
+    mode: "0755"
+  loop_control:
+    loop_var: weblogic_managed_server_name
+  loop:
+    - WLS_FORMS
+    - WLS_REPORTS
+
+- name: Enable weblogic-server and opmn services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - WLS_FORMS
+    - WLS_REPORTS

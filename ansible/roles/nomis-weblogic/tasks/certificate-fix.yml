@@ -1,0 +1,128 @@
+---
+- name: Create cert fix directory
+  ansible.builtin.file:
+    path: /home/oracle/.certificate-fix
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+
+- name: Check weblogic cert
+  ansible.builtin.stat:
+    path: /home/oracle/.certificate-fix/demokey.pem
+  register: weblogic_cert
+
+- name: Create weblogic keystore cert if not present
+  become_user: oracle
+  args:
+    chdir: /home/oracle/.certificate-fix
+  ansible.builtin.shell: |
+    set -eo pipefail
+    . ~/.bash_profile
+    . $WL_HOME/server/bin/setWLSEnv.sh
+    main() {
+      echo "# Generating democert"
+      java utils.CertGen -keyfilepass DemoIdentityPassPhrase -certfile democert -keyfile demokey -strength 1024
+    }
+    main 2>&1 | logger -p local3.info -t ansible-weblogic
+  when: not weblogic_cert.stat.exists
+
+- name: List weblogic keystore certs
+  become_user: oracle
+  args:
+    chdir: /home/oracle/.certificate-fix
+  check_mode: false
+  changed_when: false
+  ansible.builtin.shell: |
+    set -eo pipefail
+    . ~/.bash_profile > /dev/null
+    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    keytool -list -v -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase || true
+  register: weblogic_keystore_list
+
+- name: Import weblogic keystore cert if not present
+  become_user: oracle
+  args:
+    chdir: /home/oracle/.certificate-fix
+  ansible.builtin.shell: |
+    set -eo pipefail
+    . ~/.bash_profile
+    . $WL_HOME/server/bin/setWLSEnv.sh
+    main() {
+      echo "# Importing cert into KeyStore"
+      java utils.ImportPrivateKey -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase -keyfile demokey.pem -keyfilepass DemoIdentityPassPhrase -certfile democert.pem -alias demoidentity
+      keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
+    }
+    main 2>&1 | logger -p local3.info -t ansible-weblogic
+  when: not weblogic_keystore_list is search("demoidentity")
+
+- name: Ensure weblogic node manager and weblogic server are running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - weblogic-node-manager
+    - weblogic-server
+
+# Node manager and weblogic server for this to work
+- name: Query current NMType
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail    
+    . ~/.bash_profile > /dev/null
+    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
+    wlst.sh  ~/admin/scripts/get_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n NMType
+  check_mode: false
+  changed_when: false
+  register: weblogic_nmtype_raw
+
+- name: Get current NMType
+  set_fact:
+    weblogic_nmtype: "{{ weblogic_nmtype_raw.stdout | regex_search(regexp,'\\1') }}"
+  vars:
+    regexp: 'Value=\"([^"]+)'
+  failed_when: weblogic_nmtype|length == 0
+
+- debug:
+    msg: "Current NMType: {{ weblogic_nmtype }}"
+
+- name: Set NMType
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail    
+    . ~/.bash_profile > /dev/null
+    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
+    wlst.sh  ~/admin/scripts/set_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n NMType -v Plain
+  when: weblogic_nmtype != 'Plain'
+
+- name: Disable SecureListener in nodemanager.properties
+  ansible.builtin.replace:
+    path: /u01/app/oracle/Middleware/wlserver_10.3/common/nodemanager/nodemanager.properties
+    regexp: "SecureListener=true"
+    replace: "SecureListener=false"
+
+- name: Stop services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - opmn
+    - WLS_FORMS
+    - WLS_REPORTS
+    - weblogic-server
+    - weblogic-node-manager
+  when: weblogic_nmtype != 'Plain'
+
+- name: Start services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - weblogic-node-manager
+    - weblogic-server
+    - WLS_REPORTS
+    - WLS_FORMS
+    - opmn
+  when: weblogic_nmtype != 'Plain'

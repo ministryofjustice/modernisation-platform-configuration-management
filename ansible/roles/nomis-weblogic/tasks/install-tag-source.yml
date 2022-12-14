@@ -1,0 +1,45 @@
+---
+- name: Fail if required tags variables not defined
+  fail:
+    msg: "Error, please ensure weblogic_tag_version is defined"
+  when: weblogic_tag_version is not defined
+
+- name: Create software directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/tag
+
+- name: Get tag archives from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "/weblogic-software/tag/{{ weblogic_tag_version }}/{{ item }}"
+    dest: "/u01/tag/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - FormsObjects.tgz
+    - FormsSources.tgz
+    - autologoff.tgz
+    - HotPage.tgz
+    - tagsar.tgz
+  register: weblogic_tag_archives
+
+- name: Extract tag archives
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/tag/{{ item }}"
+    dest: "/u01/tag"
+    remote_src: yes
+  loop:
+    - FormsObjects.tgz
+    - FormsSources.tgz
+    - autologoff.tgz
+    - HotPage.tgz
+    - tagsar.tgz
+  when: weblogic_tag_archives.changed and not ansible_check_mode

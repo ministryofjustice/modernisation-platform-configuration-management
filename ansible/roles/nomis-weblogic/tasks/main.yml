@@ -1,0 +1,115 @@
+---
+- name: Rhel6
+  block:
+    - import_tasks: get-facts.yml
+      tags:
+        - always
+
+    - import_tasks: packages.yml
+      tags:
+        - amibuild
+        - weblogic_packages
+
+    - import_tasks: users.yml
+      tags:
+        - amibuild
+        - weblogic_users
+
+    - import_tasks: disks.yml
+      tags:
+        - amibuild
+        - weblogic_disks
+
+    - import_tasks: swap.yml
+      tags:
+        - amibuild
+        - weblogic_swap
+
+    - import_tasks: install-jdk.yml
+      tags:
+        - amibuild
+        - weblogic_install_jdk
+
+    - import_tasks: install-server.yml
+      tags:
+        - amibuild
+        - weblogic_install_server
+
+    - import_tasks: patch-weblogic.yml
+      vars:
+        weblogic_patch_filename: p32832785_1036_Generic.zip
+        weblogic_patch_id: 3NVW
+      tags:
+        - amibuild
+        - weblogic_patch_1
+
+    - import_tasks: patch-weblogic.yml
+      vars:
+        weblogic_patch_filename: p13964737_10360210720_Generic.zip
+        weblogic_patch_id: UEYM
+      tags:
+        - amibuild
+        - weblogic_patch_2
+
+    - import_tasks: install-forms.yml
+      tags:
+        - amibuild
+        - weblogic_install_forms
+
+    - import_tasks: patch-forms.yml
+      vars:
+        forms_patch_filename: 9473270.tgz
+        forms_patch_id: 9473270
+      tags:
+        - amibuild
+        - weblogic_patch_forms
+
+    - import_tasks: moj-admin-scripts.yml
+      tags:
+        - ec2build
+        - weblogic_moj_admin_scripts
+
+    - import_tasks: configure-forms.yml
+      tags:
+        - ec2build
+        - weblogic_configure_forms
+
+    - import_tasks: certificate-fix.yml
+      tags:
+        - ec2build
+        - weblogic_certificate_fix
+
+    - import_tasks: make-forms.yml
+      tags:
+        - ec2build
+        - weblogic_make_forms
+
+    - import_tasks: install-tag-source.yml
+      vars:
+        weblogic_tag_version: 2022-12-07
+      tags:
+        - ec2build
+        - weblogic_install_tag_source
+
+    - import_tasks: compile-tag-source.yml
+      tags:
+        - ec2build
+        - weblogic_compile_tag_source
+
+    - include_tasks:
+        file: create-managed-app.yml
+        apply:
+          tags:
+            - ec2build
+            - weblogic_create_managed_app
+      tags:
+        - ec2build
+        - weblogic_create_managed_app
+      loop_control:
+        loop_var: weblogic_managed_app
+      loop:
+        - WLS_AUTOLOGOFF
+        - WLS_TAGSAR
+        - WLS_HOTPAGE
+
+  when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"

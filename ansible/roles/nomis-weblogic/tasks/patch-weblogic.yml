@@ -1,0 +1,91 @@
+---
+- name: Set weblogic patch facts
+  set_fact:
+    weblogic_patch_dir: /u01/app/oracle/Middleware/utils/bsu/cache_dir
+
+- name: Fail if required weblogic patch variables not defined
+  fail:
+    msg: "Error, please ensure weblogic_patch_filename and weblogic_patch_ids are defined"
+  when: weblogic_patch_filename is not defined or weblogic_patch_id is not defined
+
+- name: Get current weblogic patch
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile > /dev/null
+    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1 | tr  "\n" " "
+  check_mode: false
+  changed_when: false
+  register: weblogic_existing_patch
+
+- name: Set existing weblogic patch code fact
+  set_fact:
+    weblogic_existing_patch_code: "{{ weblogic_existing_patch.stdout }}"
+
+    #- name: Uninstall existing patch which can take a few minutes
+    #  become_user: oracle
+    #  ansible.builtin.shell: |
+    #    set -eo pipefail
+    #    main() {
+    #      . ~/.bash_profile
+    #      . $WL_HOME/server/bin/setWLSEnv.sh
+    #      cd $WL_HOME/../utils/bsu/
+    #      echo "Uninstall patch: ./bsu.sh -remove -patchlist={{ weblogic_existing_patch_code }} -prod_dir=$WL_HOME -verbose"
+    #      ./bsu.sh -remove -patchlist={{ weblogic_existing_patch_code }} -prod_dir=$WL_HOME -verbose
+    #    }
+    #    main 2>&1 | logger -p local3.info -t ansible-weblogic
+    #  async: 1800
+    #  poll: 60
+    #  when: weblogic_existing_patch_code | length > 0 and weblogic_existing_patch_code is search(weblogic_patch_id)
+
+- name: Install weblogic patch
+  when: not weblogic_existing_patch_code is search(weblogic_patch_id)
+  block:
+    - name: Create weblogic patch directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - "{{ weblogic_patch_dir }}"
+
+    - name: Get weblogic patch archive from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "/weblogic-software/weblogic/patches/{{ weblogic_patch_filename }}"
+        dest: "{{ weblogic_patch_dir }}/{{ weblogic_patch_filename }}"
+        mode: get
+        overwrite: latest
+
+    - name: Extract weblogic patch archive
+      ansible.builtin.unarchive:
+        owner: oracle
+        group: oinstall
+        src: "{{ weblogic_patch_dir }}/{{ weblogic_patch_filename }}"
+        dest: "{{ weblogic_patch_dir }}"
+        remote_src: yes
+      when: not ansible_check_mode
+
+    # takes forever so run in async mode to prevent connection timeouts
+    - name: Run weblogic patch script which takes approx 20 mins
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "Install patch: ./bsu.sh -install -patch_download_dir={{ weblogic_patch_dir }} -patchlist={{ weblogic_patch_id }}  -prod_dir=$WL_HOME -verbose"
+          cd $WL_HOME/../utils/bsu/
+          ./bsu.sh -install -patch_download_dir={{ weblogic_patch_dir }} -patchlist={{ weblogic_patch_id }}  -prod_dir=$WL_HOME -verbose
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 3600
+      poll: 60
+
+    - name: Cleanup weblogic patch archive
+      ansible.builtin.file:
+        path: "{{ weblogic_patch_dir }}"
+        state: absent
