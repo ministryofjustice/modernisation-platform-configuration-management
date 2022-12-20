@@ -53,3 +53,13 @@ Start-Process -FilePath "C:\temp\delius-iaps-development-artefacts\OracleClient\
 
 		}
 	} 
+
+# Join computer to domain
+$secretName = "ChangeMe"
+$domainJoinUserName = "Administrator"
+$domainJoinPassword = ConvertTo-SecureString((Get-SECSecretValue -SecretId $secretName).SecretString) -AsPlainText -Force
+$domainJoinCredential = New-Object System.Management.Automation.PSCredential($domainJoinUserName, $domainJoinPassword)
+$token = invoke-restmethod -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+$instanceId = invoke-restmethod -Headers @{"X-aws-ec2-metadata-token" = $token} -Method GET -uri http://169.254.169.254/latest/meta-data/instance-id
+add-computer -DomainName "delius-iaps-development.local" -Credential $domainJoinCredential -NewName $instanceId 
+
