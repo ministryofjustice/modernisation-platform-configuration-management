@@ -4,35 +4,35 @@ import sys
 import socket
 from java.io import FileInputStream
 
+
+def usage():
+    print('get_param.py -d <param_directory> -n <param_name>')
+
+
+def conn():
+    try:
+        connect(url=adminURL, adminServerName=adminServerName)
+    except ConnectionException, e:
+        print 'Unable to find admin server'
+        exit()
+
+
 propInputStream = FileInputStream(
     "/home/oracle/admin/scripts/weblogic.properties")
 configProps = Properties()
 configProps.load(propInputStream)
 adminURL = configProps.get("domain.adminurl")
-adminUsername = configProps.get("domain.adminUsername")
-adminPassword = configProps.get("domain.adminPassword")
+adminServerName = configProps.get("domain.adminServerName")
 directory = ''
 name = ''
 
-
-def usage():
-    print('get_param.py -u <username> -p <password> -h <admin_hostname> -d <param_directory> -n <param_name>')
-
-
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "u:p:h:d:n:", [
-                               "properties=", "password=", "hostname=", "directory=", "name="])
+    opts, args = getopt.getopt(sys.argv[1:], "d:n:", ["directory=", "name="])
 except getopt.GetoptError:
     usage()
     sys.exit(2)
 for opt, arg in opts:
-    if opt in ("-u", "--username"):
-        adminUsername = arg
-    elif opt in ("-p", "--password"):
-        adminPassword = arg
-    elif opt in ("-h", "--hostname"):
-        adminURL = arg + ':7001'
-    elif opt in ("-d", "--directory"):
+    if opt in ("-d", "--directory"):
         directory = arg
     elif opt in ("-n", "--name"):
         name = arg
@@ -43,9 +43,7 @@ if not name or not directory:
     usage()
     sys.exit(2)
 
-# Connect to the AdminServer.
-connect(adminUsername, adminPassword, adminURL)
-
+conn()
 cd(directory)
 value = get(name)
 

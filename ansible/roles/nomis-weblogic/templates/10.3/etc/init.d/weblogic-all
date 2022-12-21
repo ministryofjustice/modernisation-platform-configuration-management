@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# weblogic-all        Startup script for all weblogic components
+#
+# chkconfig: - 85 15
+# description: weblogic server
+
+# Source function library.
+. /etc/init.d/functions
+
+start() {
+  set -e
+  echo $"Starting all weblogic processes: "
+  [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
+  [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
+  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  for managed_service in $managed_services; do
+    $managed_service start
+  done
+  [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn start
+}
+
+stop() {
+  echo $"Stopping all weblogic processes: "
+  [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn stop
+  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  for managed_service in $managed_services; do
+    $managed_service stop
+  done
+  [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server stop
+  [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager stop
+}
+
+status() {
+  RETVAL=0
+  echo $"Status of all weblogic processes:"
+  if [[ -x /etc/init.d/weblogic-node-manager ]]; then
+    if ! /etc/init.d/weblogic-node-manager status; then
+      RETVAL=1
+    fi
+  fi
+  if [[ -x /etc/init.d/weblogic-server ]]; then
+    if ! /etc/init.d/weblogic-server status; then
+      RETVAL=1
+    fi
+  fi
+  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  for managed_service in $managed_services; do
+    if ! $managed_service status; then
+      RETVAL=1
+    fi
+  done
+  if [[ -x /etc/init.d/opmn ]]; then
+    if ! /etc/init.d/opmn status; then
+      RETVAL=1
+    fi
+  fi
+  return $RETVAL
+}
+
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    restart
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 3
+esac
+
+exit $?

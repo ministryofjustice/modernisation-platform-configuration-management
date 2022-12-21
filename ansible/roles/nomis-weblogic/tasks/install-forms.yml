@@ -7,7 +7,6 @@
     group: oinstall
     mode: "0755"
   loop:
-    - /u01/software/forms
     - /u01/app/oracle/Middleware/forms_home
     - /var/opt/oracle
 
@@ -25,35 +24,15 @@
     path: /u01/app/oracle/Middleware/forms_home/inventory
   register: weblogic_forms_installed_check
 
-- name: Install weblogic server software
+- name: Install weblogic forms software
   block:
-    - name: Get forms archives from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "/weblogic-software/forms/{{ item }}"
-        dest: "/u01/software/forms/{{ item }}"
-        mode: get
-        overwrite: latest
-      loop:
-        - Disk1.tgz
-        - Disk2.tgz
-        - Disk3.tgz
-        - Disk4.tgz
-
-    - name: Extract forms archives
-      ansible.builtin.unarchive:
-        owner: oracle
-        group: oinstall
-        src: "/u01/software/forms/{{ item }}"
-        dest: "/u01/software/forms"
-        remote_src: yes
-      loop:
-        - Disk1.tgz
-        - Disk2.tgz
-        - Disk3.tgz
-        - Disk4.tgz
-      register: forms_archive
-      when: not ansible_check_mode
+    - import_tasks: extract-s3-archive.yml
+      vars:
+        weblogic_s3_archives:
+          - /u01/software/forms/Disk1/2013-12-18.tgz
+          - /u01/software/forms/Disk2/2013-12-18.tgz
+          - /u01/software/forms/Disk3/2013-12-18.tgz
+          - /u01/software/forms/Disk4/2013-12-18.tgz
 
     - name: Copy install rsp
       ansible.builtin.template:
@@ -93,24 +72,20 @@
 
     - name: Remove temporary install directories
       ansible.builtin.file:
-        path: "/u01/software/forms/{{ item }}"
+        path: "{{ item }}"
         state: absent
       loop:
-        - Disk1
-        - Disk2
-        - Disk3
-        - Disk4
+        - /u01/software/forms/Disk1
+        - /u01/software/forms/Disk2
+        - /u01/software/forms/Disk3
+        - /u01/software/forms/Disk4
 
     - name: Remove temporary install files
       ansible.builtin.file:
-        path: "/u01/software/forms/{{ item }}"
+        path: "{{ item }}"
         state: absent
       loop:
-        - install_only.rsp
-        - Disk1.tgz
-        - Disk2.tgz
-        - Disk3.tgz
-        - Disk4.tgz
+        - /u01/software/forms/install_only.rsp
 
   # block
   when: not weblogic_forms_installed_check.stat.exists

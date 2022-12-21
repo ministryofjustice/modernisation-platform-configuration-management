@@ -11,23 +11,21 @@
 
 - name: Copy moj admin scripts
   ansible.builtin.template:
-    src: "10.3/{{ item }}"
+    src: "10.3{{ item }}"
     dest: "{{ item }}"
     owner: oracle
     group: oinstall
     mode: "0755"
   loop:
     - /home/oracle/admin/scripts/wait_for_entry_in_log.sh
-    - /home/oracle/admin/scripts/weblogicControl.py
     - /home/oracle/admin/scripts/create_managed_app.py
     - /home/oracle/admin/scripts/get_param.py
     - /home/oracle/admin/scripts/ms_state.py
     - /home/oracle/admin/scripts/set_param.py
-    - /home/oracle/admin/scripts/NOMIS_WL_control.sh
 
 - name: Copy moj admin files
   ansible.builtin.template:
-    src: "10.3/{{ item }}"
+    src: "10.3{{ item }}"
     dest: "{{ item }}"
     owner: oracle
     group: oinstall

@@ -1,0 +1,63 @@
+<logging_configuration>
+    <log_handlers>
+        <log_handler name="bpmui_handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/Framework.log"/>
+            <property name="format" value="ODL-Text"/>
+            <property name="rotationFrequency" value="daily"/>
+            <property name="retentionPeriod" value="691200"/>
+            <property name="useSourceClassAndMethod" value="true"/>
+            <property name="encoding" value="UTF-8"/>
+        </log_handler>
+        <log_handler name="epmcss-handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/SharedServices_SecurityClient.log"/>
+            <property name="maxFileSize" value="1000000"/>
+            <property name="maxLogSize" value="5000000"/>
+            <property name="useSourceClassAndMethod" value="true"/>
+        </log_handler>
+        <log_handler name="epmreg-handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/registry.log"/>
+            <property name="maxFileSize" value="1000000"/>
+            <property name="maxLogSize" value="5000000"/>
+            <property name="useSourceClassAndMethod" value="true"/>
+        </log_handler>
+        <log_handler name="essbase-ws-handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/essbasews.log"/>
+            <property name="maxFileSize" value="10485760"/>
+            <property name="maxLogSize" value="104857600"/>
+        </log_handler>
+        <log_handler name="lst-handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <!-- <property name="path" value="D:/Stuff/logging/listener.log"/> -->
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/listener.log"/>
+            <property name="maxFileSize" value="30000000"/>
+            <property name="maxLogSize" value="300000000"/>
+            <property name="format" value="ODL-Text"/>
+            <property name="useSourceClassAndMethod" value="false"/>
+            <property name="encoding" value="UTF-8"/>
+        </log_handler>
+        <log_handler name="provider-services-handler" class="oracle.core.ojdl.logging.ODLHandlerFactory">
+            <property name="path" value="${domain.home}/servers/${weblogic.Name}/logs/apsserver.log"/>
+            <property name="maxFileSize" value="10485760"/>
+            <property name="maxLogSize" value="104857600"/>
+        </log_handler>
+    </log_handlers>
+    <loggers>
+        <logger name="oracle.bi.bifndnepm.bpmui" level="NOTIFICATION:16" useParentHandlers="false">
+            <handler name="bpmui_handler"/>
+        </logger>
+        <logger name="oracle.EPMCSS" level="NOTIFICATION:32">
+            <handler name="epmcss-handler"/>
+        </logger>
+        <logger name="oracle.EPMLST" level="TRACE" useParentHandlers="false">
+            <handler name="lst-handler"/>
+        </logger>
+        <logger name="oracle.EPMOHEWS" level="WARNING:1" useParentHandlers="false">
+            <handler name="essbase-ws-handler"/>
+        </logger>
+        <logger name="oracle.EPMOHPS" level="WARNING:1" useParentHandlers="false">
+            <handler name="provider-services-handler"/>
+        </logger>
+        <logger name="oracle.EPMREG" level="NOTIFICATION:32" useParentHandlers="false">
+            <handler name="epmreg-handler"/>
+        </logger>
+    </loggers>
+</logging_configuration>

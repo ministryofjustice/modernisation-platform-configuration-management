@@ -18,32 +18,10 @@
 
 - name: Install forms patch
   block:
-    - name: Create forms patch directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: oracle
-        group: oinstall
-        mode: "0755"
-      loop:
-        - /u01/software/forms_patch
-
-    - name: Get forms patch archive from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "/weblogic-software/forms/patches/{{ forms_patch_filename }}"
-        dest: "/u01/software/forms_patch/{{ forms_patch_filename }}"
-        mode: get
-        overwrite: latest
-
-    - name: Extract forms patch archive
-      ansible.builtin.unarchive:
-        owner: oracle
-        group: oinstall
-        src: "/u01/software/forms_patch/{{ forms_patch_filename }}"
-        dest: "/u01/software/forms_patch"
-        remote_src: yes
-      when: not ansible_check_mode
+    - import_tasks: extract-s3-archive.yml
+      vars:
+        weblogic_s3_archives:
+          - "{{ forms_patch_filename }}"
 
     - name: Run forms patch script which takes a couple of minutes
       become_user: oracle
@@ -52,19 +30,11 @@
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
         main() {
-          cd "/u01/software/forms_patch/{{ forms_patch_id }}" 
+          cd "{{ forms_patch_filename.split('/')[:-1] | join('/') }}/{{ forms_patch_id }}"
           echo "Install patch {{ forms_patch_id }}"
           opatch apply -silent
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
-
-    - name: Cleanup forms patch temporary files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - "/u01/software/forms_patch/{{ forms_patch_id }}"
-        - "/u01/software/forms_patch/{{ forms_patch_filename }}"
 
   # block
   when: not forms_lspatches.stdout is search('applied_date')

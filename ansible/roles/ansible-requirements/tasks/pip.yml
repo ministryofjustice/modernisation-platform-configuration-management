@@ -1,0 +1,16 @@
+---
+- name: Install specified python requirements
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../requirements.txt"
+    dest: "~/.ansible-configuration-management-requirements.txt"
+
+- name: Install specified python requirements using given python interpreter
+  ansible.builtin.pip:
+    executable: "{{ ansible_python_interpreter | regex_replace('python', 'pip') }}"
+    requirements: "~/.ansible-configuration-management-requirements.txt"
+  when: ansible_python_interpreter is defined
+
+- name: Install specified python requirements using default pip
+  ansible.builtin.pip:
+    requirements: "~/.ansible-configuration-management-requirements.txt"
+  when: ansible_python_interpreter is not defined

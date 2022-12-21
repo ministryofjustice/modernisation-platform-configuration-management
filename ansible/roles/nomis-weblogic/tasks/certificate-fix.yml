@@ -68,7 +68,7 @@
 - name: Query current NMType
   become_user: oracle
   ansible.builtin.shell: |
-    set -eo pipefail    
+    set -eo pipefail
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
     . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
@@ -90,7 +90,7 @@
 - name: Set NMType
   become_user: oracle
   ansible.builtin.shell: |
-    set -eo pipefail    
+    set -eo pipefail
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
     . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
@@ -103,26 +103,8 @@
     regexp: "SecureListener=true"
     replace: "SecureListener=false"
 
-- name: Stop services
+- name: Restart all weblogic services
   ansible.builtin.service:
-    name: "{{ item }}"
-    state: stopped
-  loop:
-    - opmn
-    - WLS_FORMS
-    - WLS_REPORTS
-    - weblogic-server
-    - weblogic-node-manager
-  when: weblogic_nmtype != 'Plain'
-
-- name: Start services
-  ansible.builtin.service:
-    name: "{{ item }}"
-    state: stopped
-  loop:
-    - weblogic-node-manager
-    - weblogic-server
-    - WLS_REPORTS
-    - WLS_FORMS
-    - opmn
+    name: weblogic-all
+    state: restarted
   when: weblogic_nmtype != 'Plain'

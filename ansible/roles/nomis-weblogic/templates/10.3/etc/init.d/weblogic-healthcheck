@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# weblogic-healthcheck        Control weblogic healthcheck file
+#
+# chkconfig: - 95 05
+# description: weblogic server
+
+# Source function library.
+. /etc/init.d/functions
+
+prog="weblogic-healthcheck"
+
+keepalive() {
+  echo '<HTML><BODY>keepalive.htm on {{ weblogic_servername }}</BODY></HTML>'
+}
+
+start() {
+  echo -n $"Starting $prog: "
+  if [[ -e /u01/tag/static/keepalive.htm ]]; then
+    echo -n "file already exists"
+    echo_failure
+    echo
+    return 1
+  fi
+  echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "$prog"
+  keepalive > /u01/tag/static/keepalive.htm
+  chown oracle:oinstall /u01/tag/static/keepalive.htm
+  echo_success
+  echo
+}
+
+stop() {
+  echo -n $"Stopping $prog: "
+  if [[ -e /u01/tag/static/keepalive.htm ]]; then
+    echo "Removing keepalive" | logger -p local3.info -t "$prog"
+    rm -f /u01/tag/static/keepalive.htm
+  fi
+  echo_success
+  echo
+}
+
+status() {
+  RETVAL=0
+  echo -n $"Status of $prog: "
+  if ! curl -IsSfm 5 http://localhost:7777/keepalive.htm > /dev/null 2>&1; then
+    curl -IsSfm 5 http://localhost:7777/keepalive.htm 2>&1 | head -1
+    echo_failure
+    echo
+    return 1
+  fi
+  echo_success
+  echo
+}
+
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    restart
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 3
+esac
+
+exit $?
