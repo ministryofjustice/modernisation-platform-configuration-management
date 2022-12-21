@@ -10,14 +10,15 @@ def usage():
 
 
 def conn():
-  try:
-    connect(url=adminURL, adminServerName=adminServerName)
-  except ConnectionException,e:
-    print 'Unable to find admin server'
-    exit()
+    try:
+        connect(url=adminURL, adminServerName=adminServerName)
+    except ConnectionException, e:
+        print 'Unable to find admin server'
+        exit()
 
 
-propInputStream = FileInputStream("/home/oracle/admin/scripts/weblogic.properties")
+propInputStream = FileInputStream(
+    "/home/oracle/admin/scripts/weblogic.properties")
 configProps = Properties()
 configProps.load(propInputStream)
 adminURL = configProps.get("domain.adminurl")
