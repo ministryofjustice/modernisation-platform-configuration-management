@@ -72,7 +72,7 @@
     # this ensures values in boot.properties become encrypted
     - name: Restart service
       ansible.builtin.service:
-        name: "{{ weblogic_managed_server_name }}"
+        name: "{{ weblogic_managed_app }}"
         state: restarted
         enabled: yes
 
