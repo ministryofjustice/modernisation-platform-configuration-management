@@ -31,7 +31,6 @@ configProps.load(propInputStream)
 adminUsername = configProps.get("admin.username")
 adminPassword = configProps.get("admin.password")
 adminURL = configProps.get("admin.url")
-adminServerName = configProps.get("domain.adminServerName")
 
 # Cluster
 clusterName = configProps.get("cluster.name")
