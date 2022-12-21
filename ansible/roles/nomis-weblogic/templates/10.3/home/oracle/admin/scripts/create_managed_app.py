@@ -28,6 +28,8 @@ configProps.load(propInputStream)
 
 # Get Variables From Properties Files
 # Admin Console
+adminUsername = configProps.get("admin.username")
+adminPassword = configProps.get("admin.password")
 adminURL = configProps.get("admin.url")
 adminServerName = configProps.get("domain.adminServerName")
 
