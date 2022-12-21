@@ -20,16 +20,16 @@
     - name: Get weblogic install jar from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "/weblogic-software/weblogic/{{ item }}"
-        dest: "/u01/software/weblogic/{{ item }}"
+        object: "weblogic-software{{ item }}"
+        dest: "{{ item }}"
         mode: get
         overwrite: latest
       loop:
-        - wls1036_generic.jar
+        - /u01/software/weblogic/wls1036_generic.jar
 
     - name: Copy weblogic install config
       ansible.builtin.template:
-        src: "10.3/{{ item }}"
+        src: "10.3{{ item }}"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall
@@ -74,7 +74,7 @@
 
 - name: Copy init.d weblogic-node-manager script
   ansible.builtin.template:
-    src: "10.3/{{ item }}"
+    src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
   loop:

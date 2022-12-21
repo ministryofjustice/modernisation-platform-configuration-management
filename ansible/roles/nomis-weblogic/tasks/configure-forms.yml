@@ -75,20 +75,33 @@
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security/boot.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security/boot.properties
 
+# To fix oracle.core.ojdl.logging.LoggingConfigurationException: ODL-52050
+- name: Update managed server config
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/AdminServer/logging.xml
+
 - name: Copy init.d weblogic-server and opmn scripts
   ansible.builtin.template:
-    src: "10.3/{{ item }}"
+    src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
   loop:
+    - /etc/init.d/weblogic-all
     - /etc/init.d/weblogic-server
     - /etc/init.d/opmn
+    - /etc/init.d/weblogic-healthcheck
 
 - name: Enable weblogic-server and opmn services
   ansible.builtin.service:
     name: "{{ item }}"
     enabled: yes
   loop:
+    - weblogic-all
     - weblogic-server
     - opmn
 

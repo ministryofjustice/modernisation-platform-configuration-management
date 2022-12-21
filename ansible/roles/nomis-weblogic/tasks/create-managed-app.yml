@@ -6,11 +6,17 @@
 
 - name: Check if managed app already configured
   ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/forms_instanceTODO
+    path: /etc/init.d/{{ weblogic_managed_app }}
   register: weblogic_created_managed_app_check
 
 - name: Configure forms
   block:
+    # ensure everything is running
+    - name: Start services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: started
+
     - name: Copy managed app configuration files
       ansible.builtin.template:
         src: "10.3{{ item }}"
@@ -26,7 +32,7 @@
         set -eo pipefail
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
-        main() {        
+        main() {
           echo "# create managed app {{ weblogic_managed_app }}"
           java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
         }
@@ -56,14 +62,19 @@
         - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security/boot.properties"
 
     - name: Copy managed app init.d script
+      vars:
+        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
       ansible.builtin.template:
         src: "10.3/etc/init.d/weblogic-managed-server"
         dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
         mode: "0755"
-      loop_control:
-        loop_var: weblogic_managed_server_name
-      loop:
-        - "{{ weblogic_managed_app }}"
+
+    # this ensures values in boot.properties become encrypted
+    - name: Restart service
+      ansible.builtin.service:
+        name: "{{ weblogic_managed_server_name }}"
+        state: restarted
+        enabled: yes
 
   always:
     - name: Remove temporary forms configuration files

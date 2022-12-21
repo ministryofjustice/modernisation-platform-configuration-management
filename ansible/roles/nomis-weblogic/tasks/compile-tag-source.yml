@@ -8,10 +8,11 @@
     mode: "0755"
   loop:
     - /u01/tag/utils/scripts
+    - /u01/tag/forms
 
 - name: Copy forms scripts
   ansible.builtin.template:
-    src: "10.3/{{ item }}"
+    src: "10.3{{ item }}"
     dest: "{{ item }}"
     owner: oracle
     group: oinstall
@@ -29,7 +30,10 @@
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
     main() {
-      echo "# Compile tag forms: /u01/tag/utils/scripts/doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e '{{ weblogic_db_hostname }}/{{ weblogic_db_name }}' -p 'xxx'"
-      ./doallforms.sh -s /u01/tag/FormsSources -o /u01/tag/FormsObjects -e "{{ weblogic_db_hostname }}/{{ weblogic_db_name }}" -p "{{ weblogic_db_password }}"
+      echo "# Compile tag forms: doallforms.sh -e '{{ weblogic_db_hostname }}/{{ weblogic_db_name }}' -p 'xxx'"
+      ./doallforms.sh -e "{{ weblogic_db_hostname }}/{{ weblogic_db_name }}" -p "{{ weblogic_db_password }}"
+      echo "# cp -p /u01/tag/FormsObjects/* /u01/tag/forms"
+      cp -p /u01/tag/FormsObjects/* /u01/tag/forms
     }
     main 2>&1 | logger -p local3.info -t ansible-weblogic
+

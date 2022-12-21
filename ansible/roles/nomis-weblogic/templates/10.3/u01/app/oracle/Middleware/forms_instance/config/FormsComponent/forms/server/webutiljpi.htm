@@ -1,0 +1,195 @@
+<HTML>
+<!-- FILE: webutiljpi.htm (Oracle Forms)                            -->
+<!--                                                                -->
+<!-- This is the default base HTML file for running a form on the   -->
+<!-- web using the JDK Java Plugin. This is used for example when   -->
+<!-- running with Netscape on Unix.                                 -->
+<!-- and a certificate regsitration applet for the WebUtil utility  -->
+<!--                                                                -->
+<!-- IMPORTANT NOTES:                                               -->
+<!-- Default values for all the variables which appear below        -->
+<!-- (enclosed in percent characters) are defined in the servlet    -->
+<!-- configuration file (formsweb.cfg). It is preferable to make    -->
+<!-- changes in that file where possible, rather than this one.     -->
+<!--                                                                -->
+<!-- This file uses several extra tags that are not present in the  -->
+<!-- default template files.  You should ensure that these are      -->
+<!-- present in the configuration that uses this template           -->
+<!-- The extra substitution Tags are:                               -->
+<!--  %webUtilArchive% = jar file containing the WebUtil code       -->
+<!--                     (by default this should be frmwebutil.jar) -->
+<!--  %WebUtilLogging% = Defines the current logging mode.          -->
+<!--                     Valid values: off|on|console|server|all    -->
+<!--                     (on == console)                            -->
+<!--  %WebUtilLoggingDetail% = Specifies the level of error logging.-->
+<!--                     Valid values: normal|detailed              -->
+<!--  %WebUtilErrorMode% = Should errors be displayed in an alert   -->
+<!--                     as well as the programmer defined          -->
+<!--                     locations                                  -->
+<!--                     Valid values: console|server|alert|all     -->
+<!--  %WebUtilDispatchMonitorInterval% = Counts in second to        -->
+<!--                     indicate how often the monitor thread      -->
+<!--                     checks to see if the Forms session is still-->
+<!--                     alive. Used with the WebUtil_Session       -->
+<!--                     package.                                   -->
+<!--  %WebUtilTrustInternal% = Should intranet without domain suffix-->
+<!--                     be trusted.                                -->
+<!--                     Valid values: true|yes|false|no            -->
+<!--  %WebUtilMaxTransferSize% = Size in bytes of file transfer     -->
+<!--                     segments. Default and maximum allowed is   -->
+<!--                     16384, i.e. 16K.                           -->
+
+<HEAD><TITLE>%pageTitle% - WebUtil</TITLE></HEAD>
+
+<BODY %HTMLbodyAttrs%>
+%HTMLbeforeForm%
+
+<!-- Registration applet definition (start) -->
+<OBJECT classid="%jpi_classid%"
+        codebase="%jpi_codebase%"
+        WIDTH="0"
+        HEIGHT="0"
+        HSPACE="0"
+        VSPACE="0">
+<PARAM NAME="TYPE"       VALUE="%jpi_mimetype%">
+<PARAM NAME="CODEBASE"   VALUE="%codebase%">
+<PARAM NAME="CODE"       VALUE="oracle.forms.webutil.common.RegisterWebUtil" >
+<PARAM NAME="ARCHIVE"    VALUE="%webUtilArchive%" >
+<COMMENT>
+<EMBED SRC="" PLUGINSPAGE="%jpi_download_page%"
+        TYPE="%jpi_mimetype%"
+        java_codebase="%codebase%"
+        java_code="oracle.forms.webutil.common.RegisterWebUtil"
+        java_archive="%webUtilArchive%"
+        WIDTH="1"
+        HEIGHT="1"
+        HSPACE="0"
+        VSPACE="0"
+>
+<NOEMBED>
+</COMMENT>
+</NOEMBED></EMBED>
+</OBJECT>
+<!-- Registration applet definition (end) -->
+
+<COMMENT id="forms_plugin_info" 
+         serverURL="%serverURL%"
+         plug_ver="%jpi_classid%" 
+         appheight="%Height%"
+         appwidth="%Width%"
+         appcodebase="%jpi_codebase%"
+         appname="%applet_name%">
+</COMMENT>
+
+<!-- Forms applet definition (start) -->
+<NOSCRIPT>
+<OBJECT classid="%jpi_classid%"
+        codebase="%jpi_codebase%"
+        WIDTH="%Width%"
+        HEIGHT="%Height%"
+        HSPACE="0"
+        VSPACE="0"
+        ID="%applet_name%">
+</NOSCRIPT>
+<SCRIPT LANGUAGE="JavaScript" SRC="/forms/frmjscript/forms_ie.js"></SCRIPT> 
+<PARAM NAME="TYPE"       VALUE="%jpi_mimetype%">
+<PARAM NAME="CODEBASE"   VALUE="%codebase%">
+<PARAM NAME="CODE"       VALUE="oracle.forms.engine.Main" >
+<PARAM NAME="ARCHIVE"    VALUE="%archive%,%webUtilArchive%" >
+<PARAM NAME="cache_archive_ex" VALUE="%cache_archive_ex%">
+
+<PARAM NAME="serverURL" VALUE="%appletServerURL%">
+<PARAM NAME="networkRetries" VALUE="%networkRetries%">
+<PARAM NAME="serverArgs"
+       VALUE="%escapeParams% module=%form% userid=%userid% debug=%debug% host=%host% port=%port% %otherParams%">
+<PARAM NAME="separateFrame" VALUE="%separateFrame%">
+<PARAM NAME="splashScreen"  VALUE="%splashScreen%">
+<PARAM NAME="background"  VALUE="%background%">
+<PARAM NAME="lookAndFeel"  VALUE="%lookAndFeel%">
+<PARAM NAME="colorScheme"  VALUE="%colorScheme%">
+<PARAM NAME="serverApp" VALUE="%serverApp%">
+<PARAM NAME="logo" VALUE="%logo%">
+<PARAM NAME="imageBase" VALUE="%imageBase%">
+<PARAM NAME="formsMessageListener" VALUE="%formsMessageListener%">
+<PARAM NAME="recordFileName" VALUE="%recordFileName%">
+<PARAM NAME="EndUserMonitoringEnabled" VALUE="%EndUserMonitoringEnabled%">
+<PARAM NAME="EndUserMonitoringURL" VALUE="%EndUserMonitoringURL%">
+<PARAM NAME="heartBeat" VALUE="%heartBeat%">
+<PARAM NAME="MaxEventWait" VALUE="%MaxEventWait%">
+<PARAM NAME="allowAlertClipboard" VALUE="%allowAlertClipboard%">
+<PARAM NAME="disableValidateClipboard" VALUE="%disableValidateClipboard%">
+<PARAM NAME="enableJavascriptEvent" VALUE="%enableJavascriptEvent%">
+<PARAM NAME="MAYSCRIPT" VALUE="%enableJavascriptEvent%">
+<PARAM NAME="digitSubstitution" VALUE="%digitSubstitution%">
+<PARAM NAME="legacy_lifecycle" VALUE="%legacy_lifecycle%">
+<PARAM NAME="JavaScriptBlocksHeartBeat" VALUE="%JavaScriptBlocksHeartBeat%">
+<PARAM NAME="highContrast" VALUE="%highContrast%">
+<PARAM NAME="disableMDIScrollbars" VALUE="%disableMDIScrollbars%">
+<PARAM NAME="clientDPI" VALUE="%clientDPI%">
+<PARAM NAME="guiMode" VALUE="%guiMode%">
+<!-- Params specific to webutil -->
+<PARAM NAME="WebUtilLogging" VALUE="%WebUtilLogging%">
+<PARAM NAME="WebUtilLoggingDetail" VALUE="%WebUtilLoggingDetail%">
+<PARAM NAME="WebUtilErrorMode" VALUE="%WebUtilErrorMode%">
+<PARAM NAME="WebUtilDispatchMonitorInterval" VALUE="%WebUtilDispatchMonitorInterval%">
+<PARAM NAME="WebUtilTrustInternal" VALUE="%WebUtilTrustInternal%">
+<PARAM NAME="WebUtilMaxTransferSize" VALUE="%WebUtilMaxTransferSize%">
+<PARAM name="applet_stop_timeout" value="800">
+<COMMENT>
+<EMBED SRC="" PLUGINSPAGE="%jpi_download_page%"
+        TYPE="%jpi_mimetype%"
+        java_codebase="%codebase%"
+        java_code="oracle.forms.engine.Main"
+        java_archive="%archive%,%webUtilArchive%"
+	cache_archive_ex="%cache_archive_ex%"
+        WIDTH="%Width%"
+        HEIGHT="%Height%"
+        HSPACE="0"
+        VSPACE="0"
+        NAME="%applet_name%"
+
+        serverURL="%appletServerURL%"
+        networkRetries="%networkRetries%"
+        serverArgs="%escapeParams% module=%form% userid=%userid% debug=%debug% host=%host% port=%port% %otherparams%"
+        separateFrame="%separateFrame%"
+        splashScreen="%splashScreen%"
+        background="%background%"
+        lookAndFeel="%lookAndFeel%"
+        colorScheme="%colorScheme%"
+        serverApp="%serverApp%"
+        logo="%logo%"
+        imageBase="%imageBase%"
+        recordFileName="%recordFileName%"
+        EndUserMonitoringEnabled="%EndUserMonitoringEnabled%"
+        EndUserMonitoringURL="%EndUserMonitoringURL%"
+        heartBeat="%heartBeat%"
+        MaxEventWait="%MaxEventWait%"
+        allowAlertClipboard="%allowAlertClipboard%"
+        disableValidateClipboard="%disableValidateClipboard%"
+        enableJavascriptEvent="%enableJavascriptEvent%"
+        MAYSCRIPT="%enableJavascriptEvent%"
+        digitSubstitution="%digitSubstitution%"
+        legacy_lifecycle="%legacy_lifecycle%"
+        JavaScriptBlocksHeartBeat="%JavaScriptBlocksHeartBeat%"
+        highContrast="%highContrast%"
+        disableMDIScrollbars="%disableMDIScrollbars%"
+        clientDPI="%clientDPI%"
+        guiMode="%guiMode%"
+        WebUtilLogging="%WebUtilLogging%"
+        WebUtilLoggingDetail="%WebUtilLoggingDetail%"
+        WebUtilErrormode="%WebUtilErrorMode%"
+        WebUtilDispatchMonitorInterval="%WebUtilDispatchMonitorInterval%"
+        WebUtilTrustInternal="%WebUtilTrustInternal%"
+        WebUtilMaxTransferSize="%WebUtilMaxTransferSize%"
+        applet_stop_timeout="800"
+>
+<NOEMBED>
+</COMMENT>
+</NOEMBED></EMBED>
+</OBJECT>
+<!-- Forms applet definition (end) -->
+
+%HTMLafterForm%
+
+</BODY>
+</HTML>

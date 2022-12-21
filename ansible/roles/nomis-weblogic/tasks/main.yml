@@ -37,7 +37,7 @@
 
     - import_tasks: patch-weblogic.yml
       vars:
-        weblogic_patch_filename: p32832785_1036_Generic.zip
+        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
         weblogic_patch_id: 3NVW
       tags:
         - amibuild
@@ -45,7 +45,7 @@
 
     - import_tasks: patch-weblogic.yml
       vars:
-        weblogic_patch_filename: p13964737_10360210720_Generic.zip
+        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p13964737_10360210720_Generic.zip
         weblogic_patch_id: UEYM
       tags:
         - amibuild
@@ -58,7 +58,7 @@
 
     - import_tasks: patch-forms.yml
       vars:
-        forms_patch_filename: 9473270.tgz
+        forms_patch_filename: /u01/software/forms_patch/9473270.tgz
         forms_patch_id: 9473270
       tags:
         - amibuild
@@ -66,44 +66,42 @@
 
     - import_tasks: moj-admin-scripts.yml
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_moj_admin_scripts
 
     - import_tasks: configure-forms.yml
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_configure_forms
+
+    - import_tasks: copy-managed-server-files.yml
+      tags:
+        - ec2provision
+        - weblogic_copy_managed_server_files
 
     - import_tasks: certificate-fix.yml
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_certificate_fix
 
     - import_tasks: make-forms.yml
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_make_forms
-
-    - import_tasks: install-tag-source.yml
-      vars:
-        weblogic_tag_version: 2022-12-07
-      tags:
-        - ec2build
-        - weblogic_install_tag_source
 
     - import_tasks: compile-tag-source.yml
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_compile_tag_source
 
     - include_tasks:
         file: create-managed-app.yml
         apply:
           tags:
-            - ec2build
+            - ec2provision
             - weblogic_create_managed_app
       tags:
-        - ec2build
+        - ec2provision
         - weblogic_create_managed_app
       loop_control:
         loop_var: weblogic_managed_app
@@ -111,5 +109,10 @@
         - WLS_AUTOLOGOFF
         - WLS_TAGSAR
         - WLS_HOTPAGE
+
+    - import_tasks: install-healthcheck.yml
+      tags:
+        - ec2provision
+        - weblogic_install_healthcheck
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"

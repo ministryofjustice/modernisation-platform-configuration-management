@@ -1,5 +1,5 @@
 ---
-- name: Add oinstall
+- name: Add oinstall group
   ansible.builtin.group:
     name: oinstall
     state: present
@@ -11,7 +11,6 @@
     uid: 10001
     group: oinstall
     home: /home/oracle
-    groups: wheel
     system: yes
 
 - name: Copy oracle bash profile
@@ -22,3 +21,10 @@
     group: oinstall
   loop:
     - /home/oracle/.bash_profile
+
+- name: Give oracle user sudo
+  community.general.sudoers:
+    name: oracle
+    state: present
+    user: oracle
+    commands: ALL
