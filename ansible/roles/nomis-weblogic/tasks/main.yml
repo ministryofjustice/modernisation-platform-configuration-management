@@ -3,7 +3,14 @@
   block:
     - import_tasks: get-facts.yml
       tags:
-        - always
+        - ec2provision
+        - ec2patch
+        - weblogic_moj_admin_scripts
+        - weblogic_configure_forms
+        - weblogic_copy_managed_server_files
+        - weblogic_certificate_fix
+        - weblogic_compile_tag_source
+        - weblogic_create_managed_app
 
     - import_tasks: packages.yml
       tags:

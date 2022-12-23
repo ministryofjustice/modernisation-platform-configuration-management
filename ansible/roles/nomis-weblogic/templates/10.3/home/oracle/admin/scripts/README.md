@@ -6,12 +6,11 @@ Setting environment
 ```
 . $WL_HOME/server/bin/setWLSEnv.sh
 . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh
-wlst.sh ~/admin/scripts/weblogicControl.py status wls
 ```
 
 Checking managed server status
 ```
-wlst.sh ~/admin/scripts/ms_state.py status wls
+wlst.sh ~/admin/scripts/ms_state.py
 ```
 
 Use init.d scripts for starting and stopping each individual component.

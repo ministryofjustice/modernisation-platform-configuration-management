@@ -89,6 +89,12 @@ status() {
   echo -n "$PIDS"
   echo_success
   echo
+  if [[ $(whoami) == "root" ]]; then
+    su - oracle -c "set -o pipefail && timeout 10 /u01/app/oracle/Middleware/wlserver_10.3/common/bin/wlst.sh ~/admin/scripts/ms_state.py | grep -vE '^$|^CLASSPATH|^Initializing|^Welcome to|^Type help|^Warning: An insecure protocol|^server. To|^Admin port'"
+  elif [[ $(whoami) == "oracle" ]]; then
+    set -o pipefail
+    timeout 10 /u01/app/oracle/Middleware/wlserver_10.3/common/bin/wlst.sh ~/admin/scripts/ms_state.py | grep -vE '^$|^CLASSPATH|^Initializing|^Welcome to|^Type help|^Warning: An insecure protocol|^server. To|^Admin port'
+  fi
 }
 
 restart() {
