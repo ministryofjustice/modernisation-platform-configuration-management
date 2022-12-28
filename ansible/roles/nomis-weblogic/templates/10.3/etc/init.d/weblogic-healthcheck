@@ -18,9 +18,9 @@ start() {
   echo -n $"Starting $prog: "
   if [[ -e /u01/tag/static/keepalive.htm ]]; then
     echo -n "file already exists"
-    echo_failure
+    echo_success
     echo
-    return 1
+    return 0
   fi
   echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "$prog"
   keepalive > /u01/tag/static/keepalive.htm
