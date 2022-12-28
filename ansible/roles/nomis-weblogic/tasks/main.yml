@@ -73,32 +73,32 @@
 
     - import_tasks: moj-admin-scripts.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_moj_admin_scripts
 
     - import_tasks: configure-forms.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_configure_forms
 
     - import_tasks: copy-managed-server-files.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_copy_managed_server_files
 
     - import_tasks: certificate-fix.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_certificate_fix
 
     - import_tasks: make-forms.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_make_forms
 
     - import_tasks: compile-tag-source.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_compile_tag_source
 
     - include_tasks:
@@ -108,7 +108,7 @@
             - ec2provision
             - weblogic_create_managed_app
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_create_managed_app
       loop_control:
         loop_var: weblogic_managed_app
@@ -119,7 +119,7 @@
 
     - import_tasks: install-healthcheck.yml
       tags:
-        - ec2provision
+        - ec2provisionx
         - weblogic_install_healthcheck
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"
