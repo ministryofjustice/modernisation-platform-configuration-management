@@ -5,3 +5,11 @@
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
+
+# Ensure handlers run before the next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
