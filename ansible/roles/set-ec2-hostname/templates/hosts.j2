@@ -1,5 +1,7 @@
 # this file is managed by ansible roles/set-ec2-hostname
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+{% if ansible_facts.lo['ipv6'] is defined %}
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+{% endif %}
 
 {{ ansible_default_ipv4.address }} {{ ec2_hostname_fqdn }} {{ ec2_hostname_short }}
