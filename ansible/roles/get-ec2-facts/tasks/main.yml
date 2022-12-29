@@ -3,12 +3,18 @@
   tags:
     - always
 
-- name: Debug hostvars
-  vars:
-    msg: |
-      {{ hostvars | to_nice_json }}
+- name: Print hostvars debug filename
   debug:
-    msg: "{{ msg.split('\n') }}"
+    msg: "Writing hostvars to {{ playbook_dir }}/facts.{{ inventory_hostname }}.json"
+  tags:
+    - never
+    - debug-hostvars
+
+- name: Write hostvars debug file
+  copy:
+    content: "{{ hostvars[inventory_hostname] | to_nice_json }}"
+    dest: "{{ playbook_dir }}/facts.{{ inventory_hostname }}.json"
+  delegate_to: localhost
   tags:
     - never
     - debug-hostvars
