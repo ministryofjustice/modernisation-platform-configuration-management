@@ -9,3 +9,5 @@
   loop:
     - { name: "net.ipv6.conf.all.disable_ipv6", value: 1 }
     - { name: "net.ipv6.conf.default.disable_ipv6", value: 1 }
+  notify:
+    - Refresh host facts
