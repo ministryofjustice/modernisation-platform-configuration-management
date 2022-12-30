@@ -1,0 +1,23 @@
+---
+- block:
+  - import_tasks: yum-install.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - ec2patch
+
+  - import_tasks: yum-update.yml
+    vars:
+      packages_yum_update: "{{ packages_yum_update_on_build }}"
+    tags:
+      - amibuild
+      - ec2provision
+
+  - import_tasks: yum-update.yml
+    vars:
+      packages_yum_update: "{{ packages_yum_update_on_patch }}"
+    tags:
+      - ec2patch
+  
+  # block
+  when: ansible_distribution == 'RedHat'
