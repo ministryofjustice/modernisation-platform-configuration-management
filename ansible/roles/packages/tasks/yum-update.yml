@@ -1,0 +1,7 @@
+---
+- name: Update packages
+  ansible.builtin.yum:
+    name: "{{ packages_yum_update }}"
+    state: latest
+    enablerepo: "{{ packages_yum_enablerepo }}"
+  when: packages_yum_update | length > 0

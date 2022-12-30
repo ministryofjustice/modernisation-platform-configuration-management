@@ -1,0 +1,7 @@
+---
+- name: Install packages
+  ansible.builtin.yum:
+    name: "{{ packages_yum_install }}"
+    state: present
+    enablerepo: "{{ packages_yum_enablerepo }}"
+  when: packages_yum_install | length > 0
