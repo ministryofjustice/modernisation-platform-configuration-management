@@ -20,8 +20,8 @@
     mode: 0644
 
 # - name: Start amazon-cloudwatch-agent service
-#   ansible.builtin.shell:
-#     cmd: sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+#   ansible.builtin.shell: |
+#     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 
 # No point enabling as there is nothing configured yet
 #- name: Enable amazon-cloudwatch-agent service
