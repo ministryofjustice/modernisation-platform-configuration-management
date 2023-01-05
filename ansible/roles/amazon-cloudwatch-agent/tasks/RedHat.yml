@@ -1,7 +1,7 @@
 ---
 - name: Install amazon-cloudwatch-agent
   ansible.builtin.yum:
-    name: "https://s3.eu-west-2.amazonaws.com/amazoncloudwatch-agent-eu-west-2/redhat/amd64/latest/amazon-cloudwatch-agent.rpm"
+    name: "{{ amazon_cloudwatch_agent_package }}"
 
 - name: Create amazon-cloudwatch-agent config directory
   ansible.builtin.file:
