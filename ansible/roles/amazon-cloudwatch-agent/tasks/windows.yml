@@ -1,0 +1,18 @@
+---
+# by default all msi installs run with /log, /qn, /norestart arguments already
+- name: Install amazon-cloudwatch-agent
+  ansible.windows.win_package:
+    path: "{{ amazon_cloudwatch_agent_package }}"
+    state: present
+
+- name: Create amazon-cloudwatch-agent config directory
+  ansible.windows.win_file:
+    path: "{{ amazon_cloudwatch_agent_config_path }}"
+    state: directory
+
+- name: Create amazon-cloudwatch-agent config file
+  ansible.windows.win_template:
+    src: "{{ amazon_cloudwatch_config_template_path }}"
+    dest: "{{ amazon_cloudwatch_agent_config_path }}\\{{ amazon_cloudwatch_agent_config_file }}"
+# - name: Start amazon-cloudwatch-agent service
+#   ansible.windows.win_shell: C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1 -a fetch-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}\\{{ amazon_cloudwatch_agent_config_file }}"

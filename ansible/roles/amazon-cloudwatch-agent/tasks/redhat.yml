@@ -1,0 +1,24 @@
+---
+- name: Install amazon-cloudwatch-agent
+  ansible.builtin.yum:
+    name: "{{ amazon_cloudwatch_agent_package }}"
+
+- name: Create amazon-cloudwatch-agent config directory
+  ansible.builtin.file:
+    path: "{{ amazon_cloudwatch_agent_config_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create amazon-cloudwatch-agent config file
+  ansible.builtin.template:
+    src: "{{ amazon_cloudwatch_config_template_path }}"
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Start amazon-cloudwatch-agent service
+  ansible.builtin.shell: |
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"

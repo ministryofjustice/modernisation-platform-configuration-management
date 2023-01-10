@@ -1,7 +1,14 @@
 ---
-- import_tasks: install-rhel.yml
+# IMPORTANT: Only works on RedHat-based systems at the moment
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family | lower }}.yml"
   tags:
-    - amibuild
     - ec2provision
     - ec2patch
-  when: ansible_distribution == 'RedHat'
+  when: ansible_os_family == 'RedHat'
+
+- include_tasks: "{{ ansible_os_family | lower }}.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ansible_os_family == 'RedHat'
