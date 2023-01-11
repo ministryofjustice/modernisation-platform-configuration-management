@@ -11,6 +11,42 @@
     group: root
     mode: 0755
 
+- name: Set up collectd for monitoring oracle db connections
+  block:
+    - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
+      set_fact:
+        oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
+      # when: ec2.tags['oracle-sids'] is defined
+
+    - name: Install collectd agent
+      ansible.builtin.yum:
+        name: collectd
+        state: latest
+  #     when: ec2.tags['oracle-sids'] is defined
+      
+  #   - name: Configure collectd
+  #     ansible.builtin.template:
+  #       src: collectd.conf.j2
+  #       dest: "etc/collectd.conf"
+  #     when: ec2.tags['oracle-sids'] is defined
+
+  #   - name: Add oracle_health check script
+  #     ansible.builtin.template:
+  #       src: oracle_health.sh
+  #       dest: etc/collectd/oracle_health.sh
+  #       mode: 0500
+  #       owner: oracl
+  #     when: ec2.tags['oracle-sids'] is defined
+
+  #   - name: Make Oracle Health Check script executable
+  #     ansible.builtin.shell: |
+  #       chmod +x etc/collectd/oracle_health.sh
+  #     when: ec2.tags['oracle-sids'] is defined
+
+  #   - name: Start collectd service
+  #     when: ec2.tags['oracle-sids'] is defined
+  # when: ec2.tags['oracle-sids'] is defined
+
 - name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:
     src: "{{ amazon_cloudwatch_config_template_path }}"

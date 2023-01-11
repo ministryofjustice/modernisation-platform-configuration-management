@@ -2,6 +2,10 @@
 
 This role installs the Cloudwatch Agent on a Linux host and configures it to send metrics to Cloudwatch.
 
+It will also install collectd and configure that to collect Oracle_Sids connection metrics.
+
+These connection metrics will then be picked up by Cloudwatch if the `"collectd": {}` section of the cloudwatch agent is configured.
+
 NOTE: At the moment this has NOT been tested on a Windows host. It may need to be tested as part of a deployment to a Windows host due to challenges with the module if run locally at an existing EC2 target. ONLY RUNS ON RedHat INSTANCES CURRENTLY
 
 ## Debugging on Linux
