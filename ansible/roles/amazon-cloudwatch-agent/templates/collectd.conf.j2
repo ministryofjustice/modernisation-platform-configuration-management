@@ -1,5 +1,10 @@
 LoadPlugin exec
 
 <Plugin exec>
-    Exec "oracle:oracle" "etc/collectd/oracle_health.sh" "arg0" "arg1"
+    Exec "oracle:oracle" "/opt/collectd/oracle_health.sh" "arg0" "arg1"
 </Plugin>
+
+#<Plugin exec>
+#	Exec "user:group" "/path/to/exec"
+#	NotificationExec "user:group" "/path/to/exec"
+#</Plugin>
