@@ -35,18 +35,20 @@
         name: collectd
         state: present
       
-    # - name: Configure collectd
-    #   ansible.builtin.template:
-    #     src: collectd.conf.j2
-    #     dest: "/etc/collectd.conf"
+    - name: Configure collectd # TODO: make this reload the service if/when it changes
+      ansible.builtin.template:
+        src: collectd.conf.j2
+        dest: "/etc/collectd.conf"
+        owner: root
+        mode: 0644
 
-    # - name: create folder for exec script to collect metrics
-    #   ansible.builtin.file:
-    #     path: "/opt/collectd"
-    #     state: directory
-    #     owner: root
-    #     group: root
-    #     mode: 0755
+  # - name: create folder for exec script to collect metrics
+  #   ansible.builtin.file:
+  #     path: "/opt/collectd"
+  #     state: directory
+  #     owner: root
+  #     group: root
+  #     mode: 0755
 
   #   - name: Add oracle_health check script
   #     ansible.builtin.template:
@@ -59,18 +61,23 @@
   #     ansible.builtin.shell: |
   #       chmod +x /opt/collectd/oracle_health.sh
 
-  #   - name: Start collectd service
+    - name: Start collectd service
+      ansible.builtin.service:
+        name: collectd
+        state: started
+        enabled: yes
+          # systemctl start collectd.service
 
   # when: ec2.tags['oracle-sids'] is defined
 
-# - name: Create amazon-cloudwatch-agent config file
-#   ansible.builtin.template:
-#     src: "{{ amazon_cloudwatch_config_template_path }}"
-#     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
-#     owner: root
-#     group: root
-#     mode: 0644
+- name: Create amazon-cloudwatch-agent config file
+  ansible.builtin.template:
+    src: "{{ amazon_cloudwatch_config_template_path }}"
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
+    owner: root
+    group: root
+    mode: 0644
 
-# - name: Start amazon-cloudwatch-agent service
-#   ansible.builtin.shell: |
-#     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
+- name: Start amazon-cloudwatch-agent service
+  ansible.builtin.shell: |
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"

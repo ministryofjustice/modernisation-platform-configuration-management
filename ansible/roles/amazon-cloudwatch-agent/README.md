@@ -22,6 +22,16 @@ run the following to check the config has been accepted:
 cat /opt/aws/amazon-cloudwatch-agent/logs/configuration-validation.log
 ```
 
-## Debugging everything
+## Debugging Cloudwatch Agent
 
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-CloudWatch-Agent.html
+
+## Debugging Collectd
+
+Probably the easiest thing to do is un-comment the 'logfile' plugin sections in collectd.conf.j2 and reload collectd via `sudo systemctl restart collectd.service`
+
+## Collectd gotchas and how things work
+
+IMPORTANT: .conf files must have an empty line at the end to load, otherwise collectd won't start...
+
+Collectd relies on plugins, the most important one related to Cloudwatch is the 'network' plugin which posts the metrics data to a UDP endpoint. Cloudwatch picks metrics up from there and sends them on to cloudwatch.
