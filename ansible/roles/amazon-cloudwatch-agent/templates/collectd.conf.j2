@@ -24,31 +24,28 @@ TypesDB     "/usr/share/collectd/types.db"
 # LoadPlugin logfile 
 LoadPlugin network
 # LoadPlugin exec
-LoadPlugin cpu
+# LoadPlugin cpu
 
-#<Plugin logfile>
-#   LogLevel debug
-#   File "/var/log/collectd.log"
-#   Timestamp true
-#   PrintSeverity false
-#</Plugin>
+<Plugin logfile>
+   LogLevel debug
+   File "/var/log/collectd.log"
+   Timestamp true
+   PrintSeverity false
+</Plugin>
 
 #<Plugin exec>
-#   Exec "oracle:oracle" "/opt/collectd/oracle_health.sh" "arg0" "arg1"
+#   Exec "oracle" "/opt/collectd/oracle_health.sh"
 #</Plugin>
 
-<Plugin cpu>
-  ReportByCpu true
-  ReportByState true
+# Exec "oracle" "/opt/collectd/oracle_health.sh" "{{ oracle_monitoring_list }}" "arg1"
+
+#<Plugin cpu>
+#  ReportByCpu true
+#  ReportByState true
 #  ValuesPercentage false
 #  ReportNumCpu false
 #  ReportGuestState false
 #  SubtractGuestState true
-</Plugin>
-
-#<Plugin exec>
-#	Exec "user:group" "/path/to/exec"
-#	NotificationExec "user:group" "/path/to/exec"
 #</Plugin>
 
 <Plugin network>

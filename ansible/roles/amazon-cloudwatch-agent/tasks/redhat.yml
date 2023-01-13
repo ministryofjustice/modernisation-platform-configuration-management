@@ -34,6 +34,10 @@
       ansible.builtin.yum:
         name: collectd
         state: present
+
+    - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
+      set_fact:
+        oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
       
     - name: Configure collectd # TODO: make this reload the service if/when it changes
       ansible.builtin.template:
@@ -42,20 +46,20 @@
         owner: root
         mode: 0644
 
-  # - name: create folder for exec script to collect metrics
-  #   ansible.builtin.file:
-  #     path: "/opt/collectd"
-  #     state: directory
-  #     owner: root
-  #     group: root
-  #     mode: 0755
+    - name: create folder for exec script to collect metrics
+      ansible.builtin.file:
+        path: "/opt/collectd"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
 
   #   - name: Add oracle_health check script
   #     ansible.builtin.template:
   #       src: oracle_health.sh.j2
   #       dest: /opt/collectd/oracle_health.sh
   #       mode: 0500
-  #       # owner: oracle FIXME: test this properly
+  #       owner: oracle
 
   #   - name: Make Oracle Health Check script executable
   #     ansible.builtin.shell: |
@@ -66,9 +70,8 @@
         name: collectd
         state: started
         enabled: yes
-          # systemctl start collectd.service
 
-  # when: ec2.tags['oracle-sids'] is defined
+  when: ec2.tags['oracle-sids'] is defined
 
 - name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:
