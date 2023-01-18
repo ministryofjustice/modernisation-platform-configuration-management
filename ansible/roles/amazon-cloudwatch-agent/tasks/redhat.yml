@@ -13,7 +13,6 @@
 
 - name: Set up collectd for monitoring oracle db connections
   block:
-
     - name: Ensure the EPEL repository is available
       ansible.builtin.package:
         name: epel-release
@@ -25,7 +24,7 @@
       ansible.builtin.shell: |
         yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
       when: epel_release_installed is failed
-      
+
     - name: Install collectd agent
       ansible.builtin.yum:
         name: collectd
@@ -34,7 +33,7 @@
     - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
       set_fact:
         oracle_monitoring_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
-      
+
     - name: Configure collectd # TODO: make this reload the service if/when it changes
       ansible.builtin.template:
         src: collectd.conf.j2
