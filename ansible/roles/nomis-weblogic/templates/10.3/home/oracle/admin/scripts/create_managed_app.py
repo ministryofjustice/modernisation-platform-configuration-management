@@ -143,10 +143,12 @@ if msName:
 # Create Data Source(s)
 if dsName:
     # Create List of Data Source(s)
+    dsUsernames = dsUsername.split(",")
+    dsPasswords = dsPassword.split(",")
     dsName = dsName.split(",")
     dsJNDIName = dsJNDIName.split(",")
-    datasources = zip(dsName, dsJNDIName)
-    for dsName, dsJNDIName in datasources:
+    datasources = zip(dsName, dsJNDIName, dsUsernames, dsPasswords)
+    for dsName, dsJNDIName, dsUsername, dsPassword in datasources:
         edit()
         startEdit()
         cd('/')
