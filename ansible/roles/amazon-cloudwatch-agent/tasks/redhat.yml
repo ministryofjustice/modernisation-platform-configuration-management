@@ -13,10 +13,6 @@
 
 - name: Set up collectd for monitoring oracle db connections
   block:
-    # - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
-    #   set_fact:
-    #     oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
-      # when: ec2.tags['oracle-sids'] is defined
 
     - name: Ensure the EPEL repository is available
       ansible.builtin.package:
@@ -37,7 +33,7 @@
 
     - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
       set_fact:
-        oracle_monitoring_list: "{{ ec2.tags['oracle-sids'].split() | default([]) }}"
+        oracle_monitoring_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
       
     - name: Configure collectd # TODO: make this reload the service if/when it changes
       ansible.builtin.template:
@@ -54,22 +50,30 @@
         group: root
         mode: 0755
 
-  #   - name: Add oracle_health check script
-  #     ansible.builtin.template:
-  #       src: oracle_health.sh.j2
-  #       dest: /opt/collectd/oracle_health.sh
-  #       mode: 0500
-  #       owner: oracle
+    - name: Add oracle_health check script
+      ansible.builtin.template:
+        src: oracle_health.sh.j2
+        dest: /opt/collectd/oracle_health.sh
+        mode: 0500
+        owner: oracle
 
-  #   - name: Make Oracle Health Check script executable
-  #     ansible.builtin.shell: |
-  #       chmod +x /opt/collectd/oracle_health.sh
+    - name: Make Oracle Health Check script executable
+      ansible.builtin.shell: |
+        chmod +x /opt/collectd/oracle_health.sh
 
-    - name: Start collectd service
-      ansible.builtin.service:
-        name: collectd
-        state: started
-        enabled: yes
+    # - name: run script
+    #   become: true
+    #   become_user: oracle
+    #   ansible.builtin.shell: |
+    #     bash -x ./oracle_health.sh
+    #   args:
+    #     chdir: /opt/collectd
+
+    # - name: Start collectd service
+    #   ansible.builtin.service:
+    #     name: collectd
+    #     state: started
+    #     enabled: yes
 
   when: ec2.tags['oracle-sids'] is defined
 

@@ -1,4 +1,4 @@
- #!/usr/bin/env bash
+#!/usr/bin/env bash
 
 if [[ "$(whoami)" != "oracle" ]]
 then
@@ -6,63 +6,161 @@ then
     exit 1
 fi 
 
+# We need to make sure this is in the path    
+export PATH=${PATH}:/usr/local/bin
+
+# Templated in from ansible
 HOSTNAME="${HOSTNAME}" 
-INTERVAL={{ collectd_script_interval }}
+INTERVAL="{{ collectd_script_interval }}"
+LIST="{{ oracle_monitoring_list }}"
 
-while sleep "$INTERVAL"
-do
-
-    # We need to make sure this is in the path
-    export PATH=$${PATH}:/usr/local/bin
-
+# This is a function to determine if the database is clustered or not
+clustered() {
+    local CRSCTL
     CRSCTL="$(dbhome +ASM)/bin/crsctl"
 
-    for SID in {{ oracle_monitoring_list }}
-    do
+    if [[ -x "${CRSCTL}" ]]
+    then
+        return 0
+    else
+        return 1
+    fi
+}
 
-        if [[ -x "$${CRSCTL}" ]]
+# returns 0 if RAC (clustering) disabled, 1 if enabled
+clustered_v2() {
+    cd "$(dbhome "$SID")rdbms/lib" || { echo "Could not cd to $(dbhome "$SID")rdbms/lib" ; exit 1; }
+    ar -t libknlopt.a | grep -c kcsm.o 
+    returnval=$?
+    echo "clustered y/n return val: $returnval"
+    return $returnval
+}
+
+clustered_v3() {
+    PID="$(pgrep -fal ora_pmon | grep "$SID" | awk '{print$1}')"
+    DIR="$(dirname "$(pwdx "$PID" | awk '{print$2}')")"
+    cd "$DIR/rdbms/lib" || { echo "Could not cd to $DIR/rdbms/lib" ; exit 1; }
+    ar -t libknlopt.a | grep -c kcsm.o 
+    returnval=$?
+    echo "clustered y/n return val: $returnval"
+    return $returnval
+}
+
+# if the database is clustered, is it connected?
+clustered_db_connected() {
+    # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
+    DB="$(crsctl status resource | grep -m1 -i ora\.${SID}.*\.db | cut -f2 -d=)"
+
+    # Worth noting here that crsctl exits with code 0 even if you try and find details of a database that doesn't exist
+    STATUS="$(crsctl status resource ${DB} -v | grep STATE_DETAILS | cut -f2 -d= | cut -f1 -d,)"
+
+    case ${STATUS} in
+        "Open")
+            return 0
+            ;;
+        "Open,Readonly")
+            return 0
+            ;;
+        "Mounted (Closed)")
+            return 0
+            ;;
+        *)
+            echo "clustered_db_connected: ${STATUS}"
+            return 1
+            ;;
+    esac
+}
+
+for SID in ${LIST}
+do
+    if ! clustered_v3
         then
-            # Clustered Oracle
             ORACLE_SID="+ASM"
             ORAENV_ASK="NO"
             . oraenv > /dev/null
-
-            # DB resources names are usually 'ora.$${DB}.db' but some have a suffix after $${DB}
-            DB="$(crsctl status resource | grep -m1 -i ora\.${SID}.*\.db | cut -f2 -d=)"
-
-            # Worth noting here that crsctl exits with code 0 even if you try and find details of a database that doesn't exist
-            STATUS="$(crsctl status resource $${DB} -v | grep STATE_DETAILS | cut -f2 -d= | cut -f1 -d,)"
-
-            case $${STATUS} in
-                "Open")
-                    VALUE=0
-                    ;;
-                "Open,Readonly")
-                    VALUE=0
-                    ;;
-                "Mounted (Closed)")
-                    VALUE=0
-                    ;;
-                *)
-                    VALUE=1
-                    ;;
-            esac
+            clustered_db_connected
         else
-            # Not clustered so we use the sysdate query
             ORACLE_SID="${SID}"
             ORAENV_ASK="NO"
             . oraenv > /dev/null
-
-            $${ORACLE_HOME}/bin/sqlplus / as sysdba <<-EOF > /dev/null
+            "${ORACLE_HOME}"/bin/sqlplus / as sysdba <<-EOF > /dev/null
             set heading off
             WHENEVER SQLERROR EXIT SQL.SQLCODE
             select sysdate from dual;
 EOF
-
-            exit "$${?}"
-        fi
-
-    echo "PUTVAL \"$HOSTNAME/exec-oracle-health/db-${SID}\" interval=$INTERVAL N:$VALUE"
-    done
-
+            val=$?
+            echo "clustered value: $val"
+            return $val
+    fi
 done
+# if the database is not clustered, is it connected?
+#db_connected() {
+    #             
+
+#             ${ORACLE_HOME}/bin/sqlplus / as sysdba <<-EOF > /dev/null
+#             set heading off
+#             WHENEVER SQLERROR EXIT SQL.SQLCODE
+#             select sysdate from dual;
+# EOF
+
+#             exit "$?"
+#}
+
+
+
+
+# while sleep "$INTERVAL"
+# do
+
+#     CRSCTL="$(dbhome +ASM)/bin/crsctl"
+
+#     for SID in {{ oracle_monitoring_list }}
+#     do
+
+#         if [[ -x "${CRSCTL}" ]]
+#         then
+#             # Clustered Oracle
+#             ORACLE_SID="+ASM"
+#             ORAENV_ASK="NO"
+#             . oraenv > /dev/null
+
+#             # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
+#             DB="$(crsctl status resource | grep -m1 -i ora\.${SID}.*\.db | cut -f2 -d=)"
+
+#             # Worth noting here that crsctl exits with code 0 even if you try and find details of a database that doesn't exist
+#             STATUS="$(crsctl status resource ${DB} -v | grep STATE_DETAILS | cut -f2 -d= | cut -f1 -d,)"
+
+#             case ${STATUS} in
+#                 "Open")
+#                     VALUE=0
+#                     ;;
+#                 "Open,Readonly")
+#                     VALUE=0
+#                     ;;
+#                 "Mounted (Closed)")
+#                     VALUE=0
+#                     ;;
+#                 *)
+#                     VALUE=1
+#                     ;;
+#             esac
+#         else
+#             # Not clustered so we use the sysdate query
+#             ORACLE_SID="${SID}"
+#             ORAENV_ASK="NO"
+#             . oraenv > /dev/null
+
+#             ${ORACLE_HOME}/bin/sqlplus / as sysdba <<-EOF > /dev/null
+#             set heading off
+#             WHENEVER SQLERROR EXIT SQL.SQLCODE
+#             select sysdate from dual;
+# EOF
+
+#             exit "$?"
+#         fi
+
+#     echo "PUTVAL \"$HOSTNAME/exec-oracle-health/db-${SID}\" interval=$INTERVAL N:$VALUE"
+#     done
+
+# done
+
