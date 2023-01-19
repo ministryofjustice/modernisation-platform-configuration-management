@@ -13,6 +13,56 @@ Use `user_data` to provide a cloud init or shell script which runs
 ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example. This relies on
 tags to identify which roles to run.
 
+## Installing on Mac
+
+Ensure you have python3.6+ installed on your local mac.
+
+Install ansible. Brew or pip, e.g.
+
+```
+brew install ansible@6
+```
+
+or
+
+```
+python -m pip install ansible==6.0.0
+```
+
+From this repo's ansible/ directory, install all requirements:
+
+```
+python -m pip install -r requirements.txt
+ansible-galaxy role install -r requirements.yml
+ansible-galaxy collection install -r requirements.yml
+```
+
+Ensure your ~/.aws/config contains your environment details, example [config] (https://github.com/ministryofjustice/dso-useful-stuff/blob/main/aws-cli/.aws/config)
+
+Sign into [AWS SSO](https://moj.awsapps.com/start/) and select
+"Command line or programmatic access" on the account you want to run ansible
+against.
+Under Option 1: Set AWS environment variables, Click to copy these commands
+and paste into terminal.
+
+Check you can access the dynamic inventory
+
+```
+ansible-inventory  --graph
+```
+
+This should show a list of EC2s in the account grouped by various tags. Run `ansible-playbook` like this:
+
+```
+ansible-playbook site.yml --check
+```
+
+Or try below if you get `ERROR! A worker was found in a dead state`
+
+```
+no_proxy="*" ansible-playbook site.yml --check
+```
+
 ## Running ansible against an EC2 instance post build
 
 A generic [site.yml](/ansible/site.yml) is provided with dynamic inventories
