@@ -34,6 +34,13 @@
       set_fact:
         oracle_monitoring_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
 
+    - name: add custom types file for oracle_health.sh
+      ansible.builtin.copy:
+        src: types.db.custom
+        dest: /usr/share/collectd/types.db.custom
+        owner: root
+        mode: 0644
+
     - name: Configure collectd # TODO: make this reload the service if/when it changes
       ansible.builtin.template:
         src: collectd.conf.j2
@@ -60,19 +67,11 @@
       ansible.builtin.shell: |
         chmod +x /opt/collectd/oracle_health.sh
 
-    # - name: run script
-    #   become: true
-    #   become_user: oracle
-    #   ansible.builtin.shell: |
-    #     bash -x ./oracle_health.sh
-    #   args:
-    #     chdir: /opt/collectd
-
-    # - name: Start collectd service
-    #   ansible.builtin.service:
-    #     name: collectd
-    #     state: started
-    #     enabled: yes
+    - name: Start collectd service
+      ansible.builtin.service:
+        name: collectd
+        state: started
+        enabled: yes
 
   when: ec2.tags['oracle-sids'] is defined
 
