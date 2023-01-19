@@ -58,59 +58,58 @@
 # Configuration steps for RHEL6
 - name: RHEL6
   block:
-  - name: create file for node_exporter Config
-    ansible.builtin.file:
-      path: /etc/default/node_exporter
-      state: touch
-      owner: root
-      group: root
-      mode: 0644
+    - name: create file for node_exporter Config
+      ansible.builtin.file:
+        path: /etc/default/node_exporter
+        state: touch
+        owner: root
+        group: root
+        mode: 0644
 
-  - name: user fix rhel6
-    ansible.builtin.lineinfile:
-      path: /etc/default/node_exporter
-      regexp: "^USER=.*$"
-      line: "USER=root"
-      owner: root
-      group: root
-      mode: 0644
-      state: present
+    - name: user fix rhel6
+      ansible.builtin.lineinfile:
+        path: /etc/default/node_exporter
+        regexp: "^USER=.*$"
+        line: "USER=root"
+        owner: root
+        group: root
+        mode: 0644
+        state: present
 
-  - name: add initd service file
-    ansible.builtin.copy:
-      src: node_exporter
-      dest: /etc/init.d/node_exporter
-      owner: root
-      group: root
-      mode: 0755
-    notify: reload node_exporter
+    - name: add initd service file
+      ansible.builtin.copy:
+        src: node_exporter
+        dest: /etc/init.d/node_exporter
+        owner: root
+        group: root
+        mode: 0755
+      notify: reload node_exporter
 
   # block
   when: ansible_distribution_major_version == '6'
 
 - name: RHEL78
   block:
+    - name: node_exporter systemd metrics enabled rhel7 or rhel8 (misload absent)
+      ansible.builtin.lineinfile:
+        path: /etc/default/node_exporter
+        regexp: "^NODE_EXPORTER_OPTS.*$"
+        line: 'NODE_EXPORTER_OPTS=--collector.systemd --collector.systemd.unit-whitelist ".+\.service" --collector.textfile.directory=/opt/textfile_monitoring'
+        owner: root
+        group: root
+        mode: 0644
+        state: present
+        create: yes
+      notify: reload node_exporter
 
-  - name: node_exporter systemd metrics enabled rhel7 or rhel8 (misload absent)
-    ansible.builtin.lineinfile:
-      path: /etc/default/node_exporter
-      regexp: "^NODE_EXPORTER_OPTS.*$"
-      line: 'NODE_EXPORTER_OPTS=--collector.systemd --collector.systemd.unit-whitelist ".+\.service" --collector.textfile.directory=/opt/textfile_monitoring'
-      owner: root
-      group: root
-      mode: 0644
-      state: present
-      create: yes
-    notify: reload node_exporter
+    - name: add systemd service file
+      ansible.builtin.copy:
+        src: node_exporter.service
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: 0644
 
-  - name: add systemd service file
-    ansible.builtin.copy:
-      src: node_exporter.service
-      dest: /etc/systemd/system/node_exporter.service
-      owner: root
-      group: root
-      mode: 0644
-      
   # block
   when: ansible_distribution_major_version != '6'
 
