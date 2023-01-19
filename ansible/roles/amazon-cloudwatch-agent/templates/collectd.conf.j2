@@ -13,32 +13,27 @@
 Hostname    "localhost"
 FQDNLookup   true
 BaseDir     "/var/lib/collectd"
-# PIDFile     "/var/run/collectd.pid"
 PluginDir   "/usr/lib64/collectd"
-TypesDB     "/usr/share/collectd/types.db"
+TypesDB     "/usr/share/collectd/types.db" "/usr/share/collectd/types.db.custom"
 
 ##############################################################################
 # Plugins                                                                    #
 ##############################################################################
 
-# LoadPlugin logfile 
-LoadPlugin network
-# LoadPlugin exec
+# LoadPlugin logfile
 # LoadPlugin cpu
+LoadPlugin network
+LoadPlugin exec
 
-<Plugin logfile>
-   LogLevel debug
-   File "/var/log/collectd.log"
-   Timestamp true
-   PrintSeverity false
-</Plugin>
-
-#<Plugin exec>
-#   Exec "oracle" "/opt/collectd/oracle_health.sh"
+# Enable this and the LoadPlugin logfile line to get debug output for changes
+#<Plugin logfile>
+#   LogLevel "info"
+#   File "/var/log/collectd.log"
+#   Timestamp true
+#   PrintSeverity false
 #</Plugin>
 
-# Exec "oracle" "/opt/collectd/oracle_health.sh" "{{ oracle_monitoring_list }}" "arg1"
-
+# Enable this to help debugging as this will appear in CloudWatch as collectd_cpu_value
 #<Plugin cpu>
 #  ReportByCpu true
 #  ReportByState true
@@ -52,6 +47,10 @@ LoadPlugin network
     <Server "127.0.0.1" "25826">
         SecurityLevel None
     </Server>
+</Plugin>
+
+<Plugin exec>
+   Exec "oracle" "/opt/collectd/oracle_health.sh"
 </Plugin>
 
 #############################################################################
