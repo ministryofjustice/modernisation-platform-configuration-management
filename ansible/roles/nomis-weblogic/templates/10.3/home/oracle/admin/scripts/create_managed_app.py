@@ -58,9 +58,11 @@ target = configProps.get("app.target")
 
 # JMS Module
 jmsModuleName = configProps.get("jms.module.name")
+jmsdescriptorFileName = configProps.get("jms.descriptorFile.name")
 jmsTarget = configProps.get("jms.target")
 jmsFServerName = configProps.get("jms.fserver.name")
 jmsFServerContext = configProps.get("jms.fserver.context")
+jmsFServerJNDIProperty = configProps.get("jms.fserver.jndiproperty")
 jmsFServerDestName = configProps.get("jms.fserver.destination.name")
 jmsFServerDestLocJNDIName = configProps.get(
     "jms.fserver.destination.local.jndi.name")
@@ -187,22 +189,13 @@ if dsName:
         cmo.forceShutdown()
         wait_for_ms_start()
 
-# Create App Deployment
-if appName:
-    edit()
-    startEdit()
-    progress = deploy(appName, path, target)
-    progress.printStatus()
-    save()
-    activate()
-
 # Create JMS Module (For TAGSAR)
 if jmsModuleName:
     edit()
     startEdit()
     # Create JMS Module
     cd('/')
-    cmo.createJMSSystemResource(jmsModuleName)
+    cmo.createJMSSystemResource(jmsModuleName,jmsdescriptorFileName)
     cd('/SystemResources/'+jmsModuleName)
     set('Targets', jarray.array(
         [ObjectName('com.bea:Name='+jmsTarget+',Type=Cluster')], ObjectName))
@@ -217,7 +210,7 @@ if jmsModuleName:
     cmo.createJNDIProperty('datasource')
     cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName +
        '/ForeignServers/'+jmsFServerName+'/JNDIProperties/'+'datasource')
-    cmo.setValue(jmsFServerContext)
+    cmo.setValue(jmsFServerJNDIProperty)
     # Create Foreign Destination
     cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
        jmsModuleName+'/ForeignServers/'+jmsFServerName)
@@ -236,6 +229,15 @@ if jmsModuleName:
     # Set timeout seconds for Java Transaction API (JTA)
     cd('/JTA/NomisDomain/')
     cmo.setTimeoutSeconds(1000)
+    save()
+    activate()
+
+# Create App Deployment
+if appName:
+    edit()
+    startEdit()
+    progress = deploy(appName, path, target)
+    progress.printStatus()
     save()
     activate()
 
