@@ -195,7 +195,7 @@ if jmsModuleName:
     startEdit()
     # Create JMS Module
     cd('/')
-    cmo.createJMSSystemResource(jmsModuleName,jmsdescriptorFileName)
+    cmo.createJMSSystemResource(jmsModuleName, jmsdescriptorFileName)
     cd('/SystemResources/'+jmsModuleName)
     set('Targets', jarray.array(
         [ObjectName('com.bea:Name='+jmsTarget+',Type=Cluster')], ObjectName))
