@@ -10,6 +10,8 @@
     - /u01/tag/tagsar/cache
     - /u01/tag/tagsar/logs
     - /u01/tag/tagsar/output
+    - /u01/tag/HotPage/logs
+    - /u01/tag/autologoff/logs
 
 - name: Update weblogic files
   import_tasks: extract-s3-archive.yml
@@ -51,6 +53,7 @@
     - /u01/app/oracle/Middleware/forms_home/network/admin/tnsnames.ora
     - /u01/app/oracle/Middleware/forms_instance/config/tnsnames.ora
     - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/httpd.conf
+    - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/mod_wl_ohs.conf
     - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/moduleconf/forms.conf
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/admin/resource/US/fmrweb.res
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/admin/resource/US/fmrweb_utf8.res
