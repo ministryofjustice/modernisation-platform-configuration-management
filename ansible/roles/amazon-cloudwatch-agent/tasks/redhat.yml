@@ -37,7 +37,7 @@
     - name: Get tag values for use in tagging metrics
       set_fact:
         name: '{{ ec2.tags["Name"] }}'
-        server-type: '{{ ec2.tags["server-type"] }}'
+        server_type: '{{ ec2.tags["server-type"] }}'
 
     - name: add custom types file for oracle_health.sh
       ansible.builtin.copy:
