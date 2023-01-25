@@ -21,9 +21,9 @@ TypesDB     "/usr/share/collectd/types.db" "/usr/share/collectd/types.db.custom"
 ##############################################################################
 
 # LoadPlugin logfile
-# LoadPlugin cpu
+LoadPlugin cpu
 LoadPlugin network
-LoadPlugin exec
+# LoadPlugin exec
 
 # Enable this and the LoadPlugin logfile line to get debug output for changes
 #<Plugin logfile>
@@ -34,14 +34,14 @@ LoadPlugin exec
 #</Plugin>
 
 # Enable this to help debugging as this will appear in CloudWatch as collectd_cpu_value
-#<Plugin cpu>
-#  ReportByCpu true
-#  ReportByState true
+<Plugin cpu>
+  ReportByCpu true
+  ReportByState true
 #  ValuesPercentage false
 #  ReportNumCpu false
 #  ReportGuestState false
 #  SubtractGuestState true
-#</Plugin>
+</Plugin>
 
 <Plugin network>
     <Server "127.0.0.1" "25826">
@@ -49,9 +49,9 @@ LoadPlugin exec
     </Server>
 </Plugin>
 
-<Plugin exec>
-   Exec "oracle" "/opt/collectd/oracle_health.sh"
-</Plugin>
+#<Plugin exec>
+#   Exec "oracle" "/opt/collectd/oracle_health.sh"
+#</Plugin>
 
 #############################################################################
 

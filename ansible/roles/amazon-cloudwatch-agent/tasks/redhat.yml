@@ -32,7 +32,12 @@
 
     - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
       set_fact:
-        oracle_monitoring_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
+        oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
+
+    - name: Get tag values for use in tagging metrics
+      set_fact:
+        name: '{{ ec2.tags["Name"] }}'
+        server-type: '{{ ec2.tags["server-type"] }}'
 
     - name: add custom types file for oracle_health.sh
       ansible.builtin.copy:

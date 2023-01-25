@@ -12,7 +12,9 @@ export PATH=${PATH}:/usr/local/bin
 # Templated in from ansible
 HOSTNAME="${HOSTNAME}" 
 INTERVAL="{{ collectd_script_interval }}"
-LIST="{{ oracle_monitoring_list }}"
+ORACLE_SID_LIST="{{ oracle_sid_list }}"
+ORACLE_BATCH_ERROR_FILE="{{ oracle_batch_error_file }}"
+ORACLE_BATCH_STATUSES="{{ oracle_batch_statuses }}"
 
 db_connected() {
     # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
@@ -45,6 +47,28 @@ db_connected() {
     esac
 }
 
+batch_status() {
+
+    local LINE="$1"
+    local ORACLE_BATCH_ERROR_FILE="$2"
+    
+    # Check if the file contains any of the batch statuses we're looking for
+    if [[ "$(cat $ORACLE_BATCH_ERROR_FILE | grep $LINE)" ]]
+    then
+        val="$(cat $ORACLE_BATCH_ERROR_FILE | grep "$LINE" | cut -f2 -d' ')"
+        if [[ $val == 0 ]] || [[ $val == 1 ]]
+        then
+            return "$val"
+        else
+            echo "db error for $LINE is not a number" 1>&2
+            return 2
+        fi
+    else
+        echo "no match for $LINE" 1>&2
+        return 2
+    fi
+}
+
 while sleep "$INTERVAL"
 do
     for SID in ${LIST}
@@ -56,4 +80,17 @@ do
         returnval=$?
         echo "PUTVAL \"$HOSTNAME-$SID/exec-oracle-health/bool\" interval=$INTERVAL N:$returnval"
     done
+
+
+    if [[ -s "${ORACLE_BATCH_ERROR_FILE}" ]]
+    then
+        for LINE in ${ORACLE_BATCH_STATUSES}
+        do
+            batch_status "$LINE" "$ORACLE_BATCH_ERROR_FILE"
+            status=$?
+            echo "PUTVAL \"$HOSTNAME-$LINE/exec-oracle-batch-status/graph\" interval=$INTERVAL N:$status"
+        done
+    else
+        echo "issue with file" 
+    fi
 done

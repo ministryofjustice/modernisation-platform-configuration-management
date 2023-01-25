@@ -4,12 +4,6 @@
 		"run_as_user": "root"
 	},
 	"metrics": {
-		"append_dimensions": {
-			"AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-			"ImageId": "${aws:ImageId}",
-			"InstanceId": "${aws:InstanceId}",
-			"InstanceType": "${aws:InstanceType}"
-		},
 		"metrics_collected": {
 			"cpu": {
 				"resources": ["*"],
@@ -20,7 +14,11 @@
 					"cpu_usage_system"
 				],
 				"metrics_collection_interval": 60,
-				"totalcpu": false
+				"totalcpu": false,
+				"append_dimensions":{
+					"name":"{{ name }}",
+					"server-type":"{{ server-type }}"
+         		}
 			},
 			"disk": {
 				"measurement": [
@@ -55,14 +53,17 @@
 				"metrics_collection_interval": 60,
 				"resources": ["*"]
 			}
-			{% if oracle_monitoring_list is defined %}
+			{% if oracle_sid_list is defined %}
 			,
 			"collectd":{
             	"name_prefix":"collectd_",
             	"metrics_aggregation_interval": 60,
 				"collectd_security_level": "none",
-				"collectd_typesdb": ["/usr/share/collectd/types.db","/usr/share/collectd/types.db.custom"]
-         	}
+				"collectd_typesdb": ["/usr/share/collectd/types.db","/usr/share/collectd/types.db.custom"],
+				"append_dimensions":{
+					"name":"{{ name }}",
+					"server-type":"{{ server-type }}"
+         		}
 			{% endif %}
 		}
 	},
