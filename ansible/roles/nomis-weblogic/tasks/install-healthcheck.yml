@@ -28,13 +28,5 @@
       ansible.builtin.shell: service weblogic-healthcheck status
       changed_when: false
 
-    - name: Set autoscaling hook
-      ansible.builtin.template:
-        src: "10.3{{ item }}"
-        dest: "{{ item }}"
-        mode: "0644"
-      loop:
-        - /root/.autoscaling-lifecycle-ready-hook
-
   # block
   when: not weblogic_healthcheck_installed_check.stat.exists
