@@ -4,6 +4,10 @@
 		"run_as_user": "root"
 	},
 	"metrics": {
+		"append_dimensions": {
+			"ImageId": "${aws:ImageId}",
+			"InstanceId": "${aws:InstanceId}"
+		},
 		"metrics_collected": {
 			"cpu": {
 				"resources": ["*"],
@@ -16,8 +20,8 @@
 				"metrics_collection_interval": 60,
 				"totalcpu": false,
 				"append_dimensions":{
-					"name":"{{ name }}",
-					"server_type":"{{ server_type }}"
+					"name": "{{ name }}",
+					"server_type": "{{ server_type }}"
          		}
 			},
 			"disk": {
@@ -59,11 +63,8 @@
             	"name_prefix":"collectd_",
             	"metrics_aggregation_interval": 60,
 				"collectd_security_level": "none",
-				"collectd_typesdb": ["/usr/share/collectd/types.db","/usr/share/collectd/types.db.custom"],
-				"append_dimensions":{
-					"name":"{{ name }}",
-					"server_type":"{{ server_type }}"
-         		}
+				"collectd_typesdb": ["/usr/share/collectd/types.db","/usr/share/collectd/types.db.custom"]
+			}
 			{% endif %}
 		}
 	},
