@@ -65,7 +65,7 @@
       ansible.builtin.template:
         src: oracle_health.sh.j2
         dest: /opt/collectd/oracle_health.sh
-        mode: 0500
+        mode: 0755
         owner: oracle
 
     - name: Make Oracle Health Check script executable
@@ -77,6 +77,7 @@
         name: collectd
         state: started
         enabled: yes
+      notify: restart collectd
 
   when: ec2.tags['oracle-sids'] is defined
 
@@ -86,7 +87,7 @@
     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
     owner: root
     group: root
-    mode: 0644
+    mode: 0755
 
 - name: Start amazon-cloudwatch-agent service
   ansible.builtin.shell: |
