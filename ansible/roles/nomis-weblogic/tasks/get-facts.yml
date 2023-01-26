@@ -12,6 +12,8 @@
     ssm_parameters_path_weblogic_db_password: "{{ ssm_parameters_path }}/db_password"
     ssm_parameters_path_weblogic_db_tagsar_username: "{{ ssm_parameters_path }}/db_tagsar_username"
     ssm_parameters_path_weblogic_db_tagsar_password: "{{ ssm_parameters_path }}/db_tagsar_password"
+    ssm_parameters_path_weblogic_rms_hosts: "{{ ssm_parameters_path}}/weblogic_rms_hosts"
+    ssm_parameters_path_weblogic_rms_key: "{{ ssm_parameters_path}}/weblogic_rms_key"
 
 - name: Get SSM parameters
   set_fact:
@@ -21,6 +23,8 @@
     weblogic_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_password, region=ansible_ec2_placement_region) }}"
     weblogic_db_tagsar_username: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_tagsar_username, region=ansible_ec2_placement_region) }}"
     weblogic_db_tagsar_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_tagsar_password, region=ansible_ec2_placement_region) }}"
+    weblogic_rms_hosts: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_hosts, region=ansible_ec2_placement_region) }}"
+    weblogic_rms_key: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_key, region=ansible_ec2_placement_region) }}"
   when: weblogic_admin_username is not defined
 
 - name: Set db hostname from ec2 oracle-db-hostname tag
