@@ -78,9 +78,8 @@
           "name": "{{ name }}",
           "server_type": "{{ server_type }}"
         }
-      }
-	  {% if %}
-	  ,
+	  {% if oracle_sid_list is defined %}
+	  },
       "collectd": {
         "name_prefix": "collectd_",
         "metrics_aggregation_interval": 60,
@@ -90,6 +89,9 @@
           "/usr/share/collectd/types.db.custom"
         ]
       }
+	  {% else %}
+	  }
+	  {% endif %}
     }
   },
   "logs": {
