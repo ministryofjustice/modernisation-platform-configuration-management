@@ -1,87 +1,115 @@
 {
-	"agent": {
-		"metrics_collection_interval": 60,
-		"run_as_user": "root"
-	},
-	"metrics": {
-		"append_dimensions": {
-			"AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-			"ImageId": "${aws:ImageId}",
-			"InstanceId": "${aws:InstanceId}",
-			"InstanceType": "${aws:InstanceType}"
-		},
-		"metrics_collected": {
-			"cpu": {
-				"resources": ["*"],
-				"measurement": [
-					"cpu_usage_idle",
-					"cpu_usage_iowait",
-					"cpu_usage_user",
-					"cpu_usage_system"
-				],
-				"metrics_collection_interval": 60,
-				"totalcpu": false
-			},
-			"disk": {
-				"measurement": [
-					"used_percent",
-					"inodes_free"
-				],
-				"metrics_collection_interval": 60,
-				"resources": [
-					"*"
-				]
-			},
-			"diskio": {
-				"measurement": [
-					"io_time"
-				],
-				"metrics_collection_interval": 60,
-				"resources": [
-					"*"
-				]
-			},
-			"mem": {
-				"measurement": [
-					"mem_used_percent"
-				],
-				"metrics_collection_interval": 60,
-				"resources": ["*"]
-			},
-			"swap": {
-				"measurement": [
-					"swap_used_percent"
-				],
-				"metrics_collection_interval": 60,
-				"resources": ["*"]
-			}
-			{% if oracle_monitoring_list is defined %}
-			,
-			"collectd":{
-            	"name_prefix":"collectd_",
-            	"metrics_aggregation_interval": 60,
-				"collectd_security_level": "none",
-				"collectd_typesdb": ["/usr/share/collectd/types.db","/usr/share/collectd/types.db.custom"]
-         	}
-			{% endif %}
-		}
-	},
-	"logs": {
-		"logs_collected": {
-			"files": {
-				"collect_list": [
-					{
-						"file_path": "/var/log/messages",
-						"log_group_name": "cwagent-var-log-messages",
-						"log_stream_name": "${aws:InstanceId}"
-					},
-					{
-						"file_path": "/var/log/secure",
-						"log_group_name": "cwagent-var-log-secure",
-						"log_stream_name": "${aws:InstanceId}"
-					}
-				]
-			}
-		}
-	}
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "append_dimensions": {
+      "ImageId": "${aws:ImageId}",
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "cpu": {
+        "resources": [
+          "*"
+        ],
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ],
+        "metrics_collection_interval": 60,
+        "totalcpu": false,
+        "append_dimensions": {
+          "name": "{{ name }}",
+          "server_type": "{{ server_type }}"
+        }
+      },
+      "disk": {
+        "measurement": [
+          "used_percent",
+          "inodes_free"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+          "name": "{{ name }}",
+          "server_type": "{{ server_type }}"
+        }
+      },
+      "diskio": {
+        "measurement": [
+          "io_time"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+          "name": "{{ name }}",
+          "server_type": "{{ server_type }}"
+        }
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+          "name": "{{ name }}",
+          "server_type": "{{ server_type }}"
+        }
+      },
+      "swap": {
+        "measurement": [
+          "swap_used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+          "name": "{{ name }}",
+          "server_type": "{{ server_type }}"
+        }
+	  {% if oracle_sid_list is defined %}
+	  },
+      "collectd": {
+        "name_prefix": "collectd_",
+        "metrics_aggregation_interval": 60,
+        "collectd_security_level": "none",
+        "collectd_typesdb": [
+          "/usr/share/collectd/types.db",
+          "/usr/share/collectd/types.db.custom"
+        ]
+      }
+	  {% else %}
+	  }
+	  {% endif %}
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "cwagent-var-log-messages",
+            "log_stream_name": "{{ name }}"
+          },
+          {
+            "file_path": "/var/log/secure",
+            "log_group_name": "cwagent-var-log-secure",
+            "log_stream_name": "{{ name }}"
+          }
+        ]
+      }
+    }
+  }
 }
