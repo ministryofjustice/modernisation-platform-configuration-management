@@ -107,10 +107,10 @@
             "file_path": "/var/log/secure",
             "log_group_name": "cwagent-var-log-secure",
             "log_stream_name": "{{ name }}"
-          {% if weblogic_log_path is defined %}
+          {% if ec2.tags['server-type'] == 'nomis-web' %}
           },
           {
-            "file_path": "{{ weblogic_log_path }}",
+            "file_path": "{{ weblogic_logs }}",
             "log_group_name": "cwagent-weblogic-log",
             "log_stream_name": "{{ name }}"
           }

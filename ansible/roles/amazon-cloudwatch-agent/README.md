@@ -63,4 +63,4 @@ Cloudwatch metrics are easily filtered by instance_id so you can see all the met
 If this returns a value of 1 then the database is not connected. If it returns a value of 0 then the database is connected.
 
 ## Finding Logs in Cloudwatch
-<!-- coming soon!!>
+<!-- coming soon! Add a link to where this lives in Confluence !>
