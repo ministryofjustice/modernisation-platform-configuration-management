@@ -46,7 +46,7 @@
         owner: root
         mode: 0644
 
-    - name: Configure collectd # TODO: make this reload the service if/when it changes
+    - name: Configure collectd
       ansible.builtin.template:
         src: collectd.conf.j2
         dest: "/etc/collectd.conf"
@@ -67,19 +67,25 @@
         dest: /opt/collectd/oracle_health.sh
         mode: 0755
         owner: oracle
-
-    - name: Make Oracle Health Check script executable
-      ansible.builtin.shell: |
-        chmod +x /opt/collectd/oracle_health.sh
+      notify: restart collectd # pick up health check script config changes
 
     - name: Start collectd service
       ansible.builtin.service:
         name: collectd
         state: started
         enabled: yes
-      notify: restart collectd
 
   when: ec2.tags['oracle-sids'] is defined
+
+- name: Set up amazon-cloudwatch-agent weblogic log scraping
+  block:
+    - name: get weblogic home path
+      become_user: oracle
+      ansible.builtin.shell: |
+        "$WEBLOGIC_HOME/logs"
+      register: weblogic_log_path
+
+  when: ec2.tags['server-type'] == 'nomis-web'
 
 - name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:

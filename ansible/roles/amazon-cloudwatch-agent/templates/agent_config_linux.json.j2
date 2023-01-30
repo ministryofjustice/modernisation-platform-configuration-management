@@ -107,7 +107,16 @@
             "file_path": "/var/log/secure",
             "log_group_name": "cwagent-var-log-secure",
             "log_stream_name": "{{ name }}"
+          {% if weblogic_log_path is defined %}
+          },
+          {
+            "file_path": "{{ weblogic_log_path }}",
+            "log_group_name": "cwagent-weblogic-log",
+            "log_stream_name": "{{ name }}"
           }
+          {% else %}
+          }
+          {% endif %}
         ]
       }
     }
