@@ -102,18 +102,18 @@
           {
             "file_path": "/var/log/messages",
             "log_group_name": "cwagent-var-log-messages",
-            "log_stream_name": "${aws:InstanceId}"
+            "log_stream_name": "{{ instance_id }}"
           },
           {
             "file_path": "/var/log/secure",
             "log_group_name": "cwagent-var-log-secure",
-            "log_stream_name": "${aws:InstanceId}"
+            "log_stream_name": "{{ instance_id }}"
           {% if ec2.tags['server-type'] == 'nomis-web' %}
           },
           {
             "file_path": "{{ weblogic_log_path }}",
             "log_group_name": "cwagent-weblogic-logs",
-            "log_stream_name": "${aws:InstanceId}"
+            "log_stream_name": "{{ instance_id }}"
           }
           {% else %}
           }

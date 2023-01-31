@@ -100,6 +100,7 @@
   set_fact:
     name: "{{ ec2.tags.Name }}"
     server_type: "{{ ec2.tags['server-type'] }}"
+    instance_id: "{{ ansible_ec2_instance_id }}"
 
 - name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:
