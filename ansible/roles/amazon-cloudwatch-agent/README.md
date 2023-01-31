@@ -58,9 +58,13 @@ Metrics collected by the Cloudwatch agent will appear in the 'metrics' panel as 
 
 Cloudwatch metrics are easily filtered by instance_id so you can see all the metrics for a particular instance.
 
-### collectd_exec_value: Oracle_Sids connection check
+### collectd_exec-db_connected: Oracle_Sids connection check
 
 If this returns a value of 1 then the database is not connected. If it returns a value of 0 then the database is connected.
+
+### collectd_exec-batch_error: Oracle Batch Error check
+
+If this returns a value of 1 there there is either a long running batch job or a batch job has failed.
 
 ## Finding Logs in Cloudwatch
 <!-- coming soon! Add a link to where this lives in Confluence !>
