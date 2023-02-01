@@ -91,7 +91,7 @@
 - name: Set up amazon-cloudwatch-agent weblogic log scraping
   block:
     - name: set fact
-      set_fact: 
+      set_fact:
         weblogic_log_path: "{{ weblogic_log_path }}"
 
   when: ec2.tags['server-type'] == 'nomis-web'
