@@ -1,7 +1,23 @@
 ---
+- name: check if amazon-cloudwatch-agent installed
+  ansible.builtin.shell: |
+    check_installed() {
+      check="$(amazon-cloudwatch-agent-ctl -m ec2 -a status)"
+      if [[ $check ]]
+      then 
+        return 0
+      else 
+        return 1
+      fi
+    }
+    check_installed
+  ignore_errors: true
+  register: agent_installed
+
 - name: Install amazon-cloudwatch-agent
   ansible.builtin.yum:
     name: "{{ amazon_cloudwatch_agent_package }}"
+  when: agent_installed is failed
 
 - name: Create amazon-cloudwatch-agent config directory
   ansible.builtin.file:
@@ -30,15 +46,6 @@
         name: collectd
         state: present
 
-    - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
-      set_fact:
-        oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
-
-    - name: Get tag values for use in tagging metrics
-      set_fact:
-        name: '{{ ec2.tags["Name"] }}'
-        server_type: '{{ ec2.tags["server-type"] }}'
-
     - name: add custom types file for oracle_health.sh
       ansible.builtin.copy:
         src: types.db.custom
@@ -46,7 +53,7 @@
         owner: root
         mode: 0644
 
-    - name: Configure collectd # TODO: make this reload the service if/when it changes
+    - name: Configure collectd
       ansible.builtin.template:
         src: collectd.conf.j2
         dest: "/etc/collectd.conf"
@@ -67,19 +74,33 @@
         dest: /opt/collectd/oracle_health.sh
         mode: 0755
         owner: oracle
-
-    - name: Make Oracle Health Check script executable
-      ansible.builtin.shell: |
-        chmod +x /opt/collectd/oracle_health.sh
+      notify: restart collectd # pick up health check script config changes
 
     - name: Start collectd service
       ansible.builtin.service:
         name: collectd
         state: started
         enabled: yes
-      notify: restart collectd
+
+    - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
+      set_fact:
+        oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
 
   when: ec2.tags['oracle-sids'] is defined
+
+- name: Set up amazon-cloudwatch-agent weblogic log scraping
+  block:
+    - name: set fact
+      set_fact:
+        weblogic_log_path: "{{ weblogic_log_path }}"
+
+  when: ec2.tags['server-type'] == 'nomis-web'
+
+- name: Get tag values for use in config file
+  set_fact:
+    name: "{{ ec2.tags.Name }}"
+    server_type: "{{ ec2.tags['server-type'] }}"
+    instance_id: "{{ ansible_ec2_instance_id }}"
 
 - name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:
