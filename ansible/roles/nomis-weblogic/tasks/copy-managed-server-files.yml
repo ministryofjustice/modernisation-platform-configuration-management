@@ -12,6 +12,7 @@
     - /u01/tag/tagsar/output
     - /u01/tag/HotPage/logs
     - /u01/tag/autologoff/logs
+    - /u01/tag/tmp
 
 - name: Update weblogic files
   import_tasks: extract-s3-archive.yml
@@ -63,7 +64,15 @@
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/server/webutiljpi.htm
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/formsweb.cfg
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/tag.env
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_REPORTS/applications/reports_11.1.2/configuration/rwservlet.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh
     - /u01/tag/static/OMSS40.htm
     - /u01/tag/static/TAGLIB.js
     - /u01/tag/server/bo/conf/config.properties
+
+- name: Copy report server config
+  ansible.builtin.template:
+    src: "10.3/u01/app/oracle/Middleware/forms_instance/config/ReportsServerComponent/RptSvr_forms_instance/rwserver.conf"
+    dest: "/u01/app/oracle/Middleware/forms_instance/config/ReportsServerComponent/{{ weblogic_report_servername }}/rwserver.conf"
+    owner: oracle
+    group: oinstall
