@@ -6,7 +6,7 @@ It will also install collectd and configure that to collect Oracle_Sids connecti
 
 These connection metrics will then be picked up by Cloudwatch if the `"collectd": {}` section of the cloudwatch agent is configured.
 
-NOTE: At the moment this has NOT been tested on a Windows host. It may need to be tested as part of a deployment to a Windows host due to challenges with the module if run locally at an existing EC2 target. ONLY RUNS ON RedHat INSTANCES CURRENTLY
+IMPORTANT: This role is inactive for Windows hosts as we have not yet implemented a way to run ansible at them. At some point we will probably run this from an AWS Lambda function. For now we are using the Windows Jumpserver init script in the modernisation-platform-environment repo
 
 # Cloudwatch Agent
 ## Debugging on Linux
