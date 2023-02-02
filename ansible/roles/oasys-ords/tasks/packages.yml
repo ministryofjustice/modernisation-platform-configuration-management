@@ -1,5 +1,4 @@
 ---
-
 # install xfsprogs
 - name: install xfsprogs
   yum:
@@ -32,7 +31,6 @@
     remote_src: yes
   loop: "{{ s3_keys.files }}"
   when: s3_keys is defined
-  
 
 # cd /u01/app/apache/tomcat
 # make directory for tomcat
@@ -106,7 +104,7 @@
 #     group: dba
 #     mode: 0755
 
-# # cd i 
+# # cd i
 # # cp -Rp /u01/app/oracle/product/11.1.1/as_1/instances/oasysr1/config/OHS/oasysr_ohs1/images/* .
 # # copy images to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps/i
 # - name: copy images to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps/i
