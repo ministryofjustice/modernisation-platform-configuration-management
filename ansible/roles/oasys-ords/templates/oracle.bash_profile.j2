@@ -1,0 +1,19 @@
+## Managed by Ansible:
+## ansible-monorepo:
+##   role: {{ role_name }}
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+
+export PATH
+
+export JAVA_HOME=/u01/app/apache/tomcat/jre-9.0.4
+export CATALINA_HOME=/u01/app/apache/tomcat/latest
+export CATALINA_OPTS="-Duser.timezone=UTC"
+export PATH=$PATH:$HOME/.local/bin:$HOME/bin:JAVA_HOME/bin

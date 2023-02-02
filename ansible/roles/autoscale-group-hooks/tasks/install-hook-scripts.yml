@@ -13,7 +13,7 @@
   ansible.builtin.template:
     mode: 0755
     src: "autoscaling-lifecycle-hook.sh.j2"
-    dest: "/usr/local/bin/autoscaling-lifecycle-{{ lifecycle_hook_name }}.sh"
+    dest: "{{ script_path_prefix }}{{ lifecycle_hook_name }}.sh"
   loop: "{{ autoscaling_hook_names }}"
   loop_control:
     loop_var: lifecycle_hook_name
@@ -30,7 +30,7 @@
   ansible.builtin.template:
     mode: 0644
     src: "autoscaling-lifecycle-hook.cron.j2"
-    dest: "/etc/cron.d/autoscaling-lifecycle-{{ lifecycle_hook_name }}.cron"
+    dest: "{{ cron_path_prefix }}{{ lifecycle_hook_name }}.cron"
   loop: "{{ autoscaling_hook_names }}"
   loop_control:
     loop_var: lifecycle_hook_name

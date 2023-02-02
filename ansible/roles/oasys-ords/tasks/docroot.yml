@@ -1,0 +1,46 @@
+---
+
+# only add the index.html and index_message.html files if they don't exist.
+# Manual edits are done in emergency scenarios (service issue),
+# the week before an update, and maybe other situations.
+# Clive Lee-Peach and John Gregory make the manual edits.
+# For this to be done properly through ansible the following will be needed:
+# - upskill john and clive to use ansible and git
+# - change git permissions for them to be ablw to deploy changes to these hmtl files without approval (often they do changes on their own on the weekend)
+
+- name: Copy docroot index.html
+  template:
+    src: "doc_root/{{ oasys_index_page }}.j2"
+    dest: "{{ oasys_ords_docroot_dir }}/index.html"
+    owner: "oracle"
+    group: "oinstall"
+    mode: "0644"
+    force: no # does not replace since manual changes are made (see above)
+
+- name: Copy any additional docroot files
+  template:
+    src: "doc_root/{{ item }}.j2"
+    dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
+    owner: "oracle"
+    group: "oinstall"
+    mode: "0644"
+    force: no # does not replace since manual changes are made (see above)
+  with_items: "{{ oasys_ords_extra_files }}"
+
+- name: Remove example docroot files
+  file:
+    state: absent
+    path: "{{ oasys_ords_docroot_dir }}/{{ item }}"
+  with_items:
+  - "index.jsp"
+  - "asf-logo-wide.svg"
+  - "bg-button.png"
+  - "bg-middle.png"
+  - "bg-nav.png"
+  - "bg-upper.png"
+  - "favicon.ico"
+  - "tomcat.css"
+  - "tomcat.gif"
+  - "tomcat.png"
+  - "tomcat-power.gif"
+  - "tomcat.svg"

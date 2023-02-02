@@ -1,0 +1,11 @@
+# See overrides in group_vars, e.g. group_vars/prod_oasys_web.yml ##################
+oasys_ords_root_dir: "/u01/app/apache/tomcat/latest"
+oasys_links_default_label: "{{ environment_group }}"
+oasys_links_default_path: "/eor/f?p=100:101"
+oasys_index_page: "redirect.html"
+oasys_ords_docroot_dir: "{{ oasys_ords_root_dir }}/webapps/ROOT"
+oasys_ords_extra_files: []
+oasys_maintenance_msg: ""
+oasys_ords_s3_bucket: "oasys-ords"
+ords_db_port: 1521
+ords_db_sid: "OASYS"
