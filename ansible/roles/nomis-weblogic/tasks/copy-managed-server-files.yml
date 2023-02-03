@@ -77,7 +77,7 @@
     owner: oracle
     group: oinstall
 
-- name: Copy formsweb.cfg file 
+- name: Copy formsweb.cfg file
   ansible.builtin.template:
     src: "10.3//u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS1A/applications/formsapp_11.1.2/config/formsweb.cfg"
     dest: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ item }}/applications/formsapp_11.1.2/config/formsweb.cfg"
