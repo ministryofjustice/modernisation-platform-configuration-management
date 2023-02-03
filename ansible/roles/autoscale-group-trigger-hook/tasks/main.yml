@@ -1,0 +1,7 @@
+---
+- name: Run trigger scripts
+  ansible.builtin.shell:
+    cmd: /usr/local/bin/autoscaling-lifecycle-{{ lifecycle_hook_name }}.sh
+  loop: "{{ autoscaling_hook_names }}"
+  loop_control:
+    loop_var: lifecycle_hook_name

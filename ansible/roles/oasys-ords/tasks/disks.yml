@@ -1,0 +1,63 @@
+---
+# mkdir  -p /u02/stage/ORDS/ords_stage
+# mkdir -p /u01/app/apache/tomcat
+# make two directories for tomcat
+- name: create Oracle mount points
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oracle
+    mode: 0755
+  loop:
+    - /u01/
+    - /u02/
+    - { { oasys_ords_root_dir } }
+
+# create volume group
+- name: create volume group
+  lvg:
+    vg: "{{ item.oasys_vg_name }}"
+    pvs: "{{ item.oasys_pv }}"
+    state: present
+  loop: "{{ oasys_vgs }}"
+  when: oasys_vgs is defined
+
+# create logical volume
+- name: create logical volume
+  lvol:
+    vg: "{{ item.oasys_vg_name }}"
+    lv: "{{ item.oasys_lv_name }}"
+    size: "{{ item.oasys_lv_size }}"
+    state: present
+  loop: "{{ oasys_lvs }}"
+  when: oasys_lvs is defined
+
+# format each logical volume with xfs
+- name: format logical volume
+  filesystem:
+    fstype: xfs
+    dev: "{{ item.oasys_lv_name }}"
+    resizefs: yes
+    reserve_percent: 0
+  loop: "{{ oasys_lvs }}"
+  when: oasys_lvs is defined
+
+# add fstab for /u01 and /u02
+- name: add fstab for /u01 and /u02
+  lineinfile:
+    path: /etc/fstab
+    line: "/dev/mapper/{{ item.oasys_vg_name }}-{{ item.oasys_lv_name }} /{{ item.oasys_lv_name }} xfs defaults 0 0"
+    state: present
+  loop: oasys_lvs
+  when: oasys_lvs is defined
+
+# mount /u01 and /u02
+- name: mount /u01 and /u02
+  mount:
+    path: /{{ item.oasys_lv_name }}
+    src: /dev/mapper/{{ item.oasys_vg_name }}-{{ item.oasys_lv_name }}
+    fstype: xfs
+    state: mounted
+  loop: oasys_lvs
+  when: oasys_lvs is defined

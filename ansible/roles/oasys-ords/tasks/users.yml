@@ -1,0 +1,24 @@
+---
+# create dba group
+- name: create dba group
+  group:
+    name: dba
+    state: present
+
+# create oracle user
+- name: create oracle user
+  user:
+    name: oracle
+    shell: /bin/bash
+    state: present
+    groups: dba
+    append: yes
+
+# add bash profile for oracle user
+- name: add bash profile for oracle user
+  template:
+    src: oracle.bash_profile.j2
+    dest: /home/oracle/.bash_profile
+    owner: oracle
+    group: dba
+    mode: 0644

@@ -1,0 +1,15 @@
+---
+- name: create users
+  import_tasks: users.yml
+
+- name: create disks
+  import_tasks: disks.yml
+
+- name: install packages
+  import_tasks: packages.yml
+
+- name: install tomcat
+  import_tasks: tomcat.yml
+
+- name: create docroot
+  import_tasks: docroot.yml

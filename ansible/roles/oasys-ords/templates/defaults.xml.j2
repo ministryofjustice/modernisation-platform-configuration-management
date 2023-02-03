@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Ansible managed file-->
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="db.connectionType">basic</entry>
+<entry key="db.hostname">{{ ansible_hostname }}</entry>
+<entry key="db.port">{{ ords_db_port }}</entry>
+<entry key="db.sid">{{ ords_db_sid }}</entry>
+<entry key="security.requestValidationFunction">wwv_flow_epg_include_modules.authorize</entry>
+<entry key="security.validationFunctionType">plsql</entry>
+<entry key="security.externalSessionTrustedOrigins">{{ oasys_ords_trusted_origins | join(',')}}</entry>
+<entry key="security.forceHTTPS">true</entry>
+<entry key="procedure.rest.preHook">RESTAPI.rest_utl_pkg.pre_hook</entry>
+</properties>

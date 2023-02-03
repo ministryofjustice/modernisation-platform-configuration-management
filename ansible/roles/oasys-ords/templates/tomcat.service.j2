@@ -1,0 +1,18 @@
+## Managed by Ansible:
+## ansible-monorepo: 
+##   role: {{ role_name }}
+
+[Unit]
+Description=Tomcat Service
+After=syslog.target network.target
+
+[Service]
+Type=forking
+ExecStart=/home/oracle/admin/scripts/tomcat_startup_service.sh
+ExecStop=/home/oracle/admin/scripts/tomcat_shutdown_service.sh
+User=oracle
+Group=oinstall
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
