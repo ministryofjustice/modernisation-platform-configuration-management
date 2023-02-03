@@ -76,3 +76,14 @@
     dest: "/u01/app/oracle/Middleware/forms_instance/config/ReportsServerComponent/{{ weblogic_report_servername }}/rwserver.conf"
     owner: oracle
     group: oinstall
+
+- name: Copy formsweb.cfg file
+  ansible.builtin.template:
+    src: "10.3//u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS1A/applications/formsapp_11.1.2/config/formsweb.cfg"
+    dest: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ item }}/applications/formsapp_11.1.2/config/formsweb.cfg"
+    owner: oracle
+    group: oinstall
+  loop:
+    - WLS_FORMS1A
+    - WLS_FORMS1B
+    - WLS_FORMS1C
