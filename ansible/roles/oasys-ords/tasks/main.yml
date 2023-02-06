@@ -1,15 +1,35 @@
 ---
 - name: create users
   import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
 
 - name: create disks
   import_tasks: disks.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
 
 - name: install packages
   import_tasks: packages.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
 
 - name: install tomcat
   import_tasks: tomcat.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
 
 - name: create docroot
   import_tasks: docroot.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
