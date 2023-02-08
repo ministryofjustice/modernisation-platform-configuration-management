@@ -8,7 +8,6 @@
     group: dba
     mode: 0755
 
-
 - name: install xfsprogs
   yum:
     name: xfsprogs
@@ -18,7 +17,7 @@
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ item.obj }}"
-    dest: '/tmp'
+    dest: "/tmp/{{ item.obj }}"
     mode: get
   loop: "{{ ords_artefact_list }}"
 
