@@ -43,6 +43,16 @@
         - amibuild
         - weblogic_install_jdk
 
+    - import_tasks: sysctl-update.yml
+      tags:
+        - amibuild
+        - system_sysctl_changes
+
+    - import_tasks: oracle-limits-update.yml
+      tags:
+        - amibuild
+        - oracle-limits-changes
+
     - import_tasks: install-server.yml
       tags:
         - amibuild

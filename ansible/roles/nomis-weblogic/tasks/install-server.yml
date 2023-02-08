@@ -17,14 +17,6 @@
 
 - name: Install weblogic server software
   block:
-    - name: Copy init.d weblogic-node-manager script
-      ansible.builtin.template:
-        src: "10.3{{ item }}"
-        dest: "{{ item }}"
-        mode: "0755"
-      loop:
-        - /etc/sysctl.conf
-        - /etc/security/limits.conf
 
     - name: Get weblogic install jar from S3 bucket
       amazon.aws.aws_s3:

@@ -1,0 +1,16 @@
+---
+
+- name: Add or update system config changes for nomis weblogic performance
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: "fs.aio-max-nr", value: "1048576" }
+    - { name: "fs.file-max", value: "6815744" }
+    - { name: "kernel.panic_on_oops", value: "1" }
+    - { name: "kernel.sem", value: "250 32000 100 128" }
+    - { name: "kernel.shmall", value: "4294967296" }
+    - { name: "kernel.shmmax", value: "4398046511104" }
+    - { name: "kernel.shmmni", value: "4096" }
