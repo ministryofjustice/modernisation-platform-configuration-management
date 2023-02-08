@@ -47,11 +47,13 @@
       tags:
         - amibuild
         - system_sysctl_changes
+        - ec2provision
 
     - import_tasks: oracle-limits-update.yml
       tags:
         - amibuild
         - oracle-limits-changes
+        - ec2provision
 
     - import_tasks: install-server.yml
       tags:
