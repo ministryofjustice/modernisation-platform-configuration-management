@@ -73,33 +73,10 @@
             "InstanceId": "${aws:InstanceId}",
             "InstanceType": "${aws:InstanceType}",
             "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
-        },
-        "aggregation_dimensions": [
-            [
-                "ImageId"
-            ],
-            [
-                "InstanceId",
-                "InstanceType"
-            ],
-            [
-                "d1"
-            ],
-            []
-        ]
+        }
     },
     "logs": {
         "logs_collected": {
-            "files": {
-                "collect_list": [
-                    {
-                        "file_path": "c:\\ProgramData\\Amazon\\AmazonCloudWatchAgent\\Logs\\amazon-cloudwatch-agent.log",
-                        "log_group_name": "amazon-cloudwatch-agent.log",
-                        "log_stream_name": "{instance_id}/{local_hostname}",
-                        "timezone": "UTC"
-                    }
-                ]
-            },
             "windows_events": {
                 "collect_list": [
                     {

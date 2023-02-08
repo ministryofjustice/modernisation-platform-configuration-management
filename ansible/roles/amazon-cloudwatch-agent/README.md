@@ -67,4 +67,22 @@ If this returns a value of 1 then the database is not connected. If it returns a
 If this returns a value of 1 there there is either a long running batch job or a batch job has failed.
 
 ## Finding Logs in Cloudwatch
-<!-- coming soon! Add a link to where this lives in Confluence !>
+<!-- coming soon! Add a link to where this lives in Confluence  -->
+
+# Cloudwatch Agent on Windows
+
+This is currently being deployed from the init script in the modernisation-platform-environment repo. It's not ideal but it works. This avoids having to get ansible running on the Windows hosts using the ansibe ssm module or using Lambdas as a host environment for running ansible.
+
+## Finding metrics to Monitor using Powershell
+
+Counter setnames are logicaldisk, memory, network interface, processor and system. It's easiest to find these using powershell:
+
+```powershell
+Get-Counter -ListSet * | Where-Object -FilterScript { $PSItem.counter
+setname -match 'logicaldisk'} | Select-Object -Property Counter -ExpandProperty Counter
+```
+
+
+
+
+
