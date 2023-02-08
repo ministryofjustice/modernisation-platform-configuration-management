@@ -1,6 +1,5 @@
 ---
-
-- name: Add oracle user limits 
+- name: Add oracle user limits
   community.general.pam_limits:
     domain: oracle
     limit_type: "{{ item.limit_type }}"
@@ -11,7 +10,7 @@
     - { limit_type: "soft", limit_item: "nofile", value: 1024 }
     - { limit_type: "soft", limit_item: "nproc", value: 16384 }
     - { limit_type: "soft", limit_item: "stack", value: 32768 }
-    - { limit_type: "hard", limit_item: "memlock", value: 134217728}
+    - { limit_type: "hard", limit_item: "memlock", value: 134217728 }
     - { limit_type: "hard", limit_item: "nofile", value: 65536 }
     - { limit_type: "hard", limit_item: "nproc", value: 16384 }
     - { limit_type: "hard", limit_item: "stack", value: 10240 }

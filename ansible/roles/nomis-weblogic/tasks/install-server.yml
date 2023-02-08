@@ -17,7 +17,6 @@
 
 - name: Install weblogic server software
   block:
-
     - name: Get weblogic install jar from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
