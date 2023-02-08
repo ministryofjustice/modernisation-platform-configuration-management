@@ -1,5 +1,4 @@
 ---
-
 - name: create apache tomcat directory
   file:
     path: "{{ oasys_ords_tomcat_dir }}"
@@ -7,7 +6,6 @@
     owner: oracle
     group: dba
     mode: 0755
-
 
 - name: install xfsprogs
   yum:
@@ -18,7 +16,7 @@
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ item.obj }}"
-    dest: '/tmp'
+    dest: "/tmp"
     mode: get
   loop: "{{ ords_artefact_list }}"
 
