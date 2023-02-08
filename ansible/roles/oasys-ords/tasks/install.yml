@@ -1,0 +1,29 @@
+---
+
+- name: create apache tomcat directory
+  file:
+    path: "{{ oasys_ords_tomcat_dir }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0755
+
+
+- name: install xfsprogs
+  yum:
+    name: xfsprogs
+    state: present
+
+- name: get artefects
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ item.obj }}"
+    dest: '/tmp'
+    mode: get
+  loop: "{{ ords_artefact_list }}"
+
+- name: unarchive artefacts
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ item.obj }}"
+    dest: "{{ item.dest}}"
+  loop: "{{ ords_artefact_list }}"

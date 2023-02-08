@@ -1,4 +1,34 @@
 ---
+- name: create symbolic link for tomcat
+  file:
+    src: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13"
+    dest: "{{ oasys_ords_tomcat_dir }}/latest"
+    state: link
+    owner: oracle
+    group: dba
+    mode: 0755
+
+- name: copy ords.war to eor.war
+  copy:
+    src: "{{ oasys_ords_dir }}/ords.war"
+    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
+    owner: oracle
+    group: dba
+    mode: 0755
+
+- name: copy params to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps
+  copy:
+    src: "{{ oasys_ords_dir }}/params"
+    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+    owner: oracle
+    group: dba
+    mode: 0755
+
+- name: update environmnent xml
+  template:
+    src: defaults.xml.j2
+    dest: /usr/share/tomcat/config/eor/defaults.xml
+
 # only add the index.html and index_message.html files if they don't exist.
 # Manual edits are done in emergency scenarios (service issue),
 # the week before an update, and maybe other situations.
