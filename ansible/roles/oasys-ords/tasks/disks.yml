@@ -2,6 +2,12 @@
 # mkdir  -p /u02/stage/ORDS/ords_stage
 # mkdir -p /u01/app/apache/tomcat
 # make two directories for tomcat
+
+- name: install lvm2
+  yum:
+    name: 7:lvm2-2.02.187-6.el7_9.5.x86_64
+    state: present
+
 - name: create Oracle mount points
   file:
     path: "{{ item }}"
