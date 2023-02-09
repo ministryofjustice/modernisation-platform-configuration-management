@@ -39,10 +39,6 @@
     mode: 0755
 
 - name: install eor
-  become: yes
-  become_user: oracle
-  ansible.builtin.command:
-    cmd: java -jar eor.war setup
+  ansible.builtin.shell:
+    cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup"
     chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
-    creates: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor"
-        
