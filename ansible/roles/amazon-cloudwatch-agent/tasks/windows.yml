@@ -1,4 +1,8 @@
 ---
+# IMPORTANT: This role is inactive for Windows hosts as we have not yet implemented a way to run ansible at them
+# At some point we will probably run this from an AWS Lambda function
+# For now we are using the Windows Jumpserver init script in the modernisation-platform-environment repo
+#
 # by default all msi installs run with /log, /qn, /norestart arguments already
 - name: Install amazon-cloudwatch-agent
   ansible.windows.win_package:

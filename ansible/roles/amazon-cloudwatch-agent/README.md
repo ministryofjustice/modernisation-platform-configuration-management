@@ -6,7 +6,7 @@ It will also install collectd and configure that to collect Oracle_Sids connecti
 
 These connection metrics will then be picked up by Cloudwatch if the `"collectd": {}` section of the cloudwatch agent is configured.
 
-NOTE: At the moment this has NOT been tested on a Windows host. It may need to be tested as part of a deployment to a Windows host due to challenges with the module if run locally at an existing EC2 target. ONLY RUNS ON RedHat INSTANCES CURRENTLY
+IMPORTANT: This role is inactive for Windows hosts as we have not yet implemented a way to run ansible at them. At some point we will probably run this from an AWS Lambda function. For now we are using the Windows Jumpserver init script in the modernisation-platform-environment repo
 
 # Cloudwatch Agent
 ## Debugging on Linux
@@ -67,4 +67,22 @@ If this returns a value of 1 then the database is not connected. If it returns a
 If this returns a value of 1 there there is either a long running batch job or a batch job has failed.
 
 ## Finding Logs in Cloudwatch
-<!-- coming soon! Add a link to where this lives in Confluence !>
+
+Logs are organised into Log Groups which have to be independently specified in the tf. locals for each environment. This is to prevent arbitrary EC2 instances from creating their own logs groups. Deleting them is a pain so this restriction is in place to prevent that.
+
+Log Groups are easily identified by name and filtered by instance_id.
+
+# Cloudwatch Agent on Windows
+
+This is currently being deployed from the init script in the modernisation-platform-environment repo. It's not ideal but it works. This avoids having to get ansible running on the Windows hosts using the ansibe ssm module or using Lambdas as a host environment for running ansible.
+
+## Finding metrics to Monitor using Powershell
+
+Counter setnames are logicaldisk, memory, network interface, processor and system. It's easiest to find these using powershell:
+
+```powershell
+Get-Counter -ListSet * | Where-Object -FilterScript { $PSItem.counter
+setname -match 'logicaldisk'} | Select-Object -Property Counter -ExpandProperty Counter
+```
+
+Be aware that some Windows metrics will appear in the list in the AWS Cloudwatch Console as <CounterSetName> <Metric Name> e.g. Memory % CPU Available. In some cases it's actually preferable to rename the metric in the config but not all metrics can be renamed. 
