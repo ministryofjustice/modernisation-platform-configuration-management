@@ -4,9 +4,17 @@ amazon_cloudwatch_config_template_path: agent_config_linux.json.j2
 amazon_cloudwatch_agent_config_file: amazon-cloudwatch-agent.json
 amazon_cloudwatch_agent_config_path: /opt/aws/amazon-cloudwatch-agent/etc
 collectd_script_interval: 60
+
+# oracle collectd health metrics vars
 oracle_batch_error_file: "/opt/textfile_monitoring/nomis_batch_monitoring.prom"
 oracle_batch_statuses: "nomis_long_running_batch nomis_batch_failure_status"
+service_list_oracle: "oracle-ohasd oracleasm"
+
+# weblogic cloudwatch config vars
+amazon_cloudwatch_agent_weblogic_config_file: weblogic.json
 weblogic_log_path: "/u01/app/oracle/Middleware/logs/wlst_*.log"
-weblogic_service_list: "weblogic-server weblogic-node-manager"
-linux_service_list: "amazon-ssm-agent cwagent chronyd sshd"
-oracle_service_list: "oracle-ohasd oracleasm"
+
+# service lists vars
+service_list_linux: "amazon-ssm-agent cwagent chronyd sshd"
+service_list_weblogic: "weblogic-server weblogic-node-manager"
+

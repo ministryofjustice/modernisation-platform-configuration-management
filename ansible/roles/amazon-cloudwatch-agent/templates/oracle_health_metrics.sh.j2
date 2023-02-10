@@ -15,6 +15,7 @@ INTERVAL="{{ collectd_script_interval }}"
 ORACLE_SID_LIST="{{ oracle_sid_list }}"
 ORACLE_BATCH_ERROR_FILE="{{ oracle_batch_error_file }}"
 ORACLE_BATCH_STATUSES="{{ oracle_batch_statuses }}"
+ORACLE_SERVICE_LIST="{{ service_list_oracle }}"
 
 db_connected() {
     # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
@@ -69,6 +70,11 @@ batch_status() {
     fi
 }
 
+service_status() {
+    local SERVICE="$1"
+    sudo systemctl is-active --quiet $SERVICE
+}
+
 while sleep "$INTERVAL"
 do
     for SID in ${ORACLE_SID_LIST}
@@ -81,7 +87,6 @@ do
         echo "PUTVAL $HOSTNAME/exec-db_connected/bool-$SID interval=$INTERVAL N:$returnval"
     done
 
-
     if [[ -s "${ORACLE_BATCH_ERROR_FILE}" ]]
     then
         for text in $ORACLE_BATCH_STATUSES
@@ -93,4 +98,12 @@ do
     else
         echo "PUTVAL $HOSTNAME/exec-file_error/gauge interval=$INTERVAL N:2"
     fi
+
+    for service in ${ORACLE_SERVICE_LIST}
+    do
+        service_status "$service"
+        status=$?
+        echo "PUTVAL $HOSTNAME/exec-service_status/bool-$service interval=$INTERVAL N:$status"
+    done
+
 done

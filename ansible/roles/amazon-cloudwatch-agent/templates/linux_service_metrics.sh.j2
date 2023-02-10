@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Templated in from ansible
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="{{ collectd_script_interval }}"
+LINUX_SERVICE_LIST="{{ weblogic_service_list }}"
+
+service_status() {
+    local SERVICE="$1"
+    {% if ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6' %}
+    # RHEL6 service check
+    sudo service $SERVICE status
+    {% else %}
+    sudo systemctl is-active --quiet $SERVICE
+    {% endif %}
+}
+
+while sleep "$INTERVAL"
+do
+    for service in ${LINUX_SERVICE_LIST}
+    do
+        service_status "$service"
+        status=$?
+        echo "PUTVAL $HOSTNAME/exec-service_status/bool-$service interval=$INTERVAL N:$status"
+    done
+done

@@ -78,8 +78,8 @@
           "name": "{{ name }}",
           "server_type": "{{ server_type }}"
         }
-	  {% if oracle_sid_list is defined %}
-	  },
+      {% if ansible_distribution_major_version == '7' %}
+      },
       "collectd": {
         "name_prefix": "collectd_",
         "metrics_aggregation_interval": 60,
@@ -89,10 +89,10 @@
           "/usr/share/collectd/types.db.custom"
         ]
       }
-	  {% else %}
+      {% else %}
+      }
+      {% endif %}
 	  }
-	  {% endif %}
-    }
   },
   "logs": {
     "logs_collected": {
@@ -107,17 +107,7 @@
             "file_path": "/var/log/secure",
             "log_group_name": "cwagent-var-log-secure",
             "log_stream_name": "{{ instance_id }}"
-          {% if ec2.tags['server-type'] == 'nomis-web' %}
-          },
-          {
-            "file_path": "{{ weblogic_log_path }}",
-            "log_group_name": "cwagent-weblogic-logs",
-            "log_stream_name": "{{ instance_id }}",
-            "timestamp_format": "%Y-%m-%d %H:%M:%S,%-S"
           }
-          {% else %}
-          }
-          {% endif %}
         ]
       }
     }

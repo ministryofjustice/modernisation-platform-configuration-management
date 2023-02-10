@@ -27,7 +27,7 @@
     group: root
     mode: 0755
 
-- name: Set up collectd for monitoring oracle db connections
+- name: Set up collectd for monitoring on linux or oracle servers
   block:
     - name: Ensure the EPEL repository is available
       ansible.builtin.package:
@@ -46,6 +46,65 @@
         name: collectd
         state: present
 
+  when: ansible_distribution_major_version == '7'
+
+# TODO: Implement this later 'collectd 5.12.0' is not available for RHEL 6
+# - name: set up collectd for monitoring on nomis-web instances
+#   block:
+
+#     - name: get collectd installer directly
+#       ansible.builtin.yum_repository:
+#         name: epel
+#         description: EPEL YUM repo
+#         baseurl: https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
+
+#     - name: extract collectd installer
+#       ansible.builtin.unarchive:
+#         src: collectd-5.12.0.tar.bz2
+#         dest: /opt
+#         remote_src: yes
+
+#     - name: install collectd
+#       ansible.builtin.shell: |
+#         cd collectd-version
+#         ./configure
+#         make all install
+
+#   when: ansible_distribution_major_version == '6'
+
+- name: Configure collectd
+  ansible.builtin.template:
+    src: collectd.conf.j2
+    dest: "/etc/collectd.conf"
+    owner: root
+    mode: 0644
+
+- name: add linux conf for collectd to get service state as metrics
+  ansible.builtin.file:
+    src: linux.conf
+    dest: "/etc/collectd.d/linux.conf"
+    owner: root
+    mode: 0644
+
+- name: create folder for exec script to collect metrics
+  ansible.builtin.file:
+    path: "/opt/collectd"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Add linux serice metrics script
+  ansible.builtin.template:
+    src: linux_service_metrics.sh.j2
+    dest: /opt/collectd/linux_service_metrics.sh
+    mode: 0755
+    owner: root
+  # notify: restart collectd # pick up health check script config changes
+
+- name: set up collectd for monitoring on nomis-db instances 
+  block: 
+
     - name: add custom types file for oracle_health.sh
       ansible.builtin.copy:
         src: types.db.custom
@@ -53,46 +112,38 @@
         owner: root
         mode: 0644
 
-    - name: Configure collectd
-      ansible.builtin.template:
-        src: collectd.conf.j2
-        dest: "/etc/collectd.conf"
-        owner: root
-        mode: 0644
-
-    - name: create folder for exec script to collect metrics
-      ansible.builtin.file:
-        path: "/opt/collectd"
-        state: directory
-        owner: root
-        group: root
-        mode: 0755
-
-    - name: Add oracle_health check script
-      ansible.builtin.template:
-        src: oracle_health.sh.j2
-        dest: /opt/collectd/oracle_health.sh
-        mode: 0755
-        owner: oracle
-      notify: restart collectd # pick up health check script config changes
-
-    - name: Start collectd service
-      ansible.builtin.service:
-        name: collectd
-        state: started
-        enabled: yes
-
     - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
       set_fact:
         oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
 
+    - name: Add oracle_health check script
+      ansible.builtin.template:
+        src: oracle_health_metrics.sh.j2
+        dest: /opt/collectd/oracle_health_metrics.sh
+        mode: 0755
+        owner: oracle
+      # notify: restart collectd # pick up health check script config changes
+
   when: ec2.tags['oracle-sids'] is defined
+
+- name: Start collectd service
+  ansible.builtin.service:
+    name: collectd
+    state: started
+    enabled: yes
 
 - name: Set up amazon-cloudwatch-agent weblogic log scraping
   block:
     - name: set fact
       set_fact:
         weblogic_log_path: "{{ weblogic_log_path }}"
+
+    - name: Create amazon-cloudwatch-agent config file for weblogic
+      src: agent_config_weblogic.json.j2
+      dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+      owner: root
+      group: root
+      mode: 0755
 
   when: ec2.tags['server-type'] == 'nomis-web'
 
@@ -110,6 +161,13 @@
     group: root
     mode: 0755
 
+# covers cloudwatch agent start for linux (common) and oracle EC2 instances
 - name: Start amazon-cloudwatch-agent service
   ansible.builtin.shell: |
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
+
+# additional settings for weblogic EC2 instances
+- name: Append settings for amazon-cloudwatch-agent for weblogic EC2 instances
+  ansible.builtin.shell: |
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+  when: ec2.tags['server-type'] == 'nomis-web'

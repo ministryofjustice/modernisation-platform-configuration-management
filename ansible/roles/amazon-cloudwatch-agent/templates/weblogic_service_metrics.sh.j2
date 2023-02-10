@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Templated in from ansible
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="{{ collectd_script_interval }}"
+WEBLOGIC_SERVICE_LIST="{{ service_list_weblogic }}"
+
+service_status() {
+    local SERVICE="$1"
+    sudo service $SERVICE status
+}
+
+while sleep "$INTERVAL"
+do
+    for service in ${WEBLOGIC_SERVICE_LIST}
+    do
+        service_status "$service"
+        status=$?
+        echo "PUTVAL $HOSTNAME/exec-service_status/bool-$service interval=$INTERVAL N:$status"
+    done
+done
+

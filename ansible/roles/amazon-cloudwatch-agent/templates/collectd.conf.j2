@@ -23,7 +23,7 @@ TypesDB     "/usr/share/collectd/types.db" "/usr/share/collectd/types.db.custom"
 # LoadPlugin logfile
 # LoadPlugin cpu
 LoadPlugin network
-LoadPlugin exec
+# LoadPlugin exec
 
 # Enable this and the LoadPlugin logfile line to get debug output for changes
 #<Plugin logfile>
@@ -49,9 +49,9 @@ LoadPlugin exec
     </Server>
 </Plugin>
 
-<Plugin exec>
-   Exec "oracle" "/opt/collectd/oracle_health.sh"
-</Plugin>
+# <Plugin exec>
+#   Exec "oracle" "/opt/collectd/oracle_health_metrics.sh"
+# </Plugin>
 
 #############################################################################
 
