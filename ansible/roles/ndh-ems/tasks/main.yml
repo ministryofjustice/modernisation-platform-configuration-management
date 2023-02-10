@@ -1,16 +1,22 @@
 ---
 - name: mount for reasons
   ansible.builtin.shell: mount -a
+  tags:
+    - amibuild
 
 - name: set timezone to Europe/London
   ansible.builtin.timezone:
     name: Europe/London
+  tags:
+    - amibuild
 
 - name: add tibco group
   ansible.builtin.group:
     name: tibco
     state: present
     gid: 10002
+  tags:
+    - amibuild
 
 - name: add tibco user
   ansible.builtin.user:
@@ -19,6 +25,8 @@
     group: tibco
     home: /opt/tibco
     system: yes
+  tags:
+    - amibuild
 
 - name: shell install prereqs
   ansible.builtin.shell: |
@@ -32,55 +40,79 @@
     yum groupinstall x11 --quiet -y
     yum install xorg-x11-apps --quiet -y
     yum install libstdc++.i686 --quiet -y
+  tags:
+    - amibuild
 
 - name: stop and disable firewalld
   ansible.builtin.service:
     name: firewalld
     state: stopped
     enabled: false
+  tags:
+    - amibuild
 
 - name: download archives from S3 bucket into /opt/tibco
   ansible.builtin.shell: aws s3 sync s3://ec2-image-builder-nomis20220314103938567000000001/ndh-installation-files/LinuxEMSServer/ /opt/tibco/
+  tags:
+    - amibuild
 
 - name: unzip ems install files
   ansible.builtin.shell: unzip /opt/tibco/EMSdirs.zip -d /opt/tibco
+  tags:
+    - amibuild
 
 - name: remove install zip file
   ansible.builtin.shell: rm /opt/tibco/EMSdirs.zip
+  tags:
+    - amibuild
 
 - name: make install files executable
   ansible.builtin.shell: chmod -R 777 ./*/*.bin
   args:
     chdir: /opt/tibco/Installs/
+  tags:
+    - amibuild
 
 - name: install rv
   ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
   args:
     chdir: /opt/tibco/Installs/RV
+  tags:
+    - amibuild
 
 - name: install ems
   ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/EMS_8.3.0.silent"
   args:
     chdir: /opt/tibco/Installs/EMS
+  tags:
+    - amibuild
 
 - name: install tra
   ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/TRA_5.10.0.silent"
   args:
     chdir: /opt/tibco/Installs/TRA
+  tags:
+    - amibuild
 
 - name: change permission tibco_ldconfig.sh file
   ansible.builtin.file:
     path: /opt/tibco/Installs/scripts/tibco_ldconfig.sh
     state: file
     mode: 0777
+  tags:
+    - amibuild
 
 - name: change permission traUpgradeManager.sh file
   ansible.builtin.file:
     path: /opt/tibco/Installs/scripts/traUpgradeManager.sh
     state: file
     mode: 0777
+  tags:
+    - amibuild
 
 - name: run the root user install sh
   ansible.builtin.shell: ./tibco_ldconfig.sh 
   args:
     chdir: /opt/tibco/Installs/scripts
+  tags:
+    - amibuild
