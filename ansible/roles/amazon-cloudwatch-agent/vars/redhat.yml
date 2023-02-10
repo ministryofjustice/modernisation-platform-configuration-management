@@ -1,9 +1,9 @@
 ---
 amazon_cloudwatch_agent_package: https://s3.eu-west-2.amazonaws.com/amazoncloudwatch-agent-eu-west-2/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
-amazon_cloudwatch_config_template_path: agent_config_linux.json.j2
 amazon_cloudwatch_agent_config_file: amazon-cloudwatch-agent.json
 amazon_cloudwatch_agent_config_path: /opt/aws/amazon-cloudwatch-agent/etc
 collectd_script_interval: 60
+amazon_cloudwatch_agent_collectd_config_file: "agent-config-collectd.json"
 
 # oracle collectd health metrics vars
 oracle_batch_error_file: "/opt/textfile_monitoring/nomis_batch_monitoring.prom"

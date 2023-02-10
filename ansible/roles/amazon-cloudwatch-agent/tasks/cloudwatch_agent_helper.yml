@@ -1,0 +1,8 @@
+---
+# Creates a start_cwagent_helper.sh script to start the cloudwatch agent manually
+- name: Create start_cwagent_helper.sh script
+  ansible.builtin.template:
+    src: start_cwagent_helper.sh.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/bin/start_cwagent_helper.sh
+    mode: 0755
+    owner: root
