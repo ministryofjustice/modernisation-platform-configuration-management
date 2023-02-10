@@ -1,0 +1,86 @@
+---
+- name: mount for reasons
+  ansible.builtin.shell: mount -a
+
+- name: set timezone to Europe/London
+  ansible.builtin.timezone:
+    name: Europe/London
+
+- name: add tibco group
+  ansible.builtin.group:
+    name: tibco
+    state: present
+    gid: 10002
+
+- name: add tibco user
+  ansible.builtin.user:
+    name: tibco
+    uid: 10002
+    group: tibco
+    home: /opt/tibco
+    system: yes
+
+- name: shell install prereqs
+  ansible.builtin.shell: |
+    yum-config-manager --enable rhel-7-server-rhui-optional-rpms 
+    yum-config-manager --enable rhel-7-server-rhui-extras-rpms
+    yum-config-manager --enable rhel-7-server-rhui-supplementary-rpms
+    yum install ksh --quiet -y
+    yum install compat-libstdc++-33.x86_64 --quiet -y
+    yum install glibc.i686 --quiet -y
+    yum install telnet --quiet -y
+    yum groupinstall x11 --quiet -y
+    yum install xorg-x11-apps --quiet -y
+    yum install libstdc++.i686 --quiet -y
+
+- name: stop and disable firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+
+- name: download archives from S3 bucket into /opt/tibco
+  ansible.builtin.shell: aws s3 sync s3://ec2-image-builder-nomis20220314103938567000000001/ndh-installation-files/LinuxEMSServer/ /opt/tibco/
+
+- name: unzip ems install files
+  ansible.builtin.shell: unzip /opt/tibco/EMSdirs.zip -d /opt/tibco
+
+- name: remove install zip file
+  ansible.builtin.shell: rm /opt/tibco/EMSdirs.zip
+
+- name: make install files executable
+  ansible.builtin.shell: chmod -R 777 ./*/*.bin
+  args:
+    chdir: /opt/tibco/Installs/
+
+- name: install rv
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
+  args:
+    chdir: /opt/tibco/Installs/RV
+
+- name: install ems
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/EMS_8.3.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/EMS
+
+- name: install tra
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/TRA_5.10.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/TRA
+
+- name: change permission tibco_ldconfig.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/tibco_ldconfig.sh
+    state: file
+    mode: 0777
+
+- name: change permission traUpgradeManager.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/traUpgradeManager.sh
+    state: file
+    mode: 0777
+
+- name: run the root user install sh
+  ansible.builtin.shell: ./tibco_ldconfig.sh 
+  args:
+    chdir: /opt/tibco/Installs/scripts
