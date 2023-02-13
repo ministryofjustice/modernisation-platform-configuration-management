@@ -64,16 +64,6 @@
   tags:
     - amibuild
 
-#- name: download archives from S3 bucket into /opt/tibco
-#  ansible.builtin.shell: aws s3 sync s3://ec2-image-builder-nomis20220314103938567000000001/ndh-installation-files/LinuxEMSServer/ /opt/tibco/
-#  tags:
-#    - amibuild
-#
-#- name: unzip ems install files
-#  ansible.builtin.shell: unzip /opt/tibco/EMSdirs.zip -d /opt/tibco
-#  tags:
-#    - amibuild
-
 - name: Download archives from S3 bucket into /opt/tibco
   amazon.aws.aws_s3:
     bucket: "ec2-image-builder-nomis20220314103938567000000001"
