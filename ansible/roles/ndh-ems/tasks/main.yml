@@ -28,18 +28,31 @@
   tags:
     - amibuild
 
-- name: shell install prereqs
+- name: shell enable repos in redhat
   ansible.builtin.shell: |
     yum-config-manager --enable rhel-7-server-rhui-optional-rpms 
     yum-config-manager --enable rhel-7-server-rhui-extras-rpms
     yum-config-manager --enable rhel-7-server-rhui-supplementary-rpms
-    yum install ksh --quiet -y
+  when: "{{ ansible_facts['distribution'] == RedHat }}"
+  tags:
+    - amibuild
+
+- name: shell install prereqs
+  ansible.builtin.shell: |
     yum install compat-libstdc++-33.x86_64 --quiet -y
-    yum install glibc.i686 --quiet -y
-    yum install telnet --quiet -y
     yum groupinstall x11 --quiet -y
-    yum install xorg-x11-apps --quiet -y
-    yum install libstdc++.i686 --quiet -y
+  tags:
+    - amibuild
+
+- name: package install prereqs
+  ansible.builtin.package:
+    name:
+      - ksh
+      - glibc.i686
+      - telnet
+      - xorg-x11-apps
+      - libstdc++.i686
+    state: latest
   tags:
     - amibuild
 
@@ -51,13 +64,35 @@
   tags:
     - amibuild
 
-- name: download archives from S3 bucket into /opt/tibco
-  ansible.builtin.shell: aws s3 sync s3://ec2-image-builder-nomis20220314103938567000000001/ndh-installation-files/LinuxEMSServer/ /opt/tibco/
+#- name: download archives from S3 bucket into /opt/tibco
+#  ansible.builtin.shell: aws s3 sync s3://ec2-image-builder-nomis20220314103938567000000001/ndh-installation-files/LinuxEMSServer/ /opt/tibco/
+#  tags:
+#    - amibuild
+#
+#- name: unzip ems install files
+#  ansible.builtin.shell: unzip /opt/tibco/EMSdirs.zip -d /opt/tibco
+#  tags:
+#    - amibuild
+
+- name: Download archives from S3 bucket into /opt/tibco
+  amazon.aws.aws_s3:
+    bucket: "ec2-image-builder-nomis20220314103938567000000001"
+    object: "/ndh-installation-files/LinuxEMSServer/EMSdirs.zip"
+    dest: "/opt/tibco/"
+    mode: get
+    overwrite: latest
   tags:
     - amibuild
 
-- name: unzip ems install files
-  ansible.builtin.shell: unzip /opt/tibco/EMSdirs.zip -d /opt/tibco
+- name: Extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: tibco
+    group: tibco
+    src: "/opt/tibco/EMSdirs.zip"
+    dest: "/opt/tibco/"
+    remote_src: true
+    keep_newer: true
+  when: not ansible_check_mode
   tags:
     - amibuild
 
