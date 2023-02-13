@@ -10,134 +10,22 @@
   tags:
     - amibuild
 
-- name: add tibco group
-  ansible.builtin.group:
-    name: tibco
-    state: present
-    gid: 10002
+- import_tasks: user.yml
   tags:
     - amibuild
+    - tibco_user
 
-- name: add tibco user
-  ansible.builtin.user:
-    name: tibco
-    uid: 10002
-    group: tibco
-    home: /opt/tibco
-    system: yes
+- import_tasks: prereqs.yml
   tags:
     - amibuild
+    - tibco_prereqs
 
-- name: shell enable repos in redhat
-  ansible.builtin.shell: |
-    yum-config-manager --enable rhel-7-server-rhui-optional-rpms 
-    yum-config-manager --enable rhel-7-server-rhui-extras-rpms
-    yum-config-manager --enable rhel-7-server-rhui-supplementary-rpms
-  when: ansible_facts['distribution'] == "RedHat"
+- import_tasks: get_install_files.yml
   tags:
     - amibuild
+    - tibco_installers
 
-- name: shell install prereqs
-  ansible.builtin.shell: |
-    yum install compat-libstdc++-33.x86_64 --quiet -y
-    yum groupinstall x11 --quiet -y
+- import_tasks: install_tibco.yml
   tags:
     - amibuild
-
-- name: package install prereqs
-  ansible.builtin.package:
-    name:
-      - ksh
-      - glibc.i686
-      - telnet
-      - xorg-x11-apps
-      - libstdc++.i686
-    state: latest
-  tags:
-    - amibuild
-
-- name: stop and disable firewalld
-  ansible.builtin.service:
-    name: firewalld
-    state: stopped
-    enabled: false
-  tags:
-    - amibuild
-
-- name: Download archives from S3 bucket into /opt/tibco
-  amazon.aws.aws_s3:
-    bucket: "ec2-image-builder-nomis20220314103938567000000001"
-    object: "/ndh-installation-files/LinuxEMSServer/EMSdirs.zip"
-    dest: "/opt/tibco/EMSdirs.zip"
-    mode: get
-    overwrite: latest
-  tags:
-    - amibuild
-
-- name: Extract archives into target directory
-  ansible.builtin.unarchive:
-    owner: tibco
-    group: tibco
-    src: "/opt/tibco/EMSdirs.zip"
-    dest: "/opt/tibco/"
-    remote_src: true
-    keep_newer: true
-  when: not ansible_check_mode
-  tags:
-    - amibuild
-
-- name: remove install zip file
-  ansible.builtin.shell: rm /opt/tibco/EMSdirs.zip
-  tags:
-    - amibuild
-
-- name: make install files executable
-  ansible.builtin.shell: chmod -R 777 ./*/*.bin
-  args:
-    chdir: /opt/tibco/Installs/
-  tags:
-    - amibuild
-
-- name: install rv
-  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
-  args:
-    chdir: /opt/tibco/Installs/RV
-  tags:
-    - amibuild
-
-- name: install ems
-  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/EMS_8.3.0.silent"
-  args:
-    chdir: /opt/tibco/Installs/EMS
-  tags:
-    - amibuild
-
-- name: install tra
-  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/TRA_5.10.0.silent"
-  args:
-    chdir: /opt/tibco/Installs/TRA
-  tags:
-    - amibuild
-
-- name: change permission tibco_ldconfig.sh file
-  ansible.builtin.file:
-    path: /opt/tibco/Installs/scripts/tibco_ldconfig.sh
-    state: file
-    mode: 0777
-  tags:
-    - amibuild
-
-- name: change permission traUpgradeManager.sh file
-  ansible.builtin.file:
-    path: /opt/tibco/Installs/scripts/traUpgradeManager.sh
-    state: file
-    mode: 0777
-  tags:
-    - amibuild
-
-- name: run the root user install sh
-  ansible.builtin.shell: ./tibco_ldconfig.sh 
-  args:
-    chdir: /opt/tibco/Installs/scripts
-  tags:
-    - amibuild
+    - install_tibco

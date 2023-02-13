@@ -1,0 +1,37 @@
+---
+- name: make install files executable
+  ansible.builtin.shell: chmod -R 777 ./*/*.bin
+  args:
+    chdir: /opt/tibco/Installs/
+
+- name: install rv
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
+  args:
+    chdir: /opt/tibco/Installs/RV
+
+- name: install ems
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/EMS_8.3.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/EMS
+
+- name: install tra
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/TRA_5.10.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/TRA
+
+- name: change permission tibco_ldconfig.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/tibco_ldconfig.sh
+    state: file
+    mode: 0777
+
+- name: change permission traUpgradeManager.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/traUpgradeManager.sh
+    state: file
+    mode: 0777
+
+- name: run the root user install sh
+  ansible.builtin.shell: ./tibco_ldconfig.sh 
+  args:
+    chdir: /opt/tibco/Installs/scripts
