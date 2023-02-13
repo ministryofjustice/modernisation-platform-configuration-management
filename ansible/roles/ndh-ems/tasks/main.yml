@@ -33,7 +33,7 @@
     yum-config-manager --enable rhel-7-server-rhui-optional-rpms 
     yum-config-manager --enable rhel-7-server-rhui-extras-rpms
     yum-config-manager --enable rhel-7-server-rhui-supplementary-rpms
-  when: "{{ ansible_facts['distribution'] == RedHat }}"
+  when: ansible_facts['distribution'] == "RedHat"
   tags:
     - amibuild
 
@@ -78,7 +78,7 @@
   amazon.aws.aws_s3:
     bucket: "ec2-image-builder-nomis20220314103938567000000001"
     object: "/ndh-installation-files/LinuxEMSServer/EMSdirs.zip"
-    dest: "/opt/tibco/"
+    dest: "/opt/tibco/EMSdirs.zip"
     mode: get
     overwrite: latest
   tags:
