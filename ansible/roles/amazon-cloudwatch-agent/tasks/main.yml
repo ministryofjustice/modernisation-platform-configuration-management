@@ -13,13 +13,13 @@
     - ec2patch
   when: ansible_os_family == 'RedHat'
 
-- include_tasks: "cloudwatch-agent.yml"
+- include_tasks: "cloudwatch_agent.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_os_family == 'RedHat'
 
-- include_tasks: "cloudwatch-agent-helper.yml"
+- include_tasks: "cloudwatch_agent_helper.yml"
   tags:
     - ec2provision
     - ec2patch

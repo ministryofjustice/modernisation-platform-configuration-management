@@ -19,25 +19,30 @@
 - name: Ensure the EPEL repository is available on Rhel 6
   block:
 
-    - name: Ensure the EPEL repository is available
+    - name: Ensure the EPEL repository is available on Rhel 6
       ansible.builtin.package:
         name: epel-release
         state: installed
-        register: epel_release_installed
-        ignore_errors: true
+      register: epel_release_installed
+      ignore_errors: true
     
-    - name: Add epel-release to repolist
+    - name: Add epel-release to repolist on Rhel 6
       ansible.builtin.shell: |
         wget https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
         yum install -y epel-release-6-8.noarch.rpm
       when: epel_release_installed is failed
+      ignore_errors: true
 
   when: ansible_distribution_major_version == '6'
 
+# - name: Install collectd agent
+#   ansible.builtin.yum:
+#     name: collectd
+#     state: present
+
 - name: Install collectd agent
-  ansible.builtin.yum:
-    name: collectd
-    state: present
+  ansible.builtin.shell: |
+    yum install -y collectd
 
 - name: Configure collectd
   ansible.builtin.template:
@@ -47,7 +52,7 @@
     mode: 0644
 
 - name: add linux conf for collectd to get service state as metrics
-  ansible.builtin.file:
+  ansible.builtin.copy:
     src: linux.conf
     dest: "/etc/collectd.d/linux.conf"
     owner: root
@@ -83,6 +88,13 @@
       set_fact:
         oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
 
+    - name: add oracle conf for collectd to get service state as metrics
+      ansible.builtin.copy:
+        src: oracle.conf
+        dest: "/etc/collectd.d/oracle.conf"
+        owner: root
+        mode: 0644
+
     - name: Add oracle_health check script
       ansible.builtin.template:
         src: oracle_health_metrics.sh.j2
@@ -96,13 +108,20 @@
 - name: set up collectd for monitoring on nomis-web instances
   block:
 
+    - name: add weblogic conf for collectd to get service state as metrics
+      ansible.builtin.copy:
+        src: weblogic.conf
+        dest: "/etc/collectd.d/weblogic.conf"
+        mode: 0755
+
     - name: Add weblogic_health check script
       ansible.builtin.template:
-        src: weblogic_health_metrics.sh.j2
-        dest: /opt/collectd/weblogic_health_metrics.sh
+        src: weblogic_service_metrics.sh.j2
+        dest: /opt/collectd/weblogic_service_metrics.sh
         mode: 0755
-        owner: weblogic
       notify: restart collectd # pick up health check script config changes
+
+  when: ansible_distribution_major_version == '6'
 
 # Start Collectd service
 

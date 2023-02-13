@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Helper script to start cwagent independently of ansible for testing etc.
+
+# This script is not used by ansible. 
+
+# Once it's been started and the configs loaded using append-config the 'loaded' config exists as /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml. The 'initial' file used to start the agent is moved to /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json.
+
+# It is being re-referenced here to make sure that if you're making local changes you're restarting everything from scratch.
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json"
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
+
+{% if ec2.tags['server-type'] == 'nomis-web' %}
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+{% endif %}    
+

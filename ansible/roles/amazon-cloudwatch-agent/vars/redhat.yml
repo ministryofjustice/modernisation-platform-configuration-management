@@ -15,6 +15,9 @@ amazon_cloudwatch_agent_weblogic_config_file: weblogic.json
 weblogic_log_path: "/u01/app/oracle/Middleware/logs/wlst_*.log"
 
 # service lists vars
-service_list_linux: "amazon-ssm-agent cwagent chronyd sshd"
-service_list_weblogic: "weblogic-server weblogic-node-manager"
+service_list_linux_rhel6: "chronyd sshd"
+service_list_linux_rhel7: "amazon-ssm-agent chronyd sshd" 
+# amazon-ssm-agent command check is a different config `sudo status amazon-ssm-agent` on Rhel6 but `sudo systemctl status amazon-ssm-agent` on Rhel7...
+# need to add a specific command to get the amazon-cloudwatch-agent service state
+service_list_weblogic: "weblogic-node-manager" # weblogic-server might also be needed here
 

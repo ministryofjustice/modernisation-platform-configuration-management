@@ -3,24 +3,62 @@
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-LINUX_SERVICE_LIST="{{ weblogic_service_list }}"
+LINUX_SERVICE_LIST="{{ service_list_linux_rhel6 }}"
 
 service_status() {
     local SERVICE="$1"
     {% if ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6' %}
     # RHEL6 service check
-    sudo service $SERVICE status
+    if [[ sudo service $SERVICE status | grep -q "running" ]]
+    then
+        return 0
+    else
+        return 1
+    fi
     {% else %}
     sudo systemctl is-active --quiet $SERVICE
     {% endif %}
+}
+
+amazon_ssm_agent_status() {
+    {% if ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6' %}
+    # RHEL6 ssm agent service check
+    if [[ sudo status amazon-ssm-agent | grep -q "running" ]]
+    then
+        return 0
+    else
+        return 1
+    fi
+    {% else %}
+    # RHEL7 ssm agent service check
+    sudo systemctl is-active --quiet amazon-ssm-agent
+    {% endif %}
+}
+
+amazon_cloudwatch_agent_status() {
+    if [[ /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status | grep -q "running" ]]
+    then
+        return 0
+    else
+        return 1
+    fi
 }
 
 while sleep "$INTERVAL"
 do
     for service in ${LINUX_SERVICE_LIST}
     do
-        service_status "$service"
+        service_status "$service" 
         status=$?
         echo "PUTVAL $HOSTNAME/exec-service_status/bool-$service interval=$INTERVAL N:$status"
     done
+
+    amazon_ssm_agent_status
+    ssmstatus=$?
+    echo "PUTVAL $HOSTNAME/exec-service_status/bool-ssm_agent_status interval=$INTERVAL N:$ssmstatus"
+
+    amazon_cloudwatch_agent_status
+    cwastatus=$?
+    echo "PUTVAL $HOSTNAME/exec-service_status/bool-cloudwatch_agent_status interval=$INTERVAL N:$cwastatus"
+
 done
