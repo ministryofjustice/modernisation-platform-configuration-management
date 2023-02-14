@@ -6,8 +6,8 @@
       ansible.builtin.package:
         name: epel-release
         state: installed
-        register: epel_release_installed
-        ignore_errors: true
+      register: epel_release_installed
+      ignore_errors: true
 
     - name: Add epel-release to repolist
       ansible.builtin.shell: |
@@ -35,11 +35,7 @@
 
   when: ansible_distribution_major_version == '6'
 
-# - name: Install collectd agent
-#   ansible.builtin.yum:
-#     name: collectd
-#     state: present
-
+# using shell as yum module doesn't run on Rhel6 due to old python version
 - name: Install collectd agent
   ansible.builtin.shell: |
     yum install -y collectd

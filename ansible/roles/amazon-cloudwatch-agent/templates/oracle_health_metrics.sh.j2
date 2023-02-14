@@ -42,7 +42,7 @@ db_connected() {
             return 0
             ;;
         *)
-            echo "Failed to find a valid state for ${DB}" 1>&2
+            # If this check returns a non-zero value then the database is not connected
             return 1
             ;;
     esac
@@ -72,7 +72,7 @@ batch_status() {
 
 service_status() {
     local SERVICE="$1"
-    sudo systemctl is-active --quiet $SERVICE
+    systemctl is-active --quiet $SERVICE 
 }
 
 while sleep "$INTERVAL"

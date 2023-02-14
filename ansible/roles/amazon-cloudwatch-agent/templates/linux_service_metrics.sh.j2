@@ -16,7 +16,7 @@ service_status() {
         return 1
     fi
     {% else %}
-    sudo systemctl is-active --quiet $SERVICE
+    systemctl is-active --quiet $SERVICE
     {% endif %}
 }
 
@@ -31,12 +31,13 @@ amazon_ssm_agent_status() {
     fi
     {% else %}
     # RHEL7 ssm agent service check
-    sudo systemctl is-active --quiet amazon-ssm-agent
+    systemctl is-active --quiet amazon-ssm-agent
     {% endif %}
 }
 
 amazon_cloudwatch_agent_status() {
-    if [[ /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status | grep -q "running" ]]
+    agent_status=$(/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status | grep -q "running")
+    if [[ $agent_status ]]
     then
         return 0
     else
