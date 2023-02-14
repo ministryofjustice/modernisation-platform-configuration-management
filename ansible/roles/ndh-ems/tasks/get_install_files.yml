@@ -1,0 +1,21 @@
+---
+- name: download archives from S3 bucket into /opt/tibco
+  amazon.aws.aws_s3:
+    bucket: "ec2-image-builder-nomis20220314103938567000000001"
+    object: "/ndh-installation-files/LinuxEMSServer/EMSdirs.zip"
+    dest: "/opt/tibco/EMSdirs.zip"
+    mode: get
+    overwrite: latest
+
+- name: extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: tibco
+    group: tibco
+    src: "/opt/tibco/EMSdirs.zip"
+    dest: "/opt/tibco/"
+    remote_src: true
+    keep_newer: true
+  when: not ansible_check_mode
+
+- name: remove install zip file
+  ansible.builtin.shell: rm /opt/tibco/EMSdirs.zip
