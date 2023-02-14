@@ -1,7 +1,6 @@
 ---
 - name: Ensure the EPEL repository is available on Rhel 7
   block:
-
     - name: Ensure the EPEL repository is available
       ansible.builtin.package:
         name: epel-release
@@ -18,14 +17,13 @@
 
 - name: Ensure the EPEL repository is available on Rhel 6
   block:
-
     - name: Ensure the EPEL repository is available on Rhel 6
       ansible.builtin.package:
         name: epel-release
         state: installed
       register: epel_release_installed
       ignore_errors: true
-    
+
     - name: Add epel-release to repolist on Rhel 6
       ansible.builtin.shell: |
         wget https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
@@ -75,11 +73,10 @@
     dest: /opt/collectd/linux_service_metrics.sh
     mode: 0755
     owner: root
-  notify: restart collectd # pick up health check script config changes    
+  notify: restart collectd # pick up health check script config changes
 
-- name: set up collectd for monitoring on nomis-db instances 
-  block: 
-
+- name: set up collectd for monitoring on nomis-db instances
+  block:
     - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
       set_fact:
         oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
@@ -103,7 +100,6 @@
 
 - name: set up collectd for monitoring on nomis-web instances
   block:
-
     - name: add weblogic conf for collectd to get service state as metrics
       ansible.builtin.copy:
         src: weblogic.conf
