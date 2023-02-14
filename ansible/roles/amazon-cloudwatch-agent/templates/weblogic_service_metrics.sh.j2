@@ -7,7 +7,8 @@ WEBLOGIC_SERVICE_LIST="{{ service_list_weblogic }}"
 
 service_status() {
     local SERVICE="$1"
-    if [[ sudo service $SERVICE status | grep -q "running" ]]
+    weblogic_status=$(sudo service $SERVICE status | grep "OK")
+    if [[ $weblogic_status ]]
     then
         return 0
     else

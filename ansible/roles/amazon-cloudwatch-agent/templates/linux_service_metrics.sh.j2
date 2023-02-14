@@ -3,13 +3,14 @@
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-LINUX_SERVICE_LIST="{{ service_list_linux_rhel6 }}"
+LINUX_SERVICE_LIST="{{ service_list_linux }}"
 
 service_status() {
     local SERVICE="$1"
     {% if ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6' %}
     # RHEL6 service check
-    if [[ sudo service $SERVICE status | grep -q "running" ]]
+    service_status=$(sudo service $SERVICE status | grep "running")
+    if [[ $service_status ]]
     then
         return 0
     else
@@ -23,7 +24,8 @@ service_status() {
 amazon_ssm_agent_status() {
     {% if ansible_distribution == 'RedHat' and ansible_distribution_major_version == '6' %}
     # RHEL6 ssm agent service check
-    if [[ sudo status amazon-ssm-agent | grep -q "running" ]]
+    ssm_agent=$(status amazon-ssm-agent | grep "running")
+    if [[ $ssm_agent ]]
     then
         return 0
     else
@@ -36,7 +38,7 @@ amazon_ssm_agent_status() {
 }
 
 amazon_cloudwatch_agent_status() {
-    agent_status=$(/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status | grep -q "running")
+    agent_status=$(/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status | grep "running")
     if [[ $agent_status ]]
     then
         return 0
