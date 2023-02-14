@@ -51,15 +51,17 @@ do
     do
         service_status "$service" 
         status=$?
-        echo "PUTVAL $HOSTNAME/exec-service_status/bool-$service interval=$INTERVAL N:$status"
+
+        service_name=${service//-/_}
+        echo "PUTVAL $HOSTNAME/exec-$service_name/bool-$service_name interval=$INTERVAL N:$status"
     done
 
     amazon_ssm_agent_status
     ssmstatus=$?
-    echo "PUTVAL $HOSTNAME/exec-service_status/bool-ssm_agent_status interval=$INTERVAL N:$ssmstatus"
+    echo "PUTVAL $HOSTNAME/exec-ssm_agent_status/bool-ssm_agent_status interval=$INTERVAL N:$ssmstatus"
 
     amazon_cloudwatch_agent_status
     cwastatus=$?
-    echo "PUTVAL $HOSTNAME/exec-service_status/bool-cloudwatch_agent_status interval=$INTERVAL N:$cwastatus"
+    echo "PUTVAL $HOSTNAME/exec-cloudwatch_agent_status/bool-cloudwatch_agent_status interval=$INTERVAL N:$cwastatus"
 
 done
