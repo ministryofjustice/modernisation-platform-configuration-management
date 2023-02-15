@@ -1,13 +1,25 @@
 ---
-# IMPORTANT: Only works on RedHat-based systems at the moment
 - name: Include OS-specific variables
-  include_vars: "{{ ansible_os_family | lower }}.yml"
+  include_vars: "redhat.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_os_family == 'RedHat'
 
-- include_tasks: "{{ ansible_os_family | lower }}.yml"
+# collectd is not run on weblogic (nomis-web) instances as installing this on Rhel 6 isn't implemented yet.
+- include_tasks: "collectd.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ansible_os_family == 'RedHat'
+
+- include_tasks: "cloudwatch_agent.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ansible_os_family == 'RedHat'
+
+- include_tasks: "cloudwatch_agent_helper.yml"
   tags:
     - ec2provision
     - ec2patch

@@ -1,0 +1,16 @@
+{
+    "logs": {
+        "logs_collected": {
+            "files": {
+                "collect_list": [
+                    {
+                        "file_path": "{{ weblogic_log_path }}",
+                        "log_group_name": "cwagent-weblogic-logs",
+                        "log_stream_name": "{{ instance_id }}",
+                        "timestamp_format": "%Y-%m-%d %H:%M:%S,%-S"
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+---
+# Creates a start_cwagent_helper.sh script to start the cloudwatch agent manually
+- name: Create start_cwagent_helper.sh script
+  ansible.builtin.template:
+    src: restart_cwagent_helper.sh.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/start_cwagent_helper.sh
+    owner: root
+    group: root
+    mode: 0755
+
+# using shell command as Rhel6 doesn't have the module option to make this executable from the template file task above
+- name: make helper script executable
+  ansible.builtin.shell: |
+    chmod +x /opt/aws/amazon-cloudwatch-agent/etc/restart_cwagent_helper.sh
