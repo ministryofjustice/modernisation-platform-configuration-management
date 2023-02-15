@@ -38,7 +38,15 @@
     group: oracle
     mode: 0755
 
+- name: add silent params file
+  template:
+    src: ords_params_silent.properties.j2
+    dest: "{{ oasys_ords_dir }}/params/ords_params_silent.properties"
+    owner: oracle
+    group: oracle
+    mode: 0600
+
 - name: install eor
   ansible.builtin.shell:
-    cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup"
+    cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
     chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
