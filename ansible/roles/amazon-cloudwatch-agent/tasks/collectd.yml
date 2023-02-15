@@ -1,4 +1,9 @@
 ---
+- name: is collectd installed
+  ansible.builtin.command: rpm -qa | grep collectd
+  register: collectd_installed
+  ignore_errors: true
+
 - name: Ensure the EPEL repository is available on Rhel 7
   block:
     - name: Ensure the EPEL repository is available
@@ -12,8 +17,46 @@
       ansible.builtin.shell: |
         yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
       when: epel_release_installed is failed
+      ignore_errors: true
 
-  when: ansible_distribution_major_version == '7'
+    - name: install collectd from epel-release
+      ansible.builtin.package:
+        name: collectd
+        state: installed
+      register: collectd_installed_from_epel # if failed or how to use ignore_errors properly here? 
+      ignore_errors: true
+    
+    - name: add dependencies download and untar collectd 5.12.0 for Rhel 6
+      block:
+        - name: install dependencies for collectd 5.12.0
+          ansible.builtin.package:
+            name: "{{ item }}"
+            state: installed
+          loop:
+            - libzip2
+            - make
+      
+        - name: get the tarball
+          ansible.builtin.get_url:
+            url: https://collectd.org/files/collectd-5.8.0.tar.bz2
+            dest: /tmp/collectd-5.8.0.tar.bz2
+
+        - name: untar the tarball
+          ansible.builtin.unarchive:
+            src: /tmp/collectd-5.8.0.tar.bz2
+            dest: /tmp
+            # remote_src: yes ??
+
+        - name: install using make
+          ansible.builtin.shell: |
+            cd /tmp/collectd-5.8.0
+            ./configure
+            make
+            make install
+      
+      when: collectd_installed_from_epel is failed
+
+  when: ansible_distribution_major_version == '7' and collectd_installed is failed
 
 - name: Ensure the EPEL repository is available on Rhel 6
   block:
@@ -29,14 +72,13 @@
         wget https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
         yum install -y epel-release-6-8.noarch.rpm
       when: epel_release_installed is failed
-      ignore_errors: true
 
-  when: ansible_distribution_major_version == '6'
+    # using shell as yum module doesn't run on Rhel6 due to old python version
+    - name: Install collectd agent
+      ansible.builtin.shell: |
+        yum install -y collectd
 
-# using shell as yum module doesn't run on Rhel6 due to old python version
-- name: Install collectd agent
-  ansible.builtin.shell: |
-    yum install -y collectd
+  when: ansible_distribution_major_version == '6' and collectd_installed is failed
 
 - name: Configure collectd
   ansible.builtin.template:
