@@ -1,0 +1,44 @@
+---
+- name: create dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oracle
+    mode: 0755
+    recurse: true
+  loop:
+    - "{{ oasys_ords_tomcat_dir }}"
+    - "{{ oasys_ords_dir }}"
+
+- name: install xfsprogs
+  yum:
+    name: xfsprogs
+    state: present
+
+- name: get artefects
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ item.obj }}"
+    dest: "/tmp/{{ item.obj }}"
+    mode: get
+  loop: "{{ ords_artefact_list }}"
+
+- name: unarchive artefacts
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ item.obj }}"
+    dest: "{{ item.dest}}"
+  loop: "{{ ords_artefact_list }}"
+
+- name: copy ords.war to eor.war
+  copy:
+    src: "{{ oasys_ords_dir }}/ords.war"
+    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
+    owner: oracle
+    group: oracle
+    mode: 0755
+
+- name: install eor
+  ansible.builtin.shell:
+    cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup"
+    chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"

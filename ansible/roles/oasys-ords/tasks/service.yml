@@ -1,0 +1,22 @@
+---
+- name: add startup and shutdown scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/admin/scripts/{{ item }}"
+    owner: oracle
+    group: dba
+    mode: 0755
+  loop:
+    - tomcat_startup_service.sh
+    - tomcat_shutdown_service.sh
+
+- name: systemd unit file for tomcat
+  template:
+    src: tomcat.service.j2
+    dest: /etc/systemd/system/tomcat.service
+
+- name: enable tomcat
+  systemd:
+    name: "tomcat"
+    daemon_reload: yes
+    enabled: yes
