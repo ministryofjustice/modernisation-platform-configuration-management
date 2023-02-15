@@ -2,6 +2,12 @@
 # mkdir  -p /u02/stage/ORDS/ords_stage
 # mkdir -p /u01/app/apache/tomcat
 # make two directories for tomcat
+
+- name: install lvm2
+  yum:
+    name: 7:lvm2-2.02.187-6.el7_9.5.x86_64
+    state: present
+
 - name: create Oracle mount points
   file:
     path: "{{ item }}"
@@ -12,7 +18,6 @@
   loop:
     - /u01/
     - /u02/
-    - { { oasys_ords_root_dir } }
 
 # create volume group
 - name: create volume group
@@ -49,7 +54,7 @@
     path: /etc/fstab
     line: "/dev/mapper/{{ item.oasys_vg_name }}-{{ item.oasys_lv_name }} /{{ item.oasys_lv_name }} xfs defaults 0 0"
     state: present
-  loop: oasys_lvs
+  loop: "{{ oasys_lvs }}"
   when: oasys_lvs is defined
 
 # mount /u01 and /u02
@@ -59,5 +64,5 @@
     src: /dev/mapper/{{ item.oasys_vg_name }}-{{ item.oasys_lv_name }}
     fstype: xfs
     state: mounted
-  loop: oasys_lvs
+  loop: "{{ oasys_lvs }}"
   when: oasys_lvs is defined

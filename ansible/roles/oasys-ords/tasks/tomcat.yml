@@ -1,4 +1,9 @@
 ---
+- name: install tomcat
+  yum:
+    name: tomcat-7.0.76-16.el7_9
+    state: present
+
 - name: systemd unit file for tomcat
   template:
     src: tomcat.service.j2
