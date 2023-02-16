@@ -23,38 +23,6 @@
       ansible.builtin.package:
         name: collectd
         state: installed
-      register: collectd_installed_from_epel 
-      ignore_errors: true
-    
-    - name: add dependencies download and untar collectd 5.12.0 for Rhel 7 if install fails 
-      block:
-        - name: install dependencies for collectd 5.12.0
-          ansible.builtin.package:
-            name: "{{ item }}"
-            state: installed
-          loop:
-            - lbzip2
-            - make
-      
-        - name: get the tarball
-          ansible.builtin.get_url:
-            url: https://storage.googleapis.com/collectd-tarballs/collectd-5.12.0.tar.bz2
-            dest: /tmp/collectd-5.12.0.tar.bz2
-
-        - name: untar the tarball
-          ansible.builtin.unarchive:
-            src: /tmp/collectd-5.12.0.tar.bz2
-            dest: /tmp
-            remote_src: true
-
-        - name: install using make
-          ansible.builtin.shell: |
-            cd /tmp/collectd-5.12.0
-            ./configure
-            make
-            make install
-      
-      when: collectd_installed_from_epel is failed
 
   when: (ansible_distribution_major_version == '7') and (collectd_installed != 0)
 
@@ -156,8 +124,6 @@
       notify: restart collectd # pick up health check script config changes
 
   when: ansible_distribution_major_version == '6'
-
-# Start Collectd service
 
 - name: Start collectd service
   ansible.builtin.service:
