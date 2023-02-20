@@ -46,6 +46,9 @@
         # tag.env: try
         # REPORT_SERVER_NAME=RptSvr_forms_instance
 
+- name: Update forms config
+  import_tasks: copy-forms-conf.yml
+
 - name: Copy template files
   ansible.builtin.template:
     src: "10.3{{ item }}"
@@ -57,7 +60,6 @@
     - /u01/app/oracle/Middleware/forms_instance/config/tnsnames.ora
     - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/httpd.conf
     - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/mod_wl_ohs.conf
-    - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/moduleconf/forms.conf
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/admin/resource/US/fmrweb.res
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/admin/resource/US/fmrweb_utf8.res
     - /u01/app/oracle/Middleware/forms_instance/config/FormsComponent/forms/server/webutil.cfg

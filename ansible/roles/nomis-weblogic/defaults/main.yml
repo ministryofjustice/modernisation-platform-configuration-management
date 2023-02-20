@@ -3,8 +3,6 @@ ssm_parameters_prefix: "weblogic"
 weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 weblogic_servername: "{{ ansible_facts.hostname }}"
 weblogic_cluster: "{{ ansible_facts.hostname }}"
-weblogic_cluster_forms_conf: "{{ weblogic_cluster }}:9001"
-# weblogic_cluster_forms_conf: "{{ weblogic_cluster }}:9001 {{ weblogic_cluster }}:9011 {{ weblogic_cluster }}:9021 {{ weblogic_cluster }}:9031"
 weblogic_report_servername_long: "RptSvr_{{ ansible_facts.hostname }}_forms_instance"
 weblogic_report_servername: "{{ weblogic_report_servername_long[:30] }}"
 weblogic_db_port: 1521

@@ -26,6 +26,27 @@
       loop:
         - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
 
+    - name: Create config directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ weblogic_managed_app }}/applications/formsapp_11.1.2/config
+    
+    - name: Copy config files
+      ansible.builtin.copy:
+        src: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/{{ item }}"
+        dest: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ weblogic_managed_app }}/applications/formsapp_11.1.2/config/{{ item }}"
+        owner: oracle
+        group: oinstall
+        remote_src: true
+      loop:
+        - formsweb.cfg
+        - tag.env
+
     - name: Create managed app
       become_user: oracle
       ansible.builtin.shell: |
@@ -77,6 +98,16 @@
         enabled: yes
       async: 600
       poll: 20
+
+    # commenting below out as additional forms not currently working
+    # - name: Update forms config
+    #   import_tasks: copy-forms-conf.yml
+
+    # - name: Restart opmn service
+    #   ansible.builtin.service:
+    #     name: opmn
+    #     state: restarted
+    #   when: weblogic_copy_forms_conf.changed
 
   always:
     - name: Remove temporary forms configuration files

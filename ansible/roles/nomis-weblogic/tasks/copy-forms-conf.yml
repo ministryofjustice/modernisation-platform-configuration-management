@@ -1,0 +1,26 @@
+---
+- name: Detect weblogic cluster forms conf
+  check_mode: false
+  changed_when: false
+  ansible.builtin.shell: |
+    ports=$(cat /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS*/data/nodemanager/*.url 2>/dev/null | cut -d: -f3)
+    echo -n "{{ weblogic_cluster }}:9001"
+    for port in $ports; do
+      echo -n ",{{ weblogic_cluster }}:${port}"
+    done
+    echo
+  register: weblogic_detect_cluster_forms
+
+- name: Set weblogic cluster forms fact
+  set_fact:
+    weblogic_cluster_forms_conf: "{{ weblogic_detect_cluster_forms.stdout }}"
+
+- name: Copy template files
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/moduleconf/forms.conf
+  register: weblogic_copy_forms_conf
