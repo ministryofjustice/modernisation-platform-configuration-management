@@ -146,11 +146,11 @@
         - ec2provision
         - weblogic_create_additional_form_servers
       loop_control:
-        loop_var: weblogic_managed_app
+        loop_var: weblogic_form_server_config
       loop:
-        - WLS_FORMS1A
-        - WLS_FORMS1B
-        - WLS_FORMS1C
+        - { name: WLS_FORMS1A, port: 9011 }
+        - { name: WLS_FORMS1B, port: 9021 }
+        - { name: WLS_FORMS1C, port: 9031 }
 
     - import_tasks: install-healthcheck.yml
       tags:
