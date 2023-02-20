@@ -4,9 +4,6 @@
     msg: "Error, please ensure weblogic_form_server_config is defined"
   when: weblogic_form_server_config is not defined
 
-- debug:
-    var: weblogic_form_server_config
-
 - name: Set weblogic managed app facts
   set_fact:
     weblogic_managed_app: "{{ weblogic_form_server_config.name }}"
