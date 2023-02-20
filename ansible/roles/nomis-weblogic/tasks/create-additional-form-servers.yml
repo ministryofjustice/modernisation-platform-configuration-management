@@ -99,15 +99,14 @@
       async: 600
       poll: 20
 
-    # commenting below out as additional forms not currently working
-    # - name: Update forms config
-    #   import_tasks: copy-forms-conf.yml
+    - name: Update forms config
+      import_tasks: copy-forms-conf.yml
 
-    # - name: Restart opmn service
-    #   ansible.builtin.service:
-    #     name: opmn
-    #     state: restarted
-    #   when: weblogic_copy_forms_conf.changed
+    - name: Restart opmn service
+      ansible.builtin.service:
+        name: opmn
+        state: restarted
+      when: weblogic_copy_forms_conf.changed
 
   always:
     - name: Remove temporary forms configuration files
