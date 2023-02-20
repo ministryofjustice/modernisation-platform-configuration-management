@@ -13,7 +13,7 @@ start() {
   echo $"Starting all weblogic processes: "
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
   [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
-  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  managed_services=$(find /etc/init.d/ -name 'WLS*' | sort)
   for managed_service in $managed_services; do
     $managed_service start
   done
@@ -23,7 +23,7 @@ start() {
 stop() {
   echo $"Stopping all weblogic processes: "
   [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn stop
-  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  managed_services=$(find /etc/init.d/ -name 'WLS*' | sort -r)
   for managed_service in $managed_services; do
     $managed_service stop
   done

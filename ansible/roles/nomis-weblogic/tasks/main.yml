@@ -17,6 +17,7 @@
         - weblogic_certificate_fix
         - weblogic_compile_tag_source
         - weblogic_create_managed_app
+        - weblogic_create_additional_form_servers
 
     - import_tasks: packages.yml
       tags:
@@ -134,6 +135,19 @@
         - WLS_AUTOLOGOFF
         - WLS_TAGSAR
         - WLS_HOTPAGE
+
+    - include_tasks:
+        file: create-additional-form-servers.yml
+        apply:
+          tags:
+            - ec2provision
+            - weblogic_create_additional_form_servers
+      tags:
+        - ec2provision
+        - weblogic_create_additional_form_servers
+      loop_control:
+        loop_var: weblogic_form_server_config
+      loop: "{{ weblogic_additional_form_servers }}"
 
     - import_tasks: install-healthcheck.yml
       tags:
