@@ -6,8 +6,10 @@
   "metrics": {
     "append_dimensions": {
       "ImageId": "${aws:ImageId}",
-      "InstanceId": "${aws:InstanceId}"
+      "InstanceId": "${aws:InstanceId}",
+      "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
     },
+    "aggregation_dimensions" : [["AutoScalingGroupName"],["InstanceId"],["instance"],["InstanceId","instance"]],
     "metrics_collected": {
       "cpu": {
         "resources": [
