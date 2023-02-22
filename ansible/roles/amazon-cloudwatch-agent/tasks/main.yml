@@ -1,25 +1,17 @@
 ---
-- name: Include OS-specific variables
-  include_vars: "redhat.yml"
+- import_tasks: "collectd.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
 
-# collectd is not run on weblogic (nomis-web) instances as installing this on Rhel 6 isn't implemented yet.
-- include_tasks: "collectd.yml"
+- import_tasks: "cloudwatch_agent.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
 
-- include_tasks: "cloudwatch_agent.yml"
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ansible_distribution == 'RedHat'
-
-- include_tasks: "cloudwatch_agent_helper.yml"
+- import_tasks: "cloudwatch_agent_helper.yml"
   tags:
     - ec2provision
     - ec2patch
