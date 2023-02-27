@@ -59,8 +59,7 @@ batch_status() {
         val="$(cat $ORACLE_BATCH_ERROR_FILE | grep "$LINE" | cut -f2 -d' ')"
         return "$val"
     else
-        # if the line is not there then this is still a successful check
-        echo "Batch status: $LINE not found in $ORACLE_BATCH_ERROR_FILE" 1>&2
+        # if the line is not there then return a different value to be posted to a different metric
         return 2
     fi
 }
