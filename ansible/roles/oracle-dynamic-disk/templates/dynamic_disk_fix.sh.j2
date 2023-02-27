@@ -1,0 +1,182 @@
+#!/bin/bash -e
+
+# This script exists because in cloud when you stop then start a vm the hardware the vm is running on can change.
+# Oracle depends on the unique id of the disk, this is one of the things that can change.
+# This script is meant to run after reboot and fix the unique ids of the used disks to the new ones if they change.
+# This script assumes the first run of the script will happen when the disks are set up correctly, which will generate a correct save_file.
+# designed to conform with https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/579994207/UDEV+configuraion+for+ASM+Disks
+
+function main {
+  fail_fast_checks
+  check_disks
+  if [ "$needs_fix" = true ] ; then
+    /bin/logger "ASM disk id changed"
+    reload_disks
+    save_disk_state
+    log_save_file
+    has_restart
+    log "fix complete"
+  else
+    save_disk_state
+  fi
+}
+
+# vars
+oracle_asm_rules_file={{ oracle_dynamic_disk_oracle_file }}
+save_dir={{ oracle_dynamic_disk_scripts_dir }}
+save_file=${save_dir}/disk_ids_and_names.txt
+log_dir={{ oracle_dynamic_disk_log_dir }}
+log_file=${log_dir}/{{ oracle_dynamic_disk_log_file_name }}
+disk_ids_and_names_str=`ls -l /dev/disk/by-id/ | grep -v part | grep 'scsi-' | sed 's/  */ /g' | sed 's/scsi\-//g' | cut -d " " -f 9,11 | sed 's;\.\./;;g' | sed 's/ /:/g'`
+disk_ids_and_names=(`echo ${disk_ids_and_names_str}`)
+disk_ids=(`echo "${disk_ids_and_names_str}" | cut -d ":" -f 1`)
+disk_names_and_num_to_fix=()
+needs_fix=false
+oracle_disk_dir_owner={{ oracle_dynamic_disk_owner }}
+oracle_disk_dir_group={{ oracle_dynamic_disk_dev_oracle_group }}
+dev_dir=/dev/oracle
+has_restart_script={{ oracle_dynamic_disk_has_restart_file }}
+
+function fail_fast_checks {
+  # log dir exists
+  if [ ! -d ${log_dir} ] ; then
+    echo "${log_dir} does not exist. Exiting."
+    exit
+  fi
+
+  # oracle file exists
+  if [ ! -f ${oracle_asm_rules_file} ] ; then
+    log "${oracle_asm_rules_file} not found. Exiting."
+    exit
+  fi
+
+  # file formatted as expected
+  if ! grep -q '.*KERNEL=="sd?.".*RESULT=="[a-z0-9]*"' ${oracle_asm_rules_file} ; then
+    log "${oracle_asm_rules_file} does not have expected formatting. Exiting."
+    exit
+  fi
+
+  # save dir exists
+  if [ ! -d ${save_dir} ] ; then
+    log "${save_dir} not found. Exiting."
+    exit
+  fi
+}
+
+function check_disks {
+  log "==========================================================="
+  log "running disk check at `date`"
+
+  expected_disk_ids=(`cat ${oracle_asm_rules_file} | sed 's/.*RESULT=="\([^"]*\)".*/\1/g'`)
+  log "expected disk ids:"
+  for expected_disk_id in "${expected_disk_ids[@]}"; do
+    log "${expected_disk_id}"
+  done
+
+  log_save_file
+
+  log "\ncurrent disk state (id:name):"
+  for disk_id_and_name in "${disk_ids_and_names[@]}"; do
+    log "${disk_id_and_name}"
+  done
+
+  for expected_id in "${expected_disk_ids[@]}"; do
+    for disk_id in "${disk_ids[@]}"; do
+      if [ "${disk_id}" = "${expected_id}" ] ; then
+        log "\noracle is using existing disk scsi-${disk_id}"
+        continue 2 # check next expected disk
+      fi
+    done
+    log "\ndisk scsi-${disk_id} not found, fixing.."
+    needs_fix=true
+    check_save_file_exists
+    check_expected_id_in_save_file $expected_id
+    add_disk_to_fix_list $expected_id
+    update_oracle_asm_rules_file $expected_id
+  done
+}
+
+function update_oracle_asm_rules_file {
+  old_disk_id=$1
+  old_disk_name=`grep $old_disk_id $save_file | cut -d ":" -f 2`
+  log "scsi-${old_disk_id} was mapped to ${old_disk_name}"
+  if [[ ! "${old_disk_name}" =~ sd[a-z] ]] ; then
+    log "old file name was ${old_disk_name}, was expecting 'sd*'. Exiting"
+    exit
+  fi
+  new_disk_id=`echo ${disk_ids_and_names[@]} | tr ' ' '\n' | grep ":${old_disk_name}" | cut -d ":" -f 1`
+  log "scsi-${new_disk_id} is now mapped to ${old_disk_name}"
+  log "replacing scsi-${old_disk_id} with scsi-${new_disk_id} in ${oracle_asm_rules_file}"
+  sed -i "s/${old_disk_id}/${new_disk_id}/g" $oracle_asm_rules_file
+}
+
+function save_disk_state {
+  echo "${disk_ids_and_names[@]}" | tr ' ' '\n' > $save_file
+}
+
+function log_save_file {
+  if [ -f ${save_file} ] ; then
+    save_file_content=`cat ${save_file}` 
+    log "\nprevious disk state (id:name):"
+    for line in ${save_file_content}; do
+      log $line
+    done
+  else
+    log "disk state save file ${save_file} does not exist, assuming this is the first run of this script"
+  fi
+}
+
+function check_save_file_exists {
+  if [ ! -f ${save_file} ] ; then
+    log "${save_file} does not exist, can't be sure which disk to use. Exiting"
+    exit
+  fi
+}
+
+function check_expected_id_in_save_file {
+  check_id=$1
+  if ! grep -q "${check_id}:" ${save_file} ; then
+    log "old disk id is not in ${save_file}. Exiting."
+    exit
+  fi
+}
+
+function add_disk_to_fix_list {
+  disk_to_add=$1
+  disk_name_number=`cat ${oracle_asm_rules_file} | grep ${disk_to_add} | sed 's/.*KERNEL=="sd?\(.\)".*/\1/g'`
+  disk_name=`cat ${save_file} | grep ${disk_to_add} | cut -d ":" -f 2`
+  # e.g. ( sdd:1 ... )
+  disk_names_and_num_to_fix+=("${disk_name}:${disk_name_number}")
+}
+
+function reload_disks {
+  if [ ! -d ${dev_dir} ] ; then
+    log "${dev_dir} does not exist. Creating.."
+    mkdir ${dev_dir}
+  fi
+  log "setting permissions of ${dev_dir} to ${oracle_disk_dir_owner}:${oracle_disk_dir_group}"
+  chown ${oracle_disk_dir_owner}:${oracle_disk_dir_group} /dev/oracle
+  log "\n/sbin/partprobe"
+  /sbin/partprobe &>> $log_file
+  # the below could be useful for diagnosing issues, commenting out because it bloats the logs
+  # for disk_name_and_num in "${disk_names_and_num_to_fix[@]}"; do
+  #   disk_name=`echo ${disk_name_and_num} | cut -d ":" -f 1`
+  #   disk_num=`echo ${disk_name_and_num} | cut -d ":" -f 2`
+  #   log "\n/sbin/udevadm test /block/${disk_name}/${disk_name}${disk_num}"
+  #   /sbin/udevadm test /block/${disk_name}/${disk_name}${disk_num} &>> $log_file || true
+  # done
+  log "\nudevadm control --reload-rules"
+  /sbin/udevadm control --reload-rules &>> $log_file
+}
+
+function has_restart {
+  sleep 30
+  log "running ${has_restart_script} as oracle"
+  sudo su - oracle -c "${has_restart_script}" >> $log_file
+}
+
+function log {
+  echo -e $1 >> $log_file
+}
+
+main

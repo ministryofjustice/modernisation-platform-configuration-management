@@ -1,0 +1,11 @@
+---
+oracle_dynamic_disk_owner: oracle
+oracle_dynamic_disk_group: oinstall
+oracle_dynamic_disk_dev_oracle_group: dba
+oracle_dynamic_disk_scripts_dir: /home/oracle/admin/scripts
+oracle_dynamic_disk_fix_file: "{{ oracle_dynamic_disk_scripts_dir }}/dynamic_disk_fix.sh"
+oracle_dynamic_disk_has_restart_file: "{{ oracle_dynamic_disk_scripts_dir }}/oracle_has_restart.sh"
+oracle_dynamic_disk_log_dir: "{{ oracle_dynamic_disk_scripts_dir }}/dynamic_disk_fix_logs"
+oracle_dynamic_disk_log_file_name: "dynamic_disk_fix.log"
+oracle_dynamic_disk_log_file: "{{ oracle_dynamic_disk_log_dir }}/{{ oracle_dynamic_disk_log_file_name }}"
+oracle_dynamic_disk_oracle_file: /etc/udev/rules.d/99-oracle-asmdevices.rules
