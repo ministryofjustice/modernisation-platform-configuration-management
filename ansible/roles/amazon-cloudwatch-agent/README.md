@@ -58,13 +58,30 @@ Metrics collected by the Cloudwatch agent will appear in the 'metrics' panel as 
 
 Cloudwatch metrics are easily filtered by instance_id so you can see all the metrics for a particular instance.
 
-### collectd_exec-db_connected: Oracle_Sids connection check
+### collectd_exec_value instance: db_connected
 
-If this returns a value of 1 then the database is not connected. If it returns a value of 0 then the database is connected.
+If this returns a value of 1 then the database is not connected. If it returns a value of 0 then the database is connected. There is an alarm set up for this metrics.
 
-### collectd_exec-batch_error: Oracle Batch Error check
+### collectd_exec_value instance: nomis_long_running_batch
 
-If this returns a value of 1 there there is either a long running batch job or a batch job has failed.
+If this returns a value of 1 there is a long running batch job. There IS an alarm set up for this.
+
+#### collectd_exec_value instance: nomis_long_running_batch_value_missing
+
+If this returns a value of 1 then the value for the long running batch job is missing. There isn't an alarm set up for this metric
+### collectd_exec_value instance: nomis_batch_failure_status
+
+If this returns a value of 1 there is a batch job which has failed. There IS an alarm set up for this metric.
+
+#### collectd_exec_value instance: nomis_batch_failure_status_value_missing
+
+If this returns a value of 1 then the value for the batch job failure status is missing. There isn't an alarm set up for this metric.
+
+### collectd_exec_value instance: oracle_batch_monitoring_file_missing
+
+If this returns a value of 1 then the monitoring file is not there. There isn't an alarm set up for this metric.
+
+
 
 ## Finding Logs in Cloudwatch
 

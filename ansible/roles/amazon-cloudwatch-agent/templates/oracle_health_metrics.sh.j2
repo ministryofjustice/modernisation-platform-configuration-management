@@ -57,15 +57,9 @@ batch_status() {
     if [[ "$(cat $ORACLE_BATCH_ERROR_FILE | grep $LINE)" ]]
     then
         val="$(cat $ORACLE_BATCH_ERROR_FILE | grep "$LINE" | cut -f2 -d' ')"
-        if [[ $val == 0 ]] || [[ $val == 1 ]]
-        then
-            return "$val"
-        else
-            echo "batch error value for $LINE is not a valid number" 1>&2
-            return 2
-        fi
+        return "$val"
     else
-        echo "no batch status entry for $LINE" 1>&2
+        # if the line is not there then return a different value to be posted to a different metric
         return 2
     fi
 }
@@ -89,14 +83,20 @@ do
 
     if [[ -s "${ORACLE_BATCH_ERROR_FILE}" ]]
     then
+        echo "PUTVAL $HOSTNAME/exec-oracle_batch_monitoring_file_missing/bool interval=$INTERVAL N:0"
         for text in $ORACLE_BATCH_STATUSES
         do
             batch_status "$text" "$ORACLE_BATCH_ERROR_FILE"
             status=$?
-            echo "PUTVAL $HOSTNAME/exec-batch_error/gauge-$text interval=$INTERVAL N:$status"
+            if [[ $status == 0 ]] || [[ $status == 1 ]]
+            then
+                echo "PUTVAL $HOSTNAME/exec-$text/bool interval=$INTERVAL N:$status"
+            else
+                echo "PUTVAL $HOSTNAME/exec-${text}_value_missing/bool interval=$INTERVAL N:1"
+            fi
         done
     else
-        echo "PUTVAL $HOSTNAME/exec-file_error/gauge interval=$INTERVAL N:2"
+        echo "PUTVAL $HOSTNAME/exec-oracle_batch_monitoring_file_missing/bool interval=$INTERVAL N:1"
     fi
 
     for service in ${ORACLE_SERVICE_LIST}
@@ -105,7 +105,7 @@ do
         status=$?
 
         service_name=${service//-/_}
-        echo "PUTVAL $HOSTNAME/exec-$service_name/bool-$service_name interval=$INTERVAL N:$status"
+        echo "PUTVAL $HOSTNAME/exec-${service_name}/bool interval=$INTERVAL N:$status"
     done
 
 done
