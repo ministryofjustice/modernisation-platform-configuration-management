@@ -1,5 +1,4 @@
 ---
-
 # designed to conform with https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/579994207/UDEV+configuraion+for+ASM+Disks
 
 - name: Create directory for scripts
@@ -8,7 +7,7 @@
     state: directory
     owner: "{{ oracle_dynamic_disk_owner }}"
     group: "{{ oracle_dynamic_disk_group }}"
-    mode: '0755'
+    mode: "0755"
     recurse: yes
 
 - name: Create log dir
@@ -17,7 +16,7 @@
     state: directory
     owner: "{{ oracle_dynamic_disk_owner }}"
     group: "{{ oracle_dynamic_disk_group }}"
-    mode: '0644'
+    mode: "0644"
     recurse: yes
 
 - name: Create oracle disk dir
@@ -26,7 +25,7 @@
     state: directory
     owner: "{{ oracle_dynamic_disk_owner }}"
     group: "{{ oracle_dynamic_disk_dev_oracle_group }}"
-    mode: '0755'
+    mode: "0755"
 
 - name: Add script
   template:
@@ -34,7 +33,7 @@
     dest: "{{ oracle_dynamic_disk_fix_file }}"
     owner: "{{ oracle_dynamic_disk_owner }}"
     group: "{{ oracle_dynamic_disk_group }}"
-    mode: '0700'
+    mode: "0700"
   register: dynamic_disk_fix_script
 
 - name: Add has restart script
@@ -43,7 +42,7 @@
     dest: "{{ oracle_dynamic_disk_has_restart_file }}"
     owner: "{{ oracle_dynamic_disk_owner }}"
     group: "{{ oracle_dynamic_disk_dev_oracle_group }}"
-    mode: '0700'
+    mode: "0700"
 
 - name: Add cron job to run fix at reboot
   template:
@@ -51,7 +50,7 @@
     dest: /etc/cron.d/oracle_dynamic_disk_fix
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
 - name: Add logrotate
   template:
@@ -59,10 +58,9 @@
     dest: /etc/logrotate.d/oracle_dynamic_disk_fix.logrotate
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
   # this is to generate the working save file created by the script
 - name: run dynamic disk fix script
   command: "sudo {{ oracle_dynamic_disk_fix_file }}"
   when: dynamic_disk_fix_script.changed
-  
