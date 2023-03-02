@@ -1,0 +1,10 @@
+---
+- name: Set TCP keepalive by updating sysctl
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { name: "net.ipv4.tcp_keepalive_time", value: "{{ sysctl_net_ipv4_tcp_keepalive_time }}" }
