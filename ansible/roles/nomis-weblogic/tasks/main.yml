@@ -9,6 +9,7 @@
 
     - import_tasks: get-facts.yml
       tags:
+        - ec2provision
         - ec2provisionx
         - ec2patch
         - weblogic_moj_admin_scripts
@@ -23,21 +24,25 @@
       tags:
         - amibuild
         - weblogic_packages
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: users.yml
       tags:
         - amibuild
         - weblogic_users
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: disks.yml
       tags:
         - amibuild
         - weblogic_disks
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: swap.yml
       tags:
         - amibuild
         - weblogic_swap
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: install-jdk.yml
       tags:
