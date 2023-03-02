@@ -1,0 +1,4 @@
+---
+# Reduce from 7200 to 300 to ensure this is under any AWS resource timeout.
+# For example, AWS network load balancer has fixed timeout of 350s.
+sysctl_net_ipv4_tcp_keepalive_time: 300
