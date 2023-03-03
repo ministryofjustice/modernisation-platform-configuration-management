@@ -2,7 +2,7 @@
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
-  when: ssm_parameters_path is not defined
+  when: ssm_parameters_path is not defined and ec2.tags is defined
 
 - name: Set SSM parameters weblogic path facts
   set_fact:
@@ -14,6 +14,7 @@
     ssm_parameters_path_weblogic_db_tagsar_password: "{{ ssm_parameters_path }}/db_tagsar_password"
     ssm_parameters_path_weblogic_rms_hosts: "{{ ssm_parameters_path}}/weblogic_rms_hosts"
     ssm_parameters_path_weblogic_rms_key: "{{ ssm_parameters_path}}/weblogic_rms_key"
+  when: ssm_parameters_path is defined
 
 - name: Get SSM parameters
   set_fact:
