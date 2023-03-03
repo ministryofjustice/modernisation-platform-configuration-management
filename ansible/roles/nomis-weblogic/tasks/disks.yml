@@ -1,14 +1,15 @@
 ---
-- name: Create a ext4 filesystem on /dev/xvdb
+- name: Create a ext4 filesystem on attached disk
   community.general.filesystem:
     fstype: ext4
-    dev: /dev/xvdb
+    dev: "{{ weblogic_u01_device_name }}"
 
-- name: Get UUID of /dev/xvdb
-  ansible.builtin.command: blkid -s UUID -o value /dev/xvdb
-  register: xvdb
+- name: Get UUID of attached disk
+  ansible.builtin.command: |
+    blkid -s UUID -o value {{ weblogic_u01_device_name }}
+  register: blkid
   changed_when: false
-  failed_when: xvdb.stdout|length == 0
+  failed_when: blkid.stdout|length == 0
 
 - name: Create /u01
   ansible.builtin.file:
@@ -17,10 +18,10 @@
     owner: oracle
     group: oinstall
 
-- name: Mount /dev/xvdb /u01
+- name: Mount attached disk 
   ansible.posix.mount:
     path: /u01
-    src: "UUID={{ xvdb.stdout }}"
+    src: "UUID={{ blkid.stdout }}"
     fstype: ext4
     state: mounted
   when: not ansible_check_mode

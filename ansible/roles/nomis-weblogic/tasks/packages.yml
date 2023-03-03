@@ -10,11 +10,11 @@
       - ksh
       - compat-libcap1-1.10
       - glibc
-      - glibc-devel.i686
-      - compat-libstdc++-33.i686
-      - libstdc++.i686
-      - libXext.i686
-      - libXtst.i686
+      - "glibc-devel.{{ ansible_architecture }}"
+      - "compat-libstdc++-33.{{ ansible_architecture }}"
+      - "libstdc++.{{ ansible_architecture }}"
+      - "libXext.{{ ansible_architecture }}"
+      - "libXtst.{{ ansible_architecture }}"
       - openmotif
       - openmotif22
     state: latest

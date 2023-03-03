@@ -31,6 +31,7 @@
     mode: get
     overwrite: latest
   loop: "{{ weblogic_s3_archives }}"
+  when: image_builder_s3_bucket_name is defined
 
 - name: Extract archives into target directory
   ansible.builtin.unarchive:

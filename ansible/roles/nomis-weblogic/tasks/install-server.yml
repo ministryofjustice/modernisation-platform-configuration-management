@@ -26,6 +26,7 @@
         overwrite: latest
       loop:
         - /u01/software/weblogic/wls1036_generic.jar
+      when: image_builder_s3_bucket_name is defined
 
     - name: Copy weblogic install config
       ansible.builtin.template:
@@ -45,14 +46,6 @@
           java -d64  -Xmx1024m -jar /u01/software/weblogic/wls1036_generic.jar -mode=silent -silent_xml=/u01/software/weblogic/silent.xml -Djava.io.tmpdir=/u01/software/tmp
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
-
-    - name: Remove temporary install files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/weblogic/wls1036_generic.jar
-        - /u01/software/weblogic/silent.xml
 
   # block
   when: not weblogic_server_installed_check.stat.exists
