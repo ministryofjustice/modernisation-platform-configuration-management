@@ -2,6 +2,7 @@
 - import_tasks: get-ec2-facts.yml
   tags:
     - always
+  when: ansible_aws_ssm_region is defined
 
 - name: Print hostvars debug filename
   debug:
