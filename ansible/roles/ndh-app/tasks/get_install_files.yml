@@ -1,8 +1,8 @@
 ---
 - name: download archives from S3 bucket into /opt/tibco
   amazon.aws.aws_s3:
-    bucket: "ec2-image-builder-nomis20220314103938567000000001"
-    object: "/ndh-installation-files/LinuxAppsServer/Appsdirs.zip"
+    bucket: "{{ ndh_app_bucket }}"
+    object: "{{ ndh_app_object }}"
     dest: "/opt/tibco/Appsdirs.zip"
     mode: get
     overwrite: latest
