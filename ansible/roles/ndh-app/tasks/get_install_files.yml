@@ -2,8 +2,8 @@
 - name: download archives from S3 bucket into /opt/tibco
   amazon.aws.aws_s3:
     bucket: "ec2-image-builder-nomis20220314103938567000000001"
-    object: "/ndh-installation-files/LinuxAPPServer/Appsdirs.zip"
-    dest: "/opt/tibco/APPdirs.zip"
+    object: "/ndh-installation-files/LinuxAppsServer/Appsdirs.zip"
+    dest: "/opt/tibco/Appsdirs.zip"
     mode: get
     overwrite: latest
 
@@ -11,11 +11,11 @@
   ansible.builtin.unarchive:
     owner: tibco
     group: tibco
-    src: "/opt/tibco/APPdirs.zip"
+    src: "/opt/tibco/Appsdirs.zip"
     dest: "/opt/tibco/"
     remote_src: true
     keep_newer: true
   when: not ansible_check_mode
 
 - name: remove install zip file
-  ansible.builtin.shell: rm /opt/tibco/APPdirs.zip
+  ansible.builtin.shell: rm /opt/tibco/Appsdirs.zip
