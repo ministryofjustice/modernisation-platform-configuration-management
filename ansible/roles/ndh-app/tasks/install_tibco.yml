@@ -8,6 +8,13 @@
   loop:
     - "/opt/tibco/Installs/RV"
     - "/opt/tibco/Installs/EMS"
+
+  ansible.builtin.file:
+    path: "{{ item }}./TIBCOUniversalInstaller-lnx-x86-64.bin"
+    owner: tibco
+    group: tibco
+    mode: '0770'
+  loop:
     - "/opt/tibco/Installs/TRA"
     - "/opt/tibco/Installs/BW"
     - "/opt/tibco/Installs/Hawk"
