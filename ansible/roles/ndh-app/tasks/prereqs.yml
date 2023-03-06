@@ -1,0 +1,36 @@
+---
+- name: shell enable repos in redhat
+  ansible.builtin.shell: |
+    yum-config-manager --enable rhel-7-server-rhui-optional-rpms
+    yum-config-manager --enable rhel-7-server-rhui-extras-rpms
+    yum-config-manager --enable rhel-7-server-rhui-supplementary-rpms
+  when: ansible_facts['distribution'] == "RedHat"
+
+- name: shell install prereqs
+  ansible.builtin.shell: |
+    yum install compat-libstdc++-33.x86_64 --quiet -y
+    yum groupinstall x11 --quiet -y
+
+- name: package install prereqs
+  ansible.builtin.package:
+    name:
+      - ksh
+      - glibc.i686
+      - telnet
+      - xorg-x11-apps
+      - libstdc++.i686
+      - vsftpd
+      - ftp
+    state: latest
+
+- name: start vsftpd
+  ansible.builtin.service:
+    name: vsftpd
+    state: started
+    enabled: true
+
+- name: stop and disable firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false

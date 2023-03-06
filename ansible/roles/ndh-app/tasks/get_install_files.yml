@@ -1,0 +1,21 @@
+---
+- name: download archives from S3 bucket into /opt/tibco
+  amazon.aws.aws_s3:
+    bucket: "{{ ndh_app_bucket }}"
+    object: "{{ ndh_app_object }}"
+    dest: "/opt/tibco/Appsdirs.zip"
+    mode: get
+    overwrite: latest
+
+- name: extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: tibco
+    group: tibco
+    src: "/opt/tibco/Appsdirs.zip"
+    dest: "/opt/tibco/"
+    remote_src: true
+    keep_newer: true
+  when: not ansible_check_mode
+
+- name: remove install zip file
+  ansible.builtin.shell: rm /opt/tibco/Appsdirs.zip

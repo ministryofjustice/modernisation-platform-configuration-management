@@ -1,0 +1,27 @@
+---
+- name: create dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: tibco
+    group: tibco
+    mode: 0755
+    recurse: true
+  loop:
+    - "/u01/app/sis/"
+    - "/u01/app/tibco/cde"
+    - "/u01/app/tibco/sas/"
+    - "/opt/tibco/bulk/5x5/"
+    - "/opt/tibco/bulk/f1032"
+    - "/opt/tibco/bulk/aodia"
+    - "/opt/tibco/bulk/future"
+    - "/opt/tibco/bulk/4x4/"
+    - "/opt/tibco/sas/"
+    - "/opt/tibco/bulk/aop/"
+    - "/opt/tibco/bulk/move/"
+    - "/opt/tibco/bulk/cell/"
+    - "/opt/tibco/ftptemp/"
+    - "/opt/tibco/bulk/NAS/CDE/"
+    - "/opt/tibco/bulk/NAS/JSAS/"
+    - "/opt/tibco/bulk/NAS/SIS_4x4/"
+    - "/opt/tibco/bulk/NAS/SIS_5x5/"

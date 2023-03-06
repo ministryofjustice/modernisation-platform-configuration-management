@@ -1,0 +1,69 @@
+---
+- name: make x86 install files executable
+  ansible.builtin.file:
+    path: "{{ item }}/TIBCOUniversalInstaller-lnx-x86.bin"
+    owner: tibco
+    group: tibco
+    mode: "0770"
+  loop:
+    - "/opt/tibco/Installs/RV"
+    - "/opt/tibco/Installs/EMS"
+
+- name: make x86-64 install files executable
+  ansible.builtin.file:
+    path: "{{ item }}/TIBCOUniversalInstaller-lnx-x86-64.bin"
+    owner: tibco
+    group: tibco
+    mode: "0770"
+  loop:
+    - "/opt/tibco/Installs/TRA"
+    - "/opt/tibco/Installs/BW"
+    - "/opt/tibco/Installs/Hawk"
+    - "/opt/tibco/Installs/Admin"
+
+- name: install rv
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
+  args:
+    chdir: /opt/tibco/Installs/RV
+
+- name: install ems
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/EMS_8.3.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/EMS
+
+- name: install tra
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/TRA_5.10.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/TRA
+
+- name: install bw
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/BW_5.13.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/BW
+
+- name: install hawk
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/Hawk_5.2.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/Hawk
+
+- name: install admin
+  ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/opt/tibco/Installs/Silent/Admin_5.10.0.silent"
+  args:
+    chdir: /opt/tibco/Installs/Admin
+
+- name: change permission tibco_ldconfig.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/tibco_ldconfig.sh
+    state: file
+    mode: 0770
+
+- name: change permission traUpgradeManager.sh file
+  ansible.builtin.file:
+    path: /opt/tibco/Installs/scripts/traUpgradeManager.sh
+    state: file
+    mode: 0770
+
+- name: run the root user install sh
+  ansible.builtin.shell: ./tibco_ldconfig.sh
+  args:
+    chdir: /opt/tibco/Installs/scripts
