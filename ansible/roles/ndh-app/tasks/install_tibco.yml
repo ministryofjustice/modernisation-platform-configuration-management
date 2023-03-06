@@ -1,19 +1,17 @@
 ---
 - name: make install files executable
   ansible.builtin.file:
-    path: ./TIBCOUniversalInstaller-lnx-x86.bin
+    path: "{{ item }}/TIBCOUniversalInstaller-lnx-x86.bin"
     owner: tibco
     group: tibco
     mode: '0770'
-    args:
-      chdir: "{{ item }}"
   loop:
-    - /opt/tibco/Installs/RV
-    - /opt/tibco/Installs/EMS
-    - /opt/tibco/Installs/TRA
-    - /opt/tibco/Installs/BW
-    - /opt/tibco/Installs/Hawk
-    - /opt/tibco/Installs/Admin
+    - "/opt/tibco/Installs/RV"
+    - "/opt/tibco/Installs/EMS"
+    - "/opt/tibco/Installs/TRA"
+    - "/opt/tibco/Installs/BW"
+    - "/opt/tibco/Installs/Hawk"
+    - "/opt/tibco/Installs/Admin"
 
 - name: install rv
   ansible.builtin.shell: ./TIBCOUniversalInstaller-lnx-x86.bin -silent -V responseFile="/opt/tibco/Installs/Silent/RV_8.4.4.silent"
