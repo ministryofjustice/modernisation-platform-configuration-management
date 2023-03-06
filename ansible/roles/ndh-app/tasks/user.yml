@@ -1,0 +1,28 @@
+---
+- name: add tibco group
+  ansible.builtin.group:
+    name: tibco
+    state: present
+    gid: 10002
+
+- name: add tibco user
+  ansible.builtin.user:
+    name: tibco
+    uid: 10002
+    group: tibco
+    home: /opt/tibco
+    system: yes
+
+- name: add oracle group
+  ansible.builtin.group:
+    name: oracle
+    state: present
+    gid: 10001
+
+- name: add oracle user
+  ansible.builtin.user:
+    name: oracle
+    uid: 10001
+    group: oracle
+    home: /home/oracle
+    system: yes
