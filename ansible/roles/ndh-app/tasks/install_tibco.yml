@@ -1,5 +1,5 @@
 ---
-- name: make install files executable
+- name: make x86 install files executable
   ansible.builtin.file:
     path: "{{ item }}/TIBCOUniversalInstaller-lnx-x86.bin"
     owner: tibco
@@ -9,6 +9,7 @@
     - "/opt/tibco/Installs/RV"
     - "/opt/tibco/Installs/EMS"
 
+- name: make x86-64 install files executable
   ansible.builtin.file:
     path: "{{ item }}./TIBCOUniversalInstaller-lnx-x86-64.bin"
     owner: tibco
