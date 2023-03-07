@@ -14,6 +14,11 @@
     - /u01/tag/autologoff/logs
     - /u01/tag/tmp
 
+- name: Stop all processes 
+  become_user: root
+  ansible.builtin.shell: |
+        service weblogic-all stop
+
 - name: Update weblogic files
   import_tasks: extract-s3-archive.yml
   vars:

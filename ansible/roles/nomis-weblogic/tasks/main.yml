@@ -66,34 +66,10 @@
         - amibuild
         - weblogic_install_server
 
-    - import_tasks: patch-weblogic.yml
-      vars:
-        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
-        weblogic_patch_id: 3NVW
-      tags:
-        - amibuild
-        - weblogic_patch_1
-
-    - import_tasks: patch-weblogic.yml
-      vars:
-        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p13964737_10360210720_Generic.zip
-        weblogic_patch_id: UEYM
-      tags:
-        - amibuild
-        - weblogic_patch_2
-
     - import_tasks: install-forms.yml
       tags:
         - amibuild
         - weblogic_install_forms
-
-    - import_tasks: patch-forms.yml
-      vars:
-        forms_patch_filename: /u01/software/forms_patch/9473270.tgz
-        forms_patch_id: 9473270
-      tags:
-        - amibuild
-        - weblogic_patch_forms
 
     - import_tasks: moj-admin-scripts.yml
       tags:
@@ -104,16 +80,19 @@
       tags:
         - ec2provisionx
         - weblogic_configure_forms
-
+        
     - import_tasks: copy-managed-server-files.yml
       tags:
         - ec2provisionx
         - weblogic_copy_managed_server_files
 
-    - import_tasks: certificate-fix.yml
+    - import_tasks: patch-forms.yml
+      vars:
+        forms_patch_filename: /u01/software/forms_patch/9473270.tgz
+        forms_patch_id: 9473270
       tags:
-        - ec2provisionx
-        - weblogic_certificate_fix
+        - amibuild
+        - weblogic_patch_forms
 
     - import_tasks: make-forms.yml
       tags:
@@ -158,5 +137,27 @@
       tags:
         - ec2provisionx
         - weblogic_install_healthcheck
+
+
+    # - import_tasks: patch-weblogic.yml
+    #   vars:
+    #     weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
+    #     weblogic_patch_id: 3NVW
+    #   tags:
+    #     - amibuild
+    #     - weblogic_patch_1
+
+    # - import_tasks: patch-weblogic.yml
+    #   vars:
+    #     weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p13964737_10360210720_Generic.zip
+    #     weblogic_patch_id: UEYM
+    #   tags:
+    #     - amibuild
+    #     - weblogic_patch_2
+    
+    # - import_tasks: certificate-fix.yml
+    #   tags:
+    #     - ec2provisionx
+    #     - weblogic_certificate_fix
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"

@@ -25,12 +25,16 @@
       loop:
         - /u01/software/forms/configure_only.rsp
 
+    - name: Stop nodemanager processes before configure.
+      become_user: root
+      ansible.builtin.shell: |
+            service weblogic-node-manager stop
+
     - name: Configure forms which takes approx 20 mins
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
         . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
         main() {
           echo "# Configuring forms"
           yes | bash /u01/app/oracle/Middleware/forms_home/bin/config.sh -silent -response /u01/software/forms/configure_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc || true

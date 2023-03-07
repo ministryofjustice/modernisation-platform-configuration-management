@@ -69,6 +69,8 @@
         timeout: 1800
       loop: "{{ install_forms_processes.pids }}"
       when: not ansible_check_mode
+      async: 7200
+      poll: 60
 
     - name: Remove temporary install directories
       ansible.builtin.file:
