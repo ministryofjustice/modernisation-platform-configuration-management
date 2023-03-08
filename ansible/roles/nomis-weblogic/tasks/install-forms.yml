@@ -48,20 +48,19 @@
       ansible.builtin.shell: |
         /u01/software/forms/Disk1/runInstaller -silent -responseFile /u01/software/forms/install_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc
       register: install_forms
-      when: not weblogic_manual_install_test|bool
 
     - name: Get installer tmp dir from installer output
       set_fact:
         forms_tmp_install_dir: '{{ install_forms.stdout | regex_search("\/tmp\/[^.]+") }}'
       failed_when: forms_tmp_install_dir|length == 0
-      when: not ansible_check_mode and not weblogic_manual_install_test|bool
+      when: not ansible_check_mode
 
     - name: Get installer pids
       become_user: oracle
       community.general.pids:
         pattern: "{{ forms_tmp_install_dir }}.*"
       register: install_forms_processes
-      when: not ansible_check_mode and not weblogic_manual_install_test|bool
+      when: not ansible_check_mode
 
     - name: Wait up to 30 mins for installer processes to complete
       ansible.builtin.wait_for:
@@ -69,7 +68,7 @@
         state: absent
         timeout: 1800
       loop: "{{ install_forms_processes.pids }}"
-      when: not ansible_check_mode and not weblogic_manual_install_test|bool
+      when: not ansible_check_mode
       async: 7200
       poll: 60
 
@@ -82,7 +81,6 @@
         - /u01/software/forms/Disk2
         - /u01/software/forms/Disk3
         - /u01/software/forms/Disk4
-      when: not weblogic_manual_install_test|bool
 
     - name: Remove temporary install files
       ansible.builtin.file:
@@ -90,7 +88,6 @@
         state: absent
       loop:
         - /u01/software/forms/install_only.rsp
-      when: not weblogic_manual_install_test|bool
 
   # block
   when: not weblogic_forms_installed_check.stat.exists
