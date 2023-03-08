@@ -1,35 +1,41 @@
 ---
-- name: Create jdk install directory
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: "0755"
-  loop:
-    - /u01/software/jdk
+- name: Check installed packages
+  ansible.builtin.package_facts:
 
-- name: Get jdk rpm binary from S3 bucket
-  amazon.aws.aws_s3:
-    bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "weblogic-software{{ item }}"
-    dest: "{{ item }}"
-    mode: get
-    overwrite: latest
-  loop:
-    - /u01/software/jdk/jdk-6u43-linux-x64-rpm.bin
-  register: get_jdk
+- block:
+    - name: Create jdk install directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/software/jdk
 
-- name: Install jdk rpm binary
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      echo "# installing jdk"
-      cd /u01/software/jdk
-      chmod +x ./jdk-6u43-linux-x64-rpm.bin
-      yes | ./jdk-6u43-linux-x64-rpm.bin || true
-      chmod -x ./jdk-6u43-linux-x64-rpm.bin
-      rm -f *.rpm
-    }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
-  when: get_jdk.changed
+    - name: Get jdk rpm binary from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software{{ item }}"
+        dest: "{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - /u01/software/jdk/jdk-6u43-linux-x64-rpm.bin
+      when: image_builder_s3_bucket_name is defined
+
+    - name: Install jdk rpm binary
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# installing jdk"
+          cd /u01/software/jdk
+          chmod +x ./jdk-6u43-linux-x64-rpm.bin
+          yes | ./jdk-6u43-linux-x64-rpm.bin || true
+          chmod -x ./jdk-6u43-linux-x64-rpm.bin
+          rm -f *.rpm
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+  # block
+  when: ansible_facts.packages['jdk'] is not defined
