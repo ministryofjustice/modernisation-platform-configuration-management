@@ -38,5 +38,5 @@
       }
       main 2>&1 | logger -p local3.info -t ansible-weblogic
 
-  # block
+  # block
   when: ansible_facts.packages['jdk'] is not defined
