@@ -25,12 +25,16 @@
       loop:
         - /u01/software/forms/configure_only.rsp
 
+    - name: Stop nodemanager processes before configure
+      ansible.builtin.service:
+        name: weblogic-node-manager
+        state: stopped
+
     - name: Configure forms which takes approx 20 mins
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
         . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
         main() {
           echo "# Configuring forms"
           yes | bash /u01/app/oracle/Middleware/forms_home/bin/config.sh -silent -response /u01/software/forms/configure_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc || true
@@ -74,16 +78,6 @@
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security/boot.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security/boot.properties
-
-# To fix oracle.core.ojdl.logging.LoggingConfigurationException: ODL-52050
-- name: Update managed server config
-  ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    owner: oracle
-    group: oinstall
-  loop:
-    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/AdminServer/logging.xml
 
 - name: Copy init.d weblogic-server and opmn scripts
   ansible.builtin.template:
