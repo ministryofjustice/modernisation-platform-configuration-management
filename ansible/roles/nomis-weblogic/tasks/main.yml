@@ -10,6 +10,8 @@
     - import_tasks: get-facts.yml
       tags:
         - ec2provision
+        - ec2provision1
+        - ec2provision2
         - ec2provisionx
         - ec2patch
         - weblogic_moj_admin_scripts
@@ -75,7 +77,7 @@
 
     - import_tasks: moj-admin-scripts.yml
       tags:
-        - ec2provisionx
+        - ec2provision1
         - weblogic_moj_admin_scripts
 
     - import_tasks: configure-forms.yml
@@ -85,7 +87,7 @@
         
     - import_tasks: copy-managed-server-files.yml
       tags:
-        - ec2provisionx
+        - ec2provision1
         - weblogic_copy_managed_server_files
 
     - import_tasks: patch-forms.yml
@@ -93,17 +95,18 @@
         forms_patch_filename: /u01/software/forms_patch/9473270.tgz
         forms_patch_id: 9473270
       tags:
+        - ec2provision1
         - amibuild
         - weblogic_patch_forms
 
     - import_tasks: make-forms.yml
       tags:
-        - ec2provisionx
+        - ec2provision1
         - weblogic_make_forms
 
     - import_tasks: compile-tag-source.yml
       tags:
-        - ec2provisionx
+        - ec2provision1
         - weblogic_compile_tag_source
 
     - include_tasks:
@@ -126,10 +129,10 @@
         file: create-additional-form-servers.yml
         apply:
           tags:
-            - ec2provisionx
+            - ec2provision2
             - weblogic_create_additional_form_servers
       tags:
-        - ec2provisionx
+        - ec2provision2
         - weblogic_create_additional_form_servers
       loop_control:
         loop_var: weblogic_form_server_config

@@ -26,9 +26,9 @@
         - /u01/software/forms/configure_only.rsp
 
     - name: Stop nodemanager processes before configure.
-      become_user: root
-      ansible.builtin.shell: |
-            service weblogic-node-manager stop
+      ansible.builtin.service:
+        name: weblogic-node-manager
+        state: stopped
 
     - name: Configure forms which takes approx 20 mins
       become_user: oracle
@@ -42,6 +42,7 @@
         main 2>&1 | logger -p local3.info -t ansible-weblogic
       async: 7200
       poll: 60
+      when: not weblogic_manual_install_test|bool
 
   always:
     - name: Remove temporary forms configuration files
@@ -50,6 +51,7 @@
         state: absent
       loop:
         - /u01/software/forms/configure_only.rsp
+      when: not weblogic_manual_install_test|bool
 
   # block
   when: not weblogic_forms_configured_check.stat.exists
@@ -65,6 +67,7 @@
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security
+  when: not weblogic_manual_install_test|bool
 
 # the boot.properties file is automatically updated by the weblogic server
 - name: Copy forms configuration files
@@ -78,6 +81,7 @@
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_FORMS/security/boot.properties
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/WLS_REPORTS/security/boot.properties
+  when: not weblogic_manual_install_test|bool
 
 - name: Copy init.d weblogic-server and opmn scripts
   ansible.builtin.template:
@@ -88,6 +92,7 @@
     - /etc/init.d/weblogic-all
     - /etc/init.d/weblogic-server
     - /etc/init.d/opmn
+  when: not weblogic_manual_install_test|bool
 
 - name: Enable weblogic-server and opmn services
   ansible.builtin.service:
@@ -97,6 +102,7 @@
     - weblogic-all
     - weblogic-server
     - opmn
+  when: not weblogic_manual_install_test|bool
 
 - name: Copy init.d weblogic managed server scripts
   ansible.builtin.template:
@@ -108,6 +114,7 @@
   loop:
     - WLS_FORMS
     - WLS_REPORTS
+  when: not weblogic_manual_install_test|bool
 
 - name: Enable weblogic-server and opmn services
   ansible.builtin.service:
@@ -116,3 +123,4 @@
   loop:
     - WLS_FORMS
     - WLS_REPORTS
+  when: not weblogic_manual_install_test|bool
