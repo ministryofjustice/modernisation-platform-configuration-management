@@ -18,7 +18,7 @@
     owner: oracle
     group: oinstall
 
-- name: Mount attached disk 
+- name: Mount attached disk
   ansible.posix.mount:
     path: /u01
     src: "UUID={{ blkid.stdout }}"

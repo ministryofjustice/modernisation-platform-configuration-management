@@ -26,49 +26,49 @@
       tags:
         - amibuild
         - weblogic_packages
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: users.yml
       tags:
         - amibuild
         - weblogic_users
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: disks.yml
       tags:
         - amibuild
         - weblogic_disks
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: swap.yml
       tags:
         - amibuild
         - weblogic_swap
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: install-jdk.yml
       tags:
         - amibuild
         - weblogic_install_jdk
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: sysctl-update.yml
       tags:
         - amibuild
         - weblogic_sysctl_update
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: oracle-limits-update.yml
       tags:
         - amibuild
         - weblogic_oracle_limits_update
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: install-server.yml
       tags:
         - amibuild
         - weblogic_install_server
-        - ec2provision  # TODO: remove after testing
+        - ec2provision # TODO: remove after testing
 
     - import_tasks: install-forms.yml
       tags:
@@ -84,7 +84,7 @@
       tags:
         - ec2provisionx
         - weblogic_configure_forms
-        
+
     - import_tasks: copy-managed-server-files.yml
       tags:
         - ec2provision1
@@ -143,7 +143,6 @@
         - ec2provisionx
         - weblogic_install_healthcheck
 
-
     - import_tasks: patch-weblogic.yml
       vars:
         weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
@@ -159,7 +158,7 @@
       tags:
         - amibuild
         - weblogic_patch_2
-    
+
     - import_tasks: certificate-fix.yml
       tags:
         - ec2provisionx
