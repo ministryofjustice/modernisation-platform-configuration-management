@@ -48,23 +48,25 @@
       tags:
         - amibuild
         - weblogic_install_jdk
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: sysctl-update.yml
       tags:
         - amibuild
-        - system_sysctl_changes
-        - ec2provisionx
+        - weblogic_sysctl_update
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: oracle-limits-update.yml
       tags:
         - amibuild
-        - oracle-limits-changes
-        - ec2provisionx
+        - weblogic_oracle_limits_update
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: install-server.yml
       tags:
         - amibuild
         - weblogic_install_server
+        - ec2provision  # TODO: remove after testing
 
     - import_tasks: install-forms.yml
       tags:
