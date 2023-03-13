@@ -4,11 +4,6 @@
     msg: "Error, please ensure forms_patch_filename and forms_patch_id are defined"
   when: forms_patch_filename is not defined or forms_patch_id is not defined
 
-- name: Stop services if not already running
-  ansible.builtin.service:
-    name: weblogic-all
-    state: stopped
-
 - name: Get current Oracle common patch
   become_user: oracle
   ansible.builtin.shell: |
@@ -28,9 +23,13 @@
       vars:
         weblogic_s3_archives:
           - "{{ forms_patch_filename }}"
+          
+    - name: Stop services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: stopped
 
-    # takes forever so run in async mode to prevent connection timeouts
-    - name: Run weblogic patch script which takes approx 20 mins
+    - name: Run oracle common patch script which takes approx 20 mins
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
