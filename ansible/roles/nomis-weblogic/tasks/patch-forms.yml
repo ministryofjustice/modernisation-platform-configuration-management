@@ -24,6 +24,11 @@
         weblogic_s3_archives:
           - "{{ forms_patch_filename }}"
 
+    - name: Stop services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: stopped
+
     - name: Run forms patch script which takes a couple of minutes
       become_user: oracle
       ansible.builtin.shell: |
