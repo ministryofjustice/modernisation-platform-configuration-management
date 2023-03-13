@@ -9,6 +9,7 @@
   ansible.builtin.shell: |
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    [[ -n {{ oracle_home }} ]] && ORACLE_HOME={{ oracle_home }} 
     opatch lspatches -id {{ forms_patch_id }} || true
   changed_when: false
   register: forms_lspatches
@@ -23,12 +24,18 @@
         weblogic_s3_archives:
           - "{{ forms_patch_filename }}"
 
+    - name: Stop services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: stopped
+
     - name: Run forms patch script which takes a couple of minutes
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
+        [[ -n {{ oracle_home }} ]] && ORACLE_HOME={{ oracle_home }} 
         main() {
           cd "{{ forms_patch_filename.split('/')[:-1] | join('/') }}/{{ forms_patch_id }}"
           echo "Install patch {{ forms_patch_id }}"

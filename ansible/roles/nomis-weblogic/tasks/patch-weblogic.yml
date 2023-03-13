@@ -22,6 +22,11 @@
 - name: Install weblogic patch
   when: not weblogic_existing_patch_code is search(weblogic_patch_id)
   block:
+    - name: Stop services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: stopped
+
     - name: Remove previous patch files
       ansible.builtin.file:
         path: "{{ weblogic_patch_filename.split('/')[:-1] | join('/') }}"
