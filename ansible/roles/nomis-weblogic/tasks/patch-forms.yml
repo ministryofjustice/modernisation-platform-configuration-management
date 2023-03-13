@@ -10,7 +10,6 @@
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
     [[ -n {{ oracle_home }} ]] && ORACLE_HOME={{ oracle_home }} 
-    [[ -n {{ oracle_home }} ]] && ORACLE_HOME={{ oracle_home }} 
     opatch lspatches -id {{ forms_patch_id }} || true
   changed_when: false
   register: forms_lspatches
