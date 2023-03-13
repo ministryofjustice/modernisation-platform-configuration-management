@@ -4,6 +4,11 @@
     msg: "Error, please ensure weblogic_patch_filename and weblogic_patch_ids are defined"
   when: weblogic_patch_filename is not defined or weblogic_patch_id is not defined
 
+- name: Stop services if not already running
+  ansible.builtin.service:
+    name: weblogic-all
+    state: stopped
+
 - name: Get current weblogic patch
   become_user: oracle
   ansible.builtin.shell: |

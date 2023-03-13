@@ -90,6 +90,14 @@
         - amibuild
         - weblogic_patch_forms
 
+    - import_tasks: patch-oracle-common.yml
+      vars:
+        forms_patch_filename: /u01/software/forms_patch/p18561746_111170_Generic.zip
+        forms_patch_id: 18561746
+      tags:
+        - amibuild
+        - patch_oracle_common
+
     - import_tasks: moj-admin-scripts.yml
       tags:
         - ec2provision
