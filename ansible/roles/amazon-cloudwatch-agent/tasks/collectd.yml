@@ -127,6 +127,28 @@
 
   when: ansible_distribution_major_version == '6'
 
+- name: set up collectd config for harvesting metric which indicates connectivity to fixngo/azure
+  block:
+    - name: get fact for fixngo connection target
+      set_fact:
+        fixngo_connection_target: '{{ ec2.tags["fixngo-connection-target"] }}'
+
+    - name: add fixngo conf for collectd to get connection state as a metric
+      ansible.builtin.copy:
+        src: fixngo.conf
+        dest: "/etc/collectd.d/fixngo.conf"
+        owner: root
+        mode: 0755
+
+    - name: Add fixngo connected check script
+      ansible.builtin.template:
+        src: fixngo_connected_metrics.sh.j2
+        dest: /opt/collectd/fixngo_connected_metrics.sh
+        mode: 0755
+      notify: restart collectd
+    
+  when: ec2.tags['fixngo-connection-target'] is defined
+
 - name: Start collectd service
   ansible.builtin.service:
     name: collectd

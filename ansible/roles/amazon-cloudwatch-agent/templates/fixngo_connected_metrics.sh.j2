@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Templated in from ansible
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="{{ collectd_script_interval }}"
+timeout=1
+port=4903 
+target="{{ fixngo_connection_target }}"
+
+fixngo_connection_status() {
+    connection=$(ncat -vzw "$timeout" "$target" "$port" 2>&1)
+    if [[ "${connection}" == *"Connected"* ]]
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+while sleep "$INTERVAL"
+do
+    fixngo_connection_status
+    connection=$?
+    echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:$connection"
+done
