@@ -70,7 +70,6 @@
 
   when: (ansible_distribution_version == '8.5') and (collectd_installed != 0)
 
-
 - name: Configure collectd
   ansible.builtin.template:
     src: collectd.conf.j2
