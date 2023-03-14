@@ -48,6 +48,29 @@
 
   when: (ansible_distribution_major_version == '6') and (collectd_installed != 0)
 
+- name: Ensure the EPEL repository is available on Rhel 8.5
+  block:
+    - name: Ensure the EPEL repository is available on Rhel 8.5
+      ansible.builtin.package:
+        name: epel-release
+        state: installed
+      register: epel_release_installed
+      ignore_errors: true
+
+    - name: Add epel-release to repolist on Rhel 8.5
+      ansible.builtin.shell: |
+        wget https://dl.fedoraproject.org/pub/archive/epel/8.5/Everything/x86_64/Packages/e/epel-release-8-15.el8.noarch.rpm
+        yum install -y epel-release-8-15.el8.noarch.rpm
+      when: epel_release_installed is failed
+
+    # using shell as yum module doesn't run on Rhel6 due to old python version
+    - name: Install collectd agent
+      ansible.builtin.shell: |
+        yum install -y collectd
+
+  when: (ansible_distribution_version == '8.5') and (collectd_installed != 0)
+
+
 - name: Configure collectd
   ansible.builtin.template:
     src: collectd.conf.j2
