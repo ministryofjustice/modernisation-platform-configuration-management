@@ -1,0 +1,33 @@
+---
+- name: Start services if not already running
+  ansible.builtin.service:
+  name: weblogic-all
+  state: started
+
+- name: Copy files to setup oracle forms cookie
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /u01/software/weblogic/formsapp_updateApp.properties
+    - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/moduleconf/forms.conf
+    - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/deploymentplans/formsapp/11.1.2/plan.xml
+
+- name: Update formsapp plan 
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    . ~/.bash_profile
+    . $WL_HOME/server/bin/setWLSEnv.sh
+     main() {
+      echo "# Update formsapp application plan"
+      java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/formsapp_updateApp.properties
+    }
+    main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+- name: Restart services
+  ansible.builtin.service:
+  name: weblogic-all
+  state: restarted

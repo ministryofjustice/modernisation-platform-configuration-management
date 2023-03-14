@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<deployment-plan xmlns="http://xmlns.oracle.com/weblogic/deployment-plan" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.oracle.com/weblogic/deployment-plan http://xmlns.oracle.com/weblogic/deployment-plan/1.0/deployment-plan.xsd" global-variables="false">
+  <application-name>formsapp</application-name>
+  <variable-definition>
+    <variable>
+      <name>vd-/u01/app/oracle/Middleware/forms_home/forms</name>
+      <value>/u01/app/oracle/Middleware/forms_home/forms</value>
+    </variable>
+    <variable>
+      <name>vd-/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/forms</name>
+      <value>/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/forms</value>
+    </variable>
+    <variable>
+      <name>NewCookieName</name>
+      <value>JSESSIONID_FORMS</value>
+    </variable>
+  </variable-definition>
+  <module-override>
+    <module-name>formsapp.ear</module-name>
+    <module-type>ear</module-type>
+    <module-descriptor external="false">
+      <root-element>weblogic-application</root-element>
+      <uri>META-INF/weblogic-application.xml</uri>
+    </module-descriptor>
+    <module-descriptor external="false">
+      <root-element>application</root-element>
+      <uri>META-INF/application.xml</uri>
+    </module-descriptor>
+    <module-descriptor external="true">
+      <root-element>wldf-resource</root-element>
+      <uri>META-INF/weblogic-diagnostics.xml</uri>
+    </module-descriptor>
+  </module-override>
+  <module-override>
+    <module-name>formsweb.war</module-name>
+    <module-type>war</module-type>
+    <module-descriptor external="false">
+      <root-element>weblogic-web-app</root-element>
+      <uri>WEB-INF/weblogic.xml</uri>
+      <variable-assignment>
+        <name>vd-/u01/app/oracle/Middleware/forms_home/forms</name>
+        <xpath>/weblogic-web-app/virtual-directory-mapping/[url-pattern="java/*"]/local-path</xpath>
+      </variable-assignment>
+      <variable-assignment>
+        <name>vd-/u01/app/oracle/Middleware/forms_home/forms</name>
+        <xpath>/weblogic-web-app/virtual-directory-mapping/[url-pattern="webutil/*"]/local-path</xpath>
+      </variable-assignment>
+      <variable-assignment>
+        <name>vd-/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/forms</name>
+        <xpath>/weblogic-web-app/virtual-directory-mapping/[url-pattern="registry/*"]/local-path</xpath>
+      </variable-assignment>
+      <variable-assignment>
+        <name>NewCookieName</name>
+        <xpath>/weblogic-web-app/session-descriptor/cookie-name</xpath>
+      </variable-assignment>
+    </module-descriptor>
+    <module-descriptor external="false">
+      <root-element>web-app</root-element>
+      <uri>WEB-INF/web.xml</uri>
+    </module-descriptor>
+  </module-override>
+</deployment-plan>
