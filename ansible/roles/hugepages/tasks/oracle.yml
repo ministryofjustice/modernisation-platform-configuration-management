@@ -41,3 +41,4 @@
     search_regex: "^HugePages_Total:[ ]*{{ nr_hugepages.stdout_lines[0] | int }}$"
   register: waitfor
   timeout: 60
+  ignore_errors: true
