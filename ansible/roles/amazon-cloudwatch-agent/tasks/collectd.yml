@@ -146,7 +146,7 @@
         dest: /opt/collectd/fixngo_connected_metrics.sh
         mode: 0755
       notify: restart collectd
-    
+
   when: ec2.tags['fixngo-connection-target'] is defined
 
 - name: Start collectd service
