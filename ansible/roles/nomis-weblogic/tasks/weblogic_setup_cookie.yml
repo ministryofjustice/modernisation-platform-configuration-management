@@ -38,6 +38,14 @@
     ansible.builtin.service:
       name: weblogic-all
       state: restarted
+  
+  always:
+    - name: Remove temporary forms configuration files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/formsapp_updateApp.properties
 
   # block
   when: not presence.changed
