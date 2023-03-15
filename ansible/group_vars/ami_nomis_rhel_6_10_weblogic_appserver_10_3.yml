@@ -1,7 +1,16 @@
 ---
 image_builder_s3_bucket_name: ec2-image-builder-nomis20220314103938567000000001
 ansible_python_interpreter: /usr/local/bin/python3.6
-roles_list:
+
+users_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+ami_roles_list:
+  - users-and-groups
   - disable-firewall
   - disable-ipv6
   - time
@@ -10,3 +19,6 @@ roles_list:
   - amazon-cli
   - tcp-keepalive
   - nomis-weblogic
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
