@@ -56,6 +56,10 @@ appName = configProps.get("app.name")
 path = configProps.get("app.path")
 target = configProps.get("app.target")
 
+# Update formsapp plan deployment
+fappName = configProps.get("app.fname")
+planpath = configProps.get("app.planpath")
+
 # JMS Module
 jmsModuleName = configProps.get("jms.module.name")
 jmsdescriptorFileName = configProps.get("jms.descriptorFile.name")
@@ -237,6 +241,15 @@ if appName:
     edit()
     startEdit()
     progress = deploy(appName, path, target)
+    progress.printStatus()
+    save()
+    activate()
+
+# Update application plan
+if fappName:
+    edit()
+    startEdit()
+    progress = updateApplication(fappName, planpath)
     progress.printStatus()
     save()
     activate()
