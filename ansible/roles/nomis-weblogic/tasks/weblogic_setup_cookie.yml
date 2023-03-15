@@ -1,8 +1,8 @@
 ---
 - name: Start services if not already running
   ansible.builtin.service:
-  name: weblogic-all
-  state: started
+    name: weblogic-all
+    state: started
 
 - name: Copy files to setup oracle forms cookie
   ansible.builtin.template:
@@ -14,6 +14,7 @@
     - /u01/software/weblogic/formsapp_updateApp.properties
     - /u01/app/oracle/Middleware/forms_instance/config/OHS/ohs1/moduleconf/forms.conf
     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/deploymentplans/formsapp/11.1.2/plan.xml
+    - /home/oracle/admin/scripts/create_managed_app.py
 
 - name: Update formsapp plan 
   become_user: oracle
@@ -29,5 +30,5 @@
 
 - name: Restart services
   ansible.builtin.service:
-  name: weblogic-all
-  state: restarted
+    name: weblogic-all
+    state: restarted
