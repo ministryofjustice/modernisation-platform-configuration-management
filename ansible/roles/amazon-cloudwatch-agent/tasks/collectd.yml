@@ -1,7 +1,9 @@
 ---
 - name: is collectd installed
-  ansible.builtin.command: yum list | grep -i collectd
+  ansible.builtin.command: yum list | grep collectd
   register: collectd_installed
+  check_mode: no
+  changed_when: false
   ignore_errors: true
 
 - name: Ensure the EPEL repository is available on Rhel 7
