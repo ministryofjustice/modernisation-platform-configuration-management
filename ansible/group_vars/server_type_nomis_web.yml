@@ -4,10 +4,8 @@ server_type_roles_list:
   - autoscale-group-hooks
   - set-ec2-hostname
   - domain-search
-  - disable-ipv6
-  - disable-firewall
   - node-exporter
   - nomis-weblogic
   - amazon-cloudwatch-agent
 
-roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

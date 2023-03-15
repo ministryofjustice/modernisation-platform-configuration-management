@@ -5,6 +5,9 @@ ansible_python_interpreter: /usr/local/bin/python3.6
 users_system:
   - name: oracle
     group: oinstall
+    groups:
+      - dba
+      - wheel
 
 ami_roles_list:
   - users-and-groups
@@ -18,4 +21,4 @@ ami_roles_list:
   - nomis-weblogic
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
-roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
