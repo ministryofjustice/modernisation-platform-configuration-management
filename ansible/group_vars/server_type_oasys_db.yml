@@ -1,0 +1,27 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+use_name_as_hostname: true
+roles_list:
+  - get-ec2-facts
+  - set-ec2-hostname
+  - domain-search
+  - disable-ipv6
+  - disable-firewall
+  - time
+  - packages
+  - node-exporter
+  - message-of-the-day
+  - amazon-ssm-agent
+  #- amazon-cloudwatch-agent # currently nomis specific
+  - amazon-cli
+  # - hugepages has issues
+  - disks
+  - script-exporter
+  # - oracle-19c
+  # - oracle-db-monitoring
+  # - oracle-secure-web
+  # - db-restore
+
+packages_yum_install:
+  - zip-3.0-23.el8
+  - git

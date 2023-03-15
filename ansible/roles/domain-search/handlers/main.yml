@@ -3,3 +3,10 @@
   service:
     name: network
     state: restarted
+  when: (ansible_distribution == "RedHat") and (ansible_distribution_major_version != '8')
+
+- name: Restart network rhel8
+  service:
+    name: NetworkManager
+    state: restarted
+  when: (ansible_distribution == "RedHat") and (ansible_distribution_major_version == '8')
