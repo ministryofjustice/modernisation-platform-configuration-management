@@ -4,7 +4,7 @@
     dest: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/deploymentplans/formsapp/11.1.2/plan.xml
     line: "JSESSIONID_FORMS"
   check_mode: yes
-  register: presence
+  register: jsessionid_lineinfile_check
 
 - block:
     - name: Start services if not already running
@@ -40,4 +40,4 @@
         state: restarted
 
   # block
-  when: not presence.changed
+  when: jsessionid_lineinfile_check.changed

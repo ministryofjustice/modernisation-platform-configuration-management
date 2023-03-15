@@ -18,7 +18,7 @@
         - weblogic_compile_tag_source
         - weblogic_create_managed_app
         - weblogic_create_additional_form_servers
-        - weblogic_cookie_setup
+        - weblogic_setup_cookie
 
     - import_tasks: packages.yml
       tags:
@@ -165,9 +165,9 @@
         - ec2provision
         - weblogic_install_healthcheck
 
-    - import_tasks: weblogic_setup_cookie.yml
+    - import_tasks: setup-cookie.yml
       tags:
         - ec2provision
-        - weblogic_cookie_setup
+        - weblogic_setup_cookie
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"
