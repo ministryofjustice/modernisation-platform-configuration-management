@@ -1,17 +1,8 @@
 ---
-- name: Add oinstall group
-  ansible.builtin.group:
-    name: oinstall
-    state: present
-    gid: 10001
-
-- name: Add oracle user
-  ansible.builtin.user:
-    name: oracle
-    uid: 10001
-    group: oinstall
-    home: /home/oracle
-    system: yes
+- name: Check oracle user already exists
+  ansible.builtin.getent:
+    database: passwd
+    key: oracle
 
 - name: Copy oracle bash profile
   ansible.builtin.template:
