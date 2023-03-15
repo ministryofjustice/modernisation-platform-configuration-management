@@ -164,4 +164,9 @@
         - ec2provision
         - weblogic_install_healthcheck
 
+    - import_tasks: weblogic_setup_cookie.yml
+      tags:
+        - ec2provision
+        - weblogic_cookie_setup
+
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"
