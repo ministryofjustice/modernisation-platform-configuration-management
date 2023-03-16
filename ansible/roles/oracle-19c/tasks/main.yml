@@ -1,0 +1,33 @@
+- name: setup oracle user and groups
+  import_role:
+    name: common
+    tasks_from: oracle_user.yml
+  tags:
+    - amibuild
+
+- name: install asm, grid and database
+  block:
+    - import_tasks: pre_install_tasks.yml
+      tags:
+        - amibuild
+        - pre_install
+
+    - import_tasks: configure_asm.yml
+      tags:
+        - amibuild
+        - configure_asm
+
+    - import_tasks: install_grid.yml
+      tags:
+        - amibuild
+        - install_grid
+
+    - import_tasks: install_database.yml
+      tags:
+        - amibuild
+        - install_database
+
+    - import_tasks: post_install_tasks.yml
+      tags:
+        - amibuild
+        - post_install
