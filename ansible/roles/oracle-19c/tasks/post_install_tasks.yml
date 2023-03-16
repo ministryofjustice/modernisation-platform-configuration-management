@@ -63,11 +63,11 @@
 # that any instances launched from the image do so with oracle services not
 # running, so that they can be reconfigured with the hostname of the launch instance
 
-- name: deconfigure oracle HAS
-  ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
-  args:
-    chdir: "{{ grid_home }}"
-  tags:
-    - amibuild
-    - never
-    - deconfig
+# - name: deconfigure oracle HAS
+#   ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+#   args:
+#     chdir: "{{ grid_home }}"
+#   tags:
+#     - amibuild
+#     - never
+#     - deconfig

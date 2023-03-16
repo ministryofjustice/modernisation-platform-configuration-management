@@ -1,69 +1,83 @@
-- name: create response files
-  template:
-    src: "{{ item }}.j2"
-    dest: "{{ stage }}/{{ item }}"
-    mode: u=rw,g=r,o=r
-    owner: oracle
-    group: oinstall
-  loop:
-    - "{{ password_response_file }}"
-    - "{{ grid_response_file }}"
+---
+- name: Check oracle 19c Grid Infrastructure installed 
+  ansible.builtin.stat:
+    path: "{{ oracle_inventory }}/orainstRoot.sh"
+  register: grid_software_installed
 
-- name: copy {{ grid_software }} from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ grid_software }} .
-    creates: "{{ grid_software }}"
-    chdir: "{{ artefact_dir }}"
+- name: Install oracle 19c Grid Infrastructure
+  block:
+    - name: Create response files
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: u=rw,g=r,o=r
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ grid_response_file }}"
 
-- name: copy {{ psu_patch }} from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ psu_patch }} .
-    creates: "{{ psu_patch }}"
-    chdir: "{{ artefact_dir }}"
+    - name: Copy {{ grid_software }}, {{ psu_patch }} , OPatch  from s3 bucket # this relies on the remote machine having correct IAM Role assigned
+      ansible.builtin.command:
+        cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
+        creates: "{{ grid_software }}"
+        chdir: "{{ stage }}"
+      loop:
+        - "{{ grid_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
 
-- name: unzip grid software
-  ansible.builtin.command:
-    cmd: unzip "{{ artefact_dir }}/{{ grid_software }}" -d "{{ grid_home }}"
+    - name: Unzip Oracle 19c Grid Infrastructure software
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ grid_software }}"
+        dest: "{{ grid_home }}"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
 
-- name: unzip psu patch software 
-  ansible.builtin.command:
-    cmd: unzip "{{ artefact_dir }}/{{ psu_patch }}" -d "{{ artefact_dir }}"
+    - name: Unzip psu patch software 
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ psu_patch }}"
+        dest: "{{ stage }}/psu"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
 
-- name: copy OPatch from s3 bucket
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ opatch }} {{ stage }}
-    creates: "{{ stage }}/{{ opatch }}"
+    - name: Upgrade OPatch in grid home
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ opatch }}"
+        dest: "{{ grid_home }}"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
 
-- name: upgrade OPatch in grid home
-  ansible.builtin.unarchive:
-    src: "{{ stage }}/{{ opatch }}"
-    dest: "{{ grid_home }}"
-    owner: oracle
-    group: oinstall
-    mode: u=rwX,g=rX,o=rX
-    remote_src: yes
+    - name: Run oracle grid install
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        export CV_ASSUME_DISTID=EL7
+        main() {
+          echo "# Installing Oracle 19c grid Infrastructure"
+          yes | "{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" || true
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
+      vars:
+        ansible_remote_tmp: "{{ temp }}"
 
-- name: run oracle grid install
-  ansible.builtin.command:
-    argv:
-      - "{{ grid_home }}/gridSetup.sh"
-      - -silent
-      - -waitforcompletion
-      - -ignorePrereqFailure
-      - -responseFile {{ stage }}/{{ grid_response_file }}
-      - -applyRU "{{ artefact_dir }}/34160854/34130714"
-    creates: "{{ grid_home }}/bin/sqlplus"
-  become_user: oracle
-  vars:
-    ansible_remote_tmp: "{{ temp }}"
+    - name: Run orainstRoot script
+      ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"
+      become_user: root
 
-- name: run orainstRoot script
-  ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"
+    - name: Run root script
+      ansible.builtin.command: "{{ grid_home }}/root.sh"
+      become_user: root
 
-- name: run root script
-  ansible.builtin.command: "{{ grid_home }}/root.sh"
+    - name: Run configuration script
+      ansible.builtin.command:
+        cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
+      become_user: oracle
 
-- name: Run configuration script
-  ansible.builtin.command:
-    cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
-  become_user: oracle
+  # block
+  when: not grid_software_installed.stat.exists

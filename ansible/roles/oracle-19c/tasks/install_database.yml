@@ -1,46 +1,64 @@
-- name: create response file
-  template:
-    src: db_install.rsp.j2
-    dest: "{{ stage }}/{{ database_response_file }}"
-    mode: u=rw,g=r,o=r
-    owner: oracle
-    group: oinstall
+---
+- name: Check oracle 19c DB software installed 
+  ansible.builtin.stat:
+    path: "{{ database_home }}/bin/sqlplus"
+  register: db_software_installed
 
-- name: copy {{ db_software }} from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ db_software }} .
-    creates: "{{ db_software }}"
-    chdir: "{{ artefact_dir }}"
+- name: Install Oracle 19c database software 
+  block:
+    - name: create response file
+      template:
+        src: db_install.rsp.j2
+        dest: "{{ stage }}/{{ database_response_file }}"
+        mode: u=rw,g=r,o=r
+        owner: oracle
+        group: oinstall
 
-- name: unzip db software
-  ansible.builtin.command:
-    cmd: unzip "{{ artefact_dir }}/{{ db_software }}" -d "{{ db_home }}"
+    - name: Copy {{ db_software }}, {{ psu_patch }} , OPatch  from s3 bucket # this relies on the remote machine having correct IAM Role assigned
+      ansible.builtin.command:
+        cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
+        creates: "{{ item }}"
+        chdir: "{{ stage }}"
+      loop:
+        - "{{ db_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
 
-- name: copy OPatch from s3 bucket
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ opatch }} {{ stage }}
-    creates: "{{ stage }}/{{ opatch }}"
+    - name: Unzip db software
+      ansible.builtin.unarchive:
+        src: "{{ artefact_dir }}/{{ db_software }}"
+        dest: "{{ database_home }}"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
 
-- name: upgrade OPatch on database home and grid home
-  ansible.builtin.unarchive:
-    src: "{{ stage }}/{{ opatch }}"
-    dest: "{{ grid_home }}"
-    owner: oracle
-    group: oinstall
-    mode: u=rwX,g=rX,o=rX
-    remote_src: yes
+    - name: Upgrade OPatch on database home
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ opatch }}"
+        dest: "{{ database_home }}"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
 
-- name: install database server and apply patches
-  ansible.builtin.command:
-    argv:
-      - "{{ stage }}/database/runInstaller"
-      - -silent
-      - -waitforcompletion
-      - -ignorePrereqFailure
-      - -responseFile {{ stage }}/{{ database_response_file }}
-      - -applyRU "{{ artefact_dir }}/34160854/34130714"
-      - -applyOneOffs "{{ artefact_dir }}/34160854/34086870"
-  become_user: oracle
 
-- name: run post install root script
-  ansible.builtin.command: "{{ database_home }}/root.sh"
+    - name: Install Oracle 19c db software and apply patches 
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        export CV_ASSUME_DISTID=EL7
+        main() {
+          echo "# Installing Oracle 19c database Infrastructure"
+          yes | "{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" -applyOneOffs "{{ stage }}/psu/34160854/34086870" || true
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
+      vars:
+        ansible_remote_tmp: "{{ temp }}"
+
+    - name: run post install root script
+      ansible.builtin.command: "{{ database_home }}/root.sh"
+
+  # block
+  when: db_software_installed.stat.exists
