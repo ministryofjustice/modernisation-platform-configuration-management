@@ -1,10 +1,10 @@
 ---
-- name: Check oracle 19c DB software installed 
+- name: Check oracle 19c DB software installed
   ansible.builtin.stat:
     path: "{{ database_home }}/bin/sqlplus"
   register: db_software_installed
 
-- name: Install Oracle 19c database software 
+- name: Install Oracle 19c database software
   block:
     - name: create response file
       template:
@@ -40,8 +40,7 @@
         group: oinstall
         remote_src: yes
 
-
-    - name: Install Oracle 19c db software and apply patches 
+    - name: Install Oracle 19c db software and apply patches
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail

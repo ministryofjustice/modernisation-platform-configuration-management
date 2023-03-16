@@ -1,5 +1,5 @@
 ---
-- name: Check if oracleasm disks configured 
+- name: Check if oracleasm disks configured
   ansible.builtin.stat:
     path: /dev/oracleasm/disks/DATA01
   register: asm_data_disk_configured
@@ -9,7 +9,7 @@
     name: common
     tasks_from: drive_map.yml
 
-- name: configure asm 
+- name: configure asm
   block:
     - name: configure ASMlib
       ansible.builtin.command: oracleasm configure --user oracle --group oinstall --enable --scanboot y

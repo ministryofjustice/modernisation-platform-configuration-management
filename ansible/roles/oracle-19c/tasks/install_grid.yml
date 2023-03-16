@@ -1,5 +1,5 @@
 ---
-- name: Check oracle 19c Grid Infrastructure installed 
+- name: Check oracle 19c Grid Infrastructure installed
   ansible.builtin.stat:
     path: "{{ oracle_inventory }}/orainstRoot.sh"
   register: grid_software_installed
@@ -34,7 +34,7 @@
         group: oinstall
         remote_src: yes
 
-    - name: Unzip psu patch software 
+    - name: Unzip psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
