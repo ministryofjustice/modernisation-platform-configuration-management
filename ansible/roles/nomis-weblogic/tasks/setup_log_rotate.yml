@@ -1,8 +1,9 @@
 ---
+
 - name: Start services if not already running
   ansible.builtin.service:
-  name: weblogic-all
-  state: started
+    name: weblogic-all
+    state: started
 
 - name: Copy managed app configuration files
   ansible.builtin.template:
@@ -24,3 +25,10 @@
       java weblogic.WLST ~/admin/scripts/set_ms_log_rotation.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
     }
     main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+- name: Remove temporary install files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
