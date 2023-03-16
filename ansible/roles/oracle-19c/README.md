@@ -1,11 +1,9 @@
-This role installs Oracle 11g. It assumes the installation disks `\u01` and `\u02` have already been setup (with `disks` role for example).
+This role installs Oracle 19c. It assumes the installation disks `\u01` and `\u02` have already been setup (with `disks` role for example).
 
 ### Tags
 
 Some tasks are optional and can be included in the play by adding the appropriate tag at the command line. Currently these are:
 
-- `opatch` - add to upgrade opatch to the version in `./vars/patches.yml`
-- `patch` - add to install patches set in `./vars/patches.yml`
 - `deconfig` - part of the post install tasks, adding this tag will deconfigure Oracle HAS. Typically used when this role is used as part of an AMI build, so that the install can be reconfigured on hosts subsequently launched with said AMI.
 
 E.g. Run `ansible-playbook` with `--tags "all,opatch,patch" to run the Oracle install tasks and upgrade opatch and apply patches
