@@ -19,6 +19,7 @@
         - weblogic_create_managed_app
         - weblogic_create_additional_form_servers
         - weblogic_setup_cookie
+        - weblogic_setup_log_rotate
 
     - import_tasks: packages.yml
       tags:
@@ -169,5 +170,21 @@
       tags:
         - ec2provision
         - weblogic_setup_cookie
+
+    - include_tasks:
+        file: setup_log_rotate.yml
+        apply:
+          tags:
+            - ec2provision
+            - weblogic_setup_log_rotate
+      tags:
+        - ec2provision
+        - weblogic_setup_log_rotate
+      loop_control:
+        loop_var: weblogic_managed_app
+      loop:
+        - WLS_FORMS
+        - WLS_REPORTS
+        - AdminServer
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"
