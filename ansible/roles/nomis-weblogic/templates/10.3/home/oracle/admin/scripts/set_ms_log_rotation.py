@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from java.io import FileInputStream
 import time
 import getopt
 import sys
@@ -8,30 +9,29 @@ import re
 # Get location of the properties file.
 properties = ''
 try:
-   opts, args = getopt.getopt(sys.argv[1:],"p:h::",["properies="])
+    opts, args = getopt.getopt(sys.argv[1:], "p:h::", ["properies="])
 except getopt.GetoptError:
-   print 'set_ms_log_rotation.py -p <path-to-properties-file>'
-   sys.exit(2)
+    print 'set_ms_log_rotation.py -p <path-to-properties-file>'
+    sys.exit(2)
 for opt, arg in opts:
-   if opt == '-h':
-      print 'set_ms_log_rotation.py -p <path-to-properties-file>'
-      sys.exit()
-   elif opt in ("-p", "--properties"):
-      properties = arg
+    if opt == '-h':
+        print 'set_ms_log_rotation.py -p <path-to-properties-file>'
+        sys.exit()
+    elif opt in ("-p", "--properties"):
+        properties = arg
 print 'properties=', properties
 
 # Load the properties from the properties file.
-from java.io import FileInputStream
 
 propInputStream = FileInputStream(properties)
 configProps = Properties()
 configProps.load(propInputStream)
 
 # Set all variables from values in properties file.
-adminUsername=configProps.get("admin.username")
-adminPassword=configProps.get("admin.password")
-adminURL=configProps.get("admin.url")
-msName=configProps.get("ms.name")
+adminUsername = configProps.get("admin.username")
+adminPassword = configProps.get("admin.password")
+adminURL = configProps.get("admin.url")
+msName = configProps.get("ms.name")
 
 # Connect to the AdminServer.
 connect(adminUsername, adminPassword, adminURL)

@@ -1,5 +1,4 @@
 ---
-
 - name: Start services if not already running
   ansible.builtin.service:
     name: weblogic-all
@@ -14,7 +13,7 @@
   loop:
     - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
 
-- name: Configure log setup 
+- name: Configure log setup
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail

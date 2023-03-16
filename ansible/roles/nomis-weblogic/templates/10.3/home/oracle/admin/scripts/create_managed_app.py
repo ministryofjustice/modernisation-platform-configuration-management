@@ -111,6 +111,7 @@ def wait_for_ms_start():
 
 # Function that sets up managed server log rotation
 
+
 def set_ms_log_rotation():
     edit()
     startEdit()
