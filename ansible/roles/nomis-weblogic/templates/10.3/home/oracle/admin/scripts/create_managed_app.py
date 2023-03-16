@@ -109,25 +109,6 @@ def wait_for_ms_start():
             Thread.sleep(10000)
             continue
 
-# Function that sets up managed server log rotation
-
-
-def set_ms_log_rotation():
-    edit()
-    startEdit()
-    cd('/Servers/' + msName + '/Log/' + msName)
-    cmo.setRotationType('bySize')
-    cmo.setFileMinSize(50000)
-    cmo.setNumberOfFilesLimited(true)
-    cmo.setFileCount(10)
-    cmo.setRedirectStderrToServerLogEnabled(false)
-    cmo.setRedirectStdoutToServerLogEnabled(false)
-    cmo.setMemoryBufferSeverity('Debug')
-    cmo.setLogFileSeverity('Trace')
-    save()
-    activate()
-
-
 # Connect to the AdminServer.
 connect(adminUsername, adminPassword, adminURL)
 
@@ -163,7 +144,6 @@ if msName:
     # Start Managed Server
     start(msName, 'Server')
     wait_for_ms_start()
-    set_ms_log_rotation()
 
 # Create Data Source(s)
 if dsName:
