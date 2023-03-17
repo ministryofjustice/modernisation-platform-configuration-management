@@ -46,7 +46,6 @@
     path: "{{ item }}"
     owner: oracle
     group: oinstall
-    mode: u=rwx,g=rxs,o=rx
     state: directory
     recurse: yes
   loop:
@@ -57,3 +56,12 @@
     - "{{ grid_home }}"
     - "{{ temp }}"
     - "{{ stage }}"
+
+- name: clean up {{ stage }} directory
+  ansible.builtin.file:
+    path: "{{ stage }}/{{ item }}"
+    state: absent
+  loop: 
+    - "/tmp/{{ oracle_prereq_rpm }}"
+    - "/tmp/{{ oracle_asmlib_rpm }}"
+    - "/tmp/{{ oracleasm_support_rpm }}"

@@ -79,5 +79,16 @@
         cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
       become_user: oracle
 
+    - name: clean up {{ stage }} directory
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop: 
+        - "{{ grid_response_file }}"
+        - "{{ grid_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+        - "{{ stage }}/psu"
+        
   # block
   when: not grid_software_installed.stat.exists
