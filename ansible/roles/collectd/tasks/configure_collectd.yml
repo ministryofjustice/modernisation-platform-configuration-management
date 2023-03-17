@@ -1,0 +1,57 @@
+---
+- name: Template main collect.conf file
+  ansible.builtin.template:
+    src: collectd.conf.j2
+    dest: "/etc/collectd.conf"
+    owner: root
+    mode: 0644
+
+- name: add custom types file for bool types for collectd metrics
+  ansible.builtin.copy:
+    src: types.db.custom
+    dest: /usr/share/collectd/types.db.custom
+    owner: root
+    mode: 0644
+
+- name: create folder for exec script to collect metrics
+  ansible.builtin.file:
+    path: "/opt/collectd"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: add linux conf for collectd to get service state as metrics
+  ansible.builtin.copy:
+    src: linux.conf
+    dest: "/etc/collectd.d/linux.conf"
+    owner: root
+    mode: 0644
+
+- name: Get oracle database sids for monitoring as a list from the oracle-sids tag
+  set_fact:
+    oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
+  when: ec2.tags['oracle-sids'] is defined
+
+- name: Copy collectd conf files
+  ansible.builtin.copy:
+    src: "{{ item }}.conf"
+    dest: "/etc/collectd.d/{{ item }}.conf"
+    owner: root
+    mode: 0644
+  loop: "{{ metric_configs }}"
+
+- name: Template metric collection scripts
+  ansible.builtin.template:
+    src: "{{ item }}_metrics.sh.j2"
+    dest: "/opt/collectd/{{ item }}.sh"
+    owner: root
+    mode: 0755
+  loop: "{{ metric_configs }}"
+
+- name: Start collectd service
+  ansible.builtin.service:
+    name: collectd
+    state: started
+    enabled: yes
+    

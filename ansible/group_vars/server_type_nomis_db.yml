@@ -1,7 +1,10 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
+
 use_name_as_hostname: true
-server_type_roles_list:
+metric_configs:
+  - linux
+  - nomis-db
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
@@ -10,6 +13,7 @@ server_type_roles_list:
   - oracle-db-monitoring
   - oracle-secure-web
   - amazon-cloudwatch-agent
+  - collectd
   - oracle-db-restore
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour

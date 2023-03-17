@@ -5,16 +5,6 @@ amazon_cloudwatch_agent_config_path: /opt/aws/amazon-cloudwatch-agent/etc
 collectd_script_interval: 60
 amazon_cloudwatch_agent_collectd_config_file: "agent-config-collectd.json"
 
-# oracle collectd health metrics vars
-oracle_batch_error_file: "/opt/textfile_monitoring/nomis_batch_monitoring.prom"
-oracle_batch_statuses: "nomis_long_running_batch nomis_batch_failure_status"
-service_list_oracle: "oracle-ohasd oracleasm"
-
 # weblogic cloudwatch config vars
 amazon_cloudwatch_agent_weblogic_config_file: weblogic.json
 weblogic_log_path: "/u01/app/oracle/Middleware/logs/wlst_*.log"
-
-# service lists vars
-service_list_linux: "chronyd sshd"
-service_list_weblogic: "weblogic-node-manager" # weblogic-server might also be needed to be added here
-
