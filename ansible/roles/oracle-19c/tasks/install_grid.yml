@@ -83,12 +83,12 @@
       ansible.builtin.file:
         path: "{{ stage }}/{{ item }}"
         state: absent
-      loop: 
+      loop:
         - "{{ grid_response_file }}"
         - "{{ grid_software }}"
         - "{{ psu_patch }}"
         - "{{ opatch }}"
         - "{{ stage }}/psu"
-        
+
   # block
   when: not grid_software_installed.stat.exists

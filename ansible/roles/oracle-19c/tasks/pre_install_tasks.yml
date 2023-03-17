@@ -61,7 +61,7 @@
   ansible.builtin.file:
     path: "{{ stage }}/{{ item }}"
     state: absent
-  loop: 
+  loop:
     - "/tmp/{{ oracle_prereq_rpm }}"
     - "/tmp/{{ oracle_asmlib_rpm }}"
     - "/tmp/{{ oracleasm_support_rpm }}"
