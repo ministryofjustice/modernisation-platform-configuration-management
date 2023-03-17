@@ -3,12 +3,12 @@
     cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
     creates: "{{ item }}"
     chdir: "/tmp"
-  loop: 
+  loop:
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
 
-- name: Install oracle prerequisite rpm's 
+- name: Install oracle prerequisite rpm's
   yum:
     name: "/tmp/{{ item }}"
     state: present
@@ -46,7 +46,7 @@
   ansible.builtin.file:
     path: "/tmp/{{ item }}"
     state: absent
-  loop: 
+  loop:
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
