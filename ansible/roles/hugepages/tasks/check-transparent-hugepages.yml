@@ -1,0 +1,11 @@
+---
+- name: Get meminfo
+  ansible.builtin.shell: cat /proc/meminfo 
+  changed_when: false
+  check_mode: false
+  register: meminfo
+
+- name: Fail if transparent huge pages still enabled
+  fail:
+    msg: "Tranparent huge pages must be disabled.  Reboot is required to enable if grubby has been updated"
+  when: not meminfo.stdout | regex_search("AnonHugePages:\ *0")

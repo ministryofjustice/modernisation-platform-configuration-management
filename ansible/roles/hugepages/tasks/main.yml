@@ -1,4 +1,13 @@
 ---
-- import_tasks: oracle.yml
+- import_tasks: disable-transparent-hugepages.yml
+  tags:
+    - amibuild
+
+- import_tasks: check-transparent-hugepages.yml
   tags:
     - ec2provision
+
+- import_tasks: set-hugepages.yml
+  tags:
+    - ec2provision
+    - ec2patch
