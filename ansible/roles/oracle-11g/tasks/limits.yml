@@ -1,0 +1,24 @@
+---
+- name: Calculate memory limit
+  ansible.builtin.shell: |    
+    set -eo pipefail
+    memtotal_kb=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
+    page_size_kb=2048
+    pages=$(expr $memtotal_kb / 2 / $page_size_kb)
+    memlock=$(expr 9 \* $memtotal_kb / 10)
+    memlock_max=134217728 # 128GB
+    memlock_limit=$(( $memlock > $memlock_max ? $memlock_max : $memlock ))
+    echo $memlock_limit
+  changed_when: false
+  check_mode: false
+  register: memory_limit
+
+- name: Add oracle user limits
+  community.general.pam_limits:
+    domain: oracle
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  loop:
+    - { limit_type: "soft", limit_item: "memlock", value: "{{ memory_limit.stdout }}" }
+    - { limit_type: "hard", limit_item: "memlock", value: "{{ memory_limit.stdout }}" }
