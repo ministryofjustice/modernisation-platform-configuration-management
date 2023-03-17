@@ -1,0 +1,47 @@
+---
+ansible_python_interpreter: /usr/local/bin/python3.9
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+disks_partition:
+  - ebs_device_name: /dev/sde  # data01
+  - ebs_device_name: /dev/sdf  
+  - ebs_device_name: /dev/sdg
+  - ebs_device_name: /dev/sdh
+  - ebs_device_name: /dev/sdi
+  - ebs_device_name: /dev/sdj  # flash01
+  - ebs_device_name: /dev/sdk
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
+
+ami_roles_list:
+  - packages
+  - time
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - disable-firewall
+  - selinux-config
+  - tcp-keepalive
+  - users
+  - hugepages
+    #  - disks
+    #  - script-exporter
+    #  - oracle-db-11g
+    #  - oracle-secure-web
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
