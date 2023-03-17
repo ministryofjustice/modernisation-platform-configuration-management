@@ -1,0 +1,76 @@
+---
+# Newer EC2 types are Nitro based and use NVMe spec. The NVMe device name can
+# change depending on the order in which the devices respond during instance
+# boot. Therefore to ensure we target the correct drive we map the ebs device
+# name to the NVMe name via the device serial number, which is consistent
+# See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
+#
+# The ansible combines AWS device info from ec2 instance info with
+# device information in ansible_facts.devices.
+
+- name: Fail if missing ec2 instance info
+  fail:
+    msg: "Missing ec2 instance info.  Ensure EC2 role has ec2:DescribeInstances"
+  when: not ec2.block_device_mappings is defined
+
+- name: Set fact - ebs volume ids
+  set_fact:
+    ebs_volume_ids: "{{ ec2.block_device_mappings | map(attribute='ebs.volume_id') }}"
+
+- debug:
+    var: ansible_facts.devices
+
+- name: Set xvd device mapping
+  block:
+    - name: Set xvd fact - group by device name
+      set_fact:
+        ebs_devices_by_name: "{{ dict(ec2.block_device_mappings | groupby('device_name')) }}"
+        linux_devices_by_name: "{{ dict(ansible_facts.devices | dict2items | selectattr('value.rotational', 'equalto', '0') | groupby('key')) }}"
+
+    - name: Set xvd fact - replace linux device keys with ebs device name
+      set_fact:
+        linux_devices_by_ebs_name_keys: "{{ linux_devices_by_name.keys() | map('regex_replace', '^xvda$', '/dev/sda1') | map('regex_replace', '^xvd', '/dev/sd') }}"
+
+    - name: Set xvd fact - reform linux device dict with ebs device name keys
+      set_fact:
+        linux_devices_by_ebs_name: "{{ dict(linux_devices_by_ebs_name_keys | zip(linux_devices_by_name.values())) }}"
+
+    - name: Set xvd fact - merge ebs and linux devices by ebs device name
+      set_fact:
+        combined_devices_xvd: "{{ (ebs_devices_by_name | combine(linux_devices_by_ebs_name, list_merge='append')).values() }}"
+  # block
+  when: "'xvd' in ansible_facts.devices.keys() | join"
+
+- name: Set nvme device mapping
+  block:
+    - name: Set nvme fact - group by volume id and serial number
+      set_fact:
+        ebs_devices_by_volume_id: "{{ dict(ec2.block_device_mappings | groupby('ebs.volume_id')) }}"
+        linux_devices_by_serial: "{{ dict(ansible_facts.devices | dict2items | selectattr('value.serial', 'defined') | groupby('value.serial')) }}" 
+
+    - name: Set nvme fact - replace linux serial number keys with volume id
+      set_fact:
+        linux_devices_by_volume_id_keys: "{{ linux_devices_by_serial.keys() | map('regex_replace', '^(vol)', 'vol-') }}"
+
+    - name: Set nvme fact - reform linux device dict with volume id keys
+      set_fact:
+        linux_devices_by_volume_id: "{{ dict(linux_devices_by_volume_id_keys | zip(linux_devices_by_serial.values())) }}"
+
+    - name: Set nvme fact - merge ebs and linux devices by volume id
+      set_fact:
+        combined_devices_nvme: "{{ (ebs_devices_by_volume_id | combine(linux_devices_by_volume_id, list_merge='append')).values() }}"
+  # block
+  when: "'nvme' in ansible_facts.devices.keys() | join"
+
+- name: Map aws device names to linux nvme and xvd devices
+  set_fact:
+    ebs_to_linux_device_map: "{{ ebs_to_linux_device_map | default({}) | combine({item[0].device_name: '/dev/' + item[1].key}) }}"
+  loop_control:
+    label: "{{ item[0].device_name | default(item[0].key) }}: {{ item[1].key|default('none') }}"
+  loop: "{{ (combined_devices_xvd|default([])) + (combined_devices_nvme|default([])) }}"
+  when: item|length == 2
+
+- name: Fail if missing drive mappings
+  fail:
+    msg: "Mapped {{ ebs_to_linux_device_map|length }} devices but {{ ec2.block_device_mappings|length }} found in ec2.block_device_mappings"
+  when: ebs_to_linux_device_map|length != ec2.block_device_mappings|length

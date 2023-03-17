@@ -1,7 +1,17 @@
-oracle_app_disks:
-  - device: /dev/sdb
-    mount: /u01
-  - device: /dev/sdc
-    mount: /u02
-
-swap_disk: /dev/sds
+---
+# Use disks_partition variable to configure partitions using parted ansible module
+# disks_partition:
+#  - ebs_device_name: /dev/sdc
+#    number: 1
+#
+# Use disks_mount variable to format and/or mount disks/partitions
+# disks_mount:
+#  - ebs_device_name: /dev/sdb
+#    dir: /unpartitioned
+#    fstype: xfs
+#  - ebs_device_name: /dev/sdc
+#    dir: /mypartition1
+#    fstype: xfs
+#  - ebs_device_name: /dev/sds
+#    dir: swap
+#    fstype: swap
