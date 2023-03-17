@@ -4,9 +4,7 @@ This role installs Oracle 19c. It assumes the installation disks `\u01` and `\u0
 
 Some tasks are optional and can be included in the play by adding the appropriate tag at the command line. Currently these are:
 
-- `deconfig` - part of the post install tasks, adding this tag will deconfigure Oracle HAS. Typically used when this role is used as part of an AMI build, so that the install can be reconfigured on hosts subsequently launched with said AMI.
-
-E.g. Run `ansible-playbook` with `--tags "all,opatch,patch" to run the Oracle install tasks and upgrade opatch and apply patches
+E.g. Run `ansible-playbook` with `--tags "oracle_19c_install,pre_install,configure_asm,install_grid,install_database,post_install" " to run the Oracle install tasks 
 
 ### s3 bucket
 
@@ -14,8 +12,7 @@ The Oracle installation files should be located in an s3 bucket accessible by th
 
 ### Oracle ASM disks
 
-Oracle ASM (Automatic Storage Manager) [library](https://www.oracle.com/linux/downloads/linux-asmlib-rhel7-downloads.html) is used as the volume manager for Oracle database disks rather than manual configuration with [UDEV rules](https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/579994207/UDEV+configuraion+for+ASM+Disks). The variables `oracle_asm_data_disks` and `oracle_asm_flash_disks` contains a list of devices to be configured by ASMlib and should match the device configuration on the remote host (in terms of matching the device names to the required ASM disk labels).
+Oracle ASM (Automatic Storage Manager) ASMLIB is used as the volume manager for Oracle database disks rather than manual configuration with [UDEV rules](https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/579994207/UDEV+configuraion+for+ASM+Disks). The variables `oracle_asm_data_disks` and `oracle_asm_flash_disks` contains a list of devices to be configured by ASMlib and should match the device configuration on the remote host (in terms of matching the device names to the required ASM disk labels).
 
 ### Issues
-
-There are issues running this role as `ssm-user`. It fails on the `run oracle grid install` task (see `install_grid.yml`) for some reason, complaining that `/u01/app/oraInventory` directory is not empty (which is a directory created as part of the grid install). It works fine if you connect as a normal user, either via the Bastion (see main README for how to set that up) or directly through Session Manager if `ssm-agent` is installed on the instance.
+With el8 currently we have issue with Oracle 19c Grid ASM disks discovery with ORCL , its working with only /dev/oracleasm/disks. With ORCL it results in ORA-7445 [kgfkWaitIO] , raised SR with oracle to get fix for this issue. 
