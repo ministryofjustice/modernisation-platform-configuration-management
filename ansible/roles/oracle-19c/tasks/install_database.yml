@@ -81,7 +81,7 @@
       ansible.builtin.file:
         path: "{{ stage }}/{{ item }}"
         state: absent
-      loop: 
+      loop:
         - "{{ database_response_file }}"
         - "{{ db_software }}"
         - "{{ psu_patch }}"
