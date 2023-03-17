@@ -1,0 +1,33 @@
+- name: setup oracle user and groups
+  import_role:
+    name: common
+    tasks_from: oracle_user.yml
+  tags:
+    - oracle_19c_install_user
+
+- name: install asm, grid and database
+  block:
+    - import_tasks: pre_install_tasks.yml
+      tags:
+        - oracle_19c_install
+        - pre_install
+
+    - import_tasks: configure_asm.yml
+      tags:
+        - oracle_19c_install
+        - configure_asm
+
+    - import_tasks: install_grid.yml
+      tags:
+        - oracle_19c_install
+        - install_grid
+
+    - import_tasks: install_database.yml
+      tags:
+        - oracle_19c_install
+        - install_database
+
+    - import_tasks: post_install_tasks.yml
+      tags:
+        - oracle_19c_install
+        - post_install

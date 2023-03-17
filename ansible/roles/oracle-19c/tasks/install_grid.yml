@@ -1,0 +1,91 @@
+---
+- name: Check oracle 19c Grid Infrastructure installed
+  ansible.builtin.stat:
+    path: "{{ oracle_inventory }}/orainstRoot.sh"
+  register: grid_software_installed
+
+- name: Install oracle 19c Grid Infrastructure
+  block:
+    - name: Create response files
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ grid_response_file }}"
+
+    - name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket # this relies on the remote machine having correct IAM Role assigned
+      ansible.builtin.command:
+        cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
+        creates: "{{ item }}"
+        chdir: "{{ stage }}"
+      loop:
+        - "{{ grid_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+
+    - name: Unzip Oracle 19c Grid Infrastructure software
+      become_user: oracle
+      ansible.builtin.shell: unzip "{{ stage }}/{{ grid_software }}" -d "{{ grid_home }}"
+      async: 7200
+      poll: 60
+
+    - name: Unzip psu patch software
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ psu_patch }}"
+        dest: "{{ stage }}/psu"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
+
+    - name: Upgrade OPatch in grid home
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ opatch }}"
+        dest: "{{ grid_home }}"
+        owner: oracle
+        group: oinstall
+        remote_src: yes
+
+    - name: Run oracle grid install
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        export CV_ASSUME_DISTID=EL7
+        main() {
+          echo "# Installing Oracle 19c grid Infrastructure"
+          yes | "{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" || true
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
+      vars:
+        ansible_remote_tmp: "{{ temp }}"
+
+    - name: Run orainstRoot script
+      ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"
+      become_user: root
+
+    - name: Run root script
+      ansible.builtin.command: "{{ grid_home }}/root.sh"
+      become_user: root
+
+    - name: Run configuration script
+      ansible.builtin.command:
+        cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
+      become_user: oracle
+
+    - name: Clean up {{ stage }} directory
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop: 
+        - "{{ grid_response_file }}"
+        - "{{ grid_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+        - "{{ stage }}/psu"
+
+  # block
+  when: not grid_software_installed.stat.exists
