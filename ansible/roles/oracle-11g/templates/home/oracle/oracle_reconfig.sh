@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 set -eo pipefail
 
 echo "+++Setting up Oracle HAS as Oracle user"
@@ -15,6 +14,7 @@ source oraenv <<< +ASM
 srvctl add listener
 # get spfile for ASM
 spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*' || true)
+echo "+++Spfile set to '$spfile'"
 srvctl add asm -l LISTENER -p "$spfile" -d "ORCL:ORA*"
 crsctl modify resource "ora.asm" -attr "AUTO_START=1"
 crsctl modify resource "ora.cssd" -attr "AUTO_START=1"
@@ -27,7 +27,7 @@ sleep 10
 i=0
 while [[ "$i" -le 10 ]]; do
     echo "+++Wait for ASM service #$((i + 1))"
-    asm_status=$(srvctl status asm | grep "ASM is running")
+    asm_status=$(srvctl status asm | grep "ASM is running" || true)
     if [[ -n "$asm_status" ]]; then
         echo "+++Mount disks"
         asmcmd mount DATA # returns exit code zero even if already mounted
@@ -49,7 +49,7 @@ while [[ "$i" -le 10 ]]; do
         break
     fi
     sleep 30
-    ((i++))
+    i=$((i + 1))
 done
 
 echo "+++Finished setting up Oracle HAS as Oracle user"
