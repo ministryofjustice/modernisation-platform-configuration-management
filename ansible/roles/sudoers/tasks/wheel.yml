@@ -1,0 +1,9 @@
+---
+# Override default wheel config, allow sudo without password if you are in wheel group
+- name: Give wheel user sudo without password
+  community.general.sudoers:
+    name: wheel
+    state: present
+    group: wheel
+    nopassword: "{{ sudoers_wheel_sudo_without_password }}"
+    commands: ALL
