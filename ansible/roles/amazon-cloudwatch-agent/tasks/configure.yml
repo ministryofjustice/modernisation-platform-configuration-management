@@ -30,10 +30,11 @@
     instance_id: "{{ ansible_ec2_instance_id }}"
     weblogic_log_path: "{{ weblogic_log_path if ec2.tags['server-type'] == 'nomis-web' else '' }}"
 
-# default cloudwatch-agent config file for linux required with this naming
-- name: Create amazon-cloudwatch-agent config file 
+# default cloudwatch-agent config file based on OS type (linux or windows)
+# NOTE: windows default config doesn't exist yet
+- name: Create OS specific amazon-cloudwatch-agent config file 
   ansible.builtin.template:
-    src: linux.json.j2
+    src: "{{ ansible_system|lower }}.json.j2"
     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
     owner: root
     group: root
@@ -48,11 +49,34 @@
     mode: 0755
   when: collectd_installed.rc == 0
 
-- name: Create amazon-cloudwatch-agent config file for weblogic
+# - name: Create amazon-cloudwatch-agent config file for weblogic
+#   ansible.builtin.template:
+#     src: agent_config_weblogic.json.j2
+#     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+#     owner: root
+#     group: root
+#     mode: 0755
+#   when: ec2.tags['server-type'] == 'nomis-web'
+
+# - name: get list of additional config files for cloudwatch-agent
+#   set_fact:
+#     _found_file: "{{ lookup('ansible.builtin.first_found', item, skip=True ) }} "
+#     configs: "{{ metric_configs|replace('-', '_') }}"
+
+# ignores errors as the config file may not exist for cloudwatch but may do for collectd
+- name: template config files per value of metric_configs
   ansible.builtin.template:
-    src: agent_config_weblogic.json.j2
-    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+    src: "{{ lookup('ansible.builtin.first_found', params) }}"
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ item }}.json"
     owner: root
     group: root
     mode: 0755
-  when: ec2.tags['server-type'] == 'nomis-web'
+  vars:
+    params: 
+      files: 
+        - "{{ item }}"
+      paths:
+        - 'templates'
+      skip: True
+  loop: "{{ metric_configs|replace('-', '_') }}"
+  # loop: "{{ metric_configs|replace('-', '_') }}"
