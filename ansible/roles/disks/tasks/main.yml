@@ -9,38 +9,18 @@
     - ec2provision
     - disks_wait_for_volumes
 
-- include_tasks:
-    file: partition-disk-rhel.yml
-    apply:
-      tags:
-        - amibuild
-        - ec2provision
-        - disks_partition
+- import_tasks: partition-disk-rhel.yml
   tags:
     - amibuild
     - ec2provision
     - disks_partition
-  loop_control:
-    loop_var: disk_partition
-  loop: "{{ disks_partition }}"
   when: ansible_distribution == 'RedHat' and disks_partition is defined
 
-- include_tasks:
-    file: mount-disk-rhel.yml
-    apply:
-      tags:
-        - amibuild
-        - ec2provision
-        - ec2patch
-        - disks_mount
+- import_tasks: mount-disk-rhel.yml
   tags:
     - amibuild
     - ec2provision
-    - ec2patch
     - disks_mount
-  loop_control:
-    loop_var: disk_mount
-  loop: "{{ disks_mount | selectattr('fstype', 'defined') }}"
   when: ansible_distribution == 'RedHat' and disks_mount is defined
 
 # if UUID changes, might need to disable and enable swap

@@ -1,23 +1,23 @@
 ---
-- debug:
-    msg: "Partition ebs device {{ disk_partition.ebs_device_name }}" 
-
 - name: Fail if drive map missing
   fail:
     msg: "Missing linux drive mapping, ensure device exists on device"
   when: not ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
-
-- name: Setting linux device name fact
-  set_fact:
-    linux_device_name: "{{ ebs_to_linux_device_map[disk_partition.ebs_device_name] }}"
+  loop_control:
+    loop_var: disk_partition
+  loop: "{{ disks_partition }}"
 
 - name: Partition device
   parted:
-    device: "{{ linux_device_name }}"
+    device: "{{ ebs_to_linux_device_map[disk_partition.ebs_device_name] }}"
     number: "{{ disk_partition.number | default(1) }}"
     part_type: "{{ disk_partition.part_type | default('primary') }}"
     part_start: "{{ disk_partition.part_start | default('0%') }}"
     part_end: "{{ disk_partition.part_end | default('100%') }}"
     unit: "{{ disk_partition.unit | default('KiB') }}"
     flags: "{{ disk_partition.flags | default([]) }}"
+    resize: "{{ disk_partition.resize | default(true) }}"
     state: present
+  loop_control:
+    loop_var: disk_partition
+  loop: "{{ disks_partition }}"

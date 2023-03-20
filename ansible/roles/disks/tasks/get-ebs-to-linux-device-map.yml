@@ -17,9 +17,6 @@
   set_fact:
     ebs_volume_ids: "{{ ec2.block_device_mappings | map(attribute='ebs.volume_id') }}"
 
-- debug:
-    var: ansible_facts.devices
-
 - name: Set xvd device mapping
   block:
     - name: Set xvd fact - group by device name
@@ -46,7 +43,7 @@
     - name: Set nvme fact - group by volume id and serial number
       set_fact:
         ebs_devices_by_volume_id: "{{ dict(ec2.block_device_mappings | groupby('ebs.volume_id')) }}"
-        linux_devices_by_serial: "{{ dict(ansible_facts.devices | dict2items | selectattr('value.serial', 'defined') | groupby('value.serial')) }}" 
+        linux_devices_by_serial: "{{ dict(ansible_facts.devices | dict2items | selectattr('value.serial', 'defined') | groupby('value.serial')) }}"
 
     - name: Set nvme fact - replace linux serial number keys with volume id
       set_fact:
