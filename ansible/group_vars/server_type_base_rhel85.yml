@@ -1,8 +1,10 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
-roles_list:
+server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
   - amazon-cloudwatch-agent
   - node-exporter
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
