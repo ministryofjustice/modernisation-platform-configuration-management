@@ -28,17 +28,18 @@ disks_mount:
     fstype: swap
 
 ami_roles_list:
+  - users-and-groups
+  - sudoers
   - packages
   - time
   - message-of-the-day
   - amazon-ssm-agent
   - amazon-cli
   - disable-firewall
-  - selinux-config
+    #  - selinux-config
   - tcp-keepalive
-  - users
   - hugepages
-    #  - disks
+  - disks
     #  - script-exporter
     #  - oracle-db-11g
     #  - oracle-secure-web
