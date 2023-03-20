@@ -1,12 +1,16 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
 use_name_as_hostname: true
-roles_list:
+server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
   - node-exporter
+  - oracle-11g
   - oracle-db-monitoring
   - oracle-secure-web
-  - db-restore
   - amazon-cloudwatch-agent
+  - oracle-db-restore
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

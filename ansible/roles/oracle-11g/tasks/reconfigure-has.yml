@@ -1,0 +1,59 @@
+---
+- name: Get processes using tcp 1521
+  ansible.builtin.shell: fuser -n tcp 1521 || true
+  check_mode: false
+  changed_when: false
+  register: fuser
+
+- name: Kill processes using tcp 1521
+  ansible.builtin.shell: fuser -k -n tcp 1521 || true
+  when: fuser.stdout|length != 0
+
+- name: Update listener.ora
+  ansible.builtin.replace:
+    path: "{{ grid_home }}/network/admin/listener.ora"
+    regexp: "(HOST = )([^\\)]*)"
+    replace: "\\1{{ ansible_hostname }}"
+
+- name: Deconfigure oracle HAS
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+      perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  args:
+    chdir: "{{ grid_home }}"
+
+- name: Configure oracle HAS
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl
+      perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  args:
+    chdir: "{{ grid_home }}"
+
+- name: Copy reconfig script
+  ansible.builtin.template:
+    src: ".{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /home/oracle/oracle_reconfig.sh
+
+- name: Run reconfig script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo /home/oracle/oracle_reconfig.sh
+      su - oracle -c /home/oracle/oracle_reconfig.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  async: 900
+  poll: 30

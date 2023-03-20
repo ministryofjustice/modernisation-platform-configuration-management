@@ -1,16 +1,57 @@
-# there's a big assumption here that we're running on one of the newer Nitro
-# based EC2 instances.  If not then this will not work in its current state.
+---
+- import_tasks: get-ebs-to-linux-device-map.yml
+  tags:
+    - always
 
-- name: map ebs device names
-  import_role:
-    name: common
-    tasks_from: drive_map.yml
+- import_tasks: wait-for-volumes.yml
   tags:
     - amibuild
+    - ec2provision
+    - disks_wait_for_volumes
 
-- name: setup disks
-  block:
-    - import_tasks: configure_swap_disk.yml
-    - import_tasks: configure_oracle_disk.yml
+- import_tasks: partition-disk-rhel.yml
   tags:
     - amibuild
+    - ec2provision
+    - disks_partition
+  when: ansible_distribution == 'RedHat' and disks_partition is defined
+
+- import_tasks: mount-disk-rhel.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - disks_mount
+  when: ansible_distribution == 'RedHat' and disks_mount is defined
+
+# if UUID changes, might need to disable and enable swap
+- include_tasks:
+    file: disable-swap-rhel.yml
+    apply:
+      tags:
+        - ec2provision
+        - disks_disable_swap
+      vars:
+        swap_device_name: "{{ ebs_to_linux_device_map[item.ebs_device_name] }}"
+  tags:
+    - ec2provision
+    - disks_disable_swap
+  loop: "{{ disks_mount | selectattr('fstype', 'defined') | selectattr('fstype', 'equalto', 'swap') }}"
+  when: ansible_distribution == 'RedHat' and disks_mount is defined
+
+- include_tasks:
+    file: enable-swap-rhel.yml
+    apply:
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - disks_enable_swap
+      vars:
+        swap_device_name: "{{ ebs_to_linux_device_map[item.ebs_device_name] }}"
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+    - disks_enable_swap
+  loop: "{{ disks_mount | selectattr('fstype', 'defined') | selectattr('fstype', 'equalto', 'swap') }}"
+  when: ansible_distribution == 'RedHat' and disks_mount is defined

@@ -1,0 +1,67 @@
+---
+- name: Fail if drive map missing
+  fail:
+    msg: "Missing linux drive mapping, ensure device exists on device"
+  when: not ebs_to_linux_device_map[disk_mount.ebs_device_name] is defined
+  loop_control:
+    loop_var: disk_mount
+  loop: "{{ disks_mount }}"
+
+- name: Create filesystem
+  community.general.filesystem:
+    fstype: "{{ disk_mount.fstype }}"
+    dev: "{{ ebs_to_linux_device_map[disk_mount.ebs_device_name] + (disk_mount.partition|default('')) }}"
+    resizefs: "{{ disk_mount.fstype in ['btrfs', 'ext2', 'ext3', 'ext4', 'ext4dev', 'f2fs', 'lvm', 'xfs', 'ufs', 'vfat'] }}"
+  loop_control:
+    loop_var: disk_mount
+  loop: "{{ disks_mount }}"
+
+- name: Get UUID of device
+  ansible.builtin.command: blkid -s UUID -o value {{ ebs_to_linux_device_map[disk_mount.ebs_device_name] + (disk_mount.partition|default('')) }}
+  register: blkids
+  check_mode: false
+  changed_when: false
+  loop_control:
+    loop_var: disk_mount
+  loop: "{{ disks_mount }}"
+
+- name: Fail if UUID missing
+  fail:
+    msg: "Missing UUID"
+  when: blkid.stdout|length == 0
+  loop_control:
+    loop_var: blkid
+    label: "{{ blkid.disk_mount }}"
+  loop: "{{ blkids.results }}"
+
+- name: Create mount point
+  ansible.builtin.file:
+    path: "{{ disk_mount.dir }}"
+    state: "directory"
+  loop_control:
+    loop_var: disk_mount
+  loop: "{{ disks_mount | selectattr('dir', 'defined') | rejectattr('dir', 'equalto', 'swap') }}"
+
+- name: Mount filesystem
+  ansible.posix.mount:
+    path: "{{ blkid.disk_mount.dir }}"
+    src: "UUID={{ blkid.stdout }}"
+    fstype: "{{ blkid.disk_mount.fstype }}"
+    opts: "{{ blkid.disk_mount.opts | default('defaults,nofail') }}"
+    state: mounted
+  loop_control:
+    loop_var: blkid
+    label: "{{ blkid.disk_mount }}"
+  loop: "{{ blkids.results | selectattr('disk_mount.dir', 'defined') | rejectattr('disk_mount.dir', 'equalto', 'swap') }}"
+
+- name: Mount swap
+  ansible.posix.mount:
+    path: "{{ blkid.disk_mount.dir }}"
+    src: "UUID={{ blkid.stdout }}"
+    fstype: "{{ blkid.disk_mount.fstype }}"
+    opts: "{{ blkid.disk_mount.opts | default('sw') }}"
+    state: present
+  loop_control:
+    loop_var: blkid
+    label: "{{ blkid.disk_mount }}"
+  loop: "{{ blkids.results | selectattr('disk_mount.dir', 'defined') | selectattr('disk_mount.dir', 'equalto', 'swap') }}"

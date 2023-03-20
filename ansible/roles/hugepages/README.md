@@ -1,1 +1,1 @@
-Setup relevant hugepages configuration, e.g. for oracle databases
+Configure huge pages, typically used for oracle databases

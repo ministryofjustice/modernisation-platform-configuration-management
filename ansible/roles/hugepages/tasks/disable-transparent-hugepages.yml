@@ -1,0 +1,13 @@
+---
+- name: Get grubby info
+  ansible.builtin.shell: grubby --info="/boot/vmlinuz-$(uname -r)"
+  changed_when: false
+  check_mode: false
+  register: grubby_info
+
+- debug:
+    var: grubby_info.stdout_lines
+
+- name: Disable transparent huge pages
+  ansible.builtin.shell: grubby --update-kernel=/boot/vmlinuz-{{ ansible_kernel }} --args="transparent_hugepage=never"
+  when: not grubby_info.stdout is search("transparent_hugepage=never")

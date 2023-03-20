@@ -1,0 +1,18 @@
+---
+- name: Enable hugepages by updating sysctl
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { name: "vm.nr_hugepages", value: "{{ sysctl_vm_nr_hugepages }}" }
+
+- name: Wait up to 5 minutes for pages to create
+  ansible.builtin.wait_for:
+    path: /proc/meminfo
+    search_regex: "^HugePages_Total:[ ]*{{ sysctl_vm_nr_hugepages }}$"
+  register: waitfor
+  timeout: 300
+  ignore_errors: true

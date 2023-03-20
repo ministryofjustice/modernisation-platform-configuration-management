@@ -1,0 +1,12 @@
+---
+- name: Waiting for volumes to be attached
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      echo aws ec2 wait volume-in-use --volume-ids {{ ebs_volume_ids | join(' ') }}
+      aws ec2 wait volume-in-use --volume-ids {{ ebs_volume_ids | join(' ') }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-disks
+  check_mode: false
+  changed_when: false
