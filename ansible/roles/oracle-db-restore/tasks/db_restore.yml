@@ -37,12 +37,10 @@
 # and we only need to copy the latest backup once
 - name: copy database backup from s3 bucket # this relies on the remote machine having correct IAM Role assigned
   ansible.builtin.command:
-    cmd: aws s3 cp s3://{{ db_backup_s3_bucket_name | quote }}/{{ s3_db_backup_dir | quote}} {{ db_backup_dir | quote }} --recursive
+    cmd: aws s3 sync "s3://{{ db_backup_s3_bucket_name }}/{{ s3_db_backup_dir }}" "{{ db_backup_dir }}" --no-progress --exclude "."
   become_user: oracle
   environment:
     PATH: "{{ oracle_PATH }}:/usr/local/bin/aws" # https://stackoverflow.com/questions/67687211/ansible-aws-cli-not-working-with-command-or-shell-module
-  vars:
-    ansible_remote_tmp: "{{ temp_dir }}" # this is here to supress a warning about temp directory not being available
 
 - name: get list of control files
   ansible.builtin.find:
