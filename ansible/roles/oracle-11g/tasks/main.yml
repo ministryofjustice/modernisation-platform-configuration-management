@@ -9,6 +9,11 @@
     - ec2provision
     - oracle_db_limits
 
+- import_tasks: scan-disks.yml
+  tags:
+    - ec2provision
+    - oracle_db_scan_disks
+
 - import_tasks: reconfigure-has.yml
   tags:
     - ec2provision

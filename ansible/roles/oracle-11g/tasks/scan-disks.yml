@@ -1,0 +1,9 @@
+---
+- name: Oracle ASM scandisks
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo oracleasm scandisks
+      oracleasm scandisks
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-11g

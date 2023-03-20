@@ -1,6 +1,6 @@
 ---
 - name: Calculate memory limit
-  ansible.builtin.shell: |    
+  ansible.builtin.shell: |
     set -eo pipefail
     memtotal_kb=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
     page_size_kb=2048

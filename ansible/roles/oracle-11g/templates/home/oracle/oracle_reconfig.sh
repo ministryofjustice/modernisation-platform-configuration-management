@@ -1,4 +1,7 @@
 #!/bin/bash
+set -x
+set -eo pipefail
+
 echo "+++Setting up Oracle HAS as Oracle user"
 
 unset ORAENV_ASK
@@ -11,7 +14,7 @@ password_ASMSNMP="{{ database_asmsnmp_password }}"
 source oraenv <<< +ASM
 srvctl add listener
 # get spfile for ASM
-spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*')
+spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*' || true)
 srvctl add asm -l LISTENER -p "$spfile" -d "ORCL:ORA*"
 crsctl modify resource "ora.asm" -attr "AUTO_START=1"
 crsctl modify resource "ora.cssd" -attr "AUTO_START=1"
@@ -49,4 +52,4 @@ while [[ "$i" -le 10 ]]; do
     ((i++))
 done
 
-
+echo "+++Finished setting up Oracle HAS as Oracle user"
