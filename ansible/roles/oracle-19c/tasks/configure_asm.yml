@@ -12,7 +12,7 @@
 - name: configure asm
   block:
     - name: configure ASMlib
-      ansible.builtin.command: oracleasm configure --user oracle --group oinstall --enable --scanboot y
+      ansible.builtin.command: oracleasm configure --user {{ oracle_install_user }} --group {{ oracle_install_group }} --enable --scanboot y
 
     - name: initialise ASMlib
       ansible.builtin.command: oracleasm init

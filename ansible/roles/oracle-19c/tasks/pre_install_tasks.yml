@@ -1,8 +1,11 @@
-- name: Copy oracle prerequisite rpm's from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-  ansible.builtin.command:
-    cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
-    creates: "{{ item }}"
-    chdir: "/tmp"
+---
+
+- name: Install oracle prerequisite rpm's
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "/tmp/{{ item }}"
+    mode: get
   loop:
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
@@ -28,8 +31,8 @@
 - name: Create new directories
   ansible.builtin.file:
     path: "{{ item }}"
-    owner: oracle
-    group: oinstall
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
     state: directory
     recurse: yes
   loop:

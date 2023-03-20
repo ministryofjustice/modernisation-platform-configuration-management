@@ -1,7 +1,10 @@
 #s3_bucket_with_prefix: s3-bucket20210929163229537900000001/oracle-11g-software
-s3_bucket_with_prefix: oasys-development-20230208104904211300000001/oracle-19c-software
+s3_bucket: oasys-development-20230208104904211300000001
+s3_bucket_object: oracle-19c-software
 artefact_dir: /u02
 app_dir: /u01/app
+oracle_install_user: oracle
+oracle_install_group: oinstall
 oracle_asmlib_rpm: oracleasmlib-2.0.17-1.el8.x86_64.rpm
 oracle_prereq_rpm: oracle-database-preinstall-19c-1.0-2.el8.x86_64.rpm
 oracleasm_support_rpm: oracleasm-support-2.1.12-1.el8.x86_64.rpm
@@ -19,11 +22,13 @@ database_response_file: db_install.rsp
 database_base: "{{ app_dir }}/oracle"
 database_home: "{{ oracle_home }}/db_1"
 db_software: LINUX.X64_193000_db_home.zip
+database_install_script: db_install.sh
 
 grid_response_file: grid_install.rsp
 grid_base: "{{ app_dir }}/grid"
 grid_home: "{{ oracle_home }}/gridhome_1"
 grid_software: LINUX.X64_193000_grid_home.zip
+grid_install_script: grid_install.sh
 
 password_response_file: grid_pw.rsp
 

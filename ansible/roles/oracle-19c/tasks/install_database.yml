@@ -8,59 +8,57 @@
   block:
     - name: create response file
       template:
-        src: db_install.rsp.j2
-        dest: "{{ stage }}/{{ database_response_file }}"
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
         mode: u=rw,g=r,o=r
-        owner: oracle
-        group: oinstall
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: '0700'
+      loop:
+        - "{{ database_response_file }}"
+        - "{{ database_install_script }}"
 
-    - name: Copy Oracle 19c Database install software from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-      ansible.builtin.command:
-        cmd: /usr/local/bin/aws s3 cp s3://{{ s3_bucket_with_prefix }}/{{ item }} .
-        creates: "{{ item }}"
-        chdir: "{{ stage }}"
+    - name: Download Oracle 19c Database software from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_bucket_object }}/{{ item }}"
+        dest: "{{ stage }}/{{ item }}"
+        mode: get
       loop:
         - "{{ db_software }}"
         - "{{ psu_patch }}"
         - "{{ opatch }}"
 
-    - name: Unzip Oracle 19c db software
-      become_user: oracle
-      ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
-      async: 7200
-      poll: 60
+    - name: Unzip Oracle 19c db software 
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ db_software }}"
+        dest: "{{ database_home }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
 
     - name: Unzip psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
-        owner: oracle
-        group: oinstall
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
         remote_src: yes
 
     - name: Upgrade OPatch on database home
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ opatch }}"
         dest: "{{ database_home }}"
-        owner: oracle
-        group: oinstall
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
         remote_src: yes
 
     - name: Install Oracle 19c db software and apply patches
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        export CV_ASSUME_DISTID=EL7
-        main() {
-          echo "# Installing Oracle 19c database Infrastructure"
-          yes | "{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" -applyOneOffs "{{ stage }}/psu/34160854/34086870" || true
-        }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.command:
+        cmd: "{{ stage }}/{{ database_install_script }}"
       async: 7200
       poll: 60
-      vars:
-        ansible_remote_tmp: "{{ temp }}"
 
     - name: run post install root script
       ansible.builtin.command: "{{ database_home }}/root.sh"
@@ -83,6 +81,7 @@
         state: absent
       loop:
         - "{{ database_response_file }}"
+        - "{{ database_install_script }}"
         - "{{ db_software }}"
         - "{{ psu_patch }}"
         - "{{ opatch }}"

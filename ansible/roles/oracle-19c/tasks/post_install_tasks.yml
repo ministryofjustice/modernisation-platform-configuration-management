@@ -10,7 +10,7 @@
   ansible.builtin.shell: |
     source oraenv <<< +ASM
     sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk FLASH01;"
-  become_user: oracle
+  become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
   vars:
     disks: "/dev/oracleasm/disks/"
@@ -18,17 +18,5 @@
 - name: save spfile location
   ansible.builtin.shell: source oraenv <<< +ASM
     asmcmd spget > {{ temp }}/spfilelocation.txt
-  become_user: oracle
+  become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
-# typically you will only run the `deconfig` tag when creating an image, such
-# that any instances launched from the image do so with oracle services not
-# running, so that they can be reconfigured with the hostname of the launch instance
-
-# - name: deconfigure oracle HAS
-#   ansible.builtin.command: perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
-#   args:
-#     chdir: "{{ grid_home }}"
-#   tags:
-#     - amibuild
-#     - never
-#     - deconfig
