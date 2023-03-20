@@ -1,0 +1,58 @@
+---
+# Some configs rely on whether collectd is installed or not
+- name: Check if collectd has been installed 
+  ansible.builtin.shell: |
+    check_installed() {
+      check="$(rpm -qa | grep collectd)"
+      if [[ $check ]]
+      then 
+        return 0
+      else 
+        return 1
+      fi
+    }
+    check_installed
+  ignore_errors: true
+  register: collectd_installed
+
+- name: Create amazon-cloudwatch-agent config directory
+  ansible.builtin.file:
+    path: "{{ amazon_cloudwatch_agent_config_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Get tag values for use in config file
+  set_fact:
+    name: "{{ ec2.tags.Name }}"
+    server_type: "{{ ec2.tags['server-type'] }}"
+    instance_id: "{{ ansible_ec2_instance_id }}"
+    weblogic_log_path: "{{ weblogic_log_path if ec2.tags['server-type'] == 'nomis-web' else '' }}"
+
+# default cloudwatch-agent config file for linux required with this naming
+- name: Create amazon-cloudwatch-agent config file 
+  ansible.builtin.template:
+    src: linux.json.j2
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create amazon-cloudwatch-agent config file for collectd
+  ansible.builtin.template:
+    src: agent_config_collectd.json.j2
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
+    owner: root
+    group: root
+    mode: 0755
+  when: collectd_installed.rc == 0
+
+- name: Create amazon-cloudwatch-agent config file for weblogic
+  ansible.builtin.template:
+    src: agent_config_weblogic.json.j2
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
+    owner: root
+    group: root
+    mode: 0755
+  when: ec2.tags['server-type'] == 'nomis-web'

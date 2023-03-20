@@ -39,15 +39,15 @@
     dest: "/etc/collectd.d/{{ item }}.conf"
     owner: root
     mode: 0644
-  loop: "{{ metric_configs }}"
+  loop: "{{ metric_configs|replace('-', '_') }}"
 
 - name: Template metric collection scripts
   ansible.builtin.template:
-    src: "{{ item }}_metrics.sh.j2"
+    src: "{{ item }}.sh.j2"
     dest: "/opt/collectd/{{ item }}.sh"
     owner: root
     mode: 0755
-  loop: "{{ metric_configs }}"
+  loop: "{{ metric_configs|replace('-', '_')  }}"
 
 - name: Start collectd service
   ansible.builtin.service:

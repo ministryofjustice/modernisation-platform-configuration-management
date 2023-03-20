@@ -3,10 +3,10 @@
   tags:
     - ec2provision
     - ec2patch
-  when: ansible_distribution == 'RedHat'
+  when: ansible_facts['distribution'] == "RedHat"
 
 - import_tasks: collectd_configure.yml
   tags:
     - ec2provision
     - ec2patch
-  when: ansible_distribution == 'RedHat'
+  when: ansible_facts['distribution'] == "RedHat"
