@@ -10,7 +10,6 @@
       template:
         src: "{{ item }}.j2"
         dest: "{{ stage }}/{{ item }}"
-        mode: u=rw,g=r,o=r
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: '0700'
@@ -29,13 +28,11 @@
         - "{{ psu_patch }}"
         - "{{ opatch }}"
 
-    - name: Unzip Oracle 19c db software 
-      ansible.builtin.unarchive:
-        src: "{{ stage }}/{{ db_software }}"
-        dest: "{{ database_home }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        remote_src: yes
+    - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
+      async: 7200
+      poll: 60
 
     - name: Unzip psu patch software
       ansible.builtin.unarchive:

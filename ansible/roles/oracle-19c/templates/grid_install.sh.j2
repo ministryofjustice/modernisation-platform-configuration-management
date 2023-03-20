@@ -5,3 +5,4 @@ export TMPDIR={{ temp }}
 export CV_ASSUME_DISTID=EL7
 echo "# Installing Oracle 19c grid Infrastructure"
 "{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" 
+exit 0 
