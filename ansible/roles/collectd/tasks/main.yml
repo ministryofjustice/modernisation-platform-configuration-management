@@ -1,11 +1,11 @@
 ---
-- import_tasks: "install_collectd.yml"
+- import_tasks: collectd_install.yml
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
 
-- import_tasks: "configure_collectd.yml"
+- import_tasks: collectd_configure.yml
   tags:
     - ec2provision
     - ec2patch
