@@ -1,0 +1,22 @@
+---
+- name: enable selinux
+  import_role:
+    name: common
+    tasks_from: selinux.yml
+  vars:
+    status: enforcing
+
+- name: add FLASH disk group
+  ansible.builtin.shell: |
+    source oraenv <<< +ASM
+    sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk FLASH01;"
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ grid_env }}"
+  vars:
+    disks: "/dev/oracleasm/disks/"
+
+- name: save spfile location
+  ansible.builtin.shell: source oraenv <<< +ASM
+    asmcmd spget > {{ temp }}/spfilelocation.txt
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ grid_env }}"

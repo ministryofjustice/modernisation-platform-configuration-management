@@ -1,0 +1,88 @@
+---
+- name: Check oracle 19c DB software installed
+  ansible.builtin.stat:
+    path: "{{ database_home }}/bin/sqlplus"
+  register: db_software_installed
+
+- name: Install Oracle 19c database software
+  block:
+    - name: create response file
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      loop:
+        - "{{ database_response_file }}"
+        - "{{ database_install_script }}"
+
+    - name: Download Oracle 19c Database software from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_bucket_object }}/{{ item }}"
+        dest: "{{ stage }}/{{ item }}"
+        mode: get
+      loop:
+        - "{{ db_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+
+    - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
+      async: 7200
+      poll: 60
+
+    - name: Unzip psu patch software
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ psu_patch }}"
+        dest: "{{ stage }}/psu"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+
+    - name: Upgrade OPatch on database home
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ opatch }}"
+        dest: "{{ database_home }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+
+    - name: Install Oracle 19c db software and apply patches
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.command:
+        cmd: "{{ stage }}/{{ database_install_script }}"
+      async: 7200
+      poll: 60
+
+    - name: run post install root script
+      ansible.builtin.command: "{{ database_home }}/root.sh"
+
+    - name: Update run_user for the {{ oracle_externaljob_file }}
+      replace:
+        path: "{{ oracle_externaljob_rdbms_path }}/{{ oracle_externaljob_file }}"
+        regexp: "run_user = nobody"
+        replace: "run_user = oracle"
+
+    - name: Update run_group for the {{ oracle_externaljob_file }}
+      replace:
+        path: "{{ oracle_externaljob_rdbms_path }}/{{ oracle_externaljob_file }}"
+        regexp: "run_group = nobody"
+        replace: "run_group = dba"
+
+    - name: Clean up {{ stage }} directory
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - "{{ database_response_file }}"
+        - "{{ database_install_script }}"
+        - "{{ db_software }}"
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+        - "{{ stage }}/psu"
+
+  # block
+  when: not db_software_installed.stat.exists
