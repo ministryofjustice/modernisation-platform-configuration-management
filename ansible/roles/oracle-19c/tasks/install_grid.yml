@@ -12,7 +12,7 @@
         dest: "{{ stage }}/{{ item }}"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
-        mode: '0700'
+        mode: "0700"
       loop:
         - "{{ grid_response_file }}"
         - "{{ grid_install_script }}"
@@ -51,9 +51,9 @@
         remote_src: yes
 
     - name: Run oracle grid install
-      become_user:  "{{ oracle_install_user }}"
+      become_user: "{{ oracle_install_user }}"
       ansible.builtin.command:
-        cmd: "{{ stage }}/{{ grid_install_script }}" 
+        cmd: "{{ stage }}/{{ grid_install_script }}"
       register: grid_install_output
       changed_when: "'Successfully Setup Software with warning(s).' not in grid_install_output.stdout"
       async: 7200
