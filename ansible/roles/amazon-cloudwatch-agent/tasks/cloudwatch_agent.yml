@@ -43,6 +43,21 @@
     group: root
     mode: 0755
 
+- name: Check if collectd is installed
+  ansible.builtin.shell: |
+    check_installed() {
+      check="$(rpm -qa | grep collectd)"
+      if [[ $check ]]
+      then 
+        return 0
+      else 
+        return 1
+      fi
+    }
+    check_installed
+  ignore_errors: true
+  register: collectd_installed
+
 - name: Create amazon-cloudwatch-agent config file for collectd
   ansible.builtin.template:
     src: agent_config_collectd.json.j2
@@ -50,6 +65,7 @@
     owner: root
     group: root
     mode: 0755
+  when: collectd_installed is succeeded
 
 - name: Set up amazon-cloudwatch-agent weblogic log scraping
   block:
@@ -75,6 +91,7 @@
 - name: Append settings for collectd to amazon-cloudwatch-agent config file
   ansible.builtin.shell: |
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
+  when: collectd_installed is succeeded
 
 # additional settings for weblogic EC2 instances
 - name: Append settings for amazon-cloudwatch-agent for weblogic EC2 instances

@@ -11,7 +11,7 @@ server_type_roles_list:
   - domain-search
   - node-exporter
   - nomis-weblogic
-  - amazon-cloudwatch-agent
   - collectd
+  - amazon-cloudwatch-agent
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
