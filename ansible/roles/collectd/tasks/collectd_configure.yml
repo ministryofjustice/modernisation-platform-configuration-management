@@ -21,37 +21,59 @@
     group: root
     mode: 0755
 
-- name: add linux conf for collectd to get service state as metrics
-  ansible.builtin.copy:
-    src: linux.conf
-    dest: "/etc/collectd.d/linux.conf"
-    owner: root
-    mode: 0644
+# - name: add linux conf for collectd to get service state as metrics
+#   ansible.builtin.copy:
+#     src: linux.conf
+#     dest: "/etc/collectd.d/linux.conf"
+#     owner: root
+#     mode: 0644
 
 - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
   set_fact:
     oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
   when: ec2.tags['oracle-sids'] is defined
 
-- name: Create list of additional metrics to collect
-  set_fact:
-    configs: "{{ metric_configs + [ ansible_system|lower ] }}"
+# - name: Create list of additional metrics to collect
+#   set_fact:
+#     metric_configs_files: "{{ metric_configs|replace('-', '_') }}"
 
-- name: Copy collectd conf files
+- name: check if there are collectd config files for each value of metric_configs locally
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/{{ item }}.conf"
+  register: config_files
+  loop: "{{ metric_configs|replace('-', '_') }}"
+  loop_control:
+    loop_var: item
+  when: metric_configs is defined
+
+- name: copy conf files defined above
   ansible.builtin.copy:
     src: "{{ item }}.conf"
     dest: "/etc/collectd.d/{{ item }}.conf"
     owner: root
     mode: 0644
-  loop: "{{ configs|replace('-', '_') }}"
+  loop: "{{ config_files.results|json_query('[*].item') + [ ansible_system|lower ] if config_files.results is defined else [ ansible_system|lower ]}}"
+  loop_control:
+    label: item
 
-- name: Template metric collection scripts
+- name: check if there are template files for each value of metric_configs locally
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ role_path }}/templates/{{ item }}.sh.j2"
+  register: template_files
+  loop: "{{ metric_configs|replace('-', '_') }}"
+  loop_control:
+    loop_var: item
+  when: metric_configs is defined
+
+- name: template config files defined above
   ansible.builtin.template:
     src: "{{ item }}.sh.j2"
     dest: "/opt/collectd/{{ item }}.sh"
     owner: root
     mode: 0755
-  loop: "{{ configs|replace('-', '_')  }}"
+  loop: "{{ template_files.results|json_query('[*].item') + [ ansible_system|lower ] if template_files.results is defined else [ ansible_system|lower ]}}"
 
 - name: Start collectd service
   ansible.builtin.service:

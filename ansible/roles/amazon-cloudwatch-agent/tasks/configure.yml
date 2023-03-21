@@ -49,34 +49,23 @@
     mode: 0755
   when: collectd_installed.rc == 0
 
-# - name: Create amazon-cloudwatch-agent config file for weblogic
-#   ansible.builtin.template:
-#     src: agent_config_weblogic.json.j2
-#     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
-#     owner: root
-#     group: root
-#     mode: 0755
-#   when: ec2.tags['server-type'] == 'nomis-web'
+- name: check if there are template files exist for each value of metric_configs
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ role_path }}/templates/{{ item }}.json.j2"
+  register: template_files
+  loop: "{{ metric_configs|replace('-', '_') }}"
+  loop_control:
+    loop_var: item
+  when: metric_configs is defined
 
-# - name: get list of additional config files for cloudwatch-agent
-#   set_fact:
-#     _found_file: "{{ lookup('ansible.builtin.first_found', item, skip=True ) }} "
-#     configs: "{{ metric_configs|replace('-', '_') }}"
-
-# ignores errors as the config file may not exist for cloudwatch but may do for collectd
-- name: template config files per value of metric_configs
+- name: template config files that exist
   ansible.builtin.template:
-    src: "{{ lookup('ansible.builtin.first_found', params) }}"
+    src: "{{ item }}.json.j2"
     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ item }}.json"
     owner: root
     group: root
     mode: 0755
-  vars:
-    params: 
-      files: 
-        - "{{ item }}"
-      paths:
-        - 'templates'
-      skip: True
-  loop: "{{ metric_configs|replace('-', '_') }}"
-  # loop: "{{ metric_configs|replace('-', '_') }}"
+  loop: "{{ template_files.results|json_query('[*].item') if template_files.results is defined else [] }}"
+  loop_control:
+    label: item  
