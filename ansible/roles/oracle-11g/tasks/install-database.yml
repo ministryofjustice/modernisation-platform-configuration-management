@@ -1,0 +1,27 @@
+---
+- name: Create database response file
+  template:
+    src: db_install.rsp.j2
+    dest: "/u02/stage/{{ database_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Install database server
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo /u02/stage/database/runInstaller -silent -waitforcompletion -ignoreSysPrereqs -ignorePrereq -responseFile /u02/stage/{{ database_response_file }}
+      /u02/stage/database/runInstaller -silent -waitforcompletion -ignoreSysPrereqs -ignorePrereq -responseFile /u02/stage/{{ database_response_file }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  become_user: oracle
+
+- name: Run database post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ database_home }}/root.sh
+      {{ database_home }}/root.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db

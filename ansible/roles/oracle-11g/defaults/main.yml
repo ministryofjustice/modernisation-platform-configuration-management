@@ -3,6 +3,24 @@ ssm_parameters_prefix: database
 oracle_home: /u01/app/oracle/product/11.2.0.4
 oracle_inventory: /u01/app/oraInventory
 
+oracle_tar: oracle-11gR2-asmlib-v1.tar.gz            # for install-base-software.yml
+opatch_zip: opatch_p6880880_112000_Linux-x86-64.zip  # for upgrade-opatch.yml
+patch_vars_filename: patches-20211019.yml            # for apply-patches.yml
+
+# for install-grid.yml
+asmpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
+asmmonitorpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
+grid_password_file: grid_pw.rsp
 grid_response_file: grid_install.rsp
 grid_base: /u01/app/grid
 grid_home: "{{ oracle_home }}/gridhome_1"
+grid_env:
+  ORACLE_HOME: "{{ grid_home }}"
+  PATH: "{{ grid_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin"
+
+database_response_file: db_install.rsp
+database_base: /u01/app/oracle
+database_home: "{{ oracle_home }}/db_1"
+database_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin"

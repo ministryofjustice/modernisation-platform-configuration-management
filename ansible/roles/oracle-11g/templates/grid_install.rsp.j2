@@ -347,7 +347,7 @@ oracle.install.asm.diskGroup.AUSize=1
 #     oracle.install.asm.diskGroup.disks=\\.\ORCLDISKDATA0,\\.\ORCLDISKDATA1
 #
 #-------------------------------------------------------------------------------
-oracle.install.asm.diskGroup.disks={{ oracle_asm_data_disks | json_query('[*].label') | map('regex_replace', '(^.*$)', 'ORCL:\\1') | join(',') }}
+oracle.install.asm.diskGroup.disks={{ oracle_data_diskgroup }}
 
 #-------------------------------------------------------------------------------
 # The disk discovery string to be used to discover the disks used create a ASM DiskGroup

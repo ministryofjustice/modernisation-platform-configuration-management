@@ -1,0 +1,113 @@
+---
+- include_vars:
+    file: "{{ patch_vars_filename }}"
+
+- name: Download patches from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ item }}"
+    dest: "/u02/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "oracle-11g-software/{{ patch_set }}"
+  register: oracle_db_patches_download
+    #  when: false
+
+- block:
+  - name: Unarchive patches
+    ansible.builtin.unarchive:
+      src: "/u02/{{ item }}"
+      dest: "/u02/stage"
+      owner: oracle
+      group: oinstall
+      mode: u=rwX,g=rX,o=rX
+      remote_src: yes
+    loop:
+      - "oracle-11g-software/{{ patch_set }}"
+        #    when: false
+
+  - name: Check TEST database not already present
+    ansible.builtin.command: srvctl config database -d TEST
+    register: test_database_result
+    become_user: oracle
+    environment: "{{ grid_env }}"
+    failed_when: test_database_result.rc > 1
+
+  - debug:
+      var: test_database_result
+
+  - name: Create temporary TEST database for patching purposes
+    block:
+      - ansible.builtin.lineinfile:
+          path: "{{ database_home }}/dbs/initTEST.ora"
+          regexp: "^db_name=TEST"
+          line: db_name=TEST
+          create: yes
+          group: oinstall
+          owner: oracle
+
+      - ansible.builtin.shell: |
+          set -eo pipefail
+          main() {
+            echo srvctl add database -d TEST -o "{{ database_home }}" -s nomount
+            srvctl add database -d TEST -o "{{ database_home }}" -s nomount
+            echo srvctl start database -d TEST
+            srvctl start database -d TEST
+          }
+          main 2>&1 | logger -p local3.info -t ansible-oracle-db
+        become_user: oracle
+        environment: "{{ grid_env }}"
+
+    # block
+    when: test_database_result.rc != 0
+
+  - name: Apply patches to grid and database home
+    ansible.builtin.shell: |
+      set -eo pipefail
+      main() {
+        echo {{ grid_home }}/OPatch/opatch auto /u02/stage/patches/{{ item }}
+        {{ grid_home }}/OPatch/opatch auto /u02/stage/patches/{{ item }}
+      }
+      main 2>&1 | logger -p local3.info -t ansible-oracle-db
+    loop: "{{ patches_auto }}"
+    environment: "{{ grid_env }}"
+    async: 1800
+    poll: 60
+
+  - name: Stop TEST database before patching oracle home
+    ansible.builtin.command: srvctl stop database -d TEST
+    become_user: oracle
+    environment: "{{ database_env }}"
+    register: db_stop
+    failed_when: db_stop.rc > 2
+
+  - name: Apply batch patches to database home
+    ansible.builtin.shell: |
+      set -eo pipefail
+      main() {
+        echo {{ database_home }}/OPatch/opatch napply /u02/stage/patches -id {{ patch_ids }} -silent -oh {{ database_home }}
+        {{ database_home }}/OPatch/opatch napply /u02/stage/patches -id {{ patch_ids }} -silent -oh {{ database_home }}
+      }
+      main 2>&1 | logger -p local3.info -t ansible-oracle-db
+    vars:
+      patch_ids: "{{ patches_batch | join(',') }}"
+    become_user: oracle
+    async: 1800
+    poll: 60
+
+  - name: Apply single patches to database home
+    ansible.builtin.shell: |
+      set -eo pipefail
+      main() {
+        echo {{ database_home }}/OPatch/opatch apply /u02/stage/patches/{{ item }} -silent -oh {{ database_home }}
+        {{ database_home }}/OPatch/opatch apply /u02/stage/patches/{{ item }} -silent -oh {{ database_home }}
+      }
+      main 2>&1 | logger -p local3.info -t ansible-oracle-db
+    loop: "{{ patches_single }}"
+    become_user: oracle
+    async: 1800
+    poll: 60
+
+# block
+#  when: oracle_db_patches_download.changed

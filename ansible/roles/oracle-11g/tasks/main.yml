@@ -1,4 +1,59 @@
 ---
+- import_tasks: prereqs.yml
+  tags:
+    - always
+
+- import_tasks: install-base-software.yml
+  tags:
+    - amibuild
+    - oracle_db_install_base_software
+
+- import_tasks: configure-asm.yml
+  tags:
+    - amibuild
+    - oracle_db_configure_asm
+
+- import_tasks: install-grid.yml
+  tags:
+    - amibuild
+    - oracle_db_install_grid
+
+- import_tasks: install-database.yml
+  tags:
+    - amibuild
+    - oracle_db_install_database
+
+- import_tasks: upgrade-opatch.yml
+  tags:
+    - amibuild
+    - oracle_db_upgrade_opatch
+
+- import_tasks: apply-patches.yml
+  tags:
+    - amibuild
+    - oracle_db_apply_patches
+
+- import_tasks: flash.yml
+  tags:
+    - amibuild
+    - oracle_db_flash
+
+- import_tasks: spfile.yml
+  tags:
+    - amibuild
+    - oracle_db_spfile
+
+- import_tasks: external-job.yml
+  tags:
+    - amibuild
+    - oracle_db_external_job
+
+# Deconfigure before the AMI is built.  Re-configure when EC2 is provisioned
+- import_tasks: deconfigure-has.yml
+  tags:
+    - amibuild
+    - oracle_db_deconfigure_has
+
 - import_tasks: get-facts.yml
   tags:
     - ec2provision
