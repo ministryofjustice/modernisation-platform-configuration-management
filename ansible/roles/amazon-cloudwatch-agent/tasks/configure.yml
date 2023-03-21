@@ -1,6 +1,6 @@
 ---
 # Some configs rely on whether collectd is installed or not
-- name: Check if collectd has been installed 
+- name: Check if collectd has been installed
   ansible.builtin.shell: |
     check_installed() {
       check="$(rpm -qa | grep collectd)"
@@ -32,7 +32,7 @@
 
 # default cloudwatch-agent config file based on OS type (linux or windows)
 # NOTE: windows default config doesn't exist yet
-- name: Create OS specific amazon-cloudwatch-agent config file 
+- name: Create OS specific amazon-cloudwatch-agent config file
   ansible.builtin.template:
     src: "{{ ansible_system|lower }}.json.j2"
     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
@@ -68,4 +68,4 @@
     mode: 0755
   loop: "{{ template_files.results|json_query('[*].item') if template_files.results is defined else [] }}"
   loop_control:
-    label: item  
+    label: item
