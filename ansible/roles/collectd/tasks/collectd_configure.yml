@@ -21,21 +21,10 @@
     group: root
     mode: 0755
 
-# - name: add linux conf for collectd to get service state as metrics
-#   ansible.builtin.copy:
-#     src: linux.conf
-#     dest: "/etc/collectd.d/linux.conf"
-#     owner: root
-#     mode: 0644
-
 - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
   set_fact:
     oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
   when: ec2.tags['oracle-sids'] is defined
-
-# - name: Create list of additional metrics to collect
-#   set_fact:
-#     metric_configs_files: "{{ metric_configs|replace('-', '_') }}"
 
 - name: check if there are collectd config files for each value of metric_configs locally
   delegate_to: localhost
