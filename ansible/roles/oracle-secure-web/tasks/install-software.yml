@@ -1,0 +1,45 @@
+---
+- name: Fail if IAM profile not defined
+  fail:
+    msg: "Please run get-ec2-facts role to collect facts"
+  when: ansible_ec2_iam_instance_profile_role is not defined
+
+- name: Configure osbws_argfile
+  ansible.builtin.template:
+    src: osbws_argfile
+    dest: "{{ osw_stage_dir }}/osbws_argfile"
+    mode: 0644
+    owner: oracle
+    group: oinstall
+  register: osbws_argfile
+
+- name: Copy install script
+  ansible.builtin.template:
+    src: install.sh
+    dest: "{{ osw_stage_dir }}/install.sh"
+    mode: 0755
+    owner: oracle
+    group: oinstall
+  register: osbws_install_script
+
+- block:
+  - name: Run install script
+    become_user: oracle
+    shell: |
+      {{ osw_stage_dir }}/install.sh
+
+  - name: Update osbws config
+    become_user: oracle
+    ansible.builtin.lineinfile:
+      path: "{{ database_home }}/dbs/osbws.ora"
+      line: "OSB_WS_BUCKET={{ ansible_aws_ssm_bucket_name }}"
+      create: yes
+
+  - name: Run test
+    become_user: oracle
+    shell: |
+      export OSB_WS_PFILE={{ database_home }}/dbs/osbws.ora
+      {{ database_home }}/bin/sbttest /tmp/foo -libname {{ database_home }}/lib/libosbws.so
+
+  # block
+  when: osbws_argfile.changed or osbws_install_script.changed

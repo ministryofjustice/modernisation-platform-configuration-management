@@ -8,13 +8,27 @@ users_and_groups_system:
       - wheel
 
 disks_partition:
-  - ebs_device_name: /dev/sde # data01
-  - ebs_device_name: /dev/sdf # data02
-  - ebs_device_name: /dev/sdg # data03
-  - ebs_device_name: /dev/sdh # data04
-  - ebs_device_name: /dev/sdi # data05
-  - ebs_device_name: /dev/sdj # flash01
-  - ebs_device_name: /dev/sdk # flash02
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdi
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdj
+    oracle_group: flash
+    oracle_label: FLASH01
+  - ebs_device_name: /dev/sdk
+    oracle_group: flash
+    oracle_label: FLASH02
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -36,10 +50,11 @@ ami_roles_list:
   - amazon-ssm-agent
   - amazon-cli
   - disable-firewall
-    #  - selinux-config
+  - selinux-config
   - tcp-keepalive
   - hugepages
   - disks
+  - oracle-11g
     #  - script-exporter
     #  - oracle-db-11g
     #  - oracle-secure-web

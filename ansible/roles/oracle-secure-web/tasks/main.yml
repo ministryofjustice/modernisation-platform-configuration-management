@@ -1,11 +1,10 @@
 ---
-- import_tasks: copy-install-files.yml
+- import_tasks: get-software.yml
   tags:
-    - osw-force-install
-    - ec2provision
+    - osw-get-software
+    - amibuild
 
-# force a reinstall via osw-force-install, otherwise runs via handler
-- import_tasks: install-oracle-secure-web.yml
+- import_tasks: install-software.yml
   tags:
-    - osw-force-install
-    - never
+    - osw-install-software
+    - ec2provision
