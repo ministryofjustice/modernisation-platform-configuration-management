@@ -55,9 +55,7 @@ ami_roles_list:
   - hugepages
   - disks
   - oracle-11g
-    #  - script-exporter
-    #  - oracle-db-11g
-    #  - oracle-secure-web
+  - oracle-secure-web
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
