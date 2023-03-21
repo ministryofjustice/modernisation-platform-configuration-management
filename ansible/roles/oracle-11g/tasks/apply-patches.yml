@@ -12,7 +12,6 @@
   loop:
     - "oracle-11g-software/{{ patch_set }}"
   register: oracle_db_patches_download
-    #  when: false
 
 - block:
   - name: Unarchive patches
@@ -25,7 +24,6 @@
       remote_src: yes
     loop:
       - "oracle-11g-software/{{ patch_set }}"
-        #    when: false
 
   - name: Check TEST database not already present
     ansible.builtin.command: srvctl config database -d TEST
@@ -33,9 +31,6 @@
     become_user: oracle
     environment: "{{ grid_env }}"
     failed_when: test_database_result.rc > 1
-
-  - debug:
-      var: test_database_result
 
   - name: Create temporary TEST database for patching purposes
     block:
@@ -110,4 +105,4 @@
     poll: 60
 
 # block
-#  when: oracle_db_patches_download.changed
+  when: oracle_db_patches_download.changed
