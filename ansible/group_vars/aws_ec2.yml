@@ -1,4 +1,5 @@
 ansible_connection: community.aws.aws_ssm
-ssm_timeout: 2000
+ansible_aws_ssm_timeout: 300             # long enough so long operations that don't support async, e.g. unarchive
+ansible_aws_ssm_reconnection_retries: 1  # just retry once
 ansible_aws_ssm_region: eu-west-2
 instance_id: "{{ hostvars[inventory_hostname].instance_id }}" # for scenarios where {{ ansible_host }} is set to the ip address rather than instance_id
