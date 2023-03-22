@@ -11,3 +11,13 @@ weblogic_additional_form_servers:
   - { name: WLS_FORMS1A, port: 9011 }
   - { name: WLS_FORMS1B, port: 9021 }
   - { name: WLS_FORMS1C, port: 9031 }
+
+weblogic_other_form_servers:
+  - WLS_FORMS
+  - WLS_REPORTS
+  - AdminServer
+  - WLS_AUTOLOGOFF
+  - WLS_TAGSAR
+  - WLS_HOTPAGE
+
+weblogic_all_form_servers: "{{ weblogic_other_form_servers + (weblogic_additional_form_servers | map(attribute='name')) }}"

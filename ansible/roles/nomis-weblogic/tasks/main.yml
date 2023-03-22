@@ -177,13 +177,6 @@
         - weblogic_setup_log_rotate
       loop_control:
         loop_var: weblogic_managed_app
-      loop:
-        - WLS_FORMS
-        - WLS_REPORTS
-        - AdminServer
-        - WLS_AUTOLOGOFF
-        - WLS_TAGSAR
-        - WLS_HOTPAGE
-        - "{{ weblogic_additional_form_servers }}"
+      loop: "{{ weblogic_all_form_servers }}"
 
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"

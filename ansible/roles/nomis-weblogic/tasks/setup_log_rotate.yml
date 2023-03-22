@@ -1,10 +1,13 @@
 ---
+- debug:
+    msg: "Configuring log setup {{ weblogic_managed_app }}"
+
 - name: Start services if not already running
   ansible.builtin.service:
     name: weblogic-all
     state: started
 
-- name: Copy managed app configuration files
+- name: Copy log setup managed app configuration files
   ansible.builtin.template:
     src: "10.3{{ item }}"
     dest: "{{ item }}"

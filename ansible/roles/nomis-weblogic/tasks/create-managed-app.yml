@@ -11,6 +11,9 @@
 
 - name: Configure forms
   block:
+    - debug:
+        msg: "Creating managed app {{ weblogic_managed_app }}"
+
     # ensure everything is running
     - name: Start services if not already running
       ansible.builtin.service:
