@@ -1,4 +1,5 @@
 ---
+# ignore failures, e.g. when creating AMI, the instance might not have permissions
 - name: Waiting for volumes to be attached
   ansible.builtin.shell: |
     set -eo pipefail
