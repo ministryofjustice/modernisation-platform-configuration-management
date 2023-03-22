@@ -13,10 +13,33 @@ start() {
   echo $"Starting all weblogic processes: "
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
   [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
+
   managed_services=$(find /etc/init.d/ -name 'WLS*' | sort)
+  echo -n $"Starting all WLS services in parallel: "
+  i=0
   for managed_service in $managed_services; do
-    $managed_service start
+    $managed_service start > /dev/null &
+    pids[i]=$!
+    i=$((i + 1))
   done
+  echo "PIDS ${pids[*]}"
+
+  set +e
+  i=0
+  for managed_service in $managed_services; do
+    key=$(echo $managed_service | cut -d/ -f4)
+    echo -n $"Starting $key: PID=${pids[i]}"
+    if ! wait ${pids[i]}; then
+      echo_failure
+      echo
+      return 1
+    fi
+    echo_success
+    echo
+    i=$((i + 1))
+  done
+  set -e
+
   [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn start
 }
 

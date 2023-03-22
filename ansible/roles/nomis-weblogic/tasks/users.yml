@@ -12,10 +12,3 @@
     group: oinstall
   loop:
     - /home/oracle/.bash_profile
-
-- name: Give oracle user sudo
-  community.general.sudoers:
-    name: oracle
-    state: present
-    user: oracle
-    commands: ALL
