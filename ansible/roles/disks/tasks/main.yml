@@ -16,6 +16,13 @@
     - disks_partition
   when: ansible_distribution == 'RedHat' and disks_partition is defined
 
+- import_tasks: block-size-rhel.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - disks_block_size
+  when: ansible_distribution == 'RedHat' and disks_block_size is defined
+
 - import_tasks: mount-disk-rhel.yml
   tags:
     - amibuild
