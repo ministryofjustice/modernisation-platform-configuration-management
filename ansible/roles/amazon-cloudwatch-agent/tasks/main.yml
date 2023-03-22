@@ -1,17 +1,23 @@
 ---
-- import_tasks: "collectd.yml"
+- import_tasks: "install.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
 
-- import_tasks: "cloudwatch_agent.yml"
+- import_tasks: "configure.yml"
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
 
-- import_tasks: "cloudwatch_agent_helper.yml"
+- import_tasks: "start.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ansible_distribution == 'RedHat'
+
+- import_tasks: "create_helper_script.yml"
   tags:
     - ec2provision
     - ec2patch
