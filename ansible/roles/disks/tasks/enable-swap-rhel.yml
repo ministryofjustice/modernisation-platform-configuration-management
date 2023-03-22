@@ -1,10 +1,10 @@
 ---
 - name: Get UUID of device
   ansible.builtin.command: blkid -s UUID -o value {{ swap_device_name }}
-  register: blkid
+  register: disks_swap_blkid
   check_mode: false
   changed_when: false
-  failed_when: blkid.stdout|length == 0
+  failed_when: disks_swap_blkid.stdout|length == 0
 
 - name: Get existing swap
   ansible.builtin.shell: "swapon --show --noheading | cut -d' ' -f1"
@@ -13,5 +13,5 @@
   register: swap_show
 
 - name: Activate swap
-  ansible.builtin.command: swapon UUID={{ blkid.stdout_lines[0] }}
+  ansible.builtin.command: swapon UUID={{ disks_swap_blkid.stdout_lines[0] }}
   when: not swap_show.stdout is search(swap_device_name)
