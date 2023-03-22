@@ -18,7 +18,7 @@ start() {
   echo -n $"Starting all WLS services in parallel: "
   i=0
   for managed_service in $managed_services; do
-    $managed_service start > /dev/null &
+    $managed_service start > /dev/null 2>&1 &
     pids[i]=$!
     i=$((i + 1))
   done
@@ -28,7 +28,7 @@ start() {
   i=0
   for managed_service in $managed_services; do
     key=$(echo $managed_service | cut -d/ -f4)
-    echo -n $"Starting $key: PID=${pids[i]}"
+    echo -n $"Waiting for $key: PID=${pids[i]}"
     if ! wait ${pids[i]}; then
       echo_failure
       echo
