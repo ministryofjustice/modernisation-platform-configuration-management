@@ -3,6 +3,10 @@
   set_fact:
     ebs_volume_ids: "{{ ec2.block_device_mappings | map(attribute='ebs.volume_id') }}"
 
+- name: Waiting for volumes to be attached
+  ansible.builtin.shell: |
+    aws ec2 describe-volumes > /tmp/ec2.describe-volumes.json
+
 # ignore failures, e.g. when creating AMI, the instance might not have permissions
 - name: Waiting for volumes to be attached
   ansible.builtin.shell: |
@@ -16,3 +20,6 @@
   check_mode: false
   changed_when: false
   failed_when: false
+
+- name: Refresh host facts
+  setup:
