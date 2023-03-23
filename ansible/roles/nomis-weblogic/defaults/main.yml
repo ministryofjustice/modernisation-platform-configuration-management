@@ -8,16 +8,16 @@ weblogic_report_servername: "{{ weblogic_report_servername_long[:30] }}"
 weblogic_db_port: 1521
 
 weblogic_additional_form_servers:
-  - { name: WLS_FORMS1A, port: 9011 }
-  - { name: WLS_FORMS1B, port: 9021 }
-  - { name: WLS_FORMS1C, port: 9031 }
+  - { name: WLS_FORMS1A, port: 9011, properties_src: WLS_FORMS1X }
+  - { name: WLS_FORMS1B, port: 9021, properties_src: WLS_FORMS1X }
+  - { name: WLS_FORMS1C, port: 9031, properties_src: WLS_FORMS1X }
 
 weblogic_other_form_servers:
-  - WLS_FORMS
-  - WLS_REPORTS
-  - AdminServer
-  - WLS_AUTOLOGOFF
-  - WLS_TAGSAR
-  - WLS_HOTPAGE
+  - { name: WLS_FORMS }
+  - { name: WLS_REPORTS }
+  - { name: AdminServer }
+  - { name: WLS_AUTOLOGOFF }
+  - { name: WLS_TAGSAR }
+  - { name: WLS_HOTPAGE }
 
-weblogic_all_form_servers: "{{ weblogic_other_form_servers + (weblogic_additional_form_servers | map(attribute='name')) }}"
+weblogic_all_form_servers: "{{ weblogic_other_form_servers + weblogic_additional_form_servers }}"
