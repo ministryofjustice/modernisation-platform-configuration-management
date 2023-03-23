@@ -166,6 +166,10 @@
         - ec2provision
         - weblogic_setup_cookie
 
+    - import_tasks: wait-for-managed-services.yml
+      tags:
+        - ec2provision
+
     - include_tasks:
         file: setup_log_rotate.yml
         apply:

@@ -1,0 +1,13 @@
+---
+- name: Wait for managed services to be running
+  ansible.builtin.shell: |
+    set -eo pipefail
+    for ((i=0; i<30; i++)); do
+      count=$(/home/oracle/admin/scripts/ms_state.sh | grep ^Current | grep -v RUNNING | wc -l)
+      if [[ count -eq 0 ]]; then
+        echo "All services running"
+        exit 0
+      fi
+    done
+    echo "Timed out waiting for services"
+    exit 1 
