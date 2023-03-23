@@ -1,7 +1,6 @@
 ---
 - name: Wait for managed services to be running
   ansible.builtin.shell: |
-    set -eo pipefail
     for ((i=0; i<30; i++)); do
       count=$(/home/oracle/admin/scripts/ms_state.sh | grep ^Current | grep -v RUNNING | wc -l)
       if [[ count -eq 0 ]]; then
