@@ -13,10 +13,6 @@
     msg: "Missing ec2 instance info.  Ensure EC2 role has ec2:DescribeInstances"
   when: not ec2.block_device_mappings is defined
 
-- name: Set fact - ebs volume ids
-  set_fact:
-    ebs_volume_ids: "{{ ec2.block_device_mappings | map(attribute='ebs.volume_id') }}"
-
 - name: Set xvd device mapping
   block:
     - name: Set xvd fact - group by device name
