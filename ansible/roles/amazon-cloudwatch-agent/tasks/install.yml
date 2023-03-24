@@ -1,0 +1,20 @@
+---
+- name: check if amazon-cloudwatch-agent installed
+  ansible.builtin.shell: |
+    check_installed() {
+      check="$(amazon-cloudwatch-agent-ctl -m ec2 -a status)"
+      if [[ $check ]]
+      then 
+        return 0
+      else 
+        return 1
+      fi
+    }
+    check_installed
+  ignore_errors: true
+  register: agent_installed
+
+- name: Install amazon-cloudwatch-agent
+  ansible.builtin.yum:
+    name: "{{ amazon_cloudwatch_agent_package }}"
+  when: agent_installed == 1

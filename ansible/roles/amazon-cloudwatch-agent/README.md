@@ -2,11 +2,17 @@
 
 This role installs the Cloudwatch Agent on a Linux host and configures it to send metrics to Cloudwatch.
 
-It will also install collectd and configure that to collect Oracle_Sids connection metrics.
+If the group_vars for a host has the variable `metric_configs` defined then this will deploy additional cloudwatch agent config files to the host. See files in /templates for examples. 
 
-These connection metrics will then be picked up by Cloudwatch if the `"collectd": {}` section of the cloudwatch agent is configured.
+Config exection and start order is: 
 
-IMPORTANT: This role is inactive for Windows hosts as we have not yet implemented a way to run ansible at them. At some point we will probably run this from an AWS Lambda function. For now we are using the Windows Jumpserver init script in the modernisation-platform-environment repo
+    1. ansible_system == 'linux' (the default config)
+    2. collectd config IF it's already installer
+    3. loops through values of metric_configs and deploys them to the host
+    
+* NOTE: metric_configs values can exist for collectd but not necessarily for cloudwatch agent & vice-versa. The role takes account of this in that it looks for template files locally with the same name as the metric_configs value. If it doesn't find one then it doesn't deploy it.
+
+* IMPORTANT: to pick up metrics from collectd that role has to be run first! This allows the 'start' and config sections of this role to be set up properly by looking for evidence that collectd is already installed.
 
 # Cloudwatch Agent
 ## Debugging on Linux
@@ -27,22 +33,6 @@ cat /opt/aws/amazon-cloudwatch-agent/logs/configuration-validation.log
 
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-CloudWatch-Agent.html
 
-# Collectd
-## Debugging Collectd
-
-Probably the easiest thing to do is un-comment the 'logfile' plugin sections in collectd.conf.j2 and reload collectd via `sudo systemctl restart collectd.service`
-
-Then you can `cat /var/log/collectd.log` to see what's going on. Also `sudo cat /var/log/messages | grep collectd` to see if there are any errors. This is especially useful for plugins not loading or configuration issues generally.
-
-You can also install tcpdump on the instance `sudo yum install tcpdump` and run `sudo tcpdump -vv -A -i lo -n udp port 25826 | grep oracle-health` to see the metrics which should be picked up by the Cloudwatch agent locally.
-
-Further collectd Troubleshooting [here](https://collectd.org/wiki/index.php/Troubleshooting)
-
-## Collectd gotchas and how things work
-
-1. *.conf files must have an empty line at the end to load, otherwise collectd won't start...
-2. In the agent_config_linux.json.j2 file the `append_dimensions` section needs to exist at the "global" level as well as the metrics level for these additional dimensions to be added to the metrics. This is not obvious from the documentation.
-3. formatting for the exec message (sent to localhost udp port 25826) is very important. It MUST be in the format "PUTVAL $HOSTNAME/exec-<name_of_metric>/guage-$signifier. Values after exec- and guage- (or other value type) cannot use '-' characters or spaces otherwise the exec plugin will deliver a mal-formed message. 
 
 ### Debugging continued!
 
@@ -51,6 +41,8 @@ definitely add `debug: true` to the cloudwatch agent config file to see what's g
 Collectd relies on plugins, the most important one related to Cloudwatch is the 'network' plugin which posts the metrics data to a UDP endpoint. Cloudwatch picks metrics up from there and sends them on to cloudwatch. 
 
 Intro to Collectd networking [here](https://collectd.org/wiki/index.php/Networking_introduction)
+
+In the linux.json.j2 file the `append_dimensions` section needs to exist at the "global" level as well as the metrics level for these additional dimensions to be added to the metrics. This is not obvious from the documentation.
 
 ## Finding metrics in Cloudwatch
 
@@ -80,8 +72,6 @@ If this returns a value of 1 then the value for the batch job failure status is 
 ### collectd_exec_value instance: oracle_batch_monitoring_file_missing
 
 If this returns a value of 1 then the monitoring file is not there. There isn't an alarm set up for this metric.
-
-
 
 ## Finding Logs in Cloudwatch
 

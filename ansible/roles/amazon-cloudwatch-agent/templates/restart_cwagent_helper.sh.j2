@@ -10,10 +10,12 @@
 
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:"/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
 
+{% if collectd_installed.rc == 0 %}
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
+{% endif %}
 
-{% if ec2.tags['server-type'] == 'nomis-web' %}
-/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_weblogic_config_file }}"
-{% endif %}    
+{% for item in template_files.results|json_query('[*].item') if template_files.results is defined %}
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ item }}.json"
+{% endfor %}    
 
 # Once it's been started and the configs loaded using append-config the 'loaded' config exists as /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml. The 'initial' file used to start the agent is moved to /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json. The contents of this file only reflect the initial json config in the fetch-config step, these are added directly to the toml file via the append-config steps.

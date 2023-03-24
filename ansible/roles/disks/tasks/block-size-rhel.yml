@@ -1,0 +1,29 @@
+---
+# this assumes you want the physical and logical sector sizes the same
+# to change physical sector sizes you need different disks - i.e. not done in ansible
+
+- name: print disk sector sizes
+  command: "blockdev --report {{ device_name }}"
+  register: disk_sector_sizes
+  check_mode: no # do it even in check mode
+
+- debug: msg="disk_sector_sizes.stdout.split('\n')"
+
+- name: get logical block sector size
+  command: "blockdev --getss {{ device_name }}"
+  register: logical_sector_size
+  check_mode: no # do it even in check mode
+
+- name: get physical block sector size
+  command: "blockdev --getpbsz {{ device_name }}"
+  register: physical_sector_size
+  check_mode: no # do it even in check mode
+
+- name: assert physical disks have the right sector size
+  ansible.builtin.assert:
+    that: physical_sector_size == sector_size
+    fail_msg: "The physical sector size is not {{ sector_size }}, change disks in terraform"
+
+- name: Set logical sector size
+  ansible.builtin.command: "blockdev --setss {{ sector_size }} {{ device_name }}"
+  when: sector_size != logical_sector_size
