@@ -24,7 +24,7 @@
 
     - name: Copy managed app configuration file
       ansible.builtin.template:
-        src: "10.3/u01/software/weblogic/WLS_FORMS1X.properties"
+        src: "10.3/u01/software/weblogic/{{ weblogic_form_server_config.properties_src }}.properties"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall

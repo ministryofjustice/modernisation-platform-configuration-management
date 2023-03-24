@@ -1,12 +1,17 @@
 ---
+- name: Set weblogic managed app facts
+  set_fact:
+    weblogic_managed_app: "{{ weblogic_form_server_config.name }}"
+    weblogic_managed_app_port: "{{ weblogic_form_server_config.port | default('') }}"
+
 - name: Start services if not already running
   ansible.builtin.service:
     name: weblogic-all
     state: started
 
-- name: Copy managed app configuration files
+- name: Copy log setup managed app configuration files
   ansible.builtin.template:
-    src: "10.3{{ item }}"
+    src: "10.3/u01/software/weblogic/{{ weblogic_form_server_config.properties_src | default(weblogic_managed_app) }}.properties"
     dest: "{{ item }}"
     owner: oracle
     group: oinstall
@@ -20,7 +25,7 @@
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
     main() {
-      echo "# create managed app {{ weblogic_managed_app }}"
+      echo "# configure log setup app {{ weblogic_managed_app }}"
       java weblogic.WLST ~/admin/scripts/set_ms_log_rotation.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
     }
     main 2>&1 | logger -p local3.info -t ansible-weblogic

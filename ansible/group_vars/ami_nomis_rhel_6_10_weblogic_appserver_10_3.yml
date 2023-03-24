@@ -9,8 +9,14 @@ users_and_groups_system:
       - dba
       - wheel
 
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: ext4
+
 ami_roles_list:
   - users-and-groups
+  - sudoers
   - disable-firewall
   - disable-ipv6
   - time
@@ -18,6 +24,7 @@ ami_roles_list:
   - amazon-ssm-agent
   - amazon-cli
   - tcp-keepalive
+  - disks
   - nomis-weblogic
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
