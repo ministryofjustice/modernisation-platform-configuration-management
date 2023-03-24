@@ -1,0 +1,53 @@
+---
+- name: Install ASM packages
+  ansible.builtin.yum:
+    name: kmod-oracleasm # note, 2 other required packages are installed as part of pre_install_tasks.yml
+    state: present
+    enablerepo: rhel-7-server-rhui-optional-rpms
+
+- name: Run oracleasm configure to update /etc/sysconfig/oracleasm
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      oracleasm configure --user oracle --group oinstall --enable --scanboot y
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+- name: Run oracleasm init
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      oracleasm init
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+- name: List existing ASM disks
+  ansible.builtin.command: oracleasm listdisks
+  check_mode: false
+  changed_when: false
+  register: asm_disks
+
+- name: Create ASM disk
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      echo oracleasm createdisk "{{ item.oracle_label }}" "{{ ebs_to_linux_device_map[item.ebs_device_name] }}p1"
+      oracleasm createdisk "{{ item.oracle_label }}" "{{ ebs_to_linux_device_map[item.ebs_device_name] }}p1"
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  loop: "{{ disks_partition | selectattr('oracle_label', 'defined') }}"
+  when: item.oracle_label not in asm_disks.stdout_lines
+
+- name: List existing ASM disks
+  ansible.builtin.command: oracleasm listdisks
+  check_mode: false
+  changed_when: false
+  register: asm_disks # used in grid_install.rsp.j2 template
+
+- name: Check ASM disks all there
+  ansible.builtin.assert:
+    that: "{{ disks_partition | selectattr('oracle_label', 'defined') | map(attribute='oracle_label') | difference(asm_disks.stdout_lines) | length == 0 }}"
+    fail_msg: "some ASM disks were not successfully created"

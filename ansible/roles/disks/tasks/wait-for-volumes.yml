@@ -1,4 +1,9 @@
 ---
+- name: Set fact - ebs volume ids
+  set_fact:
+    ebs_volume_ids: "{{ ec2.block_device_mappings | map(attribute='ebs.volume_id') }}"
+
+# ignore failures, e.g. when creating AMI, the instance might not have permissions
 - name: Waiting for volumes to be attached
   ansible.builtin.shell: |
     set -eo pipefail
@@ -10,3 +15,9 @@
     main 2>&1 | logger -p local3.info -t ansible-disks
   check_mode: false
   changed_when: false
+  failed_when: false
+
+# We need to refresh ansible state as the drives have probably attached since
+# ansible started running
+- name: Refresh host facts
+  setup:

@@ -1,0 +1,22 @@
+---
+- name: Change ownership of extjob
+  ansible.builtin.file:
+    path: "{{ oracle_home }}/db_1/bin/extjob"
+    state: touch
+    mode: u=rwxs,g=rx,o=
+    owner: root
+    group: oinstall
+    modification_time: preserve
+    access_time: preserve
+
+- name: Update run_user for externaljob.ora
+  replace:
+    path: "{{ oracle_home }}/db_1/rdbms/admin/externaljob.ora"
+    regexp: "run_user = nobody"
+    replace: "run_user = oracle"
+
+- name: Update run_group for externaljob.ora
+  replace:
+    path: "{{ oracle_home }}/db_1/rdbms/admin/externaljob.ora"
+    regexp: "run_group = nobody"
+    replace: "run_group = dba"

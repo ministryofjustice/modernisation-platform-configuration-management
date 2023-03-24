@@ -1,0 +1,18 @@
+---
+# not using ansible.posix.selinux as requires selinux requirement which
+# doesn't seem to work when python installed in /usr/local/bin
+- name: Get SELinux state
+  ansible.builtin.shell: |
+    grep "^SELINUX=" /etc/selinux/config | cut -d= -f2 | cut -d\  -f1
+  changed_when: false
+  check_mode: false
+  register: selinux_mode
+
+- name: Set SELinux state
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: "^SELINUX="
+    line: SELINUX={{ selinux_state }}
+  when: selinux_mode.stdout != selinux_state
+  notify:
+    - Display reboot notice

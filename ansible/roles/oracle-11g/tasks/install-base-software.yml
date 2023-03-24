@@ -1,0 +1,49 @@
+---
+- name: Create software directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: u=rwx,g=rxs,o=rx
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ oracle_home }}"
+    - "/u02/oracle-11g-software"
+    - "/u02/temp"
+    - "/u02/stage"
+
+- name: Download software from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ item }}"
+    dest: "/u02/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "oracle-11g-software/{{ oracle_tar }}"
+
+- name: Unarchive software
+  ansible.builtin.unarchive:
+    src: "/u02/{{ item }}"
+    dest: "/u02/"
+    owner: oracle
+    group: oinstall
+    mode: u=rwX,g=rX,o=rX
+    remote_src: yes
+    keep_newer: true
+  loop:
+    - "oracle-11g-software/{{ oracle_tar }}"
+
+- name: Get RPM list
+  ansible.builtin.find:
+    paths: "/u02/stage"
+    patterns: "*.rpm"
+  register: oracle_db_packages
+
+- name: Install RPMs
+  ansible.builtin.yum:
+    name: "{{ oracle_db_packages.files | map(attribute='path') }}"
+    state: present
+    enablerepo: rhel-7-server-rhui-optional-rpms # required for compat-libstdc++-33, also see https://access.redhat.com/articles/4599971
+

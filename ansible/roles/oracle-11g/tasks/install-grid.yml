@@ -1,0 +1,77 @@
+---
+- name: Debug data disk config
+  debug:
+    var: oracle_data_diskgroup
+
+- name: Create response files
+  template:
+    src: "{{ item }}.j2"
+    dest: "/u02/stage/{{ item }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+  loop:
+    - "{{ grid_password_file }}"
+    - "{{ grid_response_file }}"
+
+- name: Run oracle grid install
+  ansible.builtin.shell:
+    cmd: |
+      set -eo pipefail
+      main() {
+        /u02/stage/grid/runInstaller \
+          -silent \
+          -waitforcompletion \
+          -ignoreSysPrereqs \
+          -ignorePrereq \
+          -responseFile /u02/stage/{{ grid_response_file }}
+      }
+      main 2>&1 | logger -p local3.info -t ansible-oracle-db
+    creates: "{{ grid_home }}/bin/sqlplus"
+  become_user: oracle
+
+- name: Install grid patch 18370031
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      {{ grid_home }}/OPatch/opatch apply /u02/stage/GIPATCH_1/18370031 -silent
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  become_user: oracle
+  environment: "{{ grid_env }}"
+
+- name: Run orainstRoot script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ oracle_inventory }}/orainstRoot.sh
+      {{ oracle_inventory }}/orainstRoot.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+- name: Run root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ grid_home }}/root.sh
+      {{ grid_home }}/root.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+- name: Add shebang to config tool script # otherwise Ansible wont run it
+  ansible.builtin.lineinfile:
+    path: "{{ grid_home }}/cfgtoollogs/configToolAllCommands"
+    regexp: "^#!/bin/sh"
+    line: "#!/bin/sh"
+    insertbefore: BOF
+    create: yes
+
+- name: Set passwords
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ grid_home }}/cfgtoollogs/configToolAllCommands RESPONSE_FILE=/u02/stage/{{ grid_password_file }}
+      {{ grid_home }}/cfgtoollogs/configToolAllCommands RESPONSE_FILE=/u02/stage/{{ grid_password_file }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  become_user: oracle

@@ -1,13 +1,13 @@
 ---
-- import_tasks: get-ebs-to-linux-device-map.yml
-  tags:
-    - always
-
 - import_tasks: wait-for-volumes.yml
   tags:
     - amibuild
     - ec2provision
     - disks_wait_for_volumes
+
+- import_tasks: get-ebs-to-linux-device-map.yml
+  tags:
+    - always
 
 - import_tasks: partition-disk-rhel.yml
   tags:

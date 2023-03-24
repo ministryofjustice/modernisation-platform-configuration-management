@@ -1,0 +1,39 @@
+---
+- name: Download OPatch zip from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ item }}"
+    dest: "/u02/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "oracle-11g-software/{{ opatch_zip }}"
+  register: oracle_db_opatch_download
+
+- block:
+    - name: Backup existing OPatch directories
+      ansible.builtin.archive:
+        path: "{{ item }}/OPatch"
+        dest: "{{ item }}/OPatch_{{ansible_date_time.epoch }}.zip"
+        format: zip
+        remove: yes
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ database_home }}"
+        - "{{ grid_home }}"
+
+    - name: Unarchive software
+      ansible.builtin.unarchive:
+        src: "/u02/oracle-11g-software/{{ opatch_zip }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        mode: u=rwX,g=rX,o=rX
+        remote_src: yes
+      loop:
+        - "{{ database_home }}"
+        - "{{ grid_home }}"
+
+  # block
+  when: oracle_db_opatch_download.changed

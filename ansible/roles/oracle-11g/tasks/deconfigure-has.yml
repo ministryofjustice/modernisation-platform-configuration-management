@@ -1,0 +1,15 @@
+---
+# typically you will only run the `deconfig` tag when creating an image, such
+# that any instances launched from the image do so with oracle services not
+# running, so that they can be reconfigured with the hostname of the launch instance
+
+- name: deconfigure oracle HAS
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+      perl/bin/perl -I perl/lib -I crs/install crs/install/roothas.pl -deconfig -force
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  args:
+    chdir: "{{ grid_home }}"

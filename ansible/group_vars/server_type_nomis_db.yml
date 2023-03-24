@@ -7,13 +7,14 @@ server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
-  - node-exporter
   - oracle-11g
-  - oracle-db-monitoring
   - oracle-secure-web
   - collectd
   - amazon-cloudwatch-agent
   - oracle-db-restore
+  - node-exporter
+  - script-exporter
+  - oracle-db-monitoring
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

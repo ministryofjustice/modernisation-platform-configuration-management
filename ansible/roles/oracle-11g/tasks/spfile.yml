@@ -1,0 +1,17 @@
+---
+- name: Get spfile location
+  ansible.builtin.shell: |
+    source oraenv <<< +ASM > /dev/null
+    asmcmd spget
+  become_user: oracle
+  changed_when: false
+  check_mode: false
+  environment: "{{ grid_env }}"
+  register: spfile
+
+- name: Save spfile location
+  ansible.builtin.copy:
+    content: "{{ spfile.stdout }}\n"
+    dest: /u02/temp/spfilelocation.txt
+  become_user: oracle
+  environment: "{{ grid_env }}"
