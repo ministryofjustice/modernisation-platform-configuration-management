@@ -27,6 +27,7 @@
         - "{{ db_software }}"
         - "{{ psu_patch }}"
         - "{{ opatch }}"
+        - "{{ disk_bug_fix_patch }}"
 
     - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
       become_user: "{{ oracle_install_user }}"
@@ -38,6 +39,14 @@
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+
+    - name: Unzip disk bug fix patch fix 
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ disk_bug_fix_patch }}"
+        dest: "{{ stage }}"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         remote_src: yes
@@ -83,6 +92,7 @@
         - "{{ psu_patch }}"
         - "{{ opatch }}"
         - "{{ stage }}/psu"
+        - "{{ disk_bug_fix_patch }}"
 
   # block
   when: not db_software_installed.stat.exists

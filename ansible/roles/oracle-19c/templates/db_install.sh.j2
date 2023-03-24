@@ -4,5 +4,5 @@ export TMP={{ temp }}
 export TMPDIR={{ temp }}
 export CV_ASSUME_DISTID=EL7
 echo "# Installing Oracle 19c database Infrastructure"
-"{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" -applyOneOffs "{{ stage }}/psu/34160854/34086870" || true
+"{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" -applyOneOffs "{{ stage }}/psu/34160854/34086870","{{ stage }}/33631337" || true
 exit 0

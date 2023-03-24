@@ -9,7 +9,7 @@
 - name: add FLASH disk group
   ansible.builtin.shell: |
     source oraenv <<< +ASM
-    sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk FLASH01;"
+    sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk 'ORCL:FLASH01';"
   become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
   vars:
