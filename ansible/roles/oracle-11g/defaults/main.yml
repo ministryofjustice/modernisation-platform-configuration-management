@@ -3,9 +3,9 @@ ssm_parameters_prefix: database
 oracle_home: /u01/app/oracle/product/11.2.0.4
 oracle_inventory: /u01/app/oraInventory
 
-oracle_tar: oracle-11gR2-asmlib-v1.tar.gz            # for install-base-software.yml
-opatch_zip: opatch_p6880880_112000_Linux-x86-64.zip  # for upgrade-opatch.yml
-patch_vars_filename: patches-20211019.yml            # for apply-patches.yml
+oracle_tar: oracle-11gR2-asmlib-v1.tar.gz # for install-base-software.yml
+opatch_zip: opatch_p6880880_112000_Linux-x86-64.zip # for upgrade-opatch.yml
+patch_vars_filename: patches-20211019.yml # for apply-patches.yml
 
 # for install-grid.yml
 asmpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"

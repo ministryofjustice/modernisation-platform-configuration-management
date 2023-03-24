@@ -1,7 +1,7 @@
 ---
-# not using ansible.posix.selinux as requires selinux requirement which 
+# not using ansible.posix.selinux as requires selinux requirement which
 # doesn't seem to work when python installed in /usr/local/bin
-- name: Get SELinux state 
+- name: Get SELinux state
   ansible.builtin.shell: |
     grep "^SELINUX=" /etc/selinux/config | cut -d= -f2 | cut -d\  -f1
   changed_when: false
@@ -16,4 +16,3 @@
   when: selinux_mode.stdout != selinux_state
   notify:
     - Display reboot notice
-
