@@ -1,0 +1,38 @@
+---
+ansible_python_interpreter: /usr/local/bin/python3.9
+
+image_builder_s3_bucket_name: nomis-data-hub-software20230309164626754200000003
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+  - name: tibco
+    group: tibco
+
+ami_packages:
+  - openssl
+  - wget
+  - curl
+  - ca-certificates
+  - nc
+  - tcpdump
+  - unzip
+  - xz
+  - zlib
+  - bzip2
+  - screen
+ami_roles_list:
+  - packages
+  - time
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - tcp-keepalive
+  - ndh-app
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
+packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages | default([])) }}"
