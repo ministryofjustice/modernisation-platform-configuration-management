@@ -1,0 +1,13 @@
+---
+ansible_python_interpreter: /usr/local/bin/python3.9
+roles_list:
+  - get-ec2-facts
+  - autoscale-group-hooks # run early so that if later ansible fails, the hook script to signal failure is installed
+  - set-ec2-hostname
+  - domain-search
+  - disable-ipv6
+  - disable-firewall
+  - amazon-cloudwatch-agent
+  - node-exporter
+  - oasys-ords
+  - autoscale-trigger-hook
