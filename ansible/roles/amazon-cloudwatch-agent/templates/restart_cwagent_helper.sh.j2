@@ -14,7 +14,7 @@
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
 {% endif %}
 
-{% for item in template_files.results|json_query('[*].item') if template_files.results is defined %}
+{% for item in template_config_files.results|json_query('[*].item') if template_config_files is defined %}
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/{{ item }}.json"
 {% endfor %}    
 

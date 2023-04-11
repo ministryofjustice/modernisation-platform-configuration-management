@@ -14,7 +14,8 @@
   ignore_errors: true
   register: agent_installed
 
+# Will still fail on Rhel610 images due to: ansible-core requires a minimum of Python2 version 2.7 or Python3 version 3.5. Current version: 2.6.6
 - name: Install amazon-cloudwatch-agent
   ansible.builtin.yum:
     name: "{{ amazon_cloudwatch_agent_package }}"
-  when: agent_installed == 1
+  when: agent_installed.rc == 1 and ansible_distribution_major_version != "6"
