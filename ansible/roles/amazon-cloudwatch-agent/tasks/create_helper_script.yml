@@ -1,9 +1,4 @@
 ---
-- name: set fact so jinja templating doesn't fail looping through an empty object
-  ansible.builtin.set_fact:
-    items_to_template: "{{ template_config_files.results }}"
-  when: template_config_files.results|length > 0
-
 # Creates a start_cwagent_helper.sh script to start the cloudwatch agent manually
 - name: Create start_cwagent_helper.sh script
   ansible.builtin.template:
