@@ -99,7 +99,8 @@ Define the list of roles to run on each type of server under an server-type spec
 ```
 ---
 roles_list:
-  - node-exporter
+  - collectd
+  - amazon-cloudwatch-agent
 ```
 
 Run ansible
@@ -112,7 +113,7 @@ ansible-playbook site.yml --check
 ansible-playbook site.yml --limit bastion
 
 # Limit to a particular role
-ansible-playbook site.yml -e "role=node-exporter"
+ansible-playbook site.yml -e "role=amazon-cloudwatch-agent"
 
 # Run locally (the comma after localhost is important)
 ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_db.yml" --check

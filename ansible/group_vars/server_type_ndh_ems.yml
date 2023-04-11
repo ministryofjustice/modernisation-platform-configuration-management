@@ -5,7 +5,6 @@ server_type_roles_list:
   - set-ec2-hostname
   - domain-search
   - amazon-cloudwatch-agent
-  - node-exporter
   - ndh-ems
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
