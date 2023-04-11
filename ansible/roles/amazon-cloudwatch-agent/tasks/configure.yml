@@ -69,3 +69,4 @@
   loop: "{{ template_files.results|json_query('[*].item') if template_files.results is defined else [] }}"
   loop_control:
     label: item
+  register: template_config_files
