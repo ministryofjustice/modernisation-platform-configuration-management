@@ -35,7 +35,7 @@
         file: "{{ oasys_patch_vars_filename }}"
       when: file_check.stat.exists
 
-    - name: Set variables if environment is oasys 
+    - name: Set variables if environment is nomis
       ansible.builtin.include_vars:
         file: "{{ patch_vars_filename }}"
       when: not file_check.stat.exists
