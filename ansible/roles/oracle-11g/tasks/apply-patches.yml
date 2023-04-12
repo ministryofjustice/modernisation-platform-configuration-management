@@ -25,12 +25,12 @@
       loop:
         - "oracle-11g-software/{{ patch_set }}"
 
-    - name: Check nomis/oasys patch needs to be deployed based on existance of patch file 
-      stat: 
-        path:  "/u02/stage/patches/20774463_PatchSearch.xml"
+    - name: Check nomis/oasys patch needs to be deployed based on existance of patch file
+      stat:
+        path: "/u02/stage/patches/20774463_PatchSearch.xml"
       register: file_check
 
-    - name: Set variables if environment is oasys 
+    - name: Set variables if environment is oasys
       ansible.builtin.include_vars:
         file: "{{ oasys_patch_vars_filename }}"
       when: file_check.stat.exists
