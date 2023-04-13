@@ -1,0 +1,5 @@
+---
+server_type_roles_list:
+  - sql-developer
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

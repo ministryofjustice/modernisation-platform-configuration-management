@@ -1,0 +1,1 @@
+Role for installing Oracle SQL Developer tools onto jumpservers for dba's debugging purposes

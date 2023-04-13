@@ -1,0 +1,6 @@
+---
+- import_tasks: sql-developer-install.yml
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ansible_os_family == 'Windows'

@@ -1,0 +1,57 @@
+---
+# - name: Create download directory
+#   ansible.windows.win_file:
+#     path: "C:\\temp"
+#     state: directory
+
+# - name: Download Oracle SQL Developer 20 zip
+#   ansible.windows.win_get_url:
+#     url: ""
+#     dest: "C:\\temp\\sqldeveloper.zip"
+#     force: yes
+#     headers:
+#       Authorization: "Basic {{ oracle_username_password_base64 }}"
+
+- name: Install JDK 11 using Chocolatey
+  ansible.windows.win_chocolatey:
+    name: openjdk 
+    state: present
+    version: '11.0'
+
+- name: Install Oracle SQL Developer using Chocolatey
+  ansible.windows.win_chocolatey:
+    name: oracle-sql-developer
+    state: present
+    install_args: "--params='/Username:{{ oracle_user }} /Password:{{ oracle_password }}'"
+
+# - name: Unzip Oracle SQL Developer
+#   ansible.windows.win_unzip:
+#     src: "C:\\temp\\sqldeveloper.zip"
+#     dest: "C:\\Program Files\\Oracle\\SQL Developer"
+#     creates: "C:\\Program Files\\Oracle\\SQL Developer\\sqldeveloper.exe"
+
+# - name: Remove the downloaded zip file
+#   ansible.windows.win_file:
+#     path: "C:\\temp\\sqldeveloper.zip"
+#     state: absent
+
+- name: Set JAVA_HOME environment variable
+  ansible.windows.win_environment:
+    state: present
+    name: JAVA_HOME
+    value: "C:\\Program Files\\Java\\jdk-11"
+    level: machine
+
+- name: Add SQL Developer to PATH
+  ansible.windows.win_path:
+    elements:
+      - "C:\\Program Files\\Oracle\\SQL Developer"
+    state: present
+    scope: machine
+
+- name: Add SQL Developer desktop shortcut
+  ansible.windows.win_shortcut:
+    src: "C:\\Program Files\\Oracle\\SQL Developer\\sqldeveloper.exe"
+    dest: "C:\\Users\\Public\\Desktop\\Oracle SQL Developer.lnk"
+    description: "Oracle SQL Developer"
+    icon_location: "C:\\Program Files\\Oracle\\SQL Developer\\sqldeveloper.ico"
