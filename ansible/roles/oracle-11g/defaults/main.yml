@@ -5,9 +5,7 @@ oracle_inventory: /u01/app/oraInventory
 
 oracle_tar: oracle-11gR2-asmlib-v1.tar.gz # for install-base-software.yml
 opatch_zip: opatch_p6880880_112000_Linux-x86-64.zip # for upgrade-opatch.yml
-patch_vars_filename: patches-20211019.yml # for apply-patches.yml
-oasys_patch_vars_filename: oasys-patches-20211019.yml
-patch_set: patch-set-20211019.tar.gz
+# patch_vars_filename: # set this in group vars, e.g. nomis-patches-20211019.yml
 
 # for install-grid.yml
 asmpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
