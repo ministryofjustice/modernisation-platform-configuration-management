@@ -1,0 +1,5 @@
+# Used by ansible azcopy role to determine if CLI is updated
+# curl -I {{ azcopy_installer_url }}
+etag: {{ azcopy_zip.etag }}
+last_modified: {{ azcopy_zip.last_modified }}
+content_length: {{ azcopy_zip.content_length }}
