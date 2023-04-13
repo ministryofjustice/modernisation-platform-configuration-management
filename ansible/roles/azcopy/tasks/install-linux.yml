@@ -13,42 +13,41 @@
   register: azcopy_stats
 
 - block:
+    - name: Create installation directory
+      ansible.builtin.file:
+        path: "{{ azcopy_installer_dir }}"
+        state: directory
 
-  - name: Create installation directory
-    ansible.builtin.file:
-      path: "{{ azcopy_installer_dir }}"
-      state: directory
+    - name: Download latest azcopy archive
+      ansible.builtin.unarchive:
+        src: "{{ azcopy_installer_url }}"
+        dest: "{{ azcopy_installer_dir }}"
+        remote_src: true
 
-  - name: Download latest azcopy archive
-    ansible.builtin.unarchive:
-      src: "{{ azcopy_installer_url }}"
-      dest: "{{ azcopy_installer_dir }}"
-      remote_src: true
+    - name: Find azcopy binary
+      ansible.builtin.find:
+        paths: "{{ azcopy_installer_dir }}"
+        recurse: yes
+        file_type: file
+        patterns: "azcopy"
+      register: azcopy_find
 
-  - name: Find azcopy binary
-    ansible.builtin.find:
-      paths: "{{ azcopy_installer_dir }}"
-      recurse: yes
-      file_type: file
-      patterns: "azcopy"
-    register: azcopy_find
+    - name: Fail if azcopy missing or multiple copies
+      fail:
+        msg: "Expected exactly one copy of azcopy, got {{ azcopy_find.files|length }}"
+      when: azcopy_find.files|length != 1
 
-  - name: Fail if azcopy missing or multiple copies
-    fail:
-      msg: "Expected exactly one copy of azcopy, got {{ azcopy_find.files|length }}"
-    when: azcopy_find.files|length != 1
+    - name: Copy binary to /usr/bin
+      ansible.builtin.copy:
+        src: "{{ azcopy_find.files[0].path }}"
+        dest: "/usr/bin/azcopy"
+        mode: "0755"
+        remote_src: true
 
-  - name: Copy binary to /usr/bin
-    ansible.builtin.copy:
-      src: "{{ azcopy_find.files[0].path }}"
-      dest: "/usr/bin/azcopy"
-      mode: '0755'
-      remote_src: true
-
-  - name: Clean up
-    ansible.builtin.file:
-      state: absent
-      path: "{{ azcopy_installer_dir }}"
+    - name: Clean up
+      ansible.builtin.file:
+        state: absent
+        path: "{{ azcopy_installer_dir }}"
 
   # block
   when: azcopy_stats.changed and not ansible_check_mode
