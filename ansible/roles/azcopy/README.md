@@ -1,0 +1,1 @@
+Role for installing azcopy
