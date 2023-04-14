@@ -1,4 +1,9 @@
 ---
+- import_tasks: az_download.yml
+  tags:
+    - oracle-db-restore-download-test
+    - never
+
 - import_tasks: db_restore.yml
   tags:
     - ec2provision
