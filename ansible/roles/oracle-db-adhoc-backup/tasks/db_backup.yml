@@ -1,0 +1,41 @@
+---
+
+- name: set the database backup directory
+  set_fact:
+    db_backup_dir: "/u02/DB_BKP/{{ db_name }}"
+
+- name: create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: u=rwx,g=rxs,o=rx
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ db_backup_dir }}"
+
+- name: create rman backup script
+  template:
+    src: rman_backup.cmd.j2
+    dest: "{{ db_backup_dir }}/rman_backup.cmd"
+    owner: "oracle"
+    group: "dba"
+    mode: "0700"
+
+
+- name: Run rman backup script 
+  become_user: oracle
+  ansible.builtin.shell: |
+    export PATH=$PATH:/usr/local/bin
+    source oraenv <<< {{ db_name }}
+    cd {{ db_backup_dir }}
+    rman target / cmdfile="{{ db_backup_dir }}/rman_backup.cmd" log="{{ db_backup_dir }}/{{ LABEL }}_db_backup.log"
+
+- name: Copy password file 
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export PATH=$PATH:/usr/local/bin
+    source oraenv <<< {{ db_name }}
+    cp $ORACLE_HOME/dbs/orapw{{ db_name }} {{ db_backup_dir }}/.
