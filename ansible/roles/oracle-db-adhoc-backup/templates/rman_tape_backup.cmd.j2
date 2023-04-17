@@ -1,0 +1,14 @@
+run
+{
+allocate channel ch1 device type 'SBT_TAPE' PARMS  'SBT_LIBRARY=/u01/app/oracle/product/11.2.0.4/db_1/lib/libosbws.so , ENV=(OSB_WS_PFILE=/u01/app/oracle/product/11.2.0.4/db_1/dbs/osbws.ora)';
+allocate channel ch2 device type 'SBT_TAPE' PARMS  'SBT_LIBRARY=/u01/app/oracle/product/11.2.0.4/db_1/lib/libosbws.so , ENV=(OSB_WS_PFILE=/u01/app/oracle/product/11.2.0.4/db_1/dbs/osbws.ora)';
+allocate channel ch3 device type 'SBT_TAPE' PARMS  'SBT_LIBRARY=/u01/app/oracle/product/11.2.0.4/db_1/lib/libosbws.so , ENV=(OSB_WS_PFILE=/u01/app/oracle/product/11.2.0.4/db_1/dbs/osbws.ora)';
+allocate channel ch4 device type 'SBT_TAPE' PARMS  'SBT_LIBRARY=/u01/app/oracle/product/11.2.0.4/db_1/lib/libosbws.so , ENV=(OSB_WS_PFILE=/u01/app/oracle/product/11.2.0.4/db_1/dbs/osbws.ora)';
+backup as compressed backupset database;
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+backup archivelog all;
+backup current controlfile;
+backup spfile;
+}

@@ -17,12 +17,11 @@
 
 - name: create rman backup script
   template:
-    src: rman_backup.cmd.j2
-    dest: "{{ db_backup_dir }}/rman_backup.cmd"
+    src: rman_disk_backup.cmd.j2
+    dest: "{{ stage }}/rman_backup.cmd"
     owner: "oracle"
     group: "dba"
     mode: "0700"
-
 
 - name: Run rman backup script 
   become_user: oracle
@@ -30,7 +29,7 @@
     export PATH=$PATH:/usr/local/bin
     source oraenv <<< {{ db_name }}
     cd {{ db_backup_dir }}
-    rman target / cmdfile="{{ db_backup_dir }}/rman_backup.cmd" log="{{ db_backup_dir }}/{{ LABEL }}_db_backup.log"
+    rman target / cmdfile="{{ stage }}/rman_backup.cmd" log="{{ db_backup_dir }}/{{ LABEL }}_db_backup.log"
 
 - name: Copy password file 
   become_user: oracle
