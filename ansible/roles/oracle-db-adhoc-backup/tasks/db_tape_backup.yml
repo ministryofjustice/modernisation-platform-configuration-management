@@ -1,5 +1,4 @@
 ---
-
 - name: create rman backup script
   template:
     src: rman_tape_backup.cmd.j2
@@ -8,14 +7,14 @@
     group: "dba"
     mode: "0700"
 
-# - name: Run rman backup script 
+# - name: Run rman backup script
 #   become_user: oracle
 #   ansible.builtin.shell: |
 #     export PATH=$PATH:/usr/local/bin
 #     source oraenv <<< {{ db_name }}
 #     rman target / cmdfile="{{ stage }}/rman_backup.cmd" log="{{ stage }}/{{ LABEL }}_db_backup.log"
 
-- name: Copy password file 
+- name: Copy password file
   become_user: oracle
   ansible.builtin.shell: |
     . ~/.bash_profile
