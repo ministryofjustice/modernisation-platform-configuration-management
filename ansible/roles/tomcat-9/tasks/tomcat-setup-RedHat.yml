@@ -5,7 +5,7 @@
 
 - name: Install basic packages
   package:
-    name: ['vim','bash-completion','tmux','tree','htop','wget','unzip','curl','git']
+    name: ["vim", "bash-completion", "tmux", "tree", "htop", "wget", "unzip", "curl", "git"]
     state: present
 
 - name: Install Java 8 CentOS
@@ -84,7 +84,7 @@
 
 - name: Allow access to Manager and Host Manager apps from any IP
   template:
-    src: context.xml.j2 
+    src: context.xml.j2
     dest: "{{ item }}"
   with_items:
     - /usr/share/tomcat/webapps/host-manager/META-INF/context.xml
