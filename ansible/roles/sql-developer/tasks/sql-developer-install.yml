@@ -1,46 +1,66 @@
 ---
-# - name: Create download directory
-#   ansible.windows.win_file:
-#     path: "C:\\temp"
-#     state: directory
-
-# - name: Download Oracle SQL Developer 20 zip
-#   ansible.windows.win_get_url:
-#     url: ""
-#     dest: "C:\\temp\\sqldeveloper.zip"
-#     force: yes
-#     headers:
-#       Authorization: "Basic {{ oracle_username_password_base64 }}"
+- name: Create download directory
+  ansible.windows.win_file:
+    path: "C:\\temp"
+    state: directory
 
 - name: Install JDK 11 using Chocolatey
   ansible.windows.win_chocolatey:
-    name: openjdk 
+    name: openjdk11 
     state: present
-    version: '11.0'
+    version: '11.0.16'
+  register: chocolatey_install_jdk
 
-- name: Install Oracle SQL Developer using Chocolatey
-  ansible.windows.win_chocolatey:
-    name: oracle-sql-developer
-    state: present
-    install_args: "--params='/Username:{{ oracle_user }} /Password:{{ oracle_password }}'"
-
-# - name: Unzip Oracle SQL Developer
-#   ansible.windows.win_unzip:
-#     src: "C:\\temp\\sqldeveloper.zip"
-#     dest: "C:\\Program Files\\Oracle\\SQL Developer"
-#     creates: "C:\\Program Files\\Oracle\\SQL Developer\\sqldeveloper.exe"
-
-# - name: Remove the downloaded zip file
-#   ansible.windows.win_file:
-#     path: "C:\\temp\\sqldeveloper.zip"
-#     state: absent
+- name: debug chocolatey_install_jdk
+  debug:
+    var: chocolatey_install_jdk
 
 - name: Set JAVA_HOME environment variable
   ansible.windows.win_environment:
     state: present
     name: JAVA_HOME
-    value: "C:\\Program Files\\Java\\jdk-11"
+    value: "C:\\Program Files\\Java\\jdk-11.0.16"
     level: machine
+  register: set_jave_home_env
+
+- name: debug set_jave_home_env
+  debug:
+    var: set_jave_home_env
+
+- name: Download the SQL Developer Package from S3
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ oracle_sql_developer_bucket }}/{{ oracle_sql_developer_installer }} "
+    dest: "C:\\temp\\sqldeveloper.zip"
+    mode: get
+    overwrite: latest
+  register: sqldeveloper_download
+
+- name: debug sqldeveloper_download
+  debug:
+    var: sqldeveloper_download
+
+- name: Unzip Oracle SQL Developer
+  ansible.windows.win_unzip:
+    src: "C:\\temp\\sqldeveloper.zip"
+    dest: "C:\\temp\\SQL Developer"
+    # dest: "C:\\Program Files\\Oracle\\SQL Developer"
+    # creates: "C:\\Program Files\\Oracle\\SQL Developer\\sqldeveloper.exe"
+
+- name: Install the Windows application
+  win_package:
+    path: "C:\\temp\\SQL Developer\\sqldeveloper.exe"
+    state: present
+  register: installation_result
+
+- name: Display installation result
+  debug:
+    var: installation_result
+
+- name: Remove the downloaded zip file
+  ansible.windows.win_file:
+    path: "C:\\temp\\sqldeveloper.zip"
+    state: absent
 
 - name: Add SQL Developer to PATH
   ansible.windows.win_path:
