@@ -16,9 +16,3 @@
     - ec2provision
     - ec2patch
   when: ansible_distribution == 'RedHat'
-
-- import_tasks: "create_helper_script.yml"
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ansible_distribution == 'RedHat'

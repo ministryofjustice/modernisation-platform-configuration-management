@@ -26,43 +26,25 @@
     oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
   when: ec2.tags['oracle-sids'] is defined
 
-- name: check if there are collectd config files for each value of metric_configs locally
-  delegate_to: localhost
-  ansible.builtin.stat:
-    path: "{{ role_path }}/files/{{ item }}.conf"
-  register: config_files
-  loop: "{{ metric_configs|replace('-', '_') }}"
-  loop_control:
-    loop_var: item
-  when: metric_configs is defined
-
-- name: copy conf files defined above
+- name: copy conf files
   ansible.builtin.copy:
     src: "{{ item }}.conf"
     dest: "/etc/collectd.d/{{ item }}.conf"
     owner: root
     mode: 0644
-  loop: "{{ config_files.results|json_query('[*].item') + [ ansible_system|lower ] if config_files.results is defined else [ ansible_system|lower ]}}"
+  loop: "{{ collectd_metric_configs|replace('-', '_') + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
   loop_control:
     label: item
 
-- name: check if there are template files for each value of metric_configs locally
-  delegate_to: localhost
-  ansible.builtin.stat:
-    path: "{{ role_path }}/templates/{{ item }}.sh.j2"
-  register: template_files
-  loop: "{{ metric_configs|replace('-', '_') }}"
-  loop_control:
-    loop_var: item
-  when: metric_configs is defined
-
-- name: template config files defined above
+- name: template config files
   ansible.builtin.template:
     src: "{{ item }}.sh.j2"
     dest: "/opt/collectd/{{ item }}.sh"
     owner: root
     mode: 0755
-  loop: "{{ template_files.results|json_query('[*].item') + [ ansible_system|lower ] if template_files.results is defined else [ ansible_system|lower ]}}"
+  loop: "{{ collectd_metric_configs|replace('-', '_') + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
+  loop_control:
+    label: item
 
 - name: Start collectd service
   ansible.builtin.service:

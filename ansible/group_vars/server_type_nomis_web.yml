@@ -1,6 +1,8 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.6
-metric_configs:
+cloudwatch_agent_configs:
+  - nomis-web
+collectd_metric_configs:
   - nomis-web
 server_type_roles_list:
   - autoscale-group-hooks
