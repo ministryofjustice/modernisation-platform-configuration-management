@@ -1,5 +1,4 @@
 ---
-
 - name: set the database backup directory
   set_fact:
     db_backup_dir: "/u02/DB_BKP/{{ db_name }}"
@@ -23,7 +22,7 @@
     group: "dba"
     mode: "0700"
 
-- name: Run rman backup script 
+- name: Run rman backup script
   become_user: oracle
   ansible.builtin.shell: |
     export PATH=$PATH:/usr/local/bin
@@ -31,7 +30,7 @@
     cd {{ db_backup_dir }}
     rman target / cmdfile="{{ stage }}/rman_backup.cmd" log="{{ db_backup_dir }}/{{ LABEL }}_db_backup.log"
 
-- name: Copy password file 
+- name: Copy password file
   become_user: oracle
   ansible.builtin.shell: |
     . ~/.bash_profile

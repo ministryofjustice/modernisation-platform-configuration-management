@@ -31,8 +31,8 @@
 
 - name: Create db restore directory
   ansible.builtin.file:
-     path: "{{ oracle_db_restore_local_path }}/{{ oracle_db_restore_az_path }}"
-     state: directory
+    path: "{{ oracle_db_restore_local_path }}/{{ oracle_db_restore_az_path }}"
+    state: directory
 
 - name: Download backup files
   ansible.builtin.shell: |
