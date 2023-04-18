@@ -12,7 +12,7 @@ ords_db_port: 1521
 ords_db_sid: "OASYS" # is this correct? in pd azure it is OASPROD
 oasys_ords_dir: "/u02/stage/ORDS/ords_stage"
 
-oasys_ords_trusted_origins: # pretty sure these will need changing
+ords_trusted_origins: # pretty sure these will need changing
   - https://oasys.az.justice.gov.uk/eor
   - https://bridge-oasys.az.justice.gov.uk/eor
   - https://p-oasys.az.juistce.gov.uk/eor
@@ -25,9 +25,7 @@ ords_artefact_list:
   - { obj: "i_11Apr2023.tgz", dest: "/u02/stage/ORDS/ords_stage" }
 
 # how do we do secrets?
-db_hostname: ""
 apex_user_password: ""
-db_port: ""
 db_servicename: ""
 db_sys_password: ""
 apex_listener_password: ""
