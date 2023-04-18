@@ -1,6 +1,6 @@
-db.hostname={{ db_hostname }}
+db.hostname={{ ec2.tags['oracle-db-hostname'] }}
 db.password={{ apex_user_password }} 
-db.port={{ db_port }}
+db.port={{ ords_db_port }}
 db.servicename= {{ db_servicename }}
 db.username=APEX_PUBLIC_USER
 plsql.gateway.add=true
