@@ -51,12 +51,12 @@
 
 - name: template config files
   ansible.builtin.template:
-    src: "{{ item }}.json.j2"
-    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ item }}.json"
+    src: "{{ item|replace('-', '_') }}.json.j2"
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ item|replace('-', '_') }}.json"
     owner: root
     group: root
     mode: 0755
-  loop: "{{ cloudwatch_agent_configs|replace('-', '_') }}"
+  loop: "{{ cloudwatch_agent_configs }}"
   loop_control:
     label: item
   when: cloudwatch_agent_configs is defined

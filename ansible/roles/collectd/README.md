@@ -1,16 +1,20 @@
 # Collectd
 
-Installs collectd and configures it based on the values in group_vars `metric_configs` variable. See server_type_nomis_db for an example.
+Installs collectd and configures it based on the values in group_vars `collectd_metric_configs` variable. See server_type_nomis_db for an example.
 
-1. reads values of `metric_configs` from group_vars
+1. reads values of `collectd_metric_configs` from group_vars
 
-2. loops through values of files/[metric_configs] and templates/[metric_configs] deploys them to the host if the relevant files exist
+e.g. 
+```    
+collectd_metric_configs:
+  - nomis-web
+```
+
+2. loops through values of files/[collectd_metric_configs] and templates/[collectd_metric_configs] deploys them to the host if the relevant files exist
     
-3. deploys files/linux.conf and templates/linux.sh.j2 to the host by default if metric_configs is not defined
+3. deploys files/linux.conf and templates/linux.sh.j2 to the host by default if collectd_metric_configs is not defined
 
-* NOTE: metric_configs values can exist for collectd but not nnecessarily for cloudwatch agent & vice-versa. The role takes account of this in that it looks for template files locally with the same name as the metric_configs value. If it doesn't find one then it doesn't deploy it.
-
-* IMPORTANT: to pick up service metrics from windows hosts it'd probably be easier to use PowerShell and scheduled tasks to post the metrics directly to Cloudwatch. 
+* IMPORTANT: to pick up service metrics from windows hosts it'd probably be easier to use PowerShell and scheduled tasks to post the metrics directly to Cloudwatch. This hasn't been implemented anywhere yet though.
 ## Debugging Collectd
 
 Probably the easiest thing to do is un-comment the 'logfile' plugin sections in collectd.conf.j2 and reload collectd via `sudo systemctl restart collectd.service`
@@ -26,4 +30,3 @@ Further collectd Troubleshooting [here](https://collectd.org/wiki/index.php/Trou
 1. *.conf files must have an empty line at the end to load, otherwise collectd won't start...
 
 2. formatting for the exec message (sent to localhost udp port 25826) is very important. It MUST be in the format "PUTVAL $HOSTNAME/exec-<name_of_metric>/guage-$signifier. Values after exec- and guage- (or other value type) cannot use '-' characters or spaces otherwise the exec plugin will deliver a mal-formed message. 
-

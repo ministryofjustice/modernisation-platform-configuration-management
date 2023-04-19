@@ -28,21 +28,21 @@
 
 - name: copy conf files
   ansible.builtin.copy:
-    src: "{{ item }}.conf"
-    dest: "/etc/collectd.d/{{ item }}.conf"
+    src: "{{ item|replace('-', '_') }}.conf"
+    dest: "/etc/collectd.d/{{ item|replace('-', '_') }}.conf"
     owner: root
     mode: 0644
-  loop: "{{ collectd_metric_configs|replace('-', '_') + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
+  loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
   loop_control:
     label: item
 
 - name: template config files
   ansible.builtin.template:
-    src: "{{ item }}.sh.j2"
-    dest: "/opt/collectd/{{ item }}.sh"
+    src: "{{ item|replace('-', '_') }}.sh.j2"
+    dest: "/opt/collectd/{{ item|replace('-', '_') }}.sh"
     owner: root
     mode: 0755
-  loop: "{{ collectd_metric_configs|replace('-', '_') + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
+  loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
   loop_control:
     label: item
 

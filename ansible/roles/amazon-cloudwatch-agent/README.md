@@ -2,17 +2,25 @@
 
 This role installs the Cloudwatch Agent on a Linux host and configures it to send metrics to Cloudwatch.
 
-If the group_vars for a host has the variable `metric_configs` defined then this will deploy additional cloudwatch agent config files to the host. See files in /templates for examples. 
+If the group_vars for a host has the variable `cloudwatch_agent_configs` defined then this will deploy additional cloudwatch agent config files to the host. See files in /templates for examples. 
 
-Config exection and start order is: 
+Amazon Cloudwatch Agent config exection and start order is: 
 
-    1. ansible_system == 'linux' (the default config)
+    1. ansible_system == 'linux' (the default ansible_system i.e. linux)
     2. collectd config IF it's already installer
-    3. loops through values of metric_configs and deploys them to the host
+    3. loops through values of `cloudwatch_agent_configs` in group_vars and deploys them to the host
     
-* NOTE: metric_configs values can exist for collectd but not necessarily for cloudwatch agent & vice-versa. The role takes account of this in that it looks for template files locally with the same name as the metric_configs value. If it doesn't find one then it doesn't deploy it.
+e.g. if you have a group_vars entry like this:
 
-* IMPORTANT: to pick up metrics from collectd that role has to be run first! This allows the 'start' and config sections of this role to be set up properly by looking for evidence that collectd is already installed.
+```
+cloudwatch_agent_configs:
+  - nomis-web
+  - nomis-db
+```  
+
+* IMPORTANT: to pick up metrics from collectd the collectd role has to be run first! 
+
+This allows the 'start' and config sections of this role to be set up properly by looking for evidence that collectd is already installed.
 
 # Cloudwatch Agent
 ## Debugging on Linux
@@ -36,7 +44,7 @@ https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-C
 
 ### Debugging continued!
 
-definitely add `debug: true` to the cloudwatch agent config file to see what's going on. It may also be worth sending all the values to a custom namespace to help identify what you're looking at versus the default CWAgent namespace! Unless you specify otherwise cloudwatch agent logs go to `/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log`
+Definitely add `debug: true` to the cloudwatch agent config file to see what's going on. It may also be worth sending all the values to a custom namespace to help identify what you're looking at versus the default CWAgent namespace! Unless you specify otherwise cloudwatch agent logs go to `/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log`
 
 Collectd relies on plugins, the most important one related to Cloudwatch is the 'network' plugin which posts the metrics data to a UDP endpoint. Cloudwatch picks metrics up from there and sends them on to cloudwatch. 
 

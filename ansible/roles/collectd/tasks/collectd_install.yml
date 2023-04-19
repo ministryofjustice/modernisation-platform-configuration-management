@@ -42,6 +42,7 @@
         wget https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
         yum install -y epel-release-6-8.noarch.rpm
       when: epel_release_installed is failed
+      ignore_errors: true # role to be re-run without failing
 
     # using shell as yum module doesn't run on Rhel6 due to old python version
     - name: Install collectd agent
