@@ -18,8 +18,8 @@
 
 - name: get artefects
   amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}/{{ oasys_ords_s3_bucket }}"
-    object: "{{ item.obj }}"
+    bucket: "{{ s3_bucket }}"
+    object: "{{ oasys_ords_s3_bucket }}/{{ item.obj }}"
     dest: "/tmp/{{ item.obj }}"
     mode: get
   loop: "{{ ords_artefact_list }}"
