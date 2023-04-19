@@ -1,5 +1,4 @@
 ---
-
 - name: Assert tags
   ansible.builtin.assert:
     that:
@@ -7,7 +6,6 @@
       - ec2.tags['oracle-db-sid'] is defined
     msg: "ec2 needs these tags: oracle-db-hostname, oracle-db-sid"
 
-    
 - import_tasks: users.yml
   tags:
     - amibuild
