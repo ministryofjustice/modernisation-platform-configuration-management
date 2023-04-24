@@ -29,8 +29,8 @@
 
 - name: Set db hostname from ec2 oracle-db-hostname tag
   set_fact:
-    weblogic_db_hostname: "{{ ec2.tags['oracle-db-hostname'] }}"
-  when: weblogic_db_hostname is not defined
+    weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
+    weblogic_db_hostname_b: "{{ ec2.tags['oracle-db-hostname-b'] }}"
 
 - name: Set db name from ec2 oracle-db-name tag
   set_fact:
@@ -38,7 +38,7 @@
   when: weblogic_db_name is not defined
 
 - debug:
-    msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname }} with username {{ weblogic_db_username }}"
+    msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"
 
 - debug:
     msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"

@@ -1,8 +1,13 @@
 {{ weblogic_db_name }} =
-  (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname }})(PORT = {{ weblogic_db_port }}))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = {{ weblogic_db_name }})
-    )
+ (DESCRIPTION =
+  (ADDRESS = (HOST = {{ weblogic_db_hostname_a }}) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = {{ weblogic_db_hostname_b }}) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = NOMIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
   )
+ )
