@@ -12,7 +12,7 @@ prog=opmn
 
 start_process() {
   if [[ $(whoami) == "root" ]]; then
-    su - oracle -c "opmnctl startall" | logger -p local3.info -t $prog
+    su - oracle -c "TZ=Etc/GMT+0 opmnctl startall" | logger -p local3.info -t $prog
   else
     echo -n "must be run as root"
     return 1
