@@ -1,5 +1,18 @@
 ---
 
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters weblogic path facts
+  set_fact:
+    ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ primary_database }}/syspassword"
+
+- name: Get SSM parameters
+  set_fact:
+    database_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+
 - name: Setup Primary database for HA 
   block:
     - name: Copy setup files for execution 
@@ -22,7 +35,7 @@
     - name: Create password file if it does not exists 
       ansible.builtin.shell: |
         source oraenv <<< {{ primary_database }}
-        orapwd file="{{ database_home }}/dbs/orapw{{ primary_database }}" password=KJTgfda4i168 entries=10
+        orapwd file="{{ database_home }}/dbs/orapw{{ primary_database }}" password={{ database_sys_password }} entries=10
       when: not password_file.stat.exists
 
     - name: Setup Primary Database for new standby
