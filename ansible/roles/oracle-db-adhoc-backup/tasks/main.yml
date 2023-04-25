@@ -1,6 +1,7 @@
 ---
+
 - import_tasks: db_disk_backup.yml
-  when: BACKUP_TO == "DISK"
+  when: backup_dir is defined 
 
 - import_tasks: db_tape_backup.yml
-  when: BACKUP_TO == "S3"
+  when: backup_dir is not defined 
