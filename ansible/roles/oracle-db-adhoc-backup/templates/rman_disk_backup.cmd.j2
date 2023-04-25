@@ -1,0 +1,7 @@
+backup as compressed backupset database format '{{ db_backup_dir }}/{{ backup_tag }}_db_%d_%U';
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+backup archivelog all format '{{ db_backup_dir }}/{{ backup_tag }}_al_%d_%U';
+backup current controlfile format '{{ db_backup_dir }}/{{ backup_tag }}_cf_%d_%U';
+backup spfile format '{{ db_backup_dir }}/{{ backup_tag }}_sp_%d_%U';

@@ -1,0 +1,46 @@
+---
+- name: set the database backup directory
+  set_fact:
+    db_backup_dir: "{{ backup_dir }}/{{ db_name }}"
+
+- name: create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ user_name }}"
+    group: "{{ group_name }}"
+    mode: u=rwx,g=rxs,o=rx
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ db_backup_dir }}"
+
+- name: create rman backup script
+  template:
+    src: rman_disk_backup.cmd.j2
+    dest: "{{ stage }}/rman_backup.cmd"
+    owner: "{{ user_name }}"
+    group: "{{ group_name }}"
+    mode: "0700"
+
+- name: Take rman backup
+  block:
+    - name: Run rman backup script
+      ansible.builtin.shell: |
+        source oraenv <<< {{ db_name }}
+        cd {{ db_backup_dir }}
+        rman target / cmdfile="{{ stage }}/rman_backup.cmd" log="{{ db_backup_dir }}/{{ backup_tag }}_db_backup.log"
+
+    - name: Take standby controlfile backup for standby creation
+      ansible.builtin.shell: |
+        source oraenv <<< {{ db_name }}
+        rman target / log="{{ db_backup_dir }}/{{ backup_tag }}_db_backup.log" <<< "backup current controlfile for standby  format '{{ db_backup_dir }}/{{ backup_tag }}_al_%d_%U';"
+      when: backup_for == "standby"
+
+    - name: Copy password file
+      ansible.builtin.shell: |
+        source oraenv <<< {{ db_name }}
+        cp $ORACLE_HOME/dbs/orapw{{ db_name }} {{ db_backup_dir }}/.
+
+  become: true
+  become_user: "{{ user_name }}"
+  environment: "{{ db_env }}"
