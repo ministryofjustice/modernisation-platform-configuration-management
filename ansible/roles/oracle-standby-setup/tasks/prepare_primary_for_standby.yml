@@ -1,5 +1,4 @@
 ---
-
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
@@ -13,9 +12,9 @@
   set_fact:
     database_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
 
-- name: Setup Primary database for HA 
+- name: Setup Primary database for HA
   block:
-    - name: Copy setup files for execution 
+    - name: Copy setup files for execution
       template:
         src: "{{ item }}.j2"
         dest: "{{ stage }}/{{ item }}"
@@ -27,12 +26,12 @@
         - "add_lsnr_static_services.sh"
         - "setup_primary_for_ha.sh"
 
-    - name: Check database password file exists 
+    - name: Check database password file exists
       stat:
         path: "{{ database_home }}/dbs/orapw{{ primary_database }}"
       register: password_file
-    
-    - name: Create password file if it does not exists 
+
+    - name: Create password file if it does not exists
       ansible.builtin.shell: |
         source oraenv <<< {{ primary_database }}
         orapwd file="{{ database_home }}/dbs/orapw{{ primary_database }}" password={{ database_sys_password }} entries=10
@@ -45,14 +44,14 @@
       register: param_result
       failed_when: param_result.rc != 0
 
-    - name: Setup Listener service 
+    - name: Setup Listener service
       shell: "{{ stage }}/add_lsnr_static_services.sh {{ global_database_name }} {{ primary_database }} {{ database_home }}"
       become: true
       become_user: "{{ oracle_install_user }}"
       register: param_result
       failed_when: param_result.rc != 0
-      
-    - name: Add TNS entry for primary 
+
+    - name: Add TNS entry for primary
       shell: "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ primary_database }} {{ primary_host }} {{ db_port }} {{ primary_uniq_name }}"
       register: param_result
       failed_when: param_result.rc != 0
@@ -63,7 +62,7 @@
       become_user: "{{ oracle_install_user }}"
       register: param_result
       failed_when: param_result.rc != 0
-      
+
   become: true
   become_user: "{{ oracle_install_user }}"
   environment: "{{ db_env }}"
