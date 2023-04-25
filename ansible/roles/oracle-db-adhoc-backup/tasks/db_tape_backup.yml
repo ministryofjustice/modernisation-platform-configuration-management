@@ -1,8 +1,6 @@
 ---
-
-- name: Backup database to tape 
+- name: Backup database to tape
   block:
-
     - name: create rman backup script
       template:
         src: rman_tape_backup.cmd.j2
@@ -11,7 +9,7 @@
         group: "{{ group_name }}"
         mode: "0700"
 
-    - name: Copy controlfile backup script for standby 
+    - name: Copy controlfile backup script for standby
       template:
         src: rman_contrfolfile_backup_s3.cmd.j2
         dest: "{{ stage }}/rman_contrfolfile_backup_s3.cmd"
@@ -20,7 +18,7 @@
         mode: "0700"
       when: backup_for == "standby"
 
-    - name: Run rman backup script 
+    - name: Run rman backup script
       become_user: oracle
       ansible.builtin.shell: |
         source oraenv <<< {{ db_name }}
@@ -29,7 +27,7 @@
     - name: Take standby controlfile backup for HA creation  to S3 bucket
       ansible.builtin.shell: |
         source oraenv <<< {{ db_name }}
-        rman target / cmdfile="{{ stage }}/rman_contrfolfile_backup_s3.cmd" log="{{ stage }}/{{ backup_tag }}_db_backup.log" 
+        rman target / cmdfile="{{ stage }}/rman_contrfolfile_backup_s3.cmd" log="{{ stage }}/{{ backup_tag }}_db_backup.log"
       when: backup_for == "standby"
 
     - name: Copy password file to S3 bucket
