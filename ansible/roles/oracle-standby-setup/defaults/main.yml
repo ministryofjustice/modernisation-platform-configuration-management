@@ -1,0 +1,20 @@
+primary_database: CNOMPOC
+primary_uniq_name: CNOMPOC
+primary_host: t1-nomis-db-1-a
+primary_tns: "{{ primary_database }}"
+standby_database: CNOMPOCHA
+standby_host: t1-nomis-db-2
+standby_tns: "{{ standby_database }}"
+standby_uniq_name: CNOMPOCS1
+global_database_name: CNOMPOC
+
+oracle_install_user: oracle # Later add in group vars 
+oracle_install_group: oinstall # Later add in group vars 
+database_home: /u01/app/oracle/product/11.2.0.4/db_1 # Later add in group vars 
+temp_dir: /u02/stage/temp # Later add in group vars  
+stage: /u02/stage # Later add in group vars 
+ORACLE_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # Later add in group vars 
+db_port: 1521 # Later add in group vars 
+db_env:     # Later add in group vars 
+  ORACLE_HOME: "{{ database_home }}" # Later add in group vars  
+  PATH: "{{ database_home }}/bin:{{ ORACLE_PATH }}" # Later add in group vars 

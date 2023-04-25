@@ -1,0 +1,308 @@
+#!/bin/bash
+
+export PATH=/usr/sbin:/usr/local/bin:$PATH
+THISSCRIPT=`basename $0`
+
+info () {
+  T=`date +"%D %T"`
+    echo -e "INFO : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=`date +"%D %T"`
+  echo -e "ERROR : $THISSCRIPT : $T : $1"
+  exit 1
+  }
+
+ usage () {
+   echo ""
+   echo "Usage:"
+   echo ""
+   echo "  $THISSCRIPT -t <primary db> -s <standby db>"
+   echo ""
+   echo "  primary db              = primary database name"
+   echo "  standby db              = standby database name"
+   echo ""
+   exit 1
+}
+
+set_ora_env () {
+  export ORAENV_ASK=NO
+  export ORACLE_SID=$1
+  . oraenv
+  unset SQLPATH
+  unset TWO_TASK
+  unset LD_LIBRARY_PATH
+  export NLS_DATE_FORMAT=YYMMDDHH24MI
+}
+
+set_system_param () {
+   PARAM_NAME=$1
+   PARAM_VALUE=$2
+   X=`sqlplus -s / as sysdba <<EOF
+      set feedback off heading off echo off verify off
+      col value format a1000
+      set lines 1000
+      set long 1000
+      select 'ACTUAL_VALUE="'||value||'"' value
+        from $V_PARAMETER
+       where name = '${PARAM_NAME}';
+EOF
+`
+   eval $X
+   if [ "$ACTUAL_VALUE" != "$PARAM_VALUE" ];
+   then
+      info "Setting ${PARAM_NAME} to ${PARAM_VALUE}"
+      sqlplus -s / as sysdba << EOF
+      set feedback off heading off echo off verify off lines 132
+      declare
+
+      cursor c_fal_server is
+        select value
+        from $V_PARAMETER
+        where name = 'fal_server'
+        and value like '%${PARAM_VALUE}%';
+
+      cursor c_log_archive_config is
+        select value
+        from $V_PARAMETER
+        where name = 'log_archive_config'
+        and value like '%${PARAM_VALUE}%';
+
+      v_sql_stmt            varchar2(4000);
+      r_fal_server          c_fal_server%rowtype;
+      r_log_archive_config  c_log_archive_config%rowtype;
+
+      begin
+        if '${PARAM_NAME}' = 'fal_server'
+        then
+          open c_fal_server;
+          fetch c_fal_server into r_fal_server;
+          if c_fal_server%notfound
+          then
+            if '${ACTUAL_VALUE}' is not null
+            then
+              v_sql_stmt:='alter system set ${PARAM_NAME}='||''''||'${ACTUAL_VALUE},${PARAM_VALUE}'||''''||' scope=both';
+            else
+              v_sql_stmt:='alter system set ${PARAM_NAME}='||''''||'${PARAM_VALUE}'||''''||' scope=both';
+            end if;
+          end if;
+          close c_fal_server;
+        elsif '${PARAM_NAME}' = 'log_archive_config'
+        then
+          open c_log_archive_config;
+          fetch c_log_archive_config into r_log_archive_config;
+          if c_log_archive_config%notfound
+          then
+            if '${ACTUAL_VALUE}' is not null
+            then
+          v_sql_stmt:='alter system set ${PARAM_NAME}='||''''||regexp_replace('${ACTUAL_VALUE}','^(dg_config=.*)\)$','\1,${PARAM_VALUE})')||''''||' scope=both';
+            else
+              v_sql_stmt:='alter system set ${PARAM_NAME}='||''''||'dg_config=(${primarydb},${PARAM_VALUE})'||''''||' scope=both';
+            end if;
+          end if;
+          close c_log_archive_config;
+        else
+          v_sql_stmt:='alter system set ${PARAM_NAME}='||''''||'${PARAM_VALUE}'||''''||' scope=both';
+        end if;
+        if v_sql_stmt is not null
+        then
+          execute immediate v_sql_stmt;
+        end if;
+      end;
+      /
+      exit;
+EOF
+   fi
+}
+
+set_rman_param () {
+  CONFIGURATION=$1
+
+  X=`rman target / <<EOF
+     SHOW ALL;
+EOF
+`
+   if [ $( echo $X | grep -c "$CONFIGURATION" ) -eq 0  ];
+   then
+    info "Setting RMAN $CONFIGURATION"
+    rman target / <<EOF > /dev/null
+      CONFIGURE $CONFIGURATION;
+      exit
+EOF
+   fi
+}
+
+configure_primary_for_ha () {
+  set_ora_env ${PRIMARYDB}
+  V_DATABASE=v\$database
+  V_PARAMETER=v\$parameter
+  V_ARCHIVE_DEST=v\$archive_dest
+  X=`sqlplus -s / as sysdba <<EOF
+     set feedback off heading off echo off verify off
+     select 'LOG_MODE='||log_mode,
+            'FLASHBACK_ON='||flashback_on,
+            'FORCE_LOGGING='||force_logging
+      from $V_DATABASE;
+EOF
+`
+
+  eval $X
+  if [ "$LOG_MODE" != "ARCHIVELOG" ]
+  then
+    info "Enabling archive log mode"
+    sqlplus -s / as sysdba << EOF
+    set feedback off heading off echo off verify off
+    shutdown immediate
+    startup mount
+    alter database archivelog;
+    alter database open;
+    exit;
+EOF
+  fi
+
+  if [ "$FLASHBACK_ON" != "YES" ]
+  then
+    info "Enabling flashback database"
+    sqlplus -s / as sysdba << EOF
+    set feedback off heading off echo off verify off
+    alter database flashback on;
+    exit;
+EOF
+  fi
+
+  if [ "$FORCE_LOGGING" != "YES" ]
+  then
+    info "Enabling force logging"
+    sqlplus -s / as sysdba << EOF
+    set feedback off heading off echo off verify off
+    alter database force logging;
+    exit;
+EOF
+  fi
+
+  #  Set System Parameters
+  set_system_param  log_archive_dest_1            "location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=${primarydb}"
+  set_system_param  log_archive_config            "${standbydb}"
+
+# The log archive destinations may not be set up in ascending order so determine if a destination is already configured for this standby
+  X=`sqlplus -s / as sysdba <<EOF
+     set feedback off heading off echo off verify off
+     select 'DESTINATION_CONFIGURED='||decode(max(dest_name),NULL,'NO','YES'),
+            'DESTINATION_ID='||lower(max(dest_id))
+     from   $V_ARCHIVE_DEST
+     where  destination='${standbydb}';
+EOF
+`
+  eval $X
+
+  # If the destination has already been configured then used that destination id, otherwise
+  # use the sequential destination determined in the main section
+  if [ "$DESTINATION_CONFIGURED" == "YES" ];
+  then
+     info "Archive destination for ${STANDBYDB} is already configured on destination ${DESTINATION_ID}"
+     n=${DESTINATION_ID}
+  fi
+  set_system_param  log_archive_dest_${n}         "service=${standbydb} affirm sync valid_for=(online_logfiles,primary_role) db_unique_name=${standbydb}"
+  set_system_param  log_archive_dest_state_${n}   "enable"
+
+  set_system_param  fal_server                    "${standbydb}"
+  set_system_param  fal_client                    "${primarydb}"
+  set_system_param  standby_file_management       "auto"
+
+  # Configure RMAN Parameters
+  set_rman_param "RETENTION POLICY TO RECOVERY WINDOW OF 14 DAYS"
+  set_rman_param "CONTROLFILE AUTOBACKUP ON"
+  set_rman_param "CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE 'SBT_TAPE' TO '%F'"
+  set_rman_param "DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO COMPRESSED BACKUPSET"
+  set_rman_param "ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY BACKED UP 1 TIMES TO 'SBT_TAPE'"
+  set_rman_param "CHANNEL DEVICE TYPE 'SBT_TAPE' PARMS 'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws.ora)'"
+}
+
+create_standby_logfiles () {
+  info "Create standby log files"
+  sqlplus -s / as sysdba << EOF
+  set head off pages 1000 feed off
+  declare
+    cursor c1 is
+      select 'alter database add standby logfile thread 1 group '||rn||' size '||mb cmd
+          from ( with maxgroup as
+                (select count(*) as cnt, max(group#) as mg, max(bytes) as mb from v\$log)
+                 select cnt, mg, mb, rownum as rn
+                 from maxgroup
+                 connect by level <= ((mg)+(cnt)+1))
+      where rn > mg
+      and rn not in (select group# from v\$standby_log);
+
+      sql_stmt varchar2(400);
+
+  begin
+    for r1 in c1
+    loop
+      sql_stmt := r1.cmd;
+      execute immediate sql_stmt;
+    end loop;
+  end;
+  /
+EOF
+  [ $? -ne 0 ] && error "Creating standby log files" || info "Created standby log files"
+}
+
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+info "Start"
+
+# ------------------------------------------------------------------------------
+# Check that we are running as the correct user (oracle)
+# ------------------------------------------------------------------------------
+info "Validating user"
+THISUSER=`id | cut -d\( -f2 | cut -d\) -f1`
+[ "$THISUSER" != "oracle" ] && error "Must be oracle to run this script"
+info "User ok"
+
+# ------------------------------------------------------------------------------
+# Check that we have been given all the required arguments
+# ------------------------------------------------------------------------------
+info "Retrieving arguments"
+[ -z "$1" ] && usage
+
+TARGETDB=UNSPECIFIED
+
+while getopts "t:s:" opt
+do
+  case $opt in
+    t) PRIMARYDB=$OPTARG ;;
+    s) STANDBYDB=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+info "Primary Database = $PRIMARYDB"
+info "Standby Database = $STANDBYDB"
+
+primarydb=`echo "${PRIMARYDB}" | tr '[:upper:]' '[:lower:]'`
+standbydb=`echo "${STANDBYDB}" | tr '[:upper:]' '[:lower:]'`
+
+# ------------------------------------------------------------------------------
+# Check parameters
+# ------------------------------------------------------------------------------
+[ -z "$1" ] && usage
+
+# Configure log_archive_dest_<n>
+if [[ ${STANDBYDB} =~ .*S1 ]]
+then
+
+   n=2
+elif [[ ${STANDBYDB} =~ .*S2 ]]
+then
+   n=3
+else
+  error "Standby name may only end in S1 or S2"
+fi
+
+# Configure database parameters
+configure_primary_for_ha
+
+# Create redo standby log files they do not exist
+create_standby_logfiles
