@@ -7,7 +7,7 @@ This role can be used to backup an Oracle database using RMAN to disk or S3 buck
 ## Testing
 
 For database backup to S3 -  
-ansible-playbook site.yml --limit t1-nomis-db-1-a   -e force_role=oracle-db-adhoc-backup --extra-vars "db_name=CNOMPOC backup_for=ha"
+ansible-playbook site.yml --limit t1-nomis-db-1-a   -e force_role=oracle-db-adhoc-backup --extra-vars "db_name=CNOMPOC backup_for=standby backup_tag=TEST_BKP"
 
 For database backup to Disk - 
-ansible-playbook site.yml --limit t1-nomis-db-1-a   -e force_role=oracle-db-adhoc-backup --extra-vars "db_name=CNOMPOC backup_for=ha backup_dir=/u02/DB_BKP backup_tag=TEST_BKP"
+ansible-playbook site.yml --limit t1-nomis-db-1-a   -e force_role=oracle-db-adhoc-backup --extra-vars "db_name=CNOMPOC backup_for=standby backup_dir=/u02/DB_BKP backup_tag=TEST_BKP"
