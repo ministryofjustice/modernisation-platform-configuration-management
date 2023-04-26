@@ -1,0 +1,9 @@
+---
+# set up specific log-rotate for nomis-web instances
+- name: set up specific log-rotate for nomis-web instances
+  copy:
+    src: files/etc/logrotate.d/nomis-web
+    dest: /etc/logrotate.d/nomis-web
+    owner: root
+    group: root
+    mode: 0644

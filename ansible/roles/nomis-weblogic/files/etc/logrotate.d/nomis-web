@@ -1,0 +1,11 @@
+/u01/tag/HotPage/logs/HotPage.log
+/u01/tag/autologoff/logs/web.log
+{
+    missingok
+    rotate 7
+    daily
+    compress
+    postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}
