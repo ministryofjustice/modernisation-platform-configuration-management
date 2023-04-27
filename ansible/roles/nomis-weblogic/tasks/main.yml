@@ -183,4 +183,8 @@
         loop_var: weblogic_form_server_config
       loop: "{{ weblogic_all_form_servers }}"
 
+    - import_tasks: logging.yml
+      tags:
+        - ec2provision
+
   when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == "6"
