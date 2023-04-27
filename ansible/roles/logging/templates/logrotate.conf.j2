@@ -1,0 +1,10 @@
+{% for path in item.log_path %}
+    {%- if path in file_paths %} 
+{{ path }} {%- endif %}
+{% endfor %}
+
+{
+{% if item.extra_config %}
+    {{ item.extra_config | indent(4) }}
+{%- endif %}
+}

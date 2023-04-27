@@ -1,0 +1,49 @@
+---
+- name: Check if log files exist
+  stat:
+    path: "{{ item.1 }}"
+  register: stat_results
+  with_subelements:
+    - "{{ logrotate_confd }}"
+    - log_path
+
+- name: Set fact for existing log file paths
+  set_fact:
+    file_paths: "{{ file_paths|default([]) + [ item.stat.path ] }}"
+  with_items: "{{ stat_results.results }}"
+  when: item.stat.exists == True
+
+- name: Filter out logrotate_confd elements with non-existing paths
+  set_fact:
+    filtered_logrotate_confd: "{{ filtered_logrotate_confd|default([]) + [ item ] }}"
+  with_items: "{{ logrotate_confd }}"
+  when: item.log_path | intersect(file_paths)
+
+- name: Add files to logrotate.d
+  block:
+    - name: Add files to logrotate.d
+      template:
+        src: templates/logrotate.conf.j2
+        dest: "/etc/logrotate.d/{{ item.filename }}"
+        validate: "logrotate -f %s"
+        group: root
+        owner: root
+        mode: 0644
+      with_items: "{{ filtered_logrotate_confd }}"
+  rescue:
+    - name: Remove logrotate state file
+      file:
+        path: /var/lib/logrotate.status
+        state: absent
+    - service:
+        name: rsyslog
+        state: restarted
+    - name: Add files to logrotate.d
+      template:
+        src: templates/logrotate.conf.j2
+        dest: "/etc/logrotate.d/{{ item.filename }}"
+        validate: "logrotate -f %s"
+        group: root
+        owner: root
+        mode: 0644
+      with_items: "{{ filtered_logrotate_confd }}"

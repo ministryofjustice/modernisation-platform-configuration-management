@@ -1,0 +1,9 @@
+---
+# a handler to restart systemd-journald
+- name: restart systemd-journald
+  systemd:
+    name: systemd-journald
+    state: restarted
+    daemon_reload: yes
+  when: ansible_distribution_major_version != "6"
+  
