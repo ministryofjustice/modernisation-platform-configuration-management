@@ -1,0 +1,6 @@
+---
+# include tasks from logrotate.yml
+- include: logrotate.yml
+  tags:
+    - ec2provision
+  when: ansible_os_family == "RedHat"

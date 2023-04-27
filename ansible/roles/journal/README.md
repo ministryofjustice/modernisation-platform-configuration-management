@@ -1,0 +1,1 @@
+This role adds sensible defaults for journald.
