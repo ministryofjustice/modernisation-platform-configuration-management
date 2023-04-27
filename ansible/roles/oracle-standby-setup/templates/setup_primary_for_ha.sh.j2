@@ -292,13 +292,15 @@ standbydb=`echo "${STANDBYDB}" | tr '[:upper:]' '[:lower:]'`
 # Configure log_archive_dest_<n>
 if [[ ${STANDBYDB} =~ .*S1 ]]
 then
-
    n=2
 elif [[ ${STANDBYDB} =~ .*S2 ]]
 then
    n=3
+elif [[ ${STANDBYDB} =~ .*S3 ]]
+then
+   n=4
 else
-  error "Standby name may only end in S1 or S2"
+  error "Standby name may only end in S1 / S2 / S3"
 fi
 
 # Configure database parameters

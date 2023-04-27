@@ -1,13 +1,14 @@
 ssm_parameters_prefix: database #Later add in host vars
-primary_database: CNOMPOC
-primary_uniq_name: CNOMPOC
+primary_database: PCNOM
+primary_uniq_name: PCNOM
 primary_host: t1-nomis-db-1-a
 primary_tns: "{{ primary_database }}"
-standby_database: CNOMPOCHA
+db_name: PCNOM
+standby_database: PCNOMS1
 standby_host: t1-nomis-db-2-a
 standby_tns: "{{ standby_database }}"
-standby_uniq_name: CNOMPOCS1
-global_database_name: CNOMPOC
+standby_uniq_name: PCNOMS1
+global_database_name: PCNOMS1
 
 oracle_install_user: oracle # Later add in group vars
 oracle_install_group: oinstall # Later add in group vars

@@ -4,7 +4,7 @@
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
   when: ssm_parameters_path is not defined
 
-- name: Set SSM parameters weblogic path facts
+- name: Set SSM parameters database path facts
   set_fact:
     ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ primary_database }}/syspassword"
 
@@ -62,6 +62,11 @@
       become_user: "{{ oracle_install_user }}"
       register: param_result
       failed_when: param_result.rc != 0
+
+    - name: Copy password file to S3 bucket
+      ansible.builtin.shell: |
+        source oraenv <<< {{ db_name }}
+        aws s3 cp $ORACLE_HOME/dbs/orapw{{ db_name }} s3://{{ ansible_aws_ssm_bucket_name }}/
 
   become: true
   become_user: "{{ oracle_install_user }}"
