@@ -12,8 +12,8 @@
     ssm_parameters_path_weblogic_db_password: "{{ ssm_parameters_path }}/db_password"
     ssm_parameters_path_weblogic_db_tagsar_username: "{{ ssm_parameters_path }}/db_tagsar_username"
     ssm_parameters_path_weblogic_db_tagsar_password: "{{ ssm_parameters_path }}/db_tagsar_password"
-    ssm_parameters_path_weblogic_rms_hosts: "{{ ssm_parameters_path}}/weblogic_rms_hosts"
-    ssm_parameters_path_weblogic_rms_key: "{{ ssm_parameters_path}}/weblogic_rms_key"
+    ssm_parameters_path_weblogic_rms_hosts: "{{ ssm_parameters_path }}/rms_hosts"
+    ssm_parameters_path_weblogic_rms_key: "{{ ssm_parameters_path }}/rms_key"
 
 - name: Get SSM parameters
   set_fact:
@@ -42,3 +42,25 @@
 
 - debug:
     msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"
+
+- debug:
+    msg: "Configuring RMS hosts to {{ weblogic_rms_hosts }}"
+
+- name: Check all SSM parameters and tags are set
+  set_fact:
+    weblogic_all_variables_set: true
+  when:
+    - weblogic_admin_username|length > 0
+    - weblogic_admin_password|length > 0
+    - weblogic_db_username|length > 0
+    - weblogic_db_password|length > 0
+    - weblogic_db_tagsar_username|length > 0
+    - weblogic_db_hostname_a|length > 0
+    - weblogic_db_hostname_b|length > 0
+    - weblogic_rms_hosts|length > 0
+    - weblogic_rms_key|length > 0
+
+- name: Fail if missing SSM parameters or tags
+  fail:
+    msg: Ensure all required SSM parameters and tags are set
+  when: not weblogic_all_variables_set|default(false)
