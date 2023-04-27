@@ -1,9 +1,11 @@
 ---
 # set up specific log-rotate for nomis-web instances
 - name: set up specific log-rotate for nomis-web instances
-  copy:
-    src: files/etc/logrotate.d/nomis-web
-    dest: /etc/logrotate.d/nomis-web
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
     owner: root
     group: root
     mode: 0644
+  loop:
+    - /etc/logrotate.d/nomis-web
