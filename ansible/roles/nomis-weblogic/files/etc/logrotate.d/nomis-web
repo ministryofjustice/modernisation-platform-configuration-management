@@ -2,10 +2,9 @@
 /u01/tag/autologoff/logs/web.log
 {
     missingok
-    rotate 7
-    daily
+    copytruncate
+    maxsize 3G
+    rotate 4
+    weekly
     compress
-    postrotate
-        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
-    endscript
 }
