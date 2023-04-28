@@ -1,0 +1,151 @@
+---
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ standby_database }}/syspassword"
+
+- name: Get SSM parameters
+  set_fact:
+    database_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+
+- name: Set active duplication parameter if variable defined
+  set_fact:
+    active: " from active database "
+  when: active_duplication is defined and active_duplication == "Y"
+
+- debug:
+    var: active
+
+- name: Set active duplication parameter if variable is undefined
+  set_fact:
+    active: " "
+  when: active_duplication is undefined
+
+- name: Set variable for database duplication using backup from primary s3 bucket
+  set_fact:
+    rman_file_name: "_s3backup"
+  when: restore_from is defined
+
+- name: Set variable for database duplication using backup from primary s3 bucket
+  set_fact:
+    rman_file_name: ""
+  when: restore_from is undefined
+
+- name: Check standby database files already exists in ASM
+  ansible.builtin.shell: |
+    source oraenv <<< "+ASM"
+    asmcmd ls +DATA/{{ standby_uniq_name }}
+  register: standby_directory
+  failed_when: "'ASMCMD-8002' not in standby_directory.stderr"
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ db_env }}"
+
+- name: Setup standby oratab
+  lineinfile:
+    path: /etc/oratab
+    line: "{{ standby_database }}:{{ database_home }}:N"
+
+- name: Setup Standby database
+  block:
+    - name: Copy setup files for execution
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      loop:
+        - "add_tns_entry.sh"
+        - "add_lsnr_static_services.sh"
+        - "standby_creation{{ rman_file_name }}.cmd"
+
+    - name: Setup Listener service
+      ansible.builtin.shell: "{{ stage }}/add_lsnr_static_services.sh {{ global_database_name }} {{ standby_database }} {{ database_home }}"
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      register: param_result
+      failed_when: param_result.rc != 0
+
+    - name: Add TNS entry for primary
+      ansible.builtin.shell: "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ primary_database }} {{ primary_host }} {{ db_port }} {{ primary_uniq_name }}"
+      register: param_result
+      failed_when: param_result.rc != 0
+
+    - name: Add TNS entry for standby
+      ansible.builtin.shell: "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ standby_database }} {{ standby_host }} {{ db_port }} {{ standby_uniq_name }}"
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      register: param_result
+      failed_when: param_result.rc != 0
+
+    - name: Create directory for audit dump dest
+      ansible.builtin.file:
+        path: "/u01/app/oracle/admin/{{ standby_database }}/adump"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: u=rwx,g=rxs,o=rx
+        state: directory
+        recurse: yes
+
+    - name: Copy initialization parameter file
+      template:
+        src: "init.ora.j2"
+        dest: "{{ database_home }}/dbs/init{{ standby_database }}.ora"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+
+    - name: Copy primary password file from S3 bucket backup
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        aws s3 cp s3://{{ ansible_aws_ssm_bucket_name }}/orapw{{ primary_database }} $ORACLE_HOME/dbs/orapw{{ standby_database }}
+
+    - name: Check standby database is already running or not , if running terminate the code.
+      ansible.builtin.shell: ps -ef | grep ora_pmon_{{ standby_database }}| grep -v grep | wc -l
+      register: running_processes
+      failed_when: running_processes.stdout == "1"
+
+    - name: Start standby database in nomount mode
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ standby_database }}_nomount.log 
+        startup nomount 
+        exit
+        EOF
+
+    - name: Create standby database
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        rman cmdfile={{ stage }}/standby_creation{{ rman_file_name }}.cmd log={{ stage }}/{{ standby_database }}_active_standby_creation.log
+
+    - name: Start recovery on standby database
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ standby_database }}_check.log 
+        alter database recover managed standby database using current logfile disconnect from session;
+        exit
+        EOF
+
+    - name: Create spfile in ASM diskgroup
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ standby_database }}_check.log 
+        create pfile='/tmp/init.ora' from spfile;
+        create spfile='+DATA/{{ standby_uniq_name }}/spfile{{ standby_database }}.ora' from pfile='/tmp/init.ora' ;
+        shutdown immediate 
+        exit
+        EOF
+
+    - name: Add database in CRS
+      ansible.builtin.shell: |
+        source oraenv <<< {{ standby_database }}
+        srvctl add database -d {{ standby_database }} -o {{ database_home }} -p +DATA/{{ standby_uniq_name }}/spfile{{ standby_database }}.ora -r PHYSICAL_STANDBY -s MOUNT -t IMMEDIATE -i {{ standby_database }} -n {{ db_name }} -y AUTOMATIC -a "DATA,FLASH"
+        srvctl start database -d {{ standby_database }}
+
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ db_env }}"
