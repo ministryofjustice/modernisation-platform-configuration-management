@@ -1,0 +1,10 @@
+---
+# copy files/etc/systemd/journald.conf to the system and restart systemd-journald on Rhel7 and above
+- name: copy files/etc/systemd/journald.conf to the system
+  copy:
+    src: files/etc/systemd/journald.conf
+    dest: /etc/systemd/journald.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart systemd-journald

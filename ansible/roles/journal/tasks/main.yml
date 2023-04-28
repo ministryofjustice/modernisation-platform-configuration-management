@@ -1,0 +1,5 @@
+# include tasks from jounal.yml when the OS is RedHat and not version 6
+- include: journal.yml
+  tags:
+    - ec2provision
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version != "6"

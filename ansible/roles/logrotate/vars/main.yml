@@ -1,0 +1,57 @@
+---
+logrotate_confd:
+  - filename: syslog
+    log_path:
+      - /var/log/mail
+      - /var/log/mail.info
+      - /var/log/cron
+      - /var/log/maillog
+      - /var/log/messages
+      - /var/log/secure
+      - /var/log/spooler
+    extra_config: |
+      rotate 7
+      daily
+      missingok
+      notifempty
+      sharedscripts
+      postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+      endscript
+  - filename: mailroot
+    log_path:
+      - /var/spool/mail/root
+    extra_config: |
+      su root mail
+      rotate 7
+      daily
+      missingok
+      notifempty
+      postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+      endscript
+  - filename: sudolog
+    log_path:
+      - /var/log/sudo.log
+    extra_config: |
+      postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+      endscript
+  - filename: warn
+    log_path:
+      - /var/log/warn
+    extra_config: |
+      missingok
+      notifempty
+      postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+      endscript
+  - filename: localmessages
+    log_path:
+      - /var/log/localmessages
+    extra_config: |
+      missingok
+      notifempty
+      postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+      endscript
