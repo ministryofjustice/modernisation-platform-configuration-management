@@ -4,16 +4,17 @@
     src: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13"
     dest: "{{ oasys_ords_tomcat_dir }}/latest"
     state: link
-    owner: oracle
-    group: dba
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
     mode: 0755
 
 - name: copy params to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps
   copy:
-    src: "{{ oasys_ords_dir }}/params"
-    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
-    owner: oracle
-    group: oracle
+    src: "{{ oasys_ords_dir }}/params/ords_params.properties"
+    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/ords_params.properties"
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
+    remote_src: true
     mode: 0755
 
 - name: update environmnent xml
@@ -33,8 +34,8 @@
   template:
     src: "doc_root/{{ oasys_index_page }}.j2"
     dest: "{{ oasys_ords_docroot_dir }}/index.html"
-    owner: "oracle"
-    group: "oinstall"
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
     mode: "0644"
     force: no # does not replace since manual changes are made (see above)
 
@@ -42,8 +43,8 @@
   template:
     src: "doc_root/{{ item }}.j2"
     dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
-    owner: "oracle"
-    group: "oinstall"
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
     mode: "0644"
     force: no # does not replace since manual changes are made (see above)
   with_items: "{{ oasys_ords_extra_files }}"

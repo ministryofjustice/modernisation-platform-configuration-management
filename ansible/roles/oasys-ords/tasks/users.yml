@@ -1,24 +1,28 @@
 ---
 # create dba group
-- name: create dba group
+- name: create {{ ords_install_user }} group
   group:
-    name: dba
+    name: "{{ item.name }}"
+    gid: "{{ item.gid }}"
     state: present
+  loop:
+    - { name: oinstall, gid: 1002 }
+    - { name: dba, gid: 1003 }
 
-# create oracle user
-- name: create oracle user
+# create {{ ords_install_user }} user
+- name: create {{ ords_install_user }} user
   user:
-    name: oracle
+    name: "{{ ords_install_user }}"
     shell: /bin/bash
     state: present
-    groups: dba
+    groups: oinstall, dba
     append: yes
 
-# add bash profile for oracle user
-- name: add bash profile for oracle user
+# add bash profile for {{ ords_install_user }} user
+- name: add bash profile for {{ ords_install_user }} user
   template:
-    src: oracle.bash_profile.j2
-    dest: /home/oracle/.bash_profile
-    owner: oracle
-    group: dba
+    src: "{{ ords_install_user }}.bash_profile.j2"
+    dest: "/home/{{ ords_install_user }}/.bash_profile"
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
     mode: 0644
