@@ -1,7 +1,8 @@
 # See overrides in group_vars, e.g. group_vars/prod_oasys_web.yml ##################
+ssm_parameters_prefix: database
 oasys_ords_root_dir: "/u01/app/apache/tomcat/latest"
 oasys_ords_tomcat_dir: "/u01/app/apache/tomcat"
-oasys_links_default_label: "{{ environment_group }}"
+oasys_links_default_label: "t2-oasys-web"
 oasys_links_default_path: "/eor/f?p=100:101"
 oasys_index_page: "redirect.html"
 oasys_ords_docroot_dir: "{{ oasys_ords_root_dir }}/webapps/ROOT"
@@ -9,14 +10,14 @@ oasys_ords_extra_files: []
 oasys_maintenance_msg: ""
 oasys_ords_s3_bucket: "oasys-ords"
 ords_db_port: 1521
-ords_db_sid: "OASYS" # is this correct? in pd azure it is OASPROD
+ords_db_sid: "OASPROD" # is this correct? in pd azure it is OASPROD
 oasys_ords_dir: "/u02/stage/ORDS/ords_stage"
 
-ords_trusted_origins: # pretty sure these will need changing
-  - https://oasys.az.justice.gov.uk/eor
-  - https://bridge-oasys.az.justice.gov.uk/eor
-  - https://p-oasys.az.juistce.gov.uk/eor
-  - http://localhost:8080/eor
+ords_trusted_origins:
+  http://localhost:8080/eor
+  # - https://oasys.az.justice.gov.uk/eor
+  # - https://bridge-oasys.az.justice.gov.uk/eor
+  # - https://p-oasys.az.juistce.gov.uk/eor
 
 ords_artefact_list:
   - { obj: "apache-tomcat-9.0.13.tar.gz", dest: "/u01/app/apache/tomcat" }
@@ -24,10 +25,5 @@ ords_artefact_list:
   - { obj: "ords-19.4.6.142.1859.zip", dest: "/u02/stage/ORDS/ords_stage" }
   - { obj: "i_11Apr2023.tgz", dest: "/u02/stage/ORDS/ords_stage" }
 
-# how do we do secrets?
-apex_user_password: ""
-db_servicename: ""
-db_sys_password: ""
-apex_listener_password: ""
-apex_restapi_password: ""
-ords_public_user_password: ""
+ords_install_user: oracle
+ords_install_group: oinstall

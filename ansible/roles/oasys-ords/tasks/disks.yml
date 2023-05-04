@@ -1,23 +1,19 @@
 ---
-# mkdir  -p /u02/stage/ORDS/ords_stage
-# mkdir -p /u01/app/apache/tomcat
-# make two directories for tomcat
-
 - name: install lvm2
   yum:
     name: lvm2-2.03.14-6.el8.x86_64
     state: present
 
-- name: create Oracle mount points
+- name: create {{ ords_install_user }} mount points
   file:
     path: "{{ item }}"
     state: directory
-    owner: oracle
-    group: oracle
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
     mode: 0755
   loop:
-    - /u01/
-    - /u02/
+    - /u01
+    - /u02
 
 # create volume group
 - name: create volume group

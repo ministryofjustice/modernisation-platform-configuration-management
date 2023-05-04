@@ -1,15 +1,22 @@
 ---
-- name: create dirs
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: 0755
-    recurse: true
-  loop:
-    - "{{ oasys_ords_tomcat_dir }}"
-    - "{{ oasys_ords_dir }}"
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    #ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ primary_database }}/syspassword"
+    ssm_parameters_path_db_apex_public_user_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_public_userpassword"
+    ssm_parameters_path_db_apex_listener_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_listenerpassword"
+    ssm_parameters_path_db_apex_rest_public_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_rest_publicpassword"
+
+- name: Get SSM parameters
+  set_fact:
+    #database_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+    database_apex_public_user_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_public_user_password, region=ansible_ec2_placement_region) }}"
+    database_apex_listener_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_listener_password, region=ansible_ec2_placement_region) }}"
+    database_apex_rest_public_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_rest_public_password, region=ansible_ec2_placement_region) }}"
 
 - name: install xfsprogs
   yum:
@@ -22,40 +29,58 @@
     object: "{{ oasys_ords_s3_bucket }}/{{ item.obj }}"
     dest: "/tmp/{{ item.obj }}"
     mode: get
+    permission: public-read
   loop: "{{ ords_artefact_list }}"
 
-- name: unarchive artefacts
-  ansible.builtin.unarchive:
-    src: "/tmp/{{ item.obj }}"
-    dest: "{{ item.dest}}"
-  loop: "{{ ords_artefact_list }}"
+- name: Install ORDS
+  block:
+    - name: create dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755
+        group: "{{ ords_install_group }}"
+        recurse: true
+      loop:
+        - "{{ oasys_ords_tomcat_dir }}"
+        - "{{ oasys_ords_dir }}"
 
-- name: copy ords.war to eor.war
-  copy:
-    src: "{{ oasys_ords_dir }}/ords.war"
-    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
-    owner: oracle
-    group: oinstall
-    mode: 0755
+    - name: unarchive artefacts
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ item.obj }}"
+        dest: "{{ item.dest}}"
+        remote_src: yes
+        group: "{{ ords_install_group }}"
+      loop: "{{ ords_artefact_list }}"
 
-- name: add silent params file
-  template:
-    src: ords_params_silent.properties.j2
-    dest: "{{ oasys_ords_dir }}/params/ords_params_silent.properties"
-    owner: oracle
-    group: oinstall
-    mode: 0600
+    - name: copy ords.war to eor.war
+      copy:
+        src: "{{ oasys_ords_dir }}/ords.war"
+        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
+        remote_src: yes
+        group: "{{ ords_install_group }}"
+        mode: 0755
 
-- name: install eor
-  ansible.builtin.shell:
-    cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
-    chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+    - name: Copy oasys application images folder
+      copy:
+        src: "{{ oasys_ords_dir }}/i"
+        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/"
+        remote_src: yes
+        directory_mode: yes
+        group: "{{ ords_install_group }}"
+        mode: 0755
 
-- name: Copy oasys application images folder
-  copy:
-    src: "/tmp/i"
-    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/"
-    owner: oracle
-    group: oinstall
-    directory_mode: yes
-    mode: 0755
+    - name: Add silent params file
+      template:
+        src: ords_params_silent.properties.j2
+        dest: "{{ oasys_ords_dir }}/params/ords_params_silent.properties"
+        group: "{{ ords_install_group }}"
+        mode: 0600
+
+    - name: Install EOR application
+      ansible.builtin.shell:
+        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -Dconfig.dir=/u01/app/apache/tomcat/config -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
+        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+
+  become: true
+  become_user: "{{ ords_install_user }}"
