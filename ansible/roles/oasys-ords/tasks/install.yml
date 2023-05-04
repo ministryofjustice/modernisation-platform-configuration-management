@@ -1,5 +1,4 @@
 ---
-
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
@@ -33,9 +32,8 @@
     permission: public-read
   loop: "{{ ords_artefact_list }}"
 
-- name: Install ORDS 
+- name: Install ORDS
   block:
-
     - name: create dirs
       file:
         path: "{{ item }}"
@@ -79,7 +77,7 @@
         group: "{{ ords_install_group }}"
         mode: 0600
 
-    - name: Install EOR application 
+    - name: Install EOR application
       ansible.builtin.shell:
         cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -Dconfig.dir=/u01/app/apache/tomcat/config -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
         chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
