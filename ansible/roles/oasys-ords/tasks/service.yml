@@ -1,17 +1,9 @@
 ---
-- name: create dirs
-  file:
-    path: "/home/oracle/admin/scripts"
-    state: directory
-    mode: 0755
-    owner: "{{ ords_install_user }}"
-    group: "{{ ords_install_group }}"
-    recurse: true
 
 - name: add startup and shutdown scripts
   template:
     src: "{{ item }}.j2"
-    dest: "/home/{{ ords_install_user }}/admin/scripts/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: 0755
