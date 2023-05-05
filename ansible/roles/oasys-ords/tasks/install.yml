@@ -79,7 +79,7 @@
 
     - name: Set config directory for ORDS install
       ansible.builtin.shell:
-        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war configdir {{ oasys_ords_tomcat_dir }}"
+        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war configdir {{ oasys_ords_tomcat_dir }}/config"
         chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
 
     - name: Install EOR application
