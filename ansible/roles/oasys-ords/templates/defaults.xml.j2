@@ -8,7 +8,7 @@
 <entry key="db.sid">{{ ec2.tags['oracle-db-sid'] }}</entry>
 <entry key="security.requestValidationFunction">wwv_flow_epg_include_modules.authorize</entry>
 <entry key="security.validationFunctionType">plsql</entry>
-<entry key="security.externalSessionTrustedOrigins">{{ ords_trusted_origins | join(',')}}</entry>
+<entry key="security.externalSessionTrustedOrigins">{{ ords_trusted_origins[ec2.tags["oasys-environment"]] }}</entry>
 <entry key="security.forceHTTPS">true</entry>
 <entry key="procedure.rest.preHook">RESTAPI.rest_utl_pkg.pre_hook</entry>
 </properties>

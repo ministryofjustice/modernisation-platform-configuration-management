@@ -77,9 +77,14 @@
         group: "{{ ords_install_group }}"
         mode: 0600
 
+    - name: Set config directory for ORDS install
+      ansible.builtin.shell:
+        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war configdir {{ oasys_ords_tomcat_dir }}"
+        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+
     - name: Install EOR application
       ansible.builtin.shell:
-        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -Dconfig.dir=/u01/app/apache/tomcat/config -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
+        cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
         chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
 
   become: true
