@@ -43,13 +43,13 @@
         group: "{{ oracle_install_group }}"
         remote_src: yes
 
-    - name: Unzip disk bug fix patch fix
-      ansible.builtin.unarchive:
-        src: "{{ stage }}/{{ disk_bug_fix_patch }}"
-        dest: "{{ stage }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        remote_src: yes
+    # - name: Unzip disk bug fix patch fix
+    #   ansible.builtin.unarchive:
+    #     src: "{{ stage }}/{{ disk_bug_fix_patch }}"
+    #     dest: "{{ stage }}"
+    #     owner: "{{ oracle_install_user }}"
+    #     group: "{{ oracle_install_group }}"
+    #     remote_src: yes
 
     - name: Upgrade OPatch in grid home
       ansible.builtin.unarchive:
