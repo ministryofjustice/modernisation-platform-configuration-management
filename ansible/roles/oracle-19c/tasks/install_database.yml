@@ -27,7 +27,6 @@
         - "{{ db_software }}"
         - "{{ psu_patch }}"
         - "{{ opatch }}"
-        - "{{ disk_bug_fix_patch }}"
 
     - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
       become_user: "{{ oracle_install_user }}"
