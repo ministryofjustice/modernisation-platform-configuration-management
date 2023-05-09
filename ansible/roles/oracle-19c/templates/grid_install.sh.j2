@@ -4,5 +4,5 @@ export TMP={{ temp }}
 export TMPDIR={{ temp }}
 export CV_ASSUME_DISTID=EL7
 echo "# Installing Oracle 19c grid Infrastructure"
-"{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/34160854/34130714" -applyOneOffs "{{ stage }}/33631337"
+"{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/{{ oracle_combo_patch }}/{{ oracle_release_update }}" -applyOneOffs "{{ stage }}/33631337"
 exit 0 

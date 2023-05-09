@@ -8,13 +8,16 @@ oracle_install_group: oinstall
 oracle_asmlib_rpm: oracleasmlib-2.0.17-1.el8.x86_64.rpm
 oracle_prereq_rpm: oracle-database-preinstall-19c-1.0-2.el8.x86_64.rpm
 oracleasm_support_rpm: oracleasm-support-2.1.12-1.el8.x86_64.rpm
-opatch: p6880880_190000_Linux-x86-64.zip
+opatch: p6880880_190000_Linux-x86-64-12.2.0.1.37.zip
 disk_bug_fix_patch: p33631337_1916000DBRU_Linux-x86-64.zip
+oracle_combo_patch: 35058172
+oracle_release_update: 35037840
+oracle_ojvm_patch: 35050341
 
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
 patch: "{{ stage }}/patches"
-psu_patch: p34160854_190000_Linux-x86-64.zip
+psu_patch: p35058172_190000_Linux-x86-64.zip
 oracle_home: "{{ app_dir }}/oracle/product/19c"
 oracle_inventory: "{{ app_dir }}/oraInventory"
 oracle_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # this is to avoid having to source oracle environment variables
