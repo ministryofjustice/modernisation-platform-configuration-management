@@ -20,4 +20,4 @@
         - ec2patch
 
   # block
-  when: ansible_distribution == 'RedHat'
+  when: ansible_distribution in ['RedHat', 'OracleLinux']

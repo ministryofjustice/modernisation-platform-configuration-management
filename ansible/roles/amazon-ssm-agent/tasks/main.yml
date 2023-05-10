@@ -4,4 +4,4 @@
 - import_tasks: install-rhel.yml
   tags:
     - ec2patch
-  when: ansible_distribution == 'RedHat'
+  when: ansible_distribution in ['RedHat', 'OracleLinux']

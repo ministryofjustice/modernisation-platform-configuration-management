@@ -12,6 +12,9 @@ ami_packages:
   - zlib
   - bzip2
   - tmux
+  - jq
+  - tree
+  - vim
 ami_roles_list:
   - packages
   - time
@@ -19,6 +22,7 @@ ami_roles_list:
   - amazon-ssm-agent
   - amazon-cli
   - tcp-keepalive
+  - update-security
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
