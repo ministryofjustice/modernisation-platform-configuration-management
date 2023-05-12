@@ -4,8 +4,8 @@ After=syslog.target network.target
 
 [Service]
 Type=forking
-ExecStart=/home/oracle/admin/scripts/tomcat_startup_service.sh
-ExecStop=/home/oracle/admin/scripts/tomcat_shutdown_service.sh
+ExecStart=/usr/local/bin/tomcat_startup_service.sh
+ExecStop=/usr/local/bin/tomcat_shutdown_service.sh
 User=oracle
 Group=oinstall
 SuccessExitStatus=143

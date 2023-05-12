@@ -20,3 +20,8 @@
     name: "tomcat"
     daemon_reload: yes
     enabled: yes
+
+- name: enable tomcat
+  systemd:
+    name: "tomcat"
+    state: "started"
