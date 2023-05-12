@@ -1,5 +1,4 @@
-#db.hostname={{ ec2.tags['oracle-db-hostname'] }}
-db.hostname=10.101.36.132
+db.hostname={{ ec2.tags['oracle-db-hostname'] }}
 db.servicename={{ ec2.tags['oracle-db-sid'] }}
 db.username=APEX_PUBLIC_USER
 db.password="{{ database_apex_public_user_password }}"
