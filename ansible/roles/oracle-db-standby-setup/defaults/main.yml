@@ -1,0 +1,28 @@
+ssm_parameters_prefix: database
+database_home: /u01/app/oracle/product/11.2.0.4/db_1
+stage: /u02/stage
+temp_dir: /u02/stage/temp
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+duplicate_target_db_cmd: "duplicate target database for standby "
+rman_backup_location: /u02/DB_BKP
+
+db_configs: {}  # define in host or group vars
+# db_configs:
+#   CNOMT1:
+#     db_name: CNOMT1      
+#     db_unique_name: CNOMT1
+#     instance_name: CNOMT1
+#     host_name: T1PDL0009.azure.noms.root
+#     port: 1521
+#     tns_name: CNOMT1
+#     storage_account_name: strtcmonsazcopyorabkup
+#   T1CNOMS1:
+#     db_name: T1CNOMS1
+#     db_unique_name: T1CNOMS1
+#     instance_name: T1CNOMS1
+#     host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
+#     tns_name: T1CNOMS1
+#     s3_bucket: nomis-db-backup-bucket20220131102905687200000001

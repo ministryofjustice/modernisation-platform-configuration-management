@@ -1,0 +1,74 @@
+#!/bin/bash
+
+####################### ADD STATIC SERVICE IN THE REQUIRED LISTENER #######################
+###
+### add_lsnr_static_service.sh
+### PARAMETERS ###
+### $1 RECEIVE ORACLE_UNQNAME
+### $2 RECEIVE ORACLE_SID
+### $3 RECEIVE ORACLE_HOME
+###
+####################### ADD STATIC SERVICE IN THE REQUIRED LISTENER #######################
+
+export ORAENV_ASK=NO
+export ORACLE_SID=+ASM
+. oraenv
+
+export DB_UNQNAME=$1
+export DB_SID=$2
+export DB_HOME=$3
+export LISTENER_FILE=${ORACLE_HOME}/network/admin/listener.ora
+
+if [ -z $1 ]  || [ -z $2 ] || [ -z $3 ]
+then
+	echo "Missing parameter [GLOBAL_DBNAME] [DB_SID] [DB_HOME]"
+	exit;
+fi
+
+
+lnt1=`cat ${LISTENER_FILE} | grep SID_NAME | awk '{print $3}' | sed  's/)//g' | wc -l`
+lnt2=`cat ${LISTENER_FILE} | grep GLOBAL_DBNAME | awk '{print $3}' | sed  's/)//g' | wc -l`
+ln=0
+cnt_fnd=0
+while [ $ln -le $lnt1 ] || [ $ln -le $lnt2 ]; do
+ 	sid_name_ora=`cat ${LISTENER_FILE} | grep SID_NAME | awk '{print $3}' | sed  's/)//g' | awk -v line=$ln 'NR=line'| grep $DB_SID| uniq `
+ 	gb_name_ora=`cat ${LISTENER_FILE} | grep GLOBAL_DBNAME | awk '{print $3}' | sed  's/)//g' | awk -v line=$ln 'NR=line'| grep $DB_UNQNAME | uniq `
+  	if [ -n "${sid_list_ora}" ] && [ "${sid_name_ora}" != "${DB_SID}" ] || [ "${gb_name_ora}" != "${DB_UNQNAME}" ] && [ $ln != 0 ]; then
+   		cnt_fnd=1
+  	else
+   		cnt_fnd=0
+  	fi
+
+  	if [ -n "${sid_list_ora}" ] && [ "${sid_name_ora}" == "${DB_SID}" ] && [ "${gb_name_ora}" == "${DB_UNQNAME}" ]; then
+   		echo ""
+   		echo " *** This entry already exists: $sid_name_ora for listener: $2 ***"
+   		echo ""
+   		exit;
+    	elif [ -z "${sid_list_ora}" ] && [ $ln -lt 1 ] && [ `grep SID_LIST_LISTENER ${LISTENER_FILE} | wc -l` -eq 0 ]; then
+     		echo ""
+     		echo "*** Creating SID_LIST for: $2 and adding service: $1 ***"
+     		echo ""
+		echo "
+SID_LIST_LISTENER=
+(SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = $DB_UNQNAME)
+      (ORACLE_HOME = $DB_HOME)
+      (SID_NAME = $DB_SID)
+    )
+)" >> ${LISTENER_FILE}
+  	fi
+ 	ln=$(( ln+1 ))
+done
+
+
+if [ "$cnt_fnd" != 0 ]; then
+ 	echo ""
+ 	echo "*** Adding service entry: $ORACLE_UNQNAME for listener: $3 ***"
+ 	echo ""
+ 	sed -i '/SID_LIST =/a \ \ \ \ (SID_DESC = \n \ \ \ \ \ (GLOBAL_DBNAME = '$DB_UNQNAME') \n \ \ \ \ \ (ORACLE_HOME = '$DB_HOME') \n \ \ \ \ \ (SID_NAME = '$DB_SID') \n \ \ \ )' $LISTENER_FILE
+fi
+
+
+$ORACLE_HOME/bin/lsnrctl reload
+$ORACLE_HOME/bin/lsnrctl status

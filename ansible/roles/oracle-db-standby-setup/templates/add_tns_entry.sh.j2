@@ -1,0 +1,55 @@
+#!/bin/bash
+
+####################### ADD AN ENTRY IN THE TNSNAMES #######################
+###
+### add_tnsnames_entry.sh
+### PARAMETERS ###
+### $1 DIRECTORY OF ORACLE HOME  – [ORACLE_HOME]
+### $2 TNS ENTRY NAME – [ENTRY_NAME]
+### $3 IP OR DNS OF THE TARGET DATABASE – [HOST_ADDR]
+### $4 PORT NUMBER TO CONNECT TO THE TARGET DATABASE – [PORT_NUM]
+### $5 SERVICE NAME OF THE TARGET DATABASE – [SRV_NAME]
+###
+####################### ADD AN ENTRY IN THE TNSNAMES #######################
+
+export TNS_ADMIN_DIR=$1/network/admin
+export ENTRY_NAME=$2
+export HOST_ADDR=$3
+export PORT_NUM=$4
+export SRV_NAME=$5
+
+
+if [ -z $1 ] || [ -z $2 ] || [ -z $3 ] || [ -z $4 ] || [ -z $5 ]; then
+
+  echo "Missing one or more required parameters: [TNS_ADMIN_DIR] [ENTRY_NAME] [HOST_ADDR] [PORT_NUM] [SERVICE_NAME]"
+  exit;
+
+fi
+touch $TNS_ADMIN_DIR/tnsnames.ora
+
+chk_entry=`cat $TNS_ADMIN_DIR/tnsnames.ora | grep "$ENTRY_NAME =" | wc -l`
+
+if [ -n "$chk_entry" ] && [ "$chk_entry" = 0 ]; then
+
+  echo "Creating the required entry…"
+  echo ""
+
+echo "
+$ENTRY_NAME =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = $HOST_ADDR)(PORT = $PORT_NUM))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = $SRV_NAME)
+    )
+  )
+" >> $TNS_ADMIN_DIR/tnsnames.ora
+
+   elif [ "$chk_entry" != 0 ]; then
+
+   echo ""
+echo "This entry already exists: [$ENTRY_NAME]."
+echo "Nothing to do!"
+echo ""
+   exit;
+fi

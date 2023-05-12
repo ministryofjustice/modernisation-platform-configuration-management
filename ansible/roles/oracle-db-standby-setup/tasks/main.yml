@@ -1,0 +1,39 @@
+---
+- import_tasks: get_facts.yml
+  tags:
+    - oracle-db-standby-setup-on-primary
+    - oracle-db-standby-setup-upload-password-file
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: prepare_primary_for_standby.yml
+  tags:
+    - oracle-db-standby-setup-on-primary
+  when: db_primary_name is defined and db_standby_name is defined
+
+# don't use backup, sync 100% from primary.  Very slow
+- import_tasks: setup_standby_db.yml
+  vars:
+    duplicate_target_db_cmd: "duplicate target database for standby from active database "
+    standby_creation_cmd_filename: "standby_creation.cmd"
+  tags:
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+# download azure/s3 backup to disk and sync with primary
+- import_tasks: setup_standby_db.yml
+  vars:
+    standby_creation_cmd_filename: "standby_creation.cmd"
+  tags:
+    - oracle-db-standby-setup-from-disk-backup
+  when: db_primary_name is defined and db_standby_name is defined
+
+# use S3 backup directly and wync with primary (not tested)
+- import_tasks: setup_standby_db.yml
+  vars:
+    standby_creation_cmd_filename: "standby_creation_s3backup.cmd"
+  tags:
+    - oracle-db-standby-setup-from-s3-backup
+  when: db_primary_name is defined and db_standby_name is defined
