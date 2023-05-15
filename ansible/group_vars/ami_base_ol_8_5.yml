@@ -16,6 +16,7 @@ ami_packages:
   - tree
   - vim
   - cronie
+
 ami_roles_list:
   - packages
   - time
@@ -24,7 +25,7 @@ ami_roles_list:
   - amazon-cli
   - tcp-keepalive
   - update-security
-  - harden-ol-8-5
+  - oracle-linux-harden-8-5
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
