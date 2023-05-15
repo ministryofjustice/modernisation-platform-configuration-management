@@ -11,5 +11,6 @@ server_type_roles_list:
   - nomis-weblogic
   - collectd
   - amazon-cloudwatch-agent
+  - autoscale-group-hooks-state
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

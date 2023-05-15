@@ -1,12 +1,6 @@
 ---
 - name: Rhel6
   block:
-    # temporarily putting this at the start so we can more easily diagnose failures
-    - import_tasks: complete-autoscaling-hook.yml
-      tags:
-        - ec2provision
-        - weblogic_complete_autoscaling_hook
-
     - import_tasks: get-facts.yml
       tags:
         - ec2provision
