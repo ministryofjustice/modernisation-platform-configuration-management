@@ -78,6 +78,17 @@
 
 - name: Setup Standby database
   block:
+
+    - name: Check password file present
+      ansible.builtin.stat:
+        path: "{{ database_home }}/dbs/orapw{{ db_standby.db_name }}"
+      register: db_password_file_check
+
+    - name: Fail if password file not present
+      fail:
+        msg: "Please restore from backup (define adhoc_backup_label variable) or manually copy password file {{ database_home }}/dbs/orapw{{ db_standby.db_name }}"
+      when: not db_password_file_check.stat.exists
+
     - name: Copy setup files for execution
       template:
         src: "{{ item }}.j2"
@@ -163,7 +174,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       async: 86400
       poll: 60
-      when: not ansible_check_mode
+      when: not ansible_check_mode
 
     - name: Start recovery on standby database
       ansible.builtin.shell: |
@@ -215,3 +226,9 @@
   become: true
   become_user: oracle
   environment: "{{ db_env }}"
+
+- name: Cleanup backup directory
+  ansible.builtin.file:
+    path: "{{ adhoc_backup_dir }}"
+    state: absent
+  when: adhoc_backup_label is defined
