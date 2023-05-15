@@ -6,6 +6,15 @@ Use this role when configuring a new standby database.
 2. Take adhoc backup of primary database (using oracle-db-backup role in this repo, or rman-backup role in ansible-monorepo)
 3. Setup standby database
 
+# Known Issues
+
+The primary database log archive breaks if you change the IP of the standby
+server. This shouldn't happen in normal operation, but if you are repeatedly
+spinning up new standby servers to test the ansible code, you may run into
+it.  To fix the issue, log onto the primary database and update the standby
+TNS entry to use IP address. Do a few archive switches and then change the
+TNS back to the hostname.This should fix the issue.
+
 # Example
 
 1. Setup primary database to support the new standby database
