@@ -34,10 +34,10 @@ packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages |
 # don't update ALL packages on build as we need
 packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
 
-# Related to harden-ol-8-5 standard security
+# Related to harden-ol-8-5 standard security profile
 #var_system_crypto_policy: !!str DEFAULT
 
-# Related to harden-ol-8-5 STIG security
+# Related to harden-ol-8-5 STIG security profile
 var_aide_scan_notification_email: !!str root@localhost
 var_system_crypto_policy: !!str FIPS
 sshd_approved_ciphers: !!str aes256-ctr,aes192-ctr,aes128-ctr
