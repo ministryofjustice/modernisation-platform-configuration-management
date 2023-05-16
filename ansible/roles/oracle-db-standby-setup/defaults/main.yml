@@ -7,6 +7,7 @@ db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 duplicate_target_db_cmd: "duplicate target database for standby "
+standby_creation_cmd_filename: "standby_creation.cmd"
 rman_backup_location: /u02/DB_BKP
 
 db_configs: {}  # define in host or group vars

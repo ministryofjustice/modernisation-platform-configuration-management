@@ -1,0 +1,66 @@
+---
+- block:
+    - name: Setup standby oratab
+      ansible.builtin.lineinfile:
+        path: /etc/oratab
+        line: "{{ db_standby.instance_name }}:{{ database_home }}:N"
+
+    - name: Copy setup files for execution
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: oracle
+        group: oinstall
+        mode: "0700"
+      loop:
+        - "add_tns_entry.sh"
+        - "add_lsnr_static_services.sh"
+
+    - name: Setup Listener service
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_lsnr_static_services.sh {{ db_standby.db_unique_name }} {{ db_standby.instance_name }} {{ database_home }}"
+          {{ stage }}/add_lsnr_static_services.sh {{ db_standby.db_unique_name }} {{ db_standby.instance_name }} {{ database_home }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-db-oracle-db
+
+    - name: Add TNS entry for primary
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_primary.tns_name }} {{ db_primary.host_name }} {{ db_primary.port }} {{ db_primary.db_unique_name }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_primary.tns_name }} {{ db_primary.host_name }} {{ db_primary.port }} {{ db_primary.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add TNS entry for standby
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_standby.tns_name }} {{ db_standby.host_name }} {{ db_standby.port }} {{ db_standby.db_unique_name }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_standby.tns_name }} {{ db_standby.host_name }} {{ db_standby.port }} {{ db_standby.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Create directory for audit dump dest
+      ansible.builtin.file:
+        path: "/u01/app/oracle/admin/{{ db_standby.instance_name }}/adump"
+        owner: oracle
+        group: oinstall
+        mode: u=rwx,g=rxs,o=rx
+        state: directory
+        recurse: yes
+
+    - name: Copy initialization parameter file
+      template:
+        src: "init.ora.j2"
+        dest: "{{ database_home }}/dbs/init{{ db_standby.instance_name }}.ora"
+        owner: oracle
+        group: oinstall
+        mode: "0700"
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ db_env }}"

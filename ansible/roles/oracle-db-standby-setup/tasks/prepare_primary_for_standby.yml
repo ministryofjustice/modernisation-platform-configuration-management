@@ -17,13 +17,13 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          echo "# orapwd file={{ database_home }}/dbs/orapw{{ db_primary.db_name }} password=xxxx entries=10"
-          source oraenv <<< {{ db_primary.db_name }}
-          orapwd file={{ database_home }}/dbs/orapw{{ db_primary.db_name }} password={{ db_sys_password }} entries=10
+          echo "# orapwd file={{ database_home }}/dbs/orapw{{ db_primary.instance_name }} password=xxxx entries=10"
+          source oraenv <<< {{ db_primary.instance_name }}
+          orapwd file={{ database_home }}/dbs/orapw{{ db_primary.instance_name }} password={{ db_sys_password }} entries=10
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       args:
-        creates: "{{ database_home }}/dbs/orapw{{ db_primary.db_name }}" 
+        creates: "{{ database_home }}/dbs/orapw{{ db_primary.instance_name }}"
 
     - name: Setup Primary Database for new standby
       ansible.builtin.shell: |
