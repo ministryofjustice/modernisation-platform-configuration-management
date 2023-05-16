@@ -9,6 +9,7 @@
     - import_tasks: yum-update.yml
       vars:
         packages_yum_update: "{{ packages_yum_update_on_build }}"
+        packages_yum_update_exclude: "{{ packages_yum_update_on_build_exclude }}"
       tags:
         - amibuild
         - ec2provision
@@ -16,8 +17,9 @@
     - import_tasks: yum-update.yml
       vars:
         packages_yum_update: "{{ packages_yum_update_on_patch }}"
+        packages_yum_update_exclude: "{{ packages_yum_update_on_patch_exclude }}"
       tags:
         - ec2patch
 
   # block
-  when: ansible_distribution == 'RedHat'
+  when: ansible_distribution in ['RedHat', 'OracleLinux']
