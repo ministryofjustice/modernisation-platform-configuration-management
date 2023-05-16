@@ -1,0 +1,34 @@
+---
+- block:
+    - name: Check password file present
+      ansible.builtin.stat:
+        path: "{{ database_home }}/dbs/orapw{{ db_standby.instance_name }}"
+      register: db_password_file_check
+
+    - name: Fail if password file not present
+      fail:
+        msg: "Please restore from backup (define adhoc_backup_label variable) or manually copy password file {{ database_home }}/dbs/orapw{{ db_standby.instance_name }}"
+      when: not db_password_file_check.stat.exists
+
+    - name: Fail if standby database is already running
+      ansible.builtin.shell: ps -ef | grep ora_pmon_{{ db_standby.instance_name }}| grep -v grep | wc -l
+      register: running_processes
+      failed_when: running_processes.stdout == "1"
+
+    - name: Start standby database in nomount mode
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: startup nomount"
+          source oraenv <<< {{ db_standby.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ db_standby.instance_name }}_nomount.log
+          startup nomount
+          exit
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ db_env }}"

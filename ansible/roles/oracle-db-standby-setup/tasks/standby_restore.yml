@@ -1,0 +1,82 @@
+---
+- block:
+    - name: Copy standby creation cmd
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: oracle
+        group: oinstall
+        mode: "0700"
+      loop:
+        - "{{ standby_creation_cmd_filename }}"
+
+    - name: Create standby database which can take a very long time if backup not used
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# rman cmdfile={{ stage }}/{{ standby_creation_cmd_filename }}"
+          source oraenv <<< {{ db_standby.instance_name }}
+          rman cmdfile={{ stage }}/{{ standby_creation_cmd_filename }} log={{ stage }}/{{ db_standby.instance_name }}_active_standby_creation.log
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      async: 86400
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Start recovery on standby database
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: alter database ..."
+          source oraenv <<< {{ db_standby.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ db_standby.instance_name }}_check.log
+          alter database recover managed standby database using current logfile disconnect from session;
+          exit
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Create spfile in ASM diskgroup
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: create pfile ..."
+          source oraenv <<< {{ db_standby.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ db_standby.instance_name }}_check.log
+          create pfile='/tmp/init.ora' from spfile;
+          create spfile='+DATA/{{ db_standby.db_unique_name }}/spfile{{ db_standby.instance_name }}.ora' from pfile='/tmp/init.ora' ;
+          shutdown immediate
+          exit
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add database in CRS
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# srvctl add database -d {{ db_standby.instance_name }} ..."
+          source oraenv <<< {{ db_standby.instance_name }}
+          srvctl add database -d {{ db_standby.instance_name }} -o {{ database_home }} -p +DATA/{{ db_standby.db_unique_name }}/spfile{{ db_standby.instance_name }}.ora -r PHYSICAL_STANDBY -s MOUNT -t IMMEDIATE -i {{ db_standby.instance_name }} -n {{ db_primary.db_name }} -y AUTOMATIC -a {{ db_standby.asm_disk_groups }}
+          srvctl start database -d {{ db_standby.instance_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+  always:
+    - name: Remove temporary scripts with creds in
+      ansible.builtin.file:
+        dest: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - "{{ standby_creation_cmd_filename }}"
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ db_env }}"
+
+- name: Cleanup backup directory
+  ansible.builtin.file:
+    path: "{{ adhoc_backup_dir }}"
+    state: absent
+  when: adhoc_backup_label is defined

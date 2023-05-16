@@ -1,0 +1,92 @@
+---
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure both {{ db_primary_name }} and {{ db_standby_name }} variables are defined in db_configs fact"
+  when: db_configs[db_primary_name] is not defined or db_configs[db_standby_name] is not defined
+
+- name: Set database facts
+  set_fact:
+    db_primary: "{{ db_configs[ db_primary_name ] }}"
+    db_standby: "{{ db_configs[ db_standby_name ] }}"
+
+- name: Debug primary database
+  debug:
+    var: db_primary
+
+- name: Debug standby database
+  debug:
+    var: db_standby
+
+- name: Fail if missing backup parameters
+  fail:
+    msg: Ensure either storage_account_name or s3_bucket is defined in the primary db_config
+  when: db_primary.storage_account_name is not defined and db_primary.s3_bucket is not defined
+
+- name: Fail if invalid backup parameters
+  fail:
+    msg: Cannot have both storage_account_name and s3_bucket defined in the primary db_config
+  when: db_primary.storage_account_name is defined and db_primary.s3_bucket is defined
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ db_primary.db_name }}/syspassword"
+    ssm_parameters_path_az_sas_token: "{{ ssm_parameters_path }}/az_sas_token"
+
+# Upload password manually, e.g. aws ssm put-parameter --name "/database/t1-nomis-db-1-b/TRDATT1/syspassword" --type "SecureString" --data-type "text" --value "Password123" --profile nomis-test
+- debug:
+    msg: "System password must be uploaded to {{ ssm_parameters_path_db_sys_password }}"
+
+- name: Get SSM parameters
+  set_fact:
+    db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+
+- block:
+    - name: Get Egress Ip
+      ansible.builtin.shell: |
+        curl https://ipecho.net/plain
+      register: internet_egress_ip
+      check_mode: false
+      changed_when: false
+
+    - debug:
+        msg: "{{ internet_egress_ip.stdout }} must be allowed in dso-infra-azure-fixngo:terragrunt/NOMSProduction1/pd-noms-azcopy-orabkup/terraform.tfvars and devtest equivalent"
+
+    - debug:
+        msg: "SAS token must be uploaded {{ ssm_parameters_path_az_sas_token }}, use modernisation-platform-environments:/environments/nomis/scripts/update-db-az-sas-token.sh"
+
+    - name: Get SAS Token SSM parameter
+      set_fact:
+        sas_token: "{{ lookup('aws_ssm', ssm_parameters_path_az_sas_token, region=ansible_ec2_placement_region) }}"
+
+  # block
+  when: db_primary.storage_account_name is defined
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - db_sys_password|length > 0
+    - db_primary.db_name|length > 0
+    - db_primary.db_unique_name|length > 0
+    - db_primary.instance_name|length > 0
+    - db_primary.host_name|length > 0
+    - db_primary.port != 0
+    - db_primary.tns_name|length > 0
+    - db_primary.asm_disk_groups|length > 0
+    - db_standby.db_name|length > 0
+    - db_standby.db_unique_name|length > 0
+    - db_standby.instance_name|length > 0
+    - db_standby.host_name|length > 0
+    - db_standby.port != 0
+    - db_standby.tns_name|length > 0
+    - db_standby.asm_disk_groups|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)

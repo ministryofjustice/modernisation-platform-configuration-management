@@ -54,6 +54,12 @@
     - amibuild
     - oracle_db_deconfigure_has
 
+- import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_users
+
 - import_tasks: get-facts.yml
   tags:
     - ec2provision

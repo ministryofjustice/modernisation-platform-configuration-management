@@ -1,0 +1,14 @@
+---
+- name: Clean backup directory
+  block:
+    - name: Set backup directory fact
+      set_fact:
+        adhoc_backup_dir: "{{ rman_backup_location }}/adhoc/{{ db_primary.db_name }}/{{ adhoc_backup_label }}"
+
+    - name: Cleanup backup directory
+      ansible.builtin.file:
+        path: "{{ adhoc_backup_dir }}"
+        state: absent
+
+  # block
+  when: adhoc_backup_label is defined

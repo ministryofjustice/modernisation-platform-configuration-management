@@ -1,0 +1,70 @@
+---
+- name: Setting facts for S3 backup mode
+  set_fact:
+    standby_creation_cmd_filename: "standby_creation_s3backup.cmd"
+  tags:
+    - never
+    - oracle-db-standby-setup-from-s3-backup
+
+- name: Setting facts for active-duplication mode
+  set_fact:
+    duplicate_target_db_cmd: "duplicate target database for standby from active database "
+  tags:
+    - never
+    - oracle-db-standby-setup-active-duplication
+
+- import_tasks: get_facts.yml
+  tags:
+    - always
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: prepare_primary_for_standby.yml
+  tags:
+    - oracle-db-standby-setup-on-primary
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_prereqs.yml
+  tags:
+    - oracle-db-standby-prereqs
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_download_backup.yml
+  tags:
+    - oracle-db-standby-download-backup
+    - oracle-db-standby-setup-from-disk-backup
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_init.yml
+  tags:
+    - oracle-db-standby-init
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_start.yml
+  tags:
+    - oracle-db-standby-start
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_restore.yml
+  tags:
+    - oracle-db-standby-restore
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined
+
+- import_tasks: standby_cleanup.yml
+  tags:
+    - oracle-db-standby-cleanup
+    - oracle-db-standby-setup-from-disk-backup
+    - oracle-db-standby-setup-from-s3-backup
+    - oracle-db-standby-setup-active-duplication
+  when: db_primary_name is defined and db_standby_name is defined

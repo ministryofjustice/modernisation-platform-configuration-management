@@ -1,0 +1,67 @@
+---
+- name: Setup Primary database for HA
+  block:
+    - name: Copy setup files for execution
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: oracle
+        group: oinstall
+        mode: "0700"
+      loop:
+        - "add_tns_entry.sh"
+        - "add_lsnr_static_services.sh"
+        - "setup_primary_for_ha.sh"
+
+    - name: Create password file if it does not exists
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# orapwd file={{ database_home }}/dbs/orapw{{ db_primary.instance_name }} password=xxxx entries=10"
+          source oraenv <<< {{ db_primary.instance_name }}
+          orapwd file={{ database_home }}/dbs/orapw{{ db_primary.instance_name }} password={{ db_sys_password }} entries=10
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      args:
+        creates: "{{ database_home }}/dbs/orapw{{ db_primary.instance_name }}"
+
+    - name: Setup Primary Database for new standby
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/setup_primary_for_ha.sh -t {{ db_primary.db_unique_name }} -s {{ db_standby.db_unique_name }}"
+          {{ stage }}/setup_primary_for_ha.sh -t {{ db_primary.db_unique_name }} -s {{ db_standby.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Setup Listener service
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_lsnr_static_services.sh {{ db_primary.db_unique_name }} {{ db_primary.db_name }} {{ database_home }}"
+          {{ stage }}/add_lsnr_static_services.sh {{ db_primary.db_unique_name }} {{ db_primary.db_name }} {{ database_home }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add TNS entry for primary
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_primary.tns_name }} {{ db_primary.host_name }} {{ db_primary.port }} {{ db_primary.db_unique_name }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_primary.tns_name }} {{ db_primary.host_name }} {{ db_primary.port }} {{ db_primary.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add TNS entry for standby
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_standby.tns_name }} {{ db_standby.host_name }} {{ db_standby.port }} {{ db_standby.db_unique_name }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ db_standby.tns_name }} {{ db_standby.host_name }} {{ db_standby.port }} {{ db_standby.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ db_env }}"

@@ -1,0 +1,11 @@
+---
+- name: Check standby database files already exists in ASM
+  ansible.builtin.shell: |
+    source oraenv <<< "+ASM"
+    asmcmd ls +DATA/{{ db_standby.db_unique_name }}
+  register: standby_directory
+  check_mode: false
+  changed_when: false
+  failed_when: "'ASMCMD-8002' not in standby_directory.stderr"
+  become_user: oracle
+  environment: "{{ db_env }}"
