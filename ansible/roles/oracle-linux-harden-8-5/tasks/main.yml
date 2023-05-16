@@ -25,6 +25,9 @@
 #
 ###############################################################################
 
+- name: Run ssh-keygen
+  command: ssh-keygen -A
+
 - name: Ensure aide is installed
   package:
     name: aide
