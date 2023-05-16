@@ -15,7 +15,7 @@ db_configs:
     storage_account_name: strtcmonsazcopyorabkup
     asm_disk_groups: DATA,FLASH
   T1CNOMS1:
-    db_name: T1CNOMS1
+    db_name: CNOMT1
     db_unique_name: T1CNOMS1
     instance_name: T1CNOMS1
     host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
@@ -23,6 +23,24 @@ db_configs:
     tns_name: T1CNOMS1
     s3_bucket: nomis-db-backup-bucket20220131102905687200000001
     asm_disk_groups: DATA,FLASH
+  NDHT1:
+    db_name: NDHT1
+    db_unique_name: NDHT1
+    instance_name: NDHT1
+    host_name: T1PDL0009.azure.noms.root
+    port: 1521
+    tns_name: NDHT1
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA
+  T1NDHS1:
+    db_name: NDHT1
+    db_unique_name: T1NDHS1
+    instance_name: T1NDHS1
+    host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T1NDHS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA
   TRDATT1:
     db_name: TRDATT1
     db_unique_name: TRDATT1
@@ -33,7 +51,7 @@ db_configs:
     storage_account_name: strtcmonsazcopyorabkup
     asm_disk_groups: DATA
   T1TRDS1:
-    db_name: T1TRDS1
+    db_name: TRDATT1
     db_unique_name: T1TRDS1
     instance_name: T1TRDS1
     host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
