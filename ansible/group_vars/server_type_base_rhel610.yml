@@ -2,9 +2,10 @@
 ansible_python_interpreter: /usr/local/bin/python3.6
 
 server_type_roles_list:
-  - get-ec2-facts
+  - autoscale-group-hooks
   - set-ec2-hostname
   - domain-search
   - amazon-cloudwatch-agent
+  - autoscale-group-hooks-state
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

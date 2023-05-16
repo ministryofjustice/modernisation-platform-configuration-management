@@ -1,8 +1,0 @@
----
-- name: Set autoscaling hook
-  ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /root/.autoscaling-lifecycle-ready-hook
