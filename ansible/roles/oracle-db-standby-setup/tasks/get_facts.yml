@@ -46,22 +46,22 @@
     db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
 
 - block:
-  - name: Get Egress Ip
-    ansible.builtin.shell: |
-      curl https://ipecho.net/plain
-    register: internet_egress_ip
-    check_mode: false
-    changed_when: false
+    - name: Get Egress Ip
+      ansible.builtin.shell: |
+        curl https://ipecho.net/plain
+      register: internet_egress_ip
+      check_mode: false
+      changed_when: false
 
-  - debug:
-      msg: "{{ internet_egress_ip.stdout }} must be allowed in dso-infra-azure-fixngo:terragrunt/NOMSProduction1/pd-noms-azcopy-orabkup/terraform.tfvars and devtest equivalent"
+    - debug:
+        msg: "{{ internet_egress_ip.stdout }} must be allowed in dso-infra-azure-fixngo:terragrunt/NOMSProduction1/pd-noms-azcopy-orabkup/terraform.tfvars and devtest equivalent"
 
-  - debug:
-      msg: "SAS token must be uploaded {{ ssm_parameters_path_az_sas_token }}, use modernisation-platform-environments:/environments/nomis/scripts/update-db-az-sas-token.sh"
+    - debug:
+        msg: "SAS token must be uploaded {{ ssm_parameters_path_az_sas_token }}, use modernisation-platform-environments:/environments/nomis/scripts/update-db-az-sas-token.sh"
 
-  - name: Get SAS Token SSM parameter
-    set_fact:
-      sas_token: "{{ lookup('aws_ssm', ssm_parameters_path_az_sas_token, region=ansible_ec2_placement_region) }}"
+    - name: Get SAS Token SSM parameter
+      set_fact:
+        sas_token: "{{ lookup('aws_ssm', ssm_parameters_path_az_sas_token, region=ansible_ec2_placement_region) }}"
 
   # block
   when: db_primary.storage_account_name is defined
