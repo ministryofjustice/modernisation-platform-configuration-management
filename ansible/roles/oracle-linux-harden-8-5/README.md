@@ -3,6 +3,8 @@ This role is based on the DISA STIG for Oracle Linux 8 profile generated using O
 
 Tags can be added to the existing tasks, e.g. - amibuild to include them in the build, bootstrap or patch process
 
+By default the `sssd` authselect profile is enabled, to change this set the `authselect_profile` var.
+
 ```
 # Find info about a profile
 oscap info --profile xccdf_org.ssgproject.content_profile_standard /usr/share/xml/scap/ssg/content/ssg-ol8-ds.xml
@@ -18,7 +20,3 @@ oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_stig --fetch-rem
 # Generate fix - ansible (STIG)
 oscap xccdf generate fix --profile xccdf_org.ssgproject.content_profile_stig --fix-type ansible --output ansible.yml results.xml
 ```
-
-
-
-

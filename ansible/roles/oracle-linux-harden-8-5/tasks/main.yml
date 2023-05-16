@@ -25,19 +25,18 @@
 #
 ###############################################################################
 
-- name: Run ssh-keygen
+- name: Generate /etc/ssh/ host keys
   command: ssh-keygen -A
-
-- name: Ensure aide is installed
-  package:
-    name: aide
-    state: present
-  when: ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
     - amibuild
   when: ansible_distribution == 'OracleLinux'
+
+- name: Enabled authselect {{ authselect_profile }} profile
+  command: authselect select {{ authselect_profile }} --force --quiet
+  tags:
+    - amibuild
+  when: ansible_distribution == 'OracleLinux'
+
 # run stig hardening
-# - import_tasks: stig_oracle-linux_8.yml
-#   tags:
-#     - amibuild
-#   when: ansible_distribution == 'OracleLinux'
+- import_tasks: stig_oracle-linux_8.yml
+  when: ansible_distribution == 'OracleLinux'
