@@ -4,7 +4,7 @@
     - amibuild
     - ec2provision
     - ec2patch
-  when: ansible_distribution == 'RedHat'
+  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' )
 
 # Ensure handlers run before the next role
 - name: Flush handlers
