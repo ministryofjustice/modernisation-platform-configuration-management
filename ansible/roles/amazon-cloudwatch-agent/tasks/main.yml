@@ -3,16 +3,16 @@
   tags:
     - ec2provision
     - ec2patch
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' )
+  when: ansible_distribution in ['Redhat', 'OracleLinux']
 
 - import_tasks: "configure.yml"
   tags:
     - ec2provision
     - ec2patch
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' )
+  when: ansible_distribution in ['Redhat', 'OracleLinux']
 
 - import_tasks: "start.yml"
   tags:
     - ec2provision
     - ec2patch
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' )
+  when: ansible_distribution in ['Redhat', 'OracleLinux']

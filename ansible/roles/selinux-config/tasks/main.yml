@@ -3,7 +3,7 @@
 - import_tasks: selinux-rhel.yml
   tags:
     - amibuild
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' )
+  when: ansible_distribution in ['Redhat', 'OracleLinux']
 
 # Ensure handlers run before the next role
 - name: Flush handlers

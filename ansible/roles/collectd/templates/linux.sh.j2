@@ -7,7 +7,7 @@ LINUX_SERVICE_LIST="{{ service_list_linux }}"
 
 service_status() {
     local SERVICE="$1"
-    {% if ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and ansible_distribution_major_version == '6' %}
+    {% if ansible_distribution in ['Redhat', 'OracleLinux'] and ansible_distribution_major_version == '6' %}
     # RHEL6 service check
     service_status=$(sudo service $SERVICE status | grep "running")
     if [[ $service_status ]]
@@ -22,7 +22,7 @@ service_status() {
 }
 
 amazon_ssm_agent_status() {
-    {% if ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and ansible_distribution_major_version == '6' %}
+    {% if ansible_distribution in ['Redhat', 'OracleLinux'] and ansible_distribution_major_version == '6' %}
     # RHEL6 ssm agent service check
     ssm_agent=$(status amazon-ssm-agent | grep "running")
     if [[ $ssm_agent ]]

@@ -14,7 +14,7 @@
     - amibuild
     - ec2provision
     - disks_partition
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and disks_partition is defined
+  when: ansible_distribution in ['Redhat', 'OracleLinux'] and disks_partition is defined
 
 # don't seem to need this
 # physical sector size seems to be determined by the ami (odd)
@@ -30,7 +30,7 @@
 #       vars:
 #         device_name: "{{ ebs_to_linux_device_map[item.ebs_device_name] }}"
 #         sector_size: "{{ item.sector_size }}"
-#   when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and disks_partition is defined
+#   when: ansible_distribution in ['Redhat', 'OracleLinux'] and disks_partition is defined
 #   loop: "{{ disks_partition | selectattr('sector_size', 'defined') }}"
 
 - import_tasks: mount-disk-rhel.yml
@@ -38,7 +38,7 @@
     - amibuild
     - ec2provision
     - disks_mount
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and disks_mount is defined
+  when: ansible_distribution in ['Redhat', 'OracleLinux'] and disks_mount is defined
 
 # if UUID changes, might need to disable and enable swap
 - include_tasks:
@@ -53,7 +53,7 @@
     - ec2provision
     - disks_disable_swap
   loop: "{{ disks_mount | selectattr('fstype', 'defined') | selectattr('fstype', 'equalto', 'swap') }}"
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and disks_mount is defined
+  when: ansible_distribution in ['Redhat', 'OracleLinux'] and disks_mount is defined
 
 - include_tasks:
     file: enable-swap-rhel.yml
@@ -71,4 +71,4 @@
     - ec2patch
     - disks_enable_swap
   loop: "{{ disks_mount | selectattr('fstype', 'defined') | selectattr('fstype', 'equalto', 'swap') }}"
-  when: ( ansible_distribution == 'Redhat' or ansible_distribution == 'OracleLinux' ) and disks_mount is defined
+  when: ansible_distribution in ['Redhat', 'OracleLinux'] and disks_mount is defined
