@@ -15,6 +15,11 @@
 - name: Configure forms
   block:
     - name: Check weblogic status
+      ansible.builtin.shell: service weblogic-all repair
+      changed_when: false
+      check_mode: false
+
+    - name: Check weblogic status
       ansible.builtin.shell: service weblogic-all status
       changed_when: false
       check_mode: false
