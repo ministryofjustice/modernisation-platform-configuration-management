@@ -88,7 +88,7 @@
       ansible.builtin.file:
         path: /var/tmp
         state: directory
-        mode: '0777'
+        mode: "0777"
 
   # block
   when: not grid_software_installed.stat.exists
