@@ -2,7 +2,7 @@
 . ~/.bash_profile
 export TMP={{ temp }}
 export TMPDIR={{ temp }}
-export CV_ASSUME_DISTID=EL7
+export CV_ASSUME_DISTID=OL7.6
 echo "# Installing Oracle 19c grid Infrastructure"
 "{{ grid_home }}/gridSetup.sh" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ grid_response_file }} -applyRU "{{ stage }}/psu/{{ oracle_combo_patch }}/{{ oracle_release_update }}"
 exit 0 
