@@ -1,5 +1,5 @@
 ---
-- name: Install oracle prerequisite rpm's
+- name: Download oracle prerequisite rpm's
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
@@ -9,7 +9,6 @@
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
-    - policycoreutils-python-utils # Error During Root.sh Execution In New Installation Of Grid 19c On OL8 (Doc ID 2825802.1)
 
 - name: Install oracle prerequisite rpm's
   yum:
@@ -20,6 +19,11 @@
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
+
+- name: Install package to resolve Error During Root.sh Execution In New Installation Of Grid 19c On OL8 (Doc ID 2825802.1)
+  ansible.builtin.yum:
+    name: policycoreutils-python-utils
+    state: present
 
 - name: Disable selinux
   import_role:
