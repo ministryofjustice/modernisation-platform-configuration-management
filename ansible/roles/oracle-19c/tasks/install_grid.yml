@@ -84,5 +84,11 @@
         - "{{ opatch }}"
         - "{{ stage }}/psu"
 
+    - name: To resolve oracle issue CRS-10131 Failure to create named pipe /var/tmp/.oracle/npohasd
+      ansible.builtin.file:
+        path: /var/tmp
+        state: directory
+        mode: '0777'
+
   # block
   when: not grid_software_installed.stat.exists
