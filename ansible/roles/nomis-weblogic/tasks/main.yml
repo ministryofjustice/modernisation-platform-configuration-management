@@ -151,11 +151,6 @@
         loop_var: weblogic_form_server_config
       loop: "{{ weblogic_additional_form_servers }}"
 
-    - import_tasks: install-healthcheck.yml
-      tags:
-        - ec2provision
-        - weblogic_install_healthcheck
-
     - import_tasks: setup-cookie.yml
       tags:
         - ec2provision
@@ -182,4 +177,9 @@
       tags:
         - ec2provision
 
-  when: ansible_distribution in ['Redhat', 'OracleLinux'] and ansible_distribution_major_version == "6"
+    - import_tasks: install-healthcheck.yml
+      tags:
+        - ec2provision
+        - weblogic_install_healthcheck
+
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "6"
