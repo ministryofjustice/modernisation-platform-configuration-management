@@ -109,10 +109,11 @@
     - WLS_FORMS
     - WLS_REPORTS
 
+# don't enable, let weblogic-all start these in parallel
 - name: Enable weblogic-server and opmn services
   ansible.builtin.service:
     name: "{{ item }}"
-    enabled: yes
+    enabled: no
   loop:
     - WLS_FORMS
     - WLS_REPORTS
