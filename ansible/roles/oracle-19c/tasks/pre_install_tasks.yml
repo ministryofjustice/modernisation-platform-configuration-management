@@ -9,6 +9,7 @@
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
+    - policycoreutils-python-utils # Error During Root.sh Execution In New Installation Of Grid 19c On OL8 (Doc ID 2825802.1)
 
 - name: Install oracle prerequisite rpm's
   yum:
@@ -43,6 +44,12 @@
     - "{{ temp }}"
     - "{{ stage }}"
     - "{{ stage}}/psu"
+
+- name: To resolve oracle issue CRS-10131 Failure to create named pipe /var/tmp/.oracle/npohasd
+  ansible.builtin.file:
+    path: /var/tmp
+    state: directory
+    mode: "0777"
 
 - name: Clean up downloaded rpm's
   ansible.builtin.file:
