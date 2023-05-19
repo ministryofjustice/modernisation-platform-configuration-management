@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_ENV
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUTQ
+          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUT
 
       - name: Wait for RDS Snapshot to be ready
         run: |
