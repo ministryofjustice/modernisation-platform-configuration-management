@@ -12,15 +12,13 @@
   loop:
     - /etc/init.d/weblogic-healthcheck
 
-- name: Configure forms
+- name: Configure healthcheck
   block:
-    - name: Check weblogic status
+    - name: Repair unhealthy weblogic services
       ansible.builtin.shell: service weblogic-all repair
-      changed_when: false
-      check_mode: false
 
-    - name: Check weblogic status
-      ansible.builtin.shell: service weblogic-all status
+    - name: Check weblogic services are healthy
+      ansible.builtin.shell: service weblogic-all healthcheck
       changed_when: false
       check_mode: false
 
