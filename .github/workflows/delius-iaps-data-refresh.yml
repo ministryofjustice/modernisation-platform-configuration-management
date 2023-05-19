@@ -8,9 +8,14 @@ on:
         required: false
         description: "The terraform version to use, default is temporarily set to 1.3.9 due to bugs in 1.4.0"
         default: "1.3.9"
+  pull_request:
+    branches:
+      - NIT-671-iaps-use-terraform-for-data-refresh
 jobs:
   take-snapshot:
     runs-on: ubuntu-latest
+    outputs:
+      snapshot-name: ${{ steps.set-snapshot-name.outputs.SNAPSHOT_NAME }}
     steps:
       - name: install aws-cli
         run: |
@@ -25,9 +30,11 @@ jobs:
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
-      - name: Set Datestamp for snapshot
+      - name: Set Snapshot Name
         run: |
-          echo "DATESTAMP=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+          DATESTAMP=$(date +%Y-%m-%d)
+          echo SNAPSHOT_NAME="delius-iaps-production-database-snapshot-${DATESTAMP}" >> $GITHUB_ENV
+          echo SNAPSHOT_NAME="delius-iaps-production-database-snapshot-${DATESTAMP}" >> $GITHUB_OUTPUT
 
       - name: Create RDS snapshot
         run: |
@@ -45,7 +52,7 @@ jobs:
             aws rds modify-db-snapshot-attribute \
                 --db-snapshot-identifier "delius-iaps-production-database-snapshot-${DATESTAMP}" \
                 --attribute-name restore \
-                --values-to-add "${{ secrets.IAPS_PREPROD_ACCOUNT_ID }}"
+                --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
 #  restore-preprod-db-from-snapshot:
 #    runs-on: ubuntu-latest
@@ -57,7 +64,7 @@ jobs:
 #      - name: Configure AWS Credentials
 #        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
 #        with:
-#          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPROD_ACCOUNT_ID }}:role/github-actions"
+#          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/github-actions"
 #          role-session-name: githubactionsrolesession
 #          aws-region: "eu-west-2"
 #
