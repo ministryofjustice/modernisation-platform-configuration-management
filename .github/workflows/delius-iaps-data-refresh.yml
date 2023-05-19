@@ -39,7 +39,7 @@ jobs:
             --snapshot-type "automated" \
             --db-instance-identifier "delius-iaps-production-database" \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
-            --output text)
+            --output text | sed -e "s/^rds://")
           if [ -z "$snapshot_identifier" ]; then
             echo "No snapshot found"
             exit 1
