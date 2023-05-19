@@ -1,0 +1,18 @@
+---
+# create tibco group
+- name: create tibco group
+  ansible.builtin.group:
+    name: tibco
+    gid: 10002
+    state: present
+
+# create tibco user
+- name: create tibco user
+  ansible.builtin.user:
+    name: tibco
+    password: $6$IZXMCEl6fcRcPa4l$Y3r5MdEMdtVjNM20kjtVVK8WJgx03rJuA1lnuwFlkjlHnP3QbDwtaExAV.QObiTiSLHNy4g1G4LXwIzKombhI/
+    uid: 10002
+    state: present
+    groups: tibco
+    create_home: true
+    home: "/opt/tibco"
