@@ -20,7 +20,7 @@ start_process() {
 }
 
 wait_process() {
-  timeout 290 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
+  timeout 590 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
 }
 
 get_process_pids() {
