@@ -23,19 +23,6 @@
       poll: 60
       when: not ansible_check_mode
 
-    - name: Start recovery on standby database
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          echo "# sqlplus / as sysdba: alter database ..."
-          source oraenv <<< {{ db_standby.instance_name }}
-          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ db_standby.instance_name }}_check.log
-          alter database recover managed standby database using current logfile disconnect from session;
-          exit
-        EOF
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db
-
     - name: Create spfile in ASM diskgroup
       ansible.builtin.shell: |
         set -eo pipefail
@@ -59,6 +46,19 @@
           source oraenv <<< {{ db_standby.instance_name }}
           srvctl add database -d {{ db_standby.instance_name }} -o {{ database_home }} -p +DATA/{{ db_standby.db_unique_name }}/spfile{{ db_standby.instance_name }}.ora -r PHYSICAL_STANDBY -s MOUNT -t IMMEDIATE -i {{ db_standby.instance_name }} -n {{ db_primary.db_name }} -y AUTOMATIC -a {{ db_standby.asm_disk_groups }}
           srvctl start database -d {{ db_standby.instance_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Start recovery on standby database
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: alter database ..."
+          source oraenv <<< {{ db_standby.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ db_standby.instance_name }}_check.log
+          alter database recover managed standby database using current logfile disconnect from session;
+          exit
+        EOF
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
