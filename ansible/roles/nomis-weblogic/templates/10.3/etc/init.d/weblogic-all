@@ -27,7 +27,7 @@ start() {
   set +e
   i=0
   for managed_service in $managed_services; do
-    key=$(echo $managed_service | cut -d/ -f4)
+    key=$(echo "$managed_service" | cut -d/ -f4)
     echo -n $"Waiting for $key: PID=${pids[i]}"
     if ! wait ${pids[i]}; then
       echo_failure
@@ -86,6 +86,83 @@ restart() {
   start
 }
 
+
+get_unhealthy_services() {
+  unhealthy=()
+  if [[ -x /etc/init.d/weblogic-node-manager ]]; then
+    if ! /etc/init.d/weblogic-node-manager status | head -1 | grep OK > /dev/null; then
+      unhealthy+=(weblogic-node-manager)
+    fi
+  fi
+  if [[ -x /etc/init.d/opmn ]]; then
+    if [[ $(/etc/init.d/opmn status | grep -c Alive) != 3 ]]; then
+      unhealthy+=(opmn)
+    fi
+  fi
+  if [[ -x /etc/init.d/weblogic-server ]]; then
+    ok=1
+    weblogic_server_status=$(/etc/init.d/weblogic-server status)
+    if ! echo "$weblogic_server_status" | head -1 | grep OK > /dev/null; then
+      ok=0
+    fi
+    if ! echo "$weblogic_server_status" | grep -w AdminServer | grep RUNNING > /dev/null; then
+      ok=0
+    fi
+    if (( ! ok )); then
+      unhealthy+=(weblogic-server)
+    fi
+  fi
+  managed_services=$(find /etc/init.d/ -name 'WLS*' | cut -d/ -f4)
+  for managed_service in $managed_services; do
+    ok=1
+    if ! /etc/init.d/"$managed_service" status | head -1 | grep OK > /dev/null; then
+      ok=0
+    fi
+    if ! echo "$weblogic_server_status" | grep -w "$managed_service" | grep RUNNING > /dev/null; then
+      ok=0
+    fi
+    if (( ! ok )); then
+      unhealthy+=("$managed_service")
+    fi
+  done
+  echo "${unhealthy[@]}"
+}
+
+healthcheck() {
+  unhealthy_services=$(get_unhealthy_services)
+  if [[ -z $unhealthy_services ]]; then
+    echo -n $"Healthcheck of weblogic-all: "
+    echo_success
+    echo
+    return 0
+  else
+    for service in $unhealthy_services; do
+      echo -n $"Healthcheck of $service: "
+      echo_failure
+      echo
+    done
+    return 1
+  fi
+}
+
+repair() {
+  unhealthy_services=$(get_unhealthy_services)
+  if [[ -z $unhealthy_services ]]; then
+    echo "All services healthy, nothing to repair"
+    return 0
+  fi
+  for service in $unhealthy_services; do
+    /etc/init.d/"$service" restart
+  done
+  unhealthy_services=$(get_unhealthy_services)
+  if [[ -z $unhealthy_services ]]; then
+    echo "All services repairedr"
+    return 0
+  fi
+  echo "Failed to repair: $unhealthy_services"
+  return 1
+}
+
 case "$1" in
   start)
     start
@@ -99,8 +176,14 @@ case "$1" in
   status)
     status
     ;;
+  healthcheck)
+    healthcheck
+    ;;
+  repair)
+    repair
+    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop|restart|status|healthcheck|repair}"
     exit 3
 esac
 

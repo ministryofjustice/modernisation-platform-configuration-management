@@ -69,13 +69,28 @@ stop() {
   echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
   kill $PIDS
   sleep 2
-  if get_process_pids > /dev/null; then
-    echo_failure
+  if ! get_process_pids > /dev/null; then
+    echo_success
     echo
-    return 1
+    return 0
   fi
-  echo_success
+  sleep 5
+  if ! PIDS=$(get_process_pids); then
+    echo_success
+    echo
+    return 0
+  fi
+  echo "init.d killing with -9 $prog $PIDS" | logger -p local3.info -t "$prog"
+  kill -9 $PIDS
+  sleep 2
+  if ! get_process_pids > /dev/null; then
+    echo_success
+    echo
+    return 0
+  fi
+  echo_failure
   echo
+  return 1
 }
 
 status() {

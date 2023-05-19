@@ -21,7 +21,7 @@ start_process() {
 
 stop_process() {
   if [[ $(whoami) == "root" ]]; then
-    su - oracle -c "opmnctl stopall" | logger -p local3.info -t $prog
+    su - oracle -c "opmnctl shutdown" | logger -p local3.info -t $prog
   else
     echo -n "must be run as root"
     return 1

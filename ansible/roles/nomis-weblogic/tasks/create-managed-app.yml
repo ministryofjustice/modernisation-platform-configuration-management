@@ -77,7 +77,6 @@
       ansible.builtin.service:
         name: "{{ weblogic_managed_app }}"
         state: restarted
-        enabled: yes
       async: 600
       poll: 20
 
