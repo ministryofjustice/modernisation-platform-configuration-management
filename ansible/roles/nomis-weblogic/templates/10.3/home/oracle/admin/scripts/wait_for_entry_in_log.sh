@@ -20,3 +20,4 @@ fi
 # kill the tail subshell. It's not so easy to find the pid
 pid=$(ps -o pid= -o cmd --forest -g $(ps -o sid= -p $$) | grep -F "tail -f -n0 $logfile" | grep -v grep | cut -d\  -f1)
 [[ -n $pid ]] && kill $pid 2> /dev/null
+exit 0
