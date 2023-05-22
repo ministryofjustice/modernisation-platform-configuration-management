@@ -50,7 +50,9 @@ jobs:
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
             --target-db-snapshot-identifier "${new_snapshot_identifier}" \
-            --kms-key-id "${{ secrets.SHARED_KMS_KEY_ID }}"
+            --kms-key-id "${{ secrets.SHARED_KMS_KEY_ID }}" \
+            --source-region "eu-west-2" \
+            --region "eu-west-2"
           echo NEW_SNAPSHOT_IDENTIFIER=${new_snapshot_identifier} >> $GITHUB_ENV
 
       - name: Wait for RDS Snapshot to be ready
