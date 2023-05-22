@@ -1,10 +1,10 @@
 ---
-- block:
-    - name: Setup standby oratab
-      ansible.builtin.lineinfile:
-        path: /etc/oratab
-        line: "{{ db_standby.instance_name }}:{{ database_home }}:N"
+- name: Setup standby oratab
+  ansible.builtin.lineinfile:
+    path: /etc/oratab
+    line: "{{ db_standby.instance_name }}:{{ database_home }}:N"
 
+- block:
     - name: Copy setup files for execution
       template:
         src: "{{ item }}.j2"
