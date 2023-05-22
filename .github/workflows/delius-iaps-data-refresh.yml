@@ -46,7 +46,7 @@ jobs:
 
       - name: Copy snapshot
         run: |
-          new_snapshot_identifier=$(echo "${{ env.SNAPSHOT_IDENTIFIER }}-new" | sed -e "s/^rds://")
+          new_snapshot_identifier="delius-iaps-production-database-$(date +%s)"
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
             --target-db-snapshot-identifier "${new_snapshot_identifier}" \
