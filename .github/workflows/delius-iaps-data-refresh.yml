@@ -17,8 +17,6 @@ on:
 jobs:
   take-snapshot:
     runs-on: ubuntu-latest
-    outputs:
-      snapshot-name: ${{ steps.set-snapshot-name.outputs.SNAPSHOT_NAME }}
     steps:
       - name: install aws-cli
         run: |
@@ -45,18 +43,25 @@ jobs:
             exit 1
           fi
           echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_ENV
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUT
+
+      - name: Copy snapshot
+        run: |
+          new_snapshot_identifier=$(echo "${{ env.SNAPSHOT_IDENTIFIER }}-new" | sed -e "s/^rds://")
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
+            --target-db-snapshot-identifier "${new_snapshot_identifier}" \
+            --kms-key-id "${{ secrets.SHARED_KMS_KEY_ID }}"
+          echo NEW_SNAPSHOT_IDENTIFIER=${new_snapshot_identifier} >> $GITHUB_ENV
 
       - name: Wait for RDS Snapshot to be ready
         run: |
           aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}"
+            --db-snapshot-identifier "${{ env.NEW_SNAPSHOT_IDENTIFIER }}"
 
       - name: Share RDS snapshot with Pre-Prod
         run: |
-          snapshot_identifier=$(echo "${{ env.SNAPSHOT_IDENTIFIER }}" | sed -e "s/^rds://")
           aws rds modify-db-snapshot-attribute \
-              --db-snapshot-identifier "${snapshot_identifier}" \
+              --db-snapshot-identifier "${{ env.NEW_SNAPSHOT_IDENTIFIER }}" \
               --attribute-name restore \
               --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
