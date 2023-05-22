@@ -35,11 +35,6 @@ jobs:
 
       - name: Get latest snapshot
         run: |
-          # snapshot_identifier=$(aws rds describe-db-snapshots \
-          #   --snapshot-type "automated" \
-          #   --db-instance-identifier "delius-iaps-production-database" \
-          #   --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
-          #   --output text | sed -e "s/^rds://")
           snapshot_identifier=$(aws rds describe-db-snapshots \
             --snapshot-type "automated" \
             --db-instance-identifier "delius-iaps-production-database" \
@@ -59,10 +54,11 @@ jobs:
 
       - name: Share RDS snapshot with Pre-Prod
         run: |
-            aws rds modify-db-snapshot-attribute \
-                --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
-                --attribute-name restore \
-                --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+          snapshot_identifier=$(echo "${{ env.SNAPSHOT_IDENTIFIER }}" | sed -e "s/^rds://")
+          aws rds modify-db-snapshot-attribute \
+              --db-snapshot-identifier "${snapshot_identifier}" \
+              --attribute-name restore \
+              --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
 #  restore-preprod-db-from-snapshot:
 #    runs-on: ubuntu-latest
