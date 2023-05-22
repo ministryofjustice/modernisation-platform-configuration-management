@@ -58,7 +58,7 @@
           srvctl add service  -d {{ db_standby.instance_name }} -s {{ item.name }}  -l {{ item.role }} -e SELECT -z 180 -w 5 
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
-      loop: "{{ db_standby.services }}"
+      loop: "{{ db_standby.service }}"
 
     - name: Start recovery on standby database
       ansible.builtin.shell: |
