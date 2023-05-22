@@ -35,11 +35,16 @@ jobs:
 
       - name: Get latest snapshot
         run: |
+          # snapshot_identifier=$(aws rds describe-db-snapshots \
+          #   --snapshot-type "automated" \
+          #   --db-instance-identifier "delius-iaps-production-database" \
+          #   --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
+          #   --output text | sed -e "s/^rds://")
           snapshot_identifier=$(aws rds describe-db-snapshots \
             --snapshot-type "automated" \
             --db-instance-identifier "delius-iaps-production-database" \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
-            --output text | sed -e "s/^rds://")
+            --output text)
           if [ -z "$snapshot_identifier" ]; then
             echo "No snapshot found"
             exit 1
