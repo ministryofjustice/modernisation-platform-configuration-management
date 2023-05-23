@@ -77,8 +77,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/github-actions"
-          role-session-name: githubactionsrolesession
+          aws-access-key-id: ${{ secrets.IAPS_PREPROD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.IAPS_PREPROD_SECRET_KEY }}
           aws-region: "eu-west-2"
 
       - name: Setup Terraform
