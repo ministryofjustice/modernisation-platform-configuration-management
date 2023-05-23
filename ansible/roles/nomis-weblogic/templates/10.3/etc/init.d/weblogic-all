@@ -156,7 +156,7 @@ repair() {
   done
   unhealthy_services=$(get_unhealthy_services)
   if [[ -z $unhealthy_services ]]; then
-    echo "All services repairedr"
+    echo "All services repaired"
     return 0
   fi
   echo "Failed to repair: $unhealthy_services"
@@ -166,6 +166,7 @@ repair() {
 case "$1" in
   start)
     start
+    repair
     ;;
   stop)
     stop

@@ -44,16 +44,21 @@ start() {
   fi
   echo "init.d starting $prog" | logger -p local3.info -t "$prog"
   if ! start_process; then
+    echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
     return 1
   fi
-  wait_process
+  if ! wait_process; then
+    echo "init.d failed waiting for $prog" | logger -p local3.info -t "$prog"
+  fi
   if ! get_process_pids > /dev/null; then
+    echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
     return 1
   fi
+  echo "init.d started $prog" | logger -p local3.info -t "$prog"
   echo_success
   echo
 }
