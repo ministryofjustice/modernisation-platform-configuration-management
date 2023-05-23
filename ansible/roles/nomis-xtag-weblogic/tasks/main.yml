@@ -1,0 +1,107 @@
+---
+- name: Nomis XTAG weblogic setup
+  block:
+    - import_tasks: get-facts.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - weblogic_get_facts
+        - weblogic_moj_admin_scripts
+        # - weblogic_configure_forms
+        # - weblogic_copy_managed_server_files
+        # - weblogic_certificate_fix
+        # - weblogic_compile_tag_source
+        # - weblogic_create_managed_app
+        # - weblogic_create_additional_form_servers
+        # - weblogic_setup_cookie
+        # - weblogic_setup_log_rotate
+
+    - import_tasks: packages.yml
+      tags:
+        - amibuild
+        - weblogic_packages
+
+    - import_tasks: users.yml
+      tags:
+        - amibuild
+        - weblogic_users
+
+    - import_tasks: swap.yml
+      tags:
+        - amibuild
+        - weblogic_swap
+
+    - import_tasks: install-jdk.yml
+      tags:
+        - amibuild
+        - weblogic_install_jdk
+
+    - import_tasks: oracle-limits-update.yml
+      tags:
+        - amibuild
+        - oracle-limits-changes
+        - ec2provision
+
+    - import_tasks: install-server.yml
+      tags:
+        - amibuild
+        - weblogic_install_server
+
+    - import_tasks: patch-weblogic.yml
+      vars:
+        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
+        weblogic_patch_id: 3NVW
+      tags:
+        - amibuild
+        - weblogic_patch_1
+
+    - import_tasks: patch-weblogic.yml
+      vars:
+        weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p13964737_10360210720_Generic.zip
+        weblogic_patch_id: UEYM
+      tags:
+        - amibuild
+        - weblogic_patch_2
+
+  #   - import_tasks: create-xtag-domain.yml
+  #     tags:
+  #       - amibuild
+  #       - weblogic_create_domain
+
+  #   - include_tasks:
+  #       file: create-managed-app.yml
+  #       apply:
+  #         tags:
+  #           - ec2provision
+  #           - weblogic_create_managed_app
+  #     tags:
+  #       - ec2provision
+  #       - weblogic_create_managed_app
+  #     loop_control:
+  #       loop_var: weblogic_managed_app
+  #     loop:
+  #       - WLS_XTAG_OUTBOUND_01
+
+  #   - import_tasks: wait-for-managed-services.yml
+  #     tags:
+  #       - ec2provision
+
+  #   - include_tasks:
+  #       file: setup-log-rotate.yml
+  #       apply:
+  #         tags:
+  #           - ec2provision
+  #           - weblogic_setup_log_rotate
+  #     tags:
+  #       - ec2provision
+  #       - weblogic_setup_log_rotate
+  #     loop_control:
+  #       loop_var: weblogic_form_server_config
+  #     loop: "{{ weblogic_servers }}"
+
+  #   - import_tasks: install-healthcheck.yml
+  #     tags:
+  #       - ec2provision
+  #       - weblogic_install_healthcheck
+
+  # when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "6"

@@ -1,0 +1,77 @@
+---
+- name: Create software directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/software/weblogic
+    - /u01/software/tmp
+
+- name: Check if weblogic server already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/wlserver_10.3
+  register: weblogic_server_installed_check
+
+- name: Install weblogic server software
+  block:
+    - name: Get weblogic install jar from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software{{ item }}"
+        dest: "{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - /u01/software/weblogic/wls1036_generic.jar
+
+    - name: Copy weblogic install config
+      ansible.builtin.template:
+        src: "10.3{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/weblogic/silent.xml
+
+    - name: Install weblogic server which takes a couple of minutes
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# installing weblogic /u01/software/weblogic/wls1036_generic.jar"
+          java -d64  -Xmx1024m -jar /u01/software/weblogic/wls1036_generic.jar -mode=silent -silent_xml=/u01/software/weblogic/silent.xml -Djava.io.tmpdir=/u01/software/tmp
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+    - name: Remove temporary install files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/wls1036_generic.jar
+        - /u01/software/weblogic/silent.xml
+
+  # block
+  when: not weblogic_server_installed_check.stat.exists
+
+- name: Update bsu.sh MEM_ARGS
+  ansible.builtin.lineinfile:
+    path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
+    regexp: "^MEM_ARGS="
+    line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+
+- name: Copy init.d weblogic-node-manager script
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+  loop:
+    - /etc/init.d/weblogic-node-manager
+
+- name: Enable weblogic-node-manager service
+  ansible.builtin.service:
+    name: weblogic-node-manager
+    enabled: yes

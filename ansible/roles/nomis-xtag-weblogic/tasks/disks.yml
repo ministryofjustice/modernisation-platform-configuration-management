@@ -1,0 +1,34 @@
+---
+- name: Create a ext4 filesystem on /dev/xvdb
+  community.general.filesystem:
+    fstype: ext4
+    dev: /dev/xvdb
+
+- name: Get UUID of /dev/xvdb
+  ansible.builtin.command: blkid -s UUID -o value /dev/xvdb
+  register: xvdb
+  changed_when: false
+  failed_when: xvdb.stdout|length == 0
+
+- name: Create /u01
+  ansible.builtin.file:
+    path: "/u01"
+    state: directory
+    owner: oracle
+    group: oinstall
+
+- name: Mount /dev/xvdb /u01
+  ansible.posix.mount:
+    path: /u01
+    src: "UUID={{ xvdb.stdout }}"
+    fstype: ext4
+    state: mounted
+  when: not ansible_check_mode
+
+# Since the previous mount step may reset ownership to root
+- name: Set /u01 owner as oracle
+  ansible.builtin.file:
+    path: /u01
+    state: directory
+    owner: oracle
+    group: oinstall

@@ -1,0 +1,45 @@
+---
+- name: Fail if weblogic_s3_archives variable not defined
+  fail:
+    msg: "Error, please ensure weblogic_s3_archives is defined"
+  when: weblogic_s3_archives is not defined
+
+- name: Create archive directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/archives
+
+- name: Create target directories
+  ansible.builtin.file:
+    path: "{{ item.split('/')[:-1] | join('/') }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop: "{{ weblogic_s3_archives }}"
+
+- name: Download archives from S3 bucket into /u01/archives
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "/weblogic-software{{ item }}"
+    dest: "/u01/archives/{{ item.split('/')[1:] | join('_') }}"
+    mode: get
+    overwrite: latest
+  loop: "{{ weblogic_s3_archives }}"
+
+- name: Extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/archives/{{ item.split('/')[1:] | join('_') }}"
+    dest: "{{ item.split('/')[:-1] | join('/') }}"
+    remote_src: true
+    keep_newer: true
+  loop: "{{ weblogic_s3_archives }}"
+  when: not ansible_check_mode
+  register: weblogic_s3_archive_extract

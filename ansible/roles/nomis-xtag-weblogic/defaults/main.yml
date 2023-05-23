@@ -1,0 +1,10 @@
+---
+ssm_parameters_prefix: "weblogic"
+weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
+weblogic_servername: "{{ ansible_facts.hostname }}"
+weblogic_cluster: "{{ ansible_facts.hostname }}"
+weblogic_db_port: 1521
+
+weblogic_servers:
+  - { name: WLS_XTAG_OUTBOUND_01 }
+  - { name: AdminServer }

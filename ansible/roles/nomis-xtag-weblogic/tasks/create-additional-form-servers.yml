@@ -1,0 +1,124 @@
+---
+- name: Fail if weblogic_form_server_config variable not defined
+  fail:
+    msg: "Error, please ensure weblogic_form_server_config is defined"
+  when: weblogic_form_server_config is not defined
+
+- name: Set weblogic managed app facts
+  set_fact:
+    weblogic_managed_app: "{{ weblogic_form_server_config.name }}"
+    weblogic_managed_app_port: "{{ weblogic_form_server_config.port }}"
+
+- name: Check if managed app already configured
+  ansible.builtin.stat:
+    path: /etc/init.d/{{ weblogic_managed_app }}
+  register: weblogic_created_managed_app_check
+
+- name: Configure forms
+  block:
+    # ensure everything is running
+    - name: Start services if not already running
+      ansible.builtin.service:
+        name: weblogic-all
+        state: started
+
+    - name: Copy managed app configuration file
+      ansible.builtin.template:
+        src: "10.3/u01/software/weblogic/{{ weblogic_form_server_config.properties_src }}.properties"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+
+    - name: Create config directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ weblogic_managed_app }}/applications/formsapp_11.1.2/config
+
+    - name: Copy config files
+      ansible.builtin.copy:
+        src: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_11.1.2/config/{{ item }}"
+        dest: "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/servers/{{ weblogic_managed_app }}/applications/formsapp_11.1.2/config/{{ item }}"
+        owner: oracle
+        group: oinstall
+        remote_src: true
+      loop:
+        - formsweb.cfg
+        - tag.env
+
+    - name: Create managed app
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "# create managed app {{ weblogic_managed_app }}"
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
+
+    - name: Create managed app security directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security"
+
+    # the boot.properties file is automatically updated by the weblogic server
+    - name: Copy managed app boot properties
+      ansible.builtin.template:
+        src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        force: false
+      loop:
+        - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security/boot.properties"
+
+    - name: Copy managed app init.d script
+      vars:
+        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
+      ansible.builtin.template:
+        src: "10.3/etc/init.d/weblogic-managed-server"
+        dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
+        mode: "0755"
+
+    # this ensures values in boot.properties become encrypted
+    - name: Restart service
+      ansible.builtin.service:
+        name: "{{ weblogic_managed_app }}"
+        state: restarted
+      async: 600
+      poll: 20
+
+    - name: Update forms config
+      import_tasks: copy-forms-conf.yml
+
+    - name: Restart opmn service
+      ansible.builtin.service:
+        name: opmn
+        state: restarted
+      when: weblogic_copy_forms_conf.changed
+
+  always:
+    - name: Remove temporary forms configuration files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+
+  # block
+  when: not weblogic_created_managed_app_check.stat.exists

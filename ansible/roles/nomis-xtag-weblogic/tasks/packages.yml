@@ -1,0 +1,25 @@
+---
+- name: Install the latest version of required packages
+  ansible.builtin.package:
+    name:
+      - compat-libstdc++-33.i686
+      - compat-libstdc++-33.x86_64
+      - compat-libstdc++-33.x86_64
+      - ksh
+      - glibc.i686
+      - xorg-x11-apps
+      - libstdc++.i686
+      - compat-libcap1
+      - compat-libstdc++-33
+      - gcc
+      - gcc-c++
+      - glibc-devel
+      - libaio-devel
+      - libstdc++-devel
+      - nfs-utils
+      - xorg-x11-utils
+      - xorg-x11-xauth
+      - binutils
+      - compat-db42
+      - libXmu
+    state: latest
