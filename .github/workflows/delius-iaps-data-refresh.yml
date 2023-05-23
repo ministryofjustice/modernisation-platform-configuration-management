@@ -100,4 +100,4 @@ jobs:
       - name: Terraform apply
         working-directory: "terraform/environments/delius-iaps"
         run: |
-          terraform apply -auto-approve -target="aws_db_instance.iaps" -var="rds_refresh_snapshot_id[0]=${{ needs.take-snapshot.outputs.SNAPSHOT_IDENTIFIER }}"
+          terraform apply -auto-approve -target="aws_db_instance.iaps" -var="rds_refresh_snapshot_id=${{ needs.take-snapshot.outputs.SNAPSHOT_IDENTIFIER }}"
