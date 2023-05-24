@@ -1,0 +1,53 @@
+---
+name: delius-data-refresh
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+on:
+  workflow_dispatch:
+jobs:
+  share-latest-manual-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install aws-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip3 install awscli
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Get latest manual snapshot
+        run: |
+          snapshot_identifier=$(aws rds describe-db-snapshots \
+            --snapshot-type "manual" \
+            --db-instance-identifier "delius-iaps-production-database" \
+            --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
+            --output text)
+          if [ -z "$snapshot_identifier" ]; then
+            echo "No snapshot found"
+            exit 1
+          fi
+          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_ENV
+          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUT
+
+      - name: Wait for RDS Snapshot to be ready
+        run: |
+          aws rds wait db-snapshot-completed \
+            --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}"
+
+      - name: Share RDS snapshot with Pre-Prod
+        run: |
+          aws rds modify-db-snapshot-attribute \
+              --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
+              --attribute-name restore \
+              --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+
+      - name: Output snapshot identifier
+        run: |
+          echo "Snapshot identifier: ${{ env.SNAPSHOT_IDENTIFIER }}"
