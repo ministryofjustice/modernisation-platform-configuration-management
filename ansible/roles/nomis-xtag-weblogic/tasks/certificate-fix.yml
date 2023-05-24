@@ -103,10 +103,10 @@
     regexp: "SecureListener=true"
     replace: "SecureListener=false"
 
-- name: Restart all weblogic services
-  ansible.builtin.service:
-    name: weblogic-all
-    state: restarted
-  async: 600
-  poll: 20
-  when: weblogic_nmtype != 'Plain'
+# - name: Restart all weblogic services
+#   ansible.builtin.service:
+#     name: weblogic-all
+#     state: restarted
+#   async: 600
+#   poll: 20
+#   when: weblogic_nmtype != 'Plain'

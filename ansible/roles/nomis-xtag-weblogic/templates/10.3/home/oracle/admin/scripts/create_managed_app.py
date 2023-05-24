@@ -171,8 +171,6 @@ if  msName:
     cmo.setMachine(getMBean('/Machines/' + msAddress))
     cd('/Servers/'  + msName + '/ServerStart/' + msName)
     cmo.setArguments(msStartArg)
-    cd ('/Servers/'+ msname + '/Machine/' + machine + '/NodeManager/' + machine)
-    cmo.setNMType('Plain')
     save()
     activate()
     startEdit()
@@ -243,6 +241,7 @@ if jmsModuleName:
     jmsFServerFactoryLocJNDIName = jmsFServerFactoryLocJNDIName.split(";")
     jmsFServerFactoryRemJNDIName = jmsFServerFactoryRemJNDIName.split(";")
     jmsremoteConnectionURL = jmsremoteConnectionURL.split(";")
+    jmsFServerJNDIProperty = jmsFServerJNDIProperty.split(";")
     jmsmodule = zip(jmsModuleName, jmsdescriptorFileName, jmsFServerName, jmsFServerContext, jmsFServerJNDIProperty, jmsFServerDestName, jmsFServerDestLocJNDIName,jmsFServerDestRemJNDIName,jmsFServerFactoryName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryRemJNDIName,jmsremoteConnectionURL)
     for jmsModuleName, jmsdescriptorFileName, jmsFServerName, jmsFServerContext, jmsFServerJNDIProperty, jmsFServerDestName, jmsFServerDestLocJNDIName,jmsFServerDestRemJNDIName,jmsFServerFactoryName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryRemJNDIName,jmsremoteConnectionURL in jmsmodule:
         print "creating" + jmsModuleName
@@ -256,6 +255,7 @@ if jmsModuleName:
             [ObjectName('com.bea:Name='+jmsTarget+',Type=Cluster')], ObjectName))
         save()
         # Create Foreign Server
+        print jmsFServerJNDIProperty
         cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName)
         cmo.createForeignServer(jmsFServerName)
         cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +

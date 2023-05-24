@@ -10,10 +10,6 @@
     ssm_parameters_path_weblogic_admin_password: "{{ ssm_parameters_path }}/admin_password"
     ssm_parameters_path_weblogic_db_username: "{{ ssm_parameters_path }}/db_username"
     ssm_parameters_path_weblogic_db_password: "{{ ssm_parameters_path }}/db_password"
-    ssm_parameters_path_weblogic_db_tagsar_username: "{{ ssm_parameters_path }}/db_tagsar_username"
-    ssm_parameters_path_weblogic_db_tagsar_password: "{{ ssm_parameters_path }}/db_tagsar_password"
-    ssm_parameters_path_weblogic_rms_hosts: "{{ ssm_parameters_path }}/rms_hosts"
-    ssm_parameters_path_weblogic_rms_key: "{{ ssm_parameters_path }}/rms_key"
 
 - name: Get SSM parameters
   set_fact:
@@ -21,10 +17,6 @@
     weblogic_admin_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_admin_password, region=ansible_ec2_placement_region) }}"
     weblogic_db_username: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_username, region=ansible_ec2_placement_region) }}"
     weblogic_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_password, region=ansible_ec2_placement_region) }}"
-    weblogic_db_tagsar_username: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_tagsar_username, region=ansible_ec2_placement_region) }}"
-    weblogic_db_tagsar_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_tagsar_password, region=ansible_ec2_placement_region) }}"
-    weblogic_rms_hosts: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_hosts, region=ansible_ec2_placement_region) }}"
-    weblogic_rms_key: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_key, region=ansible_ec2_placement_region) }}"
   when: weblogic_admin_username is not defined
 
 - name: Set db hostname from ec2 oracle-db-hostname tag
@@ -43,9 +35,6 @@
 - debug:
     msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"
 
-- debug:
-    msg: "Configuring RMS hosts to {{ weblogic_rms_hosts }}"
-
 - name: Check all SSM parameters and tags are set
   set_fact:
     weblogic_all_variables_set: true
@@ -54,11 +43,8 @@
     - weblogic_admin_password|length > 0
     - weblogic_db_username|length > 0
     - weblogic_db_password|length > 0
-    - weblogic_db_tagsar_username|length > 0
     - weblogic_db_hostname_a|length > 0
     - weblogic_db_hostname_b|length > 0
-    - weblogic_rms_hosts|length > 0
-    - weblogic_rms_key|length > 0
 
 - name: Fail if missing SSM parameters or tags
   fail:

@@ -63,29 +63,29 @@
         - ec2provision
         - weblogic_moj_admin_scripts
 
-    # - import_tasks: create-xtag-domain.yml
-    #   tags:
-    #     - amibuild
-    #     - weblogic_create_domain
+    - import_tasks: create-xtag-domain.yml
+      tags:
+        - amibuild
+        - weblogic_create_domain
 
-    # - import_tasks: certificate-fix.yml
-    #   tags:
-    #     - ec2provision
-    #     - weblogic_certificate_fix
+    - import_tasks: certificate-fix.yml
+      tags:
+        - ec2provision
+        - weblogic_certificate_fix
 
-  #   - include_tasks:
-  #       file: create-managed-app.yml
-  #       apply:
-  #         tags:
-  #           - ec2provision
-  #           - weblogic_create_managed_app
-  #     tags:
-  #       - ec2provision
-  #       - weblogic_create_managed_app
-  #     loop_control:
-  #       loop_var: weblogic_managed_app
-  #     loop:
-  #       - WLS_XTAG_OUTBOUND_01
+    - include_tasks:
+        file: create-managed-app.yml
+        apply:
+          tags:
+            - ec2provision
+            - weblogic_create_managed_app
+      tags:
+        - ec2provision
+        - weblogic_create_managed_app
+      loop_control:
+        loop_var: weblogic_managed_app
+      loop:
+        - WLS_XTAG_OUTBOUND_01
 
   #   - import_tasks: wait-for-managed-services.yml
   #     tags:
