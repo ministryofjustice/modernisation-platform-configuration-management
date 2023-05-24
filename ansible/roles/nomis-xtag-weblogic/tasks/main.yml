@@ -7,14 +7,9 @@
         - ec2patch
         - weblogic_get_facts
         - weblogic_moj_admin_scripts
-        # - weblogic_configure_forms
-        # - weblogic_copy_managed_server_files
-        # - weblogic_certificate_fix
-        # - weblogic_compile_tag_source
-        # - weblogic_create_managed_app
-        # - weblogic_create_additional_form_servers
-        # - weblogic_setup_cookie
-        # - weblogic_setup_log_rotate
+        - weblogic_certificate_fix
+        - weblogic_create_managed_app
+        - weblogic_setup_log_rotate
 
     - import_tasks: packages.yml
       tags:
@@ -63,10 +58,20 @@
         - amibuild
         - weblogic_patch_2
 
-  #   - import_tasks: create-xtag-domain.yml
-  #     tags:
-  #       - amibuild
-  #       - weblogic_create_domain
+    - import_tasks: moj-admin-scripts.yml
+      tags:
+        - ec2provision
+        - weblogic_moj_admin_scripts
+
+    # - import_tasks: create-xtag-domain.yml
+    #   tags:
+    #     - amibuild
+    #     - weblogic_create_domain
+
+    # - import_tasks: certificate-fix.yml
+    #   tags:
+    #     - ec2provision
+    #     - weblogic_certificate_fix
 
   #   - include_tasks:
   #       file: create-managed-app.yml

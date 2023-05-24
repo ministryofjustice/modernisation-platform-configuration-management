@@ -4,6 +4,7 @@ import time
 import getopt
 import sys
 import re
+import pdb
 
 # Get location of the properties file.
 properties = ''
@@ -25,12 +26,22 @@ print 'properties=', properties
 propInputStream = FileInputStream(properties)
 configProps = Properties()
 configProps.load(propInputStream)
+#domainName = ''
 
 # Get Variables From Properties Files
 # Admin Console
 adminUsername = configProps.get("admin.username")
 adminPassword = configProps.get("admin.password")
 adminURL = configProps.get("admin.url")
+adminPort = configProps.get("admin.port")
+adminAddress = configProps.get("admin.address")
+
+# Domain
+domainName=configProps.get("domain.name")
+wlsPath=configProps.get("path.wls")
+domainConfigPath=configProps.get("path.domain.config")
+appConfigPath=configProps.get("path.app.config")
+machine=configProps.get("machine")
 
 # Cluster
 clusterName = configProps.get("cluster.name")
@@ -40,7 +51,6 @@ msName = configProps.get("ms.name")
 msAddress = configProps.get("ms.address")
 msPort = configProps.get("ms.port")
 msCluster = configProps.get("ms.cluster")
-msSetArguments = configProps.get("ms.startarg")
 
 # Data Source
 dsName = configProps.get("ds.name")
@@ -69,12 +79,15 @@ jmsFServerName = configProps.get("jms.fserver.name")
 jmsFServerContext = configProps.get("jms.fserver.context")
 jmsFServerJNDIProperty = configProps.get("jms.fserver.jndiproperty")
 jmsFServerDestName = configProps.get("jms.fserver.destination.name")
-jmsFServerDestLocJNDIName = configProps.get("jms.fserver.destination.local.jndi.name")
-jmsFServerDestRemJNDIName = configProps.get("jms.fserver.destination.remote.jndi.name")
+jmsFServerDestLocJNDIName = configProps.get(
+    "jms.fserver.destination.local.jndi.name")
+jmsFServerDestRemJNDIName = configProps.get(
+    "jms.fserver.destination.remote.jndi.name")
 jmsFServerFactoryName = configProps.get("jms.fserver.factory.name")
-jmsFServerFactoryLocJNDIName = configProps.get("jms.fserver.factory.local.jndi.name")
-jmsFServerFactoryRemJNDIName = configProps.get("jms.fserver.factory.remote.jndi.name")
-jmsremoteConnectionURL = configProps.get("jms.fserver.remoteconnectionurl")
+jmsFServerFactoryLocJNDIName = configProps.get(
+    "jms.fserver.factory.local.jndi.name")
+jmsFServerFactoryRemJNDIName = configProps.get(
+    "jms.fserver.factory.remote.jndi.name")
 
 # Function that waits for a managed server to start before proceeding Wait for Managed Server to start
 
@@ -107,9 +120,26 @@ def wait_for_ms_start():
             Thread.sleep(10000)
             continue
 
-
+print adminPassword
 # Connect to the AdminServer.
-connect(adminUsername, adminPassword, adminURL)
+if domainName:
+    readTemplate(wlsPath + '/common/templates/domains/wls.jar')
+    cd('/')
+    mn=create(machine,'Machine')
+    mn.setName(machine)
+    cd('/Security/base_domain/User/' + adminUsername)
+    cmo.setPassword(adminPassword)
+    cd('/Server/AdminServer')
+    cmo.setName('AdminServer')
+    cmo.setListenPort(int(adminPort))
+    cmo.setListenAddress(adminAddress)
+    create('AdminServer','SSL')
+    setOption('ServerStartMode','prod')
+    writeDomain(domainConfigPath + '/' + domainName)
+    closeTemplate()
+    exit()
+else:
+    connect(adminUsername, adminPassword, adminURL)
 
 # Create Cluster
 if clusterName:
@@ -138,8 +168,6 @@ if msName:
     cd('/Servers/' + msName)
     cmo.setCluster(getMBean('/Clusters/' + msCluster))
     cmo.setMachine(getMBean('/Machines/' + msAddress))
-    cd('/Servers/' + msName + '/ServerStart/' + msName)
-    cmo.setArguments(msSetArguments) 
     save()
     activate()
     # Start Managed Server
@@ -193,69 +221,48 @@ if dsName:
         cmo.forceShutdown()
         wait_for_ms_start()
 
-# Create JMS Module 
+# Create JMS Module (For TAGSAR)
 if jmsModuleName:
-    # Create List of JMS modules
-    jmsModuleName = jmsModuleName.split(";")
-    jmsdescriptorFileName = jmsdescriptorFileName.split(";")
-    jmsFServerName = jmsFServerName.split(";")
-    jmsFServerContext = jmsFServerContext.split(";")
-    jmsFServerDestName =jmsFServerDestName.split(";")
-    jmsFServerDestLocJNDIName = jmsFServerDestLocJNDIName.split(";")
-    jmsFServerDestRemJNDIName = jmsFServerDestRemJNDIName.split(";")
-    jmsFServerFactoryName = jmsFServerFactoryName.split(";")
-    jmsFServerFactoryLocJNDIName = jmsFServerFactoryLocJNDIName.split(";")
-    jmsFServerFactoryLocJNDIName = jmsFServerFactoryLocJNDIName.split(";")
-    jmsFServerFactoryRemJNDIName = jmsFServerFactoryRemJNDIName.split(";")
-    jmsremoteConnectionURL = jmsremoteConnectionURL.split(";")
-    jmsmodule = zip(jmsModuleName, jmsdescriptorFileName, jmsFServerName, jmsFServerContext, jmsFServerJNDIProperty, jmsFServerDestName, jmsFServerDestLocJNDIName,jmsFServerDestRemJNDIName,jmsFServerFactoryName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryRemJNDIName,jmsremoteConnectionURL)
-    for jmsModuleName, jmsdescriptorFileName, jmsFServerName, jmsFServerContext, jmsFServerJNDIProperty, jmsFServerDestName, jmsFServerDestLocJNDIName,jmsFServerDestRemJNDIName,jmsFServerFactoryName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryLocJNDIName,jmsFServerFactoryRemJNDIName,jmsremoteConnectionURL in jmsmodule 
-        edit()
-        startEdit()
-        # Create JMS Module
-        cd('/')
-        cmo.createJMSSystemResource(jmsModuleName, jmsdescriptorFileName)
-        cd('/SystemResources/'+jmsModuleName)
-        set('Targets', jarray.array(
-            [ObjectName('com.bea:Name='+jmsTarget+',Type=Cluster')], ObjectName))
-        save()
-        # Create Foreign Server
-        cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName)
-        cmo.createForeignServer(jmsFServerName)
-        cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
-        jmsModuleName+'/ForeignServers/'+jmsFServerName)
-        cmo.setDefaultTargetingEnabled(true)
-        cmo.setInitialContextFactory(jmsFServerContext)
-        cmo.setConnectionURL(jmsremoteConnectionURL)
-        cmo.createJNDIProperty('datasource')
-        cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName +
-        '/ForeignServers/'+jmsFServerName+'/JNDIProperties/'+'datasource')
-        cmo.setValue(jmsFServerJNDIProperty)
-        # Create Foreign Destination
-        jmsFServerDestName =jmsFServerDestName.split(",")
-        jmsFServerDestLocJNDIName = jmsFServerDestLocJNDIName.split(",")
-        jmsFServerDestRemJNDIName = jmsFServerDestRemJNDIName.split(",")
-        jmsFSDest = zip (jmsFServerDestName, jmsFServerDestLocJNDIName, jmsFServerDestRemJNDIName)
-        for jmsFServerDestName, jmsFServerDestLocJNDIName, jmsFServerDestRemJNDIName in jmsFSDest
-            cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
-            jmsModuleName+'/ForeignServers/'+jmsFServerName)
-            FD = cmo.createForeignDestination(jmsFServerDestName)
-            cd('ForeignDestinations')
-            FD.setLocalJNDIName(jmsFServerDestLocJNDIName)
-            FD.setRemoteJNDIName(jmsFServerDestRemJNDIName)
-        # Create Foreign Connection Factory
-        cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
-        jmsModuleName+'/ForeignServers/'+jmsFServerName)
-        cmo.createForeignConnectionFactory(jmsFServerFactoryName)
-        cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName +
-        '/ForeignServers/'+jmsFServerName+'/ForeignConnectionFactories/'+jmsFServerFactoryName)
-        cmo.setLocalJNDIName(jmsFServerFactoryLocJNDIName)
-        cmo.setRemoteJNDIName(jmsFServerFactoryRemJNDIName)
-        # Set timeout seconds for Java Transaction API (JTA)
-        cd('/JTA/NomisDomain/')
-        cmo.setTimeoutSeconds(1000)
-        save()
-        activate()
+    edit()
+    startEdit()
+    # Create JMS Module
+    cd('/')
+    cmo.createJMSSystemResource(jmsModuleName, jmsdescriptorFileName)
+    cd('/SystemResources/'+jmsModuleName)
+    set('Targets', jarray.array(
+        [ObjectName('com.bea:Name='+jmsTarget+',Type=Cluster')], ObjectName))
+    save()
+    # Create Foreign Server
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName)
+    cmo.createForeignServer(jmsFServerName)
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
+       jmsModuleName+'/ForeignServers/'+jmsFServerName)
+    cmo.setDefaultTargetingEnabled(true)
+    cmo.setInitialContextFactory(jmsFServerContext)
+    cmo.createJNDIProperty('datasource')
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName +
+       '/ForeignServers/'+jmsFServerName+'/JNDIProperties/'+'datasource')
+    cmo.setValue(jmsFServerJNDIProperty)
+    # Create Foreign Destination
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
+       jmsModuleName+'/ForeignServers/'+jmsFServerName)
+    FD = cmo.createForeignDestination(jmsFServerDestName)
+    cd('ForeignDestinations')
+    FD.setLocalJNDIName(jmsFServerDestLocJNDIName)
+    FD.setRemoteJNDIName(jmsFServerDestRemJNDIName)
+    # Create Foreign Connection Factory
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/' +
+       jmsModuleName+'/ForeignServers/'+jmsFServerName)
+    cmo.createForeignConnectionFactory(jmsFServerFactoryName)
+    cd('/JMSSystemResources/'+jmsModuleName+'/JMSResource/'+jmsModuleName +
+       '/ForeignServers/'+jmsFServerName+'/ForeignConnectionFactories/'+jmsFServerFactoryName)
+    cmo.setLocalJNDIName(jmsFServerFactoryLocJNDIName)
+    cmo.setRemoteJNDIName(jmsFServerFactoryRemJNDIName)
+    # Set timeout seconds for Java Transaction API (JTA)
+    cd('/JTA/NomisDomain/')
+    cmo.setTimeoutSeconds(1000)
+    save()
+    activate()
 
 # Create App Deployment
 if appName:

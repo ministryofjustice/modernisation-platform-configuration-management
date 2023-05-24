@@ -21,12 +21,12 @@
         mode: get
         overwrite: latest
       loop:
-        - /u01/software/jdk/jdk-17_linux-x64_bin.rpm
+        - /u01/software/jdk/jdk-7u80-linux-x64.rpm
       when: image_builder_s3_bucket_name is defined
 
     - name: Install jdk rpm binary
       yum: 
-        name: /u01/software/jdk/jdk-17_linux-x64_bin.rpm
+        name: /u01/software/jdk/jdk-7u80-linux-x64.rpm
         state: present
 
   # block

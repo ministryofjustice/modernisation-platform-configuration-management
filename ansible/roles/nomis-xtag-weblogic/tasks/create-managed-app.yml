@@ -4,12 +4,12 @@
     msg: "Error, please ensure weblogic_managed_app is defined"
   when: weblogic_managed_app is not defined
 
-- name: Check if managed app already configured
-  ansible.builtin.stat:
-    path: /etc/init.d/{{ weblogic_managed_app }}
-  register: weblogic_created_managed_app_check
+# - name: Check if managed app already configured
+#   ansible.builtin.stat:
+#     path: /etc/init.d/{{ weblogic_managed_app }}
+#   register: weblogic_created_managed_app_check
 
-- name: Configure forms
+- name: Configure managed app
   block:
     - debug:
         msg: "Creating managed app {{ weblogic_managed_app }}"
@@ -28,6 +28,24 @@
         group: oinstall
       loop:
         - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ xtag_app_path }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+
+    - name: Get xtag application ear file from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software{{ item }}"
+        dest: "{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - "{{ xtag_app_path }}/xtagoutbound.ear"
 
     - name: Create managed app
       become_user: oracle
@@ -64,21 +82,21 @@
       loop:
         - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security/boot.properties"
 
-    - name: Copy managed app init.d script
-      vars:
-        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
-      ansible.builtin.template:
-        src: "10.3/etc/init.d/weblogic-managed-server"
-        dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
-        mode: "0755"
+    # - name: Copy managed app init.d script
+    #   vars:
+    #     weblogic_managed_server_name: "{{ weblogic_managed_app }}"
+    #   ansible.builtin.template:
+    #     src: "10.3/etc/init.d/weblogic-managed-server"
+    #     dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
+    #     mode: "0755"
 
-    # this ensures values in boot.properties become encrypted
-    - name: Restart service
-      ansible.builtin.service:
-        name: "{{ weblogic_managed_app }}"
-        state: restarted
-      async: 600
-      poll: 20
+    # # this ensures values in boot.properties become encrypted
+    # - name: Restart service
+    #   ansible.builtin.service:
+    #     name: "{{ weblogic_managed_app }}"
+    #     state: restarted
+    #   async: 600
+    #   poll: 20
 
   always:
     - name: Remove temporary forms configuration files

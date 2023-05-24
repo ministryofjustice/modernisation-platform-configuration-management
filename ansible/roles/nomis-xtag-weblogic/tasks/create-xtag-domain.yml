@@ -1,91 +1,28 @@
 ---
-- name: Create forms directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: "0755"
-  loop:
-    - /u01/app/oracle/Middleware/forms_home
-    - /var/opt/oracle
 
-- name: Copy forms config files
-  ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    owner: oracle
-    group: oinstall
-  loop:
-    - /var/opt/oracle/oraInst.loc
-
-- name: Check if forms already installed
-  ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/forms_home/inventory
-  register: weblogic_forms_installed_check
-
-- name: Install weblogic forms software
+- name: Create nomis xtag domain
   block:
-    - import_tasks: extract-s3-archive.yml
-      vars:
-        weblogic_s3_archives:
-          - /u01/software/forms/Disk1/2013-12-18.tgz
-          - /u01/software/forms/Disk2/2013-12-18.tgz
-          - /u01/software/forms/Disk3/2013-12-18.tgz
-          - /u01/software/forms/Disk4/2013-12-18.tgz
 
-    - name: Copy install rsp
+    - name: Copy scripts and properties files 
       ansible.builtin.template:
         src: "10.3{{ item }}"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall
       loop:
-        - /u01/software/forms/install_only.rsp
+        - /u01/software/weblogic/WLS_XTAG_OUTBOUND_01.properties
+        - /u01/software/weblogic/domain.properties
+        - /u01/software/weblogic/AdminServer.properties
 
-    - name: Run forms installer in background
+    - name: Create weblogic Nomis xtag domain 
       become_user: oracle
       ansible.builtin.shell: |
-        /u01/software/forms/Disk1/runInstaller -silent -responseFile /u01/software/forms/install_only.rsp -invPtrLoc /var/opt/oracle/oraInst.loc
-      register: install_forms
-
-    - name: Get installer tmp dir from installer output
-      set_fact:
-        forms_tmp_install_dir: '{{ install_forms.stdout | regex_search("\/tmp\/[^.]+") }}'
-      failed_when: forms_tmp_install_dir|length == 0
-      when: not ansible_check_mode
-
-    - name: Get installer pids
-      become_user: oracle
-      community.general.pids:
-        pattern: "{{ forms_tmp_install_dir }}.*"
-      register: install_forms_processes
-      when: not ansible_check_mode
-
-    - name: Wait up to 30 mins for installer processes to complete
-      ansible.builtin.wait_for:
-        path: "/proc/{{ item }}/status"
-        state: absent
-        timeout: 1800
-      loop: "{{ install_forms_processes.pids }}"
-      when: not ansible_check_mode
-
-    - name: Remove temporary install directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/forms/Disk1
-        - /u01/software/forms/Disk2
-        - /u01/software/forms/Disk3
-        - /u01/software/forms/Disk4
-
-    - name: Remove temporary install files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/forms/install_only.rsp
-
-  # block
-  when: not weblogic_forms_installed_check.stat.exists
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "# create weblogic NomisDomain"
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/domain.properties
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 7200
+      poll: 60
