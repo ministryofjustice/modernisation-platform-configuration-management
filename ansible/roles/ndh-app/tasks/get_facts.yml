@@ -3,4 +3,3 @@
   set_fact:
     ndh_admin_user: "{{ lookup('aws_ssm', 'adminUser', region=ansible_ec2_placement_region) }}"
     ndh_admin_pass: "{{ lookup('aws_ssm', 'adminPass', region=ansible_ec2_placement_region) }}"
-    
