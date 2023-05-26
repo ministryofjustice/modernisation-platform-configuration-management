@@ -2,7 +2,7 @@
 
 	<!-- The classname of the microagent -->
 	<classname>com.tibco.hawk.tibjms.HawkController</classname>
-	
+
 	<!-- Change to above from HawkController to HawkListener if you only need to monitor the JMS daemon.  -->
 
 	<!-- The arguments to be passed to the MicroAgent.initializeMicroAgent() method -->
@@ -12,30 +12,30 @@
 		<arg>-password</arg>
 		<arg></arg>
 		<arg>-server</arg>
-		<arg>tcp://{{ ems_host }}:{{ ems_port_1 }},tcp://{{ ems_host }}:{{ ems_port_2 }}</arg>  
+		<arg>tcp://{{ ndh_ems_host }}:{{ ndh_ems_port_1 }},tcp://{{ ndh_ems_host }}:{{ ndh_ems_port_2 }}</arg>
 		<arg>-version</arg>
-		<arg>8.0</arg>  
-			
-		
-		<!--Trace Configuration -->		
+		<arg>8.0</arg>
+
+
+		<!--Trace Configuration -->
 		<arg>-traceDir</arg>
 		<arg>/opt/tibco/cfgmgmt/hawk/logs</arg>
 		<arg>-traceFilename</arg>
 		<arg>emshma.log</arg>
-		
+
 		<!-- Trace Level  -->
 		<!-- WARNING=2, ERROR=4, INFO=7, DEBUG=8 -->
 		<arg>-traceLevel</arg>
 		<arg>7</arg>
     </arguments>
-    		   
-	<!-- If you need old-style agent names, or monitoing multiple EMS servers, then use the following: 
+
+	<!-- If you need old-style agent names, or monitoing multiple EMS servers, then use the following:
 		<arg>-server_in_agent_name</arg>
 	-->
 
-	<!-- The following is an example of arguments if for SSL connection. -->  
+	<!-- The following is an example of arguments if for SSL connection. -->
 	<!-- See Hawk Installation Guide for details on the SSL arguments.    -->
-	<!-- 
+	<!--
 	<arguments>
 		<arg>-user</arg>
 		<arg>admin</arg>
@@ -44,12 +44,12 @@
 		<arg>-server</arg>
 		<arg>ssl://localhost:7243</arg>
 		<arg>-version</arg>
-		<arg>8.0</arg>  
+		<arg>8.0</arg>
 		<arg>-traceDir</arg>
 		<arg>/opt/tibco/cfgmgmt/hawk/logs</arg>
 		<arg>-traceFilename</arg>
 		<arg>emshma.log</arg>
-		
+
 		<arg>-traceLevel</arg>
 		<arg>7</arg>
         <arg>-ssl_trace</arg>
@@ -61,8 +61,8 @@
         <arg>/opt/tibco/ems/8.3/samples/certs/server.key.p8</arg>
         <arg>-ssl_expected_hostname</arg>
         <arg>server</arg>
-        <arg>-ssl_password</arg>  
-        <arg>#!RbhuxizyNviD+AS7Aaa1jSt3++aPaaJL7eBcNhaJyRs=</arg>        
+        <arg>-ssl_password</arg>
+        <arg> {{ ndh_harkemsadmin_ssl_pass }}</arg>        
 	</arguments>
 	-->
 
@@ -76,8 +76,6 @@
 		<path>/opt/tibco/ems/8.3/lib/tibjmsadmin.jar</path>
 		<path>/opt/tibco/ems/8.3/lib/tibjms.jar</path>
 		<path>/opt/tibco/ems/8.3/lib/jms-2.0.jar</path>
-		<path>/opt/tibco/ems/8.3/lib/tibcrypt.jar</path>		
-	</classpath>		
+		<path>/opt/tibco/ems/8.3/lib/tibcrypt.jar</path>
+	</classpath>
 </microagent>
-
-
