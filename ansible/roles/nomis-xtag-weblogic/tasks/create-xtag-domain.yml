@@ -30,26 +30,26 @@
         . $WL_HOME/server/bin/setWLSEnv.sh
         java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/domain.properties
 
-    # - name: Create security directories
-    #   ansible.builtin.file:
-    #     path: "{{ item }}"
-    #     state: directory
-    #     owner: oracle
-    #     group: oinstall
-    #     mode: "0755"
-    #   loop:
-    #     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security
+    - name: Create security directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security
 
-    # # the boot.properties file is automatically updated by the weblogic server
-    # - name: Copy Admin server boot properties file 
-    #   ansible.builtin.template:
-    #     src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
-    #     dest: "{{ item }}"
-    #     owner: oracle
-    #     group: oinstall
-    #     force: false
-    #   loop:
-    #     - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
+    # the boot.properties file is automatically updated by the weblogic server
+    - name: Copy Admin server boot properties file 
+      ansible.builtin.template:
+        src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        force: false
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
 
     # # - name: Start admin server 
     #   ansible.builtin.service:

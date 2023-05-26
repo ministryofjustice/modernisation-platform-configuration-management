@@ -20,4 +20,5 @@ export WL_HOME=/u01/app/oracle/Middleware/wlserver_10.3
 export NODEMGR=${WL_HOME}/server/bin
 export WEBLOGIC=/u01/app/oracle/Middleware/user_projects/domains/${DOMAIN}/bin
 export XTAG_HOME=/u01/tag/xtag
+export PATH=/u01/app/oracle/Middleware/wlserver_10.3/common/bin:$PATH
 #. $WL_HOME/server/bin/setWLSEnv.sh
