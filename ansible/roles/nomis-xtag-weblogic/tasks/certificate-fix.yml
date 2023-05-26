@@ -56,14 +56,6 @@
     main 2>&1 | logger -p local3.info -t ansible-weblogic
   when: not weblogic_keystore_list is search("demoidentity")
 
-# - name: Ensure weblogic node manager and weblogic server are running
-#   ansible.builtin.service:
-#     name: "{{ item }}"
-#     state: started
-#   loop:
-#     - weblogic-node-manager
-#     - weblogic-server
-
 - name: Disable SecureListener in nodemanager.properties
   ansible.builtin.replace:
     path: /u01/app/oracle/Middleware/wlserver_10.3/common/nodemanager/nodemanager.properties
