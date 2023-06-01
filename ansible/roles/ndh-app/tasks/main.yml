@@ -1,38 +1,41 @@
 ---
-- import_tasks: get_facts
+- import_tasks: get_facts.yml
+  tags:
+    - ec2provision
+- import_tasks: templates.yml
   tags:
     - ec2provision
 
-- name: mount for reasons
-  ansible.builtin.shell: mount -a
-  tags:
-    - amibuild
+#- name: mount for reasons
+#  ansible.builtin.shell: mount -a
+#  tags:
+#    - amibuild
 
-- name: set timezone to Europe/London
-  ansible.builtin.timezone:
-    name: Europe/London
-  tags:
-    - amibuild
+#- name: set timezone to Europe/London
+#  ansible.builtin.timezone:
+#    name: Europe/London
+#  tags:
+#    - amibuild
 
 #- import_tasks: user.yml
 #  tags:
 #    - amibuild
 
-- import_tasks: prereqs.yml
-  tags:
-    - amibuild
-    - tibco_prereqs
+#- import_tasks: prereqs.yml
+#  tags:
+#    - amibuild
+#    - tibco_prereqs
 
-- import_tasks: directories.yml
-  tags:
-    - amibuild
+#- import_tasks: directories.yml
+#  tags:
+#    - amibuild
 
-- import_tasks: get_install_files.yml
-  tags:
-    - amibuild
-    - tibco_installers
+#- import_tasks: get_install_files.yml
+#  tags:
+#    - amibuild
+#    - tibco_installers
 
-- import_tasks: install_tibco.yml
-  tags:
-    - amibuild
-    - install_tibco
+#- import_tasks: install_tibco.yml
+#  tags:
+#    - amibuild
+#    - install_tibco
