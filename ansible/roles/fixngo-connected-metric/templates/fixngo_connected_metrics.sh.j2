@@ -2,24 +2,46 @@
 
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
-INTERVAL="{{ collectd_script_interval }}"
+INTERVAL={{ collectd_script_interval }}
 timeout=1
-port=4903 
-target="{{ fixngo_connection_target }}"
+targets={{ fixngo_connection_targets_dict }} # just to be able to see the values being used
 
-fixngo_connection_status() {
-    connection=$(ncat -vzw "$timeout" "$target" "$port" 2>&1)
-    if [[ "${connection}" == *"Connected"* ]]
-    then
-        return 0
-    else
-        return 1
-    fi
-}
+{% for target in fixngo_connection_targets_dict -%}
+    
+    function{{ loop.index }}() {
+        connection=$(ncat -vzw "$timeout" {{ target.ip }} {{ target.port }} 2>&1)
+        if [[ "${connection}" == *"Connected"* ]]
+        then
+            return 0
+        else
+            return 1 # Connection failed
+        fi
+    }
+
+{% endfor %}
 
 while sleep "$INTERVAL"
 do
-    fixngo_connection_status
-    connection=$?
-    echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:$connection"
+
+    {% for target in fixngo_connection_targets_dict %}
+        function{{ loop.index }}
+        connection{{ loop.index }}=$?
+    {% endfor %}
+
+    all_connection_checks_failed=true
+
+    {% for target in fixngo_connection_targets_dict %}
+        if [[ $connection{{ loop.index }} -ne 1 ]]
+        then
+            all_connection_checks_failed=false
+            break
+        fi
+    {% endfor %}
+
+    if [[ $all_connection_checks_failed == true ]]
+    then
+        echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:1"
+    else
+        echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:0"
+    fi
 done
