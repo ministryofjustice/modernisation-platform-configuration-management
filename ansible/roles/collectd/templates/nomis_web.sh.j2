@@ -5,9 +5,9 @@ HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
 WEBLOGIC_SERVICE_LIST="{{ service_list_weblogic }}"
 
-service_status_old() {
+service_status() {
     local SERVICE="$1"
-    weblogic_status=$(sudo service "$SERVICE" status | grep "OK")
+    weblogic_status=$(sudo service $SERVICE status | grep "OK")
     if [[ $weblogic_status ]]
     then
         return 0
@@ -16,25 +16,15 @@ service_status_old() {
     fi
 }
 
-service_status() {
-    sudo service weblogic-all healthcheck
-}
-
 while sleep "$INTERVAL"
 do
-    if grep -q "healthcheck" "/etc/init.d/weblogic-all"
-    then
-        service_status
+    for service in ${WEBLOGIC_SERVICE_LIST}
+    do
+        service_status "$service" 
         status=$?
-        echo "PUTVAL $HOSTNAME/exec-weblogic_healthcheck/bool interval=$INTERVAL N:$status"
-    else
-        for service in $WEBLOGIC_SERVICE_LIST
-        do
-            service_status_old "$service"
-            status=$?
-            service_name=${service//-/_}
-            echo "PUTVAL $HOSTNAME/exec-$service_name/bool-$service_name interval=$INTERVAL N:$status"
-        done
-    fi
+
+        service_name=${service//-/_}
+        echo "PUTVAL $HOSTNAME/exec-$service_name/bool-$service_name interval=$INTERVAL N:$status"
+    done
 done
 
