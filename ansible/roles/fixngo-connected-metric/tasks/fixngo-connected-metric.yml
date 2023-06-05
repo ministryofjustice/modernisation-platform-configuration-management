@@ -17,14 +17,14 @@
     multiple_pairs: "{{ fixngo_connection_targets.split(' ') | length > 2 }}"
 
 - name: convert string to list of pairs (multiple targets)
-  set_fact: 
+  set_fact:
     fixngo_connection_targets_list: "{{ fixngo_connection_targets.split(' ') | slice(2) | map('list') | list }}"
   when: multiple_pairs
 
 - name: convert string to list of pairs (single target)
-  set_fact: 
+  set_fact:
     fixngo_connection_targets_list: "[{{ fixngo_connection_targets.split(' ') }}]"
-  when: not multiple_pairs 
+  when: not multiple_pairs
 
 - name: create dictionary of lists
   set_fact:
