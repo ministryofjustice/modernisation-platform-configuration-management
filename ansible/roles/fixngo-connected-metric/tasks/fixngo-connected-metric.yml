@@ -1,7 +1,35 @@
 ---
-- name: get fact for fixngo connection target
+- name: create folder for exec script to collect metrics
+  ansible.builtin.file:
+    path: "/opt/collectd"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+# format must be "x.x.x.x port x.x.x.x port x.x.x.x port ..."
+- name: get fact for fixngo connection targets
   set_fact:
-    fixngo_connection_target: '{{ ec2.tags["fixngo-connection-target"] }}'
+    fixngo_connection_targets: "{{ ec2.tags['fixngo-connection-targets'] }}"
+
+- name: check if fixngo connection targets contains more than two items
+  set_fact:
+    multiple_pairs: "{{ fixngo_connection_targets.split(' ') | length > 2 }}"
+
+- name: convert string to list of pairs (multiple targets)
+  set_fact:
+    fixngo_connection_targets_list: "{{ fixngo_connection_targets.split(' ') | slice(2) | map('list') | list }}"
+  when: multiple_pairs
+
+- name: convert string to list of pairs (single target)
+  set_fact:
+    fixngo_connection_targets_list: "[{{ fixngo_connection_targets.split(' ') }}]"
+  when: not multiple_pairs
+
+- name: create dictionary of lists
+  set_fact:
+    fixngo_connection_targets_dict: "{{ fixngo_connection_targets_dict | default([]) + [{'ip': item[0], 'port': item[1] }] }}"
+  loop: "{{ fixngo_connection_targets_list }}"
 
 - name: add fixngo conf for collectd to get connection state as a metric
   ansible.builtin.copy:
