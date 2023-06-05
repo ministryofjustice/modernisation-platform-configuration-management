@@ -3,7 +3,7 @@
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "/tmp/{{ item }}"
+    dest: "{{ temp }}/{{ item }}"
     mode: get
     overwrite: latest
   loop:

@@ -1,7 +1,7 @@
 ---
-- name: Install oracle prerequisite rpm's
+- name: Install oracle prerequisite rpms
   yum:
-    name: "/tmp/{{ item }}"
+    name: "{{ temp }}/{{ item }}"
     state: present
     disable_gpg_check: true
   loop:
@@ -21,23 +21,6 @@
   vars:
     selinux_state: permissive
 
-- name: Create new directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    state: directory
-    recurse: yes
-  loop:
-    - "{{ app_dir }}"
-    - "{{ grid_base }}"
-    - "{{ database_base }}"
-    - "{{ database_home }}"
-    - "{{ grid_home }}"
-    - "{{ temp }}"
-    - "{{ stage }}"
-    - "{{ stage}}/psu"
-
 - name: To resolve oracle issue CRS-10131 Failure to create named pipe /var/tmp/.oracle/npohasd
   ansible.builtin.file:
     path: /var/tmp
@@ -46,7 +29,7 @@
 
 - name: Clean up downloaded rpm's
   ansible.builtin.file:
-    path: "/tmp/{{ item }}"
+    path: "{{ temp }}/{{ item }}"
     state: absent
   loop:
     - "{{ oracle_prereq_rpm }}"

@@ -1,18 +1,40 @@
 ---
+- name: setup oracle user and groups
+  import_role:
+    name: common
+    tasks_from: oracle_user.yml
+  tags:
+    - oracle_19c_download
+    - pre_install
+    - oracle_19c_install
+
+- name: Create new directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ app_dir }}"
+    - "{{ grid_base }}"
+    - "{{ database_base }}"
+    - "{{ database_home }}"
+    - "{{ grid_home }}"
+    - "{{ temp }}"
+    - "{{ stage }}"
+    - "{{ stage}}/psu"
+  tags:
+    - oracle_19c_download
+    - pre_install
+    - oracle_19c_install
+
 - name: download oracle software
   import_tasks: download_software.yml
   tags:
     - oracle_19c_download
     - pre_install
     - oracle_19c_install
-
-- name: setup oracle user and groups
-  import_role:
-    name: common
-    tasks_from: oracle_user.yml
-  tags:
-    - oracle_19c_install
-    - pre_install
 
 - name: install asm, grid and database
   block:
