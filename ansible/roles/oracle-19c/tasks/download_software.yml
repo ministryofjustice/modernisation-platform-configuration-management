@@ -1,5 +1,5 @@
 ---
-- name: Download oracle prerequisite rpm's
+- name: Download oracle prerequisite rpms
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
@@ -10,3 +10,27 @@
     - "{{ oracle_prereq_rpm }}"
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
+
+- name: Download database software
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "{{ temp }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ db_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"
+
+- name: Download grid
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "{{ temp }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ grid_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"
