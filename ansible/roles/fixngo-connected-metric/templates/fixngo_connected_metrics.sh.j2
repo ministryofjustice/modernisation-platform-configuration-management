@@ -4,7 +4,7 @@
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL={{ collectd_script_interval }}
 timeout=1
-targets={{ fixngo_connection_targets_dict }} # just to be able to see the values being used
+targets="{{ fixngo_connection_targets_dict }}" # just to be able to see the values being used
 
 {% for target in fixngo_connection_targets_dict -%}
     
@@ -30,16 +30,18 @@ do
 
     all_connection_checks_failed=true
 
-    {% for target in fixngo_connection_targets_dict %}
-        if [[ $connection{{ loop.index }} -ne 1 ]]
+    connections=({% for target in fixngo_connection_targets_dict %} connection{{ loop.index }} {% endfor %})
+
+    for connection in "${connections[@]}"; do
+        # if any connection check succeeds, then we're connected, so break and set all_connection_checks_failed to false
+        if [[ $connection -ne 1 ]]
         then
             all_connection_checks_failed=false
             break
         fi
-    {% endfor %}
+    done
 
-    if [[ $all_connection_checks_failed == true ]]
-    then
+    if [[ "$all_connection_checks_failed" = true ]] ; then
         echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:1"
     else
         echo "PUTVAL $HOSTNAME/exec-fixngo_connected/bool-fixngo_connected interval=$INTERVAL N:0"
