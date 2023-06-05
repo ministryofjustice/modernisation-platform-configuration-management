@@ -1,3 +1,11 @@
+---
+- name: download oracle software
+  import_tasks: download_software.yml
+  tags:
+    - oracle_19c_download
+    - pre_install
+    - oracle_19c_install
+
 - name: setup oracle user and groups
   import_role:
     name: common

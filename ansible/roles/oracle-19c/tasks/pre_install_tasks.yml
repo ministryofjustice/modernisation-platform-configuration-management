@@ -1,15 +1,4 @@
 ---
-- name: Download oracle prerequisite rpm's
-  amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
-    object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "/tmp/{{ item }}"
-    mode: get
-  loop:
-    - "{{ oracle_prereq_rpm }}"
-    - "{{ oracle_asmlib_rpm }}"
-    - "{{ oracleasm_support_rpm }}"
-
 - name: Install oracle prerequisite rpm's
   yum:
     name: "/tmp/{{ item }}"
