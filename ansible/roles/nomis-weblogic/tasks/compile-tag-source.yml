@@ -32,7 +32,7 @@
     . $WL_HOME/server/bin/setWLSEnv.sh
     main() {
       echo "# Compile tag forms: doallforms.sh -e '{{ weblogic_db_name }}' -p 'xxx'"
-      rm /u01/tag/FormsSources/*.err /u01/tag/FormsSources/*log 
+      rm /u01/tag/FormsSources/*.err /u01/tag/FormsSources/*log || true
       ./doallforms.sh -e "{{ weblogic_db_name }}" -p "{{ weblogic_db_password }}" -s /u01/tag/FormsSources -o /u01/tag/FormsObjects 
       echo "# cp -p /u01/tag/FormsObjects/* /u01/tag/forms"
       cp -p /u01/tag/FormsObjects/* /u01/tag/forms
