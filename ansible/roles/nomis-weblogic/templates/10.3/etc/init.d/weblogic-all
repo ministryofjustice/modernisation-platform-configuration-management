@@ -134,21 +134,12 @@ healthcheck() {
     echo -n $"Healthcheck of weblogic-all: "
     echo_success
     echo
-    if [[ -e /u01/tag/static/keepalive.htm ]]; then
-      echo -n "file already exists"
-    else
-      echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "weblogic-all-healthcheck"
-      keepalive > /u01/tag/static/keepalive.htm
-      chown oracle:oinstall /u01/tag/static/keepalive.htm
-    fi
     return 0
   else
     for service in $unhealthy_services; do
       echo -n $"Healthcheck of $service: "
       echo_failure
       echo
-      echo "Removing keepalive" | logger -p local3.info -t "$service"
-      rm -f /u01/tag/static/keepalive.htm
     done
     return 1
   fi
