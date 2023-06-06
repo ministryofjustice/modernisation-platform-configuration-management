@@ -9,18 +9,17 @@
 . /etc/init.d/functions
 
 prog="weblogic-healthcheck"
-healthcheck_script="/etc/healthcheck/healthcheck.sh"
+# healthcheck_script="/etc/healthcheck/healthcheck.sh"
 
-get_process_pids() {
-  local file_name="$1"
+get_healthcheck_pid() {
   local pids
-  pids=$(pgrep -f "$file_name" 2> /dev/null)
+  pids=$(pgrep -u root -f "healthcheck.sh$" 2> /dev/null)
   echo "$pids"
 }
 
 start_process() {
   if [[ $(whoami) == "root" ]]; then
-    nohup $healthcheck_script 2>&1 | logger -p local3.info -t "$prog" &
+    nohup "/etc/healthcheck/healthcheck.sh" 2>&1 | logger -p local3.info -t "$prog" &
   else
     echo -n "must be run as root"
     return 1
@@ -29,7 +28,7 @@ start_process() {
 
 start() {
   echo -n $"Starting $prog: "
-  if PIDS=$(get_process_pids $healthcheck_script); then
+  if PIDS=$(get_healthcheck_pid); then
     echo "healthcheck already running: $PIDS"
     echo_success
     echo
@@ -40,7 +39,7 @@ start() {
     echo
     return 1
   fi
-  PIDS=$(get_process_pids $healthcheck_script)
+  PIDS=$(get_healthcheck_pid)
   echo "Started healthcheck: $PIDS" | logger -p local3.info -t "$prog"
   echo_success
   echo
@@ -48,7 +47,7 @@ start() {
 
 stop() {
   echo -n $"Stopping $prog: "
-  if ! PIDS=$(get_process_pids $healthcheck_script); then
+  if ! PIDS=$(get_healthcheck_pid); then
     echo -n "Already stopped"
     echo_success
     echo
@@ -57,7 +56,7 @@ stop() {
   echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
   kill "$PIDS"
   sleep 2
-  if ! get_process_pids $healthcheck_script > /dev/null; then
+  if ! get_healthcheck_pid > /dev/null; then
     echo_success
     echo
     return 0
@@ -70,7 +69,7 @@ stop() {
 
 status() {
   echo -n $"Status of $prog: "
-  if ! PIDS=$(get_process_pids $healthcheck_script); then
+  if ! PIDS=$(get_healthcheck_pid); then
     echo -n "process not found"
     echo_failure
     echo
