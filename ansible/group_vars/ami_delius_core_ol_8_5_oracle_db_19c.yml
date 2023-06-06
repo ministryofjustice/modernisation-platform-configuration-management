@@ -26,7 +26,7 @@ ami_roles_list:
   - disable-firewall
   - packages # Perform any updates to existing if there are no new packages to install
   # - amazon-ssm-agent # for ec2patch only (if version has changed)
-  # - disks
+  - disks
   # - script-exporter
   - oracle-19c
   # - oracle-db-monitoring
@@ -45,14 +45,17 @@ packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
 # Downloading Oracle packages
 s3_bucket: mod-platform-image-artefact-bucket20230203091453221500000001
 s3_bucket_object: hmpps/oracle-19c-software
-# disks_partition:
-# - ebs_device_name: /dev/sde # data01
-# - ebs_device_name: /dev/sdf # data02
-# - ebs_device_name: /dev/sdg # data03
-# - ebs_device_name: /dev/sdh # data04
-# - ebs_device_name: /dev/sdi # data05
-# - ebs_device_name: /dev/sdj # flash01
+
+# Storage: volumes, partitioning and mounting
+disks_partition:
+  - ebs_device_name: /dev/sde # data01
+  # - ebs_device_name: /dev/sdf # data02
+  # - ebs_device_name: /dev/sdg # data03
+  # - ebs_device_name: /dev/sdh # data04
+  # - ebs_device_name: /dev/sdi # data05
+  - ebs_device_name: /dev/sdj # flash01
 # - ebs_device_name: /dev/sdk # flash02
+
 # disks_mount:
 #   - ebs_device_name: /dev/sdb
 #     dir: /u01
