@@ -10,36 +10,76 @@
 
 prog="weblogic-healthcheck"
 
-keepalive() {
-  echo '<HTML><BODY>keepalive.htm on {{ weblogic_servername }}</BODY></HTML>'
+get_process_pids() {
+  local file_name="$1"
+  local pids=$(pgrep -f "$file_name" 2> /dev/null)
+  echo "$pids"
+}
+
+start_process() {
+  if [[ $(whoami) == "root" ]]; then
+    nohup /etc/healthcheck/healthcheck.sh > /var/log/healthcheck.log 2>&1 | logger -p local3.info -t "$prog" &
+  else
+    echo -n "must be run as root"
+    return 1
+  fi
 }
 
 start() {
   echo -n $"Starting $prog: "
-  if [[ -e /u01/tag/static/keepalive.htm ]]; then
-    echo -n "file already exists"
+  if PIDS=$(get_process_pids healthcheck.sh); then
+    echo "healthcheck already running: $PIDS"
     echo_success
     echo
     return 0
   fi
-  echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "$prog"
-  keepalive > /u01/tag/static/keepalive.htm
-  chown oracle:oinstall /u01/tag/static/keepalive.htm
+  if ! start_process; then
+    echo_failure
+    echo
+    return 1
+  fi
+  PIDS=$(get_process_pids healthcheck.sh)
+  echo "Started healthcheck: $PIDS" | logger -p local3.info -t "$prog"
   echo_success
   echo
 }
 
 stop() {
   echo -n $"Stopping $prog: "
-  if [[ -e /u01/tag/static/keepalive.htm ]]; then
-    echo "Removing keepalive" | logger -p local3.info -t "$prog"
-    rm -f /u01/tag/static/keepalive.htm
+  if ! PIDS=$(get_process_pids healthcheck.sh); then
+    echo -n "Already stopped"
+    echo_success
+    echo
+    return 0
   fi
+  echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
+  kill "$PIDS"
+  sleep 2
+  if ! get_process_pids healthcheck.sh > /dev/null; then
+    echo_success
+    echo
+    return 0
+  else
+    echo_failure
+    echo "init.d failed to kill $prog $PIDS" | logger -p local3.info -t "$prog"
+    return 1
+  fi
+}
+
+status() {
+  echo -n $"Status of $prog: "
+  if ! PIDS=$(get_process_pids healthcheck.sh); then
+    echo -n "process not found"
+    echo_failure
+    echo
+    return 1
+  fi
+  echo -n "$PIDS"
   echo_success
   echo
 }
 
-status() {
+keepalive() {
   RETVAL=0
   echo -n $"Status of $prog: "
   if ! curl -IsSfm 5 http://localhost:7777/keepalive.htm > /dev/null 2>&1; then
@@ -70,8 +110,11 @@ case "$1" in
   status)
     status
     ;;
+  keepalive)
+    keepalive
+    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop|restart|status|keepalive}"
     exit 3
 esac
 

@@ -4,13 +4,14 @@
     path: /etc/init.d/weblogic-healthcheck
   register: weblogic_healthcheck_installed_check
 
-- name: Copy init.d weblogic-healthcheck
+- name: Copy healthcheck files
   ansible.builtin.template:
     src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
   loop:
     - /etc/init.d/weblogic-healthcheck
+    - /etc/healthcheck/healthcheck.sh
 
 - name: Configure healthcheck
   block:
@@ -32,4 +33,4 @@
       changed_when: false
 
   # block
-  when: not weblogic_healthcheck_installed_check.stat.exists
+  # when: not weblogic_healthcheck_installed_check.stat.exists
