@@ -9,7 +9,7 @@ keepalive() {
 
 while true
 do
-    if ! weblogic-all healthcheck; then
+    if ! "$(service weblogic-all healthcheck)"; then
         echo "Removing keepalive" | logger -p local3.info -t "healthcheck"
         rm -f /u01/tag/static/keepalive.htm
     fi
