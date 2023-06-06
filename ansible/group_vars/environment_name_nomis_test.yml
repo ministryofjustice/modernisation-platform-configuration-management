@@ -77,3 +77,149 @@ db_configs:
     asm_disk_groups: DATA
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
+
+  CNOMT2:
+    db_name: CNOMT2
+    db_unique_name: CNOMT2
+    instance_name: CNOMT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: CNOMT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  T2CNOMS1:
+    db_name: CNOMT2
+    db_unique_name: T2CNOMS1
+    instance_name: T2CNOMS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2CNOMS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  NDHT2:
+    db_name: NDHT2
+    db_unique_name: NDHT2
+    instance_name: NDHT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: NDHT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  T2NDHS1:
+    db_name: NDHT2
+    db_unique_name: T2NDHS1
+    instance_name: T2NDHS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2NDHS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  TRDATT2:
+    db_name: TRDATT2
+    db_unique_name: TRDATT2
+    instance_name: TRDATT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: TRDATT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+  T2TRDS1:
+    db_name: TRDATT2
+    db_unique_name: T2TRDS1
+    instance_name: T2TRDS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2TRDS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+
+  CNOMT2:
+    db_name: CNOMT2
+    db_unique_name: CNOMT2
+    instance_name: CNOMT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: CNOMT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  T2CNOMS1:
+    db_name: CNOMT2
+    db_unique_name: T2CNOMS1
+    instance_name: T2CNOMS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2CNOMS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  NDHT2:
+    db_name: NDHT2
+    db_unique_name: NDHT2
+    instance_name: NDHT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: NDHT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  T2NDHS1:
+    db_name: NDHT2
+    db_unique_name: T2NDHS1
+    instance_name: T2NDHS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2NDHS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  TRDATT2:
+    db_name: TRDATT2
+    db_unique_name: TRDATT2
+    instance_name: TRDATT2
+    host_name: T2PDL0012.azure.noms.root
+    port: 1521
+    tns_name: TRDATT2
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+  T2TRDS1:
+    db_name: TRDATT2
+    db_unique_name: T2TRDS1
+    instance_name: T2TRDS1
+    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T2TRDS1
+    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+    asm_disk_groups: DATA
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
