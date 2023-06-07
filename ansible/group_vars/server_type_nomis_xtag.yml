@@ -8,7 +8,8 @@ users_and_groups_system:
       - dba
       - wheel
 
-ami_roles_list:
+server_type_roles_list:
+  - autoscale-group-hooks
   - users-and-groups
   - sudoers
   - disable-firewall
@@ -19,4 +20,9 @@ ami_roles_list:
   - amazon-cli
   - tcp-keepalive
   - disks
+  - set-ec2-hostname
+  - domain-search
   - nomis-xtag-weblogic
+  - autoscale-group-hooks-state
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
