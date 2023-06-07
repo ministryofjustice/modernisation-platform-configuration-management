@@ -14,6 +14,7 @@ prog="weblogic-healthcheck"
 get_healthcheck_pid() {
   local pids
   pids=$(pgrep -u root -f "healthcheck.sh$" 2> /dev/null)
+  [[ -z "$pids" ]] && return 1
   echo "$pids"
 }
 
