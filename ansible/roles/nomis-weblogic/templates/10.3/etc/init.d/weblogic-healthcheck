@@ -39,11 +39,13 @@ start() {
     echo_failure
     echo
     return 1
+  else 
+    start_process
+    PIDS=$(get_healthcheck_pid)
+    echo "Started healthcheck: $PIDS" | logger -p local3.info -t "$prog"
+    echo_success
+    echo
   fi
-  PIDS=$(get_healthcheck_pid)
-  echo "Started healthcheck: $PIDS" | logger -p local3.info -t "$prog"
-  echo_success
-  echo
 }
 
 stop() {
