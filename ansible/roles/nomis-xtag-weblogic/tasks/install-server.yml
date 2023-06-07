@@ -62,16 +62,3 @@
     path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
     regexp: "^MEM_ARGS="
     line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
-
-- name: Copy init.d weblogic-node-manager script
-  ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    mode: "0755"
-  loop:
-    - /etc/init.d/weblogic-node-manager
-
-- name: Enable weblogic-node-manager service
-  ansible.builtin.service:
-    name: weblogic-node-manager
-    enabled: yes
