@@ -13,14 +13,14 @@ prog="weblogic-healthcheck"
 
 get_healthcheck_pid() {
   local pids
-  pids=$(pgrep -u root -f "healthcheck.sh$" 2> /dev/null)
+  pids=$(pgrep -u root -f "healthcheck.sh$" | tr '\n' ' ' 2> /dev/null)
   [[ -z "$pids" ]] && return 1
-  echo "$pids"
+  echo $pids
 }
 
 start_process() {
   if [[ $(whoami) == "root" ]]; then
-    nohup su - root -c "/etc/healthcheck/healthcheck.sh" 2>&1 | logger -p local3.info -t "$prog" &
+    nohup "/etc/healthcheck/healthcheck.sh" 2>&1 | logger -p local3.info -t "$prog" &
   else
     echo -n "must be run as root"
     return 1
@@ -30,7 +30,7 @@ start_process() {
 start() {
   echo -n $"Starting $prog: "
   if PIDS=$(get_healthcheck_pid); then
-    echo "healthcheck already running: $PIDS"
+    echo -n "healthcheck already running: $PIDS"
     echo_success
     echo
     return 0
@@ -55,7 +55,7 @@ stop() {
     return 0
   fi
   echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
-  kill "$PIDS"
+  kill $PIDS
   sleep 2
   if ! get_healthcheck_pid > /dev/null; then
     echo_success
@@ -76,7 +76,7 @@ status() {
     echo
     return 1
   fi
-  echo -n "$PIDS"
+  echo -n $PIDS
   echo_success
   echo
 }
