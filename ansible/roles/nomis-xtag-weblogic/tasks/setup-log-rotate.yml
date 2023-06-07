@@ -4,16 +4,16 @@
   set_fact:
     weblogic_managed_app: "{{ weblogic_managed_app_list.name }}"
 
-# - name: Start services if not already running
-#   ansible.builtin.service:
-#     name: "{{ item }}"
-#     state: started
-#   loop: 
-#     - wls_nodemanager
-#     - wls_adminserver
-#     - wls_managedserver
-#   async: 3600
-#   poll: 60
+- name: Start services if not already running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop: 
+    - wls_nodemanager
+    - wls_adminserver
+    - wls_managedserver
+  async: 3600
+  poll: 60
   
 - name: Copy log setup managed app configuration files
   ansible.builtin.template:
