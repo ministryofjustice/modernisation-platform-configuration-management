@@ -1,24 +1,18 @@
 ---
-- name: Fail if weblogic_managed_app variable not defined
+- name: Fail if managed_server variable not defined
   fail:
-    msg: "Error, please ensure weblogic_managed_app is defined"
-  when: weblogic_managed_app is not defined
+    msg: "Error, please ensure weblogic_server is defined"
+  when: managed_server is not defined
 
-# - name: Check if managed app already configured
-#   ansible.builtin.stat:
-#     path: /etc/init.d/{{ weblogic_managed_app }}
-#   register: weblogic_created_managed_app_check
+- name: Check if managed app already configured
+  ansible.builtin.stat:
+    path: /etc/systemd/system/wls_managedserver.service
+  register: weblogic_created_managed_app_check
 
 - name: Configure managed app
   block:
     - debug:
-        msg: "Creating managed app {{ weblogic_managed_app }}"
-
-    # # ensure everything is running
-    # - name: Start services if not already running
-    #   ansible.builtin.service:
-    #     name: weblogic-all
-    #     state: started
+        msg: "Creating managed app {{ managed_server }}"
 
     - name: Copy managed app configuration files
       ansible.builtin.template:
@@ -27,17 +21,20 @@
         owner: oracle
         group: oinstall
       loop:
-        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+        - /u01/software/weblogic/{{ managed_server }}.properties
 
     - name: Create application directories
       ansible.builtin.file:
-        path: "{{ xtag_app_path }}"
+        path: "{{ item }}"
         state: directory
         owner: oracle
         group: oinstall
         mode: "0755"
+      loop:
+        - "{{ xtag_app_path }}/log"
+        - "{{ xtag_app_path }}/release"
 
-    - name: Get xtag application ear file from S3 bucket
+    - name: Get xtag application release file from S3 
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
         object: "weblogic-software{{ item }}"
@@ -45,7 +42,23 @@
         mode: get
         overwrite: latest
       loop:
-        - "{{ xtag_app_path }}/xtagoutbound.ear"
+        - "{{ xtag_app_path }}/release/install_xtagoutbound.zip"
+
+    - name: Extract xtag application file 
+      ansible.builtin.unarchive:
+        owner: oracle
+        group: oinstall
+        src: "{{ xtag_app_path }}/release/install_xtagoutbound.zip"
+        dest: "{{ xtag_app_path }}"
+        remote_src: true
+
+    - name: Copy xtag lib files in {{ domain_name }}
+      ansible.builtin.copy:
+        owner: oracle
+        group: oinstall
+        src: "{{ xtag_app_path }}/lib/"
+        dest: "{{ domain_home }}/{{ domain_name }}/lib/"
+        remote_src: true
 
     - name: Create managed app
       become_user: oracle
@@ -54,8 +67,8 @@
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
         main() {
-          echo "# create managed app {{ weblogic_managed_app }}"
-          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+          echo "# create managed app {{ managed_server }}"
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ managed_server }}.properties
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
       async: 7200
@@ -69,42 +82,45 @@
         group: oinstall
         mode: "0755"
       loop:
-        - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security"
+        - "{{ domain_home }}/{{ domain_name }}/servers/{{ managed_server }}/security"
 
-    # the boot.properties file is automatically updated by the weblogic server
     - name: Copy managed app boot properties
       ansible.builtin.template:
-        src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
+        src: "10.3{{ domain_home }}/{{ domain_name }}/servers/AdminServer/security/boot.properties"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall
         force: false
       loop:
-        - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security/boot.properties"
+        - "{{ domain_home }}/{{ domain_name }}/servers/{{ managed_server }}/security/boot.properties"
 
-    # - name: Copy managed app init.d script
-    #   vars:
-    #     weblogic_managed_server_name: "{{ weblogic_managed_app }}"
-    #   ansible.builtin.template:
-    #     src: "10.3/etc/init.d/weblogic-managed-server"
-    #     dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
-    #     mode: "0755"
+    - name: Copy nodemanager stop script
+      ansible.builtin.template:
+        src: "10.3/home/oracle/admin/scripts/stopNodeManager.sh"
+        dest: "/home/oracle/admin/scripts/stopNodeManager.sh"
+        owner: oracle
+        group: oinstall
+        mode: 0744
 
-    # # this ensures values in boot.properties become encrypted
-    # - name: Restart service
-    #   ansible.builtin.service:
-    #     name: "{{ weblogic_managed_app }}"
-    #     state: restarted
-    #   async: 600
-    #   poll: 20
+    - name: Stop nodemanager 
+      become_user: oracle
+      ansible.builtin.shell: /home/oracle/admin/scripts/stopNodeManager.sh
 
-  always:
-    - name: Remove temporary forms configuration files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+    - name: Stop adminserver
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
 
-  # # block
-  # when: not weblogic_created_managed_app_check.stat.exists
+    - name: Stop managed server
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        nohup {{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
+        
+  # block
+  when: not weblogic_created_managed_app_check.stat.exists

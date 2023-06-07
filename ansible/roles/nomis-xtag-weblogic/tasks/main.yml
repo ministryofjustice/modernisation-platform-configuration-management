@@ -82,31 +82,24 @@
       tags:
         - ec2provision
         - weblogic_create_managed_app
+
+    - import_tasks: service.yml
+      tags:
+        - ec2provision
+        - weblogic_service
+
+    - include_tasks:
+        file: setup-log-rotate.yml
+        apply:
+          tags:
+            - ec2provision
+            - weblogic_setup_log_rotate
+      tags:
+        - ec2provision
+        - weblogic_setup_log_rotate
       loop_control:
-        loop_var: weblogic_managed_app
-      loop:
-        - WLS_XTAG_OUTBOUND_01
+        loop_var: weblogic_managed_app_list
+      loop: "{{ weblogic_servers }}"
 
-  #   - import_tasks: wait-for-managed-services.yml
-  #     tags:
-  #       - ec2provision
 
-  #   - include_tasks:
-  #       file: setup-log-rotate.yml
-  #       apply:
-  #         tags:
-  #           - ec2provision
-  #           - weblogic_setup_log_rotate
-  #     tags:
-  #       - ec2provision
-  #       - weblogic_setup_log_rotate
-  #     loop_control:
-  #       loop_var: weblogic_form_server_config
-  #     loop: "{{ weblogic_servers }}"
-
-  #   - import_tasks: install-healthcheck.yml
-  #     tags:
-  #       - ec2provision
-  #       - weblogic_install_healthcheck
-
-  # when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "6"
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "7"

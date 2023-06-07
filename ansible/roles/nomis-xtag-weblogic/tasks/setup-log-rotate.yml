@@ -1,17 +1,23 @@
 ---
+
 - name: Set weblogic managed app facts
   set_fact:
-    weblogic_managed_app: "{{ weblogic_form_server_config.name }}"
-    weblogic_managed_app_port: "{{ weblogic_form_server_config.port | default('') }}"
+    weblogic_managed_app: "{{ weblogic_managed_app_list.name }}"
 
-- name: Start services if not already running
-  ansible.builtin.service:
-    name: weblogic-all
-    state: started
-
+# - name: Start services if not already running
+#   ansible.builtin.service:
+#     name: "{{ item }}"
+#     state: started
+#   loop: 
+#     - wls_nodemanager
+#     - wls_adminserver
+#     - wls_managedserver
+#   async: 3600
+#   poll: 60
+  
 - name: Copy log setup managed app configuration files
   ansible.builtin.template:
-    src: "10.3/u01/software/weblogic/{{ weblogic_form_server_config.properties_src | default(weblogic_managed_app) }}.properties"
+    src: "10.3/{{ item }}"
     dest: "{{ item }}"
     owner: oracle
     group: oinstall

@@ -135,6 +135,8 @@ if domainName:
     cmo.setListenPort(int(adminPort))
     cmo.setListenAddress(adminAddress)
     create('AdminServer','SSL')
+    cd('SSL/AdminServer')  
+    set('Enabled', 'false')
     setOption('ServerStartMode','prod')
     writeDomain(domainConfigPath + '/' + domainName)
     closeTemplate()

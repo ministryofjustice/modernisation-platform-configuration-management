@@ -54,11 +54,10 @@
       keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
     }
     main 2>&1 | logger -p local3.info -t ansible-weblogic
-  when: not weblogic_keystore_list is search("demoidentity")
 
 - name: Disable SecureListener in nodemanager.properties
   ansible.builtin.replace:
-    path: /u01/app/oracle/Middleware/wlserver_10.3/common/nodemanager/nodemanager.properties
+    path: "{{ wl_home }}/common/nodemanager/nodemanager.properties"
     regexp: "SecureListener=true"
     replace: "SecureListener=false"
 
@@ -68,7 +67,7 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/stopWebLogic.sh 
+    "{{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh"
 
 - name: Stop nodemanager processes
   become_user: oracle
@@ -81,7 +80,7 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh &
+    nohup {{ wl_home }}/server/bin/startNodeManager.sh &
 
 - name: Start adminserver
   become_user: oracle
@@ -89,7 +88,7 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/startWebLogic.sh &
+    nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
   async: 3600
   poll: 60
 
@@ -100,7 +99,7 @@
     set -eo pipefail
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
-    . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
+    . {{ domain_home }}/{{ domain_name }}/bin/setDomainEnv.sh > /dev/null
     wlst.sh  ~/admin/scripts/get_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n NMType
   check_mode: false
   changed_when: false
@@ -122,8 +121,11 @@
     set -eo pipefail
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
-    . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh > /dev/null
+    . {{ domain_home }}/{{ domain_name }}/bin/setDomainEnv.sh > /dev/null
     wlst.sh  ~/admin/scripts/set_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n NMType -v Plain
+    wlst.sh  ~/admin/scripts/set_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n ListenAddress -v {{ weblogic_domain_hostname }}
+    wlst.sh  ~/admin/scripts/set_param.py -d /SecurityConfiguration/NomisDomain -n NodeManagerUsername -v {{ weblogic_admin_username }}
+    wlst.sh  ~/admin/scripts/set_param.py -d /SecurityConfiguration/NomisDomain -n NodeManagerPassword -v {{ weblogic_admin_password }}
   when: weblogic_nmtype != 'Plain'
 
 - name: Stop Admin server 
@@ -132,7 +134,7 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/stopWebLogic.sh 
+    {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh 
 
 - name: Stop nodemanager processes
   become_user: oracle
@@ -145,7 +147,7 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh &
+    nohup {{ wl_home }}/server/bin/startNodeManager.sh &
 
 - name: Start adminserver
   become_user: oracle
@@ -153,14 +155,6 @@
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/startWebLogic.sh &
+    nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
   async: 3600
   poll: 60
-  
-# - name: Restart all weblogic services
-#   ansible.builtin.service:
-#     name: weblogic-all
-#     state: restarted
-#   async: 600
-#   poll: 20
-#   when: weblogic_nmtype != 'Plain'

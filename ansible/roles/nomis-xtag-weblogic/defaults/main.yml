@@ -5,7 +5,12 @@ weblogic_servername: "{{ ansible_facts.hostname }}"
 weblogic_cluster: "{{ ansible_facts.hostname }}"
 weblogic_db_port: 1521
 ndh_ems_server: t1pml0005
-xtag_app_path: /u01/tag/xtag/deploy
+xtag_app_path: /u01/tag/xtag
+middleware_home: /u01/app/oracle/Middleware
+wl_home: /u01/app/oracle/Middleware/wlserver_10.3
+domain_home: /u01/app/oracle/Middleware/user_projects/domains
+domain_name: NomisDomain
+managed_server: WLS_XTAG_OUTBOUND_01
 
 weblogic_servers:
   - { name: WLS_XTAG_OUTBOUND_01 }
