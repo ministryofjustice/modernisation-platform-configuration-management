@@ -20,7 +20,7 @@ get_healthcheck_pid() {
 
 start_process() {
   if [[ $(whoami) == "root" ]]; then
-    nohup "/etc/healthcheck/healthcheck.sh" 2>&1 | logger -p local3.info -t "$prog" &
+    nohup /etc/healthcheck/healthcheck.sh 2>&1 | logger -p local3.info -t "$prog" &
   else
     echo -n "must be run as root"
     return 1

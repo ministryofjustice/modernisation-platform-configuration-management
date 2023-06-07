@@ -20,6 +20,9 @@
   loop:
     - /etc/init.d/weblogic-healthcheck
     - /etc/healthcheck/healthcheck.sh
+    - /etc/init.d/weblogic-all
+    - /etc/init.d/weblogic-node-manager
+    - /etc/init.d/weblogic-server
 
 - name: Configure healthcheck
   block:
