@@ -1,0 +1,21 @@
+---
+- name: Install the latest version of required packages
+  ansible.builtin.package:
+    name:
+      - ksh
+      - glibc.i686
+      - xorg-x11-apps
+      - libstdc++.i686
+      - compat-libcap1
+      - gcc
+      - gcc-c++
+      - glibc-devel
+      - libaio-devel
+      - libstdc++-devel
+      - nfs-utils
+      - xorg-x11-utils
+      - xorg-x11-xauth
+      - binutils
+      - libXmu
+      - psmisc
+    state: latest
