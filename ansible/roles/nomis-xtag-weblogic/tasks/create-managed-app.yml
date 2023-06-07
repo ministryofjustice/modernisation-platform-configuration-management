@@ -34,7 +34,7 @@
         - "{{ xtag_app_path }}/log"
         - "{{ xtag_app_path }}/release"
 
-    - name: Get xtag application release file from S3 
+    - name: Get xtag application release file from S3
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
         object: "weblogic-software{{ item }}"
@@ -44,7 +44,7 @@
       loop:
         - "{{ xtag_app_path }}/release/install_xtagoutbound.zip"
 
-    - name: Extract xtag application file 
+    - name: Extract xtag application file
       ansible.builtin.unarchive:
         owner: oracle
         group: oinstall
@@ -102,7 +102,7 @@
         group: oinstall
         mode: 0744
 
-    - name: Stop nodemanager 
+    - name: Stop nodemanager
       become_user: oracle
       ansible.builtin.shell: /home/oracle/admin/scripts/stopNodeManager.sh
 
@@ -121,6 +121,6 @@
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
         nohup {{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
-        
+
   # block
   when: not weblogic_created_managed_app_check.stat.exists

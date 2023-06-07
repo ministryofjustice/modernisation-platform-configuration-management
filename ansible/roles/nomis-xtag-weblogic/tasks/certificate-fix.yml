@@ -61,7 +61,7 @@
     regexp: "SecureListener=true"
     replace: "SecureListener=false"
 
-- name: Stop Admin server 
+- name: Stop Admin server
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
@@ -74,7 +74,7 @@
   ansible.builtin.shell: |
     ps -fu oracle | grep "weblogic.NodeManager"| grep -v grep | gawk '{print $2}' | xargs kill -9
 
-- name: Start nodemanager 
+- name: Start nodemanager
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
@@ -128,20 +128,20 @@
     wlst.sh  ~/admin/scripts/set_param.py -d /SecurityConfiguration/NomisDomain -n NodeManagerPassword -v {{ weblogic_admin_password }}
   when: weblogic_nmtype != 'Plain'
 
-- name: Stop Admin server 
+- name: Stop Admin server
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
     . ~/.bash_profile
     . $WL_HOME/server/bin/setWLSEnv.sh
-    {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh 
+    {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh
 
 - name: Stop nodemanager processes
   become_user: oracle
   ansible.builtin.shell: |
     ps -fu oracle | grep "weblogic.NodeManager"| grep -v grep | gawk '{print $2}' | xargs kill -9
 
-- name: Start nodemanager 
+- name: Start nodemanager
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail

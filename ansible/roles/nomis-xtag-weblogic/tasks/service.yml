@@ -1,20 +1,19 @@
 ---
-
 - name: Copy systemd unit file for weblogic
   ansible.builtin.template:
     src: "10.3/{{ item }}"
     dest: "{{ item }}"
-  loop: 
+  loop:
     - /etc/systemd/system/wls_nodemanager.service
     - /etc/systemd/system/wls_adminserver.service
-    - /etc/systemd/system/wls_managedserver.service  
+    - /etc/systemd/system/wls_managedserver.service
 
 - name: Enable weblogic services
   ansible.builtin.systemd:
     name: "{{ item }}"
     daemon_reload: yes
     enabled: yes
-  loop: 
+  loop:
     - wls_nodemanager
     - wls_adminserver
     - wls_managedserver
@@ -23,11 +22,9 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: "started"
-  loop: 
+  loop:
     - wls_nodemanager
     - wls_adminserver
     - wls_managedserver
   async: 3600
   poll: 60
-  
-

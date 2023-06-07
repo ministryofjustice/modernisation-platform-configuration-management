@@ -1,9 +1,7 @@
 ---
-
 - name: Create nomis xtag domain
   block:
-
-    - name: Copy scripts and properties files 
+    - name: Copy scripts and properties files
       ansible.builtin.template:
         src: "10.3{{ item }}"
         dest: "{{ item }}"
@@ -14,7 +12,7 @@
         - /u01/software/weblogic/domain.properties
         - /u01/software/weblogic/AdminServer.properties
 
-    - name: Start nodemanager 
+    - name: Start nodemanager
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -22,7 +20,7 @@
         . $WL_HOME/server/bin/setWLSEnv.sh
          nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh &
 
-    - name: Create weblogic Nomis xtag domain 
+    - name: Create weblogic Nomis xtag domain
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -41,7 +39,7 @@
         - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security
 
     # the boot.properties file is automatically updated by the weblogic server
-    - name: Copy Admin server boot properties file 
+    - name: Copy Admin server boot properties file
       ansible.builtin.template:
         src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
         dest: "{{ item }}"
@@ -51,12 +49,12 @@
       loop:
         - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
 
-    # # - name: Start admin server 
+    # # - name: Start admin server
     #   ansible.builtin.service:
     #     name: weblogic-server
     #     enabled: yes
 
-    - name: Start Admin server 
+    - name: Start Admin server
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
