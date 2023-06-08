@@ -35,6 +35,7 @@
       ansible.builtin.service:
         name: weblogic-healthcheck
         state: started
+        enabled: yes
 
     - name: Check healthcheck status
       ansible.builtin.shell: service weblogic-healthcheck status
