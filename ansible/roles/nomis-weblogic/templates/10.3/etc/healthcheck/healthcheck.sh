@@ -8,7 +8,6 @@ while true
 do
     /etc/init.d/weblogic-all healthcheck > /dev/null 2>&1
     status=$?
-    # echo "logging status: $status" | logger -p local3.info -t "healthcheck"
     if [ $status -eq 1 ]
     then
         if [ -f "/u01/tag/static/keepalive.htm" ]

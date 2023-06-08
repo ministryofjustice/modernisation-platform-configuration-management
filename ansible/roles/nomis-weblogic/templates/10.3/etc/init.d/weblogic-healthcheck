@@ -1,15 +1,11 @@
 #!/bin/bash
 #
 # weblogic-healthcheck        Control weblogic healthcheck file
-#
-# chkconfig: - 95 05
-# description: weblogic server
 
 # Source function library.
 . /etc/init.d/functions
 
 prog="weblogic-healthcheck"
-# healthcheck_script="/etc/healthcheck/healthcheck.sh"
 
 get_healthcheck_pid() {
   local pids
