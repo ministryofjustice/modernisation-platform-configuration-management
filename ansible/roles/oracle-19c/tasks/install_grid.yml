@@ -17,18 +17,6 @@
         - "{{ grid_response_file }}"
         - "{{ grid_install_script }}"
 
-    - name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-      amazon.aws.aws_s3:
-        bucket: "{{ s3_bucket }}"
-        object: "{{ s3_bucket_object }}/{{ item }}"
-        dest: "{{ stage }}/{{ item }}"
-        mode: get
-        overwrite: latest
-      loop:
-        - "{{ grid_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-
     - name: Unzip Oracle 19c Grid Infrastructure software
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: unzip "{{ stage }}/{{ grid_software }}" -d "{{ grid_home }}"

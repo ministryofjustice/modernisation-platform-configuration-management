@@ -1,7 +1,7 @@
 ---
 - name: Install oracle prerequisite rpms
   yum:
-    name: "{{ temp }}/{{ item }}"
+    name: "{{ stage }}/{{ item }}"
     state: present
     disable_gpg_check: true
   loop:
@@ -29,7 +29,7 @@
 
 - name: Clean up downloaded rpm's
   ansible.builtin.file:
-    path: "{{ temp }}/{{ item }}"
+    path: "{{ stage }}/{{ item }}"
     state: absent
   loop:
     - "{{ oracle_prereq_rpm }}"

@@ -3,7 +3,7 @@
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "{{ temp }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
   loop:
@@ -11,11 +11,11 @@
     - "{{ oracle_asmlib_rpm }}"
     - "{{ oracleasm_support_rpm }}"
 
-- name: Download database software
+- name: Download Oracle 19c Database software from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "{{ temp }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
   loop:
@@ -23,11 +23,11 @@
     - "{{ psu_patch }}"
     - "{{ opatch }}"
 
-- name: Download grid
+- name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket 
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "{{ temp }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
   loop:

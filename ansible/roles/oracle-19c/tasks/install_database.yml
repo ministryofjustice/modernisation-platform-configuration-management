@@ -17,18 +17,6 @@
         - "{{ database_response_file }}"
         - "{{ database_install_script }}"
 
-    - name: Download Oracle 19c Database software from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ s3_bucket }}"
-        object: "{{ s3_bucket_object }}/{{ item }}"
-        dest: "{{ stage }}/{{ item }}"
-        mode: get
-        overwrite: latest
-      loop:
-        - "{{ db_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-
     - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
