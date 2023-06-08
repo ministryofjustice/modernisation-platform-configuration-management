@@ -62,6 +62,8 @@ stop() {
   fi
   echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
   kill $PIDS
+  echo "Removing keepalive" | logger -p local3.info -t "$prog"
+  rm -f /u01/tag/static/keepalive.htm
   sleep 2
   if ! get_healthcheck_pid > /dev/null; then
     echo_success
