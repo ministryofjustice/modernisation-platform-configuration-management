@@ -8,16 +8,22 @@ while true
 do
     /etc/init.d/weblogic-all healthcheck > /dev/null 2>&1
     status=$?
-    echo "logging: $status" | logger -p local3.info -t "healthcheck"
+    # echo "logging status: $status" | logger -p local3.info -t "healthcheck"
     if [ $status -eq 1 ]
     then
-        echo "Removing keepalive" | logger -p local3.info -t "healthcheck"
-        rm -f /u01/tag/static/keepalive.htm
+        if [ -f "/u01/tag/static/keepalive.htm" ]
+        then
+            echo "Removing keepalive" | logger -p local3.info -t "healthcheck"
+            rm -f /u01/tag/static/keepalive.htm
+        fi
     else
-        echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "healthcheck"
-        keepalive > /u01/tag/static/keepalive.htm
-        chown oracle:oinstall /u01/tag/static/keepalive.htm
-        echo
+        if [ ! -f "/u01/tag/static/keepalive.htm" ]
+        then
+            echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "healthcheck"
+            keepalive > /u01/tag/static/keepalive.htm
+            chown oracle:oinstall /u01/tag/static/keepalive.htm
+            echo
+        fi
     fi
-    sleep 30
+    sleep 120
 done

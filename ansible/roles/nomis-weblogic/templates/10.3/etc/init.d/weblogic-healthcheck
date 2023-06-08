@@ -35,17 +35,22 @@ start() {
     echo
     return 0
   fi
+  echo "init.d starting $prog" | logger -p local3.info -t "$prog"
   if ! start_process; then
+    echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
     return 1
-  else 
-    start_process
-    PIDS=$(get_healthcheck_pid)
-    echo "Started healthcheck: $PIDS" | logger -p local3.info -t "$prog"
-    echo_success
-    echo
   fi
+  if ! get_healthcheck_pid > /dev/null; then
+    echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
+    echo_failure
+    echo
+    return 1
+  fi
+  echo "init.d started $prog" | logger -p local3.info -t "$prog"
+  echo_success
+  echo
 }
 
 stop() {
