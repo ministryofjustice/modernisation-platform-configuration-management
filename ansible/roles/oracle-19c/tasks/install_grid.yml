@@ -19,11 +19,27 @@
 
     - name: Unzip Oracle 19c Grid Infrastructure software
       become_user: "{{ oracle_install_user }}"
-      ansible.builtin.shell: unzip "{{ stage }}/{{ grid_software }}" -d "{{ grid_home }}"
+      ansible.builtin.shell: unzip -o "{{ stage }}/{{ grid_software }}" -d "{{ grid_home }}"
       async: 7200
-      poll: 60
+      poll: 0
+      register: grid_unzip_output
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
 
-    - name: Unzip psu patch software
+    - name: Wait grid unzip to finish
+      async_status:
+        jid: "{{ grid_unzip_output.ansible_job_id }}"
+      register: result
+      until: result.finished
+      retries: 240
+      delay: 30
+      become_user: root
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
+
+    - name: Unzip grid psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
@@ -44,9 +60,23 @@
       ansible.builtin.command:
         cmd: "{{ stage }}/{{ grid_install_script }}"
       register: grid_install_output
-      changed_when: "'Successfully Setup Software with warning(s).' not in grid_install_output.stdout"
       async: 7200
-      poll: 60
+      poll: 0
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
+
+    - name: Wait grid install to finish
+      async_status:
+        jid: "{{ grid_install_output.ansible_job_id }}"
+      changed_when: "'Successfully Setup Software with warning(s).' not in grid_install_output.stdout"
+      register: result
+      until: result.finished
+      retries: 240
+      delay: 30
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
 
     - name: Run orainstRoot script
       ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"

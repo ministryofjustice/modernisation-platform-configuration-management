@@ -23,7 +23,7 @@
       async: 7200
       poll: 60
 
-    - name: Unzip psu patch software
+    - name: Unzip database psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
