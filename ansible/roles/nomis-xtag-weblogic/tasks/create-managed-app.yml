@@ -102,18 +102,6 @@
         group: oinstall
         mode: 0744
 
-    - name: Stop nodemanager
-      become_user: oracle
-      ansible.builtin.shell: /home/oracle/admin/scripts/stopNodeManager.sh
-
-    - name: Stop adminserver
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-        nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
-
     - name: Stop managed server
       become_user: oracle
       ansible.builtin.shell: |
@@ -121,6 +109,18 @@
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
         nohup {{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
+
+    - name: Stop adminserver
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        nohup {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh &
+
+    - name: Stop nodemanager
+      become_user: oracle
+      ansible.builtin.shell: /home/oracle/admin/scripts/stopNodeManager.sh
 
   # block
   when: not weblogic_created_managed_app_check.stat.exists
