@@ -1,2 +1,5 @@
 append domain-search "{{ ansible_ec2_placement_region }}.compute.internal";
 append domain-search "{{ dns_zone_internal }}";
+{% for dns_search_domain in dns_search_domains -%}
+append domain-search "{{ dns_search_domain }}";
+{% endfor %}
