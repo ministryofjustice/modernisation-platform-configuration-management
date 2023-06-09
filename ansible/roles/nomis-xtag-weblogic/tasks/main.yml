@@ -14,32 +14,37 @@
     - import_tasks: packages.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_packages
 
     - import_tasks: users.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_users
 
     - import_tasks: swap.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_swap
 
     - import_tasks: install-jdk.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_install_jdk
 
     - import_tasks: oracle-limits-update.yml
       tags:
         - amibuild
-        - oracle-limits-changes
         - ec2provision
+        - oracle-limits-changes
 
     - import_tasks: install-server.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_install_server
 
     - import_tasks: patch-weblogic.yml
@@ -48,6 +53,7 @@
         weblogic_patch_id: 3NVW
       tags:
         - amibuild
+        - ec2provision
         - weblogic_patch_1
 
     - import_tasks: patch-weblogic.yml
@@ -56,6 +62,7 @@
         weblogic_patch_id: UEYM
       tags:
         - amibuild
+        - ec2provision
         - weblogic_patch_2
 
     - import_tasks: moj-admin-scripts.yml
@@ -66,10 +73,12 @@
     - import_tasks: create-xtag-domain.yml
       tags:
         - amibuild
+        - ec2provision
         - weblogic_create_domain
 
     - import_tasks: certificate-fix.yml
       tags:
+        - amibuild
         - ec2provision
         - weblogic_certificate_fix
 
@@ -77,14 +86,17 @@
         file: create-managed-app.yml
         apply:
           tags:
+            - amibuild
             - ec2provision
             - weblogic_create_managed_app
       tags:
+        - amibuild
         - ec2provision
         - weblogic_create_managed_app
 
     - import_tasks: service.yml
       tags:
+        - amibuild
         - ec2provision
         - weblogic_service
 
@@ -92,9 +104,11 @@
         file: setup-log-rotate.yml
         apply:
           tags:
+            - amibuild
             - ec2provision
             - weblogic_setup_log_rotate
       tags:
+        - amibuild
         - ec2provision
         - weblogic_setup_log_rotate
       loop_control:
