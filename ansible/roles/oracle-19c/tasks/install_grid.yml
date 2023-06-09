@@ -16,7 +16,7 @@
       loop:
         - "{{ grid_response_file }}"
         - "{{ grid_install_script }}"
-    
+
     - name: Unzip Oracle 19c Grid Infrastructure software
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.unarchive:
