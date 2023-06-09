@@ -4,13 +4,22 @@
     path: /etc/init.d/weblogic-healthcheck
   register: weblogic_healthcheck_installed_check
 
-- name: Copy init.d weblogic-healthcheck
+- name: create folder for healthcheck script
+  ansible.builtin.file:
+    path: "/etc/healthcheck"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Copy healthcheck files
   ansible.builtin.template:
     src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
   loop:
     - /etc/init.d/weblogic-healthcheck
+    - /etc/healthcheck/healthcheck.sh
 
 - name: Configure healthcheck
   block:
@@ -26,6 +35,7 @@
       ansible.builtin.service:
         name: weblogic-healthcheck
         state: started
+        enabled: yes
 
     - name: Check healthcheck status
       ansible.builtin.shell: service weblogic-healthcheck status

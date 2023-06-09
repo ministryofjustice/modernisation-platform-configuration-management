@@ -1,45 +1,95 @@
 #!/bin/bash
 #
-# weblogic-healthcheck        Control weblogic healthcheck file
+# weblogic-healthcheck        Startup healthcheck file
 #
 # chkconfig: - 95 05
-# description: weblogic server
+# description: weblogic healthcheck starting script
 
 # Source function library.
 . /etc/init.d/functions
 
 prog="weblogic-healthcheck"
 
-keepalive() {
-  echo '<HTML><BODY>keepalive.htm on {{ weblogic_servername }}</BODY></HTML>'
+get_healthcheck_pid() {
+  local pids
+  pids=$(pgrep -u root -f "healthcheck.sh$" | tr '\n' ' ' 2> /dev/null)
+  [[ -z "$pids" ]] && return 1
+  echo $pids
+}
+
+start_process() {
+  if [[ $(whoami) == "root" ]]; then
+    nohup /etc/healthcheck/healthcheck.sh 2>&1 | logger -p local3.info -t "$prog" &
+  else
+    echo -n "must be run as root"
+    return 1
+  fi
 }
 
 start() {
   echo -n $"Starting $prog: "
-  if [[ -e /u01/tag/static/keepalive.htm ]]; then
-    echo -n "file already exists"
+  if PIDS=$(get_healthcheck_pid); then
+    echo -n "healthcheck already running: $PIDS"
     echo_success
     echo
     return 0
   fi
-  echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "$prog"
-  keepalive > /u01/tag/static/keepalive.htm
-  chown oracle:oinstall /u01/tag/static/keepalive.htm
+  echo "init.d starting $prog" | logger -p local3.info -t "$prog"
+  if ! start_process; then
+    echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
+    echo_failure
+    echo
+    return 1
+  fi
+  if ! get_healthcheck_pid > /dev/null; then
+    echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
+    echo_failure
+    echo
+    return 1
+  fi
+  echo "init.d started $prog" | logger -p local3.info -t "$prog"
   echo_success
   echo
 }
 
 stop() {
   echo -n $"Stopping $prog: "
-  if [[ -e /u01/tag/static/keepalive.htm ]]; then
-    echo "Removing keepalive" | logger -p local3.info -t "$prog"
-    rm -f /u01/tag/static/keepalive.htm
+  if ! PIDS=$(get_healthcheck_pid); then
+    echo -n "Already stopped"
+    echo_success
+    echo
+    return 0
   fi
+  echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
+  kill $PIDS
+  echo "Removing keepalive" | logger -p local3.info -t "$prog"
+  rm -f /u01/tag/static/keepalive.htm
+  sleep 2
+  if ! get_healthcheck_pid > /dev/null; then
+    echo_success
+    echo
+    return 0
+  else
+    echo_failure
+    echo "init.d failed to kill $prog $PIDS" | logger -p local3.info -t "$prog"
+    return 1
+  fi
+}
+
+status() {
+  echo -n $"Status of $prog: "
+  if ! PIDS=$(get_healthcheck_pid); then
+    echo -n "process not found"
+    echo_failure
+    echo
+    return 1
+  fi
+  echo -n $PIDS
   echo_success
   echo
 }
 
-status() {
+keepalive() {
   RETVAL=0
   echo -n $"Status of $prog: "
   if ! curl -IsSfm 5 http://localhost:7777/keepalive.htm > /dev/null 2>&1; then
@@ -70,8 +120,11 @@ case "$1" in
   status)
     status
     ;;
+  keepalive)
+    keepalive
+    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop|restart|status|keepalive}"
     exit 3
 esac
 
