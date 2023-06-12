@@ -1,5 +1,5 @@
 ---
-- name: Fail if variables ot defined
+- name: Fail if variables not defined
   fail:
     msg: "Please run get-ec2-facts role to collect facts, and ensure db_backup_s3_bucket_name is defined"
   when: ansible_ec2_iam_instance_profile_role is not defined or db_backup_s3_bucket_name is not defined
