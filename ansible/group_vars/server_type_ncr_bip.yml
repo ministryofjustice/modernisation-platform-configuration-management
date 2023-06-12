@@ -1,0 +1,34 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+server_type_roles_list:
+  - get-ec2-facts
+  - set-ec2-hostname
+  - time
+  - combined-reporting-bip
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+packages_yum_install:
+  - libstdc++.i686
+  - libstdc++.x86_64
+  - glibc.i686
+  - glibc.x86_64
+  - libX11.i686
+  - libX11.x86_64
+  - libXext.i686
+  - libXext.x86_64
+  - expat.i686
+  - expat.x86_64
+  - libgcc.i686
+  - libgcc.x86_64
+  - libXcursor.i686
+  - libXcursor.x86_64
+  - libXrender.i686
+  - libXrender.x86_64
+  - libXfixes.i686
+  - libXfixes.x86_64
+  - libxcb.i686
+  - libxcb.x86_64
+  - libXau.i686
+  - libXau.x86_64
+  - xz-libs.i686
