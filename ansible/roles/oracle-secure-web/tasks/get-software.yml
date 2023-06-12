@@ -13,8 +13,8 @@
 
 - name: Get install files
   amazon.aws.aws_s3:
-    bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "oracle-secure-web/{{ item }}"
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
     dest: "{{ osw_temp_dir }}/{{ item }}"
     mode: get
     overwrite: latest
