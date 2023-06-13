@@ -32,7 +32,7 @@
   become_user: oracle
   ansible.builtin.lineinfile:
     path: "{{ database_home }}/dbs/osbws.ora"
-    regexp: '^OSB_WS_BUCKET='
+    regexp: "^OSB_WS_BUCKET="
     line: "OSB_WS_BUCKET={{ db_backup_s3_bucket_name }}"
     create: yes
 
