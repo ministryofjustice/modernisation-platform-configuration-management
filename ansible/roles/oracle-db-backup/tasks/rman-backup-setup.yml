@@ -1,0 +1,30 @@
+---
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - /home/oracle/admin/rman_scripts
+
+- name: copy scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/admin/rman_scripts/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop: 
+    - rman_backup.sh
+
+- name: create rman_backup
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    weekday: "{{ item.weekday }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    user: root
+    job: "{{ item.job }}"
+  loop: "{{ rman_backup_cron }}"
