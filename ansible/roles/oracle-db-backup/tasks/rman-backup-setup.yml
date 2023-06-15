@@ -17,7 +17,7 @@
     group: oinstall
     mode: "0700"
   loop: 
-    - rman_backup.sh
+    - "{{ rman_backup_script }}"
 
 - name: create rman_backup
   ansible.builtin.cron:

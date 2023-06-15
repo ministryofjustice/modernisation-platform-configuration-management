@@ -2,3 +2,4 @@
 - import_tasks: rman-backup-setup.yml
   tags:
     - ec2provision
+  when: rman_backup_script|length > 0
