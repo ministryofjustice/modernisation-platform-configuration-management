@@ -1,0 +1,36 @@
+---
+- name: Download oracle prerequisite rpms
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ oracle_prereq_rpm }}"
+    - "{{ oracle_asmlib_rpm }}"
+    - "{{ oracleasm_support_rpm }}"
+
+- name: Download Oracle 19c Database software from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ db_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"
+
+- name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_bucket_object }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ grid_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"

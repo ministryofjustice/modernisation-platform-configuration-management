@@ -1,18 +1,7 @@
 ---
-- name: Download oracle prerequisite rpm's
-  amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
-    object: "{{ s3_bucket_object }}/{{ item }}"
-    dest: "/tmp/{{ item }}"
-    mode: get
-  loop:
-    - "{{ oracle_prereq_rpm }}"
-    - "{{ oracle_asmlib_rpm }}"
-    - "{{ oracleasm_support_rpm }}"
-
-- name: Install oracle prerequisite rpm's
+- name: Install oracle prerequisite rpms
   yum:
-    name: "/tmp/{{ item }}"
+    name: "{{ stage }}/{{ item }}"
     state: present
     disable_gpg_check: true
   loop:
@@ -32,23 +21,6 @@
   vars:
     selinux_state: permissive
 
-- name: Create new directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    state: directory
-    recurse: yes
-  loop:
-    - "{{ app_dir }}"
-    - "{{ grid_base }}"
-    - "{{ database_base }}"
-    - "{{ database_home }}"
-    - "{{ grid_home }}"
-    - "{{ temp }}"
-    - "{{ stage }}"
-    - "{{ stage}}/psu"
-
 - name: To resolve oracle issue CRS-10131 Failure to create named pipe /var/tmp/.oracle/npohasd
   ansible.builtin.file:
     path: /var/tmp
@@ -57,7 +29,7 @@
 
 - name: Clean up downloaded rpm's
   ansible.builtin.file:
-    path: "/tmp/{{ item }}"
+    path: "{{ stage }}/{{ item }}"
     state: absent
   loop:
     - "{{ oracle_prereq_rpm }}"

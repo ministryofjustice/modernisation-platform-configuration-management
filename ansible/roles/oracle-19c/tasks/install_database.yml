@@ -17,24 +17,14 @@
         - "{{ database_response_file }}"
         - "{{ database_install_script }}"
 
-    - name: Download Oracle 19c Database software from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ s3_bucket }}"
-        object: "{{ s3_bucket_object }}/{{ item }}"
-        dest: "{{ stage }}/{{ item }}"
-        mode: get
-      loop:
-        - "{{ db_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-
-    - name: Unzip Oracle 19c Grid Infrastructure software # Shell command added as unarchive doesn't support async
+    - name: Unzip Oracle 19c Database Infrastructure software # Shell command added as unarchive doesn't support async
+      become: true
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
       async: 7200
       poll: 60
 
-    - name: Unzip psu patch software
+    - name: Unzip database psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
@@ -51,11 +41,30 @@
         remote_src: yes
 
     - name: Install Oracle 19c db software and apply patches
+      become: true
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.command:
         cmd: "{{ stage }}/{{ database_install_script }}"
+      register: db_install_output
       async: 7200
-      poll: 60
+      poll: 0
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
+
+    - name: Wait for install Oracle 19c db software and apply patches to finish
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      async_status:
+        jid: "{{ db_install_output.ansible_job_id }}"
+      changed_when: "'Successfully Setup Software with warning(s).' not in result.stdout"
+      register: result
+      until: result.finished
+      retries: 240
+      delay: 30
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
 
     - name: run post install root script
       ansible.builtin.command: "{{ database_home }}/root.sh"
@@ -71,18 +80,6 @@
         path: "{{ oracle_externaljob_rdbms_path }}/{{ oracle_externaljob_file }}"
         regexp: "run_group = nobody"
         replace: "run_group = dba"
-
-    - name: Clean up {{ stage }} directory
-      ansible.builtin.file:
-        path: "{{ stage }}/{{ item }}"
-        state: absent
-      loop:
-        - "{{ database_response_file }}"
-        - "{{ database_install_script }}"
-        - "{{ db_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-        - "{{ stage }}/psu"
 
   # block
   when: not db_software_installed.stat.exists

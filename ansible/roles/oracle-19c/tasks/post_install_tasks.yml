@@ -20,3 +20,18 @@
     asmcmd spget > {{ temp }}/spfilelocation.txt
   become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
+
+- name: Clean up {{ stage }} directory
+  ansible.builtin.file:
+    path: "{{ stage }}/{{ item }}"
+    state: absent
+  loop:
+    - "{{ grid_response_file }}"
+    - "{{ grid_install_script }}"
+    - "{{ grid_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"
+    - "{{ stage }}/psu"
+    - "{{ database_response_file }}"
+    - "{{ database_install_script }}"
+    - "{{ db_software }}"
