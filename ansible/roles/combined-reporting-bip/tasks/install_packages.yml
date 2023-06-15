@@ -1,15 +1,17 @@
 ---
-- name: Add EPEL gpg key to yum
-  rpm_key:
-    key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
-    state: present
+- name: Get unrar installer
+  ansible.builtin.get_url:
+    src: "https://www.rarlab.com/rar/rarlinux-x64-621.tar.gz"
+    dest: "/tmp/rarlinux-x64-621.tar.gz"
 
-- name: Enable EPEL repository
-  yum:
-    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
-    state: present
+- name: Extract unrar
+  ansible.builtin.unarchive:
+    src: "/tmp/rarlinux-x64-621.tar.gz"
+    dest: "/tmp/"
+    remote_src: yes
 
-- name: Install unar
-  yum:
-    name: "unar"
-    state: present
+- name: Install unrar
+  ansible.builtin.shell:
+    cmd: "make"
+    chdir: "/tmp/rar/"
+    creates: "/tmp/rar/unar"
