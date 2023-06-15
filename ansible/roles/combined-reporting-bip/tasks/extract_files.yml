@@ -1,5 +1,6 @@
 ---
 # unpack the SAP BIP rar archive
 - name: Unpack the rar file
-  shell: unar x "{{ sap_unpack_base_directory }}/BIPLATS4303P_300-70002683_P1.EXE" "{{ sap_unpack_base_directory }}"
+  shell: "unrar x BIPLATS4303P_300-70002683_P1.EXE"
+  chdir: "{{ sap_unpack_base_directory }}"
   when: sap_unpack_base_directory is defined
