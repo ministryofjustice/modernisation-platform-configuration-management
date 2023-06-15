@@ -1,0 +1,7 @@
+---
+# unpack the SAP BIP rar archive
+- name: Unpack the rar file
+  shell: unrar x "{{ sap_unpack_base_directory }}/{{ item|basename }}" "{{ sap_unpack_base_directory }}"
+  with_fileglob:
+    - "{{ sap_unpack_base_directory }}/*.EXE"
+  when: sap_unpack_base_directory is defined

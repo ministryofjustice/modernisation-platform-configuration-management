@@ -1,4 +1,10 @@
 ---
+- name: Create directory to unpack BIP files
+  file:
+    path: "{{ sap_unpack_base_directory }}"
+    state: directory
+    mode: 0755
+
 - name: Get list of BIP files from S3
   aws_s3:
     mode: list
@@ -12,5 +18,5 @@
     mode: get
     bucket: "nomis-combined-reporting-bip-packages20230612143115114600000001"
     object: "{{ item }}"
-    dest: "~/BIP/{{ item|basename }}"
+    dest: "{{ sap_unpack_base_directory }}/{{ item|basename }}"
   with_items: "{{ s3_bucket_items.s3_keys }}"
