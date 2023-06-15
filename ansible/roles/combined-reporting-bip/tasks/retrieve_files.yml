@@ -8,7 +8,7 @@
 - name: Get list of BIP files from S3
   aws_s3:
     mode: list
-    bucket: "nomis-combined-reporting-bip-packages20230612143115114600000001"
+    bucket: "{{ bip_bucket_name }}"
     prefix: "BIP/"
     marker: "BIP/"
   register: s3_bucket_items
@@ -16,7 +16,7 @@
 - name: Download files from S3
   aws_s3:
     mode: get
-    bucket: "nomis-combined-reporting-bip-packages20230612143115114600000001"
+    bucket: "{{ bip_bucket_name }}"
     object: "{{ item }}"
     dest: "{{ sap_unpack_base_directory }}/{{ item|basename }}"
   with_items: "{{ s3_bucket_items.s3_keys }}"
