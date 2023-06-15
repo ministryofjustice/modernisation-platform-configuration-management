@@ -19,7 +19,7 @@
   loop:
     - "{{ rman_backup_script }}"
 
-- name: create rman_backup
+- name: setup rman backup root cron
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
