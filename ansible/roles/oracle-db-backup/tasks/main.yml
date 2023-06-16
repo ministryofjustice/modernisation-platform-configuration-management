@@ -3,3 +3,8 @@
   tags:
     - ec2provision
   when: rman_backup_script|length > 0
+
+- import_tasks: rman-adhoc-backup.yml
+  tags:
+    - rman-adhoc-backup
+    - never
