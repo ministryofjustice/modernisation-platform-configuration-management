@@ -1,20 +1,12 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
-# what is this? can see no reference to this elsewhere
-# use_name_as_hostname: true
-
 users_and_groups_system:
   - name: oracle
     group: oinstall
     groups:
       - dba
       - wheel
-
-# No extra packages needed, these are present in the base AMI
-# ami_packages:
-# - zip-3.0-23.el8
-# - git
 
 ami_roles_list:
   - users-and-groups # Add oracle user and associated groups
