@@ -1,0 +1,82 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+
+# what is this? can see no reference to this elsewhere
+# use_name_as_hostname: true
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+# No extra packages needed, these are present in the base AMI
+# ami_packages:
+# - zip-3.0-23.el8
+# - git
+
+ami_roles_list:
+  - users-and-groups # Add oracle user and associated groups
+  - sudoers
+  - get-ec2-facts # e.g. populate var ec2 metadata, instance and tag info fact called ec2
+  # - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
+  # - domain-search # for ec2provision and ec2patch only
+  - disable-ipv6 # disable ipv6 in sysctl
+  - disable-firewall
+  - packages # Perform any updates to existing if there are no new packages to install
+  # - amazon-ssm-agent # for ec2patch only (if version has changed)
+  - disks
+  # - script-exporter
+  - oracle-19c
+  # - oracle-db-monitoring
+  # - oracle-secure-web
+  # - db-restore
+
+ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
+packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages | default([])) }}"
+
+# don't update ALL packages on build as we need
+packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
+
+# Downloading Oracle packages
+s3_bucket: mod-platform-image-artefact-bucket20230203091453221500000001
+s3_bucket_object: hmpps/oracle-19c-software
+
+# Storage: volumes, partitioning and mounting
+disks_partition:
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdi
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdj
+    oracle_group: flash
+    oracle_label: FLASH01
+  - ebs_device_name: /dev/sdk
+    oracle_group: flash
+    oracle_label: FLASH02
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
