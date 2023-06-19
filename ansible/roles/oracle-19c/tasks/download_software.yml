@@ -1,8 +1,8 @@
 ---
 - name: Download oracle prerequisite rpms
   amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
-    object: "{{ s3_bucket_object }}/{{ item }}"
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
     dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
@@ -13,8 +13,8 @@
 
 - name: Download Oracle 19c Database software from S3 bucket
   amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
-    object: "{{ s3_bucket_object }}/{{ item }}"
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
     dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
@@ -25,8 +25,8 @@
 
 - name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket
   amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
-    object: "{{ s3_bucket_object }}/{{ item }}"
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
     dest: "{{ stage }}/{{ item }}"
     mode: get
     overwrite: latest
