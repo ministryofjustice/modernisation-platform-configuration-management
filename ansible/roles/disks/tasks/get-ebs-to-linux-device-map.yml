@@ -36,10 +36,24 @@
 
 - name: Set nvme device mapping
   block:
+
+    # Sometimes ansible_facts.devices contains a serial field corresponding to
+    # the volume ID.  Sometimes not.  If not, we extract it from the links.ids
+    - name: Set nvme fact - append serial number part 1
+      set_fact:
+        linux_devices_with_serial: "{{ ansible_facts.devices | dict2items | selectattr('value.model', 'defined') | selectattr('value.model', 'equalto', 'Amazon Elastic Block Store') | items2dict }}"
+
+    - name: Set nvme fact - append serial number part 2
+      set_fact:
+        linux_devices_with_serial: "{{ {item.key: { 'serial': item.value.links.ids | first | regex_replace('^nvme-Amazon_Elastic_Block_Store_','') }} | combine(linux_devices_with_serial, recursive=true) }}"
+      loop_control:
+        label: "{{ item.key }}"
+      loop: "{{ linux_devices_with_serial | dict2items | rejectattr('value.serial', 'defined') }}"
+
     - name: Set nvme fact - group by volume id and serial number
       set_fact:
         ebs_devices_by_volume_id: "{{ dict(ec2.block_device_mappings | groupby('ebs.volume_id')) }}"
-        linux_devices_by_serial: "{{ dict(ansible_facts.devices | dict2items | selectattr('value.serial', 'defined') | groupby('value.serial')) }}"
+        linux_devices_by_serial: "{{ dict(linux_devices_with_serial | dict2items | selectattr('value.serial', 'defined') | groupby('value.serial')) }}"
 
     - name: Set nvme fact - replace linux serial number keys with volume id
       set_fact:
