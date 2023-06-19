@@ -19,4 +19,17 @@
     bucket: "{{ bip_bucket_name }}"
     object: "{{ item }}"
     dest: "{{ sap_unpack_base_directory }}/{{ item|basename }}"
+    overwrite: false
   with_items: "{{ s3_bucket_items.s3_keys }}"
+
+- name: Hacky rename
+  shell: |
+    for f in *;
+      do
+        e="${f##*.}";
+        b="${f%.*}";
+        mv -n "$f" "${b}.${e,,}";
+      done
+  args:
+    chdir: "{{ sap_unpack_base_directory }}"
+    executable: /bin/bash
