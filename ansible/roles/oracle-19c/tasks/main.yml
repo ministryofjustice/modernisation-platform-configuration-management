@@ -1,12 +1,7 @@
 ---
-- name: setup oracle user and groups
-  import_role:
-    name: common
-    tasks_from: oracle_user.yml
+- import_tasks: prereqs.yml
   tags:
-    - oracle_19c_download
-    - pre_install
-    - oracle_19c_install
+    - always
 
 - name: Create new directories
   ansible.builtin.file:

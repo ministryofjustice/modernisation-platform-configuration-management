@@ -1,0 +1,32 @@
+---
+# create via users-and-groups role before running this role
+- name: Check oracle user already exists
+  ansible.builtin.getent:
+    database: passwd
+    key: oracle
+
+- name: Set data and flash disk facts
+  set_fact:
+    oracle_data_disks: "{{ disks_partition | default([]) | selectattr('oracle_group', 'defined') | selectattr('oracle_group', 'equalto', 'data') }}"
+    oracle_flash_disks: "{{ disks_partition | default([]) | selectattr('oracle_group', 'defined') | selectattr('oracle_group', 'equalto', 'flash') }}"
+
+- name: Set data and flash disk group facts
+  set_fact:
+    oracle_data_diskgroup: "{{ oracle_data_disks | map(attribute='oracle_label') | map('regex_replace', '(^.*$)', 'ORCL:\\1') | join(',') }}"
+    oracle_flash_diskgroup: "{{ oracle_flash_disks | map(attribute='oracle_label') | map('regex_replace', '(^.*$)', 'ORCL:\\1') | join(',') }}"
+
+- name: Fail when data disks are not defined
+  fail:
+    msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one data disk"
+  when: oracle_data_diskgroup|length == 0
+
+- name: Fail when flash disks are not defined
+  fail:
+    msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one flash disk"
+  when: oracle_flash_diskgroup|length == 0
+
+- name: Fail if drive map missing
+  fail:
+    msg: "Missing linux drive mapping, ensure device exists on device"
+  when: not ebs_to_linux_device_map[item.ebs_device_name] is defined
+  loop: "{{ disks_partition | selectattr('oracle_label', 'defined') }}"
