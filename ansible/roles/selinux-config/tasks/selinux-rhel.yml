@@ -1,18 +1,25 @@
 ---
 # not using ansible.posix.selinux as requires selinux requirement which
 # doesn't seem to work when python installed in /usr/local/bin
-- name: Get SELinux state
-  ansible.builtin.shell: |
-    grep "^SELINUX=" /etc/selinux/config | cut -d= -f2 | cut -d\  -f1
-  changed_when: false
-  check_mode: false
-  register: selinux_mode
-
-- name: Set SELinux state
+- name: Set SELinux config
   ansible.builtin.lineinfile:
     path: /etc/selinux/config
     regexp: "^SELINUX="
     line: SELINUX={{ selinux_state }}
+
+- name: Set SELinux state
+  ansible.builtin.shell: |
+    setenforce {{ selinux_state }}
+    exit 0
+
+- name: Get SELinux state
+  ansible.builtin.shell: |
+    getenforce
+  changed_when: false
+  check_mode: false
+  register: selinux_mode
+
+- name: Display reboot notice
+  debug:
+    msg: "Reboot required to update selinux state from {{ selinux_mode.stdout }} to {{ selinux_state }}"
   when: selinux_mode.stdout != selinux_state
-  notify:
-    - Display reboot notice
