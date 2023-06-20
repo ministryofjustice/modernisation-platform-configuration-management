@@ -45,40 +45,48 @@
     - name: Run oracle grid install
       become: true
       become_user: "{{ oracle_install_user }}"
-      ansible.builtin.command:
-        cmd: "{{ stage }}/{{ grid_install_script }}"
+      ansible.builtin.shell: |
+        main() {
+          echo {{ stage }}/{{ grid_install_script }}
+          {{ stage }}/{{ grid_install_script }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
       register: grid_install_output
-      async: 7200
-      poll: 0
-      vars:
-        ansible_remote_tmp: /tmp/.ansible
-        ansible_async_dir: /tmp/.ansible_async
-
-    - name: Wait grid install to finish
-      become: true
-      become_user: "{{ oracle_install_user }}"
-      async_status:
-        jid: "{{ grid_install_output.ansible_job_id }}"
-      changed_when: "'Successfully Setup Software with warning(s).' not in result.stdout"
-      register: result
-      until: result.finished
-      retries: 240
-      delay: 30
+      async: 1800
+      poll: 30
       vars:
         ansible_remote_tmp: /tmp/.ansible
         ansible_async_dir: /tmp/.ansible_async
 
     - name: Run orainstRoot script
-      ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"
-      become_user: root
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ oracle_inventory }}/orainstRoot.sh
+          {{ oracle_inventory }}/orainstRoot.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
     - name: Run root script
-      ansible.builtin.command: "{{ grid_home }}/root.sh"
-      become_user: root
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ grid_home }}/root.sh
+          {{ grid_home }}/root.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
     - name: Run configuration script
-      ansible.builtin.command:
-        cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent
+          {{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
       become: true
       become_user: "{{ oracle_install_user }}"
 

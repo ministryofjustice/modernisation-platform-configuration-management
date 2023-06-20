@@ -14,10 +14,9 @@
     name: policycoreutils-python-utils
     state: present
 
-- name: Disable selinux
+- name: Set selinux to permissive mode
   import_role:
-    name: common
-    tasks_from: selinux.yml
+    name: selinux-config
   vars:
     selinux_state: permissive
 

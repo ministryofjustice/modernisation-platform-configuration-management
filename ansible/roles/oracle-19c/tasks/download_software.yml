@@ -1,5 +1,5 @@
 ---
-- name: Download oracle prerequisite rpms
+- name: Download oracle prerequisite rpms from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
@@ -23,7 +23,7 @@
     - "{{ psu_patch }}"
     - "{{ opatch }}"
 
-- name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket
+- name: Download Oracle 19c Grid Infrastructure install files from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
