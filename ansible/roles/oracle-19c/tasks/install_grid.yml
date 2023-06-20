@@ -29,7 +29,6 @@
         - "{{ grid_install_script }}"
 
     - name: Unzip Oracle 19c Grid Infrastructure software
-      become_user: "{{ oracle_install_user }}"
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ grid_software }}"
         dest: "{{ grid_home }}"

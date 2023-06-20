@@ -28,12 +28,13 @@
         - "{{ database_response_file }}"
         - "{{ database_install_script }}"
 
-    - name: Unzip Oracle 19c Database Infrastructure software # Shell command added as unarchive doesn't support async
-      become: true
-      become_user: "{{ oracle_install_user }}"
-      ansible.builtin.shell: unzip "{{ stage }}/{{ db_software }}" -d "{{ database_home }}"
-      async: 1800
-      poll: 60
+    - name: Unzip Oracle 19c Database Infrastructure software
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ db_software }}"
+        dest: "{{ database_home }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
 
     - name: Unzip database psu patch software
       ansible.builtin.unarchive:
