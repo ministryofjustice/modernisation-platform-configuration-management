@@ -53,20 +53,15 @@
         remote_src: yes
 
     - name: Run oracle grid install
-      become: true
-      become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         main() {
           echo {{ stage }}/{{ grid_install_script }}
-          {{ stage }}/{{ grid_install_script }}
+          su - oracle -c {{ stage }}/{{ grid_install_script }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       register: grid_install_output
       async: 1800
       poll: 30
-      vars:
-        ansible_remote_tmp: /tmp/.ansible
-        ansible_async_dir: /tmp/.ansible_async
 
     - name: Run orainstRoot script
       ansible.builtin.shell: |
@@ -94,11 +89,9 @@
         PATH=$PATH:/usr/local/bin
         main() {
           echo {{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent
-          {{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent
+          sudo su - oracle -c "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
-      become: true
-      become_user: "{{ oracle_install_user }}"
 
   # block
   when: not grid_software_installed.stat.exists
