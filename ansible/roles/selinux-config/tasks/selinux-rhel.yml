@@ -22,4 +22,4 @@
 - name: Display reboot notice
   debug:
     msg: "Reboot required to update selinux state from {{ selinux_mode.stdout }} to {{ selinux_state }}"
-  when: selinux_mode.stdout != selinux_state
+  when: selinux_mode.stdout|lower != selinux_state|lower
