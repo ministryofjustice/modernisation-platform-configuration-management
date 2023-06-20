@@ -6,6 +6,17 @@
 
 - name: Install oracle 19c Grid Infrastructure
   block:
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+      loop:
+        - "{{ stage }}/psu"
+        - "{{ grid_home }}"
+
     - name: Create response files
       template:
         src: "{{ item }}.j2"
@@ -34,7 +45,7 @@
         group: "{{ oracle_install_group }}"
         remote_src: yes
 
-    - name: Upgrade OPatch in grid home
+    - name: Unzip OPatch in grid home
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ opatch }}"
         dest: "{{ grid_home }}"

@@ -1,4 +1,19 @@
 ---
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ temp }}"
+    - "{{ stage }}"
+  tags:
+    - amibuild
+    - oracle_19c_download
+    - oracle_19c_create_dirs
+
 - name: Download oracle prerequisite rpms from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"

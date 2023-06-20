@@ -6,7 +6,18 @@
 
 - name: Install Oracle 19c database software
   block:
-    - name: create response file
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+      loop:
+        - "{{ stage }}/psu"
+        - "{{ database_home }}"
+
+    - name: Create response file
       template:
         src: "{{ item }}.j2"
         dest: "{{ stage }}/{{ item }}"
@@ -32,7 +43,7 @@
         group: "{{ oracle_install_group }}"
         remote_src: yes
 
-    - name: Upgrade OPatch on database home
+    - name: Unzip OPatch on database home
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ opatch }}"
         dest: "{{ database_home }}"
