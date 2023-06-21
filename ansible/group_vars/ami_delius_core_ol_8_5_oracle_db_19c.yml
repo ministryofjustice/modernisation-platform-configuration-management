@@ -30,11 +30,11 @@ ami_roles_list:
   # - oracle-secure-web
   # - db-restore
 
+ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
 packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages | default([])) }}"
-
-ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 
 # don't update ALL packages on build as we need
 packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
