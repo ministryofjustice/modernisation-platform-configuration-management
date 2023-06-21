@@ -36,7 +36,6 @@
 
 - name: Set nvme device mapping
   block:
-
     # Sometimes ansible_facts.devices contains a serial field corresponding to
     # the volume ID.  Sometimes not.  If not, we extract it from the links.ids
     - name: Set nvme fact - append serial number part 1
