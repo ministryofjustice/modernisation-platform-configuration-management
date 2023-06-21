@@ -45,7 +45,7 @@
   ansible.builtin.command: oracleasm listdisks
   check_mode: false
   changed_when: false
-  register: asm_disks # used in grid_install.rsp.j2 template
+  register: asm_disks
 
 - name: Check ASM disks all there
   ansible.builtin.assert:
