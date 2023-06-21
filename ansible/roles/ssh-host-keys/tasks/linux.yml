@@ -1,0 +1,10 @@
+---
+- name: Generating SSH hostkeys
+  ansible.builtin.shell: ssh-keygen -A
+  register: ssh_keygen
+  changed_when: ssh_keygen.stdout|length > 0
+
+- name: Print ssh-keygen output if any keys generated
+  ansible.builtin.debug:
+    msg: "{{ ssh_keygen.stdout }}"
+  when: ssh_keygen.stdout|length > 0

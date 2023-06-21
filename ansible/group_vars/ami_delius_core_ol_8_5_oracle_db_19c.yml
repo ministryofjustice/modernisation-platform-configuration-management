@@ -1,9 +1,6 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
-# what is this? can see no reference to this elsewhere
-# use_name_as_hostname: true
-
 users_and_groups_system:
   - name: oracle
     group: oinstall
@@ -41,10 +38,6 @@ packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages |
 
 # don't update ALL packages on build as we need
 packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
-
-# Downloading Oracle packages
-s3_bucket: mod-platform-image-artefact-bucket20230203091453221500000001
-s3_bucket_object: hmpps/oracle-19c-software
 
 # Storage: volumes, partitioning and mounting
 disks_partition:

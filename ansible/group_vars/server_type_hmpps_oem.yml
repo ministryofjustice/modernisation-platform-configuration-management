@@ -1,5 +1,5 @@
 ---
-ansible_python_interpreter: /usr/local/bin/python3.9
+ansible_python_interpreter: /usr/bin/python3.9
 
 users_and_groups_system:
   - name: oracle
@@ -45,11 +45,13 @@ disks_mount:
 server_type_roles_list:
   - users-and-groups
   - sudoers
+  - ssh-host-keys
   - disks
   - message-of-the-day
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
+  - oracle-19c
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
