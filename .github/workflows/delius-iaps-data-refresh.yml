@@ -26,7 +26,7 @@ jobs:
         run: |
           snapshot_identifier=$(aws rds describe-db-snapshots \
             --snapshot-type "manual" \
-            --db-instance-identifier "delius-iaps-production-database" \
+            --db-instance-identifier "iaps \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
             --output text)
           if [ -z "$snapshot_identifier" ]; then
