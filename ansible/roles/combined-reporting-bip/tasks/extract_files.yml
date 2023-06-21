@@ -1,5 +1,6 @@
 ---
 # unpack the SAP BIP rar archive
+
 - name: Unpack the install files
   block:
     - name: Unpack the rar file
@@ -11,7 +12,7 @@
     - name: Untar the unpacked archive
       ansible.builtin.unarchive:
         src: "{{ sap_unpack_base_directory }}/BISERVONE.tgz"
-        dest: "{{ sap_unpack_base_directory }}"
+        dest: "{{ sap_extraction_directory }}"
         remote_src: yes
       when: sap_unpack_base_directory is defined
   rescue:

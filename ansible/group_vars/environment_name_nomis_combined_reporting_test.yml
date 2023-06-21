@@ -14,6 +14,8 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
+  - make
+  - nano
   - libstdc++.i686
   - libstdc++.x86_64
   - glibc.i686
@@ -26,6 +28,8 @@ packages_yum_install:
   - expat.x86_64
   - libgcc.i686
   - libgcc.x86_64
+  - libnsl.i686
+  - libxcrypt.i686
   - libXcursor.i686
   - libXcursor.x86_64
   - libXrender.i686
