@@ -3,6 +3,15 @@
   tags:
     - always
 
+- name: Set selinux to permissive mode
+  import_role:
+    name: selinux-config
+  vars:
+    selinux_state: permissive
+  tags:
+    - amibuild
+    - oracle_db_selinux_permissive
+
 - import_tasks: install-base-software.yml
   tags:
     - amibuild
@@ -79,3 +88,12 @@
   tags:
     - ec2provision
     - oracle_db_reconfigure_has
+
+- name: Set selinux to enforcing mode
+  import_role:
+    name: selinux-config
+  vars:
+    selinux_state: enforcing
+  tags:
+    - ec2provision
+    - oracle_db_selinux_enforcing
