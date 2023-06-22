@@ -1,4 +1,14 @@
 ---
+- name: Create oracle directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  loop:
+    - /u01/stage
+    - /u01/app/oraInventory
+    - /u01/app/oracle
+
 - name: Create directory to unpack BIP files
   file:
     path: "{{ sap_unpack_base_directory }}"
