@@ -1,9 +1,4 @@
 ---
-- name: Check oracle user already exists
-  ansible.builtin.getent:
-    database: passwd
-    key: oracle
-
 - name: Copy oracle bash profile
   ansible.builtin.template:
     src: ".{{ item }}"

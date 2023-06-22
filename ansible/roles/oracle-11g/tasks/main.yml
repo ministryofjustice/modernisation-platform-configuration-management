@@ -89,6 +89,11 @@
     - ec2provision
     - oracle_db_reconfigure_has
 
+- import_tasks: cleanup.yml
+  tags:
+    - ec2provision
+    - oracle_db_cleanup
+
 - name: Set selinux to enforcing mode
   import_role:
     name: selinux-config
