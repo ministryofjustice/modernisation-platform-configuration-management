@@ -1,8 +1,4 @@
 ---
-- name: Debug flash disk config
-  debug:
-    var: oracle_flash_diskgroup_sql
-
 # If you run this when FLASH group already created, the sql will fail
 # but exit code is still zero, i.e. the step will show as successful
 - name: Add FLASH disk group

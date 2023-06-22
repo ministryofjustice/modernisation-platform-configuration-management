@@ -1,7 +1,7 @@
 ---
 - name: Install ASM packages
   ansible.builtin.yum:
-    name: kmod-oracleasm # note, 2 other required packages are installed as part of pre_install_tasks.yml
+    name: kmod-oracleasm
     state: present
     enablerepo: rhel-7-server-rhui-optional-rpms
 
