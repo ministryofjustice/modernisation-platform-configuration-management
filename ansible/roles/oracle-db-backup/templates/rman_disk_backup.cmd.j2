@@ -1,0 +1,7 @@
+backup as compressed backupset database format '{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_db_%d_%U';
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+sql 'alter system archive log current';
+backup archivelog all format '{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_al_%d_%U';
+backup current controlfile format '{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_cf_%d_%U';
+backup spfile format '{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_sp_%d_%U';

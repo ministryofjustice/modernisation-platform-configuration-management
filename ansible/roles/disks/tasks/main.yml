@@ -13,6 +13,7 @@
   tags:
     - amibuild
     - ec2provision
+    - ec2patch
     - disks_partition
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and disks_partition is defined
 
@@ -37,6 +38,7 @@
   tags:
     - amibuild
     - ec2provision
+    - ec2patch
     - disks_mount
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and disks_mount is defined
 

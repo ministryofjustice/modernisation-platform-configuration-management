@@ -6,6 +6,17 @@
 
 - name: Install oracle 19c Grid Infrastructure
   block:
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+      loop:
+        - "{{ stage }}/psu"
+        - "{{ grid_home }}"
+
     - name: Create response files
       template:
         src: "{{ item }}.j2"
@@ -17,24 +28,15 @@
         - "{{ grid_response_file }}"
         - "{{ grid_install_script }}"
 
-    - name: Copy Oracle 19c Grid Infrastructure install files from s3 bucket # this relies on the remote machine having correct IAM Role assigned
-      amazon.aws.aws_s3:
-        bucket: "{{ s3_bucket }}"
-        object: "{{ s3_bucket_object }}/{{ item }}"
-        dest: "{{ stage }}/{{ item }}"
-        mode: get
-      loop:
-        - "{{ grid_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-
     - name: Unzip Oracle 19c Grid Infrastructure software
-      become_user: "{{ oracle_install_user }}"
-      ansible.builtin.shell: unzip "{{ stage }}/{{ grid_software }}" -d "{{ grid_home }}"
-      async: 7200
-      poll: 60
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ grid_software }}"
+        dest: "{{ grid_home }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
 
-    - name: Unzip psu patch software
+    - name: Unzip grid psu patch software
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ psu_patch }}"
         dest: "{{ stage }}/psu"
@@ -42,7 +44,7 @@
         group: "{{ oracle_install_group }}"
         remote_src: yes
 
-    - name: Upgrade OPatch in grid home
+    - name: Unzip OPatch in grid home
       ansible.builtin.unarchive:
         src: "{{ stage }}/{{ opatch }}"
         dest: "{{ grid_home }}"
@@ -51,38 +53,45 @@
         remote_src: yes
 
     - name: Run oracle grid install
-      become_user: "{{ oracle_install_user }}"
-      ansible.builtin.command:
-        cmd: "{{ stage }}/{{ grid_install_script }}"
+      ansible.builtin.shell: |
+        main() {
+          echo {{ stage }}/{{ grid_install_script }}
+          su - oracle -c {{ stage }}/{{ grid_install_script }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
       register: grid_install_output
-      changed_when: "'Successfully Setup Software with warning(s).' not in grid_install_output.stdout"
-      async: 7200
-      poll: 60
+      async: 1800
+      poll: 30
 
     - name: Run orainstRoot script
-      ansible.builtin.command: "{{ oracle_inventory }}/orainstRoot.sh"
-      become_user: root
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ oracle_inventory }}/orainstRoot.sh
+          {{ oracle_inventory }}/orainstRoot.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
     - name: Run root script
-      ansible.builtin.command: "{{ grid_home }}/root.sh"
-      become_user: root
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ grid_home }}/root.sh
+          {{ grid_home }}/root.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
     - name: Run configuration script
-      ansible.builtin.command:
-        cmd: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
-      become_user: "{{ oracle_install_user }}"
-
-    - name: Clean up {{ stage }} directory
-      ansible.builtin.file:
-        path: "{{ stage }}/{{ item }}"
-        state: absent
-      loop:
-        - "{{ grid_response_file }}"
-        - "{{ grid_install_script }}"
-        - "{{ grid_software }}"
-        - "{{ psu_patch }}"
-        - "{{ opatch }}"
-        - "{{ stage }}/psu"
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          echo {{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent
+          sudo su - oracle -c "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ stage }}/{{ grid_response_file }} -silent"
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
   # block
   when: not grid_software_installed.stat.exists

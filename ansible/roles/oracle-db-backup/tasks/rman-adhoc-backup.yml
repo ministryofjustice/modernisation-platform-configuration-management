@@ -1,0 +1,96 @@
+---
+- name: Fail if db_name is not defined
+  fail:
+    msg: "Please define db_name variable"
+  when: db_name is not defined
+
+- name: Set backup directory fact
+  set_fact:
+    adhoc_stage: "{{ rman_backup_location }}/adhoc"
+    adhoc_backup_dir: "{{ rman_backup_location }}/adhoc/{{ db_name }}/{{ adhoc_backup_label }}"
+    adhoc_s3_dir: "adhoc/{{ db_name }}/{{ adhoc_backup_label }}"
+
+- name: Debug backup info
+  debug:
+    msg: "Backing up {{ db_name }} to {{ adhoc_backup_dir }}"
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: u=rwx,g=rxs,o=rx
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ adhoc_stage }}"
+    - "{{ adhoc_backup_dir }}"
+  when: "'rman' in rman_adhoc_backup_control"
+
+- name: Create rman backup script
+  template:
+    src: rman_disk_backup.cmd.j2
+    dest: "{{ adhoc_stage }}/rman_backup.cmd"
+    owner: "oracle"
+    group: "dba"
+    mode: "0700"
+  when: "'rman' in rman_adhoc_backup_control"
+
+- name: Take rman backup
+  block:
+    - name: Run rman backup script
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          source oraenv <<< {{ db_name }}
+          rman target / cmdfile="{{ adhoc_stage }}/rman_backup.cmd" log="{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_db_backup.log"
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      async: 43200
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Take standby controlfile backup for HA creation
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          source oraenv <<< {{ db_name }}
+          rman target / log="{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_db_backup.log" <<< "backup current controlfile for standby  format '{{ adhoc_backup_dir }}/{{ adhoc_backup_label }}_al_%d_%U';"
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      when: adhoc_backup_for == "HA"
+
+    - name: Copy password file
+      ansible.builtin.shell: |
+        source oraenv <<< {{ db_name }}
+        cp $ORACLE_HOME/dbs/orapw{{ db_name }} {{ adhoc_backup_dir }}/.
+
+  # block
+  become_user: oracle
+  environment: "{{ db_env }}"
+  when: "'rman' in rman_adhoc_backup_control"
+
+- name: Get backup files
+  ansible.builtin.find:
+    paths: "{{ adhoc_backup_dir }}"
+    file_type: file
+  register: adhoc_backup_find
+  when: "'s3' in rman_adhoc_backup_control"
+
+- name: Upload to S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ db_backup_s3_bucket_name }}"
+    src: "{{ item.path }}"
+    object: "{{ adhoc_s3_dir }}/{{ item.path | basename }}"
+    mode: put
+    overwrite: latest
+  loop: "{{ adhoc_backup_find.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: "'s3' in rman_adhoc_backup_control"
+
+- name: Clean up backup directory
+  ansible.builtin.file:
+    path: "{{ adhoc_backup_dir }}"
+    state: absent
+  when: "'clean' in rman_adhoc_backup_control"

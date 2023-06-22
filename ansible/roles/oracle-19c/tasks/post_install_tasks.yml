@@ -1,22 +1,39 @@
 ---
-- name: enable selinux
+- name: Set SELinux to enforcing mode
   import_role:
-    name: common
-    tasks_from: selinux.yml
+    name: selinux-config
   vars:
-    status: enforcing
+    selinux_state: enforcing
 
-- name: add FLASH disk group
+- name: Add FLASH disk group
   ansible.builtin.shell: |
-    source oraenv <<< +ASM
-    sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk 'ORCL:FLASH01';"
+    main() {
+      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"'
+      source oraenv <<< +ASM
+      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
   become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
-  vars:
-    disks: "/dev/oracleasm/disks/"
 
-- name: save spfile location
-  ansible.builtin.shell: source oraenv <<< +ASM
+- name: Save spfile location
+  ansible.builtin.shell: |
+    source oraenv <<< +ASM
     asmcmd spget > {{ temp }}/spfilelocation.txt
   become_user: "{{ oracle_install_user }}"
   environment: "{{ grid_env }}"
+
+- name: Clean up {{ stage }} directory
+  ansible.builtin.file:
+    path: "{{ stage }}/{{ item }}"
+    state: absent
+  loop:
+    - "{{ grid_response_file }}"
+    - "{{ grid_install_script }}"
+    - "{{ grid_software }}"
+    - "{{ psu_patch }}"
+    - "{{ opatch }}"
+    - "{{ stage }}/psu"
+    - "{{ database_response_file }}"
+    - "{{ database_install_script }}"
+    - "{{ db_software }}"

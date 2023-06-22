@@ -1,0 +1,395 @@
+#!/bin/bash
+
+typeset -u RUN_MODE
+export RUN_MODE=LIVE
+
+typeset -u DEBUG_MODE
+export DEBUG_MODE=N
+
+export THISSCRIPT=$(basename $0)
+export THISHOST=$(uname -n)
+export THISPROC=$$
+typeset -u CATALOG_DB
+typeset -u TARGET_DB
+typeset -u BACKUP_TYPE
+typeset -u CATALOGMODE
+typeset RCATOWNER_PASSWORD
+typeset -i LEVEL
+
+export TIMESTAMP=$(date +"%Y%m%d%H%M")
+export RMANREGISTERLOGFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.log
+export RMANREGISTERCMDFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.cmd
+
+typeset -r MIN_LOG=0
+typeset -r MAX_LOG=9999999999
+
+export V_DATABASE=v\$database
+
+export SUCCESS_STATUS=0
+export WARNING_STATUS=1
+export ERROR_STATUS=9
+
+usage () {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "  $THISSCRIPT -t <backup type> [ -f <backup dir> ] [ -i <incremental level> ] [ -n <catalog> ] [ -c <catalog db> ]"
+  echo ""
+  echo "where"
+  echo ""
+  echo "  backup type = HOT or COLD"
+  echo "  backup dir = filesystem backup directory / SBT "
+  echo "  incremental level = 0 or 1."
+  echo "  catalog     = Y/N flag indciating whether or not the backup uses"
+  echo "                rman nocatalog mode or not. Default is N."
+  echo "  catalog db  = database where the rman repository resides"
+  echo ""
+
+  exit $ERROR_STATUS
+}
+
+info () {
+  T=$(date +"%D %T")
+  echo "INFO : $THISSCRIPT : $T : $1"
+  if [ "$DEBUG_MODE" = "Y" ]
+  then
+    read CONTINUE?"Press any key to continue "
+  fi
+}
+
+warning () {
+  T=$(date +"%D %T")
+  echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=$(date +"%D %T")
+  echo "ERROR : $THISSCRIPT : $T : $1"
+  exit $ERROR_STATUS
+}
+
+set_ora_env () {
+  export ORAENV_ASK=NO
+  export ORACLE_SID=$1
+  . oraenv
+  unset SQLPATH
+  unset TWO_TASK
+  unset LD_LIBRARY_PATH
+  export NLS_DATE_FORMAT=YYMMDDHH24MI
+}
+
+validate () {
+  ACTION=$1
+  case "$ACTION" in
+       user) info "Validating user"
+             THISUSER=$(id | cut -d\( -f2 | cut -d\) -f1)
+             [ "$THISUSER" != "oracle" ] && error "Must be oracle to run this script"
+             info "User ok"
+             ;;
+   targetdb) info "Validating target database"
+             [ -z "$TARGET_DB" -o "$TARGET_DB" = "UNSPECIFIED" ] && usage
+             grep ^${TARGET_DB}: /etc/oratab >/dev/null 2>&1
+             [ $? -ne 0 ] && error "Database $TARGET_DB does not exist on this machine"
+             info "Target database ok"
+             info "Set environment for $TARGET_DB"
+             set_ora_env $TARGET_DB
+             ;;
+ backuptype) info "Validating backup type"
+             case "$BACKUP_TYPE" in
+               HOT|COLD ) if [ "$BACKUP_TYPE" = "HOT" ]
+                          then
+                            case $LEVEL in
+                              0|1) ;;
+                                *) error "Please secify correct incremental level"
+                            esac
+                          fi ;;
+                      * ) usage ;;
+             esac
+             info "Backup type ok"
+             ;;
+  backupdir) info "Validating backup directory"
+             if [ "$BACKUPDIR" != "UNSPECIFIED" ]
+             then
+               [ -z $BACKUPDIR ] && error "Please specify backup directory"
+               if [ "$BACKUPDIR" != "S3" ]
+               then
+                     [ ! -d $BACKUPDIR/$TARGET_DB ] && error "$BACKUPDIR/$TARGET_DB does not exist"
+               fi
+             fi
+             info "Backup directory ok"
+             ;;
+    catalog) info "Validating catalog flag"
+             case "$CATALOGMODE" in
+               Y|N ) if [ "$CATALOGMODE" = "Y" ]
+                     then
+                       if [ -z $CATALOG_DB ]
+                       then
+                         error "Catalog mode is $CATALOGMODE, specify catalog db"
+                       else
+                         CATALOG_CONNECT=rcatowner/$RCATOWNER_PASSWORD@$CATALOG_DB
+                       fi
+                     fi
+                     ;;
+                  *) error "Incorrect catalog flag must be Y or N"
+             esac
+             info "Catalog flag ok"
+             ;;
+          *) error "Incorrect parameter passed to vaidate function"
+             ;;
+  esac
+}
+
+
+mode_check () {
+  info "Check which databases are in correct mode to backup"
+  info "Target         = $1"
+  set_ora_env $1
+  X=$(sqlplus -s / as sysdba << EOF
+  whenever sqlerror exit 1
+  set feedback off heading off verify off echo off
+  select 'DB_STATUS="'||open_mode||'"',
+         'DB_ROLE="'||database_role||'"',
+         'LOG_MODE="'||log_mode||'"'
+    from $V_DATABASE;
+  exit
+EOF
+)
+  [ $? -ne 0 ] && error "Cannot identify mode of the database"
+  eval $X
+  info "Target role     = $DB_ROLE"
+  [ "$DB_ROLE" = "PHYSICAL STANDBY" ] && info "Target is a standby, no backup to be performed"
+  info "Archivelog mode = $LOG_MODE"
+  if [ "$BACKUP_TYPE" = "HOT" ]
+  then
+    [ "$LOG_MODE" != "ARCHIVELOG" ] && error "Target database not in archivelog mode"
+  fi
+
+  info "Target status   = $DB_STATUS"
+  [ "$DB_STATUS" != "READ WRITE" ] && error "Target database must be in READ WRITE mode"
+
+}
+
+catalog_check () {
+  info "Checking Database ID"
+  X=$(sqlplus -s "/ as sysdba" <<EOF
+       set feedback off heading off echo off verify off
+       select 'DB_ID='||DBID from $V_DATABASE;
+       exit
+EOF
+)
+  eval $X
+
+  info "Database ID = $DB_ID"
+
+  info "Checking if target database is registered"
+   X=$(sqlplus -s $CATALOG_CONNECT <<EOF
+        set feedback off heading off echo off verify off
+        select 'ISREGD='||decode(count(*),0,'NO','YES')
+          from rc_database
+         where name = '$TARGET_DB'
+         and dbid = '$DB_ID';
+        exit
+EOF
+)
+  [ $? -ne 0 ] && error "Checking target database is registered"
+  eval $X
+
+  if [ "$ISREGD" = "NO" ]
+  then
+    info "Registering target database"
+    >$RMANREGISTERCMDFILE
+    echo "connect catalog $CATALOG_CONNECT ;"     >>$RMANREGISTERCMDFILE
+    echo "connect target / ;"                     >>$RMANREGISTERCMDFILE
+    echo "register database ;"                    >>$RMANREGISTERCMDFILE
+    echo "exit"                                   >>$RMANREGISTERCMDFILE
+    rman @$RMANREGISTERCMDFILE log $RMANREGISTERLOGFILE
+    grep -i "ERROR MESSAGE STACK" $RMANREGISTERLOGFILE >/dev/null 2>&1
+    [ $? -eq 0 ] && error "Rman reported errors"
+  else
+    info "Target database already registered"
+  fi
+}
+
+create_tag_format () {
+  [ "$BACKUP_TYPE" = "HOT" ] && LABEL="LEVEL${LEVEL}"
+  [ "$BACKUP_TYPE" = "COLD" ] && LABEL="COLD"
+  label=$(echo "${LABEL}" | tr '[:upper:]' '[:lower:]')
+  DIR="${BACKUPDIR}/${TARGET_DB}/"
+  if [ "$BACKUPDIR" != "S3" ] && [ "$BACKUPDIR" != "UNSPECIFIED" ]
+  then
+       DB_TAG_FORMAT="tag=DB_${LABEL}_${TIMESTAMP} format '${DIR}${label}_db_%T_%d_%U'"
+       AL_TAG_FORMAT="tag=ARCH_${LABEL}_${TIMESTAMP} format '${DIR}${label}_al_%T_%d_%U'"
+       CF_TAG_FORMAT="tag=CONTROL_${LABEL}_${TIMESTAMP} format '${DIR}${label}_cf_%T_%d_%U'"
+  else 
+       DB_TAG_FORMAT="tag=db_${label}_${TIMESTAMP}"
+       AL_TAG_FORMAT="tag=arch_${label}_${TIMESTAMP}"
+       CF_TAG_FORMAT="tag=control_${label}_${TIMESTAMP}"
+  fi
+}
+
+build_rman_command_file () {
+
+  V_PARAMETER=v\$parameter
+  X=$(sqlplus -s "/ as sysdba" <<EOF
+     whenever sqlerror exit 1
+     set feedback off heading off verify off echo off
+     select 'CPU_COUNT="'||value||'"' from $V_PARAMETER
+     where name = 'cpu_count';
+     exit
+EOF
+)
+
+  [ $? -ne 0 ] && error "Cannot determine cpu count"
+  eval $X
+  info "cpu count = $CPU_COUNT"
+
+  if [ "$CATALOGMODE" = "Y" ]
+  then
+    echo "connect catalog $CATALOG_CONNECT;" >>$RMANCMDFILE
+  fi
+  echo "connect target / ;" >>$RMANCMDFILE
+  echo "run {" >>$RMANCMDFILE
+  if [ "$BACKUPDIR" != "S3" ]
+  then  
+       TYPE="disk;"
+  else 
+       TYPE="'SBT_TAPE' PARMS  'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws.ora)';"
+  fi
+  for (( i=1; i<=${CPU_COUNT}; i++ ))
+  do
+    echo -e "  allocate channel c${i} device type $TYPE" >>$RMANCMDFILE
+  done
+  if [ "$BACKUP_TYPE" = "COLD" ]
+  then
+    echo "  shutdown immediate;" >>$RMANCMDFILE
+    echo "  startup mount;" >>$RMANCMDFILE
+    echo "  backup as compressed backupset database $DB_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  backup current controlfile $CF_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  sql 'alter database open';" >>$RMANCMDFILE
+  elif [ "$BACKUP_TYPE" = "HOT" ]
+  then
+    [ $LEVEL -eq 1 ] && LVL="$LEVEL cumulative" || LVL=$LEVEL
+    echo "  backup as compressed backupset incremental level $LVL database $DB_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  sql 'alter system archive log current';" >>$RMANCMDFILE
+    echo "  backup as compressed backupset archivelog all not backed up 1 times  $AL_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  backup current controlfile $CF_TAG_FORMAT;" >>$RMANCMDFILE
+    for (( i=1; i<=${CPU_COUNT}; i++ ))
+    do
+        echo "  release channel c${i};" >>$RMANCMDFILE
+    done
+    echo "}" >>$RMANCMDFILE
+    if [ "$BACKUPDIR" != "S3" ] 
+    then
+        echo "  allocate channel for maintenance device type disk;" >>$RMANCMDFILE
+    else 
+        echo "  allocate channel for maintenance device type 'SBT_TAPE' PARMS  'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws.ora)';"  >>$RMANCMDFILE
+        echo "  allocate channel for maintenance device type disk;" >>$RMANCMDFILE
+    fi
+    echo "  crosscheck archivelog all;" >>$RMANCMDFILE
+    echo "  crosscheck backup; " >>$RMANCMDFILE
+    echo "  delete expired backup;" >>$RMANCMDFILE
+    echo "  report obsolete;" >>$RMANCMDFILE
+    echo "  delete obsolete;" >>$RMANCMDFILE
+  fi
+  echo "exit"	>>$RMANCMDFILE
+}
+
+enable_bct () {
+  V_BLOCK_CHANGE_TRACKING=v\$block_change_tracking
+  X=$(sqlplus -s "/ as sysdba" <<EOF
+     whenever sqlerror exit 1
+     set feedback off heading off verify off echo off
+     select 'STATUS="'||status||'"' from $V_BLOCK_CHANGE_TRACKING;
+     exit
+EOF
+)
+  [ $? -ne 0 ] && error "Cannot determine block change tracking status"
+  eval $X
+  info "Block Change Tracking = $STATUS"
+  if [ "$STATUS" = "DISABLED" ]
+  then
+   sqlplus -s / as sysdba <<EOF
+   whenever sqlerror exit 1
+   set feedback off heading off verify off echo off
+   alter database enable block change tracking;
+   exit
+EOF
+  else
+    info "Block Change Tracking is already enabled"
+  fi
+  [ $? -ne 0 ] && error "Unable to enable block change tracking"
+}
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+info "Starts"
+unset ORACLE_SID
+info "Retrieving arguments"
+[ -z "$1" ] && usage
+
+BACKUP_TYPE=UNSPECIFIED
+CATALOGMODE=N
+BACKUPDIR=UNSPECIFIED
+while getopts "t:f:p:i:n:c:" opt
+do
+  case $opt in
+    t) BACKUP_TYPE=$OPTARG ;;
+    f) BACKUPDIR=$OPTARG ;;
+    p) RCATOWNER_PASSWORD=$OPTARG ;;
+    i) LEVEL=$OPTARG ;;
+    n) CATALOGMODE=$OPTARG ;;
+    c) CATALOG_DB=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+info "Backup type    = $BACKUP_TYPE"
+info "Catalog mode   = $CATALOGMODE"
+
+validate user
+info "Execute $THISUSER bash profile"
+. $HOME/.bash_profile
+validate backuptype
+validate catalog
+if [ ! -f /etc/db_backup_exclude_sids ]
+then
+	        DB_LIST=$(ps -fu $THISUSER | grep ora_smon | grep -v grep | awk -F_ '{print $NF}')
+else
+	        DB_LIST=$(ps -fu $THISUSER | grep ora_smon | grep -v grep | awk -F_ '{print $NF}'| egrep -v `cat /etc/db_backup_exclude_sids| grep -v "#"`)
+fi
+exitcode=0
+for TARGET_DB in $DB_LIST
+do
+  if ! (
+    info "Backup dir     = $BACKUPDIR/$TARGET_DB"
+    validate backupdir
+    mode_check $TARGET_DB
+    RMANLOGFILE=/home/oracle/admin/rman_scripts/logs/rman${TARGET_DB}$$.log
+    RMANCMDFILE=/home/oracle/admin/rman_scripts/logs/rman${TARGET_DB}$$.cmd
+    if [  "$CATALOGMODE" = "Y" ]
+    then
+      catalog_check
+    else
+      info "Not checking if DB is registered as running in NOCATALOG mode"
+    fi
+
+    info "Check if block change tracking is enable"
+    enable_bct
+
+    touch $RMANCMDFILE
+    info "Create rman tags and format"
+    create_tag_format
+    info "Generating rman command file"
+    build_rman_command_file
+    info "Running rman cmd file $RMANCMDFILE"
+    info "Please check progress ${RMANLOGFILE} ..."
+    rman cmdfile $RMANCMDFILE log $RMANLOGFILE > /dev/null
+    info "Checking for errors"
+    grep -i "ERROR MESSAGE STACK" $RMANLOGFILE >/dev/null 2>&1
+    [ $? -eq 0 ] && info "Rman reported errors for $TARGET_DB"
+    info "Backup of $TARGET_DB completed successfully"
+  ); then
+    exitcode=1
+  fi
+done
+exit $exitcode
