@@ -1,0 +1,18 @@
+---
+- name: Create directory to unpack BIP files
+  file:
+    path: "{{ sap_unpack_base_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Create directory to extract BIP files
+  file:
+    path: "{{ sap_extraction_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Create directory to install BIP files
+  file:
+    path: "{{ sap_installation_directory }}"
+    state: directory
+    mode: 0755

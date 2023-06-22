@@ -1,29 +1,17 @@
 ---
-- name: install bip packages
-    yum:
-      name: "{{ item }}"
-      state: present
-    loop:
-      - libstdc++.i686
-      - libstdc++.x86_64
-      - glibc.i686
-      - glibc.x86_64
-      - libX11.i686
-      - libX11.x86_64
-      - libXext.i686
-      - libXext.x86_64
-      - expat.i686
-      - expat.x86_64
-      - libgcc.i686
-      - libgcc.x86_64
-      - libXcursor.i686
-      - libXcursor.x86_64
-      - libXrender.i686
-      - libXrender.x86_64
-      - libXfixes.i686
-      - libXfixes.x86_64
-      - libxcb.i686
-      - libxcb.x86_64
-      - libXau.i686
-      - libXau.x86_64
-      - xz-libs.i686
+- name: Get unrar installer
+  ansible.builtin.get_url:
+    url: "https://www.rarlab.com/rar/rarlinux-x64-621.tar.gz"
+    dest: "/tmp/rarlinux-x64-621.tar.gz"
+
+- name: Extract unrar
+  ansible.builtin.unarchive:
+    src: "/tmp/rarlinux-x64-621.tar.gz"
+    dest: "/tmp/"
+    remote_src: yes
+
+- name: Install unrar
+  ansible.builtin.shell:
+    cmd: "make"
+    chdir: "/tmp/rar/"
+    creates: "/usr/local/bin/unrar"

@@ -9,6 +9,7 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
+  - make
   - libstdc++.i686
   - libstdc++.x86_64
   - glibc.i686

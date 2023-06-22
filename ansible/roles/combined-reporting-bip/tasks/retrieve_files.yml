@@ -2,7 +2,7 @@
 - name: Get list of BIP files from S3
   aws_s3:
     mode: list
-    bucket: "{{ BUCKET_NAME }}"
+    bucket: "{{ bip_bucket_name }}"
     prefix: "BIP/"
     marker: "BIP/"
   register: s3_bucket_items
@@ -10,7 +10,20 @@
 - name: Download files from S3
   aws_s3:
     mode: get
-    bucket: "{{ BUCKET_NAME }}"
+    bucket: "{{ bip_bucket_name }}"
     object: "{{ item }}"
-    dest: "~/{{ item|basename }}"
+    dest: "{{ sap_unpack_base_directory }}/{{ item|basename }}"
+    overwrite: false
   with_items: "{{ s3_bucket_items.s3_keys }}"
+
+- name: Hacky rename
+  shell: |
+    for f in *;
+      do
+        e="${f##*.}";
+        b="${f%.*}";
+        mv -n "$f" "${b}.${e,,}";
+      done
+  args:
+    chdir: "{{ sap_unpack_base_directory }}"
+    executable: /bin/bash
