@@ -24,7 +24,7 @@
       echo "# Generating democert"
       java utils.CertGen -keyfilepass DemoIdentityPassPhrase -certfile democert -keyfile demokey -strength 1024
     }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
+    main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
   when: not weblogic_cert.stat.exists
 
 - name: List weblogic keystore certs
@@ -53,7 +53,7 @@
       java utils.ImportPrivateKey -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase -keyfile demokey.pem -keyfilepass DemoIdentityPassPhrase -certfile democert.pem -alias demoidentity
       keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
     }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
+    main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
 
 - name: Disable SecureListener in nodemanager.properties
   ansible.builtin.replace:

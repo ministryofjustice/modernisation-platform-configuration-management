@@ -70,7 +70,7 @@
           echo "# create managed app {{ managed_server }}"
           java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ managed_server }}.properties
         }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
+        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
       async: 7200
       poll: 60
 

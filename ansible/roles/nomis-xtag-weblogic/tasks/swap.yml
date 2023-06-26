@@ -15,7 +15,7 @@
       mkswap /swapfile
       swapon /swapfile
     }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
+    main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
   when: not swapfile.stat.exists
 
 - name: Mount swapfile
