@@ -11,13 +11,13 @@
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_asks: add_oracle_user.yml
+- import_tasks: add_oracle_user.yml
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_asks: add_bobj_user.yml
+- import_tasks: add_bobj_user.yml
   tags:
     - amibuild
     - ec2provision
@@ -33,10 +33,4 @@
   tags:
     - amibuild
     - ec2provision
-  when: ansible_distribution in ['RedHat']
-
-- import_tasks: install_bip.yml
-  tags:
-      - amibuild
-      - ec2provision
   when: ansible_distribution in ['RedHat']

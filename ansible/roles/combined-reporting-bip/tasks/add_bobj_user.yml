@@ -11,5 +11,15 @@
     uid: 1201
     comment: bobj
     groups: dba,binstall
-    password: bobj
+    password: "{{ 'bobj' | password_hash('sha512') }}"
     home: /home/bobj bobj
+
+- name: Assign bobj permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: bobj
+    group: binstall
+    mode: '0775'
+  loop: 
+    - /u01/app/bobj/
+    - /u02/software/BIP_4_3_SP1/
