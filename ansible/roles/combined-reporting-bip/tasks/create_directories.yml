@@ -11,24 +11,24 @@
 
 - name: Create directory to unpack BIP files
   file:
-    path: "{{ sap_unpack_base_directory }}"
+    path: "{{ sap_bi_platform_unpack_base_directory }}"
     state: directory
     mode: 0755
 
 - name: Create directory to extract BIP files
   file:
-    path: "{{ sap_extraction_directory }}"
+    path: "{{ sap_bi_platform_extraction_directory }}"
     state: directory
     mode: 0755
 
 - name: Create directory to install BIP files
   file:
-    path: "{{ sap_installation_directory }}"
+    path: "{{ sap_bi_platform_installation_directory }}"
     state: directory
     mode: 0755
 
 - name: Create temporary directory for SAP host agent
   file:
-    path: /u01/software/SAP_Host_Agent_Linux_x86_64
+    path: "{{ sap_host_agent_base_directory }}"
     state: directory
-    mode: 0755
+    mode: 0775

@@ -1,2 +1,15 @@
 ---
-- name: 
+- name: Grant file execute permissions
+  shell: "chmod +x {{ sap_host_agent_base_directory }}/SAPCAR*"
+
+- name: Extract the software
+  shell: "{{ sap_host_agent_base_directory }}/SAPCAR* -xvf {{ sap_host_agent_base_directory }}/SAPHOST*.SAR"
+  args:
+    chdir: "{{ sap_host_agent_base_directory }}"
+  when: sap_host_agent_base_directory is defined
+
+- name: Install the SAP Host Agent
+  shell: "{{ sap_host_agent_base_directory }}/saphostexec -install"
+
+- name: Add the bobj account to the sapsys group
+  shell: gpasswd -a bobj sapsys
