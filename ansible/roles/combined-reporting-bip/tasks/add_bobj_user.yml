@@ -1,10 +1,4 @@
 ---
-- name: Ensure binstall group exists
-  ansible.builtin.group:
-    name: binstall
-    gid: 1201
-    state: present
-
 - name: Add the bobj user
   ansible.builtin.user:
     name: bobj
