@@ -1,16 +1,12 @@
 ---
-- name: Debug flash disk config
-  debug:
-    var: oracle_flash_diskgroup
-
 # If you run this when FLASH group already created, the sql will fail
 # but exit code is still zero, i.e. the step will show as successful
 - name: Add FLASH disk group
   ansible.builtin.shell: |
     main() {
-      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk '{{ oracle_flash_diskgroup }}';"'
+      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"'
       source oraenv <<< +ASM
-      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup }};"
+      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   become_user: oracle
