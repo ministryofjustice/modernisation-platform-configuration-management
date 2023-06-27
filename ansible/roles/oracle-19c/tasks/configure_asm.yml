@@ -16,7 +16,7 @@
       oracleasm configure -b
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
-    
+
 - name: Run oracleasm init
   ansible.builtin.shell: |
     set -eo pipefail
