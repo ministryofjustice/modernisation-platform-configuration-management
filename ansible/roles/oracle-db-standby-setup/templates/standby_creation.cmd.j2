@@ -7,6 +7,7 @@ allocate auxiliary channel drch1 type disk;
 {{ duplicate_target_db_cmd }}
 spfile
   parameter_value_convert '{{ db_primary.instance_name }}', '{{ db_standby.instance_name }}'
+  set audit_file_dest='/u01/app/oracle/admin/{{ db_standby.instance_name }}/adump'
   set db_unique_name='{{ db_standby.db_unique_name }}'
   set fal_client='{{ db_standby.db_unique_name }}'
   set fal_server='{{ db_primary.db_unique_name }}'
