@@ -8,6 +8,15 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
+- name: Run oracleasm configure to use logical block size for disk creation.
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      oracleasm configure -b
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+    
 - name: Run oracleasm init
   ansible.builtin.shell: |
     set -eo pipefail
