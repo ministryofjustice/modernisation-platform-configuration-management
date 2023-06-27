@@ -3,11 +3,9 @@ Description=WebLogic NodeManager Service
 
 [Service]
 Type=simple
-WorkingDirectory={{ domain_home }}
-ExecStart={{ wl_home }}/server/bin/startNodeManager.sh
+TimeoutStartSec=60
+ExecStart=/home/oracle/admin/scripts/startNodeManager.sh
 ExecStop=/home/oracle/admin/scripts/stopNodeManager.sh
-User=oracle
-Group=oinstall
 
 [Install]
 WantedBy=multi-user.target

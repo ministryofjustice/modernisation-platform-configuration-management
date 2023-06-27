@@ -1,8 +1,8 @@
 #!/bin/bash
 
 get_process_pids() {
-  process_pids1=$(pgrep -u oracle -f "startNodeManager.sh$" 2> /dev/null)
-  process_pids2=$(pgrep -u oracle -f "weblogic.NodeManager" 2> /dev/null)
+  process_pids1=$(pgrep -u oracle -f "startWebLogic.sh$" 2> /dev/null)
+  process_pids2=$(pgrep -u oracle -f "weblogic.Name=AdminServer" 2> /dev/null)
   [[ -z $process_pids1 && -z $process_pids2 ]] && return 1
   (
     for process_pid in $process_pids1 $process_pids2; do

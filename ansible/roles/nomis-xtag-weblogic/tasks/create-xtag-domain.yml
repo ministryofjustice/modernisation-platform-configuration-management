@@ -1,4 +1,9 @@
 ---
+- name: Check if domain already configured
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
+  register: weblogic_domain_configured_check
+
 - name: Create nomis xtag domain
   block:
     - name: Copy scripts and properties files
@@ -12,21 +17,21 @@
         - /u01/software/weblogic/domain.properties
         - /u01/software/weblogic/AdminServer.properties
 
-    - name: Start nodemanager
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-         nohup /u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh &
+    - name: Ensure wls_nodemanager service is started
+      ansible.builtin.service:
+        name: wls_nodemanager
+        started: yes
 
     - name: Create weblogic Nomis xtag domain
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-        java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/domain.properties
+        main() {
+          . ~/.bash_profile
+          . $WL_HOME/server/bin/setWLSEnv.sh
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/domain.properties
+        }
+        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
 
     - name: Create security directories
       ansible.builtin.file:
@@ -49,15 +54,33 @@
       loop:
         - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
 
-    # # - name: Start admin server
-    #   ansible.builtin.service:
-    #     name: weblogic-server
-    #     enabled: yes
+  #block
+  when: not weblogic_domain_configured_check.stat.exists
 
-    - name: Start Admin server
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-         nohup /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/startWebLogic.sh &
+- name: Copy adminserver systemd helper scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+  loop:
+    - /home/oracle/admin/scripts/startWebLogic.sh
+    - /home/oracle/admin/scripts/stopWebLogic.sh
+
+- name: Copy adminserver systemd service
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    - /etc/systemd/system/wls_adminserver.service
+  register: adminserver_systemd
+
+- name: Run systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: adminserver_systemd.changed
+
+- name: Start wls_adminserver service
+  ansible.builtin.service:
+    name: wls_adminserver
+    enabled: yes
+    started: yes

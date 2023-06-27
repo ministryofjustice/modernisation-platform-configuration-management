@@ -62,3 +62,30 @@
     path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
     regexp: "^MEM_ARGS="
     line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+
+- name: Copy nodemanager systemd helper scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+  loop:
+    - /home/oracle/admin/scripts/startNodeManager.sh
+    - /home/oracle/admin/scripts/stopNodeManager.sh
+
+- name: Copy nodemanager systemd service
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    - /etc/systemd/system/wls_nodemanager.service
+  register: nodemanager_systemd
+
+- name: Run systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: nodemanager_systemd.changed
+
+- name: Enable wls_nodemanager service
+  ansible.builtin.service:
+    name: wls_nodemanager
+    enabled: yes
