@@ -15,7 +15,7 @@
     object: "{{ s3.prefix }}{{ item }}"
     dest: "{{ sap_host_agent_base_directory }}/{{ item|basename }}"
     overwrite: true
-  with_items: 
+  with_items:
     - "{{ s3.files.sap_host_agent }}"
     - "{{ s3.files.sapcar }}"
 
@@ -29,7 +29,6 @@
   with_items:
     - "{{ s3.files.sap_jvm }}"
     - "{{ s3.files.sapcar }}"
-
 
 - name: Hacky rename
   shell: |
