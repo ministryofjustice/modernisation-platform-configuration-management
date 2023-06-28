@@ -3,11 +3,10 @@ Description=WebLogic managed server Service
 
 [Service]
 Type=simple
-WorkingDirectory={{ domain_home }}
-ExecStart={{ domain_home }}/{{ domain_name }}/bin/startManagedWebLogic.sh {{ managed_server }}
-ExecStop={{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
-User=oracle
-Group=oinstall
+TimeoutStartSec=180
+ExecStart=/home/oracle/admin/scripts/startManagedWebLogic.sh
+ExecStartPost=/home/oracle/admin/scripts/waitManagedWebLogic.sh
+ExecStop=/home/oracle/admin/scripts/stopManagedWebLogic.sh
 
 [Install]
 WantedBy=multi-user.target

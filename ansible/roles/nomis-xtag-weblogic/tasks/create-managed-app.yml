@@ -1,7 +1,7 @@
 ---
 - name: Fail if managed_server variable not defined
   fail:
-    msg: "Error, please ensure weblogic_server is defined"
+    msg: "Error, please ensure managed_server is defined"
   when: managed_server is not defined
 
 - name: Check if managed app already configured
@@ -9,10 +9,48 @@
     path: /etc/systemd/system/wls_managedserver.service
   register: weblogic_created_managed_app_check
 
+- name: Copy managedserver systemd helper scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/admin/scripts/startManagedWebLogic.sh
+    - /home/oracle/admin/scripts/waitManagedWebLogic.sh
+    - /home/oracle/admin/scripts/stopManagedWebLogic.sh
+
+- name: Copy managedserver systemd service
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    - /etc/systemd/system/wls_managedserver.service
+  register: managedserver_systemd
+
+- name: Run systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: managedserver_systemd.changed
+
+- name: Enable managedserver service
+  ansible.builtin.service:
+    name: wls_managedserver
+    enabled: yes
+
 - name: Configure managed app
   block:
     - debug:
         msg: "Creating managed app {{ managed_server }}"
+
+    - name: Ensure services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - wls_nodemanager
+        - wls_adminserver
 
     - name: Copy managed app configuration files
       ansible.builtin.template:
@@ -70,8 +108,8 @@
           echo "# create managed app {{ managed_server }}"
           java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ managed_server }}.properties
         }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
-      async: 7200
+        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
+      async: 3600
       poll: 60
 
     - name: Create managed app security directory
@@ -94,33 +132,31 @@
       loop:
         - "{{ domain_home }}/{{ domain_name }}/servers/{{ managed_server }}/security/boot.properties"
 
-    - name: Copy nodemanager stop script
-      ansible.builtin.template:
-        src: "10.3/home/oracle/admin/scripts/stopNodeManager.sh"
-        dest: "/home/oracle/admin/scripts/stopNodeManager.sh"
-        owner: oracle
-        group: oinstall
-        mode: 0744
+    - name: Stop all services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - wls_nodemanager
+        - wls_adminserver
+        - wls_managedserver
 
-    - name: Stop managed server
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-        nohup {{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
-
-    - name: Stop adminserver
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        . $WL_HOME/server/bin/setWLSEnv.sh
-        nohup {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh &
-
-    - name: Stop nodemanager
-      become_user: oracle
-      ansible.builtin.shell: /home/oracle/admin/scripts/stopNodeManager.sh
+  always:
+    - name: Remove temporary forms configuration files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/{{ managed_server }}.properties
 
   # block
   when: not weblogic_created_managed_app_check.stat.exists
+
+- name: Start all services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+    - wls_managedserver

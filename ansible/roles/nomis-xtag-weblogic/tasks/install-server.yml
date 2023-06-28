@@ -44,7 +44,7 @@
           echo "# installing weblogic /u01/software/weblogic/wls1036_generic.jar"
           java -d64  -Xmx1024m -jar /u01/software/weblogic/wls1036_generic.jar -mode=silent -silent_xml=/u01/software/weblogic/silent.xml -Djava.io.tmpdir=/u01/software/tmp
         }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
+        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
 
     - name: Remove temporary install files
       ansible.builtin.file:
@@ -62,3 +62,33 @@
     path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
     regexp: "^MEM_ARGS="
     line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+
+- name: Copy nodemanager systemd helper scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/admin/scripts/startNodeManager.sh
+    - /home/oracle/admin/scripts/waitNodeManager.sh
+    - /home/oracle/admin/scripts/stopNodeManager.sh
+
+- name: Copy nodemanager systemd service
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    - /etc/systemd/system/wls_nodemanager.service
+  register: nodemanager_systemd
+
+- name: Run systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: nodemanager_systemd.changed
+
+- name: Enable wls_nodemanager service
+  ansible.builtin.service:
+    name: wls_nodemanager
+    enabled: yes

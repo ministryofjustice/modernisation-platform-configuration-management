@@ -1,8 +1,8 @@
 #!/bin/bash
 
 get_process_pids() {
-  process_pids1=$(pgrep -u oracle -f "startNodeManager.sh$" 2> /dev/null)
-  process_pids2=$(pgrep -u oracle -f "weblogic.NodeManager" 2> /dev/null)
+  process_pids1=$(pgrep -u oracle -f "startManagedWebLogic.sh$" 2> /dev/null)
+  process_pids2=$(pgrep -u oracle -f "weblogic.Name={{ managed_server }}" 2> /dev/null)
   [[ -z $process_pids1 && -z $process_pids2 ]] && return 1
   (
     for process_pid in $process_pids1 $process_pids2; do
@@ -14,6 +14,13 @@ get_process_pids() {
 stop_process() {
   if ! PIDS=$(get_process_pids); then
     echo "already stopped"
+    return 0
+  fi
+
+  timeout 60 {{ domain_home }}/{{ domain_name }}/bin/stopManagedWebLogic.sh {{ managed_server }}
+
+  if ! PIDS=$(get_process_pids); then
+    echo "stopped"
     return 0
   fi
 
