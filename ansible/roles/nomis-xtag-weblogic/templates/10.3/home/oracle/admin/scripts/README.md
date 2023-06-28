@@ -13,30 +13,11 @@ Checking managed server status
 wlst.sh ~/admin/scripts/ms_state.py
 ```
 
-Use init.d scripts for starting and stopping each individual component.
+Use systemctl scripts for starting and stopping each individual component.
 This ensures any component output goes to /var/log/messages.
 
 ```
-service weblogic-node-manager start
-service weblogic-server start
-service WLS_FORMS start
-service WLS_REPORTS start
-service WLS_HOTPAGE start
-service WLS_TAGSAR start
-service WLS_AUTOLOGOFF start
-service opmn start
-```
-
-Or use master script to restart everything
-
-```
-service weblogic-all status
-service weblogic-all restart
-```
-
-And to bring in and out of load balancer
-
-```
-service weblogic-healthcheck start # to bring in
-service weblogic-healthcheck stop # to take out
+systemctl start wls_nodemanager
+systemctl start wls_adminserver
+systemctl start wls_managedserver
 ```
