@@ -5,6 +5,7 @@ Description=WebLogic NodeManager Service
 Type=simple
 TimeoutStartSec=60
 ExecStart=/home/oracle/admin/scripts/startNodeManager.sh
+ExecStartPost=/home/oracle/admin/scripts/waitNodeManager.sh
 ExecStop=/home/oracle/admin/scripts/stopNodeManager.sh
 
 [Install]

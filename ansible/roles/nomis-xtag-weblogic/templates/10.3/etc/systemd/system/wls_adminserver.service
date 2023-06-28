@@ -3,8 +3,9 @@ Description=WebLogic Admin Server
 
 [Service]
 Type=simple
-TimeoutStartSec=180
+TimeoutStartSec=60
 ExecStart=/home/oracle/admin/scripts/startWebLogic.sh
+ExecStartPost=/home/oracle/admin/scripts/waitWebLogic.sh
 ExecStop=/home/oracle/admin/scripts/stopWebLogic.sh
 
 [Install]
