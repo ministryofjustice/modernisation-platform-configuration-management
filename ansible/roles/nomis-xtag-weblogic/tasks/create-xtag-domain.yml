@@ -13,14 +13,12 @@
         owner: oracle
         group: oinstall
       loop:
-        - /u01/software/weblogic/WLS_XTAG_OUTBOUND_01.properties
         - /u01/software/weblogic/domain.properties
-        - /u01/software/weblogic/AdminServer.properties
 
     - name: Ensure wls_nodemanager service is started
       ansible.builtin.service:
         name: wls_nodemanager
-        started: yes
+        state: started
 
     - name: Create weblogic Nomis xtag domain
       become_user: oracle
@@ -54,6 +52,14 @@
       loop:
         - /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties
 
+  always:
+    - name: Remove temporary configuration files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/domain.properties
+
   #block
   when: not weblogic_domain_configured_check.stat.exists
 
@@ -62,8 +68,11 @@
     src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
+    owner: oracle
+    group: oinstall
   loop:
     - /home/oracle/admin/scripts/startWebLogic.sh
+    - /home/oracle/admin/scripts/waitWebLogic.sh
     - /home/oracle/admin/scripts/stopWebLogic.sh
 
 - name: Copy adminserver systemd service
@@ -83,4 +92,4 @@
   ansible.builtin.service:
     name: wls_adminserver
     enabled: yes
-    started: yes
+    state: started

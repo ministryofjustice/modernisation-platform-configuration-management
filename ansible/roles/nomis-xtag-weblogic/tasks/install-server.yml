@@ -68,8 +68,11 @@
     src: "10.3{{ item }}"
     dest: "{{ item }}"
     mode: "0755"
+    owner: oracle
+    group: oinstall
   loop:
     - /home/oracle/admin/scripts/startNodeManager.sh
+    - /home/oracle/admin/scripts/waitNodeManager.sh
     - /home/oracle/admin/scripts/stopNodeManager.sh
 
 - name: Copy nodemanager systemd service
