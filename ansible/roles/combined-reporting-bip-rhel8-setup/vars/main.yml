@@ -12,3 +12,14 @@ sap_host_agent_base_directory: /u01/software/SAP_Host_Agent_Linux_x86_64
 sap_host_agent_files:
   - SAPHOSTAGENT60_60-80004822.SAR
   - SAPCAR_1324-80000935.EXE
+
+s3:
+  bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
+  prefix: BIP/
+  files: 
+    sap_bi_platform: 
+      - BIPLATS4303P_300-70002683_P1.EXE
+      - BIPLATS4303P_300-70002683_P2.RAR
+    sap_host_agent: SAPHOSTAGENT60_60-80004822.SAR
+    sap_jvm: SAPJVM8_94-80000202.SAR
+    sapcar: SAPCAR_1324-80000935.EXE

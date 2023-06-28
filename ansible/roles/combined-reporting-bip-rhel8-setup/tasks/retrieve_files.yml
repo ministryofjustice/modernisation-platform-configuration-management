@@ -1,0 +1,44 @@
+---
+- name: Download BI Platform from S3
+  aws_s3:
+    mode: get
+    bucket: "{{ s3.bip_bucket_name }}"
+    object: "{{ s3.prefix }}{{ item }}"
+    dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
+    overwrite: true
+  with_items: "{{ s3.files.sap_bi_platform }}"
+
+- name: Download Host Agent from S3
+  aws_s3:
+    mode: get
+    bucket: "{{ s3.bip_bucket_name }}"
+    object: "{{ s3.prefix }}{{ item }}"
+    dest: "{{ sap_host_agent_base_directory }}/{{ item|basename }}"
+    overwrite: true
+  with_items: 
+    - "{{ s3.files.sap_host_agent }}"
+    - "{{ s3.files.sapcar }}"
+
+- name: Download JVM from S3
+  aws_s3:
+    mode: get
+    bucket: "{{ s3.bip_bucket_name }}"
+    object: "{{ s3.prefix }}{{ item }}"
+    dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
+    overwrite: true
+  with_items:
+    - "{{ s3.files.sap_jvm }}"
+    - "{{ s3.files.sapcar }}"
+
+
+- name: Hacky rename
+  shell: |
+    for f in *;
+      do
+        e="${f##*.}";
+        b="${f%.*}";
+        mv -n "$f" "${b}.${e,,}";
+      done
+  args:
+    chdir: "{{ sap_bi_platform_unpack_base_directory }}"
+    executable: /bin/bash
