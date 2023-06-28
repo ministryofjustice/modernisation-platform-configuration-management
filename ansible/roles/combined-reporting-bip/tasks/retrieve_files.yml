@@ -1,20 +1,21 @@
 ---
-- name: Get list of BIP files from S3
-  aws_s3:
-    mode: list
-    bucket: "{{ bip_bucket_name }}"
-    prefix: "BIP/"
-    marker: "BIP/"
-  register: s3_bucket_items
-
-- name: Download files from S3
+- name: Download BI Platform from S3
   aws_s3:
     mode: get
     bucket: "{{ bip_bucket_name }}"
-    object: "{{ item }}"
-    dest: "{{ sap_unpack_base_directory }}/{{ item|basename }}"
+    object: "BIP/{{ item }}"
+    dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
     overwrite: false
-  with_items: "{{ s3_bucket_items.s3_keys }}"
+  with_items: "{{ sap_bi_platform_platform_files }}"
+
+- name: Download Host Agent from S3
+  aws_s3:
+    mode: get
+    bucket: "{{ bip_bucket_name }}"
+    object: "BIP/{{ item }}"
+    dest: "{{ sap_host_agent_base_directory }}/{{ item|basename }}"
+    overwrite: false
+  with_items: "{{ sap_host_agent_files }}"
 
 - name: Hacky rename
   shell: |
@@ -25,5 +26,5 @@
         mv -n "$f" "${b}.${e,,}";
       done
   args:
-    chdir: "{{ sap_unpack_base_directory }}"
+    chdir: "{{ sap_bi_platform_unpack_base_directory }}"
     executable: /bin/bash
