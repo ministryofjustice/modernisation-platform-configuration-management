@@ -54,43 +54,15 @@
       keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
     }
     main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
+  when: not weblogic_keystore_list is search("demoidentity")
 
-- name: Disable SecureListener in nodemanager.properties
-  ansible.builtin.replace:
-    path: "{{ wl_home }}/common/nodemanager/nodemanager.properties"
-    regexp: "SecureListener=true"
-    replace: "SecureListener=false"
-
-- name: Stop Admin server
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    "{{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh"
-
-- name: Stop nodemanager processes
-  become_user: oracle
-  ansible.builtin.shell: |
-    ps -fu oracle | grep "weblogic.NodeManager"| grep -v grep | gawk '{print $2}' | xargs kill -9
-
-- name: Start nodemanager
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup {{ wl_home }}/server/bin/startNodeManager.sh &
-
-- name: Start adminserver
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
-  async: 3600
-  poll: 60
+- name: Ensure weblogic node manager and weblogic server are running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
 
 # Node manager and weblogic server for this to work
 - name: Query current NMType
@@ -113,7 +85,7 @@
   failed_when: weblogic_nmtype|length == 0
 
 - debug:
-    msg: "Current NMType: {{ weblogic_nmtype }}"
+    msg: "Current NMType: {{ weblogic_nmtype[0] }}"
 
 - name: Set NMType
   become_user: oracle
@@ -126,35 +98,28 @@
     wlst.sh  ~/admin/scripts/set_param.py -d /Machines/{{ weblogic_domain_hostname }}/NodeManager/{{ weblogic_domain_hostname }} -n ListenAddress -v {{ weblogic_domain_hostname }}
     wlst.sh  ~/admin/scripts/set_param.py -d /SecurityConfiguration/NomisDomain -n NodeManagerUsername -v {{ weblogic_admin_username }}
     wlst.sh  ~/admin/scripts/set_param.py -d /SecurityConfiguration/NomisDomain -n NodeManagerPassword -v {{ weblogic_admin_password }}
-  when: weblogic_nmtype != 'Plain'
+  when: weblogic_nmtype[0] != 'Plain'
 
-- name: Stop Admin server
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh
+- name: Disable SecureListener in nodemanager.properties
+  ansible.builtin.replace:
+    path: "{{ wl_home }}/common/nodemanager/nodemanager.properties"
+    regexp: "SecureListener=true"
+    replace: "SecureListener=false"
 
-- name: Stop nodemanager processes
-  become_user: oracle
-  ansible.builtin.shell: |
-    ps -fu oracle | grep "weblogic.NodeManager"| grep -v grep | gawk '{print $2}' | xargs kill -9
+- name: Stop services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+  when: weblogic_nmtype[0] != 'Plain'
 
-- name: Start nodemanager
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup {{ wl_home }}/server/bin/startNodeManager.sh &
-
-- name: Start adminserver
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    nohup {{ domain_home }}/{{ domain_name }}/bin/startWebLogic.sh &
-  async: 3600
-  poll: 60
+- name: Start services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+  when: weblogic_nmtype[0] != 'Plain'
