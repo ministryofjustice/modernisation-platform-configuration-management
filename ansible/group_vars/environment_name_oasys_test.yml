@@ -19,7 +19,7 @@ db_configs:
     db_name: OASPROD
     db_unique_name: OASPROD
     instance_name: OASPROD
-    host_name: T2ODL0009.azure.noms.root
+    host_name: 10.101.36.132
     port: 1521
     tns_name: OASPROD
     storage_account_name: strtcmonsazcopyorabkup
@@ -27,23 +27,23 @@ db_configs:
     service:
       - { name: OAS_TAF, role: PRIMARY }
 
-  T2OAS:
+  T2OASYS:
     db_name: OASPROD
-    db_unique_name: T2OAS
-    instance_name: T2OAS
-    host_name: 10.26.12.134
+    db_unique_name: T2OASYS
+    instance_name: T2OASYS
+    host_name: t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
     port: 1521
-    tns_name: T2OAS
+    tns_name: T2OASYS
     s3_bucket: oasys-test20230403093247696000000001
     asm_disk_groups: DATA,FLASH
     service:
-      - { name: OAS_TAF, role: PRIMARY }
+      - { name: OASYS_TAF, role: PRIMARY }
 
   ONRSYS:
     db_name: ONRSYS
     db_unique_name: ONRSYS
     instance_name: ONRSYS
-    host_name: T2ODL0009.azure.noms.root
+    host_name: 10.101.36.132
     port: 1521
     tns_name: ONRSYS
     storage_account_name: strtcmonsazcopyorabkup
@@ -55,7 +55,7 @@ db_configs:
     db_name: ONRSYS
     db_unique_name: T2ONRSYS
     instance_name: T2ONRSYS
-    host_name: 10.26.12.134
+    host_name: t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
     port: 1521
     tns_name: T2ONRSYS
     s3_bucket: oasys-test20230403093247696000000001
@@ -67,7 +67,7 @@ db_configs:
     db_name: ONRBODS
     db_unique_name: ONRBODS
     instance_name: ONRBODS
-    host_name: T2ODL0009.azure.noms.root
+    host_name: 10.101.36.132
     port: 1521
     tns_name: ONRBODS
     storage_account_name: strtcmonsazcopyorabkup
@@ -79,10 +79,82 @@ db_configs:
     db_name: ONRBODS
     db_unique_name: T2ONRBDS
     instance_name: T2ONRBDS
-    host_name: 10.26.12.134
+    host_name: t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
     port: 1521
     tns_name: T2ONRBDS
     s3_bucket: oasys-test20230403093247696000000001
     asm_disk_groups: DATA,FLASH
     service:
       - { name: ONRBODS_TAF, role: PRIMARY }
+
+  ONRAUD:
+    db_name: ONRAUD
+    db_unique_name: ONRAUD
+    instance_name: ONRAUD
+    host_name: T2ODL0009.azure.noms.root
+    port: 1521
+    tns_name: ONRAUD
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRAUD_TAF, role: PRIMARY }
+
+  T2ONRAUD:
+    db_name: ONRAUD
+    db_unique_name: T2ONRAUD
+    instance_name: T2ONRAUD
+    host_name: 10.26.12.211
+    port: 1521
+    tns_name: T2ONRAUD
+    s3_bucket: oasys-test20230403093247696000000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRAUD_TAF, role: PRIMARY }
+
+  MISTRANS:
+    db_name: MISTRANS
+    db_unique_name: MISTRANS
+    instance_name: MISTRANS
+    host_name: T2ODL0009.azure.noms.root
+    port: 1521
+    tns_name: MISTRANS
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: MISTRANS_TAF, role: PRIMARY }
+
+  T2MISTRN:
+    db_name: MISTRANS
+    db_unique_name: T2MISTRN
+    instance_name: T2MISTRN
+    host_name: 10.26.12.211
+    port: 1521
+    tns_name: T2MISTRN
+    s3_bucket: oasys-test20230403093247696000000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: MISTRANS_TAF, role: PRIMARY }
+
+  OASREP:
+    db_name: OASREP
+    db_unique_name: OASREP
+    instance_name: OASREP
+    host_name: T2ODL0009.azure.noms.root
+    port: 1521
+    tns_name: OASREP
+    storage_account_name: strtcmonsazcopyorabkup
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASREP_TAF, role: PRIMARY }
+
+  T2OASREP:
+    db_name: OASREP
+    db_unique_name: T2OASREP
+    instance_name: T2OASREP
+    host_name: 10.26.12.211
+    port: 1521
+    tns_name: T2OASREP
+    s3_bucket: oasys-test20230403093247696000000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASREP_TAF, role: PRIMARY }
