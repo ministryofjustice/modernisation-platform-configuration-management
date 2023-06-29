@@ -1,5 +1,5 @@
 ---
-ansible_python_interpreter: /usr/bin/python3.9
+ansible_python_interpreter: /usr/local/bin/python3.9
 roles_list:
   - users-and-groups
   - sudoers
@@ -36,3 +36,5 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: xfs
+
+image_builder_s3_bucket_name: devtest-oasys-20230411143832198800000001
