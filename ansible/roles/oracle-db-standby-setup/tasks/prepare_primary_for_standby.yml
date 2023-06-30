@@ -25,6 +25,16 @@
       args:
         creates: "{{ database_home }}/dbs/orapw{{ db_primary.instance_name }}"
 
+    - name: Take backup of password file to S3 bucket
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# orapwd file={{ database_home }}/dbs/orapw{{ db_primary.instance_name }} password=xxxx entries=10"
+          source oraenv <<< {{ db_primary.instance_name }}
+          aws s3 cp {{ database_home }}/dbs/orapw{{ db_primary.instance_name }} s3://{{ db_primary.s3_bucket }}/
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
     - name: Setup Primary Database for new standby
       ansible.builtin.shell: |
         set -eo pipefail
