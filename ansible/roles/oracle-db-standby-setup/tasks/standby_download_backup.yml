@@ -56,7 +56,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       become_user: oracle
-      when: db_primary.s3_bucket is not defined 
+      when: db_primary.s3_bucket is not defined
 
     - name: Download Password file backup from S3 bucket backup
       ansible.builtin.shell: |

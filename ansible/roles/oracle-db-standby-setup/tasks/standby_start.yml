@@ -1,6 +1,5 @@
 ---
 - block:
-
     - name: Download Password file backup from S3 bucket backup
       ansible.builtin.shell: |
         set -eo pipefail
@@ -12,7 +11,7 @@
       poll: 20
       become_user: oracle
       when: db_primary.s3_bucket is defined and not ansible_check_mode
-      
+
     - name: Check password file present
       ansible.builtin.stat:
         path: "{{ database_home }}/dbs/orapw{{ db_standby.instance_name }}"
