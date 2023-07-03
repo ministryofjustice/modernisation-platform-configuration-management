@@ -41,6 +41,7 @@ cat /opt/aws/amazon-cloudwatch-agent/logs/configuration-validation.log
 
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-CloudWatch-Agent.html
 
+IMPORTANT: Worth knowing about setting up Cloudwatch Agent to monitor log files. DO NOT USE WILDCARDS in file definitions for the path of a log. This causes the agent to use increasing amounts of memory as it attempts to monitor ALL the log files in the directory... 
 
 ### Debugging continued!
 
@@ -89,7 +90,7 @@ Log Groups are easily identified by name and filtered by instance_id.
 
 # Cloudwatch Agent on Windows
 
-This is currently being deployed from the init script in the modernisation-platform-environment repo. It's not ideal but it works. This avoids having to get ansible running on the Windows hosts using the ansibe ssm module or using Lambdas as a host environment for running ansible.
+This is currently being deployed from the user-data script in the modernisation-platform-environment repo. It's not ideal but it works. This avoids having to get ansible running on the Windows hosts using the ansibe ssm module or using Lambdas as a host environment for running ansible.
 
 ## Finding metrics to Monitor using Powershell
 
