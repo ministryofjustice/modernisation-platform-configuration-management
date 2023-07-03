@@ -5,6 +5,7 @@ server_type_roles_list:
   - set-ec2-hostname
   - time
   - combined-reporting-bip-rhel8-setup
+  - combined-reporting-bip-installation
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 

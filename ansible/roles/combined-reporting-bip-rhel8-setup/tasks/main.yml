@@ -1,53 +1,37 @@
 ---
-# - import_tasks: install_packages.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: install_packages.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
-# - import_tasks: create_directories.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: add_groups.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
-# - import_tasks: add_groups.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: add_users.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
-# - import_tasks: add_users.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: retrieve_files.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
-# - import_tasks: retrieve_files.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
-
-# - import_tasks: extract_files.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: extract_files.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
 - import_tasks: install_jvm.yml
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
-# - import_tasks: install_host_agent.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: install_bip.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']

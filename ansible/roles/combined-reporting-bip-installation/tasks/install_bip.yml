@@ -1,0 +1,6 @@
+---
+- name: Perform pre-requesite checks
+  shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh -InstallDir {{ sap_bi_platform_installation_directory }} -pre_requisite_check {{ sap_bi_platform_extraction_directory }}/response.ini {{ sap_bi_platform_extraction_directory }}/failedPrereqs.txt"
+
+- name: Run Silent Installation
+  shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh –InstallDir /u01/app/bobj/BIP4 -r {{ sap_bi_platform_extraction_directory }}/response.ini
