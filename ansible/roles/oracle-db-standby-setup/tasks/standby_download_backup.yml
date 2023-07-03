@@ -56,6 +56,19 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       become_user: oracle
+      when: db_primary.s3_bucket is not defined
+
+    - name: Download Password file backup from S3 bucket backup
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          aws s3 cp s3://{{ db_primary.s3_bucket }}/orapw{{ db_primary.instance_name }} {{ database_home }}/dbs/orapw{{ db_standby.instance_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      async: 7200
+      poll: 20
+      become_user: oracle
+      when: db_primary.s3_bucket is defined and not ansible_check_mode
 
   # block
   when: adhoc_backup_label is defined
