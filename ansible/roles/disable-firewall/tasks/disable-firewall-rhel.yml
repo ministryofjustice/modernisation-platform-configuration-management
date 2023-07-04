@@ -7,7 +7,7 @@
     name: iptables
     state: stopped
     enabled: no
-  when: ansible_facts.services['iptables'] is defined
+  when: ansible_facts.services['iptables'] is defined || ansible_facts.services['iptables.service'] is defined
 
 - name: Disable firewalld service if it is present
   ansible.builtin.service:
