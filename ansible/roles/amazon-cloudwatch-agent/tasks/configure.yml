@@ -49,6 +49,7 @@
     mode: 0755
   when: collectd_installed.rc == 0
 
+# additional settings for EC2 instances if they exist
 - name: template config files
   ansible.builtin.template:
     src: "{{ item|replace('-', '_') }}.json.j2"
@@ -59,4 +60,4 @@
   loop: "{{ cloudwatch_agent_configs }}"
   loop_control:
     label: item
-  when: cloudwatch_agent_configs is defined
+  when: cloudwatch_agent_configs is defined # currently none defined
