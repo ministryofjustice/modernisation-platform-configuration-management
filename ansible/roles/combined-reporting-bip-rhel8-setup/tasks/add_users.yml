@@ -11,12 +11,13 @@
 - name: Assign bobj permissions
   ansible.builtin.file:
     path: "{{ item }}"
+    state: directory
     owner: bobj
     group: binstall
     mode: "0775"
   loop:
-    - /u01/app/bobj/
-    - /u02/software/BIP_4_3_SP1/
+    - "{{ sap_bi_platform_installation_directory }}"
+    - "{{ sap_bi_platform_extraction_directory }}"
 
 - name: Add the Oracle user
   ansible.builtin.user:
@@ -29,6 +30,7 @@
 - name: Assign 775 oracle permissions
   ansible.builtin.file:
     path: "{{ item }}"
+    state: directory
     owner: oracle
     group: oinstall
     mode: "0775"
@@ -39,6 +41,7 @@
 - name: Assign 770 oracle permissions
   ansible.builtin.file:
     path: /u01/app/oraInventory/
+    state: directory
     owner: oracle
     group: oinstall
     mode: "0770"
