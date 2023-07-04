@@ -28,7 +28,7 @@
     name: "{{ ec2.tags.Name }}"
     server_type: "{{ ec2.tags['server-type'] }}"
     instance_id: "{{ ansible_ec2_instance_id }}"
-    weblogic_log_path: "{{ weblogic_log_path if ec2.tags['server-type'] == 'nomis-web' else '' }}"
+    # weblogic_log_path: "{{ weblogic_log_path if ec2.tags['server-type'] == 'nomis-web' else '' }}"
 
 # default cloudwatch-agent config file based on OS type (linux or windows)
 # NOTE: windows default config doesn't exist yet
