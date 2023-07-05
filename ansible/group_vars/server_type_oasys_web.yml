@@ -6,10 +6,10 @@ roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
+  - packages
   - disable-ipv6
   - disable-firewall
   - time
-  - packages
   - message-of-the-day
   - amazon-ssm-agent
   #- amazon-cloudwatch-agent
@@ -27,6 +27,7 @@ users_and_groups_system:
 packages_yum_install:
   - zip
   - git
+  - net-tools
 
 disks_partition: []
 
