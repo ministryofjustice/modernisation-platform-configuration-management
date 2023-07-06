@@ -5,7 +5,6 @@
   register: client_software_installed
 
 - block:
-
     - import_tasks: download_software.yml
       tags:
         - amibuild
@@ -14,7 +13,7 @@
     - import_tasks: install_client.yml
       tags:
         - amibuild
-        - oracle_client_install 
+        - oracle_client_install
 
     - import_tasks: cleanup.yml
       tags:
