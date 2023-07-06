@@ -10,3 +10,13 @@
     - ec2provision
     - ec2patch
   when: ansible_facts['distribution'] == "RedHat"
+
+- import_tasks: collectd_unconfigure.yml
+  tags:
+    - collectd_unconfigure_initial
+  when: ansible_facts['distribution'] == "RedHat"
+
+- import_tasks: collectd_selinux_policy.yml
+  tags:
+    - collectd_selinux_policy
+  when: ansible_facts['distribution'] == "RedHat"

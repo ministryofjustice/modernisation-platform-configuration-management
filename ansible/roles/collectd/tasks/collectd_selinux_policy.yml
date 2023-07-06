@@ -1,0 +1,21 @@
+---
+- name: make sure collectd has run for 5 minutes
+  pause:
+    minutes: 5
+
+- name: capture selinux details from audit log around collectd
+  ansible.builtin.shell: |
+    ausearch -c 'collectd' --raw | audit2allow -M collectd_selinux_policy
+  register: selinux_policy_output
+  become: true
+
+- name: print audit2allow output
+  ansible.builtin.debug:
+    msg: "{{ selinux_policy_output.stdout_lines }}"
+
+- name: load selinux policy
+  ansible.builtin.shell: |
+    semodule -i collectd_selinux_policy.pp
+  become: true
+  when: selinux_policy_output.stdout_lines | length > 0
+  
