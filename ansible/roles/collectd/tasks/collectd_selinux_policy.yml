@@ -8,16 +8,16 @@
   debug:
     var: selinux_status.stdout
 
-- block: # if selinux is enabled
+- block: # when selinux mode is 'Enforcing'
   - name: make sure collectd has run for 5 minutes to capture all the errors
     pause:
-      minutes: 5
+      minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
 
   - name: capture selinux details from audit log around collectd
     ansible.builtin.shell: |
       grep 'collectd' /var/log/audit/audit.log | audit2allow -M collectd_selinux_policy
     args:
-      chdir: ~ # policy file needs to be run in an allowed directory
+      chdir: ~ # policy file needs to be created/written in an "allowed" directory
     register: selinux_policy_output
     become: true
 
