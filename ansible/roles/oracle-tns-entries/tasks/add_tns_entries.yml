@@ -7,7 +7,7 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
 
-- name: Check tnsnames.ora file exists 
+- name: Check tnsnames.ora file exists
   ansible.builtin.stat:
     path: "{{ oracle_home }}/network/admin/tnsnames.ora"
   register: tns_file
@@ -22,7 +22,7 @@
     remote_src: true
   when: tns_file.stat.exists
 
-- name: Add TNS entries in tnsnames.ora file 
+- name: Add TNS entries in tnsnames.ora file
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
