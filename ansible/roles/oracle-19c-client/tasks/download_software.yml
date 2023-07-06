@@ -18,6 +18,7 @@
   loop:
     - "{{ temp }}"
     - "{{ stage }}"
+    - "{{ oracle_home }}"
 
 - name: Download oracle prerequisite rpms from S3 bucket
   amazon.aws.aws_s3:

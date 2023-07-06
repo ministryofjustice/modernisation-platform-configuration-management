@@ -4,12 +4,9 @@
     path: "{{ item }}"
     state: absent
   loop:
-    - "/u02/temp/{{ oracle_tar }}"
-    - "/u02/temp/{{ opatch_zip }}"
-    - "/u02/stage/{{ grid_password_file }}"
-    - "/u02/stage/{{ grid_response_file }}"
-    - "/u02/stage/{{ database_response_file }}"
-    - "/u02/stage/grid"
-    - "/u02/stage/database"
-    - "/u02/stage/patches"
-    - "/u02/stage/GIPATCH_1"
+    - "{{ stage }}/{{ oracle_prereq_rpm }}"
+    - "{{ stage }}/{{ opatch_zip }}"
+    - "{{ stage }}/{{ oracle_release_update_zip }}"
+    - "{{ stage }}/{{ client_software }}"
+    - "{{ stage }}/{{ client_response_file }}"
+
