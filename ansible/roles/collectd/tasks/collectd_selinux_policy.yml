@@ -1,21 +1,49 @@
 ---
-- name: make sure collectd has run for 5 minutes
-  pause:
-    minutes: 5
+- name: check whether selinux policy is enabled or not
+  command: getenforce
+  register: selinux_status
+  changed_when: false
 
-- name: capture selinux details from audit log around collectd
-  ansible.builtin.shell: |
-    ausearch -c 'collectd' --raw | audit2allow -M collectd_selinux_policy
-  register: selinux_policy_output
-  become: true
+- name: Print SELinux status
+  debug:
+    var: selinux_status.stdout
 
-- name: print audit2allow output
-  ansible.builtin.debug:
-    msg: "{{ selinux_policy_output.stdout_lines }}"
+- block: # if selinux is enabled
+  - name: make sure collectd has run for 5 minutes to capture all the errors
+    pause:
+      minutes: 5
 
-- name: load selinux policy
-  ansible.builtin.shell: |
-    semodule -i collectd_selinux_policy.pp
-  become: true
-  when: selinux_policy_output.stdout_lines | length > 0
+  - name: capture selinux details from audit log around collectd
+    ansible.builtin.shell: |
+      grep 'collectd' /var/log/audit/audit.log | audit2allow -M collectd_selinux_policy
+    args:
+      chdir: ~ # policy file needs to be run in an allowed directory
+    register: selinux_policy_output
+    become: true
+
+  - name: get contents of home directory
+    ansible.builtin.shell: |
+      ls -l ~
+    register: home_dir_contents
+    become: true
+
+  - name: print home directory contents
+    ansible.builtin.debug:
+      msg: "{{ home_dir_contents.stdout_lines }}"
+
+  - name: print audit2allow output
+    ansible.builtin.debug:
+      msg: "{{ selinux_policy_output.stdout_lines }}"
+
+  - name: load selinux policy
+    ansible.builtin.shell: |
+      semodule -i collectd_selinux_policy.pp
+    become: true
+    args:
+      chdir: ~
+    when: selinux_policy_output.stdout_lines | length > 0
+
+  # block
+  when: selinux_status.stdout == 'Enforcing'
+
   

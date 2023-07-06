@@ -15,7 +15,7 @@
 
 - name: create folder for exec script to collect metrics
   ansible.builtin.file:
-    path: "/usr/local/collectd"
+    path: "/opt/collectd"
     state: directory
     owner: root
     group: root
@@ -32,7 +32,7 @@
 - name: copy plugin files
   ansible.builtin.copy:
     src: "{{ item|replace('-', '_') }}.conf"
-    dest: "/usr/local/collectd/{{ item|replace('-', '_') }}.conf"
+    dest: "/etc/collectd.d/{{ item|replace('-', '_') }}.conf"
     owner: root
     mode: 0644
   loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
@@ -44,7 +44,7 @@
 - name: template config files
   ansible.builtin.template:
     src: "{{ item|replace('-', '_') }}.sh.j2"
-    dest: "/usr/local/collectd/{{ item|replace('-', '_') }}.sh"
+    dest: "/opt/collectd/{{ item|replace('-', '_') }}.sh"
     owner: root
     mode: 0755
   loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
