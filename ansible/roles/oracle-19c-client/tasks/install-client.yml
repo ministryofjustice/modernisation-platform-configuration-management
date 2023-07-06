@@ -1,0 +1,58 @@
+---
+- name: Create database response file
+  template:
+    src: "{{ client_response_file }}.j2"
+    dest: "/u02/stage/{{ client_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Install oracle prerequisite rpms
+  yum:
+    name: "{{ stage }}/{{ item }}"
+    state: present
+    disable_gpg_check: true
+  loop:
+    - "{{ oracle_prereq_rpm }}"
+
+- name: Unzip Oracle 19c Client software
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ client_software }}"
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+
+- name: Unzip Oracle 19c psu patch software
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ psu_patch }}"
+    dest: "{{ stage }}/psu"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+
+- name: Unzip OPatch in Oracle Client home
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ opatch }}"
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+
+- name: Install Oracle 19c client server
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignoreSysPrereqs -ignorePrereq -responseFile {{ stage }}/{{ client_response_file }} -applyRU {{ stage }}/{{ oracle_release_update }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client
+  become_user: oracle
+
+- name: Run post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ oracle_inventory }}/orainstRoot.sh
+      {{ oracle_inventory }}/orainstRoot.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client
