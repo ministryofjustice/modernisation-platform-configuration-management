@@ -11,8 +11,8 @@ password_ASMSNMP="{{ database_asmsnmp_password }}"
 
 # reconfigure Oracle HAS
 source oraenv <<< +ASM
-srvctl remove listener || true
 srvctl add listener
+srvctl start listener || true
 # get spfile for ASM
 spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*' || true)
 echo "+++Spfile set to '$spfile'"
