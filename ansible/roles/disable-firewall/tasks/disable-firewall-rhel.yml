@@ -1,9 +1,4 @@
 ---
-- name: Run systemd reload
-  ansible.builtin.systemd:
-    daemon_reload: true
-  when: ansible_distribution_major_version != '6'
-
 - name: Populate service facts
   ansible.builtin.service_facts:
 
