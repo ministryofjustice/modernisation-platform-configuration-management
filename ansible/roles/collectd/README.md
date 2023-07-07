@@ -2,19 +2,30 @@
 
 Installs collectd and configures it based on the values in group_vars `collectd_metric_configs` variable. See server_type_nomis_db for an example.
 
-1. reads values of `collectd_metric_configs` from group_vars
+Collectd is able to run scripts and perform other tasks based on plugins. The scripts are run by the exec plugin and the results are made available to the Cloudwatch agent on the same host via the network plugin. The Cloudwatch agent then sends the metrics to Cloudwatch.
 
-e.g. 
+The common plugins are defined in collectd.conf.j2 (network plugin being the most important) with additional plugins pulled in by the statement 
+`Include "/etc/collectd.d` in the main collectd.conf file. 
+
+The collectd_configure task does the following:
+
+1. reads values of `collectd_metric_configs` from group_vars, for example:
+
 ```    
 collectd_metric_configs:
-  - nomis-web
+  - nomis-db
 ```
 
 2. loops through values of files/[collectd_metric_configs] and templates/[collectd_metric_configs] deploys them to the host if the relevant files exist
     
-3. deploys files/linux.conf and templates/linux.sh.j2 to the host by default if collectd_metric_configs is not defined
+3. files/linux.conf and templates/linux.sh.j2 are deployed to the host by default if additional collectd_metric_configs are not defined
 
-* IMPORTANT: to pick up service metrics from windows hosts it'd probably be easier to use PowerShell and scheduled tasks to post the metrics directly to Cloudwatch. This hasn't been implemented anywhere yet though.
+## Collectd and Selinux
+
+There is an additional task specifically to create a selinux policy for collectd. This is because collectd runs scripts via the exec plugin and selinux will block this by default. 
+
+Having loging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
+
 ## Debugging Collectd
 
 Probably the easiest thing to do is un-comment the 'logfile' plugin sections in collectd.conf.j2 and reload collectd via `sudo systemctl restart collectd.service`
@@ -29,4 +40,4 @@ Further collectd Troubleshooting [here](https://collectd.org/wiki/index.php/Trou
 
 1. *.conf files must have an empty line at the end to load, otherwise collectd won't start...
 
-2. formatting for the exec message (sent to localhost udp port 25826) is very important. It MUST be in the format "PUTVAL $HOSTNAME/exec-<name_of_metric>/guage-$signifier. Values after exec- and guage- (or other value type) cannot use '-' characters or spaces otherwise the exec plugin will deliver a mal-formed message. 
+2. formatting for the exec message (sent to localhost udp port 25826) is very important. It MUST be in the format "PUTVAL $HOSTNAME/exec-<name_of_metric>/guage-$signifier. Values after exec- and guage- (or other value type) cannot use additional '-' characters or spaces otherwise the exec plugin will deliver a mal-formed message. 

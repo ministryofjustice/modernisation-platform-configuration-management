@@ -21,12 +21,15 @@
     group: root
     mode: 0755
 
+  # get tag values for use in script nomis_db.sh.j2 template
 - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
   set_fact:
     oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
   when: ec2.tags['oracle-sids'] is defined
 
-- name: copy conf files
+  # copy collectd plugin definitions into /etc/collectd.d/ directory referenced in collectd.conf
+  # if defined in group_vars under collectd_metric_configs, will use only linux.sh if none defined
+- name: copy plugin files
   ansible.builtin.copy:
     src: "{{ item|replace('-', '_') }}.conf"
     dest: "/etc/collectd.d/{{ item|replace('-', '_') }}.conf"
@@ -36,6 +39,8 @@
   loop_control:
     label: item
 
+  # template collectd exec scripts into /opt/collectd directory
+  # if defined in group_vars under collectd_metric_configs, will use only linux.sh if none defined
 - name: template config files
   ansible.builtin.template:
     src: "{{ item|replace('-', '_') }}.sh.j2"
