@@ -1,0 +1,45 @@
+---
+- name: Add databases
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo srvctl add database -d {{ item }} -o {{ database_home }} -p +FLASH/{{ item }}/spfile{{ item }}.ora
+      . oraenv <<< {{ item }}
+      srvctl add database -d {{ item }} -o {{ database_home }} -p +FLASH/{{ item }}/spfile{{ item }}.ora
+      srvctl config database -d {{ item }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  environment: "{{ grid_env }}"
+  become_user: oracle
+  loop: "{{ db_instances }}"
+
+- name: Add database services
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      db_name=$(echo "{{ item }}" | cut -d. -f1)
+      service_name=$(echo "{{ item }}" | cut -d. -f2)
+      echo srvctl add service -d ${db_name} -s ${service_name}
+      . oraenv <<< ${db_name}
+      srvctl add service -d ${db_name} -s ${service_name}
+      srvctl config service -d ${db_name} -s ${service_name}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  environment: "{{ grid_env }}"
+  become_user: oracle
+  loop: "{{ db_services }}"
+
+- name: Start databases
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . oraenv <<< {{ item }}
+      echo srvctl start database -d {{ item }}
+      srvctl start database -d {{ item }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  async: 900
+  poll: 30
+  environment: "{{ grid_env }}"
+  become_user: oracle
+  loop: "{{ db_instances }}"

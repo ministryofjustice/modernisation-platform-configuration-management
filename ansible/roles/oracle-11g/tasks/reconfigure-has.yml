@@ -1,4 +1,14 @@
 ---
+- name: Force stop HAS
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      source oraenv <<< +ASM
+      crsctl stop has -f || true
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  environment: "{{ grid_env }}"
+
 - name: Get processes using tcp 1521
   ansible.builtin.shell: fuser -n tcp 1521 || true
   check_mode: false
@@ -25,6 +35,15 @@
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   args:
     chdir: "{{ grid_home }}"
+
+- name: Run database post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ database_home }}/root.sh
+      {{ database_home }}/root.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
 
 - name: Configure oracle HAS
   ansible.builtin.shell: |
