@@ -34,25 +34,39 @@ if [ -n "$chk_entry" ] && [ "$chk_entry" = 0 ]; then
   echo "Creating the required entry…"
   echo ""
 
-echo "
-$ENTRY_NAME =
+  echo "" >> $TNS_ADMIN_DIR/tnsnames.ora
+  echo "$ENTRY_NAME =
   (DESCRIPTION =" >> $TNS_ADMIN_DIR/tnsnames.ora
-for i in $(echo  $HOST_ADDR | sed "s/@/ /g")
-do
-    echo "    (ADDRESS = (PROTOCOL = TCP)(HOST = $i)(PORT = $PORT_NUM))" >>  $TNS_ADMIN_DIR/tnsnames.ora
-done
-echo "    (CONNECT_DATA =
+  for i in $(echo  $HOST_ADDR | sed "s/@/ /g")
+  do
+      echo "    (ADDRESS = (PROTOCOL = TCP)(HOST = $i)(PORT = $PORT_NUM))" >>  $TNS_ADMIN_DIR/tnsnames.ora
+  done
+  MULTI_HOST=`echo $HOST_ADDR | grep '@' | wc -l`
+  if [ ${MULTI_HOST} -eq 1 ]
+  then
+	echo "    (FAILOVER = YES)" >> $TNS_ADMIN_DIR/tnsnames.ora
+	echo "    (CONNECT_DATA =
+      (SERVICE_NAME = $SRV_NAME)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+       )
+     )
+   )" >> $TNS_ADMIN_DIR/tnsnames.ora
+  else
+
+       echo "    (CONNECT_DATA =
       (SERVER = DEDICATED)
       (SERVICE_NAME = $SRV_NAME)
     )
   )
-" >> $TNS_ADMIN_DIR/tnsnames.ora
+  " >> $TNS_ADMIN_DIR/tnsnames.ora
+  fi
 
-   elif [ "$chk_entry" != 0 ]; then
-
-   echo ""
-echo "This entry already exists: [$ENTRY_NAME]."
-echo "Nothing to do!"
-echo ""
-   exit;
+elif [ "$chk_entry" != 0 ]; then
+     echo ""
+     echo "This entry already exists: [$ENTRY_NAME]."
+     echo "Nothing to do!"
+     echo ""
+     exit;
 fi
