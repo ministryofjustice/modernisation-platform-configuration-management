@@ -1,11 +1,38 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
+
+environment:
+  JAVA_HOME: /opt/sap/sapjvm_8/bin
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+  - name: bobj
+    group: binstall
+    groups:
+      - dba
+      - sapsys
+
 server_type_roles_list:
+  - users-and-groups
+  - sudoers
   - get-ec2-facts
   - set-ec2-hostname
+  - domain-search
+  - disable-ipv6
+  - disable-firewall
   - time
+  - packages
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - disks
+  - oracle-19c-client
   - combined-reporting-bip-rhel8-setup
-  - combined-reporting-tomcat-installation
+  # - combined-reporting-tomcat-installation
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -34,3 +61,11 @@ packages_yum_install:
   - libXau.i686
   - libXau.x86_64
   - xz-libs.i686
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
