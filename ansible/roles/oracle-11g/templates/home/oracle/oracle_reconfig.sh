@@ -11,6 +11,7 @@ password_ASMSNMP="{{ database_asmsnmp_password }}"
 
 # reconfigure Oracle HAS
 source oraenv <<< +ASM
+srvctl remove listener || true
 srvctl add listener
 # get spfile for ASM
 spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*' || true)
@@ -51,5 +52,9 @@ while [[ "$i" -le 10 ]]; do
     sleep 30
     i=$((i + 1))
 done
+
+crsctl check has
+crsctl check css
+asmcmd lsdg
 
 echo "+++Finished setting up Oracle HAS as Oracle user"
