@@ -1,0 +1,55 @@
+---
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ rcvcat }}  variable is defined in db_configs fact"
+  when: db_configs[rcvcat] is not defined
+
+- name: Set database facts
+  set_fact:
+    rcvcat_db_name: "{{ db_configs[ rcvcat ] }}"
+
+- name: Debug recovery catalog database name
+  debug:
+    var: rcvcat_db_name
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ rcvcat_db_name.rcvcat_db_name }}/syspassword"
+    ssm_parameters_path_db_system_password: "{{ ssm_parameters_path }}/{{ rcvcat_db_name.rcvcat_db_name }}/systempassword"
+    ssm_parameters_path_db_rcatowner_password: "{{ ssm_parameters_path }}/{{ rcvcat_db_name.rcvcat_db_name }}/rcvcatownerpassword"
+
+# Upload password manually, e.g. aws ssm put-parameter --name "/database/t1-nomis-db-1-b/TRDATT1/syspassword" --type "SecureString" --data-type "text" --value "Password123" --profile nomis-test
+- debug:
+    msg: "Sys password must be uploaded to {{ ssm_parameters_path_db_sys_password }}"
+
+- debug:
+    msg: "System password must be uploaded to {{ ssm_parameters_path_db_system_password }}"
+
+- debug:
+    msg: "rcvcatowner password must be uploaded to {{ ssm_parameters_path_db_rcatowner_password }}"
+
+- name: Get SSM parameters
+  set_fact:
+    db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+    db_system_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_system_password, region=ansible_ec2_placement_region) }}"
+    db_rcatowner_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_rcatowner_password, region=ansible_ec2_placement_region) }}"
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - db_sys_password|length > 0
+    - db_system_password| length > 0
+    - db_rcatowner_password| length > 0
+    - rcvcat_db_name.rcvcat_db_name|length > 0
+    - rcvcat_db_name.rcvcat_user_name|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)
