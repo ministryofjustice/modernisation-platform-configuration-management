@@ -1,5 +1,5 @@
 ---
-- name: Copy recovery catalog creation scripts 
+- name: Copy recovery catalog creation scripts
   template:
     src: "{{ item }}.j2"
     dest: "{{ stage }}/{{ item }}"
@@ -10,7 +10,7 @@
     - create_recovery_catalog_db.sh
     - create_recovery_catalog_user.sh
 
-- name: Create recovery catalog database 
+- name: Create recovery catalog database
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
@@ -23,7 +23,7 @@
   poll: 60
   when: not ansible_check_mode
 
-- name: Create recovery catalog database user and rman catalog 
+- name: Create recovery catalog database user and rman catalog
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
