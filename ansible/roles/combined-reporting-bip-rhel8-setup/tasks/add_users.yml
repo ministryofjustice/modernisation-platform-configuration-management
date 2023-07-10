@@ -1,13 +1,4 @@
 ---
-- name: Add the bobj user
-  ansible.builtin.user:
-    name: bobj
-    uid: 1201
-    comment: bobj
-    groups: dba,binstall
-    password: "{{ 'bobj' | password_hash('sha512') }}"
-    home: /home/bobj bobj
-
 - name: Assign bobj permissions
   ansible.builtin.file:
     path: "{{ item }}"
@@ -18,14 +9,6 @@
   loop:
     - "{{ sap_bi_platform_installation_directory }}"
     - "{{ sap_bi_platform_extraction_directory }}"
-
-- name: Add the Oracle user
-  ansible.builtin.user:
-    name: oracle
-    comment: Oracle
-    groups: oinstall,dba,wheel
-    password: "{{ 'password' | password_hash('sha512') }}"
-    home: /home/oracle oracle
 
 - name: Assign 775 oracle permissions
   ansible.builtin.file:
