@@ -1,10 +1,6 @@
 ---
 - name: Nomis XTAG weblogic setup
   block:
-    - import_tasks: get-facts.yml
-      tags:
-        - always
-
     - import_tasks: packages.yml
       tags:
         - amibuild
@@ -57,6 +53,15 @@
       tags:
         - amibuild
         - weblogic_patch_2
+
+    - import_tasks: get-facts.yml
+      tags:
+        - ec2provision
+        - weblogic_moj_admin_scripts
+        - weblogic_create_domain
+        - weblogic_certificate_fix
+        - weblogic_create_managed_app
+        - weblogic_setup_log_rotate
 
     - import_tasks: create-xtag-domain.yml
       tags:
