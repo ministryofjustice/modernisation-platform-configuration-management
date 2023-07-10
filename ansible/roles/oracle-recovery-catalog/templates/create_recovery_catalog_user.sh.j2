@@ -1,0 +1,28 @@
+#!/bin/bash
+export PATH=/home/oracle/.local/bin:/home/oracle/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+export ORACLE_SID=$1
+export RCATOWNER_PASSWORD=$2
+export STAGE_DIR=$3
+. oraenv <<< ${ORACLE_SID}
+
+sqlplus / as sysdba << EOF > ${STAGE_DIR}/catalog_user_creation.log
+create tablespace rcvcat_tbs ;
+create user rcvcatowner identified by ${RCATOWNER_PASSWORD}
+default tablespace rcvcat_tbs
+quota unlimited on rcvcat_tbs;
+grant recovery_catalog_owner to rcvcatowner;
+exit
+EOF
+
+# Setup rman catalog database
+rman catalog rcvcatowner/${RCATOWNER_PASSWORD}@${ORACLE_SID}<< EOF > ${STAGE_DIR}/rman_catalog_creation.log
+create catalog;
+exit
+EOF
+
+rman target / catalog rcvcatowner/${RCATOWNER_PASSWORD}@${ORACLE_SID}<< EOF > ${STAGE_DIR}/rman_catalog_register.log
+register database;
+configure retention policy to recovery window of 15 days;
+configure controlfile autobackup on;
+exit
+EOF
