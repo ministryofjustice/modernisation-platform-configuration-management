@@ -2,11 +2,15 @@
 - name: Populate service facts
   ansible.builtin.service_facts:
 
+# I've seen this fail on RHEL7.9 when restoring from backup with following error:
+#   'Could not find the requested service iptables: host'
+# Cannot find any good solution so setting ignore_errors flag
 - name: Disable iptables if it is present
   ansible.builtin.service:
     name: iptables
     state: stopped
     enabled: no
+  ignore_errors: true
   when: ansible_facts.services['iptables'] is defined or ansible_facts.services['iptables.service'] is defined
 
 - name: Disable firewalld service if it is present
