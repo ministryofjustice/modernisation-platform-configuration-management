@@ -3,36 +3,45 @@
   ansible.builtin.stat:
     path: "{{ oracle_home }}/bin/emctl"
   register: oem_software_installed
+  tags:
+    - ec2provision
 
 - import_tasks: get_facts.yml
   tags:
     - amibuild
     - get_facts
+    - ec2provision
 
 - block:
     - import_tasks: install_oem_prereq.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_oem_software_prereq
+
 
     - import_tasks: create_emrepo_database.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_oem_software_prereq
 
     - import_tasks: download_oem_software.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_oem_software_download
 
     - import_tasks: install_oem.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_oem_install
 
     - import_tasks: configure_oem.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_oem_configure
 
     # - import_tasks: oem_ru_upgrade.yml
