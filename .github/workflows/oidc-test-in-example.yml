@@ -1,0 +1,45 @@
+---
+name: example-oidc-test
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/oidc-test-in-example.yml'
+  pull_request:
+    branches:
+      - main
+    types: [ opened, edited, reopened, synchronize ]
+    paths:
+      - '.github/workflows/oidc-test-in-example.yml'
+env:
+  ACCOUNT_NAME: "example-development"
+jobs:
+  use-oidc-with-aws-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install aws-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip3 install awscli
+
+      - name: Get AWS Account Number
+        run: |
+          ACCOUNT_NUMBER=$(jq -r -e --arg account_name "${ACCOUNT_NAME}" '.account_ids[$account_name]' <<< $ENVIRONMENT_MANAGEMENT)
+          echo "ACCOUNT_NUMBER=${ACCOUNT_NUMBER}" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f  # v2.1.0
+        with:
+          role-to-assume: "arn:aws:iam::${{ env.ACCOUNT_NUMBER }}:role/github-actions"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: List s3 buckets
+        run: |
+          aws s3 ls
