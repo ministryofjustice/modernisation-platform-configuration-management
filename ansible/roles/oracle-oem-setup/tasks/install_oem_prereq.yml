@@ -1,0 +1,27 @@
+---
+- name: Install oracle prerequisite rpms
+  yum:
+    name: "{{ item }}"
+    state: present
+    disable_gpg_check: true
+  loop:
+    - binutils
+    - gcc
+    - gcc-c++
+    - glibc
+    - glibc-devel
+    - glibc-devel.i686
+    - libaio
+    - libaio-devel
+    - libgcc
+    - libstdc++
+    - libstdc++-devel
+    - libnsl
+    - libnsl2
+    - sysstat
+    - motif
+    - motif-devel
+    - redhat-lsb
+    - redhat-lsb-core
+    - openssl
+    - make
