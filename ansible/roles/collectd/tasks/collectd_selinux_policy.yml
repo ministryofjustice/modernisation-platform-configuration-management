@@ -3,13 +3,10 @@
   command: getenforce
   register: selinux_status
   changed_when: false
-
-- name: Print SELinux status
-  debug:
-    var: selinux_status.stdout
+  ignore_errors: true
 
 - block: # when selinux mode is 'Enforcing'
-  - name: make sure collectd has run for 5 minutes to capture all the errors
+  - name: make sure collectd has run for 3 minutes to capture all the errors
     pause:
       minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
 
@@ -20,20 +17,6 @@
       chdir: ~ # policy file needs to be created/written in an "allowed" directory
     register: selinux_policy_output
     become: true
-
-  - name: get contents of home directory
-    ansible.builtin.shell: |
-      ls -l ~
-    register: home_dir_contents
-    become: true
-
-  - name: print home directory contents
-    ansible.builtin.debug:
-      msg: "{{ home_dir_contents.stdout_lines }}"
-
-  - name: print audit2allow output
-    ansible.builtin.debug:
-      msg: "{{ selinux_policy_output.stdout_lines }}"
 
   - name: load selinux policy
     ansible.builtin.shell: |
