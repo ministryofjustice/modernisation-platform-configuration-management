@@ -1,0 +1,24 @@
+---
+artefacts_s3_bucket_name: hmpps-oem-software20230608132809146600000002
+artefacts_s3_bucket_path: oracle-oem-135
+ssm_parameters_prefix: oem
+artefact_dir: /u02
+app_dir: /u01/app/oracle/product
+oracle_inventory: /u01/app/oraInventory
+oem_domain_hostname: "{{ ansible_facts.hostname }}"
+oem_mw_home: "{{ app_dir }}/mw135"
+oem_agent_base: "{{ app_dir }}/oem-agent"
+oem_gc_inst: "{{ app_dir }}/gc_inst135"
+oem_sw_lib: "{{ app_dir }}/swlib"
+em_db_create_file_dest: "+DATA/{{ emrepo_db_name.emrepo_db_name }}/datafile/"
+oracle_install_user: oracle
+oracle_install_group: oinstall
+stage: "{{ artefact_dir }}/stage"
+temp: "{{ artefact_dir }}/temp"
+patch: "{{ stage }}/patches"
+psu_patch: p35058172_190000_Linux-x86-64.zip
+oracle_home: "{{ app_dir }}/oracle/product/19c"
+oracle_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # this is to avoid having to source oracle environment variables
+oem_install_response_file: oem_install.rsp
+oem_configure_response_file: oem_configure.rsp
+weblogic_admin_username: weblogic

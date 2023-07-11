@@ -1,0 +1,28 @@
+---
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ temp }}"
+    - "{{ stage }}"
+
+- name: Download OEM 13.5 Software 
+  become_user: oracle
+  amazon.aws.aws_s3:
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    permission: "public-read"
+    overwrite: latest
+  loop:
+    - "em13500_linux64.bin"
+    - "em13500_linux64-2.zip"
+    - "em13500_linux64-3.zip"
+    - "em13500_linux64-4.zip"
+    - "em13500_linux64-5.zip"
+  

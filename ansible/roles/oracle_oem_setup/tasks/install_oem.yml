@@ -1,0 +1,44 @@
+---
+- name: Create OEM install response file
+  template:
+    src: "{{ oem_install_response_file }}.j2"
+    dest: "{{ stage }}/{{ oem_install_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Install OEM 13.5 software in silent mode 
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      chmod 700 {{ stage }}/em13500_linux64.bin
+      {{ stage }}/em13500_linux64.bin -silent -responseFile {{ stage }}/{{ oem_install_response_file }} -J-Djava.io.tmpdir={{ temp }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+  become_user: oracle
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode
+
+- name: Run post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo "sh {{ oem_mw_home }}/allroot.sh"
+      sh {{ oem_mw_home }}/allroot.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode
+
+- name: Upload weblogic, nodemanager, sysman and OEM agent registration passwords for OEM repository database
+  become_user: oracle
+  ansible.builtin.shell: |
+    export PATH=$PATH:/usr/local/bin
+    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_weblogic_password }}" --value {{ weblogic_admin_password }} --type "SecureString" --overwrite 
+    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_nodemanager_password }}" --value {{ nodemanager_password }} --type "SecureString" --overwrite 
+    aws ssm put-parameter --name "{{ ssm_parameters_path_db_sysman_password }}" --value {{ db_sysman_password }} --type "SecureString" --overwrite 
+    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_agent_registration_password }}" --value {{ oem_agent_password }} --type "SecureString" --overwrite 
+
+  

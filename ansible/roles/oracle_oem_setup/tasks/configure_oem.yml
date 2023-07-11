@@ -1,0 +1,20 @@
+---
+- name: Create OEM configure response file
+  template:
+    src: "{{ oem_configure_response_file }}.j2"
+    dest: "{{ stage }}/{{ oem_configure_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Configure OEM 13.5 software in silent mode 
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      {{ oem_mw_home }}/sysman/install/ConfigureGC.sh -silent -responseFile {{ stage }}/{{ oem_configure_response_file }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+  become_user: oracle
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode
