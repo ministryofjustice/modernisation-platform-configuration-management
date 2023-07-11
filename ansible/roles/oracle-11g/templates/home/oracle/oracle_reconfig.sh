@@ -12,6 +12,7 @@ password_ASMSNMP="{{ database_asmsnmp_password }}"
 # reconfigure Oracle HAS
 source oraenv <<< +ASM
 srvctl add listener
+srvctl start listener || true
 # get spfile for ASM
 spfile=$(adrci exec="set home +asm ; show alert -tail 1000" | grep -oE -m 1 '\+ORADATA.*' || true)
 echo "+++Spfile set to '$spfile'"
@@ -29,6 +30,10 @@ while [[ "$i" -le 10 ]]; do
     echo "+++Wait for ASM service #$((i + 1))"
     asm_status=$(srvctl status asm | grep "ASM is running" || true)
     if [[ -n "$asm_status" ]]; then
+        echo "+++Unmount disks"
+        asmcmd umount DATA || true
+        asmcmd umount FLASH || true
+
         echo "+++Mount disks"
         asmcmd mount DATA # returns exit code zero even if already mounted
         asmcmd mount FLASH
@@ -51,5 +56,9 @@ while [[ "$i" -le 10 ]]; do
     sleep 30
     i=$((i + 1))
 done
+
+crsctl check has
+crsctl check css
+asmcmd lsdg
 
 echo "+++Finished setting up Oracle HAS as Oracle user"
