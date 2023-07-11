@@ -35,40 +35,40 @@
     nodemanager_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_nodemanager_password, region=ansible_ec2_placement_region) }}"
     oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
 
-- name: Set sys password if not in SSM 
-  set_fact: 
+- name: Set sys password if not in SSM
+  set_fact:
     db_sys_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - db_sys_password|length <= 0
 
-- name: Set system password if not in SSM 
-  set_fact: 
+- name: Set system password if not in SSM
+  set_fact:
     db_system_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - db_system_password|length <= 0
 
-- name: Set sysman password if not in SSM 
-  set_fact: 
+- name: Set sysman password if not in SSM
+  set_fact:
     db_sysman_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - db_sysman_password|length <= 0
 
-- name: Set weblogic admin password if not in SSM 
-  set_fact: 
+- name: Set weblogic admin password if not in SSM
+  set_fact:
     weblogic_admin_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - weblogic_admin_password|length <= 0
 
-- name: Set weblogic nodemanager password if not in SSM 
-  set_fact: 
+- name: Set weblogic nodemanager password if not in SSM
+  set_fact:
     nodemanager_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - nodemanager_password|length <= 0
 
-- name: Set OEM agent registration password if not in SSM 
-  set_fact: 
+- name: Set OEM agent registration password if not in SSM
+  set_fact:
     oem_agent_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
-  when: 
+  when:
     - oem_agent_password|length <= 0
 
 - name: Check parameters

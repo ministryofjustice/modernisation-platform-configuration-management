@@ -1,12 +1,12 @@
 ---
-- name: Check {{ emrepo_db_name.emrepo_db_name }} database already created or not 
+- name: Check {{ emrepo_db_name.emrepo_db_name }} database already created or not
   lineinfile:
     dest: /etc/oratab
     line: "{{ emrepo_db_name.emrepo_db_name }}"
   check_mode: yes
   register: emrepo_db_exists_check
 
-- name: Create OEM repository database 
+- name: Create OEM repository database
   block:
     - name: Copy OEM repository creation scripts
       template:
@@ -35,7 +35,7 @@
       poll: 60
       when: not ansible_check_mode
 
-    - name: Setup OEM repository database parameters 
+    - name: Setup OEM repository database parameters
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -61,7 +61,7 @@
       ansible.builtin.shell: |
         export PATH=$PATH:/usr/local/bin
         aws ssm put-parameter --name "{{ ssm_parameters_path_db_sys_password }}" --value {{ db_sys_password }} --type "SecureString" --overwrite 
-        aws ssm put-parameter --name "{{ ssm_parameters_path_db_system_password }}" --value {{ db_system_password }} --type "SecureString" --overwrite 
-    
+        aws ssm put-parameter --name "{{ ssm_parameters_path_db_system_password }}" --value {{ db_system_password }} --type "SecureString" --overwrite
+
   # block
   when: emrepo_db_exists_check.changed

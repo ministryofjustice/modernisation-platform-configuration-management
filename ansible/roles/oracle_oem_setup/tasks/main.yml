@@ -7,7 +7,7 @@
 - import_tasks: get_facts.yml
   tags:
     - amibuild
-    - get_facts 
+    - get_facts
 
 - block:
     - import_tasks: install_oem_prereq.yml
@@ -18,7 +18,7 @@
     - import_tasks: create_emrepo_database.yml
       tags:
         - amibuild
-        - oracle_oem_software_prereq       
+        - oracle_oem_software_prereq
 
     - import_tasks: download_oem_software.yml
       tags:
@@ -44,7 +44,6 @@
     #   tags:
     #     - ec2provision
     #     - oracle_oem_cleanup
-
 
   # block
   # when: not oem_software_installed.stat.exists

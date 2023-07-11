@@ -10,7 +10,7 @@
     - "{{ temp }}"
     - "{{ stage }}"
 
-- name: Download OEM 13.5 Software 
+- name: Download OEM 13.5 Software
   become_user: oracle
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
@@ -25,4 +25,3 @@
     - "em13500_linux64-3.zip"
     - "em13500_linux64-4.zip"
     - "em13500_linux64-5.zip"
-  

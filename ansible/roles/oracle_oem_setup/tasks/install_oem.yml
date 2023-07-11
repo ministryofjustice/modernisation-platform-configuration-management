@@ -7,7 +7,7 @@
     owner: oracle
     group: oinstall
 
-- name: Install OEM 13.5 software in silent mode 
+- name: Install OEM 13.5 software in silent mode
   ansible.builtin.shell: |
     set -eo pipefail
     main() {
@@ -39,6 +39,4 @@
     aws ssm put-parameter --name "{{ ssm_parameters_path_oem_weblogic_password }}" --value {{ weblogic_admin_password }} --type "SecureString" --overwrite 
     aws ssm put-parameter --name "{{ ssm_parameters_path_oem_nodemanager_password }}" --value {{ nodemanager_password }} --type "SecureString" --overwrite 
     aws ssm put-parameter --name "{{ ssm_parameters_path_db_sysman_password }}" --value {{ db_sysman_password }} --type "SecureString" --overwrite 
-    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_agent_registration_password }}" --value {{ oem_agent_password }} --type "SecureString" --overwrite 
-
-  
+    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_agent_registration_password }}" --value {{ oem_agent_password }} --type "SecureString" --overwrite
