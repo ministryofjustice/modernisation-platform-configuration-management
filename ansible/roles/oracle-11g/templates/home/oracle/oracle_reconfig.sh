@@ -30,6 +30,10 @@ while [[ "$i" -le 10 ]]; do
     echo "+++Wait for ASM service #$((i + 1))"
     asm_status=$(srvctl status asm | grep "ASM is running" || true)
     if [[ -n "$asm_status" ]]; then
+        echo "+++Unmount disks"
+        asmcmd umount DATA || true
+        asmcmd umount FLASH || true
+
         echo "+++Mount disks"
         asmcmd mount DATA # returns exit code zero even if already mounted
         asmcmd mount FLASH
