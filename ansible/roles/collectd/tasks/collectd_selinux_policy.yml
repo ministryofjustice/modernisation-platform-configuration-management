@@ -1,0 +1,30 @@
+---
+- name: check whether selinux policy is enabled or not
+  command: getenforce
+  register: selinux_status
+  changed_when: false
+  ignore_errors: true
+
+- block: # when selinux mode is 'Enforcing'
+    - name: make sure collectd has run for 3 minutes to capture all the errors
+      pause:
+        minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
+
+    - name: capture selinux details from audit log around collectd
+      ansible.builtin.shell: |
+        grep 'collectd' /var/log/audit/audit.log | audit2allow -M collectd_selinux_policy
+      args:
+        chdir: ~ # policy file needs to be created/written in an "allowed" directory
+      register: selinux_policy_output
+      become: true
+
+    - name: load selinux policy
+      ansible.builtin.shell: |
+        semodule -i collectd_selinux_policy.pp
+      become: true
+      args:
+        chdir: ~
+      when: selinux_policy_output.stdout_lines | length > 0
+
+  # block
+  when: selinux_status.stdout == 'Enforcing'
