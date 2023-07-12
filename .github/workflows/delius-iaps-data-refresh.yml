@@ -21,33 +21,41 @@ jobs:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-
-      - name: Get latest manual snapshot
+      
+      - name: Get latest overnight backup
         run: |
-          snapshot_identifier=$(aws rds describe-db-snapshots \
-            --snapshot-type "manual" \
+          overnight_snapshot_identifier=$(aws rds describe-db-snapshots \
+            --snapshot-type "automated" \
             --db-instance-identifier "iaps" \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
             --output text)
-          if [ -z "$snapshot_identifier" ]; then
+          if [ -z "$overnight_snapshot_identifier" ]; then
             echo "No snapshot found"
             exit 1
           fi
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_ENV
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUT
+          echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_ENV
+          echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_OUTPUT
+
+      - name: Copy snapshot
+        run: |
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}" \
+            --target-db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)" \
+            --source-region "eu-west-2" \
+            --target-region "eu-west-2"
 
       - name: Wait for RDS Snapshot to be ready
         run: |
           aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}"
-
+            --db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)" 
+              
       - name: Share RDS snapshot with Pre-Prod
         run: |
           aws rds modify-db-snapshot-attribute \
-              --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
+              --db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)"  \
               --attribute-name restore \
               --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
       - name: Output snapshot identifier
         run: |
-          echo "Snapshot identifier: ${{ env.SNAPSHOT_IDENTIFIER }}"
+          echo "Snapshot identifier: iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)"
