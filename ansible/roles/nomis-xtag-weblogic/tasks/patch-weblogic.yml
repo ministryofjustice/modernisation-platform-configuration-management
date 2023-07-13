@@ -45,6 +45,6 @@
           cd $WL_HOME/../utils/bsu/
           ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist={{ weblogic_patch_id }} -prod_dir=$WL_HOME -verbose
         }
-        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
+        main 2>&1 | logger -s -p local3.info -t ansible-xtag-weblogic
       async: 3600
       poll: 60

@@ -29,7 +29,7 @@
           . $WL_HOME/server/bin/setWLSEnv.sh
           java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/domain.properties
         }
-        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
+        main 2>&1 | logger -s -p local3.info -t ansible-xtag-weblogic
 
     - name: Create security directories
       ansible.builtin.file:

@@ -32,7 +32,7 @@
           echo "# configure log setup app {{ weblogic_managed_app }}"
           java weblogic.WLST ~/admin/scripts/set_ms_log_rotation.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties
         }
-        main 2>&1 | logger -p local3.info -t ansible-xtag-weblogic
+        main 2>&1 | logger -s -p local3.info -t ansible-xtag-weblogic
 
   always:
     - name: Remove temporary install files
