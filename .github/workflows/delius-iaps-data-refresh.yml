@@ -38,6 +38,7 @@ jobs:
 
       - name: Set snapshot name string
         run: |
+          echo DATETIME_STRING="$(date +%Y-%m-%d-%H-%M)" >> $GITHUB_ENV
           echo SNAPSHOT_NAME="iaps-prod-snapshot-$(date +%Y-%m-%d-%H-%M)" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod-prod)
