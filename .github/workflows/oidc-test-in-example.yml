@@ -18,6 +18,7 @@ on:
       - '.github/workflows/oidc-test-in-example.yml'
 env:
   ACCOUNT_NAME: "example-development"
+  ENVIRONMENT_MANAGEMENT: "${{ secrets.modernisation_platform_environments }}"
 jobs:
   use-oidc-with-aws-cli:
     runs-on: ubuntu-latest
