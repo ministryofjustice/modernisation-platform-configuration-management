@@ -1,11 +1,28 @@
 ---
-- name: Clean up installation files
+- name: Collect file details for cleanup from {{ stage }} 
+  ansible.builtin.find:
+    path: "{{ stage }}"
+    hidden: True
+  register: collected_files
+
+- name: Collect directory details for cleanup from {{ stage }} 
+  ansible.builtin.find:
+    paths: "{{ stage }}"
+    hidden: True
+    file_type: directory
+  register: collected_directories
+
+- name: remove collected files and directories
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: absent
-  loop:
-    - "{{ stage }}/{{ oracle_prereq_rpm }}"
-    - "{{ stage }}/{{ opatch_zip }}"
-    - "{{ stage }}/{{ oracle_release_update_zip }}"
-    - "{{ stage }}/{{ client_software }}"
-    - "{{ stage }}/{{ client_response_file }}"
+  with_items: >
+    {{
+      collected_files.files
+      + collected_directories.files
+    }}
+    
+
+
+
+

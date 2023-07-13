@@ -30,8 +30,8 @@
   include: apply_agent_patch.yml
   tags: upgrade_agent
 
-# - name: Apply required patches to central agent
-#   include: apply_patches.yml
-#   vars:
-#     patch_type: agent
-#   tags: patch_agent
+- name: Remove files from staging area 
+  include: cleanup.yml
+  vars:
+    patch_type: agent
+  tags: patch_agent
