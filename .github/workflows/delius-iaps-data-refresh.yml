@@ -69,31 +69,35 @@ jobs:
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
+      - name: Set final snapshot name string
+        run: |
+          echo FINAL_SNAPSHOT_NAME="iaps-refresh-ready-${{ env.DATETIME_STRING }}" >> $GITHUB_ENV
+
       - name: Copy snapshot (prod[shared]-preprod)
         run: |
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}"  \
-            --target-db-snapshot-identifier "refresh-ready-${{ env.DATETIME_STRING }}" \
+            --target-db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" \
             --region "eu-west-2"
 
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
         run: |
           while true; do
             aws rds wait db-snapshot-available \
-              --db-snapshot-identifier "refresh-ready-${{ env.DATETIME_STRING }}" && break || sleep 30
+              --db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" && break || sleep 30
           done
 
       - name: Store identifier in ssm
         run: |
           aws ssm put-parameter \
             --name "/iaps/refresh-ready-snapshot-identifier" \
-            --value "refresh-ready-${{ env.DATETIME_STRING }}" \
+            --value "${{ env.FINAL_SNAPSHOT_NAME }}" \
             --type "String" \
             --overwrite
 
       - name: Output snapshot identifier
         run: |
-          echo "Snapshot identifier: refresh-ready-${{ env.DATETIME_STRING }}"
+          echo "Snapshot identifier: ${{env.FINAL_SNAPSHOT_NAME}}"
 
       - name: Generate token
         id: generate_token
