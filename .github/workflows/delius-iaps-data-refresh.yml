@@ -36,26 +36,54 @@ jobs:
           echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_ENV
           echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_OUTPUT
 
-      - name: Copy snapshot
+      - name: Set datetime string
+        run: |
+          echo DATETIME_STRING=$(date +%Y-%m-%d-%H-%M) >> $GITHUB_ENV
+
+
+      - name: Copy snapshot (prod-prod)
         run: |
           aws rds copy-db-snapshot \
-            --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}" \
-            --target-db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)" \
+            --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}"  \
+            --target-db-snapshot-identifier "iaps-prod-snapshot-${{ env.DATETIME_STRING }}" \
             --source-region "eu-west-2" \
             --target-region "eu-west-2"
+
 
       - name: Wait for RDS Snapshot to be ready
         run: |
           aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)" 
+            --db-snapshot-identifier "iaps-prod-snapshot-${{ env.DATETIME_STRING }}" 
               
       - name: Share RDS snapshot with Pre-Prod
         run: |
           aws rds modify-db-snapshot-attribute \
-              --db-snapshot-identifier "iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)"  \
-              --attribute-name restore \
-              --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+            --db-snapshot-identifier "iaps-prod-snapshot-${{ env.DATETIME_STRING }}" \
+            --attribute-name restore \
+            --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Wait for RDS Snapshot to be ready in Pre-Prod
+        run: |
+          aws rds wait db-snapshot-completed \
+            --db-snapshot-identifier "iaps-prod-snapshot-${{ env.DATETIME_STRING }}" 
+
+      - name: Copy in pre-prod with correct kms key
+        run: |
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "iaps-prod-snapshot-${{ env.DATETIME_STRING }}"  \
+            --target-db-snapshot-identifier "refresh-ready-${{ env.DATETIME_STRING }}" \
+            --source-region "eu-west-2" \
+            --target-region "eu-west-2"
+
+
 
       - name: Output snapshot identifier
         run: |
-          echo "Snapshot identifier: iaps-automated-snapshot-copied-$(date +%Y-%m-%d-%H-%M)"
+          echo "Snapshot identifier: iaps-automated-snapshot-copied-${{ env.DATETIME_STRING }}"
