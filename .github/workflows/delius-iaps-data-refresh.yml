@@ -78,6 +78,7 @@ jobs:
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "arn:aws:rds:eu-west-2:${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_NAME }}"  \
             --target-db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" \
+            ---kms-key-id "arn:aws:kms:eu-west-2:374269020027:alias/rds-hmpps" \
             --region "eu-west-2"
 
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
