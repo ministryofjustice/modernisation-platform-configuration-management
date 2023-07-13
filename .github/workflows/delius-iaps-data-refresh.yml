@@ -45,8 +45,6 @@ jobs:
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}"  \
             --target-db-snapshot-identifier ""${{ env.SNAPSHOT_NAME }}"" \
-            --source-region "eu-west-2" \
-            --target-region "eu-west-2"
 
 
       - name: Wait for RDS Snapshot to be ready
