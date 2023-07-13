@@ -44,18 +44,18 @@ jobs:
         run: |
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}"  \
-            --target-db-snapshot-identifier ""${{ env.SNAPSHOT_NAME }}"" \
+            --target-db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" \
 
 
       - name: Wait for RDS Snapshot to be ready
         run: |
           aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier ""${{ env.SNAPSHOT_NAME }}"" 
+            --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}"
               
       - name: Share RDS snapshot with Pre-Prod
         run: |
           aws rds modify-db-snapshot-attribute \
-            --db-snapshot-identifier ""${{ env.SNAPSHOT_NAME }}"" \
+            --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" \
             --attribute-name restore \
             --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
@@ -69,7 +69,7 @@ jobs:
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
         run: |
           aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier ""${{ env.SNAPSHOT_NAME }}"" 
+            --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" 
 
       - name: Store identifier in ssm
         run: |
