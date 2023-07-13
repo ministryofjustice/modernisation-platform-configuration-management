@@ -1,0 +1,36 @@
+---
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ omspatcher_stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+
+- name: Download OMS RU upgrade patches 
+  become_user: oracle
+  amazon.aws.aws_s3:
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "{{ omspatcher_stage }}/{{ item }}"
+    mode: get
+    permission: "public-read"
+    overwrite: latest
+  loop:
+    - "{{ oms_opatch_patch }}"
+    - "{{ omspatcher_patch }}"
+    - "{{ oms_ru_patch }}"
+    - "{{ agent_ru_patch }}"
+    - "{{ agentpatcher_patch }}"
+
+- name: Unzip OMS RU patches
+  ansible.builtin.unarchive:
+    src: "{{ omspatcher_stage }}/{{ item }}"
+    dest: "{{ omspatcher_stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+  loop:
+    - "{{ oms_opatch_patch }}"
+    - "{{ oms_ru_patch }}"
+    - "{{ agent_ru_patch }}"

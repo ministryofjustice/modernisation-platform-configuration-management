@@ -1,9 +1,11 @@
 ---
 - name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
   ansible.builtin.stat:
-    path: "{{ oracle_home }}/bin/emctl"
+    path: "{{ oem_mw_home }}/bin/emctl"
   register: oem_software_installed
   tags:
+    - amibuild
+    - get_facts
     - ec2provision
 
 - import_tasks: get_facts.yml
@@ -11,6 +13,11 @@
     - amibuild
     - get_facts
     - ec2provision
+    - oracle_oem_patch_upgrade
+
+- name: oem_software_installed
+  debug: 
+    var: oem_software_installed.stat.exists
 
 - block:
     - import_tasks: install_oem_prereq.yml
@@ -43,15 +50,12 @@
         - ec2provision
         - oracle_oem_configure
 
-    # - import_tasks: oem_ru_upgrade.yml
-    #   tags:
-    #     - amibuild
-    #     - oracle_oem_patch_upgrade
-
-    # - import_tasks: cleanup.yml
-    #   tags:
-    #     - ec2provision
-    #     - oracle_oem_cleanup
-
   # block
-  # when: not oem_software_installed.stat.exists
+  when:  not oem_software_installed.stat.exists
+
+- import_tasks: oem_ru_upgrade.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_oem_patch_upgrade
+

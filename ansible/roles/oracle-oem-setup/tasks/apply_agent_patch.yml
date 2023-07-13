@@ -1,0 +1,39 @@
+---
+
+- name: Install Agent RU Patch
+  block:
+
+    - name: Check status of oem Agent 
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ agent_home }}
+        {{ agent_home }}/bin/emctl status agent | grep -c "^Oracle Management Server is Up" | cat
+      changed_when: false
+      register: oms_running
+
+    - name: Stop oem agent 
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ agent_home }}
+          {{ agent_home }}/bin/emctl stop agent
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+
+    - name: Apply Agent Patch
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ agent_home }}
+          cd {{ omspatcher_stage }}/{{ agent_ru_patch_number }}
+          {{ agent_home }}/AgentPatcher/agentpatcher apply -silent 
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"

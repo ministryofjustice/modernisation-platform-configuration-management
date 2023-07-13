@@ -1,0 +1,45 @@
+---
+
+- name: Install OMS RU Patch
+  block:
+
+    - name: Check status of OMS
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ oem_mw_home }}
+        {{ oem_mw_home }}/bin/emctl status oms | grep -c "^Oracle Management Server is Up" | cat
+      changed_when: false
+      register: oms_running
+
+    - name: Stop OMS Excluding Admin Console
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          {{ oem_mw_home }}/bin/emctl stop oms
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+      when: oms_running.stdout == '1'
+
+    - name: Apply OMS Patches
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          cd {{ omspatcher_stage }}/{{ oms_ru_patch_number }}
+          {{ oem_mw_home }}/OMSPatcher/omspatcher apply -silent -property_file {{ omspatcher_stage }}/oms_property_file
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+
+    - name: Remove OMSPatcher Property File
+      file:
+        path: "{{ omspatcher_stage }}/oms_property_file"
+        state: absent
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"

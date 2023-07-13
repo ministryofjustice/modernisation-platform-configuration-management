@@ -1,0 +1,65 @@
+---
+- name: Create property File
+  block:
+    - name: Create omspatcher staging directory 
+      ansible.builtin.file:
+        path: "{{ omspatcher_stage }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+
+    - name: Copy the Create Keys Files
+      ansible.builtin.copy:
+        src: "{{ oem_mw_home }}/OMSPatcher/wlskeys/{{ item }}"
+        dest: "{{ omspatcher_stage }}/{{ item }}"
+        mode: '0700'
+        remote_src: true  
+      loop:
+        - createkeys.sh
+        - runCreateKeys.pl
+
+    - name: Update createkeys.sh file to change runCretaeKeys.pl path to "{{ omspatcher_stage }}"
+      ansible.builtin.lineinfile:
+        path: "{{ omspatcher_stage }}/createkeys.sh"
+        regexp: "^status="
+        line: 'status= $MW_HOME/perl/bin/perl {{ omspatcher_stage }}/runCreateKeys.pl $MW_HOME $location'
+
+    - name: Update runCreateKeys.pl file to disable username user input 
+      ansible.builtin.lineinfile:
+        path: "{{ omspatcher_stage }}/runCreateKeys.pl"
+        regexp: "^#password="
+        line: '=for comment'
+
+    - name: Update runCreateKeys.pl file to disable password user input 
+      ansible.builtin.lineinfile:
+        path: "{{ omspatcher_stage }}/runCreateKeys.pl"
+        insertafter: "ENV{'password'}"
+        line: '=cut'
+
+    - name: Create the WebLogic encrypted configuration and key files.
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          export username={{ weblogic_admin_username }}
+          export password={{ weblogic_admin_password }}
+          {{ omspatcher_stage }}/createkeys.sh -oh {{ oem_mw_home }} -location {{ omspatcher_stage }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Copy property file template 
+      template:
+        src: "oms_property_file.j2"
+        dest: "{{ omspatcher_stage }}/oms_property_file"
+        mode: u=rw,g=r,o=r
+        owner: oracle
+        group: oinstall
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"
