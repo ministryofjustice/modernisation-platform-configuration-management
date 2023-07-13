@@ -69,11 +69,18 @@ jobs:
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
+      - name: Copy snapshot (prod[shared]-preprod)
+        run: |
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}"  \
+            --target-db-snapshot-identifier "refresh-ready-${{ env.DATETIME_STRING }}" \
+            --region "eu-west-2"
+
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
         run: |
           while true; do
             aws rds wait db-snapshot-available \
-              --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" && break || sleep 30
+              --db-snapshot-identifier "refresh-ready-${{ env.DATETIME_STRING }}" && break || sleep 30
           done
 
       - name: Store identifier in ssm
@@ -86,7 +93,7 @@ jobs:
 
       - name: Output snapshot identifier
         run: |
-          echo "Snapshot identifier: iaps-automated-snapshot-copied-${{ env.DATETIME_STRING }}"
+          echo "Snapshot identifier: refresh-ready-${{ env.DATETIME_STRING }}"
 
       - name: Generate token
         id: generate_token
