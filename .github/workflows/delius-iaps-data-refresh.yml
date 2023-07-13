@@ -76,7 +76,7 @@ jobs:
       - name: Copy snapshot (prod[shared]-preprod)
         run: |
           aws rds copy-db-snapshot \
-            --source-db-snapshot-identifier "arn:aws:rds:eu-west-2:${{ env.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_NAME }}"  \
+            --source-db-snapshot-identifier "arn:aws:rds:eu-west-2:${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_NAME }}"  \
             --target-db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" \
             --region "eu-west-2"
 
