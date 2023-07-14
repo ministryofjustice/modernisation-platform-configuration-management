@@ -1,0 +1,62 @@
+---
+- name: Get OPatch Version
+  ansible.builtin.shell: |
+    export ORACLE_HOME={{ oem_mw_home }}
+    {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
+  register: required_version_check
+
+- name: Upgrade OPatch
+  block:
+    - name: Stop OMS and agent
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          {{ oem_mw_home }}/bin/emctl stop oms -all
+          {{ oem_agent_base }}/agent_inst/bin/emctl stop agent
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oms-opatch-upgrade
+      register: opatch_upgrade_output
+      async: 86400
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Upgrade OPatch
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          {{ oem_mw_home }}/oracle_common/jdk/bin/java -jar {{ omspatcher_stage }}/6880880/opatch_generic.jar -silent oracle_home={{ oem_mw_home }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oms-opatch-upgrade
+      register: opatch_upgrade_output
+      async: 86400
+      poll: 60
+      when: not ansible_check_mode
+
+    # - name: Check oem OPatch upgrade is successful
+    #   ansible.builtin.assert:
+    #     that:  "'The install operation completed successfully.' in opatch_upgrade_output.stdout"
+    #     fail_msg: "OPatch upgrade failed."
+    #     success_msg: "OPatch upgrade succesful."
+
+    - name: Get OPatch Version
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ oem_mw_home }}
+        {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
+      register: opatch_version_check
+
+    - name: Start OMS and agent
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ oem_mw_home }}
+        {{ oem_mw_home }}/bin/emctl start oms
+        {{ oem_agent_base }}/agent_inst/bin/emctl start agent
+      when: opatch_version_check.stdout == "1"
+
+  #block
+  when: required_version_check.stdout == "0"
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment:
+    ORACLE_HOME: "{{ oem_mw_home }}"
+    PATH: "{{ oem_mw_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"

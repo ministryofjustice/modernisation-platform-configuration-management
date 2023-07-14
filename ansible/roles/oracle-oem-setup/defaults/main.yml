@@ -7,6 +7,7 @@ app_dir: /u01/app/oracle/product
 oracle_inventory: /u01/app/oraInventory
 oem_domain_hostname: "{{ ansible_facts.hostname }}"
 oem_mw_home: "{{ app_dir }}/mw135"
+oms_middleware_home: "{{ app_dir }}/mw135"
 oem_agent_base: "{{ app_dir }}/oem-agent"
 oem_gc_inst: "{{ app_dir }}/gc_inst135"
 oem_sw_lib: "{{ app_dir }}/swlib"
@@ -22,3 +23,25 @@ oracle_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 oem_install_response_file: oem_install.rsp
 oem_configure_response_file: oem_configure.rsp
 weblogic_admin_username: weblogic
+
+# Variables for OMS RU patching
+oms_ru_patch: p35437906_135000_Generic.zip
+oms_ru_patch_number: 35437906
+omspatcher_patch: p19999993_135000_Generic.zip
+oms_opatch_patch: p28186730_1394212_Generic.zip
+oms_opatch_version: 13.9.4.2.12
+omspatcher_version: 13.9.5.14.0
+omspatcher_stage: "{{ stage }}/omspatcher_stage"
+agent_ru_patch: p35437910_135000_Generic.zip
+agent_ru_patch_number: 35437910
+agentpatcher_patch: p33355570_135000_Generic.zip
+agentpatcher_version: 13.9.5.5.0
+agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+
+oms_env:
+  ORACLE_HOME: "{{ oem_mw_home }}"
+  PATH: "{{ oem_mw_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"

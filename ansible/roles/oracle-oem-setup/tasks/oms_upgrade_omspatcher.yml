@@ -1,0 +1,38 @@
+---
+- name: Get OMSPatcher Version
+  ansible.builtin.shell: |
+    export ORACLE_HOME={{ oem_mw_home }}
+    {{ oem_mw_home }}/OMSPatcher/omspatcher version | head -1 | cut -d' '  -f3 | grep {{ omspatcher_version }} | wc -l
+  register: required_version_check
+
+- name: output
+  debug:
+    var: required_version_check.stdout
+
+- name: Upgrade OMSPatcher
+  block:
+    - name: Check omspatcher directory exists
+      stat:
+        path: "{{ oem_mw_home }}/OMSPatcher"
+      register: omspatcher_directory
+
+    - name: Backup Old OMSPatcher
+      ansible.builtin.shell: mv {{ oem_mw_home }}/OMSPatcher {{ oem_mw_home  }}/OMSPatcher_PREV
+      when: omspatcher_directory.stat.exists and omspatcher_directory.stat.isdir
+
+    - name: Unzip OMS OMSPatcher
+      ansible.builtin.unarchive:
+        src: "{{ omspatcher_stage }}/{{ omspatcher_patch }}"
+        dest: "{{ oem_mw_home }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+
+  #block
+  when: required_version_check.stdout == "0"
+
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ oem_mw_home }}"
+    PATH: "{{ oem_mw_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
