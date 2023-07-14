@@ -105,8 +105,6 @@ jobs:
       - name: Generate token
         id: generate_token
         uses: tibdex/github-app-token@v1.8.0
-        env:
-          OPENSSL_CONF: /dev/null
         with:
           app_id: ${{ secrets.HMPPS_BOT_APP_ID }}
           private_key: ${{ secrets.HMPPS_BOT_PRIVATE_KEY }}
