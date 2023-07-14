@@ -89,13 +89,14 @@ jobs:
               --db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" && break || sleep 30
           done
 
-      - name: Store identifier in ssm
+      - name: Store identifier in ssm as secure string
         run: |
           aws ssm put-parameter \
             --name "/iaps/snapshot_id" \
             --value "${{ env.FINAL_SNAPSHOT_NAME }}" \
-            --type "String" \
-            --overwrite
+            --type "SecureString" \
+            --overwrite \
+            --region "eu-west-2"
 
       - name: Output snapshot identifier
         run: |
