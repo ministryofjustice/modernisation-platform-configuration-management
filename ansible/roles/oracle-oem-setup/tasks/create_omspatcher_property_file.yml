@@ -1,7 +1,7 @@
 ---
 - name: Create property File
   block:
-    - name: Create omspatcher staging directory 
+    - name: Create omspatcher staging directory
       ansible.builtin.file:
         path: "{{ omspatcher_stage }}"
         owner: "{{ oracle_install_user }}"
@@ -13,8 +13,8 @@
       ansible.builtin.copy:
         src: "{{ oem_mw_home }}/OMSPatcher/wlskeys/{{ item }}"
         dest: "{{ omspatcher_stage }}/{{ item }}"
-        mode: '0700'
-        remote_src: true  
+        mode: "0700"
+        remote_src: true
       loop:
         - createkeys.sh
         - runCreateKeys.pl
@@ -23,19 +23,19 @@
       ansible.builtin.lineinfile:
         path: "{{ omspatcher_stage }}/createkeys.sh"
         regexp: "^status="
-        line: 'status= $MW_HOME/perl/bin/perl {{ omspatcher_stage }}/runCreateKeys.pl $MW_HOME $location'
+        line: "status= $MW_HOME/perl/bin/perl {{ omspatcher_stage }}/runCreateKeys.pl $MW_HOME $location"
 
-    - name: Update runCreateKeys.pl file to disable username user input 
+    - name: Update runCreateKeys.pl file to disable username user input
       ansible.builtin.lineinfile:
         path: "{{ omspatcher_stage }}/runCreateKeys.pl"
         regexp: "^#password="
-        line: '=for comment'
+        line: "=for comment"
 
-    - name: Update runCreateKeys.pl file to disable password user input 
+    - name: Update runCreateKeys.pl file to disable password user input
       ansible.builtin.lineinfile:
         path: "{{ omspatcher_stage }}/runCreateKeys.pl"
         insertafter: "ENV{'password'}"
-        line: '=cut'
+        line: "=cut"
 
     - name: Create the WebLogic encrypted configuration and key files.
       ansible.builtin.shell: |
@@ -51,7 +51,7 @@
       poll: 60
       when: not ansible_check_mode
 
-    - name: Copy property file template 
+    - name: Copy property file template
       template:
         src: "oms_property_file.j2"
         dest: "{{ omspatcher_stage }}/oms_property_file"

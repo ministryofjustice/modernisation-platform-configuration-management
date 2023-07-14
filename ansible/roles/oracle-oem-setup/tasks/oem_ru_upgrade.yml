@@ -8,7 +8,7 @@
 
 - name: Update OMSPatcher
   include: oms_upgrade_omspatcher.yml
-  tags: omspatcher_upgrade 
+  tags: omspatcher_upgrade
 
 - name: Update OPatch
   include: oms_upgrade_opatch.yml
@@ -16,7 +16,7 @@
 
 - name: Create OMSPatcher properties file
   include: create_omspatcher_property_file.yml
-  tags: oms_property_file 
+  tags: oms_property_file
 
 - name: Apply required patches to OMS
   include: apply_oms_patch.yml
@@ -24,13 +24,13 @@
 
 - name: Update AgentPatcher
   include: oms_upgrade_agentpatcher.yml
-  tags: omspatcher_upgrade 
+  tags: omspatcher_upgrade
 
 - name: Upgrade central agent
   include: apply_agent_patch.yml
   tags: upgrade_agent
 
-- name: Remove files from staging area 
+- name: Remove files from staging area
   include: cleanup.yml
   vars:
     patch_type: agent

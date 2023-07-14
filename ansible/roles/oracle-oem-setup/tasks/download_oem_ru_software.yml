@@ -7,7 +7,7 @@
     state: directory
     recurse: yes
 
-- name: Download OMS RU upgrade patches 
+- name: Download OMS RU upgrade patches
   become_user: oracle
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"

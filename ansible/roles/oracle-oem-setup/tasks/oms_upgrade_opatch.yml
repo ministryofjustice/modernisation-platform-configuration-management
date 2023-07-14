@@ -1,15 +1,13 @@
 ---
-
 - name: Get OPatch Version
   ansible.builtin.shell: |
     export ORACLE_HOME={{ oem_mw_home }}
-    {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l 
+    {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
   register: required_version_check
 
 - name: Upgrade OPatch
   block:
-
-    - name: Stop OMS and agent 
+    - name: Stop OMS and agent
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -45,10 +43,10 @@
     - name: Get OPatch Version
       ansible.builtin.shell: |
         export ORACLE_HOME={{ oem_mw_home }}
-        {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l 
+        {{ oem_mw_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
       register: opatch_version_check
 
-    - name: Start OMS and agent 
+    - name: Start OMS and agent
       ansible.builtin.shell: |
         export ORACLE_HOME={{ oem_mw_home }}
         {{ oem_mw_home }}/bin/emctl start oms
@@ -59,10 +57,6 @@
   when: required_version_check.stdout == "0"
   become: true
   become_user: "{{ oracle_install_user }}"
-  environment: 
+  environment:
     ORACLE_HOME: "{{ oem_mw_home }}"
     PATH: "{{ oem_mw_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
-
-
-
-

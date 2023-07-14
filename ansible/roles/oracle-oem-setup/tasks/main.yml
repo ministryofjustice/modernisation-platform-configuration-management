@@ -16,7 +16,7 @@
     - oracle_oem_patch_upgrade
 
 - name: oem_software_installed
-  debug: 
+  debug:
     var: oem_software_installed.stat.exists
 
 - block:
@@ -51,11 +51,10 @@
         - oracle_oem_configure
 
   # block
-  when:  not oem_software_installed.stat.exists
+  when: not oem_software_installed.stat.exists
 
 - import_tasks: oem_ru_upgrade.yml
   tags:
     - amibuild
     - ec2provision
     - oracle_oem_patch_upgrade
-
