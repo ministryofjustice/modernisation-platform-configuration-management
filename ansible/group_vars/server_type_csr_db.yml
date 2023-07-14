@@ -1,0 +1,57 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+disks_partition:
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdi
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdj
+    oracle_group: flash
+    oracle_label: FLASH01
+  - ebs_device_name: /dev/sdk
+    oracle_group: flash
+    oracle_label: FLASH02
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
+
+server_type_roles_list:
+  - users-and-groups
+  - sudoers
+  - ssh-host-keys
+  - disks
+  - message-of-the-day
+  - get-ec2-facts
+  - set-ec2-hostname
+  - domain-search
+  - oracle-19c
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
