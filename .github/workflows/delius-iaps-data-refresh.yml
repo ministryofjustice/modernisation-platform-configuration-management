@@ -92,7 +92,7 @@ jobs:
       - name: Store identifier in ssm
         run: |
           aws ssm put-parameter \
-            --name "/iaps/refresh-ready-snapshot-identifier" \
+            --name "/iaps/snapshot_id" \
             --value "${{ env.FINAL_SNAPSHOT_NAME }}" \
             --type "String" \
             --overwrite
