@@ -28,3 +28,4 @@ dbca -silent -createDatabase                                                 \
 . oraenv <<< $ORACLE_SID
 srvctl add service -d $ORACLE_SID -s EMREP_TAF
 srvctl start service -d $ORACLE_SID -s EMREP_TAF
+srvctl status service -d $ORACLE_SID -s EMREP_TAF
