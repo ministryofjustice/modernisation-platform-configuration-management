@@ -1,0 +1,7 @@
+- name: Download Response File from S3
+  aws_s3:
+    mode: get
+    bucket: "{{ s3.bip_bucket_name }}"
+    object: "{{ s3.prefix }}{{ s3.files.tomcat_admin_patch_response_file }}"
+    dest: "{{ sap_bi_platform_extraction_directory }}/patch_response.ini"
+    overwrite: true

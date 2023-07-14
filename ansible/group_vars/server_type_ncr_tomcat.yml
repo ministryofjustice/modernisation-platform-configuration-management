@@ -32,7 +32,7 @@ server_type_roles_list:
   - disks
   - oracle-19c-client
   - combined-reporting-bip-rhel8-setup
-  # - combined-reporting-tomcat-installation
+  - combined-reporting-tomcat-installation
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
