@@ -1,5 +1,5 @@
 ---
-name: delius-data-refresh
+name: delius-iaps-data-refresh
 permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
@@ -21,33 +21,97 @@ jobs:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-
-      - name: Get latest manual snapshot
+      
+      - name: Get latest overnight backup
         run: |
-          snapshot_identifier=$(aws rds describe-db-snapshots \
-            --snapshot-type "manual" \
+          overnight_snapshot_identifier=$(aws rds describe-db-snapshots \
+            --snapshot-type "automated" \
             --db-instance-identifier "iaps" \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
             --output text)
-          if [ -z "$snapshot_identifier" ]; then
+          if [ -z "$overnight_snapshot_identifier" ]; then
             echo "No snapshot found"
             exit 1
           fi
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_ENV
-          echo SNAPSHOT_IDENTIFIER=${snapshot_identifier} >> $GITHUB_OUTPUT
+          echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_ENV
+          echo OVERNIGHT_SNAPSHOT_IDENTIFIER=${overnight_snapshot_identifier} >> $GITHUB_OUTPUT
+
+      - name: Set snapshot name string
+        run: |
+          echo DATETIME_STRING="$(date +%Y-%m-%d-%H-%M)" >> $GITHUB_ENV
+          echo SNAPSHOT_NAME="iaps-prod-snapshot-$(date +%Y-%m-%d-%H-%M)" >> $GITHUB_ENV
+
+      - name: Copy snapshot (prod-prod)
+        run: |
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "${{ env.OVERNIGHT_SNAPSHOT_IDENTIFIER }}"  \
+            --target-db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" \
+            --region "eu-west-2"
+
 
       - name: Wait for RDS Snapshot to be ready
         run: |
-          aws rds wait db-snapshot-completed \
-            --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}"
-
+          while true; do
+            aws rds wait db-snapshot-available \
+              --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" && break || sleep 30
+          done
+              
       - name: Share RDS snapshot with Pre-Prod
         run: |
           aws rds modify-db-snapshot-attribute \
-              --db-snapshot-identifier "${{ env.SNAPSHOT_IDENTIFIER }}" \
-              --attribute-name restore \
-              --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+            --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" \
+            --attribute-name restore \
+            --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Set final snapshot name string
+        run: |
+          echo FINAL_SNAPSHOT_NAME="iaps-refresh-ready-${{ env.DATETIME_STRING }}" >> $GITHUB_ENV
+
+      - name: Copy snapshot (prod[shared]-preprod)
+        run: |
+          aws rds copy-db-snapshot \
+            --source-db-snapshot-identifier "arn:aws:rds:eu-west-2:${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_NAME }}"  \
+            --target-db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" \
+            --kms-key-id "arn:aws:kms:eu-west-2:374269020027:alias/rds-hmpps" \
+            --region "eu-west-2"
+
+      - name: Wait for RDS Snapshot to be ready in Pre-Prod
+        run: |
+          while true; do
+            aws rds wait db-snapshot-available \
+              --db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" && break || sleep 30
+          done
+
+      - name: Store identifier in SSM parameter store
+        run: |
+          aws ssm put-parameter \
+            --name "/iaps/snapshot_id" \
+            --value "${{ env.FINAL_SNAPSHOT_NAME }}" \
+            --type "String" \
+            --overwrite \
+            --region "eu-west-2"
 
       - name: Output snapshot identifier
         run: |
-          echo "Snapshot identifier: ${{ env.SNAPSHOT_IDENTIFIER }}"
+          echo "Snapshot identifier: ${{env.FINAL_SNAPSHOT_NAME}}"
+
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.8.0
+        with:
+          app_id: ${{ secrets.HMPPS_BOT_APP_ID }}
+          private_key: ${{ secrets.HMPPS_BOT_PRIVATE_KEY }}
+
+      - name: Trigger IAPS Workflow
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: gh workflow run delius-iaps --ref main -F action=deploy --repo ministryofjustice/modernisation-platform-environments
+
+        
