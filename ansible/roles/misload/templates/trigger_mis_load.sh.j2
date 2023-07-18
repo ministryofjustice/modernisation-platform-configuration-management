@@ -1,0 +1,32 @@
+#!/bin/bash
+
+export PATH=$PATH:/usr/local/bin
+
+function get_ssm_value {
+    param=$1
+    aws ssm get-parameter --name $param --region "{{ ansible_ec2_placement_region }}" --with-decryption --query Parameter.Value --output text
+}
+
+username=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadusername")
+password=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadpassword")
+target="{{ misload_target }}"
+misload_batch_file_path="{{ misload_batch_file_path }}"
+
+cd {{ oracle_admin_script_dir }}
+export ORACLE_SID=T1MIS
+export ORAENV_ASK=NO
+. oraenv
+echo "misload_running 1" > /opt/textfile_monitoring/misload_running.prom
+
+{{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u $username -p $password -t $target -b $misload_batch_file_path
+
+echo "misload_running 0" > /opt/textfile_monitoring/misload_running.prom
+echo "misload_success_time " `date '+%s'` > /opt/textfile_monitoring/misload_success_time.prom
+sqlplus -s / as sysdba << EOF > /opt/textfile_monitoring/misload_success_status.prom
+set head off feedback off
+select decode(count(1),0, 'misload_success 0','misload_success 1')
+from bodimis.etl_load_log
+where to_char(load_start_datetime,'dd.mm.yyyy') = to_char(sysdate,'dd.mm.yyyy')
+and error_flag='N';
+exit
+EOF

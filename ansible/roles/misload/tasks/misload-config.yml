@@ -1,0 +1,44 @@
+---
+- name: get value for misload target
+  set_fact:
+    misload_target: "{{ ec2.tags['misload-target'] }}"
+
+# this may be redundant as oem doesn't use these? was purely there for prometheus
+- name: create required folders for misload exec script to output log files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: 0755
+  loop:
+    - /opt/textfile_monitoring
+    - "{{ oracle_admin_script_dir }}"
+
+
+- name: copy python script to execute misload batch file on remote target using pywinrm
+  ansible.builtin.copy:
+    src: "trigger_mis_load.py"
+    dest: "/usr/local/share/trigger_mis_load.py"
+    owner: oracle
+    group: oinstall
+    mode: 0755
+
+- name: template script to run misload checks
+  ansible.builtin.template:
+    src: "trigger_mis_load.sh.j2"
+    dest: "{{ oracle_admin_script_dir }}/trigger_mis_load_test.sh" # TODO: change this file name back
+    owner: oracle
+    group: oinstall
+    mode: 0755
+
+# TODO: remove this. This is just to CREATE the trigger_mis_load.sh not to run it!
+# - name: run connection Check # TODO: change this file name back to trigger_mis_load.sh
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     . "{{ oracle_script_dir }}/trigger_mis_load_test.sh" 
+#   register: mis_load_result
+
+# - name: did mis_load succeed
+#   ansible.builtin.debug:
+#     msg: "{{ mis_load_result.rc }}"

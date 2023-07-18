@@ -1,0 +1,34 @@
+---
+- name: get value for misload target
+  set_fact:
+    misload_target: "{{ ec2.tags['misload-target'] }}"
+
+- name: debug winrm_target_check
+  ansible.builtin.debug:
+    msg: "{{ misload_target }}"
+
+- name: get ansible ansible_hostname
+  ansible.builtin.debug:
+    msg: "{{ ansible_hostname }}"
+
+- name: copy python file to /usr/local/share/
+  ansible.builtin.copy:
+    src: winrm_connection_check.py
+    dest: /usr/local/share/winrm_connection_check.py
+    mode: 755
+
+- name: template connection check shell script
+  ansible.builtin.template:
+    src: connection_check.sh.j2
+    dest: /usr/local/share/connection_check.sh
+    mode: 755
+
+- name: run connection Check
+  become_user: root
+  ansible.builtin.shell: |
+    . /usr/local/share/connection_check.sh
+  register: connection_check
+
+- name: debug connection_check
+  ansible.builtin.debug:
+    msg: "{{ connection_check.rc }}"
