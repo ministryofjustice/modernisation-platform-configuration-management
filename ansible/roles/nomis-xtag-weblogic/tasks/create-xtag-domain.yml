@@ -15,11 +15,6 @@
       loop:
         - /u01/software/weblogic/domain.properties
 
-    - name: Ensure wls_nodemanager service is started
-      ansible.builtin.service:
-        name: wls_nodemanager
-        state: started
-
     - name: Create weblogic Nomis xtag domain
       become_user: oracle
       ansible.builtin.shell: |

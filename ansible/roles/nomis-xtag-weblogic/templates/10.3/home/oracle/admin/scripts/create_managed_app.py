@@ -122,9 +122,9 @@ def wait_for_ms_start():
             continue
 
 
-print adminPassword
 # Connect to the AdminServer.
 if domainName:
+    print 'Creating domain'
     readTemplate(wlsPath + '/common/templates/domains/wls.jar')
     cd('/')
     mn = create(machine, 'Machine')
@@ -141,6 +141,7 @@ if domainName:
     setOption('ServerStartMode', 'prod')
     writeDomain(domainConfigPath + '/' + domainName)
     closeTemplate()
+    print 'Domain created'
     exit()
 else:
     connect(adminUsername, adminPassword, adminURL)

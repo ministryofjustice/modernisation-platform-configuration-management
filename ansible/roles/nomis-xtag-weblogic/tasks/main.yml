@@ -65,27 +65,27 @@
 
     - import_tasks: create-xtag-domain.yml
       tags:
-        - ec2provisionx
+        - ec2provision
         - weblogic_create_domain
 
     - import_tasks: certificate-fix.yml
       tags:
-        - ec2provisionx
+        - ec2provision
         - weblogic_certificate_fix
 
     - import_tasks: create-managed-app.yml
       tags:
-        - ec2provisionx
+        - ec2provision
         - weblogic_create_managed_app
 
     - include_tasks:
         file: setup-log-rotate.yml
         apply:
           tags:
-            - ec2provisionx
+            - ec2provision
             - weblogic_setup_log_rotate
       tags:
-        - ec2provisionx
+        - ec2provision
         - weblogic_setup_log_rotate
       loop_control:
         loop_var: weblogic_managed_app_list
