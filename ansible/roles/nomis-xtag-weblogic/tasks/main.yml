@@ -1,43 +1,41 @@
 ---
 - name: Nomis XTAG weblogic setup
   block:
-    - import_tasks: get-facts.yml
-      tags:
-        - always
-
     - import_tasks: packages.yml
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_packages
 
     - import_tasks: users.yml
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_users
 
     - import_tasks: swap.yml
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_swap
 
     - import_tasks: install-jdk.yml
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_install_jdk
 
     - import_tasks: oracle-limits-update.yml
       tags:
+        - amibuild
         - ec2provision
         - oracle-limits-changes
 
     - import_tasks: moj-admin-scripts.yml
       tags:
+        - amibuild
         - ec2provision
         - weblogic_moj_admin_scripts
 
     - import_tasks: install-server.yml
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_install_server
 
     - import_tasks: patch-weblogic.yml
@@ -45,7 +43,7 @@
         weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p32832785_1036_Generic.zip
         weblogic_patch_id: 3NVW
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_patch_1
 
     - import_tasks: patch-weblogic.yml
@@ -53,8 +51,17 @@
         weblogic_patch_filename: /u01/app/oracle/Middleware/utils/bsu/cache_dir/p13964737_10360210720_Generic.zip
         weblogic_patch_id: UEYM
       tags:
-        - ec2provision
+        - amibuild
         - weblogic_patch_2
+
+    - import_tasks: get-facts.yml
+      tags:
+        - ec2provision
+        - weblogic_moj_admin_scripts
+        - weblogic_create_domain
+        - weblogic_certificate_fix
+        - weblogic_create_managed_app
+        - weblogic_setup_log_rotate
 
     - import_tasks: create-xtag-domain.yml
       tags:
