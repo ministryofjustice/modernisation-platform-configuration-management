@@ -1,10 +1,4 @@
 ---
-- import_tasks: "misload-pre-requisites.yml"
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ec2.tags['misload-target'] is defined and ansible_facts['distribution'] == "RedHat"
-
 # included to prevent having to debug connections in the actual task if the target is not reachable
 - import_tasks: "misload-connection-check.yml"
   tags:
