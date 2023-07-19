@@ -1,0 +1,15 @@
+---
+- name: Copy validation script
+  ansible.builtin.template: 
+    src: "{{ item }}.j2"
+    dest: "{{ stage }}/{{ item }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    mode: "0700"
+  loop:
+    - "validate_target_db.sh"
+
+- name: Check database is in ARCHIVELOG mode. 
+  ansible.builtin.shell: "{{ stage }}/validate_target_db.sh {{ db_sys_password }} {{ target_host }} {{ target_db }}"
+  register: db_check
+  failed_when: db_check.rc == 1 

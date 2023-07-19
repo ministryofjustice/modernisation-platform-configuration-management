@@ -1,0 +1,23 @@
+---
+- name: Collect file details for cleanup from {{ stage }}
+  ansible.builtin.find:
+    path: "{{ stage }}"
+    hidden: True
+  register: collected_files
+
+- name: Collect directory details for cleanup from {{ stage }}
+  ansible.builtin.find:
+    paths: "{{ stage }}"
+    hidden: True
+    file_type: directory
+  register: collected_directories
+
+- name: remove collected files and directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: >
+    {{
+      collected_files.files
+      + collected_directories.files
+    }}
