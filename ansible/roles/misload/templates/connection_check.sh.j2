@@ -1,0 +1,14 @@
+#!/bin/bash
+
+export PATH=$PATH:/usr/local/bin
+
+function get_ssm_value {
+    param=$1
+    aws ssm get-parameter --name $param --region "{{ ansible_ec2_placement_region }}" --with-decryption --query Parameter.Value --output text
+}
+
+username=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadusername")
+password=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadpassword")
+target="{{ misload_target }}"
+
+{{ ansible_python_interpreter }} /usr/local/share/winrm_connection_check.py -u $username -p $password -t $target
