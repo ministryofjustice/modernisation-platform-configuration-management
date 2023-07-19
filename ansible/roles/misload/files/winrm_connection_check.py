@@ -1,16 +1,20 @@
 import argparse
 import winrm
 
+
 def check_winrm_connection(target, username, password, port):
     try:
-        session = winrm.Session(f"http://{target}:{port}", auth=(username, password), transport='ntlm')
+        session = winrm.Session(
+            f"http://{target}:{port}", auth=(username, password), transport='ntlm')
         r = session.run_cmd('ipconfig', ['/all'])
         if r.status_code == 0:
             print("WinRM connection established successfully.")
         else:
-            print("Unable to establish WinRM connection. Status code: {}".format(r.status_code))
+            print("Unable to establish WinRM connection. Status code: {}".format(
+                r.status_code))
     except Exception as e:
         print("An error occurred while trying to establish WinRM connection:", str(e))
+
 
 def main():
     parser = argparse.ArgumentParser(description='Check WinRM connection')
@@ -21,7 +25,9 @@ def main():
 
     args = parser.parse_args()
 
-    check_winrm_connection(args.target, args.username, args.password, args.port)
+    check_winrm_connection(args.target, args.username,
+                           args.password, args.port)
+
 
 if __name__ == '__main__':
     main()
