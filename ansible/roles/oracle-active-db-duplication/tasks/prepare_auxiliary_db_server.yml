@@ -29,14 +29,9 @@
         - "init.ora"
 
     - name: Get compatible from source database
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          "{{ stage }}/get_parameter_compatible.sh {{ db_sys_password }} {{ target_host }} {{ target_db }}"
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db
-      register: get_compatible
-      failed_when: get_compatible.rc == 1 
+      ansible.builtin.shell: "{{ stage }}/get_parameter_compatible.sh {{ db_sys_password }} {{ target_host }} {{ target_db }}"
+      register: db_compatible_check
+      failed_when: db_compatible_check.rc == 1 
 
     - name: Setup Listener service
       ansible.builtin.shell: |
@@ -45,7 +40,7 @@
           echo "# {{ stage }}/add_lsnr_static_services.sh {{ auxiliary_db.db_unique_name }} {{ auxiliary_db.instance_name }} {{ database_home }}"
           {{ stage }}/add_lsnr_static_services.sh {{ auxiliary_db.db_unique_name }} {{ auxiliary_db.instance_name }} {{ database_home }}
         }
-        main 2>&1 | logger -p local3.info -t ansible-db-oracle-db
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-listener
 
     - name: Add TNS entry for target database 
       ansible.builtin.shell: |
@@ -54,7 +49,7 @@
           echo "# {{ stage }}/add_tns_entry.sh {{ database_home }} {{ target_db }} {{ target_host }} 1521 {{ target_db }}"
           {{ stage }}/add_tns_entry.sh {{ database_home }} {{ target_db }} {{ target_host }} 1521 {{ target_db }}
         }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-tns
 
     - name: Add TNS entry for auxiliary database 
       ansible.builtin.shell: |
@@ -63,7 +58,7 @@
           echo "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ auxiliary_db.tns_name }} {{ auxiliary_db.host_name }} {{ auxiliary_db.port }} {{ auxiliary_db.db_unique_name }}"
           {{ stage }}/add_tns_entry.sh {{ database_home }} {{ auxiliary_db.tns_name }} {{ auxiliary_db.host_name }} {{ auxiliary_db.port }} {{ auxiliary_db.db_unique_name }}
         }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-tns
 
     - name: Create directory for audit dump dest
       ansible.builtin.file:
@@ -82,7 +77,7 @@
           source oraenv <<< {{ auxiliary_db.instance_name }}
           orapwd file={{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }} password={{ db_sys_password }} entries=10
         }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-password-file
       args:
         creates: "{{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }}"
 

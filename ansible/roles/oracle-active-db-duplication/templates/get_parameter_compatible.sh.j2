@@ -13,10 +13,10 @@ SET FEEDBACK OFF
 SET HEADING OFF
 WHENEVER SQLERROR EXIT FAILURE 
 SELECT NAME||'='|| VALUE FROM V\$PARAMETER WHERE NAME='compatible';
-EXIT" > script.sql 
+EXIT" > ${stage}/script.sql 
 
-PARAMETER=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @script.sql`
-rm script.sql 
+PARAMETER=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @${stage}/script.sql`
+rm ${stage}/script.sql 
 
 if [ `echo $PARAMETER | awk -F= '{ print $1 }'` == 'compatible' ]
 then 
