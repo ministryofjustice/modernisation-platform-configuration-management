@@ -23,7 +23,7 @@ jobs:
           sudo pip3 install awscli
 
       - name: Configure AWS Credentials
-        if: ${{ github.event.inputs.environment }} == 'PRODUCTION'
+        if: github.event.inputs.environment == 'PRODUCTION'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
@@ -31,7 +31,7 @@ jobs:
           aws-region: "eu-west-2"
         
       - name: Configure AWS Credentials
-        if: ${{ github.event.inputs.environment }} == 'PREPRODUCTION'
+        if: github.event.inputs.environment == 'PREPRODUCTION'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
