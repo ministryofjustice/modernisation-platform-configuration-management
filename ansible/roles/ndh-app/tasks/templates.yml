@@ -9,18 +9,18 @@
 
 - name: transfer templates
   ansible.builtin.template:
-    src: "opt/tibco/templates/{{ item }}" 
+    src: "opt/tibco/templates/{{ item }}"
     dest: "/opt/tibco/templates/{{ item }}"
     owner: tibco
     group: tibco
     mode: 0754
   loop:
-    - 'AddJMSServer1.xml'
-    - 'AddJMSServer2.xml'
-    - 'AddMachine.xml'
-    - 'CreateDomain.xml'
-    - 'emsconfig'
-    - 'factories.conf'
-    - 'hawkemsadmin.hma'
-    - 'tibemsd1.conf'
-    - 'tibemsd2.conf'
+    - "AddJMSServer1.xml"
+    - "AddJMSServer2.xml"
+    - "AddMachine.xml"
+    - "CreateDomain.xml"
+    - "emsconfig"
+    - "factories.conf"
+    - "hawkemsadmin.hma"
+    - "tibemsd1.conf"
+    - "tibemsd2.conf"
