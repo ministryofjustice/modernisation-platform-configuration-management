@@ -1,0 +1,6 @@
+-IAMRole {{ instance_profile }}
+-walletDir {{ oracle_database_oracle_home }}/dbs/osbws_wallet
+-libDir {{ oracle_database_oracle_home }}/lib
+-location {{ ansible_ec2_instance_identity_document_region }}
+-awsEndPoint s3.{{ ansible_ec2_instance_identity_document_region }}.amazonaws.com
+-configFile {{ oracle_osbws_ora_file }}

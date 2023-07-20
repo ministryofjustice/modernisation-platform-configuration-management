@@ -1,0 +1,114 @@
+---
+
+- name: (main/reconfigure-asm) Set Oracle Grid Version
+  set_fact:
+      oracle_grid_version: "{{ oracle_grid_oracle_home | regex_replace('^.+/product/([\\d\\.]+)/grid$','\\1') }}"
+
+- name: Ensure our asm discovery template is on the system in roots home directory and is executable
+  copy:
+    src: "{{ role_path }}/files/discover-asm-disks.sh"
+    dest: "~/discover-asm-disks.sh"
+    mode: u+x
+  become: true
+
+- name:  (main/reconfigure-asm)run bash shell script do discover asm disks
+  shell: "~/discover-asm-disks.sh"
+  register: command_result
+  failed_when: command_result.rc != 0
+
+- name: (main/reconfigure-asm) Check ASM status
+  shell: "/usr/sbin/oracleasm status | grep 'yes' | wc -l"
+  register: asm_status_result
+  failed_when: asm_status_result.stdout != "2"
+  become: true
+
+- name: Display ASM disks quantity
+  debug:
+    msg: "ASM disks quantity {{ asm_disks_quantity }}"
+
+- name: (main/reconfigure-asm) Check ASM disks
+  shell: "/usr/sbin/oracleasm listdisks | wc -l"
+  register: asm_listdisks_result
+  failed_when: asm_listdisks_result.stdout != asm_disks_quantity
+  become: true
+
+- name: (main/reconfigure-asm) configure Grid Infrastructure for a Stand-Alone Server
+  shell: "{{ oracle_grid_oracle_home }}/perl/bin/perl -I {{ oracle_grid_oracle_home }}/perl/lib -I {{ oracle_grid_oracle_home }}/crs/install {{ oracle_grid_oracle_home }}/crs/install/roothas.pl"
+  register: config_result
+  failed_when: config_result.stderr_lines == ""
+  become: true
+
+- name: (main/reconfigure-asm) preparing listener template
+  template:
+    src: "{{ role_path }}/templates/netca.rsp.j2"
+    dest: "/tmp/netca.rsp"
+
+- name: (main/reconfigure-asm) configure listener
+  become: true
+  become_user: "{{ service_user_name }}"
+  shell: "{{ oracle_grid_oracle_home }}/bin/netca -silent -responsefile /tmp/netca.rsp"
+
+- name: (main/reconfigure-asm) Calulate number of disks for volume groups - allow initial 10:6 DATA to FLASH ratio
+  set_fact:
+    data_disks_quantity: "{{ 0.625 * asm_disks_quantity|int  }}"
+    data_disk_list: []
+    flash_disk_list: []
+
+- name: (main/reconfigure-asm) Construct data volume group disk list
+  set_fact:
+    data_disk_list: "{{ data_disk_list }} + [ '/dev/oracleasm/disks/ASMDISK{{item}}' ]"
+  with_sequence: count={{ data_disks_quantity|int }}
+
+- name: (main/reconfigure-asm) Construct flash volume group disk list
+  set_fact:
+    flash_disk_list: "{{ flash_disk_list }} + [ '/dev/oracleasm/disks/ASMDISK{{item}}' ]"
+  with_sequence: start={{ data_disks_quantity|int + 1 }} end={{ asm_disks_quantity }}
+
+- name: (main/reconfigure-asm) Run asmca to create DATA volume group
+  become: yes
+  become_user: "{{ service_user_name }}"
+  shell: "{{ oracle_grid_oracle_home }}/bin/asmca
+          -silent
+          -configureASM
+          -sysAsmPassword {{ oradb_sys_password|default('d3l1u5ag41n') }}
+          -asmsnmpPassword {{ oradb_asmsnmp_password|default('d3l1u5ag41n') }}
+          -diskString '/dev/oracleasm/disks/ASMDISK*'
+          -diskGroupName DATA 
+          -redundancy EXTERNAL
+          -diskList {{ data_disk_list | join(',') }}"
+  register: data_asm_result
+
+- name: (main/reconfigure-asm) Run asmca to create FLASH volume group
+  become: yes
+  become_user: "{{ service_user_name }}"
+  shell: "{{ oracle_grid_oracle_home }}/bin/asmca
+          -silent
+          -createDiskGroup
+          -diskGroupName FLASH 
+          -redundancy EXTERNAL
+          -diskList {{ flash_disk_list | join(',') }}"
+  register: flash_asm_result
+
+- name: (main/reconfigure-asm) Grant sysasm privilege to asmsnmp monitoring user (GI Versions below 12c)
+  become: yes
+  become_user: "{{ service_user_name }}"
+  shell: |
+    . ~/.bash_profile
+    ORACLE_SID=+ASM
+    ORAENV_ASK=NO
+    . oraenv > /dev/null
+    {{ oracle_grid_oracle_home }}/bin/asmcmd orapwusr --modify --privilege sysasm asmsnmp
+  register: asmsnmp_modify
+  when: oracle_grid_version is version('12','lt')
+
+- name: (main/reconfigure-asm) Grant sysasm privilege to asmsnmp monitoring user (GI Versions 12c and above)
+  become: yes
+  become_user: "{{ service_user_name }}"
+  shell: |
+    . ~/.bash_profile
+    ORACLE_SID=+ASM
+    ORAENV_ASK=NO
+    . oraenv > /dev/null
+    {{ oracle_grid_oracle_home }}/bin/asmcmd orapwusr --grant sysasm ASMSNMP
+  register: asmsnmp_modify
+  when: oracle_grid_version is version('12','ge')

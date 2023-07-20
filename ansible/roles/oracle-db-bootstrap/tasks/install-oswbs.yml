@@ -1,0 +1,73 @@
+---
+
+- name: (main/install-osbws) validate oracle_osbws_ora_file written
+  stat:
+    path: "{{ oracle_osbws_ora_file }}"
+  register: osbws_ora_file
+  become: true
+
+- name: (main/install-osbws) Set fact instance_profile
+  set_fact:
+    instance_profile: "{{ ansible_ec2_iam_instance_profile_role | regex_replace('_.*') }}"
+
+- name: (main/install-osbws) debug instance_profile
+  debug:
+    msg: "{{ instance_profile }}"
+
+- name: (main/install-osbws) Copy argfile file template
+  template:
+    src: "{{ role_path }}/templates/osbws-argfile.j2"
+    dest: "{{ oracle_osbws_installer_directory }}/osbws-argfile"
+    owner: "{{ service_user_name }}"
+    group: "{{ service_user_group }}"
+  register: argfile
+
+- name: (main/install-osbws) debug argfile
+  debug:
+    msg: "{{ argfile }}"
+
+- name: (main/install-osbws) Unzip Install JAR
+  unarchive:
+    src: "{{ oracle_database_oracle_home }}/lib/osbws_installer.zip"
+    dest: "{{ oracle_osbws_installer_directory }}"
+    creates: "{{ oracle_osbws_installer_directory }}/osbws_install.jar"
+    remote_src: yes
+
+- name: (main/install-osbws) Install Oracle Secure Backup Web Service
+  shell: |
+          . /home/{{ service_user_name }}/.bash_profile && \
+          java -verbose -jar {{ oracle_osbws_installer_directory }}/osbws_install.jar  \
+          -ARGFILE {{ oracle_osbws_installer_directory }}/osbws-argfile
+  become: true
+  become_user: "{{ service_user_name }}"
+  register: install
+  failed_when: install.rc !=0
+  when: argfile.changed or osbws_ora_file.stat.exists == false
+
+- name: (main/install-osbws) Extract Oracle DB backups S3 bucket name from arn
+  set_fact:
+    oracledb_backups_bucket_name: "{{ s3_oracledb_backups_arn | regex_replace('^arn:aws:s3:::','') }}"
+
+- name: (main/install-osbws) Set OSB_WS_BUCKET
+  lineinfile:
+    path: "{{ oracle_osbws_ora_file }}"
+    regexp: '^OSB_WS_BUCKET='
+    line: "OSB_WS_BUCKET={{ oracledb_backups_bucket_name }}"
+
+# It is possible to override the default value of OSB_WS_CHUNK_SIZE by
+# setting oracle_osbws_chunk_size in the appropriate file within hmpps-env-config
+# For example: delius-core-dev\ansible\group_vars\delius_primarydb.yml
+- name: (main/install-osbws) Set OSB_WS_CHUNK_SIZE
+  lineinfile:
+    path: "{{ oracle_osbws_ora_file }}"
+    regexp: '^OSB_WS_CHUNK_SIZE='
+    line: "OSB_WS_CHUNK_SIZE={{ oracle_osbws_chunk_size }}"
+
+# The OSBWS Installer will enable HTTP by Default.  We must set HTTPS
+# by editing the auto-generated configuration file
+- name: Use HTTPS to Secure Backup Traffic
+  lineinfile:
+      path: "{{ oracle_osbws_ora_file }}"
+      regexp: '^OSB_WS_HOST\s*=\s*http:(.*)$'
+      line: 'OSB_WS_HOST=https:\1'
+      backrefs: yes
