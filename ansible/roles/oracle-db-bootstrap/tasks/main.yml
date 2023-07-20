@@ -1,5 +1,4 @@
 ---
-
 # Skip a couple of bootstrap steps if not running in AWS (to allow for local testing)
 - name: Check if inside AWS.
   uri:
@@ -22,15 +21,15 @@
       register: find_db_version_file
 
     - block:
-      - name: (main) Output db version file
-        shell: cat ~/.db_version
-        register: db_version_output
+        - name: (main) Output db version file
+          shell: cat ~/.db_version
+          register: db_version_output
 
-      - name: (main) Set fact for db version
-        set_fact:
-          db_version: "{{ db_version_output.stdout }}"
-        when: db_version_output.stdout | length > 0
-      when: find_db_version_file.matched == 1  
+        - name: (main) Set fact for db version
+          set_fact:
+            db_version: "{{ db_version_output.stdout }}"
+          when: db_version_output.stdout | length > 0
+      when: find_db_version_file.matched == 1
   tags: oracle-db-bootstrap
 
 - name: (main) Load in our vars for 11g database and 11g grid
@@ -80,7 +79,7 @@
 
 - block:
     - name: (main) Configure and startup asm
-      include: configure-asm.yml  
+      include: configure-asm.yml
 
     - name: (main) Create our check file so we don't run this again
       file:
@@ -230,15 +229,14 @@
 # and set any custom database parameters
 # become_user is ignored for an include, so attach it to the block instead
 - block:
-
     - name: Install Patches
       include_role:
         name: oracle-db-patches
       vars:
-          install_absent_patches: true
-          target_host: localhost
-          environment_name: "{{ hmpps_environment }}"
-          config_vars: "~/.hmpps-env-configs/ansible/group_vars/all.yml"
+        install_absent_patches: true
+        target_host: localhost
+        environment_name: "{{ hmpps_environment }}"
+        config_vars: "~/.hmpps-env-configs/ansible/group_vars/all.yml"
 
     # Do not set Standby Database Parameters at Boot time as database will
     # not exist at this point.   Any custom parameters will be applied
@@ -247,19 +245,19 @@
       include_role:
         name: oracle-db-parameters
       vars:
-          target_host: localhost
+        target_host: localhost
       when:
-         - database_type != "standby"
+        - database_type != "standby"
 
-   # Only need to schedule database autotasks on Primary Database
-   # (Defaults will be kept if not configured in hmpps-env-configs)
+    # Only need to schedule database autotasks on Primary Database
+    # (Defaults will be kept if not configured in hmpps-env-configs)
     - name: Schedule Database Autotasks
       include_role:
         name: oracle-db-autotasks
       vars:
-          target_host: localhost
+        target_host: localhost
       when:
-         - database_type == "primary"
+        - database_type == "primary"
 
   become: true
   become_user: oracle
@@ -270,5 +268,5 @@
 
 - name: Remove Environment Configuration Files (now finished with them)
   file:
-      path: ~/.hmpps-env-configs
-      state: absent
+    path: ~/.hmpps-env-configs
+    state: absent

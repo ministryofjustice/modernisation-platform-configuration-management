@@ -1,13 +1,12 @@
 ---
-
 - name: (main) Get Environment Configuration
   git:
-      repo: 'https://github.com/ministryofjustice/hmpps-env-configs'
-      dest: ~/.hmpps-env-configs
-   
+    repo: "https://github.com/ministryofjustice/hmpps-env-configs"
+    dest: ~/.hmpps-env-configs
+
 - name: Slurp Environment File to Get This Hosts Configuration
   slurp:
-      src: /etc/environment
+    src: /etc/environment
   register: environmentfile
 
 - name: Set Current Environment
@@ -28,11 +27,11 @@
 
 - name: Backup host specific required_patches variable ahead of override by all.yml
   set_fact:
-      host_specific_required_patches: "{{ required_patches | default({}) }}"
+    host_specific_required_patches: "{{ required_patches | default({}) }}"
 
 - name: Get Environment Specific Variables for All Hosts
   include_vars: "~/.hmpps-env-configs/{{ hmpps_environment }}/ansible/group_vars/all.yml"
 
 - name: Merge All Required Patches with Host Specific Required Patches
   set_fact:
-      required_patches: "{{ required_patches | default({}) | combine (host_specific_required_patches) }}"
+    required_patches: "{{ required_patches | default({}) | combine (host_specific_required_patches) }}"

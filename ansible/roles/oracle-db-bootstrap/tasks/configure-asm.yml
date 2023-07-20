@@ -1,8 +1,7 @@
 ---
-
 - name: (main/reconfigure-asm) Set Oracle Grid Version
   set_fact:
-      oracle_grid_version: "{{ oracle_grid_oracle_home | regex_replace('^.+/product/([\\d\\.]+)/grid$','\\1') }}"
+    oracle_grid_version: "{{ oracle_grid_oracle_home | regex_replace('^.+/product/([\\d\\.]+)/grid$','\\1') }}"
 
 - name: Ensure our asm discovery template is on the system in roots home directory and is executable
   copy:
@@ -11,7 +10,7 @@
     mode: u+x
   become: true
 
-- name:  (main/reconfigure-asm)run bash shell script do discover asm disks
+- name: (main/reconfigure-asm)run bash shell script do discover asm disks
   shell: "~/discover-asm-disks.sh"
   register: command_result
   failed_when: command_result.rc != 0
@@ -68,25 +67,25 @@
   become: yes
   become_user: "{{ service_user_name }}"
   shell: "{{ oracle_grid_oracle_home }}/bin/asmca
-          -silent
-          -configureASM
-          -sysAsmPassword {{ oradb_sys_password|default('d3l1u5ag41n') }}
-          -asmsnmpPassword {{ oradb_asmsnmp_password|default('d3l1u5ag41n') }}
-          -diskString '/dev/oracleasm/disks/ASMDISK*'
-          -diskGroupName DATA 
-          -redundancy EXTERNAL
-          -diskList {{ data_disk_list | join(',') }}"
+    -silent
+    -configureASM
+    -sysAsmPassword {{ oradb_sys_password|default('d3l1u5ag41n') }}
+    -asmsnmpPassword {{ oradb_asmsnmp_password|default('d3l1u5ag41n') }}
+    -diskString '/dev/oracleasm/disks/ASMDISK*'
+    -diskGroupName DATA
+    -redundancy EXTERNAL
+    -diskList {{ data_disk_list | join(',') }}"
   register: data_asm_result
 
 - name: (main/reconfigure-asm) Run asmca to create FLASH volume group
   become: yes
   become_user: "{{ service_user_name }}"
   shell: "{{ oracle_grid_oracle_home }}/bin/asmca
-          -silent
-          -createDiskGroup
-          -diskGroupName FLASH 
-          -redundancy EXTERNAL
-          -diskList {{ flash_disk_list | join(',') }}"
+    -silent
+    -createDiskGroup
+    -diskGroupName FLASH
+    -redundancy EXTERNAL
+    -diskList {{ flash_disk_list | join(',') }}"
   register: flash_asm_result
 
 - name: (main/reconfigure-asm) Grant sysasm privilege to asmsnmp monitoring user (GI Versions below 12c)
