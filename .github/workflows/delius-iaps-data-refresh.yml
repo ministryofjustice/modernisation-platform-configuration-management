@@ -51,7 +51,7 @@ jobs:
 
       - name: Wait for RDS Snapshot to be ready
         run: |
-          while true; do
+          for run in {1..5}; do
             aws rds wait db-snapshot-available \
               --db-snapshot-identifier "${{ env.SNAPSHOT_NAME }}" && break || sleep 30
           done
@@ -84,7 +84,7 @@ jobs:
 
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
         run: |
-          while true; do
+          for run in {1..5}; do
             aws rds wait db-snapshot-available \
               --db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_NAME }}" && break || sleep 30
           done
