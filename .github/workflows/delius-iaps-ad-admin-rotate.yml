@@ -47,8 +47,7 @@ jobs:
 
       - name: Reset admin password
         run: |
-          directory_id = $(aws ds describe-directories --region eu-west-2 --query 'DirectoryDescriptions[0].DirectoryId' --output text)
-          aws ds reset-user-password --user-name Admin --new-password $PASSWORD --directory-id $directory_id
+          DIRECTORY_ID=$(aws ds describe-directories --region eu-west-2 --query 'DirectoryDescriptions[0].DirectoryId' --output text) && aws ds reset-user-password --user-name Admin --new-password $PASSWORD --directory-id $DIRECTORY_ID
 
       - name: Store password in secrets
         run: |
