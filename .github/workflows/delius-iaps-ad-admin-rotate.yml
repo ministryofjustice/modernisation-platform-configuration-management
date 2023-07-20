@@ -23,28 +23,32 @@ jobs:
           sudo pip3 install awscli
 
       - name: Configure AWS Credentials
+        if: ${{ github.event.inputs.envrioment }} == 'PRODUCTION'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-        if: ${{ github.event.inputs.envrioment }} == 'PRODUCTION'\
+        
       - name: Configure AWS Credentials
+        if: ${{ github.event.inputs.envrioment }} == 'PREPRODUCTION'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-        if: ${{ github.event.inputs.envrioment }} == 'PREPRODUCTION'
+
       - name: Generate new password
         id: generate_password
         run: |
           PASSWORD=$(openssl rand -base64 32)
           echo "::add-mask::$PASSWORD" 
           echo "PASSWORD=$PASSWORD" >> $GITHUB_ENV
+
       - name: Reset admin password
         run: |
           aws ds reset-user-password --user-name Admin --new-password $PASSWORD
+          
       - name: Store password in secrets
         run: |
            aws secretsmanager put-secret-value --secret-id delius-iaps-ad-admin-password --secret-string $PASSWORD
