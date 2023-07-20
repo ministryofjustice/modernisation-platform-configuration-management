@@ -4,6 +4,11 @@ permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
 on:
+  schedule:
+      # every day at 1am
+    - cron: '0 1 * * *'
+    # every day at 2am
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -23,18 +28,18 @@ jobs:
           sudo pip3 install awscli
 
       - name: Configure AWS Credentials
-        if: github.event.inputs.environment == 'PRODUCTION'
+        if: github.event.inputs.environment == 'PREPRODUCTION' || github.event.schedule != '0 1 * * *'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
         
       - name: Configure AWS Credentials
-        if: github.event.inputs.environment == 'PREPRODUCTION'
+        if: github.event.inputs.environment == 'PRODUCTION' || github.event.schedule != '0 2 * * *'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
