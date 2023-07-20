@@ -1,0 +1,17 @@
+---
+- name: get ssm parameters
+  set_fact:
+    ndh_admin_user: "{{ lookup('aws_ssm', 'ndh_admin_user', region=ansible_ec2_placement_region) }}"
+    ndh_admin_pass: "{{ lookup('aws_ssm', 'ndh_admin_pass', region=ansible_ec2_placement_region) }}"
+    ndh_domain_name: "{{ lookup('aws_ssm', 'ndh_domain_name', region=ansible_ec2_placement_region) }}"
+    ndh_ems_host: "{{ lookup('aws_ssm', 'ndh_ems_host_a', region=ansible_ec2_placement_region) }}"
+    ndh_ems_host_a: "{{ lookup('aws_ssm', 'ndh_ems_host_a', region=ansible_ec2_placement_region) }}"
+    ndh_ems_host_b: "{{ lookup('aws_ssm', 'ndh_ems_host_b', region=ansible_ec2_placement_region) }}"
+    ndh_app_host: "{{ lookup('aws_ssm', 'ndh_app_host_a', region=ansible_ec2_placement_region) }}"
+    ndh_app_host_a: "{{ lookup('aws_ssm', 'ndh_app_host_a', region=ansible_ec2_placement_region) }}"
+    ndh_app_host_b: "{{ lookup('aws_ssm', 'ndh_app_host_b', region=ansible_ec2_placement_region) }}"
+    ndh_ems_port_1: "{{ lookup('aws_ssm', 'ndh_ems_port_1', region=ansible_ec2_placement_region) }}"
+    ndh_ems_port_2: "{{ lookup('aws_ssm', 'ndh_ems_port_2', region=ansible_ec2_placement_region) }}"
+    ndh_host_os: "{{ lookup('aws_ssm', 'ndh_host_os', region=ansible_ec2_placement_region) }}"
+    ndh_host_os_version: "{{ lookup('aws_ssm', 'ndh_host_os_version', region=ansible_ec2_placement_region) }}"
+    ndh_harkemsadmin_ssl_pass: "{{ lookup('aws_ssm', 'ndh_harkemsadmin_ssl_pass', region=ansible_ec2_placement_region) }}"
