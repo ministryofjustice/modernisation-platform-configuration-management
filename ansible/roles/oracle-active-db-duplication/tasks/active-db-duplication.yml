@@ -57,7 +57,7 @@
         main() {
           echo "# srvctl add database -d {{ auxiliary_db.instance_name }} ..."
           source oraenv <<< {{ auxiliary_db.instance_name }}
-          srvctl add database -d {{ auxiliary_db.instance_name }} -o {{ database_home }} -p +DATA/{{ auxiliary_db.db_unique_name }}/spfile{{ auxiliary_db.instance_name }}.ora -r PHYSICAL_STANDBY -s MOUNT -t IMMEDIATE -i {{ auxiliary_db.instance_name }} -n {{ db_primary.db_name }} -y AUTOMATIC -a {{ auxiliary_db.asm_disk_groups }}
+          srvctl add database -d {{ auxiliary_db.instance_name }} -o {{ database_home }} -p +DATA/{{ auxiliary_db.db_unique_name }}/spfile{{ auxiliary_db.instance_name }}.ora -r PHYSICAL_STANDBY -s MOUNT -t IMMEDIATE -i {{ auxiliary_db.instance_name }} -n {{ auxiliary_db.db_name }} -y AUTOMATIC -a {{ auxiliary_db.asm_disk_groups }}
           srvctl start database -d {{ auxiliary_db.instance_name }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
