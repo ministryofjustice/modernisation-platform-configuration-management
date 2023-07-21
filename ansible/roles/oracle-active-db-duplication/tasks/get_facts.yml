@@ -2,7 +2,7 @@
 - name: Fail if missing parameters
   fail:
     msg: "Ensure both {{ target_db_name }} variables are defined in db_configs fact"
-  when: db_configs[target_db_name] is not defined 
+  when: db_configs[target_db_name] is not defined
 
 - name: Set database facts
   set_fact:

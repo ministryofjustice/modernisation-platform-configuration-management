@@ -1,12 +1,11 @@
 ---
-
 - name: Oracle 19c active database duplication
   block:
     - import_tasks: get_facts.yml
 
     - import_tasks: auxiliary_prereqs.yml
 
-    - import_tasks: validate_source_database.yml 
+    - import_tasks: validate_source_database.yml
 
     - import_tasks: prepare_auxiliary_db_server.yml
 
@@ -14,5 +13,5 @@
 
     - import_tasks: cleanup.yml
 
-  # block 
-  when: target_db_name is defined and source_db_name is defined and source_host is defined 
+  # block
+  when: target_db_name is defined and source_db_name is defined and source_host is defined
