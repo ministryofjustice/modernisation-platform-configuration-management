@@ -1,0 +1,35 @@
+#!/bin/bash
+set -x 
+export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+export PATH=$ORACLE_HOME/bin:$PATH 
+stage={{ stage }}
+db_password=$1 
+target_host=$2
+target_db=$3
+
+echo "SET LINES 1000
+SET PAGES 0
+SET FEEDBACK OFF
+SET HEADING OFF
+WHENEVER SQLERROR EXIT FAILURE 
+SELECT NAME||'='|| VALUE FROM V\$PARAMETER WHERE NAME='compatible';
+EXIT" > ${stage}/script.sql 
+
+PARAMETER=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @${stage}/script.sql`
+rm ${stage}/script.sql 
+
+if [ `echo $PARAMETER | awk -F= '{ print $1 }'` == 'compatible' ]
+then 
+	echo $PARAMETER >> "{{ stage }}/init{{auxiliary_db.db_name}}.ora"
+	exit 0
+elif [ `echo $PARAMETER | grep ORA-01017 | wc -l ` == 1 ]
+then 
+	echo "Failure: Invalid password "
+	exit 1
+elif [ `echo $PARAMETER | grep ORA-12154 | wc -l ` == 1 ]
+then 
+	echo "Failure: TNS issue"
+	exit 1 
+else 
+	exit 1
+fi	

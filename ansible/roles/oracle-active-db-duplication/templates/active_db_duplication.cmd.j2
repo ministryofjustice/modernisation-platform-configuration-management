@@ -1,0 +1,15 @@
+connect target sys/{{ db_sys_password }}@{{ target_db }} 
+connect auxiliary sys/{{ db_sys_password }}@{{ auxiliary_db.instance_name }}
+run 
+{
+allocate channel ch1 device type disk;
+allocate auxiliary channel drch1 type disk;
+duplicate  database to '{{ auxiliary_db.db_unique_name }}' from active database 
+spfile
+  parameter_value_convert ('{{ target_db }}', '{{ auxiliary_db.instance_name }}')
+  set audit_file_dest='/u01/app/oracle/admin/{{ auxiliary_db.instance_name }}/adump'
+  set control_files='+DATA/{{ auxiliary_db.db_unique_name }}/controlfile/control01.ctl','+DATA/{{ auxiliary_db.db_unique_name }}/controlfile/control02.ctl'
+  set log_archive_dest_1='location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name={{ auxiliary_db.db_unique_name }}'
+  set db_recovery_file_dest='+FLASH'
+nofilenamecheck;
+}

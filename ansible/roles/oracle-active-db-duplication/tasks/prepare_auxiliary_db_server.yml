@@ -1,0 +1,87 @@
+---
+- name: Setup auxiliary database oratab
+  ansible.builtin.lineinfile:
+    path: /etc/oratab
+    line: "{{ auxiliary_db.instance_name }}:{{ database_home }}:N"
+
+- name: Setup auxiliary database server for database duplication
+  block:
+    - name: Copy setup files for execution
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      loop:
+        - "add_tns_entry.sh"
+        - "add_lsnr_static_services.sh"
+        - "get_parameter_compatible.sh"
+
+    - name: Create initialization parameter file
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/init{{auxiliary_db.db_name}}.ora"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0644"
+      loop:
+        - "init.ora"
+
+    - name: Get compatible from source database
+      ansible.builtin.shell: "{{ stage }}/get_parameter_compatible.sh {{ db_sys_password }} {{ target_host }} {{ target_db }}"
+      register: db_compatible_check
+      failed_when: db_compatible_check.rc == 1
+
+    - name: Setup Listener service
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_lsnr_static_services.sh {{ auxiliary_db.db_unique_name }} {{ auxiliary_db.instance_name }} {{ database_home }}"
+          {{ stage }}/add_lsnr_static_services.sh {{ auxiliary_db.db_unique_name }} {{ auxiliary_db.instance_name }} {{ database_home }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-listener
+
+    - name: Add TNS entry for target database
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# {{ stage }}/add_tns_entry.sh {{ database_home }} {{ target_db }} {{ target_host }} 1521 {{ target_db }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ target_db }} {{ target_host }} 1521 {{ target_db }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-tns
+
+    - name: Add TNS entry for auxiliary database
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "{{ stage }}/add_tns_entry.sh {{ database_home }} {{ auxiliary_db.tns_name }} {{ auxiliary_db.host_name }} {{ auxiliary_db.port }} {{ auxiliary_db.db_unique_name }}"
+          {{ stage }}/add_tns_entry.sh {{ database_home }} {{ auxiliary_db.tns_name }} {{ auxiliary_db.host_name }} {{ auxiliary_db.port }} {{ auxiliary_db.db_unique_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-tns
+
+    - name: Create directory for audit dump dest
+      ansible.builtin.file:
+        path: "/u01/app/oracle/admin/{{ auxiliary_db.instance_name }}/adump"
+        owner: oracle
+        group: oinstall
+        mode: u=rwx,g=rxs,o=rx
+        state: directory
+        recurse: yes
+
+    - name: Create password file if it does not exists
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# orapwd file={{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }} password=xxxx entries=10"
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          orapwd file={{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }} password={{ db_sys_password }} entries=10
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db-password-file
+      args:
+        creates: "{{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }}"
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ db_env }}"
