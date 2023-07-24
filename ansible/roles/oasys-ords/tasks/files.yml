@@ -1,6 +1,6 @@
 ---
 - name: create symbolic link for tomcat
-  file:
+  ansible.builtin.file:
     src: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13"
     dest: "{{ oasys_ords_tomcat_dir }}/latest"
     state: link
@@ -9,7 +9,7 @@
     mode: 0755
 
 - name: copy params to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps
-  copy:
+  ansible.builtin.copy:
     src: "{{ oasys_ords_dir }}/params/ords_params.properties"
     dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/ords_params.properties"
     owner: "{{ ords_install_user }}"
@@ -18,7 +18,7 @@
     mode: 0755
 
 - name: update environmnent xml
-  template:
+  ansible.builtin.template:
     src: defaults.xml.j2
     dest: "{{ oasys_ords_tomcat_dir }}/config/eor/defaults.xml"
 
@@ -31,26 +31,24 @@
 # - change git permissions for them to be ablw to deploy changes to these hmtl files without approval (often they do changes on their own on the weekend)
 
 - name: Copy docroot index.html
-  template:
+  ansible.builtin.template:
     src: "doc_root/{{ oasys_index_page }}.j2"
     dest: "{{ oasys_ords_docroot_dir }}/index.html"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: "0644"
-    force: no # does not replace since manual changes are made (see above)
 
 - name: Copy any additional docroot files
-  template:
+  ansible.builtin.template:
     src: "doc_root/{{ item }}.j2"
     dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: "0644"
-    force: no # does not replace since manual changes are made (see above)
   with_items: "{{ oasys_ords_extra_files }}"
 
 - name: Remove example docroot files
-  file:
+  ansible.builtin.file:
     state: absent
     path: "{{ oasys_ords_docroot_dir }}/{{ item }}"
   with_items:
