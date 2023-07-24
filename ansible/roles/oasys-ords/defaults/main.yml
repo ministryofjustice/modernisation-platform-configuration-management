@@ -4,7 +4,7 @@ oasys_ords_root_dir: "/u01/app/apache/tomcat/latest"
 oasys_ords_tomcat_dir: "/u01/app/apache/tomcat"
 oasys_links_default_label: "t2-oasys-web"
 oasys_links_default_path: "/eor/f?p=100:101"
-oasys_index_page: "{{ ec2.tags['oracle-db-sid'] }}-index.html"
+oasys_index_page: "{{ ec2.tags['oasys-environment'] }}-index.html"
 oasys_ords_docroot_dir: "{{ oasys_ords_root_dir }}/webapps/ROOT"
 oasys_ords_extra_files:
   - "redirect.html"
