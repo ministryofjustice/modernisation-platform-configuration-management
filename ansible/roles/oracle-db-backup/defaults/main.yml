@@ -17,7 +17,7 @@ rman_backup_cron:
     weekday: "*"
     minute: "30"
     hour: "*"
-    job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }} | logger -p local3.info -t rman-backup"
+    job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
 # adhoc backups to file and then S3 (consistent with ansible-monorepo rman-backup role)
 rman_adhoc_backup_control: "rman,s3,clean"
