@@ -1,4 +1,11 @@
 ---
+- import_tasks: get_facts.yml
+  tags:
+    - ec2provision
+- import_tasks: templates.yml
+  tags:
+    - ec2provision
+
 - name: mount for reasons
   ansible.builtin.shell: mount -a
   tags:

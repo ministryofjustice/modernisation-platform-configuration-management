@@ -29,11 +29,19 @@
     weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
   when: weblogic_db_name is not defined
 
+- name: Set ndh ems name from ec2 ndh-ems-hostname tag
+  set_fact:
+    ndh_ems_server: "{{ ec2.tags['ndh-ems-hostname'] }}"
+  when: ndh_ems_server is not defined
+
 - debug:
     msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"
 
 - debug:
     msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"
+
+- debug:
+    msg: "Configuring NDH EMS server to {{ ndh_ems_server }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
@@ -45,6 +53,7 @@
     - weblogic_db_password|length > 0
     - weblogic_db_hostname_a|length > 0
     - weblogic_db_hostname_b|length > 0
+    - ndh_ems_server|length > 0
 
 - name: Fail if missing SSM parameters or tags
   fail:
