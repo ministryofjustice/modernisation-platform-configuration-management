@@ -18,6 +18,7 @@
     mode: "0700"
   loop:
     - "{{ rman_backup_script }}"
+    - "{{ rman_backup_monitoring_script }}"
 
 - name: setup rman backup root cron
   ansible.builtin.cron:
