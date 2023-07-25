@@ -1,1 +1,67 @@
 #!/bin/bash
+misload_running_file=/opt/textfile_monitoring/misload_running.prom
+# misload_running 0 (not currently running)
+# misload_running 1 (it's currently running)
+misload_success_file=/opt/textfile_monitoring/misload_success_status.prom
+# misload_success 0 (misload has succeeded)
+# misload_success 1 (misload has failed)
+misload_success_time_file=/opt/textfile_monitoring/misload_success_time.prom
+# misload_success_time 1234567890 (unix timestamp of last success)
+misload_db={{ misload_db_name }}
+
+
+get_value() {
+    filename=$1
+    # Check if the file exists and is a regular file
+    if [[ -f "$filename" ]]; then
+        # Use awk to print the second field (value)
+        awk '{print $2}' "$filename"
+    else
+        echo "0" # assume success if file doesn't exist
+    fi
+}
+
+running=$(get_value $misload_running_file)
+success=$(get_value $misload_success_file)
+success_time=$(get_value $misload_success_time_file)
+
+now=$(date +%s)
+timediff=$((now - success_time))
+unixtime_six_am=$(date -d "06:00:00" +%s)
+unixtime_two_am=$(date -d "02:00:00" +%s)
+unix_time_one_day_ago=$(date -d "-24 hours" +%s)
+
+# TODO: improve this at some point
+if [[ $success == "1" ]]; then
+    echo "last misload success $(date -d@${timediff} +%H:%M:%S) ago"
+    echo "misload-status $misload_db -1"
+elif [[ $running == "1" ]] && [ "$now" -gt "$unixtime_six_am" ]; then
+    echo "last misload success $(date -d@${timediff} +%H:%M:%S) ago"
+    echo "misload-status $misload_db -1"
+elif [[ $running == "0" ]] && [ "$now" -le "$unixtime_two_am" ] && [ "$success_time" -lt "$unix_time_one_day_ago" ]; then
+    echo "last misload success $(date -d@${timediff} +%H:%M:%S) ago"
+    echo "misload-status $misload_db -1"
+else
+    echo "last misload success $(date -d@${timediff} +%H:%M:%S) ago"
+    echo "misload-status $misload_db 0"
+fi
+
+
+
+
+# now=$(date +%s)
+# for file in $files; do
+#   IFS=$','
+#   backup=($(cat $file))
+#   unset IFSs
+#   dbname=${backup[0]}
+#   timestamp=${backup[1]}
+#   status=${backup[2]}
+#   timediff=$((now - timestamp))
+#   echo "last backup taken $(date -d@${timediff} +%H:%M:%S) ago"
+#   if ((timediff > 93600)); then
+#     echo "rman-backup-result $dbname -1"
+#   else
+#     echo "rman-backup-result $dbname $status"
+#   fi
+# done
