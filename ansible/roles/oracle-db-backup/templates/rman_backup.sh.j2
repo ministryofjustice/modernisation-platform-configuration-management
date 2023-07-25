@@ -386,8 +386,13 @@ do
     rman cmdfile $RMANCMDFILE log $RMANLOGFILE > /dev/null
     info "Checking for errors"
     grep -i "ERROR MESSAGE STACK" $RMANLOGFILE >/dev/null 2>&1
-    [ $? -eq 0 ] && info "Rman reported errors for $TARGET_DB"
-    info "Backup of $TARGET_DB completed successfully"
+    if [[ $? -eq 0 ]]; then
+      info "Rman reported errors for $TARGET_DB"
+      echo "$TARGET_DB,$(date +%s),0,$(date),Errors" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+    else
+      info "Backup of $TARGET_DB completed successfully"
+      echo "$TARGET_DB,$(date +%s),1,$(date),Success" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+    fi
   ); then
     exitcode=1
   fi

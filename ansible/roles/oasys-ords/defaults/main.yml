@@ -4,13 +4,16 @@ oasys_ords_root_dir: "/u01/app/apache/tomcat/latest"
 oasys_ords_tomcat_dir: "/u01/app/apache/tomcat"
 oasys_links_default_label: "t2-oasys-web"
 oasys_links_default_path: "/eor/f?p=100:101"
-oasys_index_page: "redirect.html"
+oasys_index_page: "{{ ec2.tags['oasys-environment'] }}-index.html"
 oasys_ords_docroot_dir: "{{ oasys_ords_root_dir }}/webapps/ROOT"
-oasys_ords_extra_files: []
+oasys_ords_extra_files:
+  - "redirect.html"
+  - "index_message.html"
+  - "index_no_message.html"
 oasys_maintenance_msg: ""
 oasys_ords_s3_bucket: "oasys-ords"
 ords_db_port: 1521
-ords_db_sid: "OASPROD" # is this correct? in pd azure it is OASPROD
+ords_db_sid: "{{ ec2.tags['oracle-db-sid'] }}"
 oasys_ords_dir: "/u02/stage/ORDS/ords_stage"
 
 ords_artefact_list:

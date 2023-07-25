@@ -3,16 +3,20 @@ ansible_aws_ssm_bucket_name: oasys-test20230403093247696000000001
 image_builder_s3_bucket_name: devtest-oasys-20230411143832198800000001
 dns_zone_internal: oasys.hmpps-test.modernisation-platform.internal
 s3_bucket: devtest-oasys-20230411143832198800000001
+db_backup_s3_bucket_name: devtest-oasys-db-backup-bucket-20230721145548176300000001
 
 ords_trusted_origins:
   oasys-test: "https://t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk/eor,http://localhost:8080/eor"
   t2: "https://t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk/eor,http://localhost:8080/eor"
 
-database_home: /u01/app/oracle/product/19c/db_1 
+database_home: /u01/app/oracle/product/19c/db_1
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+rman_backup_script: rman_backup.sh
+
+rman_backup_script: rman_backup.sh
 
 db_configs:
   OASPROD:
