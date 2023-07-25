@@ -1,3 +1,32 @@
 ---
 # sets up the monitoring for misload using collectd exec plugin and posting messages to /var/log/messages
-# TBD in DSOS-2009
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - /home/oracle/admin/misload_scripts/logs
+    - /home/oracle/admin/misload_scripts/status
+
+- name: copy monitoring scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/admin/misload_scripts/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ misload_monitoring_script }}"
+
+- name: setup misload monitoring root cron
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    weekday: "{{ item.weekday }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    user: root
+    job: "{{ item.job }}"
+  loop: "{{ misload_monitoring_cron }}"
