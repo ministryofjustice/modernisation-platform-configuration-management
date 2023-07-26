@@ -1,0 +1,52 @@
+---
+
+- name: OEM 13.5 agent Discover and promote targets from host 
+  block:
+
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ stage }}/emcli/conf"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+
+    - name: Get emcli from OMS server 
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          cd {{ stage }}/emcli
+          wget -P /u02/stage/emcli --quiet --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emclikit-get
+
+    - name: Install emcli 
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+          ${JAVA_HOME}/bin/java -jar {{ stage }}/emcli/emclikit.jar -install_dir={{ stage }}/emcli
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
+
+    - name: Copy add targets template 
+      template:
+        src: "add_targets.txt.j2"
+        dest: "{{ stage }}/add_targets.txt"
+        mode: u=rw,g=r,o=r
+
+    - name: Setup emcli, discover and promote targets 
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+          echo "emcli setup"
+          {{ stage }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -password="{{ oem_sysman_password }}" -dir="{{ stage }}/emcli/conf" -trustall -noregister 
+          echo "emcli discover and promote the targets"
+          {{ stage }}/emcli/emcli discover_db -input_file=db_discovery_file:{{ stage }}/add_targets.txt -promote
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install      
+
+  # block
+  become: true
+  become_user: oracle
