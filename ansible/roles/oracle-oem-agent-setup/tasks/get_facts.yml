@@ -1,8 +1,7 @@
 ---
-
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}'
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}"
     db_ssm_parameters_path: '/database/{{ ec2.tags["Name"] }}'
   when: ssm_parameters_path is not defined
 
@@ -18,7 +17,7 @@
     oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
     asmsnmp_password: "{{ lookup('aws_ssm', ssm_parameter_path_asmsnmp_password, region=ansible_ec2_placement_region) }}"
 
-- name: Get private ip address of the ec2 instance 
+- name: Get private ip address of the ec2 instance
   set_fact:
     server_private_ip_address: "{{ ec2.private_ip_address }}"
 

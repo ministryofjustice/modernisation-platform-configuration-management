@@ -1,5 +1,5 @@
 ---
-- name: Install oracle agent prerequisite zip file 
+- name: Install oracle agent prerequisite zip file
   ansible.builtin.yum:
     name: zip
     state: present
@@ -15,8 +15,7 @@
 
 - name: Install OEM 13.5 agent and add targets
   block:
-
-    - name: Get AgentPull.sh script from OMS server 
+    - name: Get AgentPull.sh script from OMS server
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -25,20 +24,20 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agentpull-get
 
-    - name: Update AgentPull.sh file to change omsHost 
+    - name: Update AgentPull.sh file to change omsHost
       ansible.builtin.lineinfile:
         path: "{{ stage }}/AgentPull.sh"
         regexp: "^omsHost="
-        line: 'omsHost={{ OMS_SERVER }}'        
+        line: "omsHost={{ OMS_SERVER }}"
 
     - name: Update AgentPull.sh permissions to execute
       ansible.builtin.file:
         path: "{{ stage }}/AgentPull.sh"
-        owner: "{{ oracle_install_user }}"  
-        group: "{{ oracle_install_group }}"  
-        mode: '0700'
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
 
-    - name: Install OEM agent 
+    - name: Install OEM agent
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -52,7 +51,7 @@
   become: true
   become_user: oracle
 
-- name: Execute root.sh 
+- name: Execute root.sh
   ansible.builtin.shell: |
     set -eo pipefail
     main() {

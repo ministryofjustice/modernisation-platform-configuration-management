@@ -1,8 +1,6 @@
 ---
-
-- name: OEM 13.5 agent Discover and promote targets from host 
+- name: OEM 13.5 agent Discover and promote targets from host
   block:
-
     - name: Create directories
       ansible.builtin.file:
         path: "{{ stage }}/emcli/conf"
@@ -11,7 +9,7 @@
         state: directory
         recurse: yes
 
-    - name: Get emcli from OMS server 
+    - name: Get emcli from OMS server
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -20,7 +18,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emclikit-get
 
-    - name: Install emcli 
+    - name: Install emcli
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -29,13 +27,13 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
-    - name: Copy add targets template 
+    - name: Copy add targets template
       template:
         src: "add_targets.txt.j2"
         dest: "{{ stage }}/add_targets.txt"
         mode: u=rw,g=r,o=r
 
-    - name: Setup emcli, discover and promote targets 
+    - name: Setup emcli, discover and promote targets
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -45,7 +43,7 @@
           echo "emcli discover and promote the targets"
           {{ stage }}/emcli/emcli discover_db -input_file=db_discovery_file:{{ stage }}/add_targets.txt -promote
         }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install      
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
   # block
   become: true
