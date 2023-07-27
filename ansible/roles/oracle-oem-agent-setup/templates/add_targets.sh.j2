@@ -3,7 +3,7 @@
 export PATH=/usr/local/bin:${PATH}
 STAGE={{ stage }}/emcli
 HOSTNAME=`hostname`
-HOST_FQDN_NAME=t3-nomis-db-1.nomis.hmpps-test.modernisation-platform.internal
+HOST_FQDN_NAME={{ ansible_fqdn }}
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
 INVENTORY_LOC=/u01/app/oraInventory
 cd ${STAGE}
@@ -41,7 +41,11 @@ then
 		echo ${i}
 		DBPASSWORD=`aws ssm get-parameter --name "/database/${HOSTNAME}/${i}/dbsnmp" --query Parameter.Value --with-decryption`
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
-	        ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
-		./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
+                # oracle_dbsys added  due to encountered bug 
+                if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
+                then 
+	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
+		        ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
+                fi
         done
 fi
