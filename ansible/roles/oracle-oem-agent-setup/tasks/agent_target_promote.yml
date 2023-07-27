@@ -27,23 +27,24 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
-    - name: Copy add targets template
+    - name: Copy add targets shell script template 
       template:
-        src: "add_targets.txt.j2"
-        dest: "{{ stage }}/add_targets.txt"
-        mode: u=rw,g=r,o=r
+        src: "add_targets.sh.j2"
+        dest: "{{ stage }}/add_targets.sh"
+        mode: u=rwx,g=r,o=r
 
-    - name: Setup emcli, discover and promote targets
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          echo "emcli setup"
-          {{ stage }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -password="{{ oem_sysman_password }}" -dir="{{ stage }}/emcli/conf" -trustall -noregister 
-          echo "emcli discover and promote the targets"
-          {{ stage }}/emcli/emcli discover_db -input_file=db_discovery_file:{{ stage }}/add_targets.txt -promote
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
+    # - name: Setup emcli, discover and promote targets
+    #   ansible.builtin.shell: |
+    #     set -eo pipefail
+    #     main() {
+    #       export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+    #       echo "emcli setup"
+    #       {{ stage }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -password="{{ oem_sysman_password }}" -dir="{{ stage }}/emcli/conf" -trustall -noregister 
+    #       {{ stage }}/add_targets.sh
+    #     }
+    #     main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
+    #   async: 86400
+    #   poll: 60
 
   # block
   become: true
