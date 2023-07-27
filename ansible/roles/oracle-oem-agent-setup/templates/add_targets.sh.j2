@@ -1,0 +1,43 @@
+#!/bin/bash
+
+STAGE={{ stage }}
+HOST_NAME={{ ansible_fqdn }}
+[[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
+INVENTORY_LOC=/u01/app/oraInventory
+HOSTIP=`grep ${HOST_NAME} /etc/hosts | awk '{ print $1 }'`
+cd ${STAGE}
+echo "emcli add target Grid Infrastructure home"
+if [ `grep "^+ASM" /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
+then
+        echo "emcli add target Grid Infrastructure home"
+        GRID_HOME_NAME=`grep grid  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
+        GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
+        ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_NAME}" -type="oracle_home" -host="${HOST_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        echo "emcli add HAS target"
+        ./emcli add_target -name="has_${HOST_NAME}" -type="has" -host="${HOST_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        echo "emcli add ASM target"
+        ./emcli add_target -name="+ASM_${HOST_NAME}" -type="osm_instance" -host="${HOST_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOSTIP}"
+        echo "emcli add Listener"
+        ./emcli add_target -name="LISTENER_${HOST_NAME}" -type="oracle_listener" -host="${HOST_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOSTIP}"
+fi
+
+if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
+then
+        echo "emcli add target database homes"
+        DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
+        DB_HOME=`grep ${i} ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_NAME}" -type="oracle_home" -host="${HOST_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+fi
+
+if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
+then
+        echo "emcli add target database homes"
+        DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
+        DB_HOME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_NAME}" -type="oracle_home" -host="${HOST_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
+        do
+		echo ${i}
+               ./emcli add_target -name="${i}_${HOST_NAME}" -type="oracle_database" -host="${HOST_NAME}" -credentials="username=dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};port:1521;OracleHome:${DB_HOME};MachineName:${HOSTIP}"
+        done
+fi
