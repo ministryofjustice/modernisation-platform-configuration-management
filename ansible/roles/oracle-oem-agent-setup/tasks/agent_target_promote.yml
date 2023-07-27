@@ -27,7 +27,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
-    - name: Copy add targets shell script template 
+    - name: Copy add targets shell script template
       template:
         src: "add_targets.sh.j2"
         dest: "{{ stage }}/add_targets.sh"
