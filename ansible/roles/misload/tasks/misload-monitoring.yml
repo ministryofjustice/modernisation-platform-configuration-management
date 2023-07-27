@@ -2,7 +2,7 @@
 # sets up the monitoring for misload using collectd exec plugin and posting messages to /var/log/messages
 - name: set fact get misload database name
   set_fact:
-    misload_db_name: "{{ ec2.tags['oracle-sids'] | select('match', '.*MIS.*') | list | first }}"
+    misload_db_name: "{{ ((ec2.tags['oracle-sids']).split(' ') | select('match', '.*MIS.*') | list) | join(' ') }}"
 
 - name: debug misload_db_name
   ansible.builtin.debug:
