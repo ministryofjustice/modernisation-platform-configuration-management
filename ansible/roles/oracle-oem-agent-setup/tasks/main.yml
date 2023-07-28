@@ -7,12 +7,14 @@
     - amibuild
     - get_facts
     - ec2provision
+    - always
 
 - import_tasks: get_facts.yml
   tags:
     - amibuild
     - get_facts
     - ec2provision
+    - always
 
 - name: oem_software_installed
   debug:
@@ -28,3 +30,14 @@
   tags:
     - amibuild
     - ec2provision
+
+- import_tasks: oem_agent_deinstall.yml
+  tags:
+    - never
+    - deinstall
+
+- import_tasks: cleanup.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - always
