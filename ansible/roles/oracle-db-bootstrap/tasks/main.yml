@@ -1,4 +1,5 @@
 ---
+
 # Skip a couple of bootstrap steps if not running in AWS (to allow for local testing)
 - name: Check if inside AWS.
   uri:
@@ -32,30 +33,10 @@
       when: find_db_version_file.matched == 1
   tags: oracle-db-bootstrap
 
-- name: (main) Load in our vars for 11g database and 11g grid
-  include_vars:
-    file: main.yml
-  when: db_version is not defined
-  tags: oracle-db-bootstrap
-
 - name: (main) Load in our vars for {{ db_version }} database and 19c grid
   include_vars:
     file: main{{ db_version | default() }}.yml
   when: db_version is defined
-  tags: oracle-db-bootstrap
-
-- block:
-    - name: (main) Define our service user
-      set_fact:
-        service_user_name: "oracle"
-  when: not service_user_name|default(false)
-  tags: oracle-db-bootstrap
-
-- block:
-    - name: (main) Define our service user's group
-      set_fact:
-        service_user_group: "oinstall"
-  when: not service_user_group|default(false)
   tags: oracle-db-bootstrap
 
 - name: (main) Get our instance facts
@@ -77,20 +58,12 @@
   include: reconfigure-instance.yml
   tags: oracle-db-bootstrap
 
-- block:
-    - name: (main) Configure and startup asm
-      include: configure-asm.yml
+- name: (main) Setup required database passwords in SSM parameter store
+  include: create-ssm-passwords.yml
+  tags: oracle-db-bootstrap
 
-    - name: (main) Create our check file so we don't run this again
-      file:
-        path: "/home/{{ service_user_name }}/.grid_installed"
-        state: touch
-
-    - name: (main) grid installed
-      set_fact:
-        grid_installed: true
-
-  when: not grid_installed|default(false)
+- name: (main) Reconfigure asm
+  include: reconfigure-asm.yml
   tags: oracle-db-bootstrap-asm
 
 - block:
@@ -108,14 +81,12 @@
 
   when:
     - not oradb_installed|default(false)
-    - grid_installed|default(false)
     - database_type != "standby"
   tags: oracle-db-bootstrap-create-db
 
 - name: (main) Setup TAF Service Name
   include: set-taf-service.yml
   when:
-    - grid_installed|default(false)
     - database_type != "standby"
   tags: oracle-db-bootstrap-service
 
@@ -127,7 +98,6 @@
     - name: (main) Install Oracle Secure Web Backup Service (oswbs)
       include: install-oswbs.yml
   when:
-    - grid_installed|bool
     - is_aws_environment|bool
   tags: oracle-db-bootstrap-oswbs
 
@@ -137,7 +107,6 @@
       - "database_type - {{database_type}}"
       - "database_bootstrap_restore - {{database_bootstrap_restore}}"
       - "backup_restored - {{backup_restored}}"
-      - "grid_installed - {{grid_installed}}"
       - "oradb_installed - {{oradb_installed}}"
     verbosity: 2
   tags: oracle-db-bootstrap
@@ -158,7 +127,6 @@
     - database_type != "standby"
     - database_bootstrap_restore|bool
     - not backup_restored|bool
-    - grid_installed|bool
     - oradb_installed|bool
   tags: oracle-db-bootstrap-restore
 
@@ -208,7 +176,6 @@
         state: touch
   when:
     - database_type != "primary"
-    - grid_installed|bool
     - not ready_for_ha|bool
 
 - block:
@@ -218,7 +185,6 @@
         state: touch
   when:
     - database_type != "standby"
-    - grid_installed|bool
     - oradb_installed|bool
     - not ready_for_ha|bool
 
@@ -262,7 +228,6 @@
   become: true
   become_user: oracle
   when:
-    - grid_installed|bool
     - oradb_installed|bool or database_type == "standby"
     - backup_restored|bool or not (database_bootstrap_restore|bool)
 
