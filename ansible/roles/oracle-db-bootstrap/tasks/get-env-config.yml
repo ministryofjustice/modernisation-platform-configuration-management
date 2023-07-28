@@ -1,5 +1,4 @@
 ---
-
 - name: Get Environment Specific Variables for Primary
   set_fact:
     host_specific_required_patches: "{{ primarydb['required_patches'] | default({})}}"
