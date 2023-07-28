@@ -1,42 +1,16 @@
 ---
-- block:
-    - name: (main/reconfigure-instance/update-service-user) Set system hostname
-      set_fact:
-        system_hostname: "{{ ansible_env.HMPPS_FQDN }}"
-  when: ansible_env.HMPPS_FQDN|default(false)
 
-- block:
-    - name: (main/reconfigure-instance/update-service-user) Set system hostname
-      set_fact:
-        system_hostname: "{{ ansible_env.HOSTNAME }}"
-  when: ansible_env.HMPPS_FQDN|default(false) == false
-
-- name: "(main/reconfigure-instance/update-service-user) Update our service users .bash_profile"
-  lineinfile:
-    path: "/home/{{ service_user_name }}/.bash_profile"
-    regexp: "^export ORACLE_HOSTNAME=localhost"
-    backrefs: true
-    line: "export ORACLE_HOSTNAME={{ system_hostname }}"
-  ignore_errors: true
-
-- name: "(main/reconfigure-instance/update-service-user) Update our service users .bash_profile"
-  lineinfile:
-    path: "/home/{{ service_user_name }}/.bash_profile"
-    regexp: "^export ORACLE_SID="
-    backrefs: true
-    line: "export ORACLE_SID={{ database_sid|default('TEST') }}"
-  ignore_errors: true
-
-- name: "(main/reconfigure-instance/update-service-user) Update our service users .bash_profile"
-  lineinfile:
-    path: "/home/{{ service_user_name }}/.bash_profile"
-    regexp: "^export ORACLE_UNQNAME="
-    backrefs: true
-    line: "export ORACLE_UNQNAME={{ database_global_database_name|default('TEST') }}"
-  ignore_errors: true
+- name: (main/reconfigure-instance/update-service-user) Update our service users with .bash_profile
+  blockinfile:
+    insertafter: EOF
+    block: "{{ bash_profile }}"
+    dest: "/home/{{ service_user_name }}/.bash_profile"
+    owner: "{{ service_user_name }}"
+    group: "{{ service_user_group}}"
 
 - name: (main/reconfigure-instance/update-service-user) Create our tmp dir for this as oracle because ansible
   file:
     state: directory
     path: "/home/{{ service_user_name }}/.ansible/tmp"
     owner: "{{ service_user_name }}"
+    group: "{{ service_user_group}}"
