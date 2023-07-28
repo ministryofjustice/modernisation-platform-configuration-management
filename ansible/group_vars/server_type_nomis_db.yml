@@ -12,6 +12,8 @@ server_type_roles_list:
 #  - collectd                 # temporarily disabling as generating errors, address in DSOS-1974
 #  - amazon-cloudwatch-agent
 #  - oracle-db-restore
+#  - fixngo-connected-metric
+#  - misload
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

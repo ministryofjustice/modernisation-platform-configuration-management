@@ -7,8 +7,6 @@ Role for configuring scheduled oracle DB backups, or taking adhoc backups
 Enabled by defining `rman_backup_script` variable, e.g. in `group_vars`.
 A default cron schedule is provided but this can also be changed via `group_vars`.
 
-TODO: enable cloudwatch/collectd monitoring of the backups.
-
 ## Adhoc DB Backups
 
 When standing up a new DB instance in standby mode via `oracle-db-standby-setup`

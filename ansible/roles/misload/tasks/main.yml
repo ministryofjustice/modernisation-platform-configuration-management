@@ -11,9 +11,9 @@
     - ec2provision
     - ec2patch
   when: ec2.tags['misload-target'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0
-# TBD in DSOS-2009
-# - import_tasks: "misload-monitoring.yml"
-#   tags:
-#     - ec2provision
-#     - ec2patch
-#   when: ec2.tags['misload-target'] is defined and ansible_facts['distribution'] == "RedHat"
+
+- import_tasks: "misload-monitoring.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ec2.tags['misload-target'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0
