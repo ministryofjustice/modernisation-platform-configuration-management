@@ -1,0 +1,34 @@
+---
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}"
+    db_ssm_parameters_path: '/database/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_oem_sysman_password: "{{ ssm_parameters_path }}/sysmanpassword"
+    ssm_parameters_path_oem_agent_registration_password: "{{ ssm_parameters_path }}/agentregpassword"
+    ssm_parameter_path_asmsnmp_password: "{{ db_ssm_parameters_path }}/ASMSNMP"
+
+- name: Get SSM parameters
+  set_fact:
+    oem_sysman_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_sysman_password, region=ansible_ec2_placement_region) }}"
+    oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
+    asmsnmp_password: "{{ lookup('aws_ssm', ssm_parameter_path_asmsnmp_password, region=ansible_ec2_placement_region) }}"
+
+- name: Get private ip address of the ec2 instance
+  set_fact:
+    server_private_ip_address: "{{ ec2.private_ip_address }}"
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - oem_sysman_password|length > 0
+    - oem_agent_password|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)
