@@ -21,6 +21,10 @@
   shell: "{{ oracle_database_oracle_home }}/bin/dbca {{ dbca_parameters }}"
   become: true
   become_user: "{{ service_user_name }}"
+  vars:
+    ansible_aws_ssm_timeout: 3600
+  async: 3600
+  poll: 60
   register: command_result
 
 - name: (main/create-database) Remove dbca response file after successful database creation
