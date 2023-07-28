@@ -1,22 +1,5 @@
 ---
 - block:
-    - name: (main/check-installation) validate oracle grid is already installed
-      stat:
-        path: "/home/{{ service_user_name }}/.grid_installed"
-      register: grid_install_check_file
-      become: true
-
-    - name: Is grid installed (false)
-      set_fact:
-        grid_installed: false
-      when: not grid_install_check_file.stat.exists
-
-    - name: Is grid installed (true)
-      set_fact:
-        grid_installed: true
-      when: grid_install_check_file.stat.exists
-
-- block:
     - name: (main/check-installation) validate oracle database is already installed
       stat:
         path: "/home/{{ service_user_name }}/.oradb_installed"
