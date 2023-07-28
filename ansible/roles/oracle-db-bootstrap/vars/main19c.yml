@@ -1,12 +1,44 @@
 ---
 oracle_root: "/u01"
+oracle_stage: "/u01/stage"
 oracle_database_oracle_base: "{{ oracle_root }}/app/oracle"
-oracle_database_oracle_home: "{{ oracle_database_oracle_base }}/product/19.0.0.0/db"
+oracle_database_oracle_home: "{{ oracle_database_oracle_base }}/product/19c/db_1"
 oracle_grid_oracle_base: "{{ oracle_root }}/app/grid"
-oracle_grid_oracle_home: "{{ oracle_grid_oracle_base }}/product/19.0.0.0/grid"
-oracle_patch_installer_directory: "{{ oracle_root }}/software/19c/patches"
+oracle_grid_oracle_home: "{{ oracle_database_oracle_base }}/product/19c/gridhome_1"
+oracle_patch_installer_directory: "{{ oracle_stage }}/patches"
 oracle_dbca_template_file: "database19c"
-oracle_osbws_installer_directory: "{{ oracle_root }}/software/19c/osbws"
+oracle_osbws_installer_directory: "{{ oracle_stage }}/osbws"
 oracle_osbws_ora_file: "{{ oracle_database_oracle_home }}/dbs/osbws.ora"
-database_taf_service: "{{ database_global_database_name }}_TAF"
-database_primary_unique: "{{ database_global_database_name }}"
+database_taf_service: "{{ primarydb['database_taf_service'] }}"
+database_primary_unique: "{{ primarydb['database_primary_unique'] }}"
+database_global_database_name: "{{ primarydb['database_global_database'] }}"
+database_sid: "{{ primarydb['database_primary_sid'] }}"
+
+# Moved from main.yml
+service_user_name: "oracle"
+service_user_group: "oinstall"
+
+# Service user bash profile
+bash_profile: |
+  alias ll='ls -lah'
+  alias cp='cp -iv'
+
+  export ORACLE_HOSTNAME={{ ansible_fqdn }}
+  export ORACLE_UNQNAME={{ database_primary_unique }}
+  export ORACLE_BASE={{ oracle_database_oracle_base }}
+  export ORACLE_HOME={{ oracle_database_oracle_home }}
+  export ORACLE_SID={{ database_sid }}
+  export ORACLE_TERM=xterm
+  export PATH=/usr/sbin:/usr/local/bin:$PATH
+  export PATH=$ORACLE_HOME/bin:$PATH
+  export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+  export CLASSPATH=$ORACLE_HOME/JRE:$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+
+  if [ $USER = "oracle" ]; then
+    if [ $SHELL = "/bin/ksh" ]; then
+      ulimit -p 16384
+      ulimit -n 65536
+    else
+      ulimit -u 16384 -n 65536
+    fi
+  fi
