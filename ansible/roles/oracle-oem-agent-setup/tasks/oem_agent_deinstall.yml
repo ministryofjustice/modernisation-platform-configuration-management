@@ -1,5 +1,4 @@
 ---
-
 - name: Create directories
   ansible.builtin.file:
     path: "{{ stage }}/emcli/conf"
@@ -7,10 +6,9 @@
     group: "{{ oracle_install_group }}"
     state: directory
     recurse: yes
-    
+
 - name: OEM 13.5 agent Deinstall
   block:
-
     - name: Get emcli from OMS server
       ansible.builtin.shell: |
         set -eo pipefail
@@ -29,7 +27,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
-    - name: Deinstall oem agent 
+    - name: Deinstall oem agent
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
