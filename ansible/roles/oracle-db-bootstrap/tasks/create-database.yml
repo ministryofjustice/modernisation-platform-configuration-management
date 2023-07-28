@@ -7,13 +7,13 @@
     mode: 0400
 
 - name: (main/create-database) Copy our database template
-  copy:
-    src: "{{ role_path }}/files/{{ oracle_dbca_template_file }}.dbc"
+  template:
+    src: "{{ role_path }}/templates/{{ oracle_dbca_template_file }}.dbc.j2"
     dest: "{{ oracle_database_oracle_home }}/assistants/dbca/templates/{{ oracle_dbca_template_file }}.dbc"
     owner: "{{ service_user_name }}"
-    remote_src: true
+    group: "{{ service_user_group}}"
 
-- name: Set fact for dbca parameters database
+- name: (main/create-database) Set fact for dbca parameters database
   set_fact:
     dbca_parameters: "-silent -createDatabase -responseFile /tmp/dbca{{ db_version }}.rsp"
 
