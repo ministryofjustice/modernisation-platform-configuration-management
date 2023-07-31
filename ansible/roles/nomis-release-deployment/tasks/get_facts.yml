@@ -1,0 +1,73 @@
+---
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ emrepo }}  variable is defined in db_configs fact"
+  when: db_configs[emrepo] is not defined
+
+- name: Set database facts
+  set_fact:
+    emrepo_db_name: "{{ db_configs[ emrepo ] }}"
+
+- name: Debug oem repository database name
+  debug:
+    var: emrepo_db_name
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+  when: ssm_parameters_path is not defined
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_db_oms_owner_password: "{{ ssm_parameters_path }}/{{ emrepo_db_name.emrepo_db_name }}/oms_owner_password"
+
+- name: Get SSM parameters
+  set_fact:
+    db_oms_owner_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+
+- name: Set sys password if not in SSM
+  set_fact:
+    db_sys_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - db_sys_password|length <= 0
+
+- name: Set system password if not in SSM
+  set_fact:
+    db_system_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - db_system_password|length <= 0
+
+- name: Set sysman password if not in SSM
+  set_fact:
+    db_sysman_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - db_sysman_password|length <= 0
+
+- name: Set weblogic admin password if not in SSM
+  set_fact:
+    weblogic_admin_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - weblogic_admin_password|length <= 0
+
+- name: Set weblogic nodemanager password if not in SSM
+  set_fact:
+    nodemanager_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - nodemanager_password|length <= 0
+
+- name: Set OEM agent registration password if not in SSM
+  set_fact:
+    oem_agent_password: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=10') }}"
+  when:
+    - oem_agent_password|length <= 0
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - emrepo_db_name.emrepo_db_name|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)

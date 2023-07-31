@@ -1,0 +1,15 @@
+---
+
+- name: Remove keepalive & stop_nomis_weblogic
+  import_tasks: stop_nomis_app.yml
+  when:  outage_required == 1
+
+- include_tasks:
+    file: nomis_deploy_release.yml
+  loop_control:
+    loop_var: nomis_release
+  loop: "{{ nomis_releases }}"
+
+- import_tasks: start_nomis_app.yml
+  tags: deploy_db_release
+  when:  outage_required == 1

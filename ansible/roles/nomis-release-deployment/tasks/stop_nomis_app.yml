@@ -1,0 +1,23 @@
+---
+
+- name: Remove keepalive 
+  ansible.builin.shell:  mv {{ tag }}/static/keepalive.htm {{ tag }}/static/keepalive.htm_REN
+
+- name: stop nomis weblogic app 
+  ansible.builtin.service:
+    name: {{ item }}
+    state: stopped
+  loop: 
+    - opmn
+    - WLS_FORMS
+    - WLS_REPORTS
+    - WLS_FORMS1A
+    - WLS_FORMS1B
+    - WLS_FORMS1C
+    - WLS_AUTOLOGOFF
+    - WLS_TAGSAR
+    - WLS_HOTPAGE
+
+- name: Kill frmweb processes not stopped 
+  ansible.builtin.shell: | 
+    ps -fu oracle | grep "frmweb webfile" | grep -v grep | gawk '{print $2}' | xargs kill -9

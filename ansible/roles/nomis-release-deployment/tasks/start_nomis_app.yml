@@ -1,0 +1,19 @@
+---
+
+- name: Start nomis weblogic app 
+  ansible.builtin.service:
+    name: {{ item }}
+    state: started
+  loop: 
+    - opmn
+    - WLS_FORMS
+    - WLS_REPORTS
+    - WLS_FORMS1A
+    - WLS_FORMS1B
+    - WLS_FORMS1C
+    - WLS_AUTOLOGOFF
+    - WLS_TAGSAR
+    - WLS_HOTPAGE
+
+- name: Remove keepalive 
+  ansible.builin.shell:  mv {{ tag }}/static/keepalive.htm_REN {{ tag }}/static/keepalive.htm
