@@ -1,9 +1,6 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
-environment:
-  JAVA_HOME: /opt/sap/sapjvm_8/bin
-
 users_and_groups_system:
   - name: oracle
     group: oinstall
@@ -16,7 +13,7 @@ users_and_groups_system:
       - dba
       - sapsys
 
-server_type_roles_list:
+roles_list:
   - users-and-groups
   - sudoers
   - get-ec2-facts
@@ -33,8 +30,6 @@ server_type_roles_list:
   - oracle-19c-client
   - combined-reporting-bip-rhel8-setup
   - combined-reporting-tomcat-installation
-
-roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
   - make

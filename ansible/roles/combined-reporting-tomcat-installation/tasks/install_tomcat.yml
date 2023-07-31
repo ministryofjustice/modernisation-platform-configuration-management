@@ -1,12 +1,12 @@
 ---
-# - name: Perform pre-requesite checks
-#   shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check {{ sap_bi_platform_extraction_directory }}/response.ini {{ sap_bi_platform_extraction_directory }}/failedPrereqs.txt"
-#   become: yes
-#   become_user: bobj
+- name: Perform pre-requesite checks
+  shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check {{ sap_bi_platform_extraction_directory }}/response.ini {{ sap_bi_platform_extraction_directory }}/failedPrereqs.txt"
+  become: true
+  become_user: bobj
 
 - name: Run Silent Installation
   shell: "sh {{ sap_bi_platform_extraction_directory }}/setup.sh -r {{ sap_bi_platform_extraction_directory }}/response.ini –InstallDir {{ sap_bi_platform_installation_directory }}/"
-  become: yes
+  become: true
   become_user: bobj
 
 - name: Run Setup
