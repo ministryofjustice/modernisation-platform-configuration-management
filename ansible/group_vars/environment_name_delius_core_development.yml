@@ -1,5 +1,4 @@
 ---
-#db_backup_s3_bucket_name: ???
 
 # From hmpps-env-configs/delius-core-dev/ansible/all.yml
 region: eu-west-2
@@ -16,29 +15,6 @@ autotask_windows:
   weekday:
     start_time: "06:20"
     duration_mins: 30
-required_patches:
-  p31810213:
-    patch_files:
-      - target_version: "19.9"
-        filename: p31810213_199000DBRU_Linux-x86-64.zip
-    description: Ora-600 [kghuclientasp_04] after upgrade to 19c database (Doc ID 2730880.1)
-    grid_patch: false
-    database_patch: true
-  p30828205:
-    patch_files:
-      - target_version: "19.9"
-        filename: p30828205_199000DBRU_Linux-x86-64.zip
-    description: Data Pump does not support compatibility above 19.0
-    postinstall_sql: postinstall.sql
-    grid_patch: false
-    database_patch: true
-  p30616738:
-    patch_files:
-      - target_version: "19.9"
-        filename: p30616738_199000DBRU_Linux-x86-64.zip
-    description: ORA-600 [qesrLoopOverSetRowP:rows] From Query In Job That Used To Work In 11g (Doc ID 2596180.1)
-    grid_patch: false
-    database_patch: true
 database_parameters:
   sga_max_size: 3280M
   sga_target: 3280M
@@ -46,6 +22,11 @@ database_parameters:
   pga_aggregate_limit: 3280M
 oracle_osbws_chunk_size: 104857600
 emctl_agent: /u01/app/oracle/oem13c_agent/agent_inst/bin/emctl
+# Buckets
+db_backup_s3_bucket_name: "{{ simple_environment_name }}-oracle-db-backups"
+dependencies_bucket:
+  name: tf-eu-west-2-hmpps-eng-dev-delius-core-dependencies-s3bucket
+  arn: arn:aws:s3:::tf-eu-west-2-hmpps-eng-dev-delius-core-dependencies-s3bucket
 
 # From hmpps-env-configs/delius-core-dev/ansible/delius_primarydb.yml
 primarydb:
