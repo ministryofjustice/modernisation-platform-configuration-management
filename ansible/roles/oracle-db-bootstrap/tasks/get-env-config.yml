@@ -11,6 +11,4 @@
 
 - name: Merge All Required Patches with Host Specific Required Patches
   set_fact:
-    all_required_patches: "{{ required_patches | combine (host_specific_required_patches) | default({}) }}"
-
-- debug: var=all_required_patches
+    required_patches: "{{ required_patches | combine (host_specific_required_patches) | default({}) }}"
