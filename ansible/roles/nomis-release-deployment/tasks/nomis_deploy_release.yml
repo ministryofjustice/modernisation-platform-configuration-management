@@ -3,18 +3,66 @@
 - name: Set variables
   set_fact:
     nomis_release_name: "{{ nomis_release.name }}"
+    app_release_status: -1
 
-- import_tasks: download_release.yml
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+    
+- name: APP - Copy sql script file to verify release on database
+  ansible.builtin.template:
+    src: "check_db_release.sql.j2"
+    dest: "{{ stage }}/check_db_release.sql"
+    mode: 0600
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
 
-- name: Check release  {{ nomis_release.name }} has FormsSources, Static, Reports files.
-  ansible.builtin.find:
-    paths: "{{ stage }}/{{ nomis_release.name }}"
-    patterns: '*.fmb,*.pll,*.htm,*.gif,*.html,*.rdf'
-    recurse: true
-  register: app_deployment_filesFound
+- name: APP - Check database release {{ nomis_release.name }} deployed on database or not 
+  become_user: "{{ oracle_install_user }}"
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    sqlplus  -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} @{{ stage }}/check_db_release.sql
+  changed_when: false
+  register: db_release_status
 
-- import_tasks: deploy_db_release.yml
-  when: db_server_file.stat.exists
+- name: Deploy release {{ nomis_release.name }} on database server 
+  block:
 
-- import_tasks: deploy_tag_release.yml
-  when: app_server_file.stat.exists and app_deployment_filesFound.matched > 0
+    - name: Download {{ nomis_release.name }} release on db server 
+      ansible.builtin.import_tasks: download_release.yml
+
+    - name: Deploy database release
+      ansible.builtin.import_tasks: deploy_db_release.yml
+
+  # block
+  when: db_server_file.stat.exists and db_release_status.stdout | regex_search("RELEASE_STATUS=0")
+    
+
+- name: Deploy release {{ nomis_release.name }} on database server 
+  block:
+
+    - name: APP - Check {{ nomis_release.name }} release alread deployed on app server 
+      ansible.builtin.shell: grep {{ nomis_release.name }} /home/oracle/tag_release_detail | wc -l 
+      register: app_release_status
+
+    - name: Download {{ nomis_release.name }} release on app server 
+      ansible.builtin.import_tasks: download_release.yml
+      when: app_release_status.stdout == 0
+
+    - name: APP - Check release  {{ nomis_release.name }} has FormsSources, Static, Reports files.
+      ansible.builtin.find:
+        paths: "{{ stage }}/{{ nomis_release.name }}"
+        patterns: '*.fmb,*.pll,*.htm,*.gif,*.html,*.rdf'
+        recurse: true
+      register: app_deployment_filesFound
+
+    - name: Deploy application release 
+      ansible.builtin.import_tasks: deploy_tag_release.yml
+      when: app_deployment_filesFound.matched > 0 
+
+  # block
+  when: app_server_file.stat.exists  and db_release_status.stdout| regex_search("RELEASE_STATUS=1") 

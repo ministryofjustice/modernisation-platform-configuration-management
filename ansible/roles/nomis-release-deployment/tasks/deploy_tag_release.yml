@@ -1,35 +1,24 @@
 ---
 
-- name: APP - Copy script to deploy release on application server 
-  ansible.builtin.template:
-    src: "tag_release_deployment.sh.j2"
-    dest: "{{ stage }}/tag_release_deployment.sh"
-    mode: 0700
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
+- name: APP - Deploy application release {{ nomis_release.name }} 
+  block:
 
-- name: APP - Copy script to compile single form 
-  ansible.builtin.template:
-    src: "compform.sh.j2"
-    dest: "/u01/tag/utils/scripts/compform.sh"
-    mode: 0700
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
+    - name: APP - Deploy tag release 
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          . ~/.bash_profile
+          {{ stage }}/tag_release_deployment.sh {{ stage }} {{ nomis_release.name }} {{ app_db_username }} {{ app_db_password }} {{ app_db_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-nomis-release-deployment
 
-- name: APP - Deploy tag release 
-  become_user: "{{ oracle_install_user }}"
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      . ~/.bash_profile
-      {{ stage }}/tag_release_deployment.sh {{ stage }} {{ nomis_release.name }} {{ app_db_username }} {{ app_db_password }} {{ app_db_name }}
-    }
-    main 2>&1 | logger -p local3.info -t ansible-nomis-release-deployment
+    - name: APP - Add note of release deployment for future verification
+      ansible.builtin.lineinfile:
+        path: /home/oracle/tag_release_detail
+        line: "{{ nomis_release.name }}"
+        create: yes
 
-- name: APP - Add note of release deployment for future verification
-  ansible.builtin.lineinfile:
-    path: /home/oracle/tag_release_detail
-    line: "{{ nomis_release.name }}"
-    create: yes
+  # block
 
 
