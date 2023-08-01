@@ -1,6 +1,6 @@
 ---
 
-- name: Download Nomis release 
+- name: Download Nomis release {{ nomis_release.name }}
   become_user: "{{ oracle_install_user }}"
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
@@ -10,7 +10,7 @@
     permission: "public-read"
     overwrite: latest
 
-- name: Extract release into stage directory
+- name: Extract release {{ nomis_release.name }} into stage directory
   ansible.builtin.unarchive:
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
@@ -19,7 +19,7 @@
     remote_src: true
     keep_newer: true
 
-- name: Extract release into stage directory
+- name: Extract release {{ nomis_release.name }} into stage directory
   ansible.builtin.unarchive:
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"

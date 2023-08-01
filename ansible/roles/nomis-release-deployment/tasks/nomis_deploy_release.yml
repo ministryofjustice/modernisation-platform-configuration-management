@@ -6,6 +6,15 @@
 
 - import_tasks: download_release.yml
 
+- name: Check release  {{ nomis_release.name }} has FormsSources, Static, Reports files.
+  ansible.builtin.find:
+    paths: "{{ stage }}/{{ nomis_release.name }}"
+    patterns: '*.fmb,*.pll,*.htm,*.gif,*.html,*.rdf'
+    recurse: true
+  register: app_deployment_filesFound
+
 - import_tasks: deploy_db_release.yml
+  when: db_server_file.stat.exists
 
 - import_tasks: deploy_tag_release.yml
+  when: app_server_file.stat.exists and app_deployment_filesFound.matched > 0

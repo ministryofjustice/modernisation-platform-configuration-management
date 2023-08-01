@@ -1,15 +1,38 @@
 ---
+- import_tasks: get_facts.yml
+  tags:
+    - always
 
-- name: Remove keepalive & stop_nomis_weblogic
+- name: Remove keepalive
+  import_tasks: rename_keepalive_start_outage.yml
+  tags: 
+    - start_outage
+  when: outage_required == 1 and app_server_file.stat.exists
+
+- name: Stop_nomis_weblogic
   import_tasks: stop_nomis_app.yml
-  when:  outage_required == 1
+  tags: 
+    - stop_application 
+  when: outage_required == 1 and app_server_file.stat.exists
 
+# - name: Create restore point before deploying releases 
+  
 - include_tasks:
     file: nomis_deploy_release.yml
+  tags: 
+    - deploy_release
   loop_control:
     loop_var: nomis_release
   loop: "{{ nomis_releases }}"
 
-# - import_tasks: start_nomis_app.yml
-#   tags: deploy_db_release
-#   when:  outage_required == 1
+- name: Start Nomis weblogic app 
+  import_tasks: start_nomis_app.yml
+  when: outage_required == 1 and app_server_file.stat.exists
+  tags: 
+    - start_application 
+
+- name: Rename keepalive back to end outage 
+  import_tasks: rename_keepalive_end_outage.yml
+  tags: 
+    - end_outage
+  when: outage_required == 1 and app_server_file.stat.exists

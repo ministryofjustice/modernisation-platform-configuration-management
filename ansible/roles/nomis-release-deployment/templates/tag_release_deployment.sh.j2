@@ -33,6 +33,7 @@ for i in ${FORMS_LIST}
 do
 	if [ -f ${TAGDIR}/FormsSources/${i} ]
 	then
+			echo "Taking backup of ${i}"
 		cp -p ${TAGDIR}/FormsSources/$i ${TOPDIR}/backup/.
 	fi
 done

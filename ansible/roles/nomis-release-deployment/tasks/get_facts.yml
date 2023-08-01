@@ -1,23 +1,47 @@
 ---
-- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
-  set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
-  when: ssm_parameters_path is not defined
 
-- name: Set SSM parameters weblogic path facts
-  set_fact:
-    ssm_parameters_path_app_db_username: "{{ ssm_parameters_path }}/db_username"
-    ssm_parameters_path_app_db_password: "{{ ssm_parameters_path }}/db_password"
+- name: Check server has DB components 
+  ansible.builtin.stat:
+    path: /etc/oratab
+  register: db_server_file 
 
-- name: Get SSM parameters
+- name: Check server has APP components 
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
+  register: app_server_file
+
+- name: If database server , get DB name from running process 
+  ansible.builtin.shell:  ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
+  register: db_name
+  when: db_server_file.stat.exists
+
+- name: Set db name from ec2 oracle-db-name tag
   set_fact:
-    app_db_username: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_username, region=ansible_ec2_placement_region) }}"
-    app_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_password, region=ansible_ec2_placement_region) }}"
+    app_db_name: "{{ db_name.stdout }}"
+  when: db_server_file.stat.exists
 
 - name: Set db name from ec2 oracle-db-name tag
   set_fact:
     app_db_name: "{{ ec2.tags['oracle-db-name'] }}"
-  when: app_db_name is not defined
+  when: app_server_file.stat.exists
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["oracle-db-name"] }}'
+  when: ssm_parameters_path is not defined and app_server_file.stat.exists 
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ app_db_name }}'
+  when: db_server_file.stat.exists 
+
+- name: Set SSM parameters path facts
+  set_fact:
+    ssm_parameters_path_app_db_password: "{{ ssm_parameters_path }}/{{ app_db_username }}"
+
+- name: Get SSM parameters
+  set_fact:
+    app_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_app_db_password, region=ansible_ec2_placement_region) }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
