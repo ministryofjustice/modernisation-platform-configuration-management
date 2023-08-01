@@ -5,3 +5,7 @@
     nomis_release_name: "{{ nomis_release.name }}"
 
 - import_tasks: download_release.yml
+
+- import_tasks: deploy_db_release.yml
+
+- import_tasks: deploy_tag_release.yml

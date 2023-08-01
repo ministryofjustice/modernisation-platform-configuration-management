@@ -1,11 +1,12 @@
 ---
 
 - name: Remove keepalive 
-  ansible.builin.shell:  mv {{ tag }}/static/keepalive.htm {{ tag }}/static/keepalive.htm_REN
+  ansible.builtin.shell:  |
+      mv {{ tag }}/static/keepalive.htm {{ tag }}/static/keepalive.htm_REN
 
 - name: stop nomis weblogic app 
   ansible.builtin.service:
-    name: {{ item }}
+    name: "{{ item }}"
     state: stopped
   loop: 
     - opmn

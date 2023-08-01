@@ -1,4 +1,42 @@
 ---
+- name: Deploy database release if not already deployed 
+  block:
+    - name: Copy sql script file to verify release on database
+      ansible.builtin.template:
+        src: "check_db_release.sql.j2"
+        dest: "{{ stage }}/check_db_release.sql"
+        mode: 0600
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
 
-- name: Check database release deployed on database or not 
-  ansible.builtin.shell: 
+    - name: Check database release deployed on database or not 
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        sqlplus {{ app_db_username }}/{{ app_db_password }}@${{ app_db_name }} @{{ stage }}/check_db_release.sql
+      changed_when: false
+      register: release_status 
+
+    - name: Deploy release if not already deployed 
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        cd {{ stage }}/{{ nomis_release.name }}
+        ./db_patch.sh -d {{ app_db_name }} -p {{ app_db_password }}
+      async: 86400
+      poll: 60
+      when: release_status.stdout == '0'
+
+    - name: Check database release deployed on database or not 
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        sqlplus {{ app_db_username }}/{{ app_db_password }}@${{ app_db_name }} @{{ stage }}/check_db_release.sql
+      changed_when: false
+      register: release_status 
+
+    - name: Fail if release not deployed successfully in database.
+      fail:
+        msg: Release deployment failed.
+      when: release_status.stdout == '0'
+
+  # block
+  become: true
+  become_user: oracle

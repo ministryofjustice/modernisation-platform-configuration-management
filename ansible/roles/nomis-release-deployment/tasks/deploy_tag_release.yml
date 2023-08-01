@@ -1,0 +1,22 @@
+---
+
+- name: Copy script to deploy release on application server 
+  ansible.builtin.template:
+    src: "tag_release_deployment.sh.j2"
+    dest: "{{ stage }}/tag_release_deployment.sh"
+    mode: 0700
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+
+- name: Check database release deployed on database or not 
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    {{ stage }}/tag_release_deployment.sh {{ stage }} {{ nomis_release.name }} {{ app_db_username }} {{ app_db_password }} {{ app_db_name }}
+
+- name: Add note of release deployment for future verification
+  ansible.builtin.lineinfile:
+    path: /home/oracle/tag_release_detail
+    line: {{ nomis_release.name }}
+    create: yes
+
