@@ -1,0 +1,8 @@
+---
+
+- name: Disable and Stop Oracle High Availability Services
+  shell: |
+         export ORACLE_HOME={{ oracle_grid_oracle_home }}; 
+         {{ oracle_grid_oracle_home }}/bin/crsctl disable has
+         {{ oracle_grid_oracle_home }}/bin/crsctl stop has
+  

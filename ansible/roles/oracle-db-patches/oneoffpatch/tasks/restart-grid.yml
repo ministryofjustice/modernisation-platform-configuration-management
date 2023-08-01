@@ -1,0 +1,8 @@
+---
+
+- name: Enable and Start Oracle High Availability Services
+  shell: |
+         export ORACLE_HOME={{ oracle_grid_oracle_home }}; 
+         {{ oracle_grid_oracle_home }}/bin/crsctl enable has
+         {{ oracle_grid_oracle_home }}/bin/crsctl start has
+  

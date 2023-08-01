@@ -1,0 +1,17 @@
+---
+
+  - name:  Apply patch {{ patch_number }} to Grid if Required
+    include_tasks: apply-patch.yml
+    vars:
+       oracle_home: "{{ oracle_grid_oracle_home }}"
+       patch_directory: "{{ grid_patch_directory }}"
+       patch_to_replace: "{{ 'none' if not rollback_from_grid else patch_to_rollback }}"
+    when: apply_to_grid
+
+  - name:  Apply patch {{ patch_number }} to Databases if Required
+    include_tasks: apply-patch.yml
+    vars:
+       oracle_home: "{{ oracle_database_oracle_home }}"
+       patch_directory: "{{ database_patch_directory }}"
+       patch_to_replace: "{{ 'none' if not rollback_from_database else patch_to_rollback }}"
+    when: apply_to_database
