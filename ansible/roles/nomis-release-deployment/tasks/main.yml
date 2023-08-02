@@ -16,7 +16,10 @@
   tags: 
     - stop_application 
 
-# - name: Create restore point before deploying releases 
+# - name: Create restore point before deploying releases (Import oracle-restore-point role, WIP)
+
+# - name: Stop streams (Import oracle-streams role, WIP)
+
 - name: APP - Copy script to deploy release on application server 
   ansible.builtin.template:
     src: "tag_release_deployment.sh.j2"
@@ -62,3 +65,5 @@
   when: outage_required == 1 and app_server_file.stat.exists
   tags: 
     - end_outage
+
+# - name: Start streams (Import oracle-streams role, WIP)
