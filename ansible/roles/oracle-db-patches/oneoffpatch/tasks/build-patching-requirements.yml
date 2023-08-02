@@ -1,0 +1,144 @@
+---
+- name: Enable Install Request for All Patches if no Specific Patch ID Requested
+  set_fact:
+    required_patches: "{{ required_patches|combine({item.key: {'install_request': true}}, recursive=true) }}"
+  with_dict: "{{ required_patches }}"
+  when:
+    - install_patch_id is not defined
+    - ((item.value.grid_patch and item.value.grid_patch_version_compatible) or (item.value.database_patch and item.value.database_patch_version_compatible))
+
+- name: Enable Install Request for Specific Patch
+  set_fact:
+    required_patches: "{{ required_patches|combine({install_patch_id: {'install_request': true}}, recursive=true) }}"
+  when: install_patch_id is defined
+
+- name: Get OPatch Inventory
+  include_tasks: query-opatch.yml
+
+# Find if the required patches have already been installed and flag them to be installed if
+# (a) They are not already installed; and (b) They are compatible with the version of the Oracle Home
+- name: Find if Required Patches Have Already Been Installed
+  include_tasks: check-installed.yml
+  vars:
+    patch_id: "{{item.key}}"
+    patch_number: "{{item.value.patch_number}}"
+    grid_patch: "{{item.value.grid_patch}}"
+    database_patch: "{{item.value.database_patch}}"
+    grid_patch_version_compatible: "{{item.value.grid_patch_version_compatible}}"
+    database_patch_version_compatible: "{{item.value.database_patch_version_compatible}}"
+    patch_to_replace: "{{item.value.replaces_patch}}"
+  with_dict: "{{ required_patches }}"
+  when: "item.value.install_request"
+
+# Some patches have multiple versions depending on the base DBRU level - we loop through all
+# defined versions of the patch in the environment configuration to find the name of the
+# file appropriate for the current version
+- name: Create List of Patches with their Possible Patch Files
+  set_fact:
+    patch_list: "{{ ( patch_list | default([]) ) + [ {'patch_id':item.key,'patch_files':item.value.patch_files} ] }}"
+  loop: "{{ required_patches | dict2items }}"
+
+- name: Get Grid Patch Filename
+  set_fact:
+    required_patches: "{{ required_patches | combine({item.0.patch_id: { 'grid_patch_filename': item.1.filename, 'grid_patch_directory': ( oracle_patch_installer_directory + '/' + ( item.1.filename.split('.') | first ))  } }, recursive=true) }}"
+  with_subelements:
+    - "{{ patch_list }}"
+    - patch_files
+  when: oracle_grid_version is search('^' + item.1.target_version)
+
+- name: Get Database Patch Filename
+  set_fact:
+    required_patches: "{{ required_patches | combine({item.0.patch_id: {'database_patch_filename': item.1.filename, 'database_patch_directory': ( oracle_patch_installer_directory +  '/' + ( item.1.filename.split('.') | first )) } }, recursive=true) }}"
+  with_subelements:
+    - "{{ patch_list }}"
+    - patch_files
+  when: oracle_database_version is search('^' + item.1.target_version)
+
+- name: Download Grid Patches Not Already Installed
+  include_tasks: download-patch.yml
+  vars:
+    patch_number: "{{item.value.patch_number}}"
+    patch_file: "{{item.value.grid_patch_filename}}"
+    patch_directory: "{{item.value.grid_patch_directory}}"
+  with_dict: "{{ required_patches }}"
+  when: "item.value.install_request and item.value.install_to_grid_required"
+
+- name: Download Database Patches Not Already Installed
+  include_tasks: download-patch.yml
+  vars:
+    patch_number: "{{item.value.patch_number}}"
+    patch_file: "{{item.value.database_patch_filename}}"
+    patch_directory: "{{item.value.database_patch_directory}}"
+  with_dict: "{{ required_patches }}"
+  when: "item.value.install_request and item.value.install_to_database_required"
+
+- name: Initialize List of Grid Patching Requirements
+  set_fact:
+    grid_patching_list: [false]
+
+# Create a list of whether Grid needs patching (true or false) for all required patches.
+# This will be if the patch install is requested, it is a Grid patch, is version compatible, and is has not already been installed.
+- name: Create List of Grid Patching Requirements
+  set_fact:
+    grid_patching_list: "{{ grid_patching_list + [ true ] }}"
+  with_dict: "{{ required_patches }}"
+  when: item.value.install_request and item.value.grid_patch and item.value.install_to_grid_required
+
+# Summarize whether we need to shutdown Grid - this is if any Grid patching is required
+- name: Set Grid Shutdown Needed
+  set_fact:
+    grid_shutdown_needed: true
+  when: "true in grid_patching_list"
+
+- name: Set Grid Shutdown Not Needed
+  set_fact:
+    grid_shutdown_needed: false
+  when: "true not in grid_patching_list"
+
+- name: Initialize List of Database Requirements
+  set_fact:
+    database_shutdown_requirements: [false]
+
+- name: Determine if Database needs Shutdown from OPatch Metadata
+  shell: |
+    {{ oracle_database_oracle_home }}/OPatch/opatch query {{ item.value.database_patch_directory }}/{{ item.value.patch_number }} | grep "Need to shutdown Oracle instances" | cut -d: -f2
+  register: tmp_database_shutdown_required
+  with_dict: "{{ required_patches }}"
+  when: item.value.install_request and item.value.database_patch and item.value.install_to_database_required
+  changed_when: false
+
+- name: Update Dictionary with Database Shutdown Requirements
+  set_fact:
+    required_patches: "{{ required_patches | combine({item.item.key: {'shutdown_required': ( item.stdout | trim | bool ) }}, recursive=true) }}"
+  with_items: "{{ tmp_database_shutdown_required.results }}"
+  when: (tmp_database_shutdown_required.results | length > 0) and (item.stdout is defined)
+
+  # Summarize whether we need to shutdown Databases - this is if any Database patches require shutdown
+- name: Set Database Shutdown Needed
+  set_fact:
+    database_shutdown_needed: true
+  with_dict: "{{ required_patches }}"
+  when:
+    - item.value.install_request
+    - item.value.install_to_grid_required or item.value.install_to_database_required
+    - item.value.shutdown_required
+
+- name: Set Database Shutdown Not Needed
+  set_fact:
+    database_shutdown_needed: false
+  when: database_shutdown_needed is undefined
+
+  # Summarize whether we need to run Datapatch - this is required if any Database patches require data patch, but need only be run once for all patches
+- name: Set Datapatch Needed
+  set_fact:
+    datapatch_needed: true
+  with_dict: "{{ required_patches }}"
+  when:
+    - item.value.install_request
+    - item.value.install_to_grid_required or item.value.install_to_database_required
+    - item.value.datapatch_required
+
+- name: Set Datapatch Not Needed
+  set_fact:
+    datapatch_needed: false
+  when: datapatch_needed is undefined
