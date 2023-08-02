@@ -1,26 +1,25 @@
 ---
-
 # Most Data Guard parameters will be set to default values during the HA Build.
 # This section is only to cover local non-default parameter settings if required.
 - name: Get Current Value of Data Guard Parameters
   shell: |
-         . ~/.bash_profile
-         dgmgrl / <<EODG | awk -F= '/{{ parameter }}/{print $2}' | sed 's/'"'"'//g' | tr -d ' '
-         show database {{ database_sid }} {{ parameter }};
-         exit
-         EODG
+    . ~/.bash_profile
+    dgmgrl / <<EODG | awk -F= '/{{ parameter }}/{print $2}' | sed 's/'"'"'//g' | tr -d ' '
+    show database {{ database_sid }} {{ parameter }};
+    exit
+    EODG
   register: get_dg_parameter
   loop: "{{ data_guard_parameters.keys() }}"
   loop_control:
-     loop_var: parameter
+    loop_var: parameter
   changed_when: false
 
 - name: Set Data Guard Parameter if it is Not As Expected
   shell: |
-         . ~/.bash_profile
-         dgmgrl / << EODG
-         edit database {{ database_sid }} set property {{ item.parameter }} = '{{ data_guard_parameters[item.parameter] }}';
-         exit
-         EODG
+    . ~/.bash_profile
+    dgmgrl / << EODG
+    edit database {{ database_sid }} set property {{ item.parameter }} = '{{ data_guard_parameters[item.parameter] }}';
+    exit
+    EODG
   loop: "{{ get_dg_parameter.results }}"
   when: ( data_guard_parameters[item.parameter] | string ) != ( item.stdout | string )

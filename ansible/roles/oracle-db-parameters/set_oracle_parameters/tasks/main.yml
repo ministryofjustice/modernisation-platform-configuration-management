@@ -1,44 +1,43 @@
 ---
-
 - name: Get Database SID
   set_fact:
-     database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
+    database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
 
 - name: Create Empty Expected Database Parameters Dictionary if Not Defined in Config
   set_fact:
-     database_parameters: {}
+    database_parameters: {}
   when: database_parameters is not defined
 
 # We default the expected management pack licence to NONE if we have
 # not explicitly stated in the config that management packs are available
 - name: Create Default Pack Licencing Key if Not Defined
   set_fact:
-      default_pack_licence:
-          control_management_pack_access: NONE
-  when: "'control_management_pack_access' not in database_parameters" 
+    default_pack_licence:
+      control_management_pack_access: NONE
+  when: "'control_management_pack_access' not in database_parameters"
 
 - name: Add Default Pack Licencing Key if Not Defined
   set_fact:
-      database_parameters: '{{ database_parameters| combine(default_pack_licence) }}'
+    database_parameters: "{{ database_parameters| combine(default_pack_licence) }}"
   when: "'control_management_pack_access' not in database_parameters"
 
 # Always fetch sga_max_size regardless of whether we need it as it is an upper limit for sga_target
 - name: Create CSV List of Database Parameters
   set_fact:
-     parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size'\" }}"
+    parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size'\" }}"
 
 - name: Get List of Current Database Parameter Values
-  script:  get_parameter_values.sh {{ database_sid }} "{{ parameter_csv }}"
+  script: get_parameter_values.sh {{ database_sid }} "{{ parameter_csv }}"
   register: current_parameter_values
   changed_when: false
 
 - set_fact:
-        database_parameters_actual: "{{ database_parameters_actual | default({}) | combine({item.split(',')[0]:item.split(',')[1]}) }}"
+    database_parameters_actual: "{{ database_parameters_actual | default({}) | combine({item.split(',')[0]:item.split(',')[1]}) }}"
   loop: "{{ current_parameter_values.stdout_lines | select() | list }}"
 
 - name: Create dictionary for parameters that can be changed in spfile only
   set_fact:
-    database_parameters_spfile: "{{ database_parameters_spfile | default({}) | combine({item.split(',')[0]:item.split(',')[2]}) }}" 
+    database_parameters_spfile: "{{ database_parameters_spfile | default({}) | combine({item.split(',')[0]:item.split(',')[2]}) }}"
   with_items: "{{ current_parameter_values.stdout_lines | select() | list }}"
 
 # We define memory_expanded_values as the values for memory parameters in bytes, i.e. expanding out the K, M or G suffixes
@@ -63,7 +62,7 @@
 
 - name: What is Set
   debug:
-     msg: "{{ item }} Expected: {{ ( memory_expanded_values | default({}) )[item] | default(database_parameters[item]) }} ; Actual: {{ database_parameters_actual[item] }}"
+    msg: "{{ item }} Expected: {{ ( memory_expanded_values | default({}) )[item] | default(database_parameters[item]) }} ; Actual: {{ database_parameters_actual[item] }}"
   with_items: "{{ database_parameters }}"
 
 # Reject SGA_TARGET if SGA_MAX_SIZE is not large enough
@@ -71,25 +70,25 @@
 # We must use the expanded (bytes) values for comparison, not the values with K/M/G suffixes
 - name: Check SGA_MAX_SIZE is large enough for SGA_TARGET
   assert:
-     that:  ( memory_expanded_values['sga_target'] | int ) <= ( memory_expanded_values['sga_max_size'] | default(database_parameters_actual['sga_max_size']) | int )
+    that: ( memory_expanded_values['sga_target'] | int ) <= ( memory_expanded_values['sga_max_size'] | default(database_parameters_actual['sga_max_size']) | int )
   when: database_parameters['sga_target'] is defined
 
 # When setting the parameters, numeric values and booleans need to be unquoted and everything else should be single quoted
-# Note that we require some special handling for boolean case sensitivity as Ansible will convert true or false strings to booleans  
+# Note that we require some special handling for boolean case sensitivity as Ansible will convert true or false strings to booleans
 - name: Set Parameter
-  script:  set_parameter_values.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
+  script: set_parameter_values.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
   register: setout
   with_items: "{{ database_parameters }}"
-  when: 
+  when:
     - item not in memory_parameter_names
     - database_parameters[item] | regex_replace('(?i)true','TRUEVALUE') | regex_replace('(?i)false','FALSEVALUE') != database_parameters_actual[item] | regex_replace('(?i)true','TRUEVALUE') | regex_replace('(?i)false','FALSEVALUE')
     - database_parameters_spfile[item] == 'NORESTART'
 
-- name: Set Parameter In Spfile 
-  script:  set_parameter_values_spfile.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
+- name: Set Parameter In Spfile
+  script: set_parameter_values_spfile.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
   register: setout_spfile
   with_items: "{{ database_parameters }}"
-  when: 
+  when:
     - item not in memory_parameter_names
     - database_parameters[item] | regex_replace('(?i)true','TRUEVALUE') | regex_replace('(?i)false','FALSEVALUE') != database_parameters_actual[item] | regex_replace('(?i)true','TRUEVALUE') | regex_replace('(?i)false','FALSEVALUE')
     - database_parameters_spfile[item] == 'RESTART'
@@ -98,7 +97,7 @@
 # (We cannot change memory component sizes by fractions of a granule, so this restriction prevents repeating attempts
 #  to make small memory changes which will never complete to the exact number of bytes specified)
 - name: Set SGA_TARGET
-  script: set_parameter_values.sh {{ database_sid }} sga_target {{ database_parameters['sga_target'] }} 
+  script: set_parameter_values.sh {{ database_sid }} sga_target {{ database_parameters['sga_target'] }}
   register: setout_sga_target
   with_items: "sga_target-online"
   when:
@@ -110,7 +109,7 @@
 # Set SGA_TARGET in SPFILE if there is not enough memory but SGA_MAX_SIZE is being increased to accommodate it
 # and the change in size is more than one granule
 - name: Set SGA_TARGET In Spfile
-  script: set_parameter_values_spfile.sh {{ database_sid }} sga_target {{ database_parameters['sga_target'] }} 
+  script: set_parameter_values_spfile.sh {{ database_sid }} sga_target {{ database_parameters['sga_target'] }}
   register: setout_sga_target_spfile
   with_items: "sga_target-spfile"
   when:
@@ -123,19 +122,18 @@
 
 # Set SGA_MAX_SIZE in SPFILE if it has been changed by more than one granule
 - name: Set SGA_MAX_SIZE
-  script: set_parameter_values_spfile.sh {{ database_sid }} sga_max_size {{ database_parameters['sga_max_size'] }} 
+  script: set_parameter_values_spfile.sh {{ database_sid }} sga_max_size {{ database_parameters['sga_max_size'] }}
   register: setout_sga_maxsize_spfile
   with_items: "sga_max_size"
-  when: 
+  when:
     - database_parameters['sga_max_size'] is defined
     - (   ( memory_expanded_values['sga_max_size'] | int ) < ((database_parameters_actual['sga_max_size']  | int ) - granule_size)
       or  ( memory_expanded_values['sga_max_size'] | int ) > ((database_parameters_actual['sga_max_size']  | int ) + granule_size) )
 
-
 - name: Detect if Restart Required Debug
   debug:
     msg: "{{ item.stdout }}"
-  with_items: 
+  with_items:
     - "{{ setout_spfile.results }}"
     - "{{ setout_sga_target_spfile.results }}"
     - "{{ setout_sga_maxsize_spfile.results }}"
@@ -170,14 +168,13 @@
 # PGA_AGGREGATE_TARGET is dependant on both PGA_AGGREGATE_LIMIT and SGA_TARGET value
 #
 # Example:
-# PGA_AGGREGATE_TARGET <= ((90% * PHYSICAL MEMORY) - SGA_TARGET) / 2 
+# PGA_AGGREGATE_TARGET <= ((90% * PHYSICAL MEMORY) - SGA_TARGET) / 2
 # PGA_AGGREGATE_TARGET <= PGA_AGGREGATE_LIMIT / 2
 
 # Ensure PGA_AGGREGATE_LIMIT value is set to no more than Oracle allowed value to avoid ORA-00093 errors
 - block:
-
     - name: Get processes value
-      script:  get_parameter_values.sh {{ database_sid }} "'processes'"
+      script: get_parameter_values.sh {{ database_sid }} "'processes'"
       register: current_processes
       changed_when: false
 
@@ -186,9 +183,8 @@
         processes_value: '{{ ( current_processes.stdout_lines[0].split(",")[1] | int ) * 3 * 1024 * 1024 }}'
 
     - block:
-
         - name: Get pga target value
-          script:  get_parameter_values.sh {{ database_sid }} "'pga_aggregate_target'"
+          script: get_parameter_values.sh {{ database_sid }} "'pga_aggregate_target'"
           register: current_pga_target
           changed_when: false
 
@@ -207,18 +203,17 @@
 
         - name: Set PGA_AGGREGATE_LIMIT
           script: set_parameter_values.sh {{ database_sid }} pga_aggregate_limit {{ database_parameters['pga_aggregate_limit'] }}
-          with_items: "pga_aggregate_limit" 
+          with_items: "pga_aggregate_limit"
           register: setout_pga_limit
 
         - set_fact:
             set_pga_aggregate_limit_later: false
 
-      when: 
+      when:
         - database_parameters['pga_aggregate_target'] is not defined
           or ( database_parameters['pga_aggregate_target'] is defined  and ( memory_expanded_values['pga_aggregate_target'] | int == database_parameters_actual['pga_aggregate_target'] | int ) )
 
     - block:
-
         - name: Calculate maximum allowed PGA_AGGREGATE_LIMIT value when expected pga target is set and not equal to actual pga target
           set_fact:
             pga_aggregate_limit_allowed: "{{ [ ( processes_value | int ), (( memory_expanded_values['pga_aggregate_target']  | int ) * 2), (2 * 1024 * 1024 * 1024) ] | max }}"
@@ -227,28 +222,27 @@
           assert:
             that: memory_expanded_values['pga_aggregate_limit'] | int >= pga_aggregate_limit_allowed | int
             fail_msg: "Please ensure PGA_AGGREGATE_LIMIT value is greater than or equal to {{ pga_aggregate_limit_allowed }} bytes"
-  
+
         - set_fact:
             set_pga_aggregate_limit_later: true
 
-      when: 
-        - database_parameters['pga_aggregate_target'] is defined 
+      when:
+        - database_parameters['pga_aggregate_target'] is defined
         - memory_expanded_values['pga_aggregate_target'] | int != database_parameters_actual['pga_aggregate_target'] | int
 
-  when: 
+  when:
     - database_parameters['pga_aggregate_limit'] is defined
     - memory_expanded_values['pga_aggregate_limit'] | int != database_parameters_actual['pga_aggregate_limit'] | int
 
 # Ensure PGA_AGGREGATE_TARGET value is set to no more than Oracle allowed value to avoid ORA-00855,ORA-0856 errors
 - block:
-
     - name: Get 90% value of total memory allocated to server
       shell: |
         grep ^MemTotal: /proc/meminfo | awk '{printf("%.f",$2*1024*0.9)}'
       register: memtotal
 
     - name: Get sga_target value
-      script:  get_parameter_values.sh {{ database_sid }} "'sga_target'"
+      script: get_parameter_values.sh {{ database_sid }} "'sga_target'"
       register: current_sga_target
       changed_when: false
 
@@ -259,54 +253,54 @@
     - name: Calculate pga limit if already set
       set_fact:
         pga_limit: "{{ (( database_parameters_actual['pga_aggregate_limit'] | int  ) / 2 ) | round | int }}"
-      when: 
-        - not set_pga_aggregate_limit_later | default(false) | bool 
+      when:
+        - not set_pga_aggregate_limit_later | default(false) | bool
 
     - name: Calculate pga limit if not set
       set_fact:
         pga_limit: "{{ (( memory_expanded_values['pga_aggregate_limit'] | int ) / 2 ) | round | int }}"
-      when: 
+      when:
         - set_pga_aggregate_limit_later | default(false) | bool
 
     - name: Set allowed pga_aggregate_target limit
-      set_fact: 
+      set_fact:
         pga_aggregate_target_allowed: "{{ [ ( sga_limit | int), ( pga_limit | int ) ] | min }}"
 
     - name: Compare maximum allowed PGA_AGGREGATE_TARGET value with expected value
       assert:
-        that: 
+        that:
           - memory_expanded_values['pga_aggregate_target'] | int <=  pga_aggregate_target_allowed | int
-        fail_msg: 
+        fail_msg:
           - "Please ensure PGA_AGGREGATE_TARGET value is less than or equal to {{ pga_aggregate_target_allowed }} bytes"
 
     - name: Calculate if pga_aggregate_limit temporary value is to be set
       set_fact:
         pga_aggregate_limit_tmp_value: "{{ (( memory_expanded_values['pga_aggregate_target'] | int ) * 2 ) | round | int }} "
-      when: memory_expanded_values['pga_aggregate_target'] | int > ( database_parameters_actual['pga_aggregate_limit'] | int ) / 2 
+      when: memory_expanded_values['pga_aggregate_target'] | int > ( database_parameters_actual['pga_aggregate_limit'] | int ) / 2
 
     - name: Set PGA_AGGREGATE_LIMIT to temporary value
-      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_limit {{ pga_aggregate_limit_tmp_value }} 
-      when: memory_expanded_values['pga_aggregate_target'] | int > ( database_parameters_actual['pga_aggregate_limit'] | int ) / 2 
+      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_limit {{ pga_aggregate_limit_tmp_value }}
+      when: memory_expanded_values['pga_aggregate_target'] | int > ( database_parameters_actual['pga_aggregate_limit'] | int ) / 2
 
     - name: Set PGA_AGGREGATE_TARGET
-      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_target {{ database_parameters['pga_aggregate_target'] }} 
-      with_items: "pga_aggregate_target" 
+      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_target {{ database_parameters['pga_aggregate_target'] }}
+      with_items: "pga_aggregate_target"
       register: setout_pga_target
 
     - name: Set PGA_AGGREGATE_LIMIT if not already set
-      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_limit {{ database_parameters['pga_aggregate_limit'] }} 
-      with_items: "pga_aggregate_limit" 
+      script: set_parameter_values.sh {{ database_sid }} pga_aggregate_limit {{ database_parameters['pga_aggregate_limit'] }}
+      with_items: "pga_aggregate_limit"
       register: setout_pga_limit
       when: set_pga_aggregate_limit_later | default(false) | bool
-    
-  when: 
+
+  when:
     - database_parameters['pga_aggregate_target'] is defined
     - memory_expanded_values['pga_aggregate_target'] | int != database_parameters_actual['pga_aggregate_target'] | int
 
 - name: Report Output of System Alteration
   debug:
     msg: "{{ item.stdout }}"
-  with_items: 
+  with_items:
     - "{{ setout.results }}"
     - "{{ setout_spfile.results }}"
     - "{{ setout_sga_target.results }}"
@@ -315,24 +309,24 @@
     - "{{ setout_pga_target.results }}"
     - "{{ setout_pga_limit.results }}"
   loop_control:
-    label: "{{ item.item }}" 
+    label: "{{ item.item }}"
   when: item.stdout is defined
 
 # Additional Non-SPFILE Parameters:  SQL*Net network configuration parameters set-up
 - name: Set SQL*Net Network Parameters If Required
-  include:  sqlnet_parameters.yml
+  include: sqlnet_parameters.yml
   when: sqlnet_parameters is defined
 
 # Additional Non-SPFILE Parameters:  Data Guard configuration parameters set-up
 - name: Set Data Guard Parameters If Required
-  include:  data_guard_parameters.yml
+  include: data_guard_parameters.yml
   when: data_guard_parameters is defined
 
 # Additional Non-SPFILE Parameters: AWR configuration parameters set-up
 # We only need to run this on the Primary Database and Only if Management Packs are enabled
 - name: Set AWR Configuration if Required
-  include:  awr_parameters.yml
-  when: 
-     - database_parameters.control_management_pack_access in ['DIAGNOSTICS','DIAGNOSTIC+TUNING']
-     - database_primary_sid is defined
-     - awr_retention_days is defined
+  include: awr_parameters.yml
+  when:
+    - database_parameters.control_management_pack_access in ['DIAGNOSTICS','DIAGNOSTIC+TUNING']
+    - database_primary_sid is defined
+    - awr_retention_days is defined
