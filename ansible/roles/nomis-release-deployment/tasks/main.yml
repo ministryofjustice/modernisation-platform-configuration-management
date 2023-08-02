@@ -6,13 +6,13 @@
 
 - name: Remove keepalive
   ansible.builtin.import_tasks: rename_keepalive_start_outage.yml
-  when: outage_required == 1 and app_server_file.stat.exists
+  when: app_server_file.stat.exists
   tags: 
     - start_outage
 
 - name: Stop_nomis_weblogic
   ansible.builtin.import_tasks: stop_nomis_app.yml
-  when: outage_required == 1 and app_server_file.stat.exists
+  when: app_server_file.stat.exists
   tags: 
     - stop_application 
 
@@ -56,13 +56,13 @@
 
 - name: Start Nomis weblogic app 
   ansible.builtin.import_tasks: start_nomis_app.yml
-  when: outage_required == 1 and app_server_file.stat.exists
+  when: app_server_file.stat.exists
   tags: 
     - start_application 
 
 - name: Rename keepalive back to end outage 
   ansible.builtin.import_tasks: rename_keepalive_end_outage.yml
-  when: outage_required == 1 and app_server_file.stat.exists
+  when: app_server_file.stat.exists
   tags: 
     - end_outage
 
