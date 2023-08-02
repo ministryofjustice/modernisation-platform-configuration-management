@@ -1,6 +1,5 @@
 ---
-
-- name: Copy drop restore point script 
+- name: Copy drop restore point script
   ansible.builtin.template:
     src: "drop_restore_point.sql.j2"
     dest: "{{ stage }}/drop_restore_point.sql"
@@ -10,13 +9,13 @@
 
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   ansible.builtin.set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ item }}/sys'
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ item }}/sys"
 
-- name: Get sys password for oracle database . 
+- name: Get sys password for oracle database .
   ansible.builtin.set_fact:
     db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path, region=ansible_ec2_placement_region) }}"
 
-- name: Check password is extracted from SSM 
+- name: Check password is extracted from SSM
   ansible.builtin.set_fact:
     db_sys_password_set: true
   when:
@@ -24,7 +23,7 @@
 
 - name: Fail if missing SSM parameters
   ansible.builtin.fail:
-    msg: Ensure SYS password is in SSM for {{ item }} database 
+    msg: Ensure SYS password is in SSM for {{ item }} database
   when: not  db_sys_password_set |default(false)
 
 - name: Drop restore point in database {{ item }}
@@ -39,10 +38,10 @@
     main 2>&1 | logger -p local3.info -t ansible-oracle-restore-point
 
 - name: Check restore point dropped successfully or not from {{ item }}
-  ansible.builtin.shell: grep "Restore point dropped." {{ stage }}/{{ item }}_restore_point.log  | wc -l 
+  ansible.builtin.shell: grep "Restore point dropped." {{ stage }}/{{ item }}_restore_point.log  | wc -l
   register: restore_point_check
 
 - name: Fail if missing SSM parameters
   ansible.builtin.fail:
     msg: Drop restore point failed for {{ item }}
-  when: restore_point_check.stdout == "0" 
+  when: restore_point_check.stdout == "0"
