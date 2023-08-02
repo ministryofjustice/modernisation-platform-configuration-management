@@ -1,13 +1,15 @@
 ---
-# - name: Perform pre-requesite checks
-#   shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check {{ sap_bi_platform_extraction_directory }}/response.ini {{ sap_bi_platform_extraction_directory }}/failedPrereqs.txt"
-#   become: yes
-#   become_user: bobj
+- name: Run installation of BI Platform
+  block:
+    - name: Perform pre-requesite checks
+      ansible.builtin.shell: "./setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check ./response.ini ./failedPrereqs.txt"
+      ignore_errors: true
+      args:
+        chdir: "{{ sap_bi_platform_extraction_directory }}"
 
-- name: Run Silent Installation
-  shell: "sh {{ sap_bi_platform_extraction_directory }}/setup.sh -r {{ sap_bi_platform_extraction_directory }}/response.ini –InstallDir {{ sap_bi_platform_installation_directory }}/"
-  become: yes
+    - name: Run Silent Installation
+      ansible.builtin.shell: "./setup.sh –InstallDir {{ sap_bi_platform_installation_directory }}/ -r ./response.ini"
+      args:
+        chdir: "{{ sap_bi_platform_extraction_directory }}"
+  become: true
   become_user: bobj
-
-- name: Run Setup
-  shell: "sudo sh {{ sap_bi_platform_installation_directory }}/sap_bobj/init/setupinit.sh"

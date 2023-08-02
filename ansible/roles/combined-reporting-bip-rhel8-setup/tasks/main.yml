@@ -11,7 +11,7 @@
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_tasks: add_users.yml
+- import_tasks: assign_permissions.yml
   tags:
     - amibuild
     - ec2provision
@@ -28,9 +28,8 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
-
-- import_tasks: install_jvm.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+# - import_tasks: install_jvm.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#   when: ansible_distribution in ['RedHat']
