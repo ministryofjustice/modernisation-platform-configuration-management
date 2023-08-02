@@ -1,0 +1,32 @@
+---
+- name: Define Oracle State File for Shutting Down Databases
+  set_fact:
+    oracle_statefile: "{{ oracle_database_oracle_home }}/dbs/patching_statefile"
+
+- name: Remove Previous Statefile
+  file:
+    path: "{{ oracle_statefile }}"
+    state: absent
+  when: database_shutdown_needed|bool
+
+  # Switch Off FSFO Mode if Enabled (including Observe-Only Mode)
+  # Only need to run this on the primary.
+- name: Switch Off FSFO
+  when: group_names | select('match','.*_primarydb') | length > 0
+  block:
+    - name: Get FSFO Mode
+      shell: |
+        . ~/.bash_profile
+        echo -e "show fast_start failover" | dgmgrl / | grep "Fast-Start Failover:" | awk -F: '{print $2}'
+      register: get_fsfo_mode
+
+    - name: Disable FSFO Mode
+      shell: |
+        . ~/.bash_profile
+        echo -e "disable fast_start failover" | dgmgrl /
+      when:
+        - get_fsfo_mode.stdout | trim != ''
+        - get_fsfo_mode.stdout | trim != 'Disabled'
+
+- name: Shutdown all running databases in the current Oracle Home
+  shell: "export ORACLE_HOME={{ oracle_database_oracle_home }}; {{ oracle_database_oracle_home }}/bin/srvctl stop home -o {{ oracle_database_oracle_home }} -s {{ oracle_statefile }} -t IMMEDIATE"
