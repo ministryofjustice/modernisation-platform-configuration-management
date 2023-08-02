@@ -1,0 +1,65 @@
+---
+
+  # We need to determine which of the Oracle Variables Config files
+  # to use to determine Oracle Home paths and patch locations
+  # relevant to the specific versions of Grid and Database currently in use.
+
+- name: Get ASM Path from OraTab
+  shell: |
+         egrep -e "^\+ASM" /etc/oratab | awk '{print $1}'
+  changed_when: false
+  register: get_asmpath
+
+- name: Set ASM Path Version Component
+  set_fact:
+     asm_version_component: "{{ get_asmpath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+
+- name: Get Database Path from OraTab
+  shell: |
+         egrep -e "^{{ database_primary_sid | default(database_standby_sid) }}" /etc/oratab | awk '{print $1}'
+  changed_when: false
+  register: get_databasepath
+
+- name: Set Database Path Version Component
+  set_fact:
+     database_version_component: "{{ get_databasepath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+
+# Copy the oracle_vars_dir directory to standby host 
+- name: Copy oracle_vars_dir directory from localhost to standby host
+  copy: 
+    src: "{{ oracle_vars_dir }}"
+    dest: "/tmp"
+
+# There are potentially multiple config files with this particular version of GI
+- name: Get Potential Grid Config Variable Files
+  find:
+     paths: "/tmp/{{ oracle_vars_dir.split('/')[-1] }}"
+     patterns: "*.yml"
+     contains: "oracle_grid_oracle_home.*{{ asm_version_component }}.*"
+  register: get_potential_grid_config_files
+
+# There are potentially multiple config files with this particular version of Database
+- name: Get Potential Database Config Variable Files
+  find:
+     paths: "/tmp/{{ oracle_vars_dir.split('/')[-1] }}"
+     patterns: "*.yml"
+     contains: "oracle_database_oracle_home.*{{ database_version_component }}.*"
+  register: get_potential_database_config_files
+
+# However, there should only be one config file matching this version of GI
+# and this version of Database
+- name: Determine Oracle Variables Config File Name
+  set_fact:
+     oracle_vars_file: "{{ get_potential_grid_config_files.files | map(attribute='path') | list | intersect( get_potential_database_config_files.files | map(attribute='path') | list ) }}"
+
+# We should have only identified one Oracle configuration file
+- assert:
+     that: oracle_vars_file | length == 1
+
+- name: Show Configuration File we have picked to use
+  debug: 
+      msg: "Using Oracle Configuration File {{ oracle_vars_dir}}/{{ oracle_vars_file[0]| basename }}"
+
+- name: Load in Oracle Environment Variables
+  include_vars:
+     file: "{{ oracle_vars_dir}}/{{ oracle_vars_file[0] | basename }}"
