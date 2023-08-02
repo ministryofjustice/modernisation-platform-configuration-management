@@ -37,3 +37,9 @@
     - "{{ database_response_file }}"
     - "{{ database_install_script }}"
     - "{{ db_software }}"
+
+- name: Create database version hidden file for bootstapping phase
+  ansible.builtin.lineinfile:
+    create: yes
+    path: "~/.db_version"
+    line: "19c"
