@@ -1,5 +1,4 @@
 ---
-
 # The Default Timezone for Scheduler Jobs should be set to Europe/London
 # so that jobs run according to local wallclock time
 
@@ -7,10 +6,10 @@
 # is not required at present.
 
 - name: Get Current Default Scheduler Timezone
-  script:  get_scheduler_timezone.sh
+  script: get_scheduler_timezone.sh
   register: get_scheduler_timezone
   changed_when: false
 
 - name: Set Default Scheduler Timezone
-  script:  set_scheduler_timezone.sh
+  script: set_scheduler_timezone.sh
   when: get_scheduler_timezone.stdout_lines[0] != 'Europe/London'

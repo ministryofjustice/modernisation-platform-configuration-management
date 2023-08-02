@@ -1,5 +1,4 @@
 ---
-
 # The Statistics Advisor runs automatically but is not managed as an Auto Task in the same way as the other tasks.
 # Instead of being managed using DBMS_AUTO_TASK_ADMIN, it is managed using DBMS_STATS.
 # See MOS:  How To Disable Optimizer Statistics Advisor From 12.2 Onwards (Doc ID 2686022.1)
@@ -28,5 +27,5 @@
 
 - name: Report Output of System Alteration
   debug:
-       msg: "{{ set_statistics_advisor_status.stdout }}"
+    msg: "{{ set_statistics_advisor_status.stdout }}"
   when: set_statistics_advisor_status.stdout is defined

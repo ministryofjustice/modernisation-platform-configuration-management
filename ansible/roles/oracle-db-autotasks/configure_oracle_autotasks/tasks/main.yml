@@ -1,8 +1,7 @@
 ---
-
 - name: Get Database SID
   set_fact:
-     database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
+    database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
 
 # Ensure Default Scheduler Timezone is set to Europe/London to account for UK Daylight Savings
 - name: Set Default Scheduler Timezone
