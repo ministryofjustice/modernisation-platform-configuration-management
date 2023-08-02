@@ -16,17 +16,17 @@
   tags:
     - stop_application
 
-- name: Create oracle restore point before release deployment 
+- name: Create oracle restore point before release deployment
   ansible.builtin.include_role:
     name: oracle-restore-point
     apply:
-      tags: 
+      tags:
         - create_restore_point
   vars:
     restore_point_name: "{{ restore_point_name }}"
     db_tns_list: "{{ db_tns_list }}"
     action: create
-  tags: 
+  tags:
     - create_restore_point
 
 # - name: Stop streams (Import oracle-streams role, WIP)
@@ -83,11 +83,11 @@
   ansible.builtin.include_role:
     name: oracle-restore-point
     apply:
-      tags: 
+      tags:
         - drop_restore_point
   vars:
     restore_point_name: "{{ restore_point_name }}"
     db_tns_list: "{{ db_tns_list }}"
     action: drop
-  tags: 
+  tags:
     - drop_restore_point
