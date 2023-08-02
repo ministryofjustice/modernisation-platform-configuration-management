@@ -7,20 +7,20 @@
 - name: Remove keepalive
   ansible.builtin.import_tasks: rename_keepalive_start_outage.yml
   when: app_server_file.stat.exists
-  tags: 
+  tags:
     - start_outage
 
 - name: Stop_nomis_weblogic
   ansible.builtin.import_tasks: stop_nomis_app.yml
   when: app_server_file.stat.exists
-  tags: 
-    - stop_application 
+  tags:
+    - stop_application
 
 # - name: Create restore point before deploying releases (Import oracle-restore-point role, WIP)
 
 # - name: Stop streams (Import oracle-streams role, WIP)
 
-- name: APP - Copy script to deploy release on application server 
+- name: APP - Copy script to deploy release on application server
   ansible.builtin.template:
     src: "tag_release_deployment.sh.j2"
     dest: "{{ stage }}/tag_release_deployment.sh"
@@ -28,10 +28,10 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
   when: app_server_file.stat.exists
-  tags: 
+  tags:
     - deploy_release
 
-- name: APP - Copy script to compile single form 
+- name: APP - Copy script to compile single form
   ansible.builtin.template:
     src: "compform.sh.j2"
     dest: "/u01/tag/utils/scripts/compform.sh"
@@ -39,31 +39,30 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
   when: app_server_file.stat.exists
-  tags: 
+  tags:
     - deploy_release
 
 - name: Deploy nomis releases
   ansible.builtin.include_tasks:
     file: nomis_deploy_release.yml
     apply:
-      tags: 
+      tags:
         - deploy_release
   loop_control:
     loop_var: nomis_release
   loop: "{{ nomis_releases }}"
-  tags: 
+  tags:
     - deploy_release
 
-- name: Start Nomis weblogic app 
+- name: Start Nomis weblogic app
   ansible.builtin.import_tasks: start_nomis_app.yml
   when: app_server_file.stat.exists
-  tags: 
-    - start_application 
+  tags:
+    - start_application
 
-- name: Rename keepalive back to end outage 
+- name: Rename keepalive back to end outage
   ansible.builtin.import_tasks: rename_keepalive_end_outage.yml
   when: app_server_file.stat.exists
-  tags: 
+  tags:
     - end_outage
-
 # - name: Start streams (Import oracle-streams role, WIP)

@@ -1,10 +1,9 @@
 ---
-
-- name: Start nomis weblogic app 
+- name: Start nomis weblogic app
   ansible.builtin.service:
     name: "{{ item }}"
     state: started
-  loop: 
+  loop:
     - WLS_FORMS
     - WLS_REPORTS
     - WLS_FORMS1A
@@ -14,4 +13,3 @@
     - WLS_TAGSAR
     - WLS_HOTPAGE
     - opmn
-    

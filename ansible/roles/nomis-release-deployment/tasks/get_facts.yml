@@ -1,17 +1,16 @@
 ---
-
-- name: Check server has DB components 
+- name: Check server has DB components
   ansible.builtin.stat:
     path: /etc/oratab
-  register: db_server_file 
+  register: db_server_file
 
-- name: Check server has APP components 
+- name: Check server has APP components
   ansible.builtin.stat:
     path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
   register: app_server_file
 
-- name: If database server , get DB name from running process 
-  ansible.builtin.shell:  ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
+- name: If database server , get DB name from running process
+  ansible.builtin.shell: ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
   register: db_name
   when: db_server_file.stat.exists
 
@@ -28,12 +27,12 @@
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["oracle-db-name"] }}'
-  when: ssm_parameters_path is not defined and app_server_file.stat.exists 
+  when: ssm_parameters_path is not defined and app_server_file.stat.exists
 
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ app_db_name }}'
-  when: db_server_file.stat.exists 
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ app_db_name }}"
+  when: db_server_file.stat.exists
 
 - name: Set SSM parameters path facts
   set_fact:

@@ -1,9 +1,7 @@
 ---
-
-- name: APP - Deploy application release {{ nomis_release.name }} 
+- name: APP - Deploy application release {{ nomis_release.name }}
   block:
-
-    - name: APP - Deploy tag release 
+    - name: APP - Deploy tag release
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         set -eo pipefail
@@ -20,5 +18,3 @@
         create: yes
 
   # block
-
-

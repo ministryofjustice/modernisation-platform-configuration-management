@@ -1,8 +1,7 @@
 ---
-- name: DB - Deploy database release {{ nomis_release.name }} if not already deployed 
+- name: DB - Deploy database release {{ nomis_release.name }} if not already deployed
   block:
-
-    - name: DB - Deploy release if not already deployed 
+    - name: DB - Deploy release if not already deployed
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -14,12 +13,12 @@
       async: 86400
       poll: 60
 
-    - name: DB - Check database release {{ nomis_release.name }} deployed on database or not 
+    - name: DB - Check database release {{ nomis_release.name }} deployed on database or not
       ansible.builtin.shell: |
         . ~/.bash_profile
         sqlplus -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} @{{ stage }}/check_db_release.sql
       changed_when: false
-      register: release_status 
+      register: release_status
 
     - name: DB - Fail if release not deployed successfully in database.
       fail:
