@@ -16,3 +16,9 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
+
+- import_tasks: post_installation.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
