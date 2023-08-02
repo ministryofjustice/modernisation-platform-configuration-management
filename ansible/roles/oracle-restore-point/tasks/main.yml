@@ -11,18 +11,7 @@
       tags:
         - create_restore_point
   with_items: "{{ db_tns_list.split(',') }}"
-  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined
-  tags:
-    - create_restore_point
-
-- debug:
-    var: db_server_file.stat.exists
-
-- debug:
-    var: db_tns_list
-
-- debug:
-    var: restore_point_name
+  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "create"
 
 - name: Drop restore point from databases specified by TNS
   ansible.builtin.include_tasks:
@@ -31,6 +20,4 @@
       tags:
         - drop_restore_point
   with_items: "{{ db_tns_list.split(',') }}"
-  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined
-  tags:
-    - drop_restore_point
+  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "drop"
