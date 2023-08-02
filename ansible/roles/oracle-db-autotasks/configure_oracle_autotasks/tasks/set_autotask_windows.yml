@@ -1,0 +1,66 @@
+---
+
+- name: Define Weekdays
+  set_fact:
+     weekdays: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']
+
+- name: Get List of Current Database Autotask Windows
+  script:  get_autotask_windows.sh {{ database_sid }}
+  register: current_autotask_windows
+  changed_when: false
+
+- set_fact:
+        database_windows_actual: "{{ database_windows_actual | default({}) | combine({item.split(',')[0]: {'repeat_interval': item.split(',')[1], 'duration_mins': item.split(',')[2]}}) }}"
+  with_items: "{{ current_autotask_windows.stdout_lines | select() | list }}"
+
+# Check and Update Any Mis-matched Repeat Intervals
+- name: Generate List of Repeat Intervals for the Week
+  set_fact:
+      repeat_intervals: "{{ (repeat_intervals | default({})) | combine({item: {'repeat_interval': 'freq=daily;byday=' + item[0:3] + ';byhour=' +  autotask_windows.weekday.start_time[0:2] + ';byminute=' + autotask_windows.weekday.start_time[3:5]}}) }}"
+  with_items: "{{ weekdays }}"
+
+- name: Show What Repeat Interval is Set
+  debug:
+     msg: "{{ item }} Expected: {{ repeat_intervals[item].repeat_interval }} : Actual: {{ database_windows_actual[item + '_WINDOW'].repeat_interval }}"
+  loop: "{{ weekdays }}"
+
+- name: Set Repeat Intervals
+  script:  set_autotask_repeat_interval.sh {{ database_sid }} "{{ item + '_WINDOW' }}" "{{ repeat_intervals[item].repeat_interval }}"
+  register: setout
+  loop: "{{ weekdays }}"
+  when: repeat_intervals[item].repeat_interval != database_windows_actual[item + '_WINDOW'].repeat_interval
+
+- name: Report Output of System Alteration
+  debug:
+       msg: "{{ item.stdout }}"
+  with_items: "{{ setout.results }}"
+  when: item.stdout is defined
+  loop_control:
+    label: "{{ item.stdout | default('') }}"
+
+
+# Check and Update Any Mis-matched Durations   
+- name: Generate List of Durations for the Week
+  set_fact:
+      durations: "{{ (durations | default({})) | combine({item: {'duration_mins': autotask_windows.weekday.duration_mins | int }}) }}"
+  with_items: "{{ weekdays }}"
+
+- name: Show What Duration is Set
+  debug:
+     msg: "{{ item }} Expected: {{ durations[item].duration_mins }} : Actual: {{ database_windows_actual[item + '_WINDOW'].duration_mins }}"
+  loop: "{{ weekdays }}"
+
+- name: Set Durations
+  script:  set_autotask_duration.sh {{ database_sid }} "{{ item + '_WINDOW' }}" "{{ durations[item].duration_mins }}"
+  register: setout
+  loop: "{{ weekdays }}"
+  when: ( durations[item].duration_mins | int ) != ( database_windows_actual[item + '_WINDOW'].duration_mins | int )
+
+- name: Report Output of System Alteration
+  debug:
+       msg: "{{ item.stdout }}"
+  with_items: "{{ setout.results }}"
+  when: item.stdout is defined
+  loop_control:
+    label: "{{ item.stdout | default('') }}"
+
