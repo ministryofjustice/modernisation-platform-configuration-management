@@ -1,12 +1,11 @@
 ---
-
 - name: Restart all databases in the current Oracle Home
   shell: "export ORACLE_HOME={{ oracle_database_oracle_home }}; {{ oracle_database_oracle_home }}/bin/srvctl start home -o {{ oracle_database_oracle_home }} -s {{ oracle_statefile }}"
 
 - name: Remove state file
   file:
-     path: "{{ oracle_statefile }}"
-     state: absent
+    path: "{{ oracle_statefile }}"
+    state: absent
 
 - name: Get database type
   set_fact:
@@ -16,14 +15,14 @@
 # (Only run from Primary for each Database Type to avoid competing startups)
 - name: Re-enable FSFO
   include_role:
-     name: hmpps-delius-oracledb-ha
-     tasks_from: enable-fsfo.yml
+    name: hmpps-delius-oracledb-ha
+    tasks_from: enable-fsfo.yml
   vars:
-     delegation_host: "{{ hostvars[groups[database_type + '_primarydb'][0]]['inventory_hostname'] }}"
-     primary_hostname: "{{ hostvars[groups[database_type + '_primarydb'][0]]['inventory_hostname'] }}"
-     fsfo_mode: "{{ hostvars[groups[database_type + '_primarydb'][0]]['fsfo_mode'] | default('disabled') }}"
-     high_availability_count: "{{ database[database_type]['high_availability_count'] }}"
-  when: 
+    delegation_host: "{{ hostvars[groups[database_type + '_primarydb'][0]]['inventory_hostname'] }}"
+    primary_hostname: "{{ hostvars[groups[database_type + '_primarydb'][0]]['inventory_hostname'] }}"
+    fsfo_mode: "{{ hostvars[groups[database_type + '_primarydb'][0]]['fsfo_mode'] | default('disabled') }}"
+    high_availability_count: "{{ database[database_type]['high_availability_count'] }}"
+  when:
     - database[database_type]['high_availability_count'] | int > 0
     - hostvars[groups[database_type + '_primarydb'][0]]['fsfo_mode'] | default('disabled') | lower in ['enabled','observe','observer']
-    - group_names | select('match','.*_primarydb') | length > 0 
+    - group_names | select('match','.*_primarydb') | length > 0

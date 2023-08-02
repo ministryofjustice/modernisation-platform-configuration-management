@@ -1,5 +1,4 @@
 ---
-
 - name: Set fact to define install_patch_id only when parameter requested_patch_id is not empty
   set_fact:
     install_patch_id: requested_patch_id
@@ -26,25 +25,25 @@
 # (This should include the full local path)
 - name: (main) Load in Oracle Environment Variables when Filename Supplied
   include_vars:
-     file: "{{ oracle_vars }}"
+    file: "{{ oracle_vars }}"
   when: oracle_vars is defined
 
 # If neither oracle_vars_dir nor oracle_vars has been supplied then we can assume that we are in
 # boostrap and these variables have therefore already been set.   Check we have values before progressing.
 - assert:
     that:
-       - oracle_grid_oracle_home is defined
-       - oracle_database_oracle_home is defined
-       - oracle_patch_installer_directory is defined
-     
+      - oracle_grid_oracle_home is defined
+      - oracle_database_oracle_home is defined
+      - oracle_patch_installer_directory is defined
+
 - name: (main) Report Patch ID
   debug:
-     msg:  Patch ID                  {{ install_patch_id }}
+    msg: Patch ID                  {{ install_patch_id }}
   when: install_patch_id is defined
 
 - name: (main) Get Dependencies Bucket
   set_fact:
-      dependencies_bucket_name: "{{ dependencies_bucket.name }}"
+    dependencies_bucket_name: "{{ dependencies_bucket.name }}"
 
 - name: (main) Prepare Oracle Home Version Information
   include: get-oracle-version.yml
@@ -60,78 +59,76 @@
 
 - name: (main) Set Environment Name from Target Host if Not Set
   set_fact:
-     environment_name: get_environment_name.stdout
+    environment_name: get_environment_name.stdout
   when: environment_name is not defined
 
 - name: (main) Display Runtime Information
   debug:
-      msg: |
-           Environment Name          {{ environment_name }}
-           Install Absent Patches    {{ install_absent_patches }}
-           Oracle DB Home            {{ oracle_database_oracle_home }}
-           Oracle DB Home Version    {{ oracle_database_version }}
-           Grid Home                 {{ oracle_grid_oracle_home }}
-           Grid Version              {{ oracle_grid_version }}
-           Patch Directory           {{ oracle_patch_installer_directory }}
-           Dependencies Bucket       {{ dependencies_bucket_name }}
+    msg: |
+      Environment Name          {{ environment_name }}
+      Install Absent Patches    {{ install_absent_patches }}
+      Oracle DB Home            {{ oracle_database_oracle_home }}
+      Oracle DB Home Version    {{ oracle_database_version }}
+      Grid Home                 {{ oracle_grid_oracle_home }}
+      Grid Version              {{ oracle_grid_version }}
+      Patch Directory           {{ oracle_patch_installer_directory }}
+      Dependencies Bucket       {{ dependencies_bucket_name }}
 
 - name: Fail if Specific Patch ID Requested but Not Defined
-  fail: 
-     msg: "Definition of Patch {{ install_patch_id }} must be configured in the Environments Repository"
+  fail:
+    msg: "Definition of Patch {{ install_patch_id }} must be configured in the Environments Repository"
   when: install_patch_id is defined and required_patches[install_patch_id] is not defined
 
 - name: (main) Setup Initial Dictionary of Patch Information
   block:
+    # Dictionary Key is p<patchno>.  The leading p corresponds to
+    # usage by Oracle in patch naming and avoids ansible problems handling
+    # number/string conversion by forcing use of strings only for patch IDs.
+    # For backwards compatibility, the default target version for patches is 11.2.0.4 unless otherwise specified.
+    # (Typically an exact point version should be supplied, e.g. 11.2.0.4 but regular expressions may be used if needed
+    #  for patches applicable to multiple point versions, e.g. 11.2..*)
+    # To find if a compatible version of a patch is defined for the current grid or database version we
+    # create a regular expression by joining all possible target_versions with pipes and try to match
+    # the current grid or database versions against that expression.
+    - name: (main) Show Starting Dictionary
+      debug: var=required_patches
 
-  # Dictionary Key is p<patchno>.  The leading p corresponds to
-  # usage by Oracle in patch naming and avoids ansible problems handling
-  # number/string conversion by forcing use of strings only for patch IDs.
-  # For backwards compatibility, the default target version for patches is 11.2.0.4 unless otherwise specified.
-  # (Typically an exact point version should be supplied, e.g. 11.2.0.4 but regular expressions may be used if needed
-  #  for patches applicable to multiple point versions, e.g. 11.2..*)
-  # To find if a compatible version of a patch is defined for the current grid or database version we
-  # create a regular expression by joining all possible target_versions with pipes and try to match
-  # the current grid or database versions against that expression.
-  - name: (main) Show Starting Dictionary
-    debug: var=required_patches
+    - name: (main) Add Supplementary Patch Attributes with Default Values
+      set_fact:
+        tmp_patch: >
+          {{ {item.key:
+                 {'patch_number':item.key.split("p")[1],
+                  'description':item.value.description | default('no patch'),
+                  'grid_patch_filename':'undefined',
+                  'grid_patch_directory':oracle_patch_installer_directory,
+                  'database_patch_filename':'undefined',
+                  'database_patch_directory':oracle_patch_installer_directory,
+                  'patch_files':item.value.patch_files,
+                  'postinstall':item.value.postinstall_sql | default('none'),
+                  'grid_patch':item.value.grid_patch,
+                  'database_patch':item.value.database_patch,
+                  'grid_patch_version_compatible':oracle_grid_version is search( '^(' + ( item.value.patch_files | map(attribute='target_version') | list | join ('|') ) + ')'),
+                  'database_patch_version_compatible':oracle_database_version is search( '^(' + ( item.value.patch_files | map(attribute='target_version') | list | join ('|') ) + ')'),
+                  'install_request': false,
+                  'install_to_grid_required':false,
+                  'install_to_database_required':false,
+                  'datapatch_required':item.value.datapatch_required|default(false),
+                  'replaces_patch':item.value.replaces_patch | default('none'),
+                  'grid_rollback_required': false,
+                  'database_rollback_required': false,
+                  'shutdown_required': true}} 
+           }}
+      with_dict: "{{ required_patches }}"
+      register: tmp_patches
 
-  - name: (main) Add Supplementary Patch Attributes with Default Values
-    set_fact:
-            tmp_patch: >
-                      {{ {item.key:
-                             {'patch_number':item.key.split("p")[1],
-                              'description':item.value.description | default('no patch'),
-                              'grid_patch_filename':'undefined',
-                              'grid_patch_directory':oracle_patch_installer_directory,
-                              'database_patch_filename':'undefined',
-                              'database_patch_directory':oracle_patch_installer_directory,
-                              'patch_files':item.value.patch_files,
-                              'postinstall':item.value.postinstall_sql | default('none'),
-                              'grid_patch':item.value.grid_patch,
-                              'database_patch':item.value.database_patch,
-                              'grid_patch_version_compatible':oracle_grid_version is search( '^(' + ( item.value.patch_files | map(attribute='target_version') | list | join ('|') ) + ')'),
-                              'database_patch_version_compatible':oracle_database_version is search( '^(' + ( item.value.patch_files | map(attribute='target_version') | list | join ('|') ) + ')'),
-                              'install_request': false,
-                              'install_to_grid_required':false,
-                              'install_to_database_required':false,
-                              'datapatch_required':item.value.datapatch_required|default(false),
-                              'replaces_patch':item.value.replaces_patch | default('none'),
-                              'grid_rollback_required': false,
-                              'database_rollback_required': false,
-                              'shutdown_required': true}} 
-                       }}
-    with_dict: "{{ required_patches }}"
-    register: tmp_patches
+    - name: Show It
+      debug: var=item
+      with_items: "{{ tmp_patches.results | map(attribute='ansible_facts.tmp_patch') | list }}"
 
-  - name: Show It
-    debug:
-      var=item
-    with_items: "{{ tmp_patches.results | map(attribute='ansible_facts.tmp_patch') | list }}"
-
-  - name: (main) Create New Patch Dictionary
-    set_fact:
-            required_patches: "{{ required_patches | combine(item) }}"
-    with_items: "{{ tmp_patches.results | map(attribute='ansible_facts.tmp_patch') | list }}"
+    - name: (main) Create New Patch Dictionary
+      set_fact:
+        required_patches: "{{ required_patches | combine(item) }}"
+      with_items: "{{ tmp_patches.results | map(attribute='ansible_facts.tmp_patch') | list }}"
 
   when: required_patches is defined
 
@@ -139,24 +136,23 @@
 # for this environment and we have specified install_absent_patches
 - name: (main) Installation Block when Required Patches are Defined and Install Required
   block:
+    - name: (main) Prepare Patch Information
+      include: build-patching-requirements.yml
 
-   - name: (main) Prepare Patch Information
-     include: build-patching-requirements.yml
+    - name: Show the Required Patches
+      debug: var=required_patches
 
-   - name: Show the Required Patches
-     debug: var=required_patches
+    - name: (main) Shutdown Databases
+      include_tasks: shutdown-databases.yml
+      when: database_shutdown_needed or grid_shutdown_needed
 
-   - name: (main) Shutdown Databases
-     include_tasks: shutdown-databases.yml
-     when: database_shutdown_needed or grid_shutdown_needed
+    - name: (main) Shutdown Grid
+      include_tasks: shutdown-grid.yml
+      when: grid_shutdown_needed
 
-   - name: (main) Shutdown Grid
-     include_tasks: shutdown-grid.yml
-     when: grid_shutdown_needed
-
-   - name: (main) Install Patches
-     include_tasks: install-patches.yml
-     vars:
+    - name: (main) Install Patches
+      include_tasks: install-patches.yml
+      vars:
         patch_number: "{{ item.value.patch_number }}"
         grid_patch_directory: "{{ item.value.grid_patch_directory }}"
         database_patch_directory: "{{ item.value.database_patch_directory }}"
@@ -164,29 +160,29 @@
         apply_to_grid: "{{ item.value.install_to_grid_required }}"
         patch_to_rollback: "{{ item.value.replaces_patch }}"
         rollback_from_database: "{{ item.value.database_rollback_required }}"
-        rollback_from_grid: "{{ item.value.grid_rollback_required }}" 
-     with_dict: "{{ required_patches }}"
-     when: item.value.install_request and ((item.value.install_to_grid_required) or (item.value.install_to_database_required))
+        rollback_from_grid: "{{ item.value.grid_rollback_required }}"
+      with_dict: "{{ required_patches }}"
+      when: item.value.install_request and ((item.value.install_to_grid_required) or (item.value.install_to_database_required))
 
-   - name: (main) Restart Grid
-     include_tasks: restart-grid.yml
-     when: grid_shutdown_needed
+    - name: (main) Restart Grid
+      include_tasks: restart-grid.yml
+      when: grid_shutdown_needed
 
-   - name: (main) Restart Databases
-     include_tasks: restart-databases.yml
-     when: database_shutdown_needed or grid_shutdown_needed    
+    - name: (main) Restart Databases
+      include_tasks: restart-databases.yml
+      when: database_shutdown_needed or grid_shutdown_needed
 
-   - name: (main) Apply Post Install SQL for Patch
-     include_tasks: run-postinstall.yml
-     vars:
+    - name: (main) Apply Post Install SQL for Patch
+      include_tasks: run-postinstall.yml
+      vars:
         patch_number: "{{ item.value.patch_number }}"
         postinstall_sql: "{{ item.value.postinstall }}"
-     with_dict: "{{ required_patches }}"
-     when: item.value.install_request and item.value.install_to_database_required and item.value.postinstall != 'none'
+      with_dict: "{{ required_patches }}"
+      when: item.value.install_request and item.value.install_to_database_required and item.value.postinstall != 'none'
 
-   - name: (main) Apply Datapatch
-     include_tasks: run-datapatch.yml
-     when: datapatch_needed
+    - name: (main) Apply Datapatch
+      include_tasks: run-datapatch.yml
+      when: datapatch_needed
 
   when: required_patches is defined and (install_absent_patches | bool | default(false))
 
@@ -195,58 +191,52 @@
 #     and also if install_absent_patches is true (confirmation of any installations performed)
 - name: (main) Reporting Block when Required Patches
   block:
-
     - name: (main) Update OPatch Inventory
       include_tasks: query-opatch.yml
 
     - name: (main) Find if Any Requested Patches Remain Uninstalled
       include_tasks: check-installed.yml
       vars:
-              patch_id: "{{item.key}}"
-              patch_number: "{{item.value.patch_number}}"
-              grid_patch: "{{item.value.grid_patch}}"
-              database_patch: "{{item.value.database_patch}}"
-              grid_patch_version_compatible: "{{item.value.grid_patch_version_compatible}}"
-              database_patch_version_compatible: "{{item.value.database_patch_version_compatible}}"
-              patch_to_replace: "{{item.value.replaces_patch}}"
+        patch_id: "{{item.key}}"
+        patch_number: "{{item.value.patch_number}}"
+        grid_patch: "{{item.value.grid_patch}}"
+        database_patch: "{{item.value.database_patch}}"
+        grid_patch_version_compatible: "{{item.value.grid_patch_version_compatible}}"
+        database_patch_version_compatible: "{{item.value.database_patch_version_compatible}}"
+        patch_to_replace: "{{item.value.replaces_patch}}"
       with_dict: "{{ required_patches }}"
 
     - name: (main) Initialise List of Missing Grid Patches
       set_fact:
-            missing_grid_patches: []
+        missing_grid_patches: []
 
     - name: Show the Required Patches
       debug: var=required_patches
 
     - name: (main) Populate List of Missing Grid Patches
       set_fact:
-            missing_grid_patches: "{{ missing_grid_patches + [item.key] }}"
+        missing_grid_patches: "{{ missing_grid_patches + [item.key] }}"
       with_dict: "{{ required_patches }}"
-      when:  "item.value.install_to_grid_required"
+      when: "item.value.install_to_grid_required"
 
     - name: (main) Fail if any Grid Patches are absent and we have not specified a specific patch number
       fail:
-          msg: "The following Grid patches were required but not installed: {{ missing_grid_patches }}"
+        msg: "The following Grid patches were required but not installed: {{ missing_grid_patches }}"
       when: ((install_patch_id is not defined) and (missing_grid_patches | length > 0)) or ((install_patch_id is defined) and (required_patches[install_patch_id].grid_patch) and (install_patch_id in missing_grid_patches))
 
     - name: (main) Initialise List of Missing Database Patches
       set_fact:
-          missing_database_patches: []
+        missing_database_patches: []
 
     - name: (main) Populate List of Missing Database Patches
       set_fact:
-          missing_database_patches: "{{ missing_database_patches + [item.key] }}"
+        missing_database_patches: "{{ missing_database_patches + [item.key] }}"
       with_dict: "{{ required_patches }}"
-      when:  "item.value.install_to_database_required"
+      when: "item.value.install_to_database_required"
 
     - name: (main) Fail if any Database Patches are absent and we have not specified a specific patch number
       fail:
         msg: "The following Database patches were required but not installed: {{ missing_database_patches }}"
       when: ((install_patch_id is not defined) and (missing_database_patches | length > 0)) or ((install_patch_id is defined) and (required_patches[install_patch_id].database_patch) and (install_patch_id in missing_database_patches))
 
-
   when: required_patches is defined
-
-
-
-  

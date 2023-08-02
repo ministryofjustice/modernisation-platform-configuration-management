@@ -1,23 +1,22 @@
 ---
-
 - name: Nominate temporary file for recording Grid OPatch Output
   file:
-       path: /tmp/grid_opatch_out.xml
-       state: absent
+    path: /tmp/grid_opatch_out.xml
+    state: absent
 
 - name: Get OPatch Output for Grid Home
   shell: |
-         export ORACLE_HOME={{ oracle_grid_oracle_home }}
-         {{ oracle_grid_oracle_home }}/OPatch/opatch lsinventory -xml /tmp/grid_opatch_out.xml >/dev/null
-  changed_when: false 
+    export ORACLE_HOME={{ oracle_grid_oracle_home }}
+    {{ oracle_grid_oracle_home }}/OPatch/opatch lsinventory -xml /tmp/grid_opatch_out.xml >/dev/null
+  changed_when: false
 
 - name: Nominate temporary file for recording Database OPatch Output
   file:
-       path: /tmp/database_opatch_out.xml
-       state: absent
+    path: /tmp/database_opatch_out.xml
+    state: absent
 
-- name: Get OPatch Output for Database Home 
+- name: Get OPatch Output for Database Home
   shell: |
-         export ORACLE_HOME={{ oracle_database_oracle_home }}
-         {{ oracle_database_oracle_home }}/OPatch/opatch lsinventory -xml /tmp/database_opatch_out.xml >/dev/null
+    export ORACLE_HOME={{ oracle_database_oracle_home }}
+    {{ oracle_database_oracle_home }}/OPatch/opatch lsinventory -xml /tmp/database_opatch_out.xml >/dev/null
   changed_when: false
