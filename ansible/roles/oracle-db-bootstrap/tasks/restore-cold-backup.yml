@@ -1,0 +1,25 @@
+---
+- name: (main/restore-cold-backup) Create dir for backup files
+  file:
+    path: "{{ database_backup_location }}"
+    mode: 0775
+    state: directory
+  become: true
+  become_user: "{{ service_user_name }}"
+
+- name: (main/restore-cold-backup) Copy restore script.
+  copy:
+    src: "{{ role_path }}/files/rman_backup_restore.sh"
+    dest: "{{ database_backup_location }}/rman_backup_restore.sh"
+    mode: 0744
+  become: true
+  become_user: "{{ service_user_name }}"
+
+- name: (main/restore-cold-backup) Run script to restore from backup
+  shell: ". ~/.bash_profile; {{ database_backup_location }}/rman_backup_restore.sh -t {{ database_sid }} -l seed -d {{ database_backup_location }}"
+  register: restoredb_r_result
+  failed_when: restoredb_r_result.rc != 0
+  ignore_errors: false
+  become: true
+  become_user: "{{ service_user_name }}"
+  no_log: false

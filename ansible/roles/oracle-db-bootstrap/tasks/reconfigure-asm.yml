@@ -1,0 +1,20 @@
+---
+- name: (main/reconfigure-asm) Alter asmsnmp monitoring and sys user
+  become: yes
+  become_user: "{{ service_user_name }}"
+  shell: |
+    . ~/.bash_profile
+    ORACLE_SID=+ASM
+    ORAENV_ASK=NO
+    . oraenv > /dev/null
+    sqlplus -S /nolog <<EOF
+      connect / as sysasm
+      set pages 0
+      set lines 30
+      set echo on
+      whenever sqlerror exit failure
+      ALTER USER sys IDENTIFIED BY "{{ oradb_sys_password }}";
+      ALTER USER asmsnmp IDENTIFIED BY "{{ oradb_asmsnmp_password }}";
+      GRANT sysasm TO asmsnmp;
+    EOF
+  register: asmsnmp_modify

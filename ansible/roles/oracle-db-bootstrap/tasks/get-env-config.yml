@@ -1,0 +1,14 @@
+---
+- name: Get Environment Specific Variables for Primary
+  set_fact:
+    host_specific_required_patches: "{{ primarydb['required_patches'] | default({})}}"
+  when: database_type == "primary"
+
+- name: Get Environment Specific Variables for Standby (either will do as patches should be identical)
+  set_fact:
+    host_specific_required_patches: "{{ standbydb1['required_patches'] | default({}) }}"
+  when: database_type == "standby"
+
+- name: Merge All Required Patches with Host Specific Required Patches
+  set_fact:
+    required_patches: "{{ required_patches |  default({}) | combine (host_specific_required_patches) }}"

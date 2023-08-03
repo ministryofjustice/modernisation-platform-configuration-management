@@ -1,0 +1,37 @@
+---
+- block:
+    - name: (main/reconfigure-instance) Get the page size
+      command: /usr/bin/getconf PAGE_SIZE
+      register: page_size
+      failed_when: page_size.rc != 0
+
+    - name: (main/reconfigure-instance) Get shmmax value
+      command: /usr/bin/cat /proc/sys/kernel/shmmax
+      register: sshmax_value
+      failed_when: sshmax_value.rc != 0
+
+    - name: (main/reconfigure-instance) Set shmall value
+      sysctl:
+        name: kernel.shmall
+        value: "{{ (sshmax_value.stdout|int / page_size.stdout|int)|string| regex_replace('(\\.*)','')|int }}"
+        reload: yes
+        state: present
+      ignore_errors: false
+
+- name: (main/reconfigure-instance) Update our service_users profile so that the ORACLE_HOSTNAME variable is correct and resolves
+  include: update-service-user.yml
+
+- name: Find out how much system memory we have
+  set_fact:
+    system_memory_kb: "{{ ((ansible_memtotal_mb/10)*9)*1024|int }}"
+  ignore_errors: true
+
+- name: (main/reconfigure-instance) Update oracle memory limits
+  lineinfile:
+    dest: /etc/security/limits.conf
+    regexp: "{{ service_user_name }} {{ item.limit }} {{ item.type}}"
+    line: "{{ service_user_name }} {{ item.limit }} {{ item.type}} {{ item.value }}"
+  with_items:
+    - { limit: "soft", type: memlock, value: "{{ system_memory_kb|int }}" }
+    - { limit: "hard", type: memlock, value: "{{ system_memory_kb|int }}" }
+    - { limit: "soft", type: nproc, value: 16384 }

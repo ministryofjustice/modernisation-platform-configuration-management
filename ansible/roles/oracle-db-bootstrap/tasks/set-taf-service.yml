@@ -1,0 +1,38 @@
+- name: (main/set-taf-service) Add service {{ database_taf_service}} to {{ database_primary_unique}}
+  shell: |
+    . ~/.bash_profile
+    ORAENV_ASK=NO
+    ORACLE_SID={{ database_primary_unique }} 
+    . oraenv
+    srvctl status service -d {{ database_primary_unique}} -s {{ database_taf_service}} > /dev/null
+    if [ $? -ne 0 ]
+    then
+      srvctl add service -d {{ database_primary_unique }} -s {{ database_taf_service }} -l PRIMARY
+      if [ $? -eq 0 ]
+      then
+        echo "Added {{ database_taf_service}} to {{ database_primary_unique}}"
+      else
+        echo "Error adding {{ database_taf_service }} to {{ database_primary_unique }}"
+        exit 1
+      fi
+    else
+      echo "Service {{ database_taf_service }} already configured"
+    fi
+    STARTRESULT=`srvctl start service -d {{ database_primary_unique }} -s {{ database_taf_service }}`
+    if [ $? -ne 0 ]
+    then
+      if [[ "${STARTRESULT}" =~ "PRCC-1014" ]]
+      then
+        echo "Service {{ database_taf_service }} already running"
+      else
+        echo "Issue starting {{ database_taf_service }}" 
+        exit 1
+      fi
+    else
+      echo "Started service {{ database_taf_service }}"
+    fi
+  become: true
+  become_user: "{{ service_user_name }}"
+  changed_when: false
+  register: add_service
+  failed_when: add_service.rc !=0

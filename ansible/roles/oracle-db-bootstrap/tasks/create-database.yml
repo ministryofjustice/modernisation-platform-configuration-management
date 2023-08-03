@@ -1,0 +1,34 @@
+---
+- name: (main/create-database) preparing database response template
+  template:
+    src: "{{ role_path }}/templates/dbca{{ db_version }}.rsp.j2"
+    dest: "/tmp/dbca{{ db_version }}.rsp"
+    owner: "{{ service_user_name }}"
+    mode: 0400
+
+- name: (main/create-database) Copy our database template
+  template:
+    src: "{{ role_path }}/templates/{{ oracle_dbca_template_file }}.dbc.j2"
+    dest: "{{ oracle_database_oracle_home }}/assistants/dbca/templates/{{ oracle_dbca_template_file }}.dbc"
+    owner: "{{ service_user_name }}"
+    group: "{{ service_user_group}}"
+
+- name: (main/create-database) Set fact for dbca parameters database
+  set_fact:
+    dbca_parameters: "-silent -createDatabase -responseFile /tmp/dbca{{ db_version }}.rsp"
+
+- name: (main/create-database) Run database configuration assistant
+  shell: "{{ oracle_database_oracle_home }}/bin/dbca {{ dbca_parameters }}"
+  become: true
+  become_user: "{{ service_user_name }}"
+  vars:
+    ansible_aws_ssm_timeout: 3600
+  async: 3600
+  poll: 60
+  register: command_result
+
+- name: (main/create-database) Remove dbca response file after successful database creation
+  file:
+    path: "/tmp/dbca{{ db_version }}.rsp"
+    state: absent
+  when: command_result.stdout is search("100%")

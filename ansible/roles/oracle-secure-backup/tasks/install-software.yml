@@ -23,12 +23,14 @@
   register: osbws_install_script
 
 - name: Run install script
+  become: true
   become_user: oracle
   shell: |
     {{ osw_stage_dir }}/install.sh
   when: osbws_argfile.changed or osbws_install_script.changed
 
 - name: Update osbws config
+  become: true
   become_user: oracle
   ansible.builtin.lineinfile:
     path: "{{ database_home }}/dbs/osbws.ora"
@@ -36,7 +38,17 @@
     line: "OSB_WS_BUCKET={{ db_backup_s3_bucket_name }}"
     create: yes
 
+- name: Set OSB_WS_CHUNK_SIZE
+  become: true
+  become_user: oracle
+  ansible.builtin.lineinfile:
+    path: "{{ database_home }}/dbs/osbws.ora"
+    regexp: "^OSB_WS_CHUNK_SIZE="
+    line: "OSB_WS_CHUNK_SIZE={{ oracle_osbws_chunk_size }}"
+  when: oracle_osbws_chunk_size is defined
+
 - name: Run test
+  become: true
   become_user: oracle
   shell: |
     export OSB_WS_PFILE={{ database_home }}/dbs/osbws.ora
