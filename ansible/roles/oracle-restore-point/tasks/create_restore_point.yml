@@ -1,0 +1,47 @@
+---
+- name: Copy restore point creation script
+  ansible.builtin.template:
+    src: "create_restore_point.sql.j2"
+    dest: "{{ stage }}/create_restore_point.sql"
+    mode: 0600
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  ansible.builtin.set_fact:
+    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ item }}/sys"
+
+- name: Get sys password for oracle database .
+  ansible.builtin.set_fact:
+    db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path, region=ansible_ec2_placement_region) }}"
+
+- name: Check password is extracted from SSM
+  ansible.builtin.set_fact:
+    db_sys_password_set: true
+  when:
+    - db_sys_password |length > 0
+
+- name: Fail if missing SSM parameters
+  ansible.builtin.fail:
+    msg: Ensure SYS password is in SSM for {{ item }} database
+  when: not  db_sys_password_set |default(false)
+
+- name: Create restore point in database {{ item }}
+  become_user: "{{ oracle_install_user }}"
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . ~/.bash_profile
+      . oraenv <<< {{ db_sid }}
+      sqlplus sys/{{ db_sys_password }}@{{ item }} as sysdba @{{ stage }}/create_restore_point.sql
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-restore-point
+
+- name: Check restore point created successfully or not in {{ item }}
+  ansible.builtin.shell: grep "Restore point created." {{ stage }}/{{ item }}_restore_point.log  | wc -l
+  register: restore_point_check
+
+- name: Fail if missing SSM parameters
+  ansible.builtin.fail:
+    msg: Restore point creation failed for {{ item }}
+  when: restore_point_check.stdout == "0"
