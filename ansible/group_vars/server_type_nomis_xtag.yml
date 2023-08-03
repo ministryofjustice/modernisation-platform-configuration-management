@@ -1,12 +1,15 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
 image_builder_s3_bucket_name: ec2-image-builder-nomis20220314103938567000000001
+collectd_metric_configs:
+  - nomis-xtag
 
 server_type_roles_list:
   - autoscale-group-hooks
   - set-ec2-hostname
   - domain-search
   - nomis-xtag-weblogic
+  - collectd
   - amazon-cloudwatch-agent
   - autoscale-group-hooks-state
 
