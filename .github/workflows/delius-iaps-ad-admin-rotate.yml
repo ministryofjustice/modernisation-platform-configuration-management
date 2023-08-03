@@ -4,6 +4,11 @@ permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
 on:
+  schedule:
+    # every day at 1am
+    - cron: '0 1 * * *'
+    # every day at 2am
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -23,28 +28,32 @@ jobs:
           sudo pip3 install awscli
 
       - name: Configure AWS Credentials
+        if: github.event.inputs.environment == 'PREPRODUCTION' || github.event.schedule == '0 1 * * *'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-        if: ${{ github.event.inputs.envrioment }} == 'PRODUCTION'\
+        
       - name: Configure AWS Credentials
+        if: github.event.inputs.environment == 'PRODUCTION' || github.event.schedule == '0 2 * * *'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
+          role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-secrets-rotator"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
-        if: ${{ github.event.inputs.envrioment }} == 'PREPRODUCTION'
+
       - name: Generate new password
         id: generate_password
         run: |
           PASSWORD=$(openssl rand -base64 32)
           echo "::add-mask::$PASSWORD" 
           echo "PASSWORD=$PASSWORD" >> $GITHUB_ENV
+
       - name: Reset admin password
         run: |
-          aws ds reset-user-password --user-name Admin --new-password $PASSWORD
+          DIRECTORY_ID=$(aws ds describe-directories --region eu-west-2 --query 'DirectoryDescriptions[0].DirectoryId' --output text) && aws ds reset-user-password --user-name Admin --new-password $PASSWORD --directory-id $DIRECTORY_ID
+
       - name: Store password in secrets
         run: |
-           aws secretsmanager put-secret-value --secret-id delius-iaps-ad-admin-password --secret-string $PASSWORD
+           aws secretsmanager put-secret-value --secret-id delius-iaps-ad-password --secret-string $PASSWORD
