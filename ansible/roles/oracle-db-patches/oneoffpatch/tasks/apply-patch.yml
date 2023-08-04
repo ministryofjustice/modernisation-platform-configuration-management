@@ -1,32 +1,28 @@
 ---
-- name: Remove previous response file (use root in case left from bootstrap)
-  file:
-    path: /tmp/ocm.rsp
-    state: absent
-  become_user: root
-
-- name: Copy OPatch response file
-  copy:
-    src: ocm.rsp
-    dest: /tmp/ocm.rsp
 
 # The fuser utility is not installed as a matter of course so we set OPATCH_NO_FUSER to workaround this
 - name: Rollback earlier patch from {{ oracle_home }}
   shell: |
-    export PATH=$PATH:{{ oracle_home }}/bin 
-    export OPATCH_NO_FUSER=true
-    cd {{ patch_directory }}/{{ patch_number }}
-     {{ oracle_home }}/OPatch/opatch rollback -silent -id {{ patch_to_replace }}
+          export PATH=$PATH:{{ oracle_home }}/bin 
+          export OPATCH_NO_FUSER=true
+          cd {{ patch_directory }}/{{ patch_number }}
+           {{ oracle_home }}/OPatch/opatch rollback -silent -id {{ patch_to_replace }}
   when: patch_to_replace != 'none'
 
 - name: Use OPatch to install the patch {{ patch_number }} to {{ oracle_home }}
-  shell: |
-    export PATH=$PATH:{{ oracle_home }}/bin 
-    export OPATCH_NO_FUSER=true
-    cd {{ patch_directory }}/{{ patch_number }}
-     {{ oracle_home }}/OPatch/opatch apply -silent -ocmrf /tmp/ocm.rsp
+  shell:  |
+          export PATH=$PATH:{{ oracle_home }}/bin 
+          export OPATCH_NO_FUSER=true
+          cd {{ patch_directory }}/{{ patch_number }}
+           {{ oracle_home }}/OPatch/opatch apply -silent
+  async: 1200
+  poll: 0
+  register: run_opatch
 
-- name: Remove response file
-  file:
-    path: /tmp/ocm.rsp
-    state: absent
+- name: Wait for OPatch Install
+  async_status:
+      jid: "{{ run_opatch.ansible_job_id }}"
+  register: result
+  until: result.finished
+  retries: 40
+  delay: 30
