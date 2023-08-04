@@ -108,7 +108,7 @@
   changed_when: false
 
 # If online patching is available for a patch, update shutdown_required from existing default of true, unless we have
-# set only_patch_offline=true, which is the default, as we prefer to patch offline.  
+# set only_patch_offline=true, which is the default, as we prefer to patch offline.
 #
 # Note:
 # - Online patches are recommended when a downtime cannot be scheduled and the patch needs to be applied urgently.
@@ -117,9 +117,9 @@
 #
 - name: Update Dictionary for Online Patches
   set_fact:
-      required_patches: "{{ required_patches | combine({item.item.key: {'shutdown_required': ( item.stdout | trim | bool ) }}, recursive=true) }}" 
+    required_patches: "{{ required_patches | combine({item.item.key: {'shutdown_required': ( item.stdout | trim | bool ) }}, recursive=true) }}"
   with_items: "{{ tmp_database_shutdown_required.results }}"
-  when: 
+  when:
     - tmp_database_shutdown_required.results | length > 0
     - item.stdout is defined
     - not ( only_patch_offline | default(true) | bool )
