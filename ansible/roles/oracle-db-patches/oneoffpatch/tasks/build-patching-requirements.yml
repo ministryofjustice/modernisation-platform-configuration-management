@@ -107,11 +107,22 @@
   when: item.value.install_request and item.value.database_patch and item.value.install_to_database_required
   changed_when: false
 
-- name: Update Dictionary with Database Shutdown Requirements
+# If online patching is available for a patch, update shutdown_required from existing default of true, unless we have
+# set only_patch_offline=true, which is the default, as we prefer to patch offline.
+#
+# Note:
+# - Online patches are recommended when a downtime cannot be scheduled and the patch needs to be applied urgently.
+# - Online patches consume additional memory and if kept permanently the memory consumption increases as the number of processes in the system increases.
+# - It is strongly recommended to rollback all Online patches and replace them with regular (offline) patches on next instance shutdown or the earliest maintenance window.
+#
+- name: Update Dictionary for Online Patches
   set_fact:
     required_patches: "{{ required_patches | combine({item.item.key: {'shutdown_required': ( item.stdout | trim | bool ) }}, recursive=true) }}"
   with_items: "{{ tmp_database_shutdown_required.results }}"
-  when: (tmp_database_shutdown_required.results | length > 0) and (item.stdout is defined)
+  when:
+    - tmp_database_shutdown_required.results | length > 0
+    - item.stdout is defined
+    - not ( only_patch_offline | default(true) | bool )
 
   # Summarize whether we need to shutdown Databases - this is if any Database patches require shutdown
 - name: Set Database Shutdown Needed
