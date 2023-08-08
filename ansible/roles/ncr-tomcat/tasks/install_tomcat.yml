@@ -1,0 +1,15 @@
+---
+- name: Perform pre-requesite checks
+  shell: "./setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check ./response.ini ./failedPrereqs.txt"
+  become: true
+  become_user: bobj
+  ignore_errors: true
+  args:
+    chdir: "{{ sap_bi_platform_extraction_directory }}"
+
+- name: Run Silent Installation
+  shell: "./setup.sh –InstallDir {{ sap_bi_platform_installation_directory }}/ -r ./response.ini"
+  become: true
+  become_user: bobj
+  args:
+    chdir: "{{ sap_bi_platform_extraction_directory }}"

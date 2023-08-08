@@ -4,8 +4,9 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
-# - import_tasks: install_bip.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+  
+- import_tasks: install_bip.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']

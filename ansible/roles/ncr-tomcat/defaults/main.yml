@@ -1,0 +1,31 @@
+---
+bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
+sap_bi_platform_unpack_base_directory: /opt/sap/bip
+sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
+sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
+sap_jvm_unpack_base_directory: /opt/sap/java
+
+sap_bi_platform_platform_files:
+  - BIPLATS4303P_300-70002683_P1.EXE
+  - BIPLATS4303P_300-70002683_P2.RAR
+
+s3:
+  bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
+  packages_prefix: BIP/
+  response_files_prefix: RESPONSE_FILES/
+  files:
+    sap_bi_platform:
+      - BIPLATS4303P_300-70002683_P1.EXE
+      - BIPLATS4303P_300-70002683_P2.RAR
+    sap_jvm: SAPJVM8_94-80000202.SAR
+    sapcar: SAPCAR_1324-80000935.EXE
+    tomcat_admin_response_file: tomcat_admin_response.ini
+    tomcat_response_file: tomcat_response.ini
+
+ssm_parameters_prefix: "tomcat"
+
+tomcat_post_install_directories:
+  tomcat: /u01/app/bobj/BIP4/sap_bobj/tomcat
+  custom_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom
+  biprws_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom
+  webapps_root: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/ROOT

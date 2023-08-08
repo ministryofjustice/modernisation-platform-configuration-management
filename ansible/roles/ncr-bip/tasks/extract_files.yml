@@ -1,0 +1,29 @@
+---
+# unpack the SAP BIP rar archive
+
+- name: Check if setup.sh file exists
+  stat:
+    path: "{{ sap_bi_platform_extraction_directory }}/setup.sh"
+  register: result
+
+- name: Unpack the install files
+  block:
+    - name: Unpack the rar file
+      shell: /usr/local/bin/unrar x -y BIPLATS4303P_300-70002683_P1.exe
+      args:
+        chdir: "{{ sap_bi_platform_unpack_base_directory }}"
+      when: sap_bi_platform_unpack_base_directory is defined
+
+    - name: Untar the unpacked archive
+      ansible.builtin.unarchive:
+        src: "{{ sap_bi_platform_unpack_base_directory }}/BISERVONE.tgz"
+        dest: "{{ sap_bi_platform_extraction_directory }}"
+        remote_src: yes
+      when: sap_bi_platform_unpack_base_directory is defined
+  when: not result.stat.exists
+  rescue:
+    - name: Remove the unpacked RAR
+      file:
+        path: "{{ sap_bi_platform_unpack_base_directory }}/BISERVONE.tgz"
+        state: absent
+      when: sap_bi_platform_unpack_base_directory is defined
