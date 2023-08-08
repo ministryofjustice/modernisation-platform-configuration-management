@@ -10,21 +10,44 @@
       pause:
         minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
 
-    - name: capture selinux details from audit log around collectd
+    # also checks if there's a policy to enforce, if not then no subsequent tasks will run
+    - name: capture selinux AVC rules from audit log around collectd 
       ansible.builtin.shell: |
-        grep 'collectd' /var/log/audit/audit.log | audit2allow -M collectd_selinux_policy
+        result=$(grep 'AVC.*collectd\|collectd.*AVC' /var/log/audit/audit.log)
+        if [[ $result ]]; then
+          echo "$result" | audit2allow -a -M collectd_selinux_policy
+        fi
       args:
         chdir: ~ # policy file needs to be created/written in an "allowed" directory
-      register: selinux_policy_output
       become: true
+      changed_when: false # don't want to fail if no selinux AVC rules are found for collectd
 
-    - name: load selinux policy
+    - name: check if selinux policy file exists (Rhel 6)
+      ansible.builtin.stat:
+        path: ./collectd_selinux_policy.te
+      register: te_file
+
+    - name: convert and compile .te policy (RHEL 6) to .pp policy
+      ansible.builtin.shell: |
+        checkmodule -M -m -o collectd_selinux_policy.mod collectd_selinux_policy.te
+        semodule_package -o collectd_selinux_policy.pp -m collectd_selinux_policy.mod
+      become: true
+      args:
+        chdir: ~
+      when: te_file.stat.exists
+
+    - name: Check if .pp file exists (RHEL 7+)
+      stat:
+        path: ./collectd_selinux_policy.pp
+      register: pp_file
+
+    - name: Load .pp policy (RHEL 6 or 7+)
       ansible.builtin.shell: |
         semodule -i collectd_selinux_policy.pp
       become: true
       args:
         chdir: ~
-      when: selinux_policy_output.stdout_lines | length > 0
+      when: pp_file.stat.exists
 
   # block
   when: selinux_status.stdout == 'Enforcing'
