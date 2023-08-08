@@ -6,14 +6,8 @@ dns_zone_internal: nomis.hmpps-test.modernisation-platform.internal
 dns_search_domains:
   - azure.noms.root
 
-database_home: /u01/app/oracle/product/11.2.0.4/db_1
-oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 OMS_SERVER: oem.test.nomis.service.justice.gov.uk
 OEM_AGENT_VERSION: 13.5.0.0.0
-
-db_env:
-  ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
 rman_backup_script: rman_backup.sh
 db_configs:

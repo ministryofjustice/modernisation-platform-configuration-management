@@ -57,11 +57,6 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 database_home: /u01/app/oracle/product/19c/db_1
-oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
-
-db_env:
-  ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
 rman_backup_script: rman_backup.sh
 db_configs:

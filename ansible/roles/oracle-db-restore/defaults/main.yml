@@ -1,7 +1,7 @@
 database_home: /u01/app/oracle/product/11.2.0.4/db_1/
 temp_dir: /u02/temp
 # db_backup_s3_bucket_name:  set in group_vars
-oracle_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
   ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_PATH }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
