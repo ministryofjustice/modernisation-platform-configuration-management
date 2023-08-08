@@ -1,4 +1,13 @@
 ---
+- name: Copy syscon tag release details file for build information
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/tag_release_detail
+
 - name: Create tag directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -77,12 +86,3 @@
     dest: "/u01/app/oracle/Middleware/forms_instance/config/ReportsServerComponent/{{ weblogic_report_servername }}/rwserver.conf"
     owner: oracle
     group: oinstall
-
-- name: Copy syscon tag release details file for build information
-  ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    owner: oracle
-    group: oinstall
-  loop:
-    - /home/oracle/tag_release_details
