@@ -11,7 +11,7 @@
         minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
 
     # also checks if there's a policy to enforce, if not then no subsequent tasks will run
-    - name: capture selinux AVC rules from audit log around collectd
+    - name: capture selinux AVC rules from audit log around collectd 
       ansible.builtin.shell: |
         result=$(grep 'AVC.*collectd\|collectd.*AVC' /var/log/audit/audit.log)
         if [[ $result ]]; then
