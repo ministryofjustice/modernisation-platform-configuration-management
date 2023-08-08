@@ -1,0 +1,31 @@
+---
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+
+- name: Download OEM agent RU upgrade patches
+  become_user: "{{ oracle_install_user }}"
+  amazon.aws.aws_s3:
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    permission: "public-read"
+    overwrite: latest
+  loop:
+    - "{{ agent_ru_patch }}"
+    - "{{ agentpatcher_patch }}"
+
+- name: Unzip OEM agent RU upgrade patches
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ item }}"
+    dest: "{{ stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+  loop:
+    - "{{ agent_ru_patch }}"
