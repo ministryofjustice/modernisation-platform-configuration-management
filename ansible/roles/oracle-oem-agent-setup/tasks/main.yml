@@ -31,6 +31,12 @@
     - amibuild
     - ec2provision
 
+- import_tasks: oem_target_agent_ru_upgrade.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - agent_ru_upgrade
+
 - import_tasks: oem_agent_deinstall.yml
   tags:
     - never
