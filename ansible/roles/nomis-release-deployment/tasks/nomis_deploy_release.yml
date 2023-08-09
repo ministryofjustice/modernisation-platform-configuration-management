@@ -12,7 +12,7 @@
     state: directory
     recurse: yes
 
-- name: APP - Copy sql script file to verify release on database
+- name: Copy sql script file to verify release on database
   ansible.builtin.template:
     src: "check_db_release.sql.j2"
     dest: "{{ stage }}/check_db_release.sql"
@@ -20,7 +20,7 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
 
-- name: APP - Check database release {{ nomis_release.name }} deployed on database or not
+- name: Check database release {{ nomis_release.name }} deployed on database or not
   become_user: "{{ oracle_install_user }}"
   ansible.builtin.shell: |
     . ~/.bash_profile

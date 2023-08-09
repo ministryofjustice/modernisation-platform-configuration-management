@@ -14,7 +14,7 @@ TAGDIR=/u01/tag
 CNT=`sqlplus -s ${USERNAME}/${PASSWORD}@${TNS} << EOF
 set head off
 set feedback off
-select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '${RELEASE}%';
+select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '${RELEASE}';
 exit
 EOF
 `
