@@ -1,4 +1,5 @@
 ---
+
 - name: Get Database SID
   set_fact:
     database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
@@ -22,9 +23,10 @@
   when: "'control_management_pack_access' not in database_parameters"
 
 # Always fetch sga_max_size regardless of whether we need it as it is an upper limit for sga_target
+# Always fetch control_file_record_keep_time as we need to check if RMAN retention time is within limit
 - name: Create CSV List of Database Parameters
   set_fact:
-    parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size'\" }}"
+     parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size','control_file_record_keep_time'\" }}"
 
 - name: Get List of Current Database Parameter Values
   script: get_parameter_values.sh {{ database_sid }} "{{ parameter_csv }}"
@@ -37,8 +39,50 @@
 
 - name: Create dictionary for parameters that can be changed in spfile only
   set_fact:
-    database_parameters_spfile: "{{ database_parameters_spfile | default({}) | combine({item.split(',')[0]:item.split(',')[2]}) }}"
-  with_items: "{{ current_parameter_values.stdout_lines | select() | list }}"
+     database_parameters_spfile: "{{ database_parameters_spfile | default({}) | combine({item.split(',')[0]:item.split(',')[2]}) }}" 
+   with_items: "{{ current_parameter_values.stdout_lines | select() | list }}"
+
+# Where we do not have an RMAN Catalog (engineering accounts) ensure that we do 
+# not attempt to reduce the Control File Record Keep type below the RMAN Retention Policy
+- name: Check RMAN Retention Policy
+  when: catalog is not defined
+  block:
+
+      # The RMAN Retention Policy is only defined on the primary database so
+      # check which group that is
+      - name: Get Primary Database Group
+        set_fact:
+           primarydb_group: "{{ target_host.split('_')[0] + '_primarydb' }}"
+      
+      - name: Get Specified RMAN Recovery Window
+        set_fact:
+           recovery_window: "{{ hostvars[groups[primarydb_group][0]]['rman_retention_policy'] | regex_replace('RECOVERY WINDOW OF (\\d+) DAYS','\\1') }}"
+        when: hostvars[groups[primarydb_group][0]]['rman_retention_policy'] is defined
+
+      # If the Recovery Window has not been specified in the Ansible variable check what it is set to
+      - name: Get Actual RMAN Recovery Window
+        script: get_rman_retention.sh
+        register: get_rman_retention
+        when: not hostvars[groups[primarydb_group][0]]['rman_retention_policy'] is defined
+
+      - name: Get RMAN Recovery Window
+        set_fact:
+           recovery_window: "{{ get_rman_retention.stdout | regex_replace('.*CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF (\\d+) DAYS.*','\\1')}}"
+        when: 
+           - get_rman_retention is defined
+           - get_rman_retention.stdout is search('.*CONFIGURE RETENTION POLICY TO RECOVERY WINDOW.*')
+
+      # If we have not yet found the size of the Recovery Window it is probably because the database
+      # is using REDUNDANCY rather than RECOVERY WINDOW, so just default the size to zero.
+      - name: Default Recovery Window
+        set_fact:
+           recovery_window: 0
+        when: recovery_window is not defined
+
+      - fail: 
+          msg: "Control File Record Keep Time of {{ database_parameters.control_file_record_keep_time | default(database_parameters_actual['control_file_record_keep_time']) }} is less than RMAN Retention Period of {{ recovery_window }} days."
+        when: 
+           - database_parameters.control_file_record_keep_time | default(database_parameters_actual['control_file_record_keep_time']) | int < recovery_window | int
 
 # We define memory_expanded_values as the values for memory parameters in bytes, i.e. expanding out the K, M or G suffixes
 # so that we can do integer based comparisons.  memory_expanded_values are the target values (not necessarily those in use on the instance).
