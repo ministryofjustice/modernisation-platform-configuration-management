@@ -28,3 +28,21 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
+
+- import_tasks: retrieve_response_file.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
+- import_tasks: install_tomcat.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
+- import_tasks: post_installation_config.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
