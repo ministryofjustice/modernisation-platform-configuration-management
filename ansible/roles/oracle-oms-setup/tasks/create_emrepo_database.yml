@@ -19,9 +19,6 @@
         - create_oem_repository_db.sh
         - db_set_parameter.sh
 
-    - debug:
-        msg: "Sys password {{ db_sys_password }} and system password {{ db_system_password }}"
-
     - name: Create OEM repository database
       become_user: oracle
       ansible.builtin.shell: |
@@ -55,13 +52,6 @@
         . oraenv <<< {{ emrepo_db_name.emrepo_db_name }} 
         srvctl stop database -d {{ emrepo_db_name.emrepo_db_name }} 
         srvctl start database -d {{ emrepo_db_name.emrepo_db_name }}
-
-    - name: Upload sys and system passwords for OEM repository database
-      become_user: oracle
-      ansible.builtin.shell: |
-        export PATH=$PATH:/usr/local/bin
-        aws ssm put-parameter --name "{{ ssm_parameters_path_db_sys_password }}" --value {{ db_sys_password }} --type "SecureString" --overwrite 
-        aws ssm put-parameter --name "{{ ssm_parameters_path_db_system_password }}" --value {{ db_system_password }} --type "SecureString" --overwrite
 
   # block
   when: emrepo_db_exists_check.changed
