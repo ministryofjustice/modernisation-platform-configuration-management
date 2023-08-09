@@ -40,7 +40,7 @@
 - name: Create dictionary for parameters that can be changed in spfile only
   set_fact:
      database_parameters_spfile: "{{ database_parameters_spfile | default({}) | combine({item.split(',')[0]:item.split(',')[2]}) }}" 
-   with_items: "{{ current_parameter_values.stdout_lines | select() | list }}"
+  with_items: "{{ current_parameter_values.stdout_lines | select() | list }}"
 
 # Where we do not have an RMAN Catalog (engineering accounts) ensure that we do 
 # not attempt to reduce the Control File Record Keep type below the RMAN Retention Policy
