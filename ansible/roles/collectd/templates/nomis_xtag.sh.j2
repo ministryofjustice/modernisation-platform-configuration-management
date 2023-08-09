@@ -17,7 +17,7 @@ do
         service_status "$service" 
         status=$?
 
-        service_name=${service//-/_}
-        echo "PUTVAL $HOSTNAME/exec-$service_name/bool-$service_name interval=$INTERVAL N:$status"
+        service_name=${service//_}
+        echo "PUTVAL $HOSTNAME/$service_name/bool-$service_name interval=$INTERVAL N:$status"
     done
 done
