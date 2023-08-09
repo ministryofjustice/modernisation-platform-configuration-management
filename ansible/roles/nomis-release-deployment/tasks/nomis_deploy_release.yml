@@ -12,7 +12,7 @@
     state: directory
     recurse: yes
 
-- name: APP - Copy sql script file to verify release on database
+- name: Copy sql script file to verify release on database
   ansible.builtin.template:
     src: "check_db_release.sql.j2"
     dest: "{{ stage }}/check_db_release.sql"
@@ -20,7 +20,7 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
 
-- name: APP - Check database release {{ nomis_release.name }} deployed on database or not
+- name: Check database release {{ nomis_release.name }} deployed on database or not
   become_user: "{{ oracle_install_user }}"
   ansible.builtin.shell: |
     . ~/.bash_profile
@@ -39,7 +39,7 @@
   # block
   when: db_server_file.stat.exists and db_release_status.stdout | regex_search("RELEASE_STATUS=0")
 
-- name: Deploy release {{ nomis_release.name }} on database server
+- name: Deploy release {{ nomis_release.name }} on application server
   block:
     - name: APP - Check {{ nomis_release.name }} release alread deployed on app server
       ansible.builtin.shell: grep {{ nomis_release.name }} /home/oracle/tag_release_detail | wc -l
@@ -47,7 +47,7 @@
 
     - name: Download {{ nomis_release.name }} release on app server
       ansible.builtin.import_tasks: download_release.yml
-      when: app_release_status.stdout == 0
+      when: app_release_status.stdout == "0"
 
     - name: APP - Check release  {{ nomis_release.name }} has FormsSources, Static, Reports files.
       ansible.builtin.find:
