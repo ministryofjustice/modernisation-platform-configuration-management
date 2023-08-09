@@ -49,5 +49,24 @@
         chdir: ~
       when: pp_file.stat.exists
 
-  # block
+    # seems this step is also needed to allow collectd to run without selinux errors
+    - name: set selinux policy for collectd_t to permissive
+      ansible.builtin.command: semanage permissive -a collectd_t
+      become: true
+      changed_when: false
+      ignore_errors: true
+
+    - name: restart collectd after policy on Rhel 6
+      ansible.builtin.command: service collectd restart
+      become: true
+      when: ansible_distribution_major_version == '6'
+
+    - name: restart collectd after policy on Rhel 7+
+      ansible.builtin.service:
+        name: collectd
+        state: restarted
+        enabled: yes
+      become: true
+      when: ansible_distribution_major_version >= '7'
+
   when: selinux_status.stdout == 'Enforcing'
