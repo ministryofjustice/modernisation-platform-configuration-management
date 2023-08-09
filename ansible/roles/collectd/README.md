@@ -26,6 +26,8 @@ There is an additional task specifically to create a selinux policy for collectd
 
 Having loging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
 
+setting semanage to permissively allow collectd to run scripts is also required. This is done by the task `collectd_configure : set selinux to permissive for collectd`
+
 ## Debugging Collectd
 
 Probably the easiest thing to do is un-comment the 'logfile' plugin sections in collectd.conf.j2 and reload collectd via `sudo systemctl restart collectd.service`
