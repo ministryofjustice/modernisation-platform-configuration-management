@@ -39,7 +39,7 @@
   # block
   when: db_server_file.stat.exists and db_release_status.stdout | regex_search("RELEASE_STATUS=0")
 
-- name: Deploy release {{ nomis_release.name }} on database server
+- name: Deploy release {{ nomis_release.name }} on application server
   block:
     - name: APP - Check {{ nomis_release.name }} release alread deployed on app server
       ansible.builtin.shell: grep {{ nomis_release.name }} /home/oracle/tag_release_detail | wc -l
@@ -47,7 +47,7 @@
 
     - name: Download {{ nomis_release.name }} release on app server
       ansible.builtin.import_tasks: download_release.yml
-      when: app_release_status.stdout == 0
+      when: app_release_status.stdout == "0"
 
     - name: APP - Check release  {{ nomis_release.name }} has FormsSources, Static, Reports files.
       ansible.builtin.find:
