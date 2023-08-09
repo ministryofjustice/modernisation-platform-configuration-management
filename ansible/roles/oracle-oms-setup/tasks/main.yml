@@ -4,20 +4,11 @@
     path: "{{ oem_mw_home }}/bin/emctl"
   register: oem_software_installed
   tags:
-    - amibuild
-    - get_facts
-    - ec2provision
+    - always
 
 - import_tasks: get_facts.yml
   tags:
-    - amibuild
-    - get_facts
-    - ec2provision
-    - oracle_oem_patch_upgrade
-
-- name: oem_software_installed
-  debug:
-    var: oem_software_installed.stat.exists
+    - always
 
 - block:
     - import_tasks: install_oem_prereq.yml
