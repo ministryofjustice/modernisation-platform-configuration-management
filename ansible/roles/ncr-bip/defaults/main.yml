@@ -11,7 +11,8 @@ sap_bi_platform_platform_files:
 
 s3:
   bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
-  prefix: BIP/
+  packages_prefix: BIP/
+  response_files_prefix: RESPONSE_FILES/
   files:
     sap_bi_platform:
       - BIPLATS4303P_300-70002683_P1.EXE
@@ -19,5 +20,7 @@ s3:
     sap_host_agent: SAPHOSTAGENT60_60-80004822.SAR
     sap_jvm: SAPJVM8_94-80000202.SAR
     sapcar: SAPCAR_1324-80000935.EXE
+    tomcat_admin_response_file: tomcat_admin_response.ini
+    tomcat_response_file: tomcat_response.ini
 
 ssm_parameters_prefix: "bip"

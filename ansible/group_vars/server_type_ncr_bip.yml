@@ -28,8 +28,8 @@ server_type_roles_list:
   - amazon-cli
   - disks
   - oracle-19c-client
-  - combined-reporting-bip-rhel8-setup
-  - combined-reporting-bip-installation
+  - oracle-tns-entries
+  - ncr-bip
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 

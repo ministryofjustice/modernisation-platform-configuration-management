@@ -1,14 +1,8 @@
 ### TOMCAT POST INSTALLATION CONFIGURATION
 ---
-- name: Check if setup has been executed
-  stat:
-    path: "{{ sap_bi_platform_installation_directory }}/sap_bobj/init/SAPBOBJEnterpriseXI40"
-  register: setup
-
 - name: Run Setup
-  ansible.builtin.shell: "sudo sh {{ sap_bi_platform_installation_directory }}/sap_bobj/init/setupinit.sh"
+  ansible.builtin.shell: "sudo {{ sap_bi_platform_installation_directory }}/sap_bobj/init/setupinit.sh"
   become: true
-  when: setup.stat.exists
 
 - name: Add tomcat config files
   ansible.builtin.template:
