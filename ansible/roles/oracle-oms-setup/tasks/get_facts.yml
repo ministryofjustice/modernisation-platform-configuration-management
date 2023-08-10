@@ -35,6 +35,11 @@
     nodemanager_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_nodemanager_password, region=ansible_ec2_placement_region) }}"
     oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
 
+- debug:
+    var: db_sys_password
+- debug:
+    var: db_system_password
+
 - name: Check parameters
   set_fact:
     db_all_variables_set: true
@@ -47,6 +52,11 @@
     - nodemanager_password|length > 0
     - oem_agent_password|length > 0
 
+- debug:
+    var: db_sys_password
+- debug:
+    var: db_system_password
+
 - name: Fail if missing parameters
   fail:
     msg: Ensure all required parameters are set
@@ -54,3 +64,6 @@
 
 - debug:
     msg: "A create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
+
+- debug:
+    msg: "AA {{ db_sys_password }}"
