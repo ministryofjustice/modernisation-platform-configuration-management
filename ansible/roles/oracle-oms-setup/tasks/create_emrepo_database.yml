@@ -19,12 +19,15 @@
         - create_oem_repository_db.sh
         - db_set_parameter.sh
 
+    - debug:
+        msg: "create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
+
     - name: Create OEM repository database
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          echo "# create_oem_repository_db.sh "
+          echo "# create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
           {{ stage }}/create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
