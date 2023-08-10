@@ -5,6 +5,9 @@
     line: "{{ emrepo_db_name.emrepo_db_name }}"
   check_mode: yes
   register: emrepo_db_exists_check
+    
+- debug:
+    msg: "E create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
 
 - name: Create OEM repository database
   block:
@@ -20,7 +23,7 @@
         - db_set_parameter.sh
 
     - debug:
-        msg: "create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
+        msg: "F create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
 
     - name: Create OEM repository database
       become_user: oracle

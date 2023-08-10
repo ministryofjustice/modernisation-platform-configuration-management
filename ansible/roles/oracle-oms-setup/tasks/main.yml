@@ -10,12 +10,22 @@
   tags:
     - always
 
+- debug:
+    msg: "B create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
+  tags:
+    - always
+
 - block:
     - import_tasks: install_oem_prereq.yml
       tags:
         - amibuild
         - ec2provision
         - oracle_oem_software_prereq
+
+    - debug:
+        msg: "D create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
+      tags:
+        - always
 
     - import_tasks: create_emrepo_database.yml
       tags:

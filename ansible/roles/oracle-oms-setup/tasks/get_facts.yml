@@ -51,3 +51,6 @@
   fail:
     msg: Ensure all required parameters are set
   when: not db_all_variables_set|default(false)
+
+- debug:
+    msg: "A create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
