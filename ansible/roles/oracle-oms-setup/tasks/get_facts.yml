@@ -25,9 +25,6 @@
     ssm_parameters_path_oem_nodemanager_password: "{{ ssm_parameters_path }}/OEM/nodemanagerpassword"
     ssm_parameters_path_oem_agent_registration_password: "{{ ssm_parameters_path }}/OEM/agentregpassword"
 
-- debug:
-    var: ssm_parameters_path_db_sys_password
-
 - name: Get SSM parameters
   set_fact:
     db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
@@ -36,11 +33,6 @@
     weblogic_admin_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_weblogic_password, region=ansible_ec2_placement_region) }}"
     nodemanager_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_nodemanager_password, region=ansible_ec2_placement_region) }}"
     oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
-
-- debug:
-    var: db_sys_password
-- debug:
-    var: db_system_password
 
 - name: Check parameters
   set_fact:
@@ -54,18 +46,7 @@
     - nodemanager_password|length > 0
     - oem_agent_password|length > 0
 
-- debug:
-    var: db_sys_password
-- debug:
-    var: db_system_password
-
 - name: Fail if missing parameters
   fail:
     msg: Ensure all required parameters are set
   when: not db_all_variables_set|default(false)
-
-- debug:
-    msg: "A create_oem_repository_db.sh {{ emrepo_db_name.emrepo_db_name }} {{ db_sys_password }} {{ db_system_password }}"
-
-- debug:
-    msg: "AA {{ db_sys_password }}"
