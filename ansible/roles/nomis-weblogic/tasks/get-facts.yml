@@ -2,7 +2,6 @@
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
-  when: ssm_parameters_path is not defined
 
 - name: Set SSM parameters weblogic path facts
   set_fact:
@@ -25,7 +24,6 @@
     weblogic_db_tagsar_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_tagsar_password, region=ansible_ec2_placement_region) }}"
     weblogic_rms_hosts: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_hosts, region=ansible_ec2_placement_region) }}"
     weblogic_rms_key: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_rms_key, region=ansible_ec2_placement_region) }}"
-  when: weblogic_admin_username is not defined
 
 - name: Set db hostname from ec2 oracle-db-hostname tag
   set_fact:
@@ -35,7 +33,6 @@
 - name: Set db name from ec2 oracle-db-name tag
   set_fact:
     weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
-  when: weblogic_db_name is not defined
 
 - debug:
     msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"
