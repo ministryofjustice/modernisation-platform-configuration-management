@@ -3,7 +3,6 @@
   set_fact:
     ssm_parameters_path: "/{{ ssm_parameters_prefix }}"
     db_ssm_parameters_path: '/database/{{ ec2.tags["Name"] }}'
-  when: ssm_parameters_path is not defined
 
 - name: Set SSM parameters database path facts
   set_fact:

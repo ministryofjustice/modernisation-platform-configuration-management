@@ -2,7 +2,6 @@
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
     ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
-  when: ssm_parameters_path is not defined
 
 - name: Set SSM parameters tomcat path facts
   set_fact:
@@ -13,4 +12,3 @@
   set_fact:
     tomcat_cms_password: "{{ lookup('aws_ssm', ssm_parameters_path_tomcat_cms_password, region=ansible_ec2_placement_region) }}"
     tomcat_product_key: "{{ lookup('aws_ssm', ssm_parameters_path_tomcat_product_key, region=ansible_ec2_placement_region) }}"
-  when: tomcat_cms_password is not defined
