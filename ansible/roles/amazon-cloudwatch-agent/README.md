@@ -1,3 +1,5 @@
+# FIXME: this page needs an extensive re-write
+
 # Cloudwatch Agent Role
 
 This role installs the Cloudwatch Agent on a Linux host and configures it to send metrics to Cloudwatch.
@@ -7,8 +9,7 @@ If the group_vars for a host has the variable `cloudwatch_agent_configs` defined
 Amazon Cloudwatch Agent config exection and start order is: 
 
     1. ansible_system == 'linux' (the default ansible_system i.e. linux) via `/templates/linux.json.j2`
-    2. collectd config if collectd is already installed via `/templates/agen_config_collectd.json.j2`
-    3. loops through values of `cloudwatch_agent_configs` in group_vars and deploys them to the host
+    2. loops through values of `cloudwatch_agent_configs` in group_vars and deploys them to the host
     
 e.g. if you have a group_vars entry like this:
 
