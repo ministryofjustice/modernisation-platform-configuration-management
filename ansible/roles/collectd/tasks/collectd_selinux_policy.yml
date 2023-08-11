@@ -20,13 +20,13 @@
       become: true
       changed_when: false # don't want to fail if no selinux AVC rules are found for collectd
 
-    - name: check if selinux policy file exists (Rhel 6)
+    - name: check if selinux policy file exists
       become: true
       ansible.builtin.stat:
         path: /opt/collectd/collectd_selinux_policy.te
       register: te_file
 
-    - name: convert and compile .te policy (RHEL 6) to .pp policy
+    - name: convert and compile .te policy to .pp policy
       ansible.builtin.shell: |
         checkmodule -M -m -o /opt/collectd/collectd_selinux_policy.mod /opt/collectd/collectd_selinux_policy.te
         semodule_package -o /opt/collectd/collectd_selinux_policy.pp -m /opt/collectd/collectd_selinux_policy.mod
