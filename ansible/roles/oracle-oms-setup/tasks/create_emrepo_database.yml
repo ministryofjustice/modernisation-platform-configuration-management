@@ -5,7 +5,7 @@
     line: "{{ emrepo_db_name.emrepo_db_name }}"
   check_mode: yes
   register: emrepo_db_exists_check
-    
+
 - name: Create OEM repository database
   block:
     - name: Copy OEM repository creation scripts
@@ -49,8 +49,8 @@
       become_user: oracle
       ansible.builtin.shell: |
         export PATH=$PATH:/usr/local/bin
-        . oraenv <<< {{ emrepo_db_name.emrepo_db_name }} 
-        srvctl stop database -d {{ emrepo_db_name.emrepo_db_name }} 
+        . oraenv <<< {{ emrepo_db_name.emrepo_db_name }}
+        srvctl stop database -d {{ emrepo_db_name.emrepo_db_name }}
         srvctl start database -d {{ emrepo_db_name.emrepo_db_name }}
 
   # block
