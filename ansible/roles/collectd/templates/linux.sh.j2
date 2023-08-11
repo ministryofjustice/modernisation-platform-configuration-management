@@ -3,7 +3,7 @@
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-LINUX_SERVICE_LIST="{{ service_list_linux }}"
+MONITORED_SERVICES="{{ monitored_services }}"
 
 service_status() {
     local SERVICE="$1"

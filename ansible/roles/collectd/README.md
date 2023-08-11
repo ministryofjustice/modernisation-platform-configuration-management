@@ -1,3 +1,8 @@
+<!-- 
+FIXME: readme needs an extensive re-write
+
+-->
+
 # Collectd
 
 Installs collectd and configures it based on the values in group_vars `collectd_metric_configs` variable. See server_type_nomis_db for an example.

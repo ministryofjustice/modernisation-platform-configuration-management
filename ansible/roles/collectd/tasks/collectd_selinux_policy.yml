@@ -8,7 +8,8 @@
 - block: # when selinux mode is 'Enforcing'
     - name: make sure collectd has run for 3 minutes to capture all the errors
       pause:
-        minutes: 3 # may need to be extended if this doesn't allow enough time for all issues to be captured
+        minutes: 5 # may need to be extended if this doesn't allow enough time for all issues to be captured
+      when: ansible_distribution_major_version != '7' # run this on everything apart from RHEL 7 for now
 
     # also checks if there's a policy to enforce, if not then no subsequent tasks will run
     - name: capture selinux AVC rules from audit log around collectd
@@ -19,6 +20,15 @@
         fi
       become: true
       changed_when: false # don't want to fail if no selinux AVC rules are found for collectd
+      when: ansible_distribution_major_version != '7' # run this on everything apart from RHEL 7 for now
+
+    - name: provide pre-built selinux policy file for Rhel 7
+      copy:
+        src: collectd_selinux_policy_rhel_7.te
+        dest: /opt/collectd/collectd_selinux_policy.te
+        mode: 0644
+      become: true
+      when: ansible_distribution_major_version == '7' # run this on RHEL 7 only
 
     - name: check if selinux policy file exists
       become: true
@@ -43,18 +53,6 @@
         semodule -i /opt/collectd/collectd_selinux_policy.pp
       become: true
       when: pp_file.stat.exists
-
-    - name: restart collectd after policy on Rhel 6
-      ansible.builtin.command: service collectd restart
-      become: true
-      when: ansible_distribution_major_version == '6'
-
-    - name: restart collectd after policy on Rhel 7+
-      ansible.builtin.service:
-        name: collectd
-        state: restarted
-        enabled: yes
-      become: true
-      when: ansible_distribution_major_version >= '7'
+      notify: restart collectd
 
   when: selinux_status.stdout == 'Enforcing'
