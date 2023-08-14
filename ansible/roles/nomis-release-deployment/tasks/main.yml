@@ -14,6 +14,7 @@
   ansible.builtin.import_tasks: stop_nomis_app.yml
   when: app_server_file.stat.exists
   tags:
+    - ec2provision
     - stop_application
 
 - name: Create oracle restore point before release deployment
@@ -40,6 +41,7 @@
     group: "{{ oracle_install_group }}"
   when: app_server_file.stat.exists
   tags:
+    - ec2provision
     - deploy_release
 
 - name: APP - Copy script to compile single form
@@ -51,6 +53,7 @@
     group: "{{ oracle_install_group }}"
   when: app_server_file.stat.exists
   tags:
+    - ec2provision
     - deploy_release
 
 - name: Deploy nomis releases
@@ -63,12 +66,14 @@
     loop_var: nomis_release
   loop: "{{ nomis_releases }}"
   tags:
+    - ec2provision
     - deploy_release
 
 - name: Start Nomis weblogic app
   ansible.builtin.import_tasks: start_nomis_app.yml
   when: app_server_file.stat.exists
   tags:
+    - ec2provision
     - start_application
 
 - name: Rename keepalive back to end outage
