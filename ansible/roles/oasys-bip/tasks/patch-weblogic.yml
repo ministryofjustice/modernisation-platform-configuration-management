@@ -1,0 +1,50 @@
+---
+- name: Fail if required weblogic patch variables not defined
+  fail:
+    msg: "Error, please ensure weblogic_patch_filename and weblogic_patch_ids are defined"
+  when: weblogic_patch_filename is not defined or weblogic_patch_id is not defined
+
+- name: Get current weblogic patch
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile > /dev/null
+    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+    cd $WL_HOME/../utils/bsu/
+    ./bsu.sh -view -status=applied -prod_dir=$WL_HOME | grep "^Patch ID:" | cut -d: -f2 | sed  's/^ *//g' | cut -d\  -f1 | tr  "\n" " "
+  check_mode: false
+  changed_when: false
+  register: weblogic_existing_patch
+
+- name: Set existing weblogic patch code fact
+  set_fact:
+    weblogic_existing_patch_code: "{{ weblogic_existing_patch.stdout }}"
+
+- name: Install weblogic patch
+  when: not weblogic_existing_patch_code is search(weblogic_patch_id)
+  block:
+    - name: Remove previous patch files
+      ansible.builtin.file:
+        path: "{{ weblogic_patch_filename.split('/')[:-1] | join('/') }}"
+        state: absent
+
+    - import_tasks: extract-s3-archive.yml
+      vars:
+        weblogic_s3_archives:
+          - "{{ weblogic_patch_filename }}"
+
+    # takes forever so run in async mode to prevent connection timeouts
+    - name: Run weblogic patch script which takes approx 20 mins
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          patch_dir={{ weblogic_patch_filename.split('/')[:-1] | join('/') }}
+          echo "Install patch: ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist={{ weblogic_patch_id }} -prod_dir=$WL_HOME -verbose"
+          cd $WL_HOME/../utils/bsu/
+          ./bsu.sh -install -patch_download_dir=$patch_dir -patchlist={{ weblogic_patch_id }} -prod_dir=$WL_HOME -verbose
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      async: 83600
+      poll: 60
