@@ -11,14 +11,13 @@
     - ec2patch
   when: ansible_facts['distribution'] == "RedHat"
 
-- import_tasks: collectd_selinux_policy.yml
+- import_tasks: collectd_cloudwatch_append_config.yml
   tags:
     - ec2provision
     - ec2patch
   when: ansible_facts['distribution'] == "RedHat"
 
-# TODO: add a 'add config to cloudwatch and restart' task here
-- import_tasks: collectd_cloudwatch_append_config.yml
+- import_tasks: collectd_selinux_policy.yml
   tags:
     - ec2provision
     - ec2patch

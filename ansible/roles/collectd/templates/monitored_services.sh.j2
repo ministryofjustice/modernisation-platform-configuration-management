@@ -1,7 +1,7 @@
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-MONITORED_SERVICES="{{ monitored_services }}"
+MONITORED_SERVICES="{{ collectd_monitored_services | join(' ') }}"
 
 service_status() {
     local SERVICE="$1"
@@ -27,10 +27,10 @@ do
         status=$?
 
         service_name=${service//_}
-        echo "PUTVAL $HOSTNAME/$service_name/bool-$service_name interval=$INTERVAL N:$status"
+        service_name=${service_name//-}
+        echo "PUTVAL $HOSTNAME/$service_name/bool interval=$INTERVAL N:$status"
     done
 done
 
-// FIXME: see whether the bool-$service_name here is even needed?
-// FIXME: amazon-ssm-agent and amazon-cloudwatch-agent services need to be added to the service list
-// FIXME: casing or dashes in the service names need to be handled
+// FIXME: see whether the bool-$service_name here is even needed? Probably not but let's try it out
+// FIXME: test the monitored_services.sh.j2 script can handle amazon-ssm-agent and amazon-cloudwatch-agent services on Rhel6
