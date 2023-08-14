@@ -26,7 +26,7 @@
 - name: Download archives from S3 bucket into /u01/archives
   amazon.aws.aws_s3:
     bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "/weblogic-software{{ item }}"
+    object: "oasys-bip{{ item }}"
     dest: "/u01/archives/{{ item.split('/')[1:] | join('_') }}"
     mode: get
     overwrite: latest

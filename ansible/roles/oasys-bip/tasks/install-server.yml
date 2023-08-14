@@ -9,6 +9,7 @@
   loop:
     - /u01/software/weblogic
     - /u01/software/tmp
+    - /u01/app
 
 - name: Check if weblogic server already installed
   ansible.builtin.stat:
@@ -20,7 +21,7 @@
     - name: Get weblogic install jar from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "weblogic-software{{ item }}"
+        object: "oasys-bip{{ item }}"
         dest: "{{ item }}"
         mode: get
         overwrite: latest

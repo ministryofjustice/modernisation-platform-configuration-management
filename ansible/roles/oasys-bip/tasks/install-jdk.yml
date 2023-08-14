@@ -16,7 +16,7 @@
     - name: Get jdk rpm binary from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "weblogic-software{{ item }}"
+        object: "oasys-bip{{ item }}"
         dest: "{{ item }}"
         mode: get
         overwrite: latest
