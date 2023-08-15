@@ -6,16 +6,18 @@
   ignore_errors: true
 
 - block: # when selinux mode is 'Enforcing'
-    - name: make sure collectd has run for 3 minutes to capture all the errors
+    - name: make sure collectd has run for 5 minutes to capture all the errors
       pause:
         minutes: 5 # may need to be extended if this doesn't allow enough time for all issues to be captured
-      when: ansible_distribution_major_version != '7' # run this on everything apart from RHEL 7 for now
+      when: ansible_distribution_major_version == '6' # run this on everything apart from RHEL 7 for now
 
     # also checks if there's a policy to enforce, if not then no subsequent tasks will run
     - name: capture selinux AVC rules from audit log around collectd
       ansible.builtin.shell: |
         result=$(grep 'AVC.*collectd\|collectd.*AVC' /var/log/audit/audit.log)
-        if [[ $result ]]; then
+        if [[ -z "$result" ]] || [[ "$result" != *"Nothing to do"* ]]; then
+          echo "No selinux AVC rules found for collectd"
+        else
           echo "$result" | audit2allow -m collectd_selinux_policy > /opt/collectd/collectd_selinux_policy.te
         fi
       become: true
@@ -30,6 +32,14 @@
       become: true
       when: ansible_distribution_major_version == '7' # run this on RHEL 7 only
 
+    - name: provide pre-built selinux policy file for Rhel 8
+      ansible.builtin.copy:
+        src: collectd_selinux_policy_rhel_8.te
+        dest: /opt/collectd/collectd_selinux_policy.te
+        mode: 0644
+      become: true
+      when: ansible_distribution_major_version == '8' # run this on RHEL 8 only
+
     - name: check if selinux policy file exists
       become: true
       ansible.builtin.stat:
@@ -43,12 +53,12 @@
       become: true
       when: te_file.stat.exists
 
-    - name: Check if .pp file exists (RHEL 7+)
+    - name: Check if .pp file exists
       stat:
         path: /opt/collectd/collectd_selinux_policy.pp
       register: pp_file
 
-    - name: Load .pp policy (RHEL 6 or 7+)
+    - name: Load .pp policy
       ansible.builtin.shell: |
         semodule -i /opt/collectd/collectd_selinux_policy.pp
       become: true

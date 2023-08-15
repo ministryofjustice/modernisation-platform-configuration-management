@@ -28,12 +28,22 @@
     oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
   when: ec2.tags['oracle-sids'] is defined
 
-- name: copy heartbeat config file to /etc/collectd.d
-  ansible.builtin.copy:
-    src: collectd_heartbeat.conf
-    dest: /etc/collectd.d/collectd_heartbeat.conf
-    owner: root
-    mode: 0644
+- name: get the monitored_services
+  set_fact:
+    monitored_services: '{{ collectd_monitored_services.split() | default([]) | join(" ") }}'
+  when: collectd_monitored_services is defined
+
+- name: debug
+  ansible.builtin.debug:
+    msg: "{{ monitored_services }}"
+
+# FIXME: delete this as a duplicate of the above
+# - name: copy heartbeat config file to /etc/collectd.d
+#   ansible.builtin.copy:
+#     src: monitored_services.conf
+#     dest: /etc/collectd.d/monitored_services.conf
+#     owner: root
+#     mode: 0644
 
   # FIXME: this is gonna be moved into the setup scripts/role
   # copy collectd plugin definitions into /etc/collectd.d/ directory referenced in collectd.conf
@@ -45,7 +55,7 @@
     mode: 0644
   loop: 
     - monitored_services
-    - nomis_db # this will be removed in DSOS-2092
+    # - nomis_db # this will be removed in DSOS-2092 FIXME: put this back later
   loop_control:
     label: item
 
@@ -57,7 +67,7 @@
     mode: 0755
   loop:
     - monitored_services
-    - nomis_db # this will be removed in DSOS-2092
+    # - nomis_db # this will be removed in DSOS-2092 FIXME: put this back later
   loop_control:
     label: item
 

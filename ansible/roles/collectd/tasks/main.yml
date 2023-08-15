@@ -5,7 +5,7 @@
     - ec2patch
   when: ansible_facts['distribution'] == "RedHat"
 
-- import_tasks: collectd_basic_configure.yml
+- import_tasks: collectd_configure.yml
   tags:
     - ec2provision
     - ec2patch

@@ -1,7 +1,9 @@
+#!/bin/bash
+
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-MONITORED_SERVICES="{{ collectd_monitored_services | join(' ') }}"
+MONITORED_SERVICES="{{ monitored_services }}"
 
 service_status() {
     local SERVICE="$1"
@@ -15,13 +17,13 @@ service_status() {
         return 1
     fi
     {% else %}
-    systemctl is-active --quiet $SERVICE
+        systemctl is-active --quiet $SERVICE
     {% endif %}
 }
 
 while sleep "$INTERVAL"
 do
-    for service in ${LINUX_SERVICE_LIST}
+    for service in ${MONITORED_SERVICES}
     do
         service_status "$service" 
         status=$?
@@ -32,5 +34,4 @@ do
     done
 done
 
-// FIXME: see whether the bool-$service_name here is even needed? Probably not but let's try it out
-// FIXME: test the monitored_services.sh.j2 script can handle amazon-ssm-agent and amazon-cloudwatch-agent services on Rhel6
+# FIXME: test this script can handle amazon-ssm-agent and amazon-cloudwatch-agent services on Rhel6

@@ -1,10 +1,20 @@
 ---
 - name: is collectd installed
-  ansible.builtin.command: yum list | grep collectd
-  register: collectd_installed
+  ansible.builtin.yum:
+    list: collectd
+    state: present
+  register: collectd_installed_state
   check_mode: no
-  changed_when: false
+  # changed_when: false
   ignore_errors: true
+
+- name: set fact for collectd installed or not
+  set_fact:
+    collectd_installed: "{{ collectd_installed_state.results is defined and collectd_installed_state.results | length > 0 and 'installed' in collectd_installed_state.results[0].yumstate }}"
+
+- name: debug collectd_installed
+  ansible.builtin.debug:
+    msg: "{{ collectd_installed }}"
 
 - name: Ensure the EPEL repository is available on Rhel 7
   block:
@@ -26,7 +36,7 @@
         name: collectd
         state: installed
 
-  when: (ansible_distribution_major_version == '7') and (collectd_installed != 0)
+  when: (ansible_distribution_major_version == '7') and (not collectd_installed)
 
 - name: Ensure the EPEL repository is available on Rhel 6
   block:
@@ -49,7 +59,7 @@
       ansible.builtin.shell: |
         yum install -y collectd
 
-  when: (ansible_distribution_major_version == '6') and (collectd_installed != 0)
+  when: (ansible_distribution_major_version == '6') and (not collectd_installed)
 
 - name: Ensure the EPEL repository is available on Rhel 8.7
   block:
@@ -66,9 +76,9 @@
         yum install -y epel-release-8-15.el8.noarch.rpm
       when: epel_release_installed is failed
 
-    # using shell as yum module doesn't run on Rhel6 due to old python version
     - name: Install collectd agent
-      ansible.builtin.shell: |
-        yum install -y collectd
+      ansible.builtin.dnf:
+        name: collectd
+        state: installed
 
-  when: (ansible_distribution_version == '8.7') and (collectd_installed != 0)
+  when: ansible_distribution_major_version >= "8" and not collectd_installed
