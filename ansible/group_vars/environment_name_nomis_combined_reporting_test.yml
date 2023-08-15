@@ -9,6 +9,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+rman_backup_script: rman_backup.sh
 
 db_configs:
   T1BIPSYS:
