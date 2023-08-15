@@ -28,6 +28,24 @@
   changed_when: false
   register: db_release_status
 
+- name: APP - Copy script to deploy release on application server
+  ansible.builtin.template:
+    src: "tag_release_deployment.sh.j2"
+    dest: "{{ stage }}/tag_release_deployment.sh"
+    mode: 0700
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+  when: app_server_file.stat.exists
+
+- name: APP - Copy script to compile single form
+  ansible.builtin.template:
+    src: "compform.sh.j2"
+    dest: "/u01/tag/utils/scripts/compform.sh"
+    mode: 0700
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+  when: app_server_file.stat.exists
+
 - name: Deploy release {{ nomis_release.name }} on database server
   block:
     - name: Download {{ nomis_release.name }} release on db server
