@@ -9,15 +9,27 @@ service_status() {
     local SERVICE="$1"
     {% if ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == '6' %}
     # RHEL6 service check
-    service_status=$(sudo service $SERVICE status | grep "running")
-    if [[ $service_status ]]
+    if [[ $SERVICE == "amazon-ssm-agent" ]] || [[ $SERVICE == "amazon-cloudwatch-agent" ]]
     then
-        return 0
+        service_status=$(sudo status $SERVICE | grep "running")
+        if [[ $service_status ]]
+        then
+            return 0
+        else
+            return 1
+        fi
     else
-        return 1
+        service_status=$(sudo service $SERVICE status | grep "running")
+        if [[ $service_status ]]
+        then
+            return 0
+        else
+            return 1
+        fi
     fi
     {% else %}
-        systemctl is-active --quiet $SERVICE
+    # RHEL7+ service check
+    systemctl is-active --quiet $SERVICE
     {% endif %}
 }
 

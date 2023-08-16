@@ -14,7 +14,7 @@
     instance_id: "{{ ansible_ec2_instance_id }}"
 
 # default cloudwatch-agent config file based on OS type (linux or windows)
-# NOTE: windows default config doesn't exist yet
+# NOTE: windows default config doesn't exist, this is being handled in the Windows instance user-data in terraform
 - name: Create OS specific amazon-cloudwatch-agent config file
   ansible.builtin.template:
     src: "{{ ansible_system|lower }}.json.j2"
