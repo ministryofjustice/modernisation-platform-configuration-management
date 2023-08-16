@@ -1,4 +1,12 @@
 ---
+- name: Set parameters to get the hostname
+  set_fact:
+    server_name: '{{ ec2.tags["server-name"] }}'
+
+- name: Set parameters to get the hostname
+  set_fact:
+    env_name: "{{ server_name.split('-') | first }}"
+
 - name: Copy template shell script for adding tns entries
   template:
     src: "add_tns_entry.sh.j2"
@@ -32,4 +40,4 @@
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   loop_control:
     loop_var: tns_config
-  loop: "{{ tns_entries }}"
+  loop: "{{ tns_entries[ env_name ] | list }}"
