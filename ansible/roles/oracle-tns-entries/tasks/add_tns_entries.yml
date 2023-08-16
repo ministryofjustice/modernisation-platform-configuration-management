@@ -1,10 +1,9 @@
 ---
-
-- name: Set parameters to get the hostname 
+- name: Set parameters to get the hostname
   set_fact:
     server_name: '{{ ec2.tags["server-name"] }}'
 
-- name: Set parameters to get the hostname 
+- name: Set parameters to get the hostname
   set_fact:
     env_name: "{{ server_name.split('-') | first }}"
 
