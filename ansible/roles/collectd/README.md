@@ -1,8 +1,3 @@
-<!-- 
-FIXME: readme needs an extensive re-write
-
--->
-
 # Collectd
 
 Installs collectd and configures it based on the values in group_vars `collectd_metric_configs` variable. See server_type_nomis_db for an example.
@@ -25,13 +20,6 @@ collectd_metric_configs:
     
 3. files/linux.conf and templates/linux.sh.j2 are deployed to the host by default if additional collectd_metric_configs are not defined
 
-## Collectd and Selinux
-
-There is an additional task specifically to create a selinux policy for collectd. This is because collectd runs scripts via the exec plugin and selinux will block this by default. 
-
-Having loging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
-
-setting semanage to permissively allow collectd to run scripts is also required. This is done by the task `collectd_configure : set selinux to permissive for collectd`
 
 ## Debugging Collectd
 
@@ -48,3 +36,31 @@ Further collectd Troubleshooting [here](https://collectd.org/wiki/index.php/Trou
 1. *.conf files must have an empty line at the end to load, otherwise collectd won't start...
 
 2. formatting for the exec message (sent to localhost udp port 25826) is very important. It MUST be in the format "PUTVAL $HOSTNAME/exec-<name_of_metric>/guage-$signifier. Values after exec- and guage- (or other value type) cannot use additional '-' characters or spaces otherwise the exec plugin will deliver a mal-formed message. 
+
+## Collectd and Selinux
+
+There is an additional task specifically to create a selinux policy for collectd. This is because collectd runs scripts via the exec plugin and selinux will block this by default. 
+
+Having loging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
+
+There are selinux exceptions for collectd when it comes to Rhel 7 & 8. It _seems_ this isn't needed for Rhel 6 but there is an existing task to automatically scan the audit.log for issues and then create a policy file. 
+
+### Some useful selinux commands for troubleshooting
+
+`ls -Z /file/path` will tell you the selinux context of a file, this is useful to understand what context a file needs to be in to be accessed by a particular process
+
+Once you have found an AVC denial message in /var/log/audit/audit.log you can use the audit2allow command to create a policy file to allow the process to access the file.
+
+`echo 'denial message' | audit2allow -M <name_of_policy_file>` this will create a *.te file and a *.pp file which you can add to the selinux policy by running `semodule -i <name_of_policy_file>.pp` directly. NOTE: that there are permissions issues with running this in certain directories so you may need to run this command in /usr/tmp or similar.
+
+If/when there are additional instances of this please add the settings back to the relevant collectd_selinux_policy_rhel_(version).te file and re-run the ansible task to create the policy file.
+
+At some point we may simply decide to place the whole collectd_t domain into permissive mode.
+
+```
+- name: change the collectd_t domain to permissive
+  community.general.selinux_permissive:
+    type: collectd_t
+    permissive: true
+```
+
