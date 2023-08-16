@@ -5,13 +5,13 @@ rman_backup_monitoring_script: "rman_backup_monitoring.sh"
 rman_backup_cron:
   - name: rman_backup_weekly
     weekday: "0"
-    minute: "00"
-    hour: "05"
+    minute: "30"
+    hour: "07"
     job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -i 0 -f S3' 2>&1 | logger -p local3.info -t rman-backup"
   - name: rman_backup_daily
     weekday: "1-6"
-    minute: "00"
-    hour: "05"
+    minute: "30"
+    hour: "07"
     job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -i 1 -f S3' 2>&1 | logger -p local3.info -t rman-backup"
   - name: rman_backup_monitoring
     weekday: "*"
