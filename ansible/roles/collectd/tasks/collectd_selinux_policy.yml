@@ -6,6 +6,13 @@
   ignore_errors: true
 
 - block: # when selinux mode is 'Enforcing'
+    - name: create folder for selinux policy file
+      ansible.builtin.file:
+        path: /opt/selinux
+        state: directory
+        mode: 0755
+      become: true
+
     - name: make sure collectd has run for 5 minutes to capture all the errors
       pause:
         minutes: 5 # may need to be extended if this doesn't allow enough time for all issues to be captured
@@ -18,16 +25,16 @@
         if [[ -z "$result" ]] || [[ "$result" != *"Nothing to do"* ]]; then
           echo "No selinux AVC rules found for collectd"
         else
-          echo "$result" | audit2allow -m collectd_selinux_policy > /opt/collectd/collectd_selinux_policy.te
+          echo "$result" | audit2allow -m collectd_selinux_policy > /opt/selinux/collectd_selinux_policy.te
         fi
       become: true
       changed_when: false # don't want to fail if no selinux AVC rules are found for collectd
-      when: ansible_distribution_major_version != '7' # run this on everything apart from RHEL 7 for now
+      when: ansible_distribution_major_version == '6' # run this on everything apart from RHEL 7 for now
 
     - name: provide pre-built selinux policy file for Rhel 7
       copy:
         src: collectd_selinux_policy_rhel_7.te
-        dest: /opt/collectd/collectd_selinux_policy.te
+        dest: /opt/selinux/collectd_selinux_policy.te
         mode: 0644
       become: true
       when: ansible_distribution_major_version == '7' # run this on RHEL 7 only
@@ -35,7 +42,7 @@
     - name: provide pre-built selinux policy file for Rhel 8
       ansible.builtin.copy:
         src: collectd_selinux_policy_rhel_8.te
-        dest: /opt/collectd/collectd_selinux_policy.te
+        dest: /opt/selinux/collectd_selinux_policy.te
         mode: 0644
       become: true
       when: ansible_distribution_major_version == '8' # run this on RHEL 8 only
@@ -43,24 +50,24 @@
     - name: check if selinux policy file exists
       become: true
       ansible.builtin.stat:
-        path: /opt/collectd/collectd_selinux_policy.te
+        path: /opt/selinux/collectd_selinux_policy.te
       register: te_file
 
     - name: convert and compile .te policy to .pp policy
       ansible.builtin.shell: |
-        checkmodule -M -m -o /opt/collectd/collectd_selinux_policy.mod /opt/collectd/collectd_selinux_policy.te
-        semodule_package -o /opt/collectd/collectd_selinux_policy.pp -m /opt/collectd/collectd_selinux_policy.mod
+        checkmodule -M -m -o /opt/selinux/collectd_selinux_policy.mod /opt/selinux/collectd_selinux_policy.te
+        semodule_package -o /opt/selinux/collectd_selinux_policy.pp -m /opt/selinux/collectd_selinux_policy.mod
       become: true
       when: te_file.stat.exists
 
     - name: Check if .pp file exists
       stat:
-        path: /opt/collectd/collectd_selinux_policy.pp
+        path: /opt/selinux/collectd_selinux_policy.pp
       register: pp_file
 
     - name: Load .pp policy
       ansible.builtin.shell: |
-        semodule -i /opt/collectd/collectd_selinux_policy.pp
+        semodule -i /opt/selinux/collectd_selinux_policy.pp
       become: true
       when: pp_file.stat.exists
       notify: restart collectd

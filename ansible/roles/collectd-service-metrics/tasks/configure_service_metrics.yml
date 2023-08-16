@@ -1,7 +1,7 @@
 ---
 - name: get the monitored_services
   set_fact:
-    monitored_services: '{{ collectd_monitored_services.split() | default([]) | join(" ") }}'
+    monitored_services: '{{ collectd_monitored_services | default([]) | join(" ") }}'
   when: collectd_monitored_services is defined
 
 - name: debug

@@ -1,21 +1,4 @@
 ---
-# FIXME: this check might or might not be needed elsewhere
-# Some configs rely on whether collectd is installed or not
-# - name: Check if collectd has been installed
-#   ansible.builtin.shell: |
-#     check_installed() {
-#       check="$(rpm -qa | grep collectd)"
-#       if [[ $check ]]
-#       then 
-#         return 0
-#       else 
-#         return 1
-#       fi
-#     }
-#     check_installed
-#   ignore_errors: true
-#   register: collectd_installed
-
 - name: Create amazon-cloudwatch-agent config directory
   ansible.builtin.file:
     path: "{{ amazon_cloudwatch_agent_config_path }}"
@@ -39,16 +22,6 @@
     owner: root
     group: root
     mode: 0755
-
-# FIXME: this needs to exist elsewhere as part of setting up collectd
-# - name: Create amazon-cloudwatch-agent config file for collectd
-#   ansible.builtin.template:
-#     src: agent_config_collectd.json.j2
-#     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_collectd_config_file }}"
-#     owner: root
-#     group: root
-#     mode: 0755
-#   when: collectd_installed.rc == 0
 
 # additional settings for EC2 instances if they exist
 - name: template config files
