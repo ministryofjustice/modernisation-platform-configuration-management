@@ -392,6 +392,8 @@ do
     else
       info "Backup of $TARGET_DB completed successfully"
       echo "$TARGET_DB,$(date +%s),1,$(date),Success" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+      find /home/oracle/admin/rman_scripts/logs -name "*cmd" -mtime +15 -exec rm {} \;
+      find /home/oracle/admin/rman_scripts/logs -name "*log" -mtime +15 -exec rm {} \;
     fi
   ); then
     exitcode=1
