@@ -1,7 +1,7 @@
 ---
 - name: Template main collect.conf file
-  ansible.builtin.template:
-    src: collectd.conf.j2
+  ansible.builtin.copy:
+    src: collectd.conf
     dest: "/etc/collectd.conf"
     owner: root
     mode: 0644
@@ -13,66 +13,8 @@
     owner: root
     mode: 0644
 
-- name: create folder for exec script to collect metrics
-  ansible.builtin.file:
-    path: "/opt/collectd"
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-# FIXME: this is required elsewhere, to specifically set up oracle monitoring elsewhere
-# get tag values for use in script nomis_db.sh.j2 template - will be moved in DSOS-2092
-- name: Get oracle database sids for monitoring as a list from the oracle-sids tag
-  set_fact:
-    oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
-  when: ec2.tags['oracle-sids'] is defined
-
-- name: get the monitored_services
-  set_fact:
-    monitored_services: '{{ collectd_monitored_services.split() | default([]) | join(" ") }}'
-  when: collectd_monitored_services is defined
-
-- name: debug
-  ansible.builtin.debug:
-    msg: "{{ monitored_services }}"
-
-# FIXME: delete this as a duplicate of the above
-# - name: copy heartbeat config file to /etc/collectd.d
-#   ansible.builtin.copy:
-#     src: monitored_services.conf
-#     dest: /etc/collectd.d/monitored_services.conf
-#     owner: root
-#     mode: 0644
-
-  # FIXME: this is gonna be moved into the setup scripts/role
-  # copy collectd plugin definitions into /etc/collectd.d/ directory referenced in collectd.conf
-- name: copy plugin files
-  ansible.builtin.copy:
-    src: "{{ item|replace('-', '_') }}.conf"
-    dest: "/etc/collectd.d/{{ item|replace('-', '_') }}.conf"
-    owner: root
-    mode: 0644
-  loop: 
-    - monitored_services
-    # - nomis_db # this will be removed in DSOS-2092 FIXME: put this back later
-  loop_control:
-    label: item
-
-- name: template config files
-  ansible.builtin.template:
-    src: "{{ item|replace('-', '_') }}.sh.j2"
-    dest: "/opt/collectd/{{ item|replace('-', '_') }}.sh"
-    owner: root
-    mode: 0755
-  loop:
-    - monitored_services
-    # - nomis_db # this will be removed in DSOS-2092 FIXME: put this back later
-  loop_control:
-    label: item
-
-- name: Start collectd service
-  ansible.builtin.service:
-    name: collectd
-    state: started
-    enabled: yes
+# - name: Start collectd service
+#   ansible.builtin.service:
+#     name: collectd
+#     state: started
+#     enabled: yes

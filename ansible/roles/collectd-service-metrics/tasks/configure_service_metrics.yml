@@ -1,0 +1,68 @@
+---
+- name: get the monitored_services
+  set_fact:
+    monitored_services: '{{ collectd_monitored_services.split() | default([]) | join(" ") }}'
+  when: collectd_monitored_services is defined
+
+- name: debug
+  ansible.builtin.debug:
+    msg: "{{ monitored_services }}"
+
+- name: create folder for exec script to collect metrics
+  ansible.builtin.file:
+    path: "/opt/collectd"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: copy plugin files
+  ansible.builtin.copy:
+    src: "{{ item }}.conf"
+    dest: "/etc/collectd.d/{{ item }}.conf"
+    owner: root
+    mode: 0644
+  loop: 
+    - monitored_services
+  loop_control:
+    label: item
+
+- name: template config files
+  ansible.builtin.template:
+    src: "{{ item }}.sh.j2"
+    dest: "/opt/collectd/{{ item }}.sh"
+    owner: root
+    mode: 0755
+  loop:
+    - monitored_services
+  loop_control:
+    label: item
+
+- block: # FIXME: this will be removed in DSOS-2092 
+    - name: Get oracle database sids for monitoring as a list from the oracle-sids tag
+      set_fact:
+        oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
+    
+    - name: copy plugin files
+      ansible.builtin.copy:
+        src: "{{ item }}.conf"
+        dest: "/etc/collectd.d/{{ item }}.conf"
+        owner: root
+        mode: 0644
+      loop: 
+        - nomis_db 
+      loop_control:
+        label: item
+
+    - name: template config files
+      ansible.builtin.template:
+        src: "{{ item }}.sh.j2"
+        dest: "/opt/collectd/{{ item }}.sh"
+        owner: root
+        mode: 0755
+      loop:
+        - nomis_db 
+      loop_control:
+        label: item
+  # block  
+  when: ec2.tags['oracle-sids'] is defined
