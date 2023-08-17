@@ -56,9 +56,6 @@ server_type_roles_list:
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
-database_home: /u01/app/oracle/product/19c/db_1
-
-rman_backup_script: rman_backup.sh
 db_configs:
   T3IWFM:
     db_name: T3IWFM
@@ -70,3 +67,10 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: IWFM_TAF, role: PRIMARY }
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/19c/db_1
+grid_home: /u01/app/oracle/product/19c/gridhome_1

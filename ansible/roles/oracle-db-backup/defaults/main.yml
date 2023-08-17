@@ -1,32 +1,12 @@
 ---
 # scheduled backups go directly to S3
-rman_backup_script: "" # define elsewhere, e.g. in group vars, e.g. rman_backup.sh
+# rman_backup_script: "" # define elsewhere, e.g. in group vars, e.g. rman_backup.sh
 rman_backup_monitoring_script: "rman_backup_monitoring.sh"
-rman_backup_cron:
-  - name: rman_backup_weekly
-    weekday: "0"
-    minute: "30"
-    hour: "07"
-    job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -i 0 -f S3' 2>&1 | logger -p local3.info -t rman-backup"
-  - name: rman_backup_daily
-    weekday: "1-6"
-    minute: "30"
-    hour: "07"
-    job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -i 1 -f S3' 2>&1 | logger -p local3.info -t rman-backup"
-  - name: rman_backup_monitoring
-    weekday: "*"
-    minute: "30"
-    hour: "*"
-    job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
+catalog_parameter: ""
+recovery_catalog_defined_check: 0
 
 # adhoc backups to file and then S3 (consistent with ansible-monorepo rman-backup role)
 rman_adhoc_backup_control: "rman,s3,clean"
 rman_backup_location: /u02/DB_BKP
 adhoc_backup_label: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}T{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}"
 adhoc_backup_for: "HA"
-
-database_home: /u01/app/oracle/product/11.2.0.4/db_1
-oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
-db_env:
-  ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_path }}"

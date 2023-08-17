@@ -1,6 +1,5 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
-database_home: /u01/app/oracle/product/11.2.0.4/db_1
 collectd_metric_configs:
   - nomis-db
 server_type_roles_list:
@@ -18,3 +17,10 @@ server_type_roles_list:
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/11.2.0.4/db_1
+grid_home: /u01/app/oracle/product/11.2.0.4/gridhome_1

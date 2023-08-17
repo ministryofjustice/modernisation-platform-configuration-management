@@ -6,11 +6,37 @@ dns_zone_internal: nomis.hmpps-test.modernisation-platform.internal
 dns_search_domains:
   - azure.noms.root
 
+# OEM server
 OMS_SERVER: oem.test.nomis.service.justice.gov.uk
 OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  monitoring:
+    - name: rman_backup_monitoring
+      weekday: "*"
+      minute: "30"
+      hour: "*"
+      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
+
+# syscon production web release details
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.214
 
-rman_backup_script: rman_backup.sh
 db_configs:
   T1CNOM:
     db_name: T1CNOM
