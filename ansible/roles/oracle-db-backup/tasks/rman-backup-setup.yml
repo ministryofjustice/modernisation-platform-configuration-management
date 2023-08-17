@@ -45,7 +45,7 @@
     job: "su oracle -c '{{ backup_command }} 0' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_0 | list }}"
 
-- name: setup rman database backup level 0
+- name: setup rman database backup level 1
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
@@ -55,7 +55,7 @@
     job: "su oracle -c '{{ backup_command }} 1' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_1 | list }}"
 
-- name: setup rman backup root cron
+- name: setup rman backup monitoring job 
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
