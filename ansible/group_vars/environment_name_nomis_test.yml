@@ -6,11 +6,18 @@ dns_zone_internal: nomis.hmpps-test.modernisation-platform.internal
 dns_search_domains:
   - azure.noms.root
 
+# OEM server
 OMS_SERVER: oem.test.nomis.service.justice.gov.uk
 OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+
+# syscon production web release details
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.214
 
-rman_backup_script: rman_backup.sh
 db_configs:
   T1CNOM:
     db_name: T1CNOM

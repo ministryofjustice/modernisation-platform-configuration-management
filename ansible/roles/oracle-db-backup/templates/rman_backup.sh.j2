@@ -13,7 +13,6 @@ typeset -u CATALOG_DB
 typeset -u TARGET_DB
 typeset -u BACKUP_TYPE
 typeset -u CATALOGMODE
-typeset RCATOWNER_PASSWORD
 typeset -i LEVEL
 
 export TIMESTAMP=$(date +"%Y%m%d%H%M")
@@ -126,7 +125,9 @@ validate () {
                        then
                          error "Catalog mode is $CATALOGMODE, specify catalog db"
                        else
-                         CATALOG_CONNECT=rcatowner/$RCATOWNER_PASSWORD@$CATALOG_DB
+			                   RCATOWNER=`aws ssm get-parameter --name "/database/recovery-catalog-owner/username" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+			                   RCATOWNER_PASSWORD=`aws ssm get-parameter --name "/database/recovery-catalog-owner/password" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+                         CATALOG_CONNECT=$RCATOWNER/$RCATOWNER_PASSWORD@$CATALOG_DB
                        fi
                      fi
                      ;;

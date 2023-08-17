@@ -9,7 +9,15 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+
+# OEM server
+OMS_SERVER: oem.test.nomis.service.justice.gov.uk
+OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
 rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
 
 db_configs:
   T1BIPSYS:
