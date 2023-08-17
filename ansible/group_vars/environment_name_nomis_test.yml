@@ -34,7 +34,6 @@ rman_backup_cron:
       hour: "*"
       job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
-
 # syscon production web release details
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.214
 

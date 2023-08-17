@@ -1,16 +1,16 @@
 ---
 - name: Verify recovery catalog usage defined for oracle database backup
-  ansible.builtin.set_fact: 
+  ansible.builtin.set_fact:
     recovery_catalog_defined_check: 1
   when: recovery_catalog is defined
 
 - name: Set catalog parameters if recovery catalog defined
-  ansible.builtin.set_fact: 
+  ansible.builtin.set_fact:
     catalog_parameter: "-n Y -c RCVCAT"
   when: recovery_catalog_defined_check == 1 and recovery_catalog == 1
 
 - name: Generate backup command parameters for scheduler
-  ansible.builtin.set_fact: 
+  ansible.builtin.set_fact:
     backup_command: "/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -f S3 {{ catalog_parameter }} -i "
 
 - name: create script directory
@@ -35,7 +35,7 @@
     - "{{ rman_backup_script }}"
     - "{{ rman_backup_monitoring_script }}"
 
-- name: setup rman database backup level 0 
+- name: setup rman database backup level 0
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
@@ -45,7 +45,7 @@
     job: "su oracle -c '{{ backup_command }} 0' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_0 | list }}"
 
-- name: setup rman database backup level 0 
+- name: setup rman database backup level 0
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
