@@ -14,14 +14,9 @@
      )
 {% else %}
     (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[0] }}")(PORT = "{{ tns_entry.port }}"))
-    (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[1] }}")(PORT = "{{ tns_entry.port }}"))
-    (FAILOVER = YES)
     (CONNECT_DATA =
+       (SERVER = DEDICATED)
        (SERVICE_NAME = "{{ tns_entry.service_name }})"
-        (FAILOVER_MODE =
-        (TYPE = SELECT)
-        (METHOD = BASIC)
-       )
      )
 {% endif %}
   )
