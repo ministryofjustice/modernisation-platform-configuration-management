@@ -1,5 +1,7 @@
 ---
 # dns_zone_internal: set in environment specific group_vars
 
+dns_search_interface: "{{ ansible_facts.default_ipv4.interface|default(eth0) }}"
+
 # optionally add additional search domains
 dns_search_domains: []
