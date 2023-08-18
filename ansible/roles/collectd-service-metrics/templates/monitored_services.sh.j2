@@ -19,7 +19,7 @@ service_status() {
             return 1
         fi
     else
-        service_status=$(sudo service $SERVICE status | grep "running")
+        service_status=$(sudo service $SERVICE status | grep -E "running|OK")
         if [[ $service_status ]]
         then
             return 0
