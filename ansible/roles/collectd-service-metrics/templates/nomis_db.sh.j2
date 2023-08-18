@@ -15,7 +15,6 @@ INTERVAL="{{ collectd_script_interval }}"
 ORACLE_SID_LIST="{{ oracle_sid_list }}"
 ORACLE_BATCH_ERROR_FILE="{{ oracle_batch_error_file }}"
 ORACLE_BATCH_STATUSES="{{ oracle_batch_statuses }}"
-ORACLE_SERVICE_LIST="{{ service_list_oracle }}"
 
 db_connected() {
     # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
@@ -64,11 +63,6 @@ batch_status() {
     fi
 }
 
-service_status() {
-    local SERVICE="$1"
-    systemctl is-active --quiet $SERVICE 
-}
-
 while sleep "$INTERVAL"
 do
     for SID in ${ORACLE_SID_LIST}
@@ -98,14 +92,5 @@ do
     else
         echo "PUTVAL $HOSTNAME/exec-oracle_batch_monitoring_file_missing/bool interval=$INTERVAL N:1"
     fi
-
-    for service in ${ORACLE_SERVICE_LIST}
-    do
-        service_status "$service"
-        status=$?
-
-        service_name=${service//-/_}
-        echo "PUTVAL $HOSTNAME/exec-${service_name}/bool interval=$INTERVAL N:$status"
-    done
 
 done

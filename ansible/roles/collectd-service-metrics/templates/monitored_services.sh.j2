@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Templated in from ansible
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="{{ collectd_script_interval }}"
+MONITORED_SERVICES="{{ monitored_services }}"
+
+service_status() {
+    local SERVICE="$1"
+    {% if ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == '6' %}
+    # RHEL6 service check
+    if [[ $SERVICE == "amazon-ssm-agent" ]] || [[ $SERVICE == "amazon-cloudwatch-agent" ]]
+    then
+        service_status=$(sudo status $SERVICE | grep "running")
+        if [[ $service_status ]]
+        then
+            return 0
+        else
+            return 1
+        fi
+    else
+        service_status=$(sudo service $SERVICE status | grep "running")
+        if [[ $service_status ]]
+        then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    {% else %}
+    # RHEL7+ service check
+    systemctl is-active --quiet $SERVICE
+    {% endif %}
+}
+
+while sleep "$INTERVAL"
+do
+    for service in ${MONITORED_SERVICES}
+    do
+        service_status "$service" 
+        status=$?
+
+        service_name=${service//_}
+        service_name=${service_name//-}
+        echo "PUTVAL $HOSTNAME/$service_name/bool interval=$INTERVAL N:$status"
+    done
+done
+
+# FIXME: test this script can handle amazon-ssm-agent and amazon-cloudwatch-agent services on Rhel6

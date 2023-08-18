@@ -1,0 +1,12 @@
+---
+- name: restart collectd
+  ansible.builtin.service:
+    name: collectd
+    state: restarted
+    enabled: yes
+
+- name: restart amazon-cloudwatch-agent
+  ansible.builtin.service:
+    name: amazon-cloudwatch-agent
+    state: restarted
+    enabled: yes
