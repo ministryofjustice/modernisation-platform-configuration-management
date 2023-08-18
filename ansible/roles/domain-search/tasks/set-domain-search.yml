@@ -9,12 +9,39 @@
     msg: "dns_zone_internal variable must be defined"
   when: dns_zone_internal is not defined
 
-- name: Configure /etc/dhcp/dhclient-eth0.conf
+- name: Fail if search interface not found
+  fail:
+    msg: "dns search interface {{ dns_search_interface }} not found in {{ ansible_facts.interfaces|default('') }}"
+  when: dns_search_interface not in ansible_facts.interfaces
+
+- name: Configure /etc/dhcp/dhclient-{{ dns_search_interface }}.conf
   ansible.builtin.template:
-    src: dhclient-eth0.conf.j2
-    dest: "/etc/dhcp/dhclient-eth0.conf"
+    src: dhclient.conf.j2
+    dest: "/etc/dhcp/dhclient-{{ dns_search_interface }}.conf"
     mode: 0644
     owner: root
   notify:
-    - Restart network
-    - Restart network rhel8
+    - Restart network pre rhel8
+  when: (ansible_distribution in ['redhat', 'oraclelinux']) and (ansible_distribution_major_version in ['5', '6', '7'])
+
+# Cannot get the dhclient approach to work in RHEL8 so unfortunately have to go with this
+- name: Rhel8+
+  block:
+    - name: Configure NetworkManager.conf
+      ansible.builtin.template:
+        src: 90-network-manager-dns.conf.j2
+        dest: /etc/NetworkManager/conf.d/90-network-manager-dns.conf
+        mode: 0644
+        owner: root
+
+    - name: Configure resolve.conf
+      ansible.builtin.template:
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        mode: 0644
+        owner: root
+      notify:
+        - Restart network rhel8+
+
+  # block
+  when: (ansible_distribution in ['RedHat', 'OracleLinux']) and (ansible_distribution_major_version not in ['5', '6', '7'])
