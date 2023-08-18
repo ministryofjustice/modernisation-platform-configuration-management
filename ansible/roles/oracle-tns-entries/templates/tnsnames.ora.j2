@@ -1,0 +1,28 @@
+{% for tns_entry in tns_entries -%}
+"{{ tns_entry.name }}" =
+  (DESCRIPTION =
+{% if tns_entry.host_list|length == 2 %}
+    (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[0] }}")(PORT = 1521))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[1] }}")(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+       (SERVICE_NAME = "{{ tns_entry.service_name }})"
+        (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+       )
+     )
+{% else %}
+    (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[0] }}")(PORT = 1521))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = "{{ tns_entry.host_list[1] }}")(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+       (SERVICE_NAME = "{{ tns_entry.service_name }})"
+        (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+       )
+     )
+{% endif %}
+  )
+{% endfor %}

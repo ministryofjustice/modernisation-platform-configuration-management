@@ -7,13 +7,21 @@
   set_fact:
     env_name: "{{ server_name.split('-') | first }}"
 
-- name: Copy template shell script for adding tns entries
-  template:
-    src: "add_tns_entry.sh.j2"
-    dest: "{{ stage }}/add_tns_entry.sh"
-    mode: u=rwx,g=r,o=r
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
+- name: Create stage directories
+  ansible.builtin.file:
+    owner: oracle
+    group: oinstall
+    path: "{{ stage }}"
+    state: directory
+    mode: "0755"
+
+# - name: Copy template shell script for adding tns entries
+#   ansible.builtin.template:
+#     src: "add_tns_entry.sh.j2"
+#     dest: "{{ stage }}/add_tns_entry.sh"
+#     mode: u=rwx,g=r,o=r
+#     owner: "{{ oracle_install_user }}"
+#     group: "{{ oracle_install_group }}"
 
 - name: Check tnsnames.ora file exists
   ansible.builtin.stat:
@@ -23,21 +31,31 @@
 - name: Backup tnsnames.ora file before making changes
   ansible.builtin.copy:
     src: "{{ oracle_home }}/network/admin/tnsnames.ora"
-    dest: "{{ stage }}/tnsnames.ora_BKP"
+    dest: "{{ stage }}/tnsnames.ora_{{ bkpdate }}"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     backup: yes
     remote_src: true
   when: tns_file.stat.exists
 
+# - name: Add TNS entries in tnsnames.ora file
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     main() {
+#       {{ stage }}/add_tns_entry.sh {{ oracle_home }} {{ tns_config.name }} {{ tns_config.host_list }} {{ tns_config.port }} {{ tns_config.service_name }}
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-oracle-client
+#   loop_control:
+#     loop_var: tns_config
+#   loop: "{{ tns_entries[ env_name ] | list }}"
+
 - name: Add TNS entries in tnsnames.ora file
   become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      {{ stage }}/add_tns_entry.sh {{ oracle_home }} {{ tns_config.name }} {{ tns_config.host_list }} {{ tns_config.port }} {{ tns_config.service_name }}
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-client
-  loop_control:
-    loop_var: tns_config
+  ansible.builtin.template:
+    src: "tnsnames.ora.j2"
+    dest: "{{ stage }}/san_test.ora"
+    mode: u=rwx,g=r,o=r
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
   loop: "{{ tns_entries[ env_name ] | list }}"
