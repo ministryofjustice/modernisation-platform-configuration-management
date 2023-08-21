@@ -52,6 +52,8 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle
+  async: 1800
+  poll: 30
 
 - name: Run post install root script
   ansible.builtin.shell: |

@@ -6,5 +6,7 @@
 
 - import_tasks: catalog_db_setup.yml
   tags:
+    - amibuild
+    - ec2provision
     - catalog_db_setup
   when: rcvcat is defined

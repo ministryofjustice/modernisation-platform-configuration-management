@@ -40,7 +40,7 @@
     cmd: aws s3 sync "s3://{{ db_backup_s3_bucket_name }}/{{ s3_db_backup_dir }}" "{{ db_backup_dir }}" --no-progress --exclude "."
   become_user: oracle
   environment:
-    PATH: "{{ oracle_PATH }}:/usr/local/bin/aws" # https://stackoverflow.com/questions/67687211/ansible-aws-cli-not-working-with-command-or-shell-module
+    PATH: "{{ oracle_path }}:/usr/local/bin/aws" # https://stackoverflow.com/questions/67687211/ansible-aws-cli-not-working-with-command-or-shell-module
 
 - name: get list of control files
   ansible.builtin.find:

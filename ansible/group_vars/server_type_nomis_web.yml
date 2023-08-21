@@ -1,14 +1,19 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.6
-collectd_metric_configs:
-  - nomis-web
+
 server_type_roles_list:
   - autoscale-group-hooks
   - set-ec2-hostname
   - domain-search
   - nomis-weblogic
-  - collectd
-  - amazon-cloudwatch-agent
+  - nomis-release-deployment
+  - collectd-service-metrics
   - autoscale-group-hooks-state
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+collectd_monitored_services:
+  - chronyd
+  - amazon-ssm-agent
+  - amazon-cloudwatch-agent
+  - weblogic-healthcheck

@@ -1,4 +1,6 @@
 ---
+artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+artefacts_s3_bucket_path: hmpps/oracle-oem-135
 ssm_parameters_prefix: oem
 oracle_inventory: /u01/app/oraInventory
 app_dir: /u01/app/oracle/product
@@ -8,3 +10,8 @@ oracle_install_group: oinstall
 artefact_dir: /u02
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
+agent_ru_patch: p35437910_135000_Generic.zip
+agent_ru_patch_number: 35437910
+agentpatcher_patch: p33355570_135000_Generic.zip
+agentpatcher_version: 13.9.5.5.0
+agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"

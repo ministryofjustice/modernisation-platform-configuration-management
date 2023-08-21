@@ -1,0 +1,15 @@
+---
+- name: Create amazon-cloudwatch-agent config file to listen for collectd metrics on port 25826
+  ansible.builtin.copy:
+    src: agent_config_collectd.json
+    dest: "{{ amazon_cloudwatch_agent_config_path }}/agent_config_collectd.json"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Append settings for collectd to amazon-cloudwatch-agent config file
+  ansible.builtin.shell: |
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:"{{ amazon_cloudwatch_agent_config_path }}/agent_config_collectd.json"
+  notify:
+    - restart collectd
+    - restart amazon-cloudwatch-agent
