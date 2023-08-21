@@ -1,0 +1,46 @@
+---
+name: example-oidc-test
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/oidc-test-in-cooker.yml'
+  pull_request:
+    branches:
+      - main
+    types: [ opened, edited, reopened, synchronize ]
+    paths:
+      - '.github/workflows/oidc-test-in-cooker.yml'
+env:
+  ACCOUNT_NAME: "cooker-development"
+  ENVIRONMENT_MANAGEMENT: "${{ secrets.modernisation_platform_environments }}"
+jobs:
+  use-oidc-with-aws-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install aws-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip3 install awscli
+
+      - name: Get AWS Account Number
+        run: |
+          ACCOUNT_NUMBER=$(jq -r -e --arg account_name "${ACCOUNT_NAME}" '.account_ids[$account_name]' <<< $ENVIRONMENT_MANAGEMENT)
+          echo "ACCOUNT_NUMBER=${ACCOUNT_NUMBER}" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: "arn:aws:iam::${{ env.ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: List s3 buckets
+        run: |
+          aws s3 ls
