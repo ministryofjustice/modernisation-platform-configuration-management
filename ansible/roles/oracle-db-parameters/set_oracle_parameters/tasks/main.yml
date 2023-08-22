@@ -118,7 +118,6 @@
     - database_parameters['sga_max_size'] is defined
     - (   ( memory_expanded_values['sga_target'] | int ) < ((database_parameters_actual['sga_target']  | int ) - granule_size)
       or  ( memory_expanded_values['sga_target'] | int ) > ((database_parameters_actual['sga_target']  | int ) + granule_size) )
-    - ( memory_expanded_values['sga_target'] | int ) >  ( database_parameters_actual['sga_max_size'] | int )
     - ( memory_expanded_values['sga_target'] | int ) <= ( memory_expanded_values['sga_max_size'] | int )
 
 # Set SGA_MAX_SIZE in SPFILE if it has been changed by more than one granule
