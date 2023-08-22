@@ -1,0 +1,9 @@
+set echo on 
+spool {{ stage }}/SNS_CONFIG_update.log
+
+select ALLOWED_HOST, HOSTNAME from  eor.SNS_CONFIG  where SNS_NAME='DELIUS_RSR';
+update eor.SNS_CONFIG set ALLOWED_HOST='{{ oasys_db_hostname }}'  where SNS_NAME='DELIUS_RSR';
+select ALLOWED_HOST, HOSTNAME from  eor.SNS_CONFIG  where SNS_NAME='DELIUS_RSR';
+
+spool off 
+exit
