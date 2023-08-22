@@ -1,5 +1,4 @@
 ---
-
 - name: Get Current AWR Retention
   script: get_awr_retention.sh
   register: get_awr_retention
@@ -7,6 +6,6 @@
 
 - name: Set AWR Retention if it is Not As Expected
   script: set_awr_retention.sh {{ awr_retention_days }}
-  when:  
-     - awr_retention_days is defined
-     - ( get_awr_retention.stdout | int ) < ( awr_retention_days | int )
+  when:
+    - awr_retention_days is defined
+    - ( get_awr_retention.stdout | int ) < ( awr_retention_days | int )
