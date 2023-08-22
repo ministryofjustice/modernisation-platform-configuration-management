@@ -1,11 +1,10 @@
 ---
-
 - name: Check sqlnet.ora file exists
   ansible.builtin.stat:
     path: "{{ oracle_home }}/network/admin/sqlnet.ora"
   register: sqlnet_file
 
-- name: Copy sqlnet.ora from template 
+- name: Copy sqlnet.ora from template
   become_user: oracle
   ansible.builtin.template:
     src: "sqlnet.ora.j2"

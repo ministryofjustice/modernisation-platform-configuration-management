@@ -1,5 +1,5 @@
 ---
-- name: set fact 
+- name: set fact
   ansible.builtin.set_fact:
     oasys_db_hostname: "{{ ec2.tags['server-name'] }}"
 
@@ -16,22 +16,22 @@
     path: "{{ oracle_home }}/oasys-sns"
   register: sns_directory
 
-- name: Get oasys-sns file from S3 bucket 
+- name: Get oasys-sns file from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
     object: "oasys-sns/oasys-sns.tar"
     dest: "{{ stage }}/oasys-sns.tar"
     mode: get
     permission: public-read
-  when: not sns_directory.stat.exists  
+  when: not sns_directory.stat.exists
 
-- name: Unarchive oracle-sns.tar 
+- name: Unarchive oracle-sns.tar
   become_user: oracle
   ansible.builtin.unarchive:
     src: "{{ stage }}/oasys-sns.tar"
     dest: "{{ oracle_home }}"
     remote_src: yes
-  when: not sns_directory.stat.exists  
+  when: not sns_directory.stat.exists
 
 - name: Copy sns_config_update.sql script template
   become_user: "{{ oracle_install_user }}"
@@ -42,9 +42,9 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
 
-- name: Update oracle SNS_CONFIG table 
+- name: Update oracle SNS_CONFIG table
   become_user: "{{ oracle_install_user }}"
-  ansible.builtin.shell: | 
+  ansible.builtin.shell: |
     set -eo pipefail
     PATH=$PATH:/usr/local/bin
     main() {
