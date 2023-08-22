@@ -4,18 +4,40 @@ db_backup_s3_bucket_name: nomis-db-backup-bucket20220131102905687200000001
 image_builder_s3_bucket_name: ec2-image-builder-nomis20220314103938567000000001
 dns_zone_internal: nomis.hmpps-test.modernisation-platform.internal
 dns_search_domains:
+  - hmpps-oem.hmpps-test.modernisation-platform.internal
   - azure.noms.root
 
-database_home: /u01/app/oracle/product/11.2.0.4/db_1
-oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
-OMS_SERVER: oem.test.nomis.service.justice.gov.uk
+# OEM server
+OMS_SERVER: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0
 
-db_env:
-  ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
-
+# rman details
 rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
+  monitoring:
+    - name: rman_backup_monitoring
+      weekday: "*"
+      minute: "30"
+      hour: "*"
+      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
+
+# syscon production web release details
+PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.214
+
 db_configs:
   T1CNOM:
     db_name: T1CNOM
@@ -24,20 +46,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1CNOM
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: OR_TAF, role: PRIMARY }
-      - { name: NOMIS_TAF, role: PRIMARY }
-      - { name: OLDNOMIS_TAF, role: PRIMARY }
-      - { name: NOMIS_APIRO, role: PRIMARY }
-  T1CNOMS1:
-    db_name: CNOMT1
-    db_unique_name: T1CNOMS1
-    instance_name: T1CNOMS1
-    host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-    port: 1521
-    tns_name: T1CNOMS1
     s3_bucket: nomis-db-backup-bucket20220131102905687200000001
     asm_disk_groups: DATA,FLASH
     service:
@@ -56,17 +64,6 @@ db_configs:
     asm_disk_groups: DATA
     service:
       - { name: NDH_TAF, role: PRIMARY }
-  T1NDHS1:
-    db_name: T1NDH
-    db_unique_name: T1NDHS1
-    instance_name: T1NDHS1
-    host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-    port: 1521
-    tns_name: T1NDHS1
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
-    service:
-      - { name: NDH_TAF, role: PRIMARY }
   T1TRDAT:
     db_name: T1TRDAT
     db_unique_name: T1TRDAT
@@ -74,17 +71,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1TRDAT
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
-    service:
-      - { name: TRDAT_TAF, role: PRIMARY }
-  T1TRDS1:
-    db_name: T1TRDAT
-    db_unique_name: T1TRDS1
-    instance_name: T1TRDS1
-    host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-    port: 1521
-    tns_name: T1TRDS1
     s3_bucket: nomis-db-backup-bucket20220131102905687200000001
     asm_disk_groups: DATA
     service:
@@ -136,20 +122,6 @@ db_configs:
       - { name: NOMIS_TAF, role: PRIMARY }
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO, role: PRIMARY }
-  T2CNOMS1:
-    db_name: T2CNOM
-    db_unique_name: T2CNOMS1
-    instance_name: T2CNOMS1
-    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-    port: 1521
-    tns_name: T2CNOMS1
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: OR_TAF, role: PRIMARY }
-      - { name: NOMIS_TAF, role: PRIMARY }
-      - { name: OLDNOMIS_TAF, role: PRIMARY }
-      - { name: NOMIS_APIRO, role: PRIMARY }
   T2NDH:
     db_name: T2NDH
     db_unique_name: T2NDH
@@ -157,17 +129,6 @@ db_configs:
     host_name: t2-nomis-db-1-a
     port: 1521
     tns_name: T2NDH
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
-    service:
-      - { name: NDH_TAF, role: PRIMARY }
-  T2NDHS1:
-    db_name: T2NDH
-    db_unique_name: T2NDHS1
-    instance_name: T2NDHS1
-    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-    port: 1521
-    tns_name: T2NDHS1
     s3_bucket: nomis-db-backup-bucket20220131102905687200000001
     asm_disk_groups: DATA
     service:
@@ -183,14 +144,164 @@ db_configs:
     asm_disk_groups: DATA
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
-  T2TRDS1:
-    db_name: T2TRDAT
-    db_unique_name: T2TRDS1
-    instance_name: T2TRDS1
-    host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-    port: 1521
-    tns_name: T2TRDS1
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
-    service:
-      - { name: TRDAT_TAF, role: PRIMARY }
+  # T2CNOMS1:
+  #   db_name: T2CNOM
+  #   db_unique_name: T2CNOMS1
+  #   instance_name: T2CNOMS1
+  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T2CNOMS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA,FLASH
+  #   service:
+  #     - { name: OR_TAF, role: PRIMARY }
+  #     - { name: NOMIS_TAF, role: PRIMARY }
+  #     - { name: OLDNOMIS_TAF, role: PRIMARY }
+  #     - { name: NOMIS_APIRO, role: PRIMARY }
+  # T2NDHS1:
+  #   db_name: T2NDH
+  #   db_unique_name: T2NDHS1
+  #   instance_name: T2NDHS1
+  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T2NDHS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA
+  #   service:
+  #     - { name: NDH_TAF, role: PRIMARY }
+  # T1TRDS1:
+  #   db_name: T1TRDAT
+  #   db_unique_name: T1TRDS1
+  #   instance_name: T1TRDS1
+  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T1TRDS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA
+  #   service:
+  #     - { name: TRDAT_TAF, role: PRIMARY }
+  # T2TRDS1:
+  #   db_name: T2TRDAT
+  #   db_unique_name: T2TRDS1
+  #   instance_name: T2TRDS1
+  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T2TRDS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA
+  #   service:
+  #     - { name: TRDAT_TAF, role: PRIMARY }
+  # T1NDHS1:
+  #   db_name: T1NDH
+  #   db_unique_name: T1NDHS1
+  #   instance_name: T1NDHS1
+  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T1NDHS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA
+  #   service:
+  #     - { name: NDH_TAF, role: PRIMARY }
+  # T1CNOMS1:
+  #   db_name: CNOMT1
+  #   db_unique_name: T1CNOMS1
+  #   instance_name: T1CNOMS1
+  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
+  #   port: 1521
+  #   tns_name: T1CNOMS1
+  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
+  #   asm_disk_groups: DATA,FLASH
+  #   service:
+  #     - { name: OR_TAF, role: PRIMARY }
+  #     - { name: NOMIS_TAF, role: PRIMARY }
+  #     - { name: OLDNOMIS_TAF, role: PRIMARY }
+  #     - { name: NOMIS_APIRO, role: PRIMARY }
+
+tns_entries:
+  t1:
+    - name: T1CNOM
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1CNOM
+    - name: T1NDH
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1NDH
+    - name: T1TRDAT
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1TRDAT
+    - name: T1MIS
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1MIS
+    - name: misq
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1MIS
+    - name: T1CNMAUD
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1CNMAUD
+    - name: T1BIPSYS
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPSYS
+    - name: T1BIPAUD
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+  t2:
+    - name: T2CNOM
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2CNOM
+    - name: T2NDH
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2NDH
+    - name: T2TRDAT
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2TRDAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+  t3:
+    - name: T3CNOM
+      port: 1521
+      host_list:
+        - t3nomis-a.test.nomis.service.justice.gov.uk
+        - t3nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T3CNOM
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF

@@ -19,7 +19,7 @@ patch: "{{ stage }}/patches"
 psu_patch: p35058172_190000_Linux-x86-64.zip
 oracle_home: "{{ app_dir }}/oracle/product/19c"
 oracle_inventory: "{{ app_dir }}/oraInventory"
-oracle_PATH: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # this is to avoid having to source oracle environment variables
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # this is to avoid having to source oracle environment variables
 
 database_response_file: db_install.rsp
 database_base: "{{ app_dir }}/oracle"
@@ -40,11 +40,11 @@ asmmonitorpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=asci
 
 grid_env:
   ORACLE_HOME: "{{ grid_home }}"
-  PATH: "{{ grid_home }}/bin:{{ oracle_PATH }}"
+  PATH: "{{ grid_home }}/bin:{{ oracle_path }}"
 
 db_env:
   ORACLE_HOME: "{{ database_home }}"
-  PATH: "{{ database_home }}/bin:{{ oracle_PATH }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
 oracle_asm_data_disks: # the 'device' needs to match the device name in AWS
   - device: /dev/sde

@@ -1,0 +1,228 @@
+---
+# Skip a couple of bootstrap steps if not running in AWS (to allow for local testing)
+- name: Check if inside AWS.
+  uri:
+    url: http://169.254.169.254/latest/meta-data
+    timeout: 20
+  register: aws_uri_check
+  failed_when: false
+  tags: always
+
+- set_fact:
+    is_aws_environment: "{{ aws_uri_check.status == 200 }}"
+  tags: always
+
+- block:
+    - name: (main) Find db version file
+      find:
+        path: "~/"
+        patterns: ".db_version"
+        hidden: yes
+      register: find_db_version_file
+
+    - block:
+        - name: (main) Output db version file
+          shell: cat ~/.db_version
+          register: db_version_output
+
+        - name: (main) Set fact for db version
+          set_fact:
+            db_version: "{{ db_version_output.stdout }}"
+          when: db_version_output.stdout | length > 0
+      when: find_db_version_file.matched == 1
+  tags: always
+
+- name: (main) Load in our vars for {{ db_version }} database and 19c grid
+  include_vars:
+    file: main{{ db_version | default() }}.yml
+  when: db_version is defined
+  tags: always
+
+- name: (main) Get our instance facts
+  ec2_metadata_facts:
+  when: is_aws_environment|bool
+  tags: always
+
+- name: (main) Display database type
+  debug:
+    var: database_type
+  tags: always
+
+- name: (main) Gather installation facts
+  include: check-installation.yml
+  tags: always
+
+- name: (main) Reconfigure our config that was set during ami build
+  include: reconfigure-instance.yml
+  tags: oracle-db-bootstrap-reconfigure-instance
+
+- name: (main) Setup required database passwords in SSM parameter store
+  include: create-ssm-passwords.yml
+  tags: oracle-db-bootstrap-ssm
+
+- name: (main) Reconfigure asm
+  include: reconfigure-asm.yml
+  tags: oracle-db-bootstrap-asm
+
+- block:
+    - name: (main) Configure out database
+      include: create-database.yml
+
+    - name: (main) Create our check file so we don't run this again
+      file:
+        path: "/home/{{ service_user_name }}/.oradb_installed"
+        state: touch
+
+    - name: (main) oradb installed
+      set_fact:
+        oradb_installed: true
+
+  when:
+    - not oradb_installed|default(false)
+    - database_type != "standby"
+  tags: oracle-db-bootstrap-create-db
+
+- name: (main) Setup TAF Service Name
+  include: set-taf-service.yml
+  when:
+    - database_type != "standby"
+  tags: oracle-db-bootstrap-service
+
+- name: (main) Install Oracle Secure Web Backup Service (oswbs)
+  include_role:
+    name: oracle-secure-backup
+  vars:
+    database_home: "{{ oracle_database_oracle_home }}"
+  tags: oracle-db-bootstrap-oswbs
+
+- name: (main) Display database_bootstrap_restore var
+  debug:
+    msg:
+      - "database_type - {{ database_type }}"
+      - "database_bootstrap_restore - {{ database_bootstrap_restore }}"
+      - "backup_restored - {{ backup_restored }}"
+      - "oradb_installed - {{ oradb_installed }}"
+  tags: oracle-db-bootstrap
+
+- block:
+    - name: (main) Restore Cold Backup
+      include: restore-cold-backup.yml
+
+    - name: (main) Create our check file so we don't run this again
+      file:
+        path: "/home/{{ service_user_name }}/.backup_restored"
+        state: touch
+
+    - name: (main) backup restored
+      set_fact:
+        backup_restored: true
+  when:
+    - database_type != "standby"
+    - database_bootstrap_restore|bool
+    - not backup_restored|bool
+    - oradb_installed|bool
+  tags: oracle-db-bootstrap-restore
+
+- block:
+    - name: (main) Copy huge page script
+      copy:
+        src: "{{ role_path }}/files/hugepages.sh"
+        dest: /tmp/hugepages.sh
+        mode: u+x
+
+    - name: (main) Execute huge page script
+      shell: "/tmp/hugepages.sh"
+      register: hugepage_value
+      failed_when: hugepage_value.rc != 0
+
+    - name: (main) Find the value of hugepages already set
+      command: /usr/bin/cat /proc/sys/vm/nr_hugepages
+      register: hugepage_result
+      failed_when: hugepage_result.rc != 0
+
+    - name: (main) Configure kernel for hugepages if required
+      sysctl:
+        name: "vm.nr_hugepages"
+        value: "{{ hugepage_value.stdout }}"
+        state: present
+      when: hugepage_result.stdout != hugepage_value.stdout
+
+    - name: (main) Create our check file so we don't run this again
+      file:
+        path: "/home/{{ service_user_name }}/.hugepages_set"
+        state: touch
+
+    - name: (main) hugepages set
+      set_fact:
+        hugepages_set: true
+
+  when:
+    - database_type != "standby"
+    - backup_restored|bool
+    - not hugepages_set|bool
+  tags: oracle-db-bootstrap-hugepages
+
+- block:
+    - name: (main) Create DB ready for HA check file standby
+      file:
+        path: "/home/{{ service_user_name }}/.ready_for_ha"
+        state: touch
+  when:
+    - database_type != "primary"
+    - not ready_for_ha|bool
+
+- block:
+    - name: (main) Create DB ready for HA check file primary
+      file:
+        path: "/home/{{ service_user_name }}/.ready_for_ha"
+        state: touch
+  when:
+    - database_type != "standby"
+    - oradb_installed|bool
+    - not ready_for_ha|bool
+
+- name: Ensure Password File is in ASM
+  include_tasks: move_password_file_to_asm.yml
+
+- name: (main) Get environment-specific configuration variables
+  include: get-env-config.yml
+  tags: oracle-db-bootstrap-required-patches
+
+# Install all one-off patches specified for this environment
+# and set any custom database parameters
+# become_user is ignored for an include, so attach it to the block instead
+- block:
+    - name: Install Patches
+      include_role:
+        name: oracle-db-patches/oneoffpatch
+      vars:
+        install_absent_patches: true
+        target_host: localhost
+
+    # Do not set Standby Database Parameters at Boot time as database will
+    # not exist at this point.   Any custom parameters will be applied
+    # to standby later when it is cloned from the primary.
+    - name: Set Database Custom Parameters
+      include_role:
+        name: oracle-db-parameters/set_oracle_parameters
+      vars:
+        target_host: localhost
+      when:
+        - database_type != "standby"
+
+    # Only need to schedule database autotasks on Primary Database
+    # (Defaults will be kept if not configured in hmpps-env-configs)
+    - name: Schedule Database Autotasks
+      include_role:
+        name: oracle-db-autotasks/configure_oracle_autotasks
+      vars:
+        target_host: localhost
+      when:
+        - database_type == "primary"
+
+  become: true
+  become_user: oracle
+  when:
+    - oradb_installed or database_type == "standby"
+    - backup_restored or not database_bootstrap_restore
+  tags: oracle-db-bootstrap-post-tasks

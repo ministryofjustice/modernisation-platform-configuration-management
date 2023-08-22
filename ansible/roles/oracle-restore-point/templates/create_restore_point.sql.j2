@@ -1,0 +1,3 @@
+spool {{ stage }}/{{ item }}_restore_point.log 
+create restore point {{ restore_point_name }} guarantee flashback database;
+exit

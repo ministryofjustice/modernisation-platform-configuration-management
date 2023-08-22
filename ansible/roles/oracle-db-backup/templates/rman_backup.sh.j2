@@ -13,7 +13,6 @@ typeset -u CATALOG_DB
 typeset -u TARGET_DB
 typeset -u BACKUP_TYPE
 typeset -u CATALOGMODE
-typeset RCATOWNER_PASSWORD
 typeset -i LEVEL
 
 export TIMESTAMP=$(date +"%Y%m%d%H%M")
@@ -126,7 +125,9 @@ validate () {
                        then
                          error "Catalog mode is $CATALOGMODE, specify catalog db"
                        else
-                         CATALOG_CONNECT=rcatowner/$RCATOWNER_PASSWORD@$CATALOG_DB
+			                   RCATOWNER=`aws ssm get-parameter --name "/database/recovery-catalog-owner/username" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+			                   RCATOWNER_PASSWORD=`aws ssm get-parameter --name "/database/recovery-catalog-owner/password" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+                         CATALOG_CONNECT=$RCATOWNER/$RCATOWNER_PASSWORD@$CATALOG_DB
                        fi
                      fi
                      ;;
@@ -178,16 +179,23 @@ catalog_check () {
 EOF
 )
   eval $X
-
+  info "Checking Database name"
+  X=$(sqlplus -s "/ as sysdba" <<EOF
+       set feedback off heading off echo off verify off
+       select 'DB_NAME='||name from $V_DATABASE;
+       exit
+EOF
+)
+  eval $X
   info "Database ID = $DB_ID"
+  info "Database ID = $DB_NAME"
 
   info "Checking if target database is registered"
    X=$(sqlplus -s $CATALOG_CONNECT <<EOF
         set feedback off heading off echo off verify off
         select 'ISREGD='||decode(count(*),0,'NO','YES')
           from rc_database
-         where name = '$TARGET_DB'
-         and dbid = '$DB_ID';
+         where dbid = '$DB_ID' and name='$DB_NAME';
         exit
 EOF
 )
@@ -392,6 +400,8 @@ do
     else
       info "Backup of $TARGET_DB completed successfully"
       echo "$TARGET_DB,$(date +%s),1,$(date),Success" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+      find /home/oracle/admin/rman_scripts/logs -name "*cmd" -mtime +15 -exec rm {} \;
+      find /home/oracle/admin/rman_scripts/logs -name "*log" -mtime +15 -exec rm {} \;
     fi
   ); then
     exitcode=1

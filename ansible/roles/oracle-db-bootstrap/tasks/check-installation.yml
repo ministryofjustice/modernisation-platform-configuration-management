@@ -1,0 +1,68 @@
+---
+- block:
+    - name: (main/check-installation) validate oracle database is already installed
+      stat:
+        path: "/home/{{ service_user_name }}/.oradb_installed"
+      register: oradb_install_check_file
+      become: true
+
+    - name: (main/check-installation) Is oradb installed (false)
+      set_fact:
+        oradb_installed: false
+      when: not oradb_install_check_file.stat.exists
+
+    - name: (main/check-installation) Is oradb installed (true)
+      set_fact:
+        oradb_installed: true
+      when: oradb_install_check_file.stat.exists
+
+- block:
+    - name: (main/check-installation) validate backup restored
+      stat:
+        path: "/home/{{ service_user_name }}/.backup_restored"
+      register: backup_restored_check_file
+      become: true
+
+    - name: (main/check-installation) is backup restored (false)
+      set_fact:
+        backup_restored: false
+      when: not backup_restored_check_file.stat.exists
+
+    - name: (main/check-installation) is backup restored (true)
+      set_fact:
+        backup_restored: true
+      when: backup_restored_check_file.stat.exists
+
+- block:
+    - name: (main/check-installation) validate hugepages set
+      stat:
+        path: "/home/{{ service_user_name }}/.hugepages_set"
+      register: hugepages_set_check_file
+      become: true
+
+    - name: (main/check-installation) is hugepages set (false)
+      set_fact:
+        hugepages_set: false
+      when: not hugepages_set_check_file.stat.exists
+
+    - name: (main/check-installation) is backup restored (true)
+      set_fact:
+        hugepages_set: true
+      when: hugepages_set_check_file.stat.exists
+
+- block:
+    - name: (main/check-installation) validate ready for ha
+      stat:
+        path: "/home/{{ service_user_name }}/.ready_for_ha"
+      register: ready_for_ha_check_file
+      become: true
+
+    - name: (main/check-installation) is hugepages set (false)
+      set_fact:
+        ready_for_ha: false
+      when: not ready_for_ha_check_file.stat.exists
+
+    - name: (main/check-installation) is backup restored (true)
+      set_fact:
+        ready_for_ha: true
+      when: ready_for_ha_check_file.stat.exists

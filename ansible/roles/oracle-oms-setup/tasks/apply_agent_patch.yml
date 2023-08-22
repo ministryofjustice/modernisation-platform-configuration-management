@@ -4,9 +4,7 @@
     - name: Check status of oem Agent
       ansible.builtin.shell: |
         export ORACLE_HOME={{ agent_home }}
-        {{ agent_home }}/bin/emctl status agent | grep -c "^Oracle Management Server is Up" | cat
-      changed_when: false
-      register: oms_running
+        {{ agent_home }}/bin/emctl status agent | grep -c "^Agent is Running and Ready" | cat
 
     - name: Stop oem agent
       ansible.builtin.shell: |

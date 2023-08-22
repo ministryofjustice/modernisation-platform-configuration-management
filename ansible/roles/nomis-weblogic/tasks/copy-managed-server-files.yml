@@ -1,4 +1,13 @@
 ---
+- name: Copy syscon tag release details file for build information
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/tag_release_detail
+
 - name: Create tag directories
   ansible.builtin.file:
     path: "{{ item }}"
@@ -28,7 +37,7 @@
     weblogic_s3_archives:
       - /u01/tag/static/TAG.gif.tgz
       - /u01/tag/static/HELP/2018-07-26.tgz
-      - /u01/tag/FormsSources/2023-06-05.tgz
+      - /u01/tag/FormsSources/2023-08-07.tgz
       - /u01/tag/tagsar/applib/2008-06-27.tgz
       - /u01/tag/tagsar/deploy/2012-07-25.tgz
       - /u01/tag/tagsar/stylesheets/2021-06-01.tgz
