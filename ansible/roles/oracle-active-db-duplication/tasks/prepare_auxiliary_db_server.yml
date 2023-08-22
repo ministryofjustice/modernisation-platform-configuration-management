@@ -21,7 +21,7 @@
     - name: Create initialization parameter file
       ansible.builtin.template:
         src: "{{ item }}.j2"
-        dest: "{{ stage }}/init{{auxiliary_db.db_name}}.ora"
+        dest: "{{ stage }}/init{{auxiliary_db.instance_name}}.ora"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: "0644"
