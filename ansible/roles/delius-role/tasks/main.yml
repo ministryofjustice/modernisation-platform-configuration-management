@@ -19,14 +19,26 @@
   debug:
      msg: "The database SID is {{ database_primary_sid | default(database_standby_sid) | default('UNKNOWN') }}"
 
-- name: Get the Primary Host Group
-  set_fact:
-     primarydb_group: "{{ 'environment_name_' + (db_ec2_facts.instances[0].tags['environment-name'] + '_' + db_ec2_facts.instances[0].tags['delius-environment-name'] + '_primarydb') | replace('-','_') }}"
+- name: Continue on Database Hosts Only
+  when: db_ec2_facts.instances[0].tags['delius-database-role'] is defined
+  block:
 
-- name: Show Primary Host Group
-  debug:
-     msg: "The primary host group is {{ primarydb_group }}"
+    - name: Get the Database Type
+      set_fact:
+        database_type: "{{ db_ec2_facts.instances[0].tags['delius-database-role'].split('_')[0] }}"
 
-- name: Show Primary Database for this Database System
-  debug:
-     msg: "The primary database SID for this system is {{ hostvars[groups[primarydb_group][0]]['database_primary_sid']}}"
+    - name: Show the Database Type
+      debug:
+        msg: "The database type is {{ database_type }}"   
+
+    - name: Get the Primary Host Group
+      set_fact:
+        primarydb_group: "{{ 'environment_name_' + (db_ec2_facts.instances[0].tags['environment-name'] + '_' + db_ec2_facts.instances[0].tags['delius-environment-name'] + '_' + database_type + '_primarydb') | replace('-','_') }}"
+
+    - name: Show Primary Host Group
+      debug:
+        msg: "The primary host group is {{ primarydb_group }}"
+
+    - name: Show Primary Database for this Database System
+      debug:
+        msg: "The primary database SID for this system is {{ hostvars[groups[primarydb_group][0]]['database_primary_sid']}}"
