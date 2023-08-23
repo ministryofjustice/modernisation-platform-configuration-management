@@ -1,0 +1,140 @@
+---
+
+- name: Bomb out if target is production db
+  fail:
+    msg: "Cannot refresh any production database !"
+  when:  primarydb['database_primary_sid'] | regex_search('PRD.*')
+
+- name: Exit if rman catalog not specified
+  fail:
+    msg: "No rman catalog specified...exiting"
+  when: catalog is not defined
+
+- name: Check s3 bucket is accessible
+  become: yes
+  become_user: oracle
+  block:
+
+    - name: Attempt to list source s3 bucket from target
+      shell: |
+        . ~/.bash_profile
+        aws s3 ls s3://{{ s3_source_bucket }}
+      register: s3access
+      ignore_errors: True
+      changed_when: False
+    
+    - name: Cannot access source s3 buckeet
+      fail:
+        msg: "s3 bucket {{ s3_source_bucket }} not accessible"
+      when: s3access.rc != 0
+
+    - name: Find the target osbws configuration file
+      shell: |
+        . ~/.bash_profile
+        echo $ORACLE_HOME/dbs/osbws.ora
+      changed_when: False
+      register: osbwsfile
+
+    - name: Check target osbws configuration file exists
+      stat:
+        path: "{{ osbwsfile.stdout }}"
+      register: osbwsfile_output
+
+    - fail:
+        msg: "osbws configuration file does not exist to copy"
+      when: osbwsfile_output.stat.exists == False
+
+    - name: Create rman_scripts directory
+      file:
+        path: /home/oracle/admin/rman_scripts
+        owner: oracle
+        group: oinstall
+        mode: 0755
+        state: directory
+
+    - name: Copy osbws.ora file to rman_scripts directory
+      copy:
+        src: "{{ osbwsfile_output.stat.path }}"
+        dest: /home/oracle/admin/rman_scripts/osbws_duplicate.ora
+        owner: oracle
+        group: oinstall
+        mode: 0544
+        remote_src: yes
+        force: no
+
+    - name: Replace with s3 source bucket {{ s3_source_bucket }}
+      replace:
+        path: /home/oracle/admin/rman_scripts/osbws_duplicate.ora
+        regexp: '^OSB_WS_BUCKET=.*'
+        replace: 'OSB_WS_BUCKET={{ s3_source_bucket }}'
+
+- name: Check restore datetime parameter is valid
+  script: rman_check_restore_datetime.sh {{ source_db}} {{ catalog }} '{{ restore_datetime }}'
+  changed_when: false
+  register: restore_datetime_ok
+  when: (restore_datetime is defined) and (restore_datetime|length > 0)
+
+- name: Exit if no source backups matching restore datetime
+  fail:
+    msg: "No {{ source_db }} backups found matching restore datetime"
+  when: (restore_datetime is defined) and (restore_datetime|length > 0) and ("0" in restore_datetime_ok.stdout)
+
+- name: Set fact restore datetime option when defined
+  set_fact:
+    rman_datetime_option: "-t '{{ restore_datetime }}'"
+  when: (restore_datetime is defined) and (restore_datetime|length > 0)
+
+- name: Set ssm parameter when variable is not null
+  set_fact:
+    ssm_parameter_option: "-p {{ ssm_parameter }}"
+  when: ssm_parameter is defined
+
+- name: Set spfile parameters when variable is not null
+  set_fact: 
+    spfile_parameters_option: "-f {% for item in database_parameters | dict2items %}{{ item.key}}='{{ item.value }}'\n{% endfor %} "
+  when: database_parameters is defined
+
+- name: Set local disk backup flag if s3 Bucket is set to NONE
+  set_fact:
+    local_disk_backup: "-l"
+  when: s3_source_bucket == 'NONE'
+
+- name: RMAN Duplicate
+  block:
+
+    - name: Install RMAN script
+      copy:
+        src: rman_duplicate.sh
+        dest: /home/oracle/admin/rman_scripts/rman_duplicate.sh
+        owner: oracle
+        group: oinstall
+        mode: 0744
+
+    - name: Generate Command to Run RMAN Script
+      set_fact:
+          run_rman_script: "/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ primarydb['database_primary_sid'] }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} \"{{ spfile_parameters_option|default()|trim }}\""
+
+    - name: Show Script to Run
+      debug:
+          msg: "Running: {{ run_rman_script }}"
+
+    # Spawn RMAN as asynchronous background job unless we have set the run_rman_in_foreground parameter (for debugging purposes only)
+    - name: Running RMAN script
+      shell: "{{ run_rman_script }} &> /home/oracle/admin/rman_scripts/rman_duplicate_script_$( date +%Y%m%d%H%M ).log"
+      async: 57600
+      poll: "{{ 30 if (run_rman_in_foreground | default(false)) else 0 }}"
+      args:
+         executable: /bin/bash
+      environment: 
+        ENVIRONMENT: "{{ environment_name }}"
+        APPLICATION: "{{ project_name }}"
+        REGION: "{{ region }}"
+      register: duplicate_cmd_output
+      become: yes
+      become_user: oracle
+
+    - name: Report Run Output
+      debug: 
+        msg: "{{ duplicate_cmd_output }}"
+
+  tags: run
