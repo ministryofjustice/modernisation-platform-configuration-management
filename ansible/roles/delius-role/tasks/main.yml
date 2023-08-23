@@ -1,0 +1,32 @@
+- name: Get current instance ID
+  uri:
+    url: "http://169.254.169.254/latest/meta-data/instance-id"
+    return_content: yes
+  register: current_instance_id
+
+- name: Get instance facts
+  ec2_instance_info:
+    region: "{{ region }}"
+    instance_ids: "{{ current_instance_id.content }}"
+  register: db_ec2_facts
+  no_log: true
+
+- name: Show Environment Wide Variable
+  debug:
+     msg: "The dependencies bucket is {{ dependencies_bucket }} and the NDelius versions is {{ ndelius_version }}"
+
+- name: Show Host Variable
+  debug:
+     msg: "The database SID is {{ database_primary_sid | default(database_standby_sid) | default('UNKNOWN') }}"
+
+- name: Get the Primary Host Group
+  set_fact:
+     primarydb_group: "{{ 'environment_name_' + (db_ec2_facts.instances[0].tags['environment-name'] + '_' + db_ec2_facts.instances[0].tags['delius-environment-name'] + '_primarydb') | replace('-','_') }}"
+
+- name: Show Primary Host Group
+  debug:
+     msg: "The primary host group is {{ primarydb_group }}"
+
+- name: Show Primary Database for this Database System
+  debug:
+     msg: "The primary database SID for this system is {{ hostvars[groups[primarydb_group][0]]['database_primary_sid']}}"
