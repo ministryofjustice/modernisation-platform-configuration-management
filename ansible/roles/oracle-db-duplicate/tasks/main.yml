@@ -1,9 +1,8 @@
 ---
-
 - name: Bomb out if target is production db
   fail:
     msg: "Cannot refresh any production database !"
-  when:  primarydb['database_primary_sid'] | regex_search('PRD.*')
+  when: primarydb['database_primary_sid'] | regex_search('PRD.*')
 
 - name: Exit if rman catalog not specified
   fail:
@@ -14,7 +13,6 @@
   become: yes
   become_user: oracle
   block:
-
     - name: Attempt to list source s3 bucket from target
       shell: |
         . ~/.bash_profile
@@ -22,7 +20,7 @@
       register: s3access
       ignore_errors: True
       changed_when: False
-    
+
     - name: Cannot access source s3 buckeet
       fail:
         msg: "s3 bucket {{ s3_source_bucket }} not accessible"
@@ -65,8 +63,8 @@
     - name: Replace with s3 source bucket {{ s3_source_bucket }}
       replace:
         path: /home/oracle/admin/rman_scripts/osbws_duplicate.ora
-        regexp: '^OSB_WS_BUCKET=.*'
-        replace: 'OSB_WS_BUCKET={{ s3_source_bucket }}'
+        regexp: "^OSB_WS_BUCKET=.*"
+        replace: "OSB_WS_BUCKET={{ s3_source_bucket }}"
 
 - name: Check restore datetime parameter is valid
   script: rman_check_restore_datetime.sh {{ source_db}} {{ catalog }} '{{ restore_datetime }}'
@@ -90,7 +88,7 @@
   when: ssm_parameter is defined
 
 - name: Set spfile parameters when variable is not null
-  set_fact: 
+  set_fact:
     spfile_parameters_option: "-f {% for item in database_parameters | dict2items %}{{ item.key}}='{{ item.value }}'\n{% endfor %} "
   when: database_parameters is defined
 
@@ -101,7 +99,6 @@
 
 - name: RMAN Duplicate
   block:
-
     - name: Install RMAN script
       copy:
         src: rman_duplicate.sh
@@ -112,11 +109,11 @@
 
     - name: Generate Command to Run RMAN Script
       set_fact:
-          run_rman_script: "/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ primarydb['database_primary_sid'] }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} \"{{ spfile_parameters_option|default()|trim }}\""
+        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ primarydb[''database_primary_sid''] }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
 
     - name: Show Script to Run
       debug:
-          msg: "Running: {{ run_rman_script }}"
+        msg: "Running: {{ run_rman_script }}"
 
     # Spawn RMAN as asynchronous background job unless we have set the run_rman_in_foreground parameter (for debugging purposes only)
     - name: Running RMAN script
@@ -124,8 +121,8 @@
       async: 57600
       poll: "{{ 30 if (run_rman_in_foreground | default(false)) else 0 }}"
       args:
-         executable: /bin/bash
-      environment: 
+        executable: /bin/bash
+      environment:
         ENVIRONMENT: "{{ environment_name }}"
         APPLICATION: "{{ project_name }}"
         REGION: "{{ region }}"
@@ -134,7 +131,7 @@
       become_user: oracle
 
     - name: Report Run Output
-      debug: 
+      debug:
         msg: "{{ duplicate_cmd_output }}"
 
   tags: run
