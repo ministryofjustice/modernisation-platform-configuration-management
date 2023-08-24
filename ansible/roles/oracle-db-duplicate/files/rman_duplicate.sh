@@ -410,6 +410,8 @@ EOF
 
 recreate_temporary_tablespaces () {
 
+info "Recreate temporary tablespaces with no tempfiles"
+
 sqlplus -s / as sysdba << EOF
 
 declare
@@ -438,7 +440,7 @@ begin
         execute immediate q'[create temporary tablespace duptemp tempfile '+data']';
         execute immediate 'alter database default temporary tablespace duptemp';
       end if;
-      execute immediate 'drop tablespace '||t.name||' including contents and datafiles';
+      execute immediate 'drop tablespace '||t.name;
       for n in 1..t.no_tempfiles
       loop
         if n = 1
