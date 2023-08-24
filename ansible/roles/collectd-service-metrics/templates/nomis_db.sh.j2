@@ -12,7 +12,7 @@ export PATH=${PATH}:/usr/local/bin
 # Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-ORACLE_SID_LIST="{{ oracle_sid_list }}"
+ORACLE_SID_LIST=$(grep db_1 /etc/oratab|grep -v "^#"| awk -F: '{ print $1 }')
 ORACLE_BATCH_ERROR_FILE="{{ oracle_batch_error_file }}"
 ORACLE_BATCH_STATUSES="{{ oracle_batch_statuses }}"
 
