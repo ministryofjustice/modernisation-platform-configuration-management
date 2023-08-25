@@ -37,6 +37,21 @@ ansible-galaxy role install -r requirements.yml
 ansible-galaxy collection install -r requirements.yml
 ```
 
+Run:
+
+```
+pip list
+pip3 list
+```
+
+If the **boto3** and **botocore** packages are only listed in `pip3 list` you might hit some errors when running Ansible.
+
+To fix this, run:
+
+```
+pip install boto3 botocore
+```
+
 Ensure your ~/.aws/config contains your environment details, example [config] (https://github.com/ministryofjustice/dso-useful-stuff/blob/main/aws-cli/.aws/config)
 
 Sign into [AWS SSO](https://moj.awsapps.com/start/) and select
