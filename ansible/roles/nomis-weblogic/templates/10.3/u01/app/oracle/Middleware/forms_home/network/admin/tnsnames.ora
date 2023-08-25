@@ -4,7 +4,7 @@
   (ADDRESS = (HOST = {{ weblogic_db_hostname_b }}) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
   (CONNECT_DATA =
-   (SERVICE_NAME = NOMIS_TAF)
+   (SERVICE_NAME = {{ weblogic_db_tns_service_name }})
    (FAILOVER_MODE =
     (TYPE = SELECT)
     (METHOD = BASIC)
