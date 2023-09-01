@@ -18,6 +18,7 @@ typeset -i LEVEL
 export TIMESTAMP=$(date +"%Y%m%d%H%M")
 export RMANREGISTERLOGFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.log
 export RMANREGISTERCMDFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.cmd
+export PATH=/usr/local/bin:$PATH
 
 typeset -r MIN_LOG=0
 typeset -r MAX_LOG=9999999999
@@ -27,6 +28,7 @@ export V_DATABASE=v\$database
 export SUCCESS_STATUS=0
 export WARNING_STATUS=1
 export ERROR_STATUS=9
+cd /home/oracle/admin/rman_scripts
 
 usage () {
   echo ""
@@ -279,7 +281,7 @@ EOF
     [ $LEVEL -eq 1 ] && LVL="$LEVEL cumulative" || LVL=$LEVEL
     echo "  backup as compressed backupset incremental level $LVL database $DB_TAG_FORMAT;" >>$RMANCMDFILE
     echo "  sql 'alter system archive log current';" >>$RMANCMDFILE
-    echo "  backup as compressed backupset archivelog all not backed up 1 times  $AL_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  backup as compressed backupset archivelog all delete input  $AL_TAG_FORMAT;" >>$RMANCMDFILE
     echo "  backup current controlfile $CF_TAG_FORMAT;" >>$RMANCMDFILE
     for (( i=1; i<=${CPU_COUNT}; i++ ))
     do
