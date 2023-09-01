@@ -2,10 +2,39 @@
 
 Role for configuring scheduled oracle DB backups, or taking adhoc backups
 
-## Scheduled Oracle DB Backups
+# Pre-requisite for scheduled backup  
 
-Enabled by defining `rman_backup_script` variable, e.g. in `group_vars`.
-A default cron schedule is provided but this can also be changed via `group_vars`.
+For S3 bucket with recovery catalog, in SSM parameter store save details for 
+/database/recovery-catalog-owner/username
+/database/recovery-catalog-owner/password 
+
+In group_vars add details for backup schedule and catalog details 
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  monitoring:
+    - name: rman_backup_monitoring
+      weekday: "*"
+      minute: "30"
+      hour: "*"
+      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
+
+Example:
+no_proxy="*" ansible-playbook site.yml --limit test-oem-a -e force_role=oracle-db-backup
 
 ## Adhoc DB Backups
 
