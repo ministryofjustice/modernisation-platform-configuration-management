@@ -3,13 +3,13 @@
   set_fact:
     server_name: '{{ ec2.tags["server-name"] }}'
 
-- name: Extract environment from server name 
+- name: Extract environment from server name
   set_fact:
-    environment_name: '{{ server_name[:2] | upper }}'
+    environment_name: "{{ server_name[:2] | upper }}"
 
-- name: Set database name 
+- name: Set database name
   set_fact:
-    db_name: '{{ environment_name }}BIPINF' 
+    db_name: "{{ environment_name }}BIPINF"
 
 - name: Fail if missing parameters
   fail:
@@ -41,5 +41,3 @@
   fail:
     msg: Ensure all required parameters are set
   when: not db_all_variables_set|default(false)
-
-
