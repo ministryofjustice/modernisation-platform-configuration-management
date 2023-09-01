@@ -1,0 +1,45 @@
+---
+- name: Get server name
+  set_fact:
+    server_name: '{{ ec2.tags["server-name"] }}'
+
+- name: Extract environment from server name 
+  set_fact:
+    environment_name: '{{ server_name[:2] | upper }}'
+
+- name: Set database name 
+  set_fact:
+    db_name: '{{ environment_name }}BIPINF' 
+
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ db_name }}  variable is defined in db_configs fact"
+  when: db_configs[db_name] is not defined
+
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ec2.tags["ssm-parameters-prefix"] }}{{ ec2.tags["Name"] }}'
+
+- name: Set SSM parameters database path facts
+  set_fact:
+    ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ db_name}}/syspassword"
+    ssm_parameters_path_db_system_password: "{{ ssm_parameters_path }}/{{ db_name }}/systempassword"
+
+- name: Get SSM parameters
+  set_fact:
+    db_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
+    db_system_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_system_password, region=ansible_ec2_placement_region) }}"
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - db_sys_password|length > 0
+    - db_system_password| length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)
+
+

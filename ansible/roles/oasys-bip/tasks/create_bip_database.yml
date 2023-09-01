@@ -1,0 +1,29 @@
+---
+- name: Create stage directory
+  ansible.builtin.file:
+    path: "{{ stage }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+
+- name: Copy BIP database creation scripts
+  template:
+    src: "create_bip_db.sh.j2"
+    dest: "{{ stage }}/create_bip_db.sh"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+
+- name: Create BIP database
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo "# create_recovery_catalog_db.sh "
+      {{ stage }}/create_bip_db.sh {{ db_name }} {{ db_sys_password }} {{ db_system_password }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode

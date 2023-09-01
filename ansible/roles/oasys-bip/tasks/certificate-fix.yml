@@ -1,73 +1,81 @@
 ---
-- name: Create cert fix directory
-  ansible.builtin.file:
-    path: /home/oracle/.certificate-fix
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: "0755"
+# - name: Start nodemanager
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     . ~/.bash_profile
+#     . $WL_HOME/server/bin/setWLSEnv.sh
+#     nohup {{ wl_home }}/server/bin/startNodeManager.sh &
 
-- name: Check weblogic cert
-  ansible.builtin.stat:
-    path: /home/oracle/.certificate-fix/demokey.pem
-  register: weblogic_cert
+# - name: Create cert fix directory
+#   ansible.builtin.file:
+#     path: /home/oracle/.certificate-fix
+#     state: directory
+#     owner: oracle
+#     group: oinstall
+#     mode: "0755"
 
-- name: Create weblogic keystore cert if not present
-  become_user: oracle
-  args:
-    chdir: /home/oracle/.certificate-fix
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    main() {
-      echo "# Generating democert"
-      java utils.CertGen -keyfilepass DemoIdentityPassPhrase -certfile democert -keyfile demokey -strength 1024
-    }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
-  when: not weblogic_cert.stat.exists
+# - name: Check weblogic cert
+#   ansible.builtin.stat:
+#     path: /home/oracle/.certificate-fix/demokey.pem
+#   register: weblogic_cert
 
-- name: List weblogic keystore certs
-  become_user: oracle
-  args:
-    chdir: /home/oracle/.certificate-fix
-  check_mode: false
-  changed_when: false
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile > /dev/null
-    . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
-    keytool -list -v -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase || true
-  register: weblogic_keystore_list
+# - name: Create weblogic keystore cert if not present
+#   become_user: oracle
+#   args:
+#     chdir: /home/oracle/.certificate-fix
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     . ~/.bash_profile
+#     . $WL_HOME/server/bin/setWLSEnv.sh
+#     main() {
+#       echo "# Generating democert"
+#       java utils.CertGen -keyfilepass DemoIdentityPassPhrase -certfile democert -keyfile demokey -strength 1024
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-weblogic
+#   when: not weblogic_cert.stat.exists
 
-- name: Import weblogic keystore cert if not present
-  become_user: oracle
-  args:
-    chdir: /home/oracle/.certificate-fix
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    main() {
-      echo "# Importing cert into KeyStore"
-      java utils.ImportPrivateKey -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase -keyfile demokey.pem -keyfilepass DemoIdentityPassPhrase -certfile democert.pem -alias demoidentity
-      keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
-    }
-    main 2>&1 | logger -p local3.info -t ansible-weblogic
+# - name: List weblogic keystore certs
+#   become_user: oracle
+#   args:
+#     chdir: /home/oracle/.certificate-fix
+#   check_mode: false
+#   changed_when: false
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     . ~/.bash_profile > /dev/null
+#     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
+#     keytool -list -v -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase || true
+#   register: weblogic_keystore_list
 
-- name: Disable SecureListener in nodemanager.properties
-  ansible.builtin.replace:
-    path: "{{ wl_home }}/common/nodemanager/nodemanager.properties"
-    regexp: "SecureListener=true"
-    replace: "SecureListener=false"
+# - name: Import weblogic keystore cert if not present
+#   become_user: oracle
+#   args:
+#     chdir: /home/oracle/.certificate-fix
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     . ~/.bash_profile
+#     . $WL_HOME/server/bin/setWLSEnv.sh
+#     main() {
+#       echo "# Importing cert into KeyStore"
+#       java utils.ImportPrivateKey -keystore DemoIdentity.jks -storepass DemoIdentityKeyStorePassPhrase -keyfile demokey.pem -keyfilepass DemoIdentityPassPhrase -certfile democert.pem -alias demoidentity
+#       keytool -importcert -trustcacerts -alias wlscertgenca -keystore DemoTrust.jks -storepass DemoTrustKeyStorePassPhrase -file /u01/app/oracle/Middleware/wlserver_10.3/server/lib/CertGenCA.der -noprompt
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-weblogic
 
-- name: Stop Admin server
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    . ~/.bash_profile
-    . $WL_HOME/server/bin/setWLSEnv.sh
-    "{{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh"
+# - name: Disable SecureListener in nodemanager.properties
+#   ansible.builtin.replace:
+#     path: "{{ wl_home }}/common/nodemanager/nodemanager.properties"
+#     regexp: "SecureListener=true"
+#     replace: "SecureListener=false"
+
+# - name: Stop Admin server
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     . ~/.bash_profile
+#     . $WL_HOME/server/bin/setWLSEnv.sh
+#     "{{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh"
 
 - name: Stop nodemanager processes
   become_user: oracle

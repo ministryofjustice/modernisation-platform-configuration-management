@@ -5,7 +5,7 @@
   when: weblogic_patch_filename is not defined or weblogic_patch_id is not defined
 
 - name: Get current weblogic patch
-  become_user: oracle
+  become_user: "{{ oracle_install_user }}"
   ansible.builtin.shell: |
     . ~/.bash_profile > /dev/null
     . $WL_HOME/server/bin/setWLSEnv.sh > /dev/null
@@ -34,7 +34,7 @@
 
     # takes forever so run in async mode to prevent connection timeouts
     - name: Run weblogic patch script which takes approx 20 mins
-      become_user: oracle
+      become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         set -eo pipefail
         . ~/.bash_profile

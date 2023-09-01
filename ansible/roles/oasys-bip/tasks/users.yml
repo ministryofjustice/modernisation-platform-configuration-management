@@ -2,13 +2,13 @@
 - name: Check oracle user already exists
   ansible.builtin.getent:
     database: passwd
-    key: oracle
+    key: "{{ oracle_install_user }}"
 
 - name: Copy oracle bash profile
   ansible.builtin.template:
-    src: "10.3{{ item }}"
-    dest: "{{ item }}"
-    owner: oracle
-    group: oinstall
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/.bash_profile"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
   loop:
-    - /home/oracle/.bash_profile
+    - .bash_profile

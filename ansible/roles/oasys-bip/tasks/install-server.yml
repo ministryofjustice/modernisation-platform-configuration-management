@@ -3,13 +3,14 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: oracle
-    group: oinstall
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
     mode: "0755"
   loop:
     - /u01/software/weblogic
     - /u01/software/tmp
     - /u01/app
+    - "{{ stage }}"
 
 - name: Check if weblogic server already installed
   ansible.builtin.stat:
@@ -21,29 +22,36 @@
     - name: Get weblogic install jar from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "oasys-bip{{ item }}"
-        dest: "{{ item }}"
+        object: "oasys-bip/u01/software/weblogic/wls1036_generic.jar"
+        dest: "{{ stage }}/wls1036_generic.jar"
         mode: get
         overwrite: latest
-      loop:
-        - /u01/software/weblogic/wls1036_generic.jar
 
     - name: Copy weblogic install config
       ansible.builtin.template:
-        src: "10.3{{ item }}"
-        dest: "{{ item }}"
-        owner: oracle
-        group: oinstall
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
       loop:
-        - /u01/software/weblogic/silent.xml
+        - silent.xml
+
+    - name: Copy oraInst.loc file
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "/etc/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+      loop:
+        - oraInst.loc
 
     - name: Install weblogic server which takes a couple of minutes
-      become_user: oracle
+      become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          echo "# installing weblogic /u01/software/weblogic/wls1036_generic.jar"
-          java -d64  -Xmx1024m -jar /u01/software/weblogic/wls1036_generic.jar -mode=silent -silent_xml=/u01/software/weblogic/silent.xml -Djava.io.tmpdir=/u01/software/tmp
+          echo "# installing weblogic {{ stage }}/wls1036_generic.jar"
+          java -d64  -Xmx1024m -jar {{ stage }}/wls1036_generic.jar -mode=silent -silent_xml={{ stage }}/silent.xml -Djava.io.tmpdir=/u01/software/tmp -invPtrLoc /etc/oraInst.loc
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
 
@@ -52,8 +60,8 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - /u01/software/weblogic/wls1036_generic.jar
-        - /u01/software/weblogic/silent.xml
+        - "{{ stage }}/wls1036_generic.jar"
+        - "{{ stage }}/silent.xml"
 
   # block
   when: not weblogic_server_installed_check.stat.exists

@@ -1,5 +1,5 @@
 ---
-- name: Nomis XTAG weblogic setup
+- name: Oasys BI publisher Installation
   block:
     - import_tasks: get-facts.yml
       tags:
@@ -65,4 +65,27 @@
         - ec2provision
         - weblogic_patch_2
 
+    - import_tasks: certificate-fix.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - certificate_fix 
+
+    - import_tasks: rcu.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - rcu
+
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "7"
+
+- import_tasks: get-db-facts.yml
+  tags:
+    - bip_db_create
+    - never
+
+- import_tasks: create_bip_database.yml
+  tags:
+    - bip_db_create
+    - never
+

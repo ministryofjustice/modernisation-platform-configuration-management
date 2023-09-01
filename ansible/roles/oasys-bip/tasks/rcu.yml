@@ -1,5 +1,5 @@
 ---
-- name: Create software directories
+- name: Create stage directory
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -7,59 +7,45 @@
     group: oinstall
     mode: "0755"
   loop:
-    - /u01/software/weblogic
-    - /u01/software/tmp
-    - /u01/app
+    - "{{ stage }}"
+    - "{{ wl_home }}/bi_rcu"
 
-- name: Check if weblogic server already installed
-  ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/wlserver_10.3
-  register: weblogic_server_installed_check
+- name: Get RCU install software from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "oasys-bip/u01/software/rcu/rcuHome.zip"
+    dest: "{{ stage }}/rcuHome.zip"
+    mode: get
+    overwrite: latest
 
-- name: Install weblogic server software
-  block:
-    - name: Get weblogic install jar from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "oasys-bip{{ item }}"
-        dest: "{{ item }}"
-        mode: get
-        overwrite: latest
-      loop:
-        - /u01/software/weblogic/wls1036_generic.jar
+- name: Extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "{{stage }}/rcuHome.zip"
+    dest: "{{ wl_home }}/bi_rcu"
+    remote_src: true
+    keep_newer: true
 
-    - name: Copy weblogic install config
-      ansible.builtin.template:
-        src: "10.3{{ item }}"
-        dest: "{{ item }}"
-        owner: oracle
-        group: oinstall
-      loop:
-        - /u01/software/weblogic/silent.xml
+- name: Copy weblogic install config
+  ansible.builtin.template:
+    src: "bip_password.tmp.j2"
+    dest: "{{stage }}/obiee_rcu_paramfile.txt"
+    owner: oracle
+    group: oinstall
 
-    - name: Install weblogic server which takes a couple of minutes
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          echo "# installing weblogic /u01/software/weblogic/wls1036_generic.jar"
-          java -d64  -Xmx1024m -jar /u01/software/weblogic/wls1036_generic.jar -mode=silent -silent_xml=/u01/software/weblogic/silent.xml -Djava.io.tmpdir=/u01/software/tmp
-        }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
-
-    - name: Remove temporary install files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/weblogic/wls1036_generic.jar
-        - /u01/software/weblogic/silent.xml
-
-  # block
-  when: not weblogic_server_installed_check.stat.exists
-
-- name: Update bsu.sh MEM_ARGS
-  ansible.builtin.lineinfile:
-    path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
-    regexp: "^MEM_ARGS="
-    line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+- name: Create BIP database
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . ~/.bash_profile
+      $WL_HOME//bi_rcu/bin/rcu -silent -createRepository  \
+      -connectString  {{ bip_db_server }}:1521/{{ bip_db_name }} \
+      -dbUser SYS -dbRole SYSDBA -schemaPrefix TEST \
+      -component BIPLATFORM -component MDS -f < /u01/stage/obiee_rcu_paramfile.txt
+    }
+    main 2>&1 | logger -p local3.info -t ansible-bip-repository
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode

@@ -10,6 +10,9 @@
     ssm_parameters_path_weblogic_admin_password: "{{ ssm_parameters_path }}/admin_password"
     ssm_parameters_path_weblogic_db_username: "{{ ssm_parameters_path }}/db_username"
     ssm_parameters_path_weblogic_db_password: "{{ ssm_parameters_path }}/db_password"
+    ssm_parameters_path_bipdb_sys_password: "{{ ssm_parameters_path }}/syspassword"
+    ssm_parameters_path_bipdb_biplatform_password: "{{ ssm_parameters_path }}/biplatformpassword"
+    ssm_parameters_path_bipdb_mds_password: "{{ ssm_parameters_path }}/mdspassword"
 
 - name: Get SSM parameters
   set_fact:
@@ -17,6 +20,9 @@
     weblogic_admin_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_admin_password, region=ansible_ec2_placement_region) }}"
     weblogic_db_username: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_username, region=ansible_ec2_placement_region) }}"
     weblogic_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_weblogic_db_password, region=ansible_ec2_placement_region) }}"
+    bipdb_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_bipdb_sys_password, region=ansible_ec2_placement_region) }}"
+    bipdb_biplatform_password: "{{ lookup('aws_ssm', ssm_parameters_path_bipdb_biplatform_password, region=ansible_ec2_placement_region) }}"
+    bipdb_mds_password: "{{ lookup('aws_ssm', ssm_parameters_path_bipdb_mds_password, region=ansible_ec2_placement_region) }}"
   when: weblogic_admin_username is not defined
 
 - name: Set db hostname from ec2 oracle-db-hostname tag
@@ -45,6 +51,9 @@
     - weblogic_db_password|length > 0
     - weblogic_db_hostname_a|length > 0
     - weblogic_db_hostname_b|length > 0
+    - bipdb_sys_password| length> 0
+    - bipdb_biplatform_password| length> 0
+    - bipdb_mds_password| length> 0
 
 - name: Fail if missing SSM parameters or tags
   fail:
