@@ -74,6 +74,17 @@
     owner: root
     mode: 0755
   loop:
-    - batch_status
+    - oracle_batch_status
+  loop_control:
+    label: item
+
+- name: copy oracle batch status unit file
+  ansible.builtin.copy:
+    src: "{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    mode: 0644
+  loop:
+    - oracle-batch-status
   loop_control:
     label: item

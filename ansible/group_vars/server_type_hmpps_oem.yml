@@ -60,6 +60,9 @@ server_type_roles_list:
 
 collectd_monitored_services:
   - chronyd
+  - amazon-ssm-agent
+  - amazon-cloudwatch-agent
+  - oracle-batch-status
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
