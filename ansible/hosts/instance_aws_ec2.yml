@@ -26,5 +26,9 @@ keyed_groups:
     prefix: server-type
   - key: tags['os-type'] | lower
     prefix: os-type
+  - key: tags['environment-name'] + '_' + tags['delius-environment-name'] + '_all'
+    prefix: environment-name
+  - key: tags['environment-name'] + '_' + tags['delius-environment-name'] + '_' + tags['delius-database-role']
+    prefix: environment-name
 
 strict: no
