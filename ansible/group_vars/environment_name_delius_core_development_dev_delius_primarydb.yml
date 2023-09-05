@@ -1,0 +1,40 @@
+---
+
+# From hmpps-env-configs/delius-core-dev/ansible/delius_primarydb.yml
+database_global_database: DNDA
+database_taf_service: DNDA_TAF
+database_primary_unique: DNDA
+database_primary_sid: DNDA
+delius_users:
+  dbull_ro:
+  nmcmahon_ro:
+  mrees_ro:
+  ahaslehurst_ro:
+  bbuchan_ro:
+    ash_report: true
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+  worr_sro:
+oracle_software:
+  version: 19.18
+  combo_patch: p34773504_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.36
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.36.zip
+audited_interaction_repo: TSTNDA
+database_locked_statistics:
+  - schema_name: DELIUS_APP_SCHEMA
+    table_names:
+      - DOC_MIGRATION_QUEUE_TAB: ALL
+required_patches:
+  p35012866:
+    patch_files:
+      - target_version: "19.18"
+        filename: p35012866_1918000DBRU_Linux-x86-64.zip
+    description: "BUG_33527739_APPLY.SQL GOT ORA-13516: AWR OPERATION FAILED: CATPROC NOT VALID"
+    grid_patch: false
+    database_patch: true
+    datapatch_required: true

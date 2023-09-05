@@ -1,0 +1,23 @@
+--- 
+# From hmpps-env-configs/delius-core-dev/ansible/all.yml
+region: eu-west-2
+project_name: delius-core
+environment_name: delius-core-dev
+simple_environment_name: dev
+ndelius_version: "5.8.10"
+catalog: DCAT
+data_classification: unclassified-data
+database_autotasks:
+      sql_tuning_advisor: disabled
+      auto_space_advisor: disabled
+autotask_windows:
+        weekday:
+                start_time: "06:20"
+                duration_mins: 30
+database_parameters:
+   sga_max_size: 3280M
+   sga_target: 3280M
+   pga_aggregate_target: 1640M
+   pga_aggregate_limit: 3280M
+oracle_osbws_chunk_size: 104857600
+emctl_agent: /u01/app/oracle/oem13c_agent/agent_inst/bin/emctl
