@@ -60,8 +60,22 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       register: grid_install_output
-      async: 1800
-      poll: 30
+      async: 3600
+      poll: 0
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
+
+    - name: Wait for grid install to complete
+      ansible.builtin.async_status:
+        jid: "{{ grid_install_output.ansible_job_id }}"
+      register: grid_install_output_result
+      until: grid_install_output_result.finished
+      delay: 60
+      retries: 60
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
 
     - name: Run orainstRoot script
       ansible.builtin.shell: |
