@@ -3,10 +3,10 @@
   tags:
     - ec2provision
     - ec2patch
-  when: ansible_facts['distribution'] == "RedHat"
+  when: ansible_distribution in ['RedHat', 'OracleLinux']
 
 - import_tasks: append_collectd_cloudwatch_config.yml
   tags:
     - ec2provision
     - ec2patch
-  when: ansible_facts['distribution'] == "RedHat"
+  when: ansible_distribution in ['RedHat', 'OracleLinux']

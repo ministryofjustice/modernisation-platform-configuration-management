@@ -1,0 +1,41 @@
+---
+- name: Create directory to unpack BIP files
+  file:
+    path: "{{ sap_bi_platform_unpack_base_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Create directory to unpack JVM
+  file:
+    path: "{{ sap_jvm_unpack_base_directory }}"
+    state: directory
+    mode: 0755
+
+- name: Check if the BIPLATS4303P_300-70002683_P1.exe exists
+  stat:
+    path: "{{ sap_bi_platform_unpack_base_directory }}/BIPLATS4303P_300-70002683_P1.exe"
+  register: s3_result
+
+- name: Download BI Platform from S3
+  block:
+    - name: Download BI files from S3
+      aws_s3:
+        mode: get
+        bucket: "{{ s3.bip_bucket_name }}"
+        object: "{{ s3.prefix }}{{ item }}"
+        dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
+        overwrite: never
+      with_items: "{{ s3.files.sap_bi_platform }}"
+
+    - name: Hacky rename
+      shell: |
+        for f in *;
+          do
+            e="${f##*.}";
+            b="${f%.*}";
+            mv -n "$f" "${b}.${e,,}";
+          done
+      args:
+        chdir: "{{ sap_bi_platform_unpack_base_directory }}"
+        executable: /bin/bash
+  when: not s3_result.stat.exists

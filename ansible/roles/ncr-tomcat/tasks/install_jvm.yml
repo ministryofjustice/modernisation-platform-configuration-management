@@ -1,9 +1,0 @@
----
-- name: Grant file execute permissions
-  shell: "chmod +x {{ sap_jvm_unpack_base_directory }}/SAPCAR*"
-
-- name: Extract the software
-  shell: "{{ sap_jvm_unpack_base_directory }}/SAPCAR* -xvf {{ sap_jvm_unpack_base_directory }}/SAPJVM*.SAR"
-  args:
-    chdir: "{{ sap_jvm_unpack_base_directory }}"
-  when: sap_jvm_unpack_base_directory is defined
