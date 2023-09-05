@@ -2,7 +2,7 @@
 - name: Bomb out if target is production db
   fail:
     msg: "Cannot refresh any production database !"
-  when: primarydb['database_primary_sid'] | regex_search('PRD.*')
+  when: database_primary_sid | regex_search('PRD.*')
 
 - name: Exit if rman catalog not specified
   fail:
@@ -109,7 +109,7 @@
 
     - name: Generate Command to Run RMAN Script
       set_fact:
-        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ primarydb[''database_primary_sid''] }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
+        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ database_primary_sid }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
 
     - name: Show Script to Run
       debug:
