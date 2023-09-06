@@ -1,13 +1,14 @@
 ---
-- name: Fail if drive map missing
-  fail:
-    msg: "Missing linux drive mapping, ensure device exists on device"
-  when: not ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
-  loop_control:
-    loop_var: disk_partition
-  loop: "{{ disks_partition }}"
+# - name: Fail if drive map missing
+#   fail:
+#     msg: "Missing linux drive mapping, ensure device exists on device"
+#   when: not ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
+#   loop_control:
+#     loop_var: disk_partition
+#   loop: "{{ disks_partition }}"
 
 - name: Partition device
+  when: ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
   parted:
     device: "{{ ebs_to_linux_device_map[disk_partition.ebs_device_name] }}"
     number: "{{ disk_partition.number | default(1) }}"
