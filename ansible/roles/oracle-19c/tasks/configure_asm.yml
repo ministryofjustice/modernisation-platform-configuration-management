@@ -42,7 +42,9 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   loop: "{{ disks_partition | selectattr('oracle_label', 'defined') }}"
-  when: item.oracle_label not in asm_disks.stdout_lines
+  when:
+    - item.oracle_label not in asm_disks.stdout_lines
+    - ebs_to_linux_device_map[item.ebs_device_name] is defined
 
 - name: List existing ASM disks
   ansible.builtin.command: oracleasm listdisks
