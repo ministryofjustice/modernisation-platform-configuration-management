@@ -66,3 +66,25 @@
         label: item
   # block
   when: ec2.tags['oracle-sids'] is defined
+
+- name: template batch_status.sh
+  ansible.builtin.template:
+    src: "{{ item }}.sh.j2"
+    dest: "/opt/collectd/{{ item }}.sh"
+    owner: root
+    mode: 0755
+  loop:
+    - oracle_batch_status
+  loop_control:
+    label: item
+
+- name: copy oracle batch status unit file
+  ansible.builtin.copy:
+    src: "{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    mode: 0644
+  loop:
+    - oracle-batch-status
+  loop_control:
+    label: item
