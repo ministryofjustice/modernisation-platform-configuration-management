@@ -503,6 +503,7 @@ do
     *) usage ;;
   esac
 done
+
 info "Target         = $TARGET_DB"
 info "Source         = $SOURCE_DB"
 info "Catalog db     = $CATALOG_DB"
@@ -519,25 +520,35 @@ validate targetdb
 validate catalog
 validate datetime
 
-info "Get compatible value before shutting down"
-V_PARAMETER=v\$parameter
-if ! X=`sqlplus -s / as sysdba <<EOF
-   whenever sqlerror exit 1
-   set feedback off heading off verify off echo off
-   select 'COMPATIBLE_VALUE='||value 
-   from $V_PARAMETER
-   where name='compatible';
-   exit;
-EOF
-`
+# info "Get compatible value before shutting down"
+# V_PARAMETER=v\$parameter
+# if ! X=`sqlplus -s / as sysdba <<EOF
+#    whenever sqlerror exit 1
+#    set feedback off heading off verify off echo off
+#    select 'COMPATIBLE_VALUE='||value 
+#    from $V_PARAMETER
+#    where name='compatible';
+#    exit;
+# EOF
+# `
+# then
+  #  info "Cannot determine compatible value from database; falling back to most recently logged value"
+  #  COMPATIBLE_VALUE=$( egrep -E "^[[:space:]]+compatible" $ORACLE_BASE/diag/rdbms/${ORACLE_SID}/${ORACLE_SID}/trace/alert_${ORACLE_SID}.log $ORACLE_BASE/diag/rdbms/${ORACLE_SID,,}/${ORACLE_SID}/trace/alert_${ORACLE_SID}.log | tail -1 | sed 's/"//g' | awk '{print $NF}'  )
+# else
+#    eval $X
+# fi
+# [ -z $COMPATIBLE_VALUE ] && error "Cannot determine compatible value"
+
+if [ "${SPFILE_PARAMETERS}" != "UNSPECIFIED" ]
 then
-   info "Cannot determine compatible value from database; falling back to most recently logged value"
-   COMPATIBLE_VALUE=$( egrep -E "^[[:space:]]+compatible" $ORACLE_BASE/diag/rdbms/${ORACLE_SID}/${ORACLE_SID}/trace/alert_${ORACLE_SID}.log $ORACLE_BASE/diag/rdbms/${ORACLE_SID,,}/${ORACLE_SID}/trace/alert_${ORACLE_SID}.log | tail -1 | sed 's/"//g' | awk '{print $NF}'  )
-else
-   eval $X
+  for PARAM in ${SPFILE_PARAMETERS[@]}
+  do
+    if [[ ${PARAM} =~ compatible.* ]]
+    then  
+      COMPATIBLE=${PARAM//\'/}
+    fi
+  done
 fi
-[ -z $COMPATIBLE_VALUE ] && error "Cannot determine compatible value"
-info "Compatible    = ${COMPATIBLE_VALUE}"
 
 info "Shutdown ${TARGET_DB}"
   sqlplus -s / as sysdba <<EOF
@@ -563,7 +574,7 @@ fi
 DUPLICATEPFILE=${ORACLE_HOME}/dbs/init${TARGET_DB}_duplicate.ora
 info "Create ${DUPLICATEPFILE} pfile"
 echo "db_name=${TARGET_DB}" > ${DUPLICATEPFILE}
-echo "compatible=${COMPATIBLE_VALUE}" >> ${DUPLICATEPFILE}
+echo "${COMPATIBLE}" >> ${DUPLICATEPFILE}
 
 info "Place ${TARGET_DB} in nomount mode"
 if ! sqlplus -s / as sysdba << EOF
