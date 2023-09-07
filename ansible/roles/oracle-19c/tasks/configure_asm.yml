@@ -53,7 +53,7 @@
   register: asm_disks
 
 - name: Output ASM disks
-  debug: var=item
+  debug: var=asmdisk
   loop: "{{ asm_disks.stdout_lines }}"
   loop_control:
     loop_var: asmdisk
