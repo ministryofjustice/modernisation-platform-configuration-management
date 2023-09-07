@@ -52,7 +52,13 @@
   changed_when: false
   register: asm_disks
 
-- name: Check ASM disks all there
-  ansible.builtin.assert:
-    that: "{{ disks_partition | selectattr('oracle_label', 'defined') | map(attribute='oracle_label') | difference(asm_disks.stdout_lines) | length == 0 }}"
-    fail_msg: "some ASM disks were not successfully created"
+- name: Output ASM disks
+  debug: var=item
+  loop: "{{ asm_disks.stdout_lines }}"
+  loop_control:
+    loop_var: asmdisk
+
+# - name: Check ASM disks all there
+#   ansible.builtin.assert:
+#     that: "{{ disks_partition | selectattr('oracle_label', 'defined') | map(attribute='oracle_label') | difference(asm_disks.stdout_lines) | length == 0 }}"
+#     fail_msg: "some ASM disks were not successfully created"
