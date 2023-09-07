@@ -27,7 +27,6 @@
   fail:
     msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one flash disk"
   when: oracle_flash_diskgroup_sql|length == 0
-
 # - name: Fail if drive map missing
 #   fail:
 #     msg: "Missing linux drive mapping, ensure device exists on device"
