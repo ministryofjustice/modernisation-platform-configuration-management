@@ -39,27 +39,27 @@
     label: item
 
 - block:
-  - name: templates batch_status and db_connected
-    ansible.builtin.template:
-      src: "{{ item }}.sh.j2"
-      dest: "/opt/collectd/{{ item }}.sh"
-      owner: root
-      mode: 0755
-    loop:
-      - oracle_batch_status
-      - oracle_db_connected
-    loop_control:
-      label: item
+    - name: templates batch_status and db_connected
+      ansible.builtin.template:
+        src: "{{ item }}.sh.j2"
+        dest: "/opt/collectd/{{ item }}.sh"
+        owner: root
+        mode: 0755
+      loop:
+        - oracle_batch_status
+        - oracle_db_connected
+      loop_control:
+        label: item
 
-  - name: copy oracle monitoring unit files
-    ansible.builtin.copy:
-      src: "{{ item }}.service"
-      dest: "/etc/systemd/system/{{ item }}.service"
-      owner: root
-      mode: 0644
-    loop:
-      - oracle-batch-status
-      - oracle-db-connected
-    loop_control:
-      label: item
+    - name: copy oracle monitoring unit files
+      ansible.builtin.copy:
+        src: "{{ item }}.service"
+        dest: "/etc/systemd/system/{{ item }}.service"
+        owner: root
+        mode: 0644
+      loop:
+        - oracle-batch-status
+        - oracle-db-connected
+      loop_control:
+        label: item
   when: ec2.tags['oracle-sids'] is defined
