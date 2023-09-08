@@ -14,6 +14,7 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   become_user: "{{ oracle_install_user }}"
+  become: yes
   environment: "{{ grid_env }}"
 
 - name: Save spfile location
@@ -21,6 +22,7 @@
     source oraenv <<< +ASM
     asmcmd spget > {{ temp }}/spfilelocation.txt
   become_user: "{{ oracle_install_user }}"
+  become: yes
   environment: "{{ grid_env }}"
 
 - name: Clean up {{ stage }} directory
