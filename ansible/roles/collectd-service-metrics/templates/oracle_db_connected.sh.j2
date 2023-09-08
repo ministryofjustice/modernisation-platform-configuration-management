@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Templated in from ansible
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="{{ collectd_script_interval }}"
+ORACLE_SID_LIST=$(grep db_1 /etc/oratab|grep -v "^#"| awk -F: '{ print $1 }')
+
+db_connected() {
+    # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
+    DB="$(crsctl status resource | grep -m1 -i ora\.${SID}.*\.db | cut -f2 -d=)"
+
+    # Check added to alert on not having a database resource BEFORE trying to get it's status
+    if [[ -z "$DB" ]]
+    then
+        echo "Failed to find a database resource for ${SID}" 1>&2
+        return 1
+    fi
+
+    # Worth noting here that crsctl exits with code 0 even if you try and find details of a database that doesn't exist
+    STATUS="$(crsctl status resource ${DB} -v | grep STATE_DETAILS | cut -f2 -d= | cut -f1 -d,)"
+
+    case ${STATUS} in
+        "Open")
+            return 0
+            ;;
+        "Open,Readonly")
+            return 0
+            ;;
+        "Mounted (Closed)")
+            return 0
+            ;;
+        *)
+            # If this check returns a non-zero value then the database is not connected
+            return 1
+            ;;
+    esac
+}
+
+while sleep "$INTERVAL"
+do
+    for SID in ${ORACLE_SID_LIST}
+    do            
+        ORACLE_SID="+ASM"
+        ORAENV_ASK="NO"
+        . oraenv > /dev/null
+        db_connected
+        returnval=$?
+        echo "PUTVAL $HOSTNAME/exec-db_connected/bool-$SID interval=$INTERVAL N:$returnval"
+    done
+done
