@@ -57,7 +57,6 @@
   loop: "{{ asm_disks.stdout_lines }}"
   loop_control:
     loop_var: asmdisk
-
 # - name: Check ASM disks all there
 #   ansible.builtin.assert:
 #     that: "{{ disks_partition | selectattr('oracle_label', 'defined') | map(attribute='oracle_label') | difference(asm_disks.stdout_lines) | length == 0 }}"
