@@ -1,0 +1,113 @@
+---
+- name: Fail if account ids lookup table not defined
+  fail:
+    msg: "Account_ids lookup not found, please check get-modernisation-platform-facts role ran successfully"
+  when: account_ids is not defined
+
+- name: Setup facts
+  set_fact:
+    secretsmanager_passwords_dict: "{{ secretsmanager_passwords_dict|default({}) }}"
+    secretsmanager_passwords_self: "{{ secretsmanager_passwords | rejectattr('account_name', 'defined') }}"
+    secretsmanager_passwords_other: "{{ secretsmanager_passwords | selectattr('account_name', 'defined') }}"
+
+- name: Form Secret Ids - Self
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.key: {
+               'id': item.secret
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords_self }}"
+
+- name: Form Secret Ids - Other accounts
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.key: {
+               'id': 'arn:aws:secretsmanager:eu-west-2:' + account_ids[item.account_name] + ':secret:' + item.secret
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords_other }}"
+
+- name: Get SecretManager Secrets
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.key: {
+             'value': lookup('amazon.aws.aws_secret', secretsmanager_passwords_dict[item.key].id, region='eu-west-2')
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords }}"
+
+- name: Prepare any placeholder secrets
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.key: {
+             'passwords': {} if 'placeholder' in secretsmanager_passwords_dict[item.key].value else secretsmanager_passwords_dict[item.key].value
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords }}"
+
+# The if statement:
+# - use the password defined in the secretsmanager_passwords variable if there is one
+# - else use existing password defined in the secretsmanager_secret
+# - else generate random password
+- name: Generate any missing passwords
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item[0].key: {
+             'passwords': {
+               item[1].keys()|first:
+                 item[1].values()|first if item[1].values()|first != None
+                 else secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first] if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key]
+                 else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
+                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
+             }
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item[0].key }}:{{ item[0].secret }}:{{ item[1].keys()|first }}"
+  with_subelements:
+    - "{{ secretsmanager_passwords }}"
+    - users
+
+- name: Check secrets which require updating
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.key: {
+               'upload': secretsmanager_passwords_dict[item.key].passwords != secretsmanager_passwords_dict[item.key].value
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords }}"
+
+- debug:
+    var: secretsmanager_passwords_dict|dict2items
+
+- name: Check secrets which require da
+  set_fact:
+    secretsmanager_passwords_to_update: "{{ secretsmanager_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
+
+- debug:
+    var: secretsmanager_passwords_to_update
+
+- name: Only create a new secret, but do not update if alredy exists by name
+  community.aws.secretsmanager_secret:
+    name: item.value.id
+    secret_json: item.value.passwords
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ secretsmanager_passwords_to_update }}"
