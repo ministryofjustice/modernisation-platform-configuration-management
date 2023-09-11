@@ -1,6 +1,14 @@
 ---
 # Note these tasks can also be used elsewhere via import_role
 
+- name: testing application
+  debug:
+    var: application
+
+- name: testing envionment
+  debug:
+    var: environment
+
 - name: Include uid and gid vars
   ansible.builtin.include_vars:
     dir: vars

@@ -17,14 +17,6 @@
   debug:
     var: db_standby
 
-- name: testing application
-  debug:
-    var: application
-
-- name: testing envionment
-  debug:
-    var: environment
-
 - name: Fail if missing backup parameters
   fail:
     msg: Ensure either storage_account_name or s3_bucket is defined in the primary db_config
