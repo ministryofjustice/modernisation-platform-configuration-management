@@ -1,11 +1,66 @@
 ---
+
+application: oasys
+environment: preproduction
+
+# s3
 ansible_aws_ssm_bucket_name: oasys-preproduction20230403093924275400000001
 image_builder_s3_bucket_name: prodpreprod-oasys-20230412084245180100000001
+db_backup_s3_bucket_name: preprod-oasys-db-backup-bucket-20230721150538452600000001
+s3_bucket: prodpreprod-oasys-20230412084245180100000001
+
+# domains
 dns_zone_internal: oasys.hmpps-preproduction.modernisation-platform.internal
 dns_search_domains:
   - hmpps-oem.hmpps-preproduction.modernisation-platform.internal
   - azure.hmpp.root
-s3_bucket: prodpreprod-oasys-20230412084245180100000001
+
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
 ords_trusted_origins:
   preproduction: "https://pp-oasys.az.justice.gov.uk/eor,https://bridge-pp-oasys.az.justice.gov.uk/eor,https://pp.oasys.service.justice.gov.uk/eor,https://pp-int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
+
+
+# OEM server
+# OMS_SERVER: preproduction-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal doesn't exist yet
+# OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  monitoring:
+    - name: rman_backup_monitoring
+      weekday: "*"
+      minute: "30"
+      hour: "*"
+      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
+
+# db_configs:
+#   PPOASYS:
+#     db_name: OASPROD
+#     db_unique_name: PPOASYS
+#     instance_name: PPOASYS
+#     host_name: pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+#     port: 1521
+#     tns_name: PPOASYS
+#     s3_bucket: oasys-preproduction20230403093924275400000001
+#     asm_disk_groups: DATA,FLASH
+#     service:
+#       - { name: OASYS_TAF, role: PRIMARY }
