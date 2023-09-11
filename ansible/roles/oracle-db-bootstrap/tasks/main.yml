@@ -49,24 +49,24 @@
   tags: always
 
 - name: (main) Gather installation facts
-  include: check-installation.yml
+  include_tasks: check-installation.yml
   tags: always
 
 - name: (main) Reconfigure our config that was set during ami build
-  include: reconfigure-instance.yml
+  include_tasks: reconfigure-instance.yml
   tags: oracle-db-bootstrap-reconfigure-instance
 
 - name: (main) Setup required database passwords in SSM parameter store
-  include: create-ssm-passwords.yml
+  include_tasks: create-ssm-passwords.yml
   tags: oracle-db-bootstrap-ssm
 
 - name: (main) Reconfigure asm
-  include: reconfigure-asm.yml
+  include_tasks: reconfigure-asm.yml
   tags: oracle-db-bootstrap-asm
 
 - block:
     - name: (main) Configure out database
-      include: create-database.yml
+      include_tasks: create-database.yml
 
     - name: (main) Create our check file so we don't run this again
       file:
@@ -83,7 +83,7 @@
   tags: oracle-db-bootstrap-create-db
 
 - name: (main) Setup TAF Service Name
-  include: set-taf-service.yml
+  include_tasks: set-taf-service.yml
   when:
     - database_type != "standby"
   tags: oracle-db-bootstrap-service
@@ -106,7 +106,7 @@
 
 - block:
     - name: (main) Restore Cold Backup
-      include: restore-cold-backup.yml
+      include_tasks: restore-cold-backup.yml
 
     - name: (main) Create our check file so we don't run this again
       file:
@@ -185,7 +185,7 @@
   include_tasks: move_password_file_to_asm.yml
 
 - name: (main) Get environment-specific configuration variables
-  include: get-env-config.yml
+  include_tasks: get-env-config.yml
   tags: oracle-db-bootstrap-required-patches
 
 # Install all one-off patches specified for this environment
