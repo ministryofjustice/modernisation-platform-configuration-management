@@ -19,7 +19,6 @@ db_env:
 ords_trusted_origins:
   preproduction: "https://pp-oasys.az.justice.gov.uk/eor,https://bridge-pp-oasys.az.justice.gov.uk/eor,https://pp.oasys.service.justice.gov.uk/eor,https://pp-int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
 
-
 # OEM server
 # OMS_SERVER: preproduction-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal doesn't exist yet
 # OEM_AGENT_VERSION: 13.5.0.0.0
@@ -47,7 +46,6 @@ rman_backup_cron:
       minute: "30"
       hour: "*"
       job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
-
 # db_configs:
 #   PPOASYS:
 #     db_name: OASPROD
