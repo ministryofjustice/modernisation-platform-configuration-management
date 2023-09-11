@@ -24,15 +24,15 @@ recovery_catalog_server: "{{ OMS_SERVER }}"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
-      weekday: "0"
+      weekday: "5"
       minute: "30"
-      hour: "07"
+      hour: "17"
       # job: command generated in rman-backup-setup
   backup_level_1:
     - name: rman_backup_daily
-      weekday: "1-6"
+      weekday: "0,1,2,3,4,6"
       minute: "30"
-      hour: "07"
+      hour: "17"
       # job: command generated in rman-backup-setup
   monitoring:
     - name: rman_backup_monitoring
