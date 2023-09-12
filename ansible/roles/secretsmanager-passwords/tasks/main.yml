@@ -100,9 +100,10 @@
     label: "{{ item.key }}"
   loop: "{{ secretsmanager_passwords }}"
 
-# NOTE: if this fails, it might be because a password is marked as requiring
-# update in a different account to where the secret is stored.  Update
-# it in the account where the secret is stored instead
+# NOTE: if this fails, check a password isn't being updated in an account
+# that is different to where the secret is stored. If this is intentional,
+# the relevant IAM policies for updating secrets across accounts need
+# to be configured
 - name: Retrieve resource policy for any secrets requiring update
   ansible.builtin.shell: |
     if [[ {{ secretsmanager_passwords_dict[item.key].upload }} == True ]]; then
@@ -124,12 +125,19 @@
              'policy': item.stdout
            }
          }, recursive=true) }}
+  loop_control:
+    label: "{{ item.item.key }}"
   loop: "{{ secret_resource_policy.results }}"
 
 - name: Check secrets which require updating
   set_fact:
     secretsmanager_passwords_to_update: "{{ secretsmanager_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
 
+# - debug:
+#    var: secretsmanager_passwords_to_update
+
+# When I tested, if resource_policy wasn't set, the policy was cleared
+# and would need to be reset in terraform.  So attempting to set here.
 - name: Upload updated secrets
   community.aws.secretsmanager_secret:
     region: "eu-west-2"
