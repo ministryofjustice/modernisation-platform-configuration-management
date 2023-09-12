@@ -1,21 +1,16 @@
 ---
 - name: Perform pre-requesite checks
-  shell: "./setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check ./cmc_response.ini ./failedPrereqs.txt"
+  shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh -InstallDir {{ sap_bi_platform_installation_directory }}/ -pre_requisite_check {{ sap_bi_platform_extraction_directory }}/cmc_response.ini {{ sap_bi_platform_extraction_directory }}/failedPrereqs.txt"
   become: true
   become_user: bobj
   ignore_errors: true
-  args:
-    chdir: "{{ sap_bi_platform_extraction_directory }}"
 
 - name: Run Silent Installation
-  shell: "./setup.sh –InstallDir {{ sap_bi_platform_installation_directory }}/ -r ./cmc_response.ini"
+  shell: "{{ sap_bi_platform_extraction_directory }}/setup.sh –InstallDir {{ sap_bi_platform_installation_directory }}/ -r {{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
   become: true
   become_user: bobj
   ignore_errors: true
-  args:
-    chdir: "{{ sap_bi_platform_extraction_directory }}"
   environment:
-    ORACLE_BASE: /u01/app/oracle
     ORACLE_HOME: /u01/app/oracle/product/19c/client_1
     TNS_ADMIN: /u01/app/oracle/product/19c/client_1/network/admin
     LD_LIBRARY_PATH: /u01/app/oracle/product/19c/client_1/lib
