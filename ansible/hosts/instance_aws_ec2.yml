@@ -30,5 +30,9 @@ keyed_groups:
     prefix: environment-name
   - key: tags['environment-name'] + '_' + tags['delius-environment-name'] + '_' + tags['database']
     prefix: environment-name
+  # - key: tags['environment-name'].split('-')[:-1]|join('-')   # an interesting idea for later maybe
+  #   prefix: application
+  # - key: tags['environment-name'].split('-')|last             # an interesting idea for later maybe
+  #   prefix: aws_environment
 
 strict: no
