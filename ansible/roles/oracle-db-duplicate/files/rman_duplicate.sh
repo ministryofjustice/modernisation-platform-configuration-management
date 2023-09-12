@@ -465,6 +465,13 @@ exit
 EOF
 }
 
+run_datapatch() {
+    info "Run datapatch"
+    cd ${ORACLE_HOME}/OPatch
+    ./datapatch >/dev/null 2>&1
+    [ $? -ne 0 ] && error "Running datapatch"
+}
+
 post_actions () {
   add_spfile_asm
   enable_bct
@@ -476,6 +483,8 @@ post_actions () {
   configure_rman_archive_deletion_policy
   # Ensure the tempfiles for temporary exist other wise recreate the temporary tablespace
   recreate_temporary_tablespaces
+  # Run datapatch in case the source db is at lower release update level
+  run_datapatch
 }
 
 # ------------------------------------------------------------------------------
