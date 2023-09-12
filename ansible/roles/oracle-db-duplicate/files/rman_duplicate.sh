@@ -108,7 +108,7 @@ validate () {
                fi 
                RMANPASS=`aws ssm get-parameters --region ${REGION} --with-decryption --name ${SSMNAME} | jq -r '.Parameters[].Value'`
                [ -z ${RMANPASS} ] && error "Password for rman in aws parameter store ${SSMNAME} does not exist"
-               CATALOG_CONNECT=rman19c/${RMANPASS}@$CATALOG_DB
+               CATALOG_CONNECT=rman19c/${RMANPASS}@"${CATALOG_DB}"
                CONNECT_TO_CATALOG=$(echo "connect catalog $CATALOG_CONNECT;")						
              fi
              info "Catalog ok"
@@ -465,6 +465,13 @@ exit
 EOF
 }
 
+run_datapatch() {
+    info "Run datapatch"
+    cd ${ORACLE_HOME}/OPatch
+    ./datapatch >/dev/null 2>&1
+    [ $? -ne 0 ] && error "Running datapatch"
+}
+
 post_actions () {
   add_spfile_asm
   enable_bct
@@ -476,6 +483,8 @@ post_actions () {
   configure_rman_archive_deletion_policy
   # Ensure the tempfiles for temporary exist other wise recreate the temporary tablespace
   recreate_temporary_tablespaces
+  # Run datapatch in case the source db is at lower release update level
+  run_datapatch
 }
 
 # ------------------------------------------------------------------------------
@@ -554,6 +563,9 @@ info "Shutdown ${TARGET_DB}"
   sqlplus -s / as sysdba <<EOF
   shutdown abort;
 EOF
+
+info "Modify database using Server Control with correct spfile location"
+srvctl modify database -d ${TARGET_DB} -p "+DATA/${TARGET_DB}/spfile${TARGET_DB}.ora"
 
 remove_asm_directory DATA ${TARGET_DB}
 remove_asm_directory FLASH ${TARGET_DB}

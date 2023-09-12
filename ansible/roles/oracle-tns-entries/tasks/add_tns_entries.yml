@@ -42,8 +42,7 @@
 - name: Copy staged tnsnames.ora file in oracle home.
   ansible.builtin.copy:
     src: "{{ stage }}/tnsnames.ora"
-    dest: "{{ oracle_home }}/network/admin.tnsnames.ora"
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     remote_src: true
-  when: tns_file.stat.exists
