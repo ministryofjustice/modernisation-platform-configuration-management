@@ -14,3 +14,8 @@
   ignore_errors: true
   args:
     chdir: "{{ sap_bi_platform_extraction_directory }}"
+  environment:
+    ORACLE_BASE: /u01/app/oracle
+    ORACLE_HOME: /u01/app/oracle/product/19c/client_1
+    TNS_ADMIN: /u01/app/oracle/product/19c/client_1/network/admin
+    LD_LIBRARY_PATH: /u01/app/oracle/product/19c/client_1/lib
