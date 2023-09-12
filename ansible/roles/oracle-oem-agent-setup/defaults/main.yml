@@ -16,12 +16,12 @@ agentpatcher_version: 13.9.5.5.0
 agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
 oem_secretsmanager_secrets:
   - key: "oem_passwords"
-    account_name: "hmpps-oem-{{ environment }}"
+    account_name: "hmpps-oem-{{ aws_environment }}"
     secret: "/ec2/oracle/oem/passwords"
     users:
       - agentreg:
   - key: "emrep_passwords"
-    account_name: "hmpps-oem-{{ environment }}"
+    account_name: "hmpps-oem-{{ aws_environment }}"
     secret: "/ec2/oracle/database/EMREP/passwords"
     users:
       - sysman:
