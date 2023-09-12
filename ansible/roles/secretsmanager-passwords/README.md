@@ -49,3 +49,12 @@ The role will automatically generate passwords and update the
 secret value.
 
 See OEM secrets for an example of how this is used in practice.
+
+3. Force re-generation of password
+
+You can force a re-generation of password by including the secret key and username
+in the `secretmanager_passwords_force_rotate` variable.  For example:
+
+```
+ansible-playbook site.yml -e role=oracle-oem-agent-setup -e secretmanager_passwords_force_rotate=emrep_passwords:sysman --limit test-oem-a
+```
