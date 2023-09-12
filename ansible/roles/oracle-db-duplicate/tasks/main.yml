@@ -9,6 +9,11 @@
     msg: "No rman catalog specified...exiting"
   when: catalog is not defined
 
+- name: Replace catalog with catalog_tns if defined
+  set_fact:
+    catalog: "{{ catalog_tns }}"
+  when: catalog_tns is defined
+
 - name: Check s3 bucket is accessible
   become: yes
   become_user: oracle
@@ -109,7 +114,7 @@
 
     - name: Generate Command to Run RMAN Script
       set_fact:
-        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ database_primary_sid }} -s {{ source_db }} -c {{ catalog }} {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
+        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ database_primary_sid }} -s {{ source_db }} -c "{{ catalog }}" {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
 
     - name: Show Script to Run
       debug:
