@@ -5,12 +5,23 @@
   vars:
     selinux_state: enforcing
 
+- name: Get DATA disk group compatabile.asm value
+  ansible.builtin.shell: |
+    ORACLE_SID=+ASM
+    ORAENV_ASK=NO
+    source oraenv > /dev/null
+    asmcmd lsattr -l -G DATA --suppressheader compatible.asm | awk '{print $NF}'
+  register: datadgcompatible
+  become_user: "{{ oracle_install_user }}"
+  become: yes
+  environment: "{{ grid_env }}"
+
 - name: Add FLASH disk group
   ansible.builtin.shell: |
     main() {
-      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"'
+      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }} attribute 'compatible.asm' = '{{ datadgcompatible.stdout }}';"'
       source oraenv <<< +ASM
-      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }};"
+      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }} attribute 'compatible.asm' = '{{ datadgcompatible.stdout }}';"
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   become_user: "{{ oracle_install_user }}"
