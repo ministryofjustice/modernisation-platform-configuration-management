@@ -82,28 +82,31 @@ oracle_inventory: /u01/app/oraInventory
 
 tns_entries:
   t1:
-    - {
-        name: BIPAUDT1,
-        port: 1521,
-        host_list: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk,
-        service_name: BIPAUD_TAF,
-      }
-    - {
-        name: BIPSYST1,
-        port: 1521,
-        host_list: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk,
-        service_name: BIPSYS_TAF,
-      }
-    - { name: CNOMT1, port: 1521, host_list: t1or-a.test.nomis.service.justice.gov.uk@t1or-b.test.nomis.service.justice.gov.uk, service_name: OR_TAF }
-    - {
-        name: CNMAUDT1,
-        port: 1521,
-        host_list: t1mis-a.test.nomis.service.justice.gov.uk@t1mis-b.test.nomis.service.justice.gov.uk,
-        service_name: CNMAUD_TAF,
-      }
-    - {
-        name: MIST1,
-        port: 1521,
-        host_list: t1mis-a.test.nomis.service.justice.gov.uk@t1mis-b.test.nomis.service.justice.gov.uk,
-        service_name: MIS_TAF,
-      }
+    - name: CNOM
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: OR_TAF
+    - name: MIS
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: MIS_TAF
+    - name: CNMAUD
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: CNMAUD_TAF
+    - name: BIPSYS
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: BIPSYS_TAF
+    - name: BIPAUD
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: BIPAUD_TAF
