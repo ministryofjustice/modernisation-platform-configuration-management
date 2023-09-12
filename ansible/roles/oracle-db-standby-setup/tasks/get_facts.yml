@@ -4,7 +4,7 @@
     msg: "Ensure both {{ db_primary_name }} and {{ db_standby_name }} variables are defined in db_configs fact"
   when: db_configs[db_primary_name] is not defined or db_configs[db_standby_name] is not defined
 
-- name: Set facts
+- name: Set database facts
   set_fact:
     db_primary: "{{ db_configs[ db_primary_name ] }}"
     db_standby: "{{ db_configs[ db_standby_name ] }}"
