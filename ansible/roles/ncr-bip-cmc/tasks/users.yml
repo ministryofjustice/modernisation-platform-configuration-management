@@ -1,0 +1,20 @@
+---
+- name: Copy bobj bash profile
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: bobj
+    group: binstall
+  loop:
+    - home/bobj/.bash_profile
+
+- name: Set env variables
+  blockinfile:
+    dest: /home/bobj/.bashrc
+    block: |
+      export {{ item.name }}={{ item.line }}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  with_items:
+    - { name: ORACLE_HOME, line: /u01/app/oracle/product/19c/client_1 }
+    - { name: TNS_ADMIN, line: /u01/app/oracle/product/19c/client_1/network/admin }
+    - { name: LD_LIBRARY_PATH, line: /u01/app/oracle/product/19c/client_1/lib }

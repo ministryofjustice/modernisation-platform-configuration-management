@@ -1,0 +1,22 @@
+---
+- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+  set_fact:
+    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
+
+- name: Set SSM parameters bip cmc path facts
+  set_fact:
+    ssm_parameters_path_bip_cmc_cms_cluster_key: "{{ ssm_parameters_path }}/cms_cluster_key"
+    ssm_parameters_path_bip_cmc_cms_admin_password: "{{ ssm_parameters_path }}/cms_admin_password"
+    ssm_parameters_path_bip_cmc_lcm_password: "{{ ssm_parameters_path }}/lcm_password"
+    ssm_parameters_path_bip_cmc_cms_db_password: "{{ ssm_parameters_path }}/cms_db_password"
+    ssm_parameters_path_bip_cmc_auditing_db_password: "{{ ssm_parameters_path }}/auditing_db_password"
+    ssm_parameters_path_bip_cmc_product_key: "{{ ssm_parameters_path }}/product_key"
+
+- name: Get SSM parameters
+  set_fact:
+    bip_cmc_cms_cluster_key: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_cms_cluster_key, region=ansible_ec2_placement_region) }}"
+    bip_cmc_cms_admin_password: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_cms_admin_password, region=ansible_ec2_placement_region) }}"
+    bip_cmc_lcm_password: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_lcm_password, region=ansible_ec2_placement_region) }}"
+    bip_cmc_cms_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_cms_db_password, region=ansible_ec2_placement_region) }}"
+    bip_cmc_auditing_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_auditing_db_password, region=ansible_ec2_placement_region) }}"
+    bip_cmc_product_key: "{{ lookup('aws_ssm', ssm_parameters_path_bip_cmc_product_key, region=ansible_ec2_placement_region) }}"
