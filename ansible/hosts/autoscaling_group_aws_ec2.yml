@@ -16,8 +16,6 @@ hostnames:
 
 compose:
   ansible_host: instance_id # private_ip_address - use ip address if need to go through bastion
-  aws_application: tags['environment-name'].split('-')[:-1]|join('-')
-  aws_environment: tags['environment-name'].split('-')|last
 
 groups:
   bastion: tags.Name is search('bastion')
@@ -32,5 +30,9 @@ keyed_groups:
     prefix: server-type
   - key: tags['os-type'] | lower
     prefix: os-type
+  # - key: tags['environment-name'].split('-')[:-1]|join('-')   # an interesting idea for later maybe
+  #   prefix: application
+  # - key: tags['environment-name'].split('-')|last             # an interesting idea for later maybe
+  #   prefix: aws_environment
 
 strict: no
