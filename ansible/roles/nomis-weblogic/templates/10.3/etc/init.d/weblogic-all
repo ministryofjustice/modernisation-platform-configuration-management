@@ -95,7 +95,7 @@ get_unhealthy_services() {
     fi
   fi
   if [[ -x /etc/init.d/opmn ]]; then
-    if [[ $(/etc/init.d/opmn status | grep -c Alive) != 3 ]]; then
+   if [[ $(/etc/init.d/opmn status | grep -c Alive) -lt 3 ]]; then
       unhealthy+=(opmn)
     fi
   fi

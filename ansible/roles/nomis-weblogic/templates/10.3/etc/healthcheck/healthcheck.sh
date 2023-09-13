@@ -6,22 +6,24 @@ keepalive() {
 
 while true
 do
-    /etc/init.d/weblogic-all healthcheck > /dev/null 2>&1
+    output=$(/etc/init.d/weblogic-all healthcheck 2>&1)
     status=$?
     if [ $status -eq 1 ]
     then
         if [ -f "/u01/tag/static/keepalive.htm" ]
         then
-            echo "Removing keepalive" | logger -p local3.info -t "healthcheck"
+            echo "${output}"
+            /etc/init.d/weblogic-all status
+            echo "Removing keepalive"
             rm -f /u01/tag/static/keepalive.htm
         fi
     else
         if [ ! -f "/u01/tag/static/keepalive.htm" ]
         then
-            echo "Creating keepalive /u01/tag/static/keepalive.htm" | logger -p local3.info -t "healthcheck"
+            echo "${output}"
+            echo "Creating keepalive /u01/tag/static/keepalive.htm"
             keepalive > /u01/tag/static/keepalive.htm
             chown oracle:oinstall /u01/tag/static/keepalive.htm
-            echo
         fi
     fi
     sleep 120
