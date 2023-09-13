@@ -17,11 +17,11 @@ agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
 oem_secretsmanager_secrets:
   - key: "oem_passwords"
     account_name: "hmpps-oem-{{ aws_environment }}"
-    secret: "/ec2/oracle/oem/passwords"
+    secret: "/oracle/oem/passwords"
     users:
       - agentreg:
   - key: "emrep_passwords"
     account_name: "hmpps-oem-{{ aws_environment }}"
-    secret: "/ec2/oracle/database/EMREP/passwords"
+    secret: "/oracle/database/EMREP/passwords"
     users:
       - sysman:
