@@ -1,0 +1,20 @@
+---
+# Ensure EC2 includes arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore or a policy with ssm:GetParameter
+- name: Get modernisation_platform_account_id SSM parameter
+  set_fact:
+    modernisation_platform_account_id: "{{ lookup('aws_ssm', 'modernisation_platform_account_id', region='eu-west-2') }}"
+  failed_when: modernisation_platform_account_id|length < 12
+
+- name: Get environment_management SecretsManager Secret Id
+  set_fact:
+    environment_management_secret_id: "arn:aws:secretsmanager:eu-west-2:{{ modernisation_platform_account_id }}:secret:environment_management"
+
+# The secret is shared with all accounts, the EC2 should have access without any extra policies.
+- name: Get environment_maangement SecretsManager Secret
+  set_fact:
+    environment_management_secret: "{{ lookup('amazon.aws.aws_secret', environment_management_secret_id, region='eu-west-2') }}"
+  failed_when: environment_management_secret|length < 2
+
+- name: Get account_ids JSON
+  set_fact:
+    account_ids: "{{ environment_management_secret.account_ids }}"

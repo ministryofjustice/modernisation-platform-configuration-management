@@ -1,19 +1,22 @@
 ---
+- name: Get OEM secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ oem_secretsmanager_secrets }}"
+
 - name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
   set_fact:
-    ssm_parameters_path: "/{{ ssm_parameters_prefix }}"
     db_ssm_parameters_path: '/database/{{ ec2.tags["Name"] }}'
 
 - name: Set SSM parameters database path facts
   set_fact:
-    ssm_parameters_path_oem_sysman_password: "{{ ssm_parameters_path }}/sysmanpassword"
-    ssm_parameters_path_oem_agent_registration_password: "{{ ssm_parameters_path }}/agentregpassword"
     ssm_parameter_path_asmsnmp_password: "{{ db_ssm_parameters_path }}/ASMSNMP"
 
 - name: Get SSM parameters
   set_fact:
-    oem_sysman_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_sysman_password, region=ansible_ec2_placement_region) }}"
-    oem_agent_password: "{{ lookup('aws_ssm', ssm_parameters_path_oem_agent_registration_password, region=ansible_ec2_placement_region) }}"
+    oem_sysman_password: "{{ secretsmanager_passwords_dict['emrep_passwords'].passwords['sysman'] }}"
+    oem_agent_password: "{{ secretsmanager_passwords_dict['oem_passwords'].passwords['agentreg'] }}"
     asmsnmp_password: "{{ lookup('aws_ssm', ssm_parameter_path_asmsnmp_password, region=ansible_ec2_placement_region) }}"
 
 - name: Get private ip address of the ec2 instance
