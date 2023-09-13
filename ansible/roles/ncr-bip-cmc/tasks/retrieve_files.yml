@@ -22,7 +22,7 @@
       aws_s3:
         mode: get
         bucket: "{{ s3.bip_bucket_name }}"
-        object: "{{ s3.prefix }}{{ item }}"
+        object: "{{ s3.packages_prefix }}{{ item }}"
         dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
         overwrite: never
       with_items: "{{ s3.files.sap_bi_platform }}"
