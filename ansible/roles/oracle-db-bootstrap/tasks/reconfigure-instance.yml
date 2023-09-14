@@ -18,7 +18,7 @@
         state: present
       ignore_errors: false
 
-- name: (main/reconfigure-instance) Update our service_users profile so that the ORACLE_HOSTNAME variable is correct and resolves
+- name: (main/reconfigure-instance) Update our service users profile
   include_tasks: update-service-user.yml
 
 - name: Find out how much system memory we have

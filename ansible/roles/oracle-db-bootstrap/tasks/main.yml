@@ -54,15 +54,15 @@
 
 - name: (main) Reconfigure our config that was set during ami build
   include_tasks: reconfigure-instance.yml
-  tags: oracle-db-bootstrap-reconfigure-instance
+  tags: always
 
 - name: (main) Setup required database passwords in SSM parameter store
   include_tasks: create-ssm-passwords.yml
-  tags: oracle-db-bootstrap-ssm
+  tags: always
 
 - name: (main) Reconfigure asm
   include_tasks: reconfigure-asm.yml
-  tags: oracle-db-bootstrap-asm
+  tags: always
 
 - block:
     - name: (main) Configure out database
@@ -78,50 +78,41 @@
         oradb_installed: true
 
   when:
-    - not oradb_installed|default(false)
+    - not oradb_installed
     - database_type != "standby"
-  tags: oracle-db-bootstrap-create-db
+  tags: always
 
 - name: (main) Setup TAF Service Name
   include_tasks: set-taf-service.yml
   when:
     - database_type != "standby"
-  tags: oracle-db-bootstrap-service
+  tags: always
 
 - name: (main) Install Oracle Secure Web Backup Service (oswbs)
   include_role:
     name: oracle-secure-backup
   vars:
     database_home: "{{ oracle_database_oracle_home }}"
-  tags: oracle-db-bootstrap-oswbs
-
-- name: (main) Display database_bootstrap_restore var
-  debug:
-    msg:
-      - "database_type - {{ database_type }}"
-      - "database_bootstrap_restore - {{ database_bootstrap_restore }}"
-      - "backup_restored - {{ backup_restored }}"
-      - "oradb_installed - {{ oradb_installed }}"
-  tags: oracle-db-bootstrap
+  tags: always
 
 - block:
-    - name: (main) Restore Cold Backup
-      include_tasks: restore-cold-backup.yml
+    - name: (main) Duplicate database
+      include_role:
+        name: oracle-db-duplicate
 
     - name: (main) Create our check file so we don't run this again
       file:
-        path: "/home/{{ service_user_name }}/.backup_restored"
+        path: "/home/{{ service_user_name }}/.database_duplicated"
         state: touch
 
-    - name: (main) backup restored
+    - name: (main) Database duplicated
       set_fact:
-        backup_restored: true
+        database_duplicated: true
   when:
     - database_type != "standby"
-    - database_bootstrap_restore|bool
-    - not backup_restored|bool
-    - oradb_installed|bool
-  tags: oracle-db-bootstrap-restore
+    - not database_duplicated
+    - oradb_installed
+  tags: always
 
 - block:
     - name: (main) Copy huge page script
@@ -155,12 +146,11 @@
     - name: (main) hugepages set
       set_fact:
         hugepages_set: true
-
   when:
     - database_type != "standby"
-    - backup_restored|bool
-    - not hugepages_set|bool
-  tags: oracle-db-bootstrap-hugepages
+    - database_duplicated
+    - not hugepages_set
+  tags: always
 
 - block:
     - name: (main) Create DB ready for HA check file standby
@@ -169,7 +159,8 @@
         state: touch
   when:
     - database_type != "primary"
-    - not ready_for_ha|bool
+    - not ready_for_ha
+  tags: always
 
 - block:
     - name: (main) Create DB ready for HA check file primary
@@ -178,15 +169,17 @@
         state: touch
   when:
     - database_type != "standby"
-    - oradb_installed|bool
-    - not ready_for_ha|bool
+    - oradb_installed
+    - not ready_for_ha
+  tags: always
 
 - name: Ensure Password File is in ASM
   include_tasks: move_password_file_to_asm.yml
+  tags: always
 
 - name: (main) Get environment-specific configuration variables
   include_tasks: get-env-config.yml
-  tags: oracle-db-bootstrap-required-patches
+  tags: always
 
 # Install all one-off patches specified for this environment
 # and set any custom database parameters
@@ -224,5 +217,5 @@
   become_user: oracle
   when:
     - oradb_installed or database_type == "standby"
-    - backup_restored or not database_bootstrap_restore
-  tags: oracle-db-bootstrap-post-tasks
+    - database_duplicated
+  tags: always

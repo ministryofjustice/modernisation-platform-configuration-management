@@ -135,6 +135,17 @@
       become: yes
       become_user: oracle
 
+    - name: Wait for RMAN duplicate to complete only in lower environments for migration
+      ansible.builtin.async_status:
+        jid: "{{ duplicate_cmd_output.ansible_job_id }}"
+      register: duplicate_cmd_output_result
+      until: duplicate_cmd_output_result.finished
+      delay: 960
+      retries: 60
+      become: yes
+      become_user: oracle
+      when: catalog_tns is defined
+
     - name: Report Run Output
       debug:
         msg: "{{ duplicate_cmd_output }}"
