@@ -26,7 +26,7 @@ done
 case $KERN in
    '2.4') HUGETLB_POOL=`echo "$NUM_PG*$HPG_SZ/1024" | bc -q`;
           echo "$HUGETLB_POOL" ;;
-   '2.6' | '3.8' | '3.10' | '4.1' ) echo "$NUM_PG" ;;
+   '2.6' | '3.8' | '3.10' | '4.1' | '5.4') echo "$NUM_PG" ;;
     *) echo "Unrecognized kernel version $KERN. Exiting." ;;
 esac
 # End
