@@ -2,7 +2,7 @@
 # inventory, or passed in to command line via extra_vars parameter when
 # running locally.  Setting dummy values here to ensure the ansible doesn't
 # crash out if they aren't set, e.g. when running AMI builds
-ec2_name: "no_name"
-aws_environment: "no_environment"
-application: "no_application"
+ec2_name: "no_name"               # the tags.Name on either EC2 or AutoScalingGroup
+aws_environment: "no_environment" # development, test, preproduction or production
+application: "no_application"     # the aws account minus the environment, e.g. nomis
 my_test_var: "test"
