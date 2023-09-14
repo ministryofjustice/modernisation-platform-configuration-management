@@ -36,6 +36,9 @@
 
 - hosts: "{{ target | default('all') }}"
   tasks:
+    - debug:
+        msg: "{{ ec2_name }} {{ application }} {{ aws_environment }} {{ my_test_var }}"
+
     - name: Set roles_defined fact
       set_fact:
         # These are roles_list defined in inventory. Default is empty list.
