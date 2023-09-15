@@ -1,0 +1,13 @@
+---
+- name: Create the YUM repository
+  yum_repository:
+    name: "{{ azure_package_name }}"
+    baseurl: "{{ yum_repo_baseurl }}"
+    gpgkey: "{{ repo_key_url }}"
+    gpgcheck: yes
+    enabled: yes
+
+- name: Install the application package (RedHat)
+  package:
+    name: "{{ azure_package_name }}"
+    state: present
