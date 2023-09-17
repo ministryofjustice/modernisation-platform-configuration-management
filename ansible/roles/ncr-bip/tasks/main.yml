@@ -23,6 +23,12 @@
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
+- import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
 - import_tasks: retrieve_files.yml
   tags:
     - amibuild
@@ -30,6 +36,18 @@
   when: ansible_distribution in ['RedHat']
 
 - import_tasks: extract_files.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
+- import_tasks: add_response_file.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
+- import_tasks: install_bip_cmc.yml
   tags:
     - amibuild
     - ec2provision

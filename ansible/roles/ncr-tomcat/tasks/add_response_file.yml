@@ -1,0 +1,15 @@
+- name: Copy pre requesites file
+  ansible.builtin.template:
+    src: u02/software/BIP_4_3_SP1/prereq_checks.ini
+    dest: "{{ sap_bi_platform_extraction_directory }}/prereqs.ini"
+    owner: bobj
+    group: binstall
+    mode: "0755"
+
+- name: Copy response file
+  ansible.builtin.template:
+    src: u02/software/BIP_4_3_SP1/cmc_response.ini
+    dest: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    owner: bobj
+    group: binstall
+    mode: "0755"

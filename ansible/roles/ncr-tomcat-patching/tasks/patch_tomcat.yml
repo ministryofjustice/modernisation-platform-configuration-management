@@ -1,5 +1,8 @@
 ---
 - name: Run Patch
-  shell: "sh {{ sap_bi_platform_extraction_directory }}/setup.sh –InstallDir {{ sap_bi_platform_installation_directory }}/ -r {{ sap_bi_platform_extraction_directory }}/patch_response.ini"
+  become_user: bobj
+  ansible.builtin.shell: |
+    . ~/.bash_profile 
+    /u02/software/BIP_4_3_SP1/setup.sh -InstallDir /u01/app/bobj/BIP4/ -r /u02/software/BIP_4_3_SP1/tomcat_patch_response.ini
   become: true
   become_user: bobj

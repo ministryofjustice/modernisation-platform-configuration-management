@@ -3,7 +3,7 @@
     mode: get
     bucket: "{{ s3.bip_bucket_name }}"
     object: "{{ s3.response_files_prefix }}{{ s3.files.tomcat_admin_response_file }}"
-    dest: "{{ sap_bi_platform_extraction_directory }}/response.ini"
+    dest: "{{ sap_bi_platform_extraction_directory }}/tomcat_response.ini"
     overwrite: true
 
 - name: Ensure product key is set in response file
