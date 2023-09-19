@@ -37,7 +37,6 @@
         owner: oracle
         group: oinstall
         mode: 0755
-      # when: db_primary.storage_account_name is defined and not ansible_check_mode
 
     - name: Download backup from Azure Storage Account
       ansible.builtin.shell: |
