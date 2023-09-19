@@ -30,14 +30,6 @@
       become_user: oracle
       when: db_primary.s3_bucket is defined and not ansible_check_mode
 
-    - name: Add generate sas token script
-      ansible.builtin.template:
-        src: "update-db-az-sas-token.sh.j2"
-        dest: "/usr/local/bin/update-db-az-sas-token.sh"
-        owner: oracle
-        group: oinstall
-        mode: 0755
-
     - name: Download backup from Azure Storage Account
       ansible.builtin.shell: |
         set -eo pipefail

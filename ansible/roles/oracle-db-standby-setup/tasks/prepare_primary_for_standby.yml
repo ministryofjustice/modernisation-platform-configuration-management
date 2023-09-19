@@ -1,6 +1,14 @@
 ---
 - name: Setup Primary database for HA
   block:
+    - name: Add generate sas token script
+      ansible.builtin.template:
+        src: "update-db-az-sas-token.sh.j2"
+        dest: "/usr/local/bin/update-db-az-sas-token.sh"
+        owner: oracle
+        group: oinstall
+        mode: 0755
+    
     - name: Copy setup files for execution
       ansible.builtin.template:
         src: "{{ item }}.j2"
