@@ -37,6 +37,6 @@
     - name: Execute setup script
       become: true
       ansible.builtin.shell: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
-  when: 
+  when:
     - bip_init_file_check.stat.exists
     - not setupinit_folder_check.stat.exists
