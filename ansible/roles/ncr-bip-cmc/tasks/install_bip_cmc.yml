@@ -9,6 +9,11 @@
     path: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
   register: bip_init_file_check
 
+- name: Check if init has been run
+  stat:
+    path: /etc/init.d/SAPBOBJEnterpriseXI40
+  register: setupinit_folder_check
+
 - name: Install BIP
   block:
     - name: Perform pre-requesite checks
@@ -23,6 +28,15 @@
   when: not bip_installed_check.stat.exists
 
 - name: Run setup
-  become: true
-  ansible.builtin.shell: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
-  when: bip_init_file_check.stat.exists
+  block:
+    - name: Copy setupinit file
+      ansible.builtin.template:
+        src: u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+        dest: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+
+    - name: Execute setup script
+      become: true
+      ansible.builtin.shell: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+  when: 
+    - bip_init_file_check.stat.exists
+    - not setupinit_folder_check.stat.exists
