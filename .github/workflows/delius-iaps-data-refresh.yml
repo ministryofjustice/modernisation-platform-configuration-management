@@ -45,8 +45,8 @@ jobs:
       - name: Snapshot ID provided
         if: ${{ github.event.inputs.manually_specified_snapshot_id != '' }}
         run: |
-          echo SNAPSHOT_IDENTIFIER=${{ github.event.inputs.snapshot_id }} >> $GITHUB_ENV
-          echo SNAPSHOT_IDENTIFIER=${{ github.event.inputs.snapshot_id }} >> $GITHUB_OUTPUT
+          echo SNAPSHOT_IDENTIFIER=${{ github.event.inputs.manually_specified_snapshot_id }} >> $GITHUB_ENV
+          echo SNAPSHOT_IDENTIFIER=${{ github.event.inputs.manually_specified_snapshot_id }} >> $GITHUB_OUTPUT
 
 
       - name: Set snapshot name string
