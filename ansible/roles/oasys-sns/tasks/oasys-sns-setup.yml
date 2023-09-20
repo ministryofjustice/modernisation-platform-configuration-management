@@ -1,0 +1,55 @@
+---
+- name: set fact
+  ansible.builtin.set_fact:
+    oasys_db_hostname: "{{ ec2.tags['server-name'] }}"
+
+- name: Create stage directories
+  ansible.builtin.file:
+    owner: oracle
+    group: oinstall
+    path: "{{ stage }}"
+    state: directory
+    mode: "0755"
+
+- name: Check oasys-sns folder exists
+  ansible.builtin.stat:
+    path: "{{ oracle_home }}/oasys-sns"
+  register: sns_directory
+
+- name: Get oasys-sns file from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "oasys-sns/oasys-sns.tar"
+    dest: "{{ stage }}/oasys-sns.tar"
+    mode: get
+    permission: public-read
+  when: not sns_directory.stat.exists
+
+- name: Unarchive oracle-sns.tar
+  become_user: oracle
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/oasys-sns.tar"
+    dest: "{{ oracle_home }}"
+    remote_src: yes
+  when: not sns_directory.stat.exists
+
+- name: Copy sns_config_update.sql script template
+  become_user: "{{ oracle_install_user }}"
+  ansible.builtin.template:
+    src: "sns_config_update.sql.j2"
+    dest: "{{ stage }}/sns_config_update.sql"
+    mode: u=rwx,g=,o=
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+
+- name: Update oracle SNS_CONFIG table
+  become_user: "{{ oracle_install_user }}"
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      export ORACLE_SID=`grep OASYS /etc/oratab | awk -F: '{ print $1 }'`
+      . oraenv <<< $ORACLE_SID
+      sqlplus / as sysdba @{{ stage }}/sns_config_update.sql
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db

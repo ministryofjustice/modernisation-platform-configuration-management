@@ -1,0 +1,75 @@
+---
+- name: Get facts for playbook execution
+  ansible.builtin.import_tasks: get_facts.yml
+  tags:
+    - always
+
+- name: Remove keepalive
+  ansible.builtin.import_tasks: rename_keepalive_start_outage.yml
+  when: app_server_file.stat.exists
+  tags:
+    - start_outage
+
+- name: Stop_nomis_weblogic
+  ansible.builtin.import_tasks: stop_nomis_app.yml
+  when: app_server_file.stat.exists
+  tags:
+    - ec2provision
+    - stop_application
+
+- name: Create oracle restore point before release deployment
+  ansible.builtin.include_role:
+    name: oracle-restore-point
+    apply:
+      tags:
+        - create_restore_point
+  vars:
+    restore_point_name: "{{ restore_point_name }}"
+    db_tns_list: "{{ db_tns_list }}"
+    action: create
+  tags:
+    - create_restore_point
+
+# - name: Stop streams (Import oracle-streams role, WIP)
+
+- name: Deploy nomis releases
+  ansible.builtin.include_tasks:
+    file: nomis_deploy_release.yml
+    apply:
+      tags:
+        - ec2provision
+        - deploy_release
+  loop_control:
+    loop_var: nomis_release
+  loop: "{{ nomis_releases }}"
+  tags:
+    - ec2provision
+    - deploy_release
+
+- name: Start Nomis weblogic app
+  ansible.builtin.import_tasks: start_nomis_app.yml
+  when: app_server_file.stat.exists
+  tags:
+    - ec2provision
+    - start_application
+
+- name: Rename keepalive back to end outage
+  ansible.builtin.import_tasks: rename_keepalive_end_outage.yml
+  when: app_server_file.stat.exists
+  tags:
+    - end_outage
+
+# - name: Start streams (Import oracle-streams role, WIP)
+
+- name: Drop oracle restore point post successful validation
+  ansible.builtin.include_role:
+    name: oracle-restore-point
+    apply:
+      tags:
+        - drop_restore_point
+  vars:
+    restore_point_name: "{{ restore_point_name }}"
+    db_tns_list: "{{ db_tns_list }}"
+    action: drop
+  tags:
+    - drop_restore_point

@@ -1,0 +1,49 @@
+---
+- name: DB - Deploy database release {{ nomis_release.name }} if not already deployed
+  block:
+    - name: DB - Deploy release if not already deployed
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          . ~/.bash_profile
+          cd {{ stage }}/{{ nomis_release.name }}
+          ./db_patch.sh -d {{ app_db_name }} -p {{ app_db_password }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-nomis-release-deployment
+      async: 86400
+      poll: 20
+
+    - name: set fact for nomis release patch is inserted in db_patches or not
+      set_fact:
+        db_patch_updated: "{{ nomis_release.db_patch_updated }}"
+
+    - name: DB - Copy sql script file to verify release on database
+      ansible.builtin.template:
+        src: "insert_db_release.sql.j2"
+        dest: "{{ stage }}/insert_db_release.sql"
+        mode: 0600
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+      when: db_patch_updated == "0"
+
+    - name: DB - Insert release {{ nomis_release.name }}  details in db_patches table.
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        sqlplus -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} @{{ stage }}/insert_db_release.sql
+      when: db_patch_updated == "0"
+
+    - name: DB - Check database release {{ nomis_release.name }} deployed on database or not
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        sqlplus -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} @{{ stage }}/check_db_release.sql
+      changed_when: false
+      register: release_status
+
+    - name: DB - Fail if release not deployed successfully in database.
+      fail:
+        msg: Release deployment failed.
+      when: release_status.stdout | regex_search("RELEASE_STATUS=0")
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"

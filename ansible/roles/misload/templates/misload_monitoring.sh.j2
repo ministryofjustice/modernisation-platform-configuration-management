@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -e
+
+export PATH=$PATH:/usr/local/bin
+
+misload_db={{ misload_db_name }}
+
+get_misload_status() {
+    sqlplus -s / as sysdba << EOF
+    set head off feedback off
+    select decode(count(1),0, '1','0')
+    from bodimis.etl_load_log
+    where to_char(load_start_datetime,'dd.mm.yyyy') = to_char(sysdate,'dd.mm.yyyy')
+    and error_flag='N';
+    exit
+EOF
+}
+
+get_misload_triggered_time() {
+    file_path=$1
+    text="misload_triggered"
+    trigger_time=$(grep "$text" $file_path | awk '{print $2, $3}')
+    # trigger_timeStamp=$(date -d "$trigger_time" +%s)
+    echo $trigger_time
+}
+
+last_triggered=$(get_misload_triggered_time /opt/textfile_monitoring/misload_triggered.prom)
+
+cd {{ oracle_admin_script_dir }}
+export ORACLE_SID=T1MIS
+export ORAENV_ASK=NO
+. oraenv > /dev/null
+status=$(get_misload_status | tr -d '\n')
+echo "misload-status $misload_db $status last-triggered: $last_triggered"

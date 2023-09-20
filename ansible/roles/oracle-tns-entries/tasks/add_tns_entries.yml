@@ -1,11 +1,19 @@
 ---
-- name: Copy template shell script for adding tns entries
-  template:
-    src: "add_tns_entry.sh.j2"
-    dest: "{{ stage }}/add_tns_entry.sh"
-    mode: u=rwx,g=r,o=r
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
+- name: Set parameters to get the hostname
+  set_fact:
+    server_name: '{{ ec2.tags["server-name"] }}'
+
+- name: Set parameters to get the hostname
+  set_fact:
+    env_name: "{{ server_name.split('-') | first }}"
+
+- name: Create stage directories
+  ansible.builtin.file:
+    owner: oracle
+    group: oinstall
+    path: "{{ stage }}"
+    state: directory
+    mode: "0755"
 
 - name: Check tnsnames.ora file exists
   ansible.builtin.stat:
@@ -15,21 +23,26 @@
 - name: Backup tnsnames.ora file before making changes
   ansible.builtin.copy:
     src: "{{ oracle_home }}/network/admin/tnsnames.ora"
-    dest: "{{ stage }}/tnsnames.ora_BKP"
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora_{{ bkpdate }}"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     backup: yes
     remote_src: true
   when: tns_file.stat.exists
 
-- name: Add TNS entries in tnsnames.ora file
+- name: Generate tnsnames.ora file in staging area
   become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      {{ stage }}/add_tns_entry.sh {{ oracle_home }} {{ tns_config.name }} {{ tns_config.host_list }} {{ tns_config.port }} {{ tns_config.service_name }}
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-client
-  loop_control:
-    loop_var: tns_config
-  loop: "{{ tns_entries }}"
+  ansible.builtin.template:
+    src: "tnsnames.ora.j2"
+    dest: "{{ stage }}/tnsnames.ora"
+    mode: u=rwx,g=r,o=r
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+
+- name: Copy staged tnsnames.ora file in oracle home.
+  ansible.builtin.copy:
+    src: "{{ stage }}/tnsnames.ora"
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: true

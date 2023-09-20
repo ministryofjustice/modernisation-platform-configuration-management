@@ -1,70 +1,65 @@
 ---
 ansible_aws_ssm_bucket_name: s3-bucket20230301110846292900000001
-image_builder_s3_bucket_name: nnomis-combined-reporting-software20230330140932343400000001
-dns_zone_internal: nomis-combined-reporting.hmpps-development.modernisation-platform.internal
+db_backup_s3_bucket_name: ncr-db-backup-bucket20230815134351976500000003
+image_builder_s3_bucket_name: nomis-combined-reporting-software20230330140932343400000001
+dns_zone_internal: nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+dns_search_domains:
+  - hmpps-oem.hmpps-test.modernisation-platform.internal
+  - azure.noms.root
 
-users_and_groups_system:
-  - name: oracle
-    group: oinstall
-    groups:
-      - dba
-      - wheel
-  - name: bobj
-    group: binstall
-    groups:
-      - dba
-      - sapsys
+database_home: /u01/app/oracle/product/19c/db_1
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
-server_type_roles_list:
-  - users-and-groups
-  - sudoers
-  - get-ec2-facts
-  - set-ec2-hostname
-  - domain-search
-  - disable-ipv6
-  - disable-firewall
-  - time
-  - packages
-  - message-of-the-day
-  - amazon-ssm-agent
-  - amazon-cli
-  - disks
-  - oracle-19c-client
-  - combined-reporting-bip-rhel8-setup
-  - combined-reporting-tomcat-installation
+# OEM server
+OMS_SERVER: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
 
-roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "5"
+      minute: "30"
+      hour: "17"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "0,1,2,3,4,6"
+      minute: "30"
+      hour: "17"
+      # job: command generated in rman-backup-setup
+  monitoring:
+    - name: rman_backup_monitoring
+      weekday: "*"
+      minute: "30"
+      hour: "*"
+      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
-packages_yum_install:
-  - make
-  - libstdc++.i686
-  - libstdc++.x86_64
-  - glibc.i686
-  - glibc.x86_64
-  - libX11.i686
-  - libX11.x86_64
-  - libXext.i686
-  - libXext.x86_64
-  - expat.i686
-  - expat.x86_64
-  - libgcc.i686
-  - libgcc.x86_64
-  - libXcursor.i686
-  - libXcursor.x86_64
-  - libXrender.i686
-  - libXrender.x86_64
-  - libXfixes.i686
-  - libXfixes.x86_64
-  - libxcb.i686
-  - libxcb.x86_64
-  - libXau.i686
-  - libXau.x86_64
-  - xz-libs.i686
+db_configs:
+  T1BIPSYS:
+    db_name: T1BIPSYS
+    db_unique_name: T1BIPSYS
+    instance_name: T1BIPSYS
+    host_name: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+    port: 1521
+    tns_name: T1BIPSYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIPSYS_TAF, role: PRIMARY }
 
-disks_mount:
-  - ebs_device_name: /dev/sdb
-    dir: /u01
-    fstype: xfs
-  - ebs_device_name: /dev/sds
-    dir: swap
-    fstype: swap
+  T1BIPAUD:
+    db_name: T1BIPAUD
+    db_unique_name: T1BIPAUD
+    instance_name: T1BIPAUD
+    host_name: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+    port: 1521
+    tns_name: T1BIPAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIPAUD_TAF, role: PRIMARY }

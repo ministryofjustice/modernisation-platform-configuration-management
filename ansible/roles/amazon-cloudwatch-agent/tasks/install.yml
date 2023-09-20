@@ -19,4 +19,11 @@
     name: "{{ amazon_cloudwatch_agent_package }}"
     state: present
     disable_gpg_check: true
-  when: agent_installed.rc == 1
+  when: agent_installed.rc == 1 and ansible_distribution_major_version != '6'
+
+- name: Install amazon-cloudwatch-agent on Rhel 6
+  ansible.builtin.shell: |
+    wget https://s3.amazonaws.com/amazoncloudwatch-agent/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
+    rpm -U ./amazon-cloudwatch-agent.rpm
+  become: true
+  when: agent_installed.rc == 1 and ansible_distribution_major_version == '6'

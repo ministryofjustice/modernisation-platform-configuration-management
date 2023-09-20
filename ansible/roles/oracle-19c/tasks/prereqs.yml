@@ -5,18 +5,32 @@
     database: passwd
     key: oracle
 
-- name: Set data and flash disk facts
+- name: Set data disks facts
   set_fact:
-    oracle_data_disks: "{{ disks_partition | default([]) | selectattr('oracle_group', 'defined') | selectattr('oracle_group', 'equalto', 'data') }}"
-    oracle_flash_disks: "{{ disks_partition | default([]) | selectattr('oracle_group', 'defined') | selectattr('oracle_group', 'equalto', 'flash') }}"
+    oracle_data_disks: "{{ oracle_data_disks | default([]) + [disk_partition.oracle_label | regex_replace('(^.*$)', 'ORCL:\\1')] }}"
+  loop_control:
+    loop_var: disk_partition
+  loop: "{{ disks_partition }}"
+  when:
+    - disk_partition.oracle_group == 'data'
+    - ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
+
+- name: Set flash disks facts
+  set_fact:
+    oracle_flash_disks: "{{ oracle_flash_disks | default([]) + [disk_partition.oracle_label | regex_replace('(^.*$)', regex)] }}"
+  vars:
+    regex: "'ORCL:\\1'"
+  loop_control:
+    loop_var: disk_partition
+  loop: "{{ disks_partition }}"
+  when:
+    - disk_partition.oracle_group == 'flash'
+    - ebs_to_linux_device_map[disk_partition.ebs_device_name] is defined
 
 - name: Set data and flash disk group facts
   set_fact:
-    oracle_data_diskgroup: "{{ oracle_data_disks | map(attribute='oracle_label') | map('regex_replace', '(^.*$)', regex1) | join(',') }}"
-    oracle_flash_diskgroup_sql: "{{ oracle_flash_disks | map(attribute='oracle_label') | map('regex_replace', '(^.*$)', regex2) | join(', ') }}"
-  vars:
-    regex1: "ORCL:\\1"
-    regex2: "'ORCL:\\1'"
+    oracle_data_diskgroup: "{{ oracle_data_disks | join(',') }}"
+    oracle_flash_diskgroup_sql: "{{ oracle_flash_disks | join(',') }}"
 
 - name: Fail when data disks are not defined
   fail:
@@ -27,9 +41,8 @@
   fail:
     msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one flash disk"
   when: oracle_flash_diskgroup_sql|length == 0
-
-- name: Fail if drive map missing
-  fail:
-    msg: "Missing linux drive mapping, ensure device exists on device"
-  when: not ebs_to_linux_device_map[item.ebs_device_name] is defined
-  loop: "{{ disks_partition | selectattr('oracle_label', 'defined') }}"
+# - name: Fail if drive map missing
+#   fail:
+#     msg: "Missing linux drive mapping, ensure device exists on device"
+#   when: not ebs_to_linux_device_map[item.ebs_device_name] is defined
+#   loop: "{{ disks_partition | selectattr('oracle_label', 'defined') }}"

@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en-gb" xml:lang="en-gb" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta content="text/html" http-equiv="text/html; charset=iso-8859-1" />
+<meta content="No" http-equiv="MSThemeCompatible" />
+<meta content="true" name="MSSmartTagsPreventParsing" />
+<meta content="no" http-equiv="imagetoolbar" />
+<meta content="IE=8" http-equiv="X-UA-Compatible" />
+<meta content="noindex,nofollow" http-equiv="robots" />
+<title>OASys-R Restricted Launch Applications</title>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<!-- CSS -->
+<link href="/i/themes/moj_blue_theme/css/oasys-css-combined-min.css" rel="stylesheet" type="text/css" />
+<!-- Javascript -->
+<script src="/i/themes/moj_blue_theme/javascript/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+<!-- Begin
+function popUp(URL) {
+day = new Date();
+id = day.getTime();
+eval("page" + id + " = window.open(URL, '_blank', 'toolbar=0,scrollbars=1,location=0,statusbar=1,menubar=0,resizable=1,width=1024,height=768');");
+}
+// End -->
+
+
+(function($) {
+
+jQuery.fn.pngFix = function(settings) {
+
+	// Settings
+	settings = jQuery.extend({
+		blankgif: 'blank.gif'
+	}, settings);
+
+	var ie55 = (navigator.appName == "Microsoft Internet Explorer" && parseInt(navigator.appVersion) == 4 && navigator.appVersion.indexOf("MSIE 5.5") != -1);
+	var ie6 = (navigator.appName == "Microsoft Internet Explorer" && parseInt(navigator.appVersion) == 4 && navigator.appVersion.indexOf("MSIE 6.0") != -1);
+
+	if (jQuery.browser.msie && (ie55 || ie6)) {
+
+		//fix images with png-source
+		jQuery(this).find("img[src$=.png]").each(function() {
+
+			jQuery(this).attr('width',jQuery(this).width());
+			jQuery(this).attr('height',jQuery(this).height());
+
+			var prevStyle = '';
+			var strNewHTML = '';
+			var imgId = (jQuery(this).attr('id')) ? 'id="' + jQuery(this).attr('id') + '" ' : '';
+			var imgClass = (jQuery(this).attr('class')) ? 'class="' + jQuery(this).attr('class') + '" ' : '';
+			var imgTitle = (jQuery(this).attr('title')) ? 'title="' + jQuery(this).attr('title') + '" ' : '';
+			var imgAlt = (jQuery(this).attr('alt')) ? 'alt="' + jQuery(this).attr('alt') + '" ' : '';
+			var imgAlign = (jQuery(this).attr('align')) ? 'float:' + jQuery(this).attr('align') + ';' : '';
+			var imgHand = (jQuery(this).parent().attr('href')) ? 'cursor:hand;' : '';
+			if (this.style.border) {
+				prevStyle += 'border:'+this.style.border+';';
+				this.style.border = '';
+			}
+			if (this.style.padding) {
+				prevStyle += 'padding:'+this.style.padding+';';
+				this.style.padding = '';
+			}
+			if (this.style.margin) {
+				prevStyle += 'margin:'+this.style.margin+';';
+				this.style.margin = '';
+			}
+			var imgStyle = (this.style.cssText);
+
+			strNewHTML += '<span '+imgId+imgClass+imgTitle+imgAlt;
+			strNewHTML += 'style="position:relative;white-space:pre-line;display:inline-block;background:transparent;'+imgAlign+imgHand;
+			strNewHTML += 'width:' + jQuery(this).width() + 'px;' + 'height:' + jQuery(this).height() + 'px;';
+			strNewHTML += 'filter:progid:DXImageTransform.Microsoft.AlphaImageLoader' + '(src=\'' + jQuery(this).attr('src') + '\', sizingMethod=\'scale\');';
+			strNewHTML += imgStyle+'"></span>';
+			if (prevStyle != ''){
+				strNewHTML = '<span style="position:relative;display:inline-block;'+prevStyle+imgHand+'width:' + jQuery(this).width() + 'px;' + 'height:' + jQuery(this).height() + 'px;'+'">' + strNewHTML + '</span>';
+			}
+
+			jQuery(this).hide();
+			jQuery(this).after(strNewHTML);
+
+		});
+
+		// fix css background pngs
+		jQuery(this).find("*").each(function(){
+			var bgIMG = jQuery(this).css('background-image');
+			if(bgIMG.indexOf(".png")!=-1){
+				var iebg = bgIMG.split('url("')[1].split('")')[0];
+				jQuery(this).css('background-image', 'none');
+				jQuery(this).get(0).runtimeStyle.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='" + iebg + "',sizingMethod='scale')";
+			}
+		});
+
+		//fix input with png-source
+		jQuery(this).find("input[src$=.png]").each(function() {
+			var bgIMG = jQuery(this).attr('src');
+			jQuery(this).get(0).runtimeStyle.filter = 'progid:DXImageTransform.Microsoft.AlphaImageLoader' + '(src=\'' + bgIMG + '\', sizingMethod=\'scale\');';
+   		jQuery(this).attr('src', settings.blankgif)
+		});
+
+	}
+
+	return jQuery;
+
+};
+
+})(jQuery);
+
+
+$(document).ready(function(){
+ $(document).pngFix();
+});
+</script>
+<style type="text/css">
+.auto-style1 {
+	font-size: 1em;
+	color: #10658A;
+}
+</style>
+</head>
+
+<body class="home" style="visibility:visible" oncontextmenu="return false;" style="background-color: white;">
+
+<div id="container" style="background-color: white; width: 987px;">
+	<div id="bannercontainer">
+		<div id="banner">
+			<div id="bannerbarrnd">
+				<span id="bannerbarleftrnd">
+				<img alt="MOJ Logo" alt="MOJ Logo" height="70px" src="/i/themes/moj_blue_theme/images/MOJTransSmall.png" style="margin-top: 7px;" width="226" /></span>
+				<span id="bannerbarrightrnd">
+				<h3 style="margin-top: 10px;"><strong>OASys</strong> (Offender Assessment
+				System)<br><strong></strong></h3>
+				</span></div>
+		</div>
+		<div id="bannertoolbar">
+		</div>
+	</div>
+	<div id="contentwrapper">
+		<div id="logincontent" style="vertical-align: middle; text-align: center; padding-top: 20px; height: 430px;">
+			<br><br>
+			<!-- Content -->
+			<div style="margin: 0 auto;">
+
+			    <style>
+			    #launchLinks td{
+	               text-align: left;
+	               font-weight:
+	               normal; font-size: 15px;
+                }
+			    </style>
+
+				<table id="launchLinks" style="width: 100%">
+					<tr>
+						<td style="width: 10%"></td>
+						<td style="text-align: left"><B>Please click on one of the links below to launch the OASys application you need.</B></td>
+					</tr>
+					<tr>
+						<td>&nbsp;</td>
+						<td style="text-align: left">&nbsp;</td>
+					</tr>
+
+					<tr>
+						<td style="width: 10%"></td>
+						<td>
+						<a href="javascript:popUp('/redirect.html')">
+						<img alt="OASys Icon" height="35" src="i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
+						OASys</a></td>
+					</tr>
+
+
+					<tr>
+						<td style="width: 10%"></td>
+						<td style="font-size: 12px">
+<textarea name="Comments" cols="100" rows="4" readonly="yes">
+We are aware of an on-going issue with Prison events failing under some circumstances. This will affect the creation of new Offender Records and Basic Custody Screenings. Our technical support team are currently investigating, we apologies for the obvious inconvenience.
+</textarea>				</td>
+					</tr>
+
+
+					<tr>
+						<td>&nbsp;</td>
+						<td style="text-align: left">&nbsp;</td>
+					</tr>
+					<tr>
+						<td style="width: 10%"></td>
+						<td>
+
+					</tr>
+					<tr>
+						<td style="width: 10%"></td>
+						<td>
+						<a href="javascript:popUp(window.location.protocol + '//practice.' + window.location.host + '/')">
+						<img alt="OASys Icon" height="35" src="i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
+						Practice</a></td>
+					</tr>
+
+
+					<tr>
+						<td>&nbsp;</td>
+						<td style="text-align: left">&nbsp;</td>
+					</tr>
+					<tr>
+						<td style="width: 10%"></td>
+						<td>
+						<a href="javascript:popUp(window.location.protocol + '//training.' + window.location.host + '/')">
+						<img alt="OASys Icon" height="35" src="i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
+						Training</a></td>
+					</tr>
+					<tr>
+						<td>&nbsp;</td>
+						<td style="text-align: left">&nbsp;</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div id="loginfooter">
+			<p><strong>Restricted<stong></p>
+		</div>
+	</div>
+	</strong></div>
+
+</body>
+
+</html>

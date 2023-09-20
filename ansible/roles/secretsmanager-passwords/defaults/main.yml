@@ -1,0 +1,16 @@
+---
+secretmanager_passwords:
+# - key: "unique_key_for_ansible_dictionary1" e.g. my_password
+#   account_name: "my-aws-account-name1"      e.g. hmpps-oem-test
+#   secret: "my-secretsmanager-secret-name1"  e.g. /ec2/oracle/oem/passwords"
+#   users:  # list of users and optional passwords (don't commit)
+#     - myuser1: myfixedvalue
+#     - myuser2
+# - key: "unique_key_for_ansible_dictionary2"
+#   account_name: "my-aws-account-name2"
+#   secret: "my-secretsmanager-secret-name2"
+#   users:
+#     - myuser3
+
+secretmanager_passwords_force_rotate: ""
+# include the secret key and username to force rotation, e.g. "unique_key_for_ansible_dictionary1:myuser1"

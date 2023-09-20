@@ -1,0 +1,79 @@
+---
+- block:
+    - name: Copy database duplication script
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      loop:
+        - active_db_duplication.cmd
+
+    - name: Start auxiliary database in nomount mode
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: startup nomount pfile='{{ stage }}/init{{ auxiliary_db.instance_name }}.ora'"
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ auxiliary_db.instance_name }}_nomount.log
+          startup nomount  pfile='{{ stage }}/init{{ auxiliary_db.instance_name }}.ora'
+          exit
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Create standby database which can take a very long time if backup not used
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# rman cmdfile={{ stage }}/active_db_duplication.cmd"
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          rman cmdfile={{ stage }}/active_db_duplication.cmd log={{ stage }}/{{ auxiliary_db.instance_name }}_active_standby_creation.log
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      async: 86400
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Create spfile in ASM diskgroup
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# sqlplus / as sysdba: create pfile ..."
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          sqlplus "/ as sysdba" << EOF > {{ stage }}/start_{{ auxiliary_db.instance_name }}_check.log
+          create pfile='/tmp/init.ora' from spfile;
+          create spfile='+DATA/{{ auxiliary_db.db_unique_name }}/spfile{{ auxiliary_db.instance_name }}.ora' from pfile='/tmp/init.ora' ;
+          shutdown immediate
+          exit
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add database in CRS
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# srvctl add database -d {{ auxiliary_db.instance_name }} ..."
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          srvctl add database -d {{ auxiliary_db.instance_name }} -o {{ database_home }} -p +DATA/{{ auxiliary_db.db_unique_name }}/spfile{{ auxiliary_db.instance_name }}.ora -r PHYSICAL_STANDBY -s open -t IMMEDIATE -i {{ auxiliary_db.instance_name }} -n {{ auxiliary_db.db_name }} -y AUTOMATIC -a {{ auxiliary_db.asm_disk_groups }}
+          srvctl start database -d {{ auxiliary_db.instance_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+
+    - name: Add database service in CRS
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# srvctl add service -d {{ auxiliary_db.instance_name }} ..."
+          source oraenv <<< {{ auxiliary_db.instance_name }}
+          srvctl add service  -d {{ auxiliary_db.instance_name }} -s {{ item.name }}  -l {{ item.role }} -e SELECT -z 180 -w 5 
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
+      loop: "{{ auxiliary_db.service }}"
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ db_env }}"

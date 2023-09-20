@@ -1,0 +1,42 @@
+---
+- name: Check if product is installed
+  stat:
+    path: /u01/app/bobj/BIP4/sap_bobj
+  register: bip_installed_check
+
+- name: Check if init file exists
+  stat:
+    path: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+  register: bip_init_file_check
+
+- name: Check if init has been run
+  stat:
+    path: /etc/init.d/SAPBOBJEnterpriseXI40
+  register: setupinit_folder_check
+
+- name: Install Tomcat
+  block:
+    - name: Perform pre-requesite checks
+      become_user: bobj
+      ansible.builtin.shell: "/u02/software/BIP_4_3_SP1/setup.sh -InstallDir /u01/app/bobj/BIP4/ -pre_requisite_check /u02/software/BIP_4_3_SP1/prereq_checks.ini /u02/software/BIP_4_3_SP1/failedPrereqs.txt"
+
+    - name: Run Silent Installation
+      become_user: bobj
+      ansible.builtin.shell: |
+        . ~/.bash_profile 
+        /u02/software/BIP_4_3_SP1/setup.sh -InstallDir /u01/app/bobj/BIP4/ -r /u02/software/BIP_4_3_SP1/cmc_response.ini
+  when: not bip_installed_check.stat.exists
+
+- name: Run setup
+  block:
+    - name: Copy setupinit file
+      ansible.builtin.template:
+        src: u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+        dest: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+
+    - name: Execute setup script
+      become: true
+      ansible.builtin.shell: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
+  when:
+    - bip_init_file_check.stat.exists
+    - not setupinit_folder_check.stat.exists

@@ -7,15 +7,27 @@
     owner: oracle
     group: oinstall
 
-- name: Install oracle prerequisite rpms
-  yum:
-    name: "{{ stage }}/{{ item }}"
-    state: present
-    disable_gpg_check: true
+- name: Install packages with yum command as those are not getting installed by ansible yum
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      yum -y install {{ item }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-yum-install
   loop:
-    - "{{ oracle_prereq_rpm }}"
     - libnsl
     - libnsl2
+    - libnsl.i686
+    - libnsl2.i686
+
+- name: Install oracle prerequisite rpms
+  yum:
+    name: "{{ item }}"
+    state: latest
+    disable_gpg_check: true
+    update_cache: true
+  loop:
+    - "{{ stage }}/{{ oracle_prereq_rpm }}"
 
 - name: Unzip Oracle 19c Client software
   ansible.builtin.unarchive:
@@ -50,6 +62,8 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle
+  async: 1800
+  poll: 30
 
 - name: Run post install root script
   ansible.builtin.shell: |

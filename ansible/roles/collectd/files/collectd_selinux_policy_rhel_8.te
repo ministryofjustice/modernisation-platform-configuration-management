@@ -1,0 +1,32 @@
+
+module collectd_selinux_policy 1.0;
+
+require {
+        type systemd_systemctl_exec_t;
+        type systemd_unit_file_t;
+        type collectd_t;
+        type timedatex_t;
+        type cloud_init_t;
+        type sudo_exec_t;
+        type usr_t;
+        class dbus send_msg;
+        class file { execute execute_no_trans getattr map open read };
+        class capability kill;
+        class service status;
+}
+
+#============= collectd_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow collectd_t self:capability kill;
+allow collectd_t sudo_exec_t:file { execute getattr };
+
+#!!!! This avc is allowed in the current policy
+allow collectd_t systemd_systemctl_exec_t:file { execute execute_no_trans getattr map open read };
+allow collectd_t usr_t:file execute;
+allow collectd_t usr_t:file execute_no_trans;
+allow collectd_t systemd_unit_file_t:file { read getattr open };
+allow collectd_t systemd_unit_file_t:service status;
+
+#============= timedatex_t ==============
+allow timedatex_t cloud_init_t:dbus send_msg;

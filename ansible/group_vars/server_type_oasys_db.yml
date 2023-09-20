@@ -24,11 +24,10 @@ roles_list:
   - amazon-cli
   # - hugepages has issues
   - disks
-  # - script-exporter
   - azcopy
   - oracle-19c
-  # - oracle-secure-web
-  # - db-restore
+  - oracle-secure-backup
+  - oracle-db-backup
 
 packages_yum_install:
   - zip-3.0-23.el8
@@ -69,3 +68,10 @@ disks_mount:
   - ebs_device_name: /dev/sds
     dir: swap
     fstype: swap
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/19c/db_1
+grid_home: /u01/app/oracle/product/19c/gridhome_1

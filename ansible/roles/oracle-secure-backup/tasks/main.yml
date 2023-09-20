@@ -1,0 +1,11 @@
+---
+- import_tasks: get-software.yml
+  tags:
+    - osw-get-software
+    - amibuild
+    - ec2provision
+
+- import_tasks: install-software.yml
+  tags:
+    - osw-install-software
+    - ec2provision

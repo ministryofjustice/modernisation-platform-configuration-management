@@ -1,0 +1,5 @@
+# Managed by ansible, git repo modernisation-platform-configuration-management, role domain-search
+search {{ ansible_ec2_placement_region }}.compute.internal {{ dns_zone_internal }} {{ dns_search_domains  | join(' ') }}
+{% for nameserver in ansible_facts.dns.nameservers -%}
+nameserver {{ nameserver }}
+{% endfor %}

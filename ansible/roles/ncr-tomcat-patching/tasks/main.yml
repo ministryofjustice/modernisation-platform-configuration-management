@@ -1,0 +1,12 @@
+---
+- import_tasks: add_response_file.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
+- import_tasks: patch_tomcat.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']

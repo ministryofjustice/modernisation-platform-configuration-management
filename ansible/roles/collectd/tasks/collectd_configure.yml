@@ -1,7 +1,7 @@
 ---
 - name: Template main collect.conf file
-  ansible.builtin.template:
-    src: collectd.conf.j2
+  ansible.builtin.copy:
+    src: collectd.conf
     dest: "/etc/collectd.conf"
     owner: root
     mode: 0644
@@ -12,47 +12,8 @@
     dest: /usr/share/collectd/types.db.custom
     owner: root
     mode: 0644
-
-- name: create folder for exec script to collect metrics
-  ansible.builtin.file:
-    path: "/opt/collectd"
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-  # get tag values for use in script nomis_db.sh.j2 template
-- name: Get oracle database sids for monitoring as a list from the oracle-sids tag
-  set_fact:
-    oracle_sid_list: '{{ ec2.tags["oracle-sids"].split() | default([]) | join(" ") }}'
-  when: ec2.tags['oracle-sids'] is defined
-
-  # copy collectd plugin definitions into /etc/collectd.d/ directory referenced in collectd.conf
-  # if defined in group_vars under collectd_metric_configs, will use only linux.sh if none defined
-- name: copy plugin files
-  ansible.builtin.copy:
-    src: "{{ item|replace('-', '_') }}.conf"
-    dest: "/etc/collectd.d/{{ item|replace('-', '_') }}.conf"
-    owner: root
-    mode: 0644
-  loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
-  loop_control:
-    label: item
-
-  # template collectd exec scripts into /opt/collectd directory
-  # if defined in group_vars under collectd_metric_configs, will use only linux.sh if none defined
-- name: template config files
-  ansible.builtin.template:
-    src: "{{ item|replace('-', '_') }}.sh.j2"
-    dest: "/opt/collectd/{{ item|replace('-', '_') }}.sh"
-    owner: root
-    mode: 0755
-  loop: "{{ collectd_metric_configs + [ ansible_system|lower ] if collectd_metric_configs is defined else [ ansible_system|lower ]}}"
-  loop_control:
-    label: item
-
-- name: Start collectd service
-  ansible.builtin.service:
-    name: collectd
-    state: started
-    enabled: yes
+# - name: Start collectd service
+#   ansible.builtin.service:
+#     name: collectd
+#     state: started
+#     enabled: yes

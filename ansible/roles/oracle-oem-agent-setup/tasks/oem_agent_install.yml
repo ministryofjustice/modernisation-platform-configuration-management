@@ -1,0 +1,60 @@
+---
+- name: Install oracle agent prerequisite zip package
+  ansible.builtin.yum:
+    name: zip
+    state: present
+    disable_gpg_check: true
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+
+- name: Install OEM 13.5 agent and add targets
+  block:
+    - name: Get AgentPull.sh script from OMS server
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          cd {{ stage }}
+          curl "https://{{ OMS_SERVER }}:7803/em/install/getAgentImage" --insecure -o AgentPull.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agentpull-get
+
+    - name: Update AgentPull.sh file to change omsHost
+      ansible.builtin.lineinfile:
+        path: "{{ stage }}/AgentPull.sh"
+        regexp: "^omsHost="
+        line: "omsHost={{ OMS_SERVER }}"
+
+    - name: Update AgentPull.sh permissions to execute
+      ansible.builtin.file:
+        path: "{{ stage }}/AgentPull.sh"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+
+    - name: Install OEM agent
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ stage }}/AgentPull.sh AGENT_BASE_DIR={{ oem_agent_base }} LOGIN_USER=sysman LOGIN_PASSWORD={{ oem_sysman_password }} PLATFORM="Linux x86-64" AGENT_REGISTRATION_PASSWORD={{ oem_agent_password }} VERSION={{ OEM_AGENT_VERSION }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-install
+      async: 86400
+      poll: 60
+
+  # block
+  become: true
+  become_user: oracle
+
+- name: Execute root.sh
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/root.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script

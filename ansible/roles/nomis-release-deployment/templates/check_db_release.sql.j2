@@ -1,0 +1,3 @@
+set head off feedback off
+select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '{{ nomis_release.name }}';
+exit

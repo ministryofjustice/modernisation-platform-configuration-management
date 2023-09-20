@@ -1,0 +1,15 @@
+---
+- name: (main/reconfigure-instance/update-service-user) Update our service users with .bash_profile
+  blockinfile:
+    insertafter: EOF
+    block: "{{ bash_profile }}"
+    dest: "/home/{{ service_user_name }}/.bash_profile"
+    owner: "{{ service_user_name }}"
+    group: "{{ service_user_group}}"
+
+- name: (main/reconfigure-instance/update-service-user) Create our tmp dir for this as oracle because ansible
+  file:
+    state: directory
+    path: "/home/{{ service_user_name }}/.ansible/tmp"
+    owner: "{{ service_user_name }}"
+    group: "{{ service_user_group}}"

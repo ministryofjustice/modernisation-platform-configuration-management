@@ -1,17 +1,31 @@
 ---
 ansible_python_interpreter: /usr/local/bin/python3.9
-collectd_metric_configs:
-  - nomis-db
+
 server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
   - oracle-11g
-  - oracle-secure-web
+  - oracle-secure-backup
   - oracle-db-backup
-#  - collectd                 # temporarily disabling as generating errors, address in DSOS-1974
-#  - amazon-cloudwatch-agent
-#  - oracle-db-restore
+  - collectd-service-metrics
+  #  - oracle-db-restore
+  - fixngo-connected-metric
+  - misload
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/11.2.0.4/db_1
+grid_home: /u01/app/oracle/product/11.2.0.4/gridhome_1
+
+collectd_monitored_services:
+  - chronyd
+  - amazon-ssm-agent
+  - amazon-cloudwatch-agent
+  - oracle-ohasd
+  - oracleasm

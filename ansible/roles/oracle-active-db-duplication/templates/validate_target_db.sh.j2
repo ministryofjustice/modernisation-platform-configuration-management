@@ -1,0 +1,35 @@
+#!/bin/bash
+
+export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+export PATH=$ORACLE_HOME/bin:$PATH 
+stage={{ stage }}
+db_password=$1 
+target_host=$2
+target_db=$3
+
+echo "SET LINES 1000
+SET PAGES 0
+SET FEEDBACK OFF
+SET HEADING OFF
+WHENEVER SQLERROR EXIT FAILURE 
+SELECT 'LOG_MODE='|| LOG_MODE FROM v\$DATABASE ;
+EXIT" > script.sql 
+
+LOG_MODE=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @script.sql`
+rm script.sql 
+
+if [ `echo $LOG_MODE | awk -F= '{ print $2 }'` == 'NOARCHIVELOG' ]
+then 
+	echo "Failure:  Source database is in noarchivelog mode" 
+	exit 1 
+elif [ `echo $LOG_MODE | grep ORA-01017 | wc -l ` == 1 ]
+then 
+	echo "Failure: Invalid password "
+	exit 1
+elif [ `echo $LOG_MODE | grep ORA-12154 | wc -l ` == 1 ]
+then 
+	echo "Failure: TNS issue"
+	exit 1 
+else 
+	exit 0
+fi	

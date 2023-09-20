@@ -1,0 +1,63 @@
+---
+- name: Find Location of Grid Infrastructure SQLNET.ORA file
+  shell: |
+    . ~/.bash_profile
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv
+    echo $ORACLE_HOME/network/admin/sqlnet.ora
+  register: get_gi_sqlnet
+  changed_when: false
+
+- name: Set Location of Grid Infrastructure SQLNET.ORA file
+  set_fact:
+    gi_sqlnet_ora_location: "{{ get_gi_sqlnet.stdout_lines[-1] }}"
+
+- name: Add Grid Infrastructure SQLNET parameters
+  lineinfile:
+    path: "{{ gi_sqlnet_ora_location }}"
+    create: yes
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}"
+  loop: "{{ sqlnet_parameters.grid | default({}) | dict2items }}"
+
+- name: Find Location of Grid Infrastructure LISTENER.ORA file
+  shell: |
+    . ~/.bash_profile
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv
+    echo $ORACLE_HOME/network/admin/listener.ora
+  register: get_gi_listener
+  changed_when: false
+
+- name: Set Location of Grid Infrastructure LISTENER.ORA file
+  set_fact:
+    gi_listener_ora_location: "{{ get_gi_listener.stdout_lines[-1] }}"
+
+- name: Add Grid Infrastructure LISTENER parameters
+  lineinfile:
+    path: "{{ gi_listener_ora_location }}"
+    create: yes
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}"
+  loop: "{{ listener_parameters.grid | default({}) | dict2items }}"
+
+- name: Find Location of Database SQLNET.ORA file
+  shell: |
+    . ~/.bash_profile
+    echo $ORACLE_HOME/network/admin/sqlnet.ora
+  register: get_db_sqlnet
+  changed_when: false
+
+- name: Set Location of Database SQLNET.ORA file
+  set_fact:
+    db_sqlnet_ora_location: "{{ get_db_sqlnet.stdout_lines[-1] }}"
+
+- name: Add Database SQLNET parameters
+  lineinfile:
+    path: "{{ db_sqlnet_ora_location }}"
+    create: yes
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}"
+  loop: "{{ sqlnet_parameters.database | default({}) | dict2items }}"

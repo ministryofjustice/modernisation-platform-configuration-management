@@ -31,12 +31,3 @@
   async: 86400
   poll: 60
   when: not ansible_check_mode
-
-- name: Upload weblogic, nodemanager, sysman and OEM agent registration passwords for OEM repository database
-  become_user: oracle
-  ansible.builtin.shell: |
-    export PATH=$PATH:/usr/local/bin
-    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_weblogic_password }}" --value {{ weblogic_admin_password }} --type "SecureString" --overwrite 
-    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_nodemanager_password }}" --value {{ nodemanager_password }} --type "SecureString" --overwrite 
-    aws ssm put-parameter --name "{{ ssm_parameters_path_db_sysman_password }}" --value {{ db_sysman_password }} --type "SecureString" --overwrite 
-    aws ssm put-parameter --name "{{ ssm_parameters_path_oem_agent_registration_password }}" --value {{ oem_agent_password }} --type "SecureString" --overwrite

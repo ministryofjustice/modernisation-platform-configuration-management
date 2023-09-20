@@ -13,12 +13,12 @@ typeset -u CATALOG_DB
 typeset -u TARGET_DB
 typeset -u BACKUP_TYPE
 typeset -u CATALOGMODE
-typeset RCATOWNER_PASSWORD
 typeset -i LEVEL
 
 export TIMESTAMP=$(date +"%Y%m%d%H%M")
 export RMANREGISTERLOGFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.log
 export RMANREGISTERCMDFILE=/home/oracle/admin/rman_scripts/logs/rmanregister${TARGET_DB}.cmd
+export PATH=/usr/local/bin:$PATH
 
 typeset -r MIN_LOG=0
 typeset -r MAX_LOG=9999999999
@@ -28,6 +28,7 @@ export V_DATABASE=v\$database
 export SUCCESS_STATUS=0
 export WARNING_STATUS=1
 export ERROR_STATUS=9
+cd /home/oracle/admin/rman_scripts
 
 usage () {
   echo ""
@@ -126,7 +127,9 @@ validate () {
                        then
                          error "Catalog mode is $CATALOGMODE, specify catalog db"
                        else
-                         CATALOG_CONNECT=rcatowner/$RCATOWNER_PASSWORD@$CATALOG_DB
+			                   RCATOWNER=`aws ssm get-parameter --name "/database/recovery-catalog-owner/username" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+			                   RCATOWNER_PASSWORD=`aws ssm get-parameter --name "/database/recovery-catalog-owner/password" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+                         CATALOG_CONNECT=$RCATOWNER/$RCATOWNER_PASSWORD@$CATALOG_DB
                        fi
                      fi
                      ;;
@@ -178,16 +181,23 @@ catalog_check () {
 EOF
 )
   eval $X
-
+  info "Checking Database name"
+  X=$(sqlplus -s "/ as sysdba" <<EOF
+       set feedback off heading off echo off verify off
+       select 'DB_NAME='||name from $V_DATABASE;
+       exit
+EOF
+)
+  eval $X
   info "Database ID = $DB_ID"
+  info "Database ID = $DB_NAME"
 
   info "Checking if target database is registered"
    X=$(sqlplus -s $CATALOG_CONNECT <<EOF
         set feedback off heading off echo off verify off
         select 'ISREGD='||decode(count(*),0,'NO','YES')
           from rc_database
-         where name = '$TARGET_DB'
-         and dbid = '$DB_ID';
+         where dbid = '$DB_ID' and name='$DB_NAME';
         exit
 EOF
 )
@@ -271,7 +281,7 @@ EOF
     [ $LEVEL -eq 1 ] && LVL="$LEVEL cumulative" || LVL=$LEVEL
     echo "  backup as compressed backupset incremental level $LVL database $DB_TAG_FORMAT;" >>$RMANCMDFILE
     echo "  sql 'alter system archive log current';" >>$RMANCMDFILE
-    echo "  backup as compressed backupset archivelog all not backed up 1 times  $AL_TAG_FORMAT;" >>$RMANCMDFILE
+    echo "  backup as compressed backupset archivelog all delete input  $AL_TAG_FORMAT;" >>$RMANCMDFILE
     echo "  backup current controlfile $CF_TAG_FORMAT;" >>$RMANCMDFILE
     for (( i=1; i<=${CPU_COUNT}; i++ ))
     do
@@ -386,8 +396,15 @@ do
     rman cmdfile $RMANCMDFILE log $RMANLOGFILE > /dev/null
     info "Checking for errors"
     grep -i "ERROR MESSAGE STACK" $RMANLOGFILE >/dev/null 2>&1
-    [ $? -eq 0 ] && info "Rman reported errors for $TARGET_DB"
-    info "Backup of $TARGET_DB completed successfully"
+    if [[ $? -eq 0 ]]; then
+      info "Rman reported errors for $TARGET_DB"
+      echo "$TARGET_DB,$(date +%s),0,$(date),Errors" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+    else
+      info "Backup of $TARGET_DB completed successfully"
+      echo "$TARGET_DB,$(date +%s),1,$(date),Success" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
+      find /home/oracle/admin/rman_scripts/logs -name "*cmd" -mtime +15 -exec rm {} \;
+      find /home/oracle/admin/rman_scripts/logs -name "*log" -mtime +15 -exec rm {} \;
+    fi
   ); then
     exitcode=1
   fi

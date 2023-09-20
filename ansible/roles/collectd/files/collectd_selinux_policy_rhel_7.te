@@ -1,0 +1,49 @@
+module collectd_selinux_policy 1.0;
+
+require {
+    type init_exec_t;
+    type systemd_unit_file_t;
+    type init_t;
+    type usr_t;
+    type sshd_unit_file_t;
+    type shell_exec_t;
+    type system_dbusd_t;
+    type bin_t;
+    type systemd_systemctl_exec_t;
+    type collectd_t;
+    type chronyd_unit_file_t;
+    class service status;
+    class unix_stream_socket connectto;
+    class dbus send_msg;
+    class system status;
+    class capability kill;
+    class file { execute execute_no_trans getattr open read };
+}
+
+#============= collectd_t ==============
+
+#!!!! WARNING: 'bin_t' is a base type.
+allow collectd_t bin_t:file { execute execute_no_trans };
+allow collectd_t chronyd_unit_file_t:service status;
+allow collectd_t init_exec_t:file { execute execute_no_trans open read };
+allow collectd_t init_t:dbus send_msg;
+allow collectd_t init_t:system status;
+allow collectd_t self:capability kill;
+
+#!!!! WARNING: 'shell_exec_t' is a base type.
+allow collectd_t shell_exec_t:file { execute execute_no_trans };
+allow collectd_t sshd_unit_file_t:service status;
+allow collectd_t system_dbusd_t:dbus send_msg;
+
+#!!!! The file '/run/dbus/system_bus_socket' is mislabeled on your system.  
+#!!!! Fix with $ restorecon -R -v /run/dbus/system_bus_socket
+allow collectd_t system_dbusd_t:unix_stream_socket connectto;
+allow collectd_t systemd_systemctl_exec_t:file { execute execute_no_trans getattr open read };
+allow collectd_t systemd_unit_file_t:service status;
+allow collectd_t usr_t:file execute_no_trans;
+
+#!!!! This avc is allowed in the current policy
+allow collectd_t usr_t:file execute;
+
+#============= init_t ==============
+allow init_t collectd_t:dbus send_msg;

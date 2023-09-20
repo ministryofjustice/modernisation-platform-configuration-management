@@ -1,0 +1,7 @@
+---
+- name: Start nomis weblogic app
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - weblogic-all

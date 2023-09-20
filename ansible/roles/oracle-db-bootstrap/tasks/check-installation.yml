@@ -1,0 +1,44 @@
+---
+- block:
+    - name: (main/check-installation) Validate oracle database installed
+      stat:
+        path: "/home/{{ service_user_name }}/.oradb_installed"
+      register: oradb_install_check_file
+      become: true
+
+    - name: (main/check-installation) Is oradb installed
+      set_fact:
+        oradb_installed: "{% if oradb_install_check_file.stat.exists %}true{% else %}false{% endif %}"
+
+- block:
+    - name: (main/check-installation) Validate database duplicated
+      stat:
+        path: "/home/{{ service_user_name }}/.database_duplicated"
+      register: database_duplicated_check_file
+      become: true
+
+    - name: (main/check-installation) Is database duplicated
+      set_fact:
+        database_duplicated: "{% if database_duplicated_check_file.stat.exists %}true{% else %}false{% endif %}"
+
+- block:
+    - name: (main/check-installation) Validate hugepages set
+      stat:
+        path: "/home/{{ service_user_name }}/.hugepages_set"
+      register: hugepages_set_check_file
+      become: true
+
+    - name: (main/check-installation) Is hugepages set
+      set_fact:
+        hugepages_set: "{% if hugepages_set_check_file.stat.exists %}true{% else %}false{% endif %}"
+
+- block:
+    - name: (main/check-installation) Validate ready for ha
+      stat:
+        path: "/home/{{ service_user_name }}/.ready_for_ha"
+      register: ready_for_ha_check_file
+      become: true
+
+    - name: (main/check-installation) Is ready for ha
+      set_fact:
+        ready_for_ha: "{% if ready_for_ha_check_file.stat.exists %}true{% else %}false{% endif %}"
