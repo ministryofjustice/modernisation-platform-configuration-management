@@ -1,9 +1,9 @@
 stage: /u02/stage
 temp_dir: /u02/stage/temp
-rcvcat_db_name: "{{ db_configs[rcvcat].rcvcat_db_name }}"
+rcvcat_db_name: "{{ db_configs[rcvcat] }}"
 rc_ssm_passwords:
   - key: "rc_passwords"
-    parameter: "/oracle/database/{{ rcvcat_db_name }}/passwords"
+    parameter: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
     users:
       - rcvcatowner:
       - sys:
