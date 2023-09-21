@@ -23,6 +23,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-pip
           sudo pip3 install awscli
+        
+      - name: Dry run flag
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo DRY_RUN_FLAG="--dry-run" >> $GITHUB_ENV
+          else
+            echo DRY_RUN_FLAG="" >> $GITHUB_ENV
+          fi
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
@@ -38,7 +46,7 @@ jobs:
             --snapshot-type "automated" \
             --db-instance-identifier "iaps" \
             --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[0].DBSnapshotIdentifier" \
-            --output text)
+            --output text ${{env.DRY_RUN_FLAG}})
           if [ -z "$overnight_snapshot_identifier" ]; then
             echo "No snapshot found"
             exit 1
@@ -59,51 +67,28 @@ jobs:
           echo SNAPSHOT_PROD_COPY_NAME="iaps-prod-snapshot-$DATETIME_STRING" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod-prod)
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "${{ env.SOURCE_SNAPSHOT_IDENTIFIER }}"  \
             --target-db-snapshot-identifier "${{ env.SNAPSHOT_PROD_COPY_NAME }}" \
-            --region "eu-west-2"
-
-      - name: "[DRY RUN] Copy snapshot (prod-prod)"
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run only, skipping snapshot copy"
-          echo "Command generated:"
-          echo "aws rds copy-db-snapshot \
-            --source-db-snapshot-identifier '${{ env.SOURCE_SNAPSHOT_IDENTIFIER }}'  \
-            --target-db-snapshot-identifier '${{ env.SNAPSHOT_PROD_COPY_NAME }}' \
-            --region 'eu-west-2'"
+            --region "eu-west-2 ${{env.DRY_RUN_FLAG}}"
 
       - name: Wait for RDS Snapshot to be ready
         if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           for run in {1..5}; do
             aws rds wait db-snapshot-available \
-              --db-snapshot-identifier "${{ env.SNAPSHOT_PROD_COPY_NAME }}" && break || sleep 10 * run
+              --db-snapshot-identifier "${{ env.SNAPSHOT_PROD_COPY_NAME }} ${{env.DRY_RUN_FLAG}}" && break || sleep 10 * run
           done
               
       - name: Share RDS snapshot with Pre-Prod
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           aws rds modify-db-snapshot-attribute \
             --db-snapshot-identifier "${{ env.SNAPSHOT_PROD_COPY_NAME }}" \
             --attribute-name restore \
-            --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
-        
-      - name: "[DRY RUN] Share RDS snapshot with Pre-Prod"
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run only, skipping share snapshot with pre-prod"
-          echo "Command generated:"
-          echo "aws rds modify-db-snapshot-attribute \
-            --db-snapshot-identifier '${{ env.SNAPSHOT_PROD_COPY_NAME }}' \
-            --attribute-name restore \
-            --values-to-add '${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}'"
+            --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }} ${{env.DRY_RUN_FLAG}}"
 
       - name: Configure AWS Credentials
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
@@ -115,24 +100,12 @@ jobs:
           echo FINAL_SNAPSHOT_PROD_COPY_NAME="iaps-refresh-ready-${{ env.DATETIME_STRING }}" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod[shared]-preprod)
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           aws rds copy-db-snapshot \
             --source-db-snapshot-identifier "arn:aws:rds:eu-west-2:${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_PROD_COPY_NAME }}"  \
             --target-db-snapshot-identifier "${{ env.FINAL_SNAPSHOT_PROD_COPY_NAME }}" \
             --kms-key-id "arn:aws:kms:eu-west-2:374269020027:alias/rds-hmpps" \
-            --region "eu-west-2"
-
-      - name: "[DRY RUN] Copy snapshot (prod[shared]-preprod)"
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run only, skipping copy snapshot (prod[shared]-preprod)"
-          echo "Command generated:"
-          echo "aws rds copy-db-snapshot \
-            --source-db-snapshot-identifier 'arn:aws:rds:eu-west-2:${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:snapshot:${{ env.SNAPSHOT_PROD_COPY_NAME }}'  \
-            --target-db-snapshot-identifier '${{ env.FINAL_SNAPSHOT_PROD_COPY_NAME }}' \
-            --kms-key-id 'arn:aws:kms:eu-west-2:374269020027:alias/rds-hmpps' \
-            --region 'eu-west-2'"
+            --region "eu-west-2" ${{env.DRY_RUN_FLAG}}
 
       - name: Wait for RDS Snapshot to be ready in Pre-Prod
         if: ${{ github.event.inputs.dry_run == 'false' }}
@@ -143,33 +116,20 @@ jobs:
           done
 
       - name: Store identifier in SSM parameter store
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           aws ssm put-parameter \
             --name "/iaps/snapshot_id" \
             --value "${{ env.FINAL_SNAPSHOT_PROD_COPY_NAME }}" \
             --type "String" \
             --overwrite \
-            --region "eu-west-2"
-
-      - name: "[DRY RUN] Store identifier in SSM parameter store"
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run only, skipping store identifier in SSM parameter store"
-          echo "Command generated:"
-          echo "aws ssm put-parameter \
-            --name '/iaps/snapshot_id' \
-            --value '${{ env.FINAL_SNAPSHOT_PROD_COPY_NAME }}' \
-            --type 'String' \
-            --overwrite \
-            --region 'eu-west-2'"
+            --region "eu-west-2 ${{env.DRY_RUN_FLAG}}"
 
       - name: Output snapshot identifier
         run: |
           echo "Snapshot identifier: ${{env.FINAL_SNAPSHOT_PROD_COPY_NAME}}"
 
       - name: Generate token
-        if: github.event.inputs.dry_run == 'false'
+        if: ${{ github.event.inputs.dry_run == 'false' }}
         id: generate_token
         uses: tibdex/github-app-token@v1.8.0
         with:
@@ -177,7 +137,7 @@ jobs:
           private_key: ${{ secrets.HMPPS_BOT_PRIVATE_KEY }}
 
       - name: Trigger IAPS Workflow
-        if: github.event.inputs.dry_run == 'false'
+        if: ${{ github.event.inputs.dry_run == 'false' }}
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: gh workflow run delius-iaps --ref main -F action=deploy --repo ministryofjustice/modernisation-platform-environments
