@@ -19,6 +19,21 @@
     - name: Perform pre-requesite checks
       become_user: bobj
       ansible.builtin.shell: "/u02/software/BIP_4_3_SP1/setup.sh -InstallDir /u01/app/bobj/BIP4/ -pre_requisite_check /u02/software/BIP_4_3_SP1/prereq_checks.ini /u02/software/BIP_4_3_SP1/failedPrereqs.txt"
+      ignore_errors: true
+
+    - name: Verfy checks have passed
+      become_user: bobj
+      lineinfile:
+        path: /u02/software/BIP_4_3_SP1/failedPrereqs.txt
+        line: "All product pre-reqs have passed."
+        state: present
+      check_mode: yes
+      register: prereqs
+      failed_when: prereqs is changed
+
+    - name: "sample task in case the String present in the file"
+      debug: msg="All product pre requesites have passed"
+      when: prereqs is not changed
 
     - name: Run Silent Installation
       become_user: bobj
