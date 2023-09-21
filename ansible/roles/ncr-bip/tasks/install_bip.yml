@@ -29,7 +29,7 @@
         state: present
       check_mode: yes
       register: prereqs
-      failed_when: prereqs is changed 
+      failed_when: prereqs is changed
 
     - name: "sample task in case the String present in the file"
       debug: msg="All product pre requesites have passed"
@@ -52,6 +52,6 @@
     - name: Execute setup script
       become: true
       ansible.builtin.shell: /u01/app/bobj/BIP4/sap_bobj/init/setupinit.sh
-  when: 
+  when:
     - bip_init_file_check.stat.exists
     - not setupinit_folder_check.stat.exists
