@@ -11,6 +11,31 @@ The secret itself is a JSON with following structure:
 }
 ```
 
+## Sharing SecretsManager Secrets across accounts
+
+If you are not doing this, you may as well use SSM parameters.
+This is tricky to setup.
+
+The EC2 needs to assume an IAM role with the relevant permissions to retrieve
+the SecretsManager secret and KMS key. There's example of how to do this
+in baseline terraform code:
+
+Account core-shared-services-production
+- Holds the KMS key which encrypts the secret
+
+Account A e.g. hmpps-oem-development
+- Creates secrets and shares the resources with each relevant IAM role in the
+  target accounts B,C,D etc.  See `locals_oem.tf` in hmpps-oem terraform
+
+Account B,C,D, e.g. nomis-development, oasys-development
+- Creates an IAM role which can be assumed from an EC2. See
+  EC2OracleEnterpriseManagementSecretsRole in `baseline_presets` terraform module.
+- Ensure this role can access KMS keys and Secrets
+
+The ansible will assume the role (if necessary) to retrieve the secret from
+another account.
+
+
 ## Recommended Usage
 
 1. Set placeholder value in terraform
@@ -35,11 +60,13 @@ Ensure the secret has been shared with EC2 instances in this account.
     secretsmanager_passwords:
       - key: "oem_passwords"
         account_name: "hmpps-oem-{{ environment }}"
+        assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/oem/passwords"
         users:
           - agentreg:
       - key: "emrep_passwords"
         account_name: "hmpps-oem-{{ environment }}"
+        assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/database/EMREP/passwords"
         users:
           - sysman:

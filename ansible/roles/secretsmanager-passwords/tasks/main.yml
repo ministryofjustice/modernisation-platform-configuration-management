@@ -7,53 +7,51 @@
 - name: Setup facts
   set_fact:
     secretsmanager_passwords_dict: "{{ secretsmanager_passwords_dict|default({}) }}"
-    secretsmanager_passwords_self: "{{ secretsmanager_passwords | rejectattr('account_name', 'defined') }}"
-    secretsmanager_passwords_other: "{{ secretsmanager_passwords | selectattr('account_name', 'defined') }}"
 
-# If this fails, ensure secret has been created via terraform first
-- name: Form Secret Ids - Self
-  set_fact:
-    secretsmanager_passwords_dict: |
-      {{ secretsmanager_passwords_dict | combine({
-           item.key: {
-               'id': item.secret
-           }
-         }, recursive=true) }}
-  loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords_self }}"
-
-# If this fails, ensure secret has been created via terraform first and has been
-# shared into this account
-- name: Form Secret Ids - Other accounts
-  set_fact:
-    secretsmanager_passwords_dict: |
-      {{ secretsmanager_passwords_dict | combine({
-           item.key: {
-               'id': 'arn:aws:secretsmanager:eu-west-2:' + account_ids[item.account_name] + ':secret:' + item.secret
-           }
-         }, recursive=true) }}
-  loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords_other }}"
-
+# Using the cli instead of native ansible as we need to assume a role
+# to access secrets in other accounts
 - name: Get SecretManager Secrets
-  set_fact:
-    secretsmanager_passwords_dict: |
-      {{ secretsmanager_passwords_dict | combine({
-           item.key: {
-             'value': lookup('amazon.aws.aws_secret', secretsmanager_passwords_dict[item.key].id, region='eu-west-2')
-           }
-         }, recursive=true) }}
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
+    set -e
+    account_id=$(aws sts get-caller-identity --query Account --output text)
+    secret_account_id="{{ account_ids[item.account_name] }}"
+    if [[ $account_id != $secret_account_id ]]; then
+      role_arn="arn:aws:iam::${account_id}:role/{{ item.assume_role_name }}"
+      session="{{ item.key }}-ansible"
+      creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
+      export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
+      export AWS_SECRET_ACCESS_KEY=$(echo "${creds}" | tail -1 | cut -f2)
+      export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
+    fi
+    secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ item.secret }}"
+    aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text
   loop_control:
     label: "{{ item.key }}"
   loop: "{{ secretsmanager_passwords }}"
+  check_mode: false
+  changed_when: false
+  register: get_secrets_shell
 
+- name: Add Secrets to fact
+  set_fact:
+    secretsmanager_passwords_dict: |
+      {{ secretsmanager_passwords_dict | combine({
+           item.item.key: {
+             'value': item.stdout
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.item.key }}"
+  loop: "{{ get_secrets_shell.results }}"
+
+# If this fails, check the secret value is valid json
 - name: Prepare any placeholder secrets
   set_fact:
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item.key: {
+             'config': item,
              'passwords': {} if 'placeholder' in secretsmanager_passwords_dict[item.key].value else secretsmanager_passwords_dict[item.key].value|from_json
            }
          }, recursive=true) }}
@@ -100,52 +98,27 @@
     label: "{{ item.key }}"
   loop: "{{ secretsmanager_passwords }}"
 
-# NOTE: if this fails, check a password isn't being updated in an account
-# that is different to where the secret is stored. If this is intentional,
-# the relevant IAM policies for updating secrets across accounts need
-# to be configured
-- name: Retrieve resource policy for any secrets requiring update
-  ansible.builtin.shell: |
-    if [[ {{ secretsmanager_passwords_dict[item.key].upload }} == True ]]; then
-      PATH=$PATH:/usr/local/bin
-      aws secretsmanager get-resource-policy --secret-id "{{ secretsmanager_passwords_dict[item.key].id }}" --query ResourcePolicy --output text
-    fi
-  loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords }}"
-  check_mode: false
-  changed_when: false
-  register: secret_resource_policy
-
-- name: Add resource policy to fact
-  set_fact:
-    secretsmanager_passwords_dict: |
-      {{ secretsmanager_passwords_dict | combine({
-           item.item.key: {
-             'policy': item.stdout
-           }
-         }, recursive=true) }}
-  loop_control:
-    label: "{{ item.item.key }}"
-  loop: "{{ secret_resource_policy.results }}"
-
 - name: Check secrets which require updating
   set_fact:
     secretsmanager_passwords_to_update: "{{ secretsmanager_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
 
 # - debug:
-#    var: secretsmanager_passwords_to_update
+#     var: secretsmanager_passwords_to_update
 
-# When I tested, if resource_policy wasn't set, the policy was cleared
-# and would need to be reset in terraform.  So attempting to set here.
-- name: Upload updated secrets
-  community.aws.secretsmanager_secret:
-    region: "eu-west-2"
-    name: "{{ item.value.id }}"
-    secret: "{{ item.value.passwords|to_json }}"
-    resource_policy: "{{ item.value.policy }}"
-  loop_control:
-    label: "{{ item.key }}"
+# community.aws.secretsmanager_secret doesn't work brilliantly. It requires
+# resource policy to be explicitly set and needs more permissions than
+# expected. Using cli instead
+- name: Update SecretManager Secrets from named account
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
+    set -e
+    account_id=$(aws sts get-caller-identity --query Account --output text)
+    secret_account_id="{{ account_ids[item.value.config.account_name] }}"
+    if [[ $account_id != $secret_account_id ]]; then
+      echo "ERROR: cannot update secret in other account" >&2
+      exit 1
+    fi
+    aws secretsmanager put-secret-value --secret-id "{{ item.value.config.secret }}" --secret-string '{{ item.value.passwords|to_json }}'
   loop: "{{ secretsmanager_passwords_to_update }}"
 
 - name: Update upload fact

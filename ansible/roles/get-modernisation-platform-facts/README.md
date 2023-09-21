@@ -1,9 +1,14 @@
 Role for retrieving common modernisation platform secrets and SSM parameters.
 
-Variables are set as follows:
-- `modernisation_platform_account_id` is the account ID for `modernisation_platform` account
-- `environment_management_secret` is the `environment_management` secret
-- `account_ids` is a map of account IDs where account name is the key.  Part of the `environment_management` secret.
+Note that the `environment_management` secret stored in `modernisation_platform`
+is not shared with EC2 instances. So this role relies on a copy being stored
+as a SSM parameter `account_ids`.
+
+See nomis for an example of how this parameter is created using the
+`baseline` and `baseline_presets` module.
+
+Facts are set as follows:
+- `account_ids` is a map of account IDs where account name is the key
 
 Use this if you need to reference resources from other accounts.  For example:
 
