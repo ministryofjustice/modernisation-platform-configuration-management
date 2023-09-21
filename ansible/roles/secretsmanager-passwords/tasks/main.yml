@@ -8,7 +8,7 @@
   set_fact:
     secretsmanager_passwords_dict: "{{ secretsmanager_passwords_dict|default({}) }}"
 
-# Using the cli instead of native ansible as we need to assume a role 
+# Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
 - name: Get SecretManager Secrets
   ansible.builtin.shell: |
