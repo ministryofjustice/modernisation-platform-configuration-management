@@ -33,7 +33,7 @@
           - "{{ weblogic_patch_filename }}"
 
     # takes forever so run in async mode to prevent connection timeouts
-    - name: Run weblogic patch script which takes approx 20 mins
+    - name: Run weblogic patch {{ weblogic_patch_id }} which takes approx 20 mins
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         set -eo pipefail
