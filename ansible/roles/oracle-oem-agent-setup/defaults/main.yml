@@ -27,3 +27,8 @@ oem_secretsmanager_passwords:
     secret: "/oracle/database/EMREP/passwords"
     users:
       - sysman:
+oem_ssm_passwords:
+  - key: "asm_passwords"
+    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    users:
+      - ASMSNMP:

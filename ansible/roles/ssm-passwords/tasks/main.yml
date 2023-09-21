@@ -1,0 +1,98 @@
+---
+- name: Prepare ssm_passwords_dict fact
+  set_fact:
+    ssm_passwords_dict: "{{ ssm_passwords_dict|default({}) }}"
+
+- name: Get SSM Parameters
+  set_fact:
+    ssm_passwords_dict: |
+      {{ ssm_passwords_dict | combine({
+           item.key: {
+             'parameter': item.parameter,
+             'value': lookup('amazon.aws.aws_ssm', item.parameter, region='eu-west-2')
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ ssm_passwords }}"
+
+# If this fails, the SSM parameter doesn't exist or isn't valid json
+- name: Prepare any placeholder parameters
+  set_fact:
+    ssm_passwords_dict: |
+      {{ ssm_passwords_dict | combine({
+           item.key: {
+             'passwords': {} if 'placeholder' in ssm_passwords_dict[item.key].value else ssm_passwords_dict[item.key].value|from_json
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ ssm_passwords }}"
+
+# The if statement:
+# - use the password defined in the ssm_passwords variable if there is one
+# - else use existing password defined in the SecretString and force_rotate not set
+# - else generate random password
+- name: Generate any missing passwords
+  set_fact:
+    ssm_passwords_dict: |
+      {{ ssm_passwords_dict | combine({
+           item[0].key: {
+             'passwords': {
+               item[1].keys()|first:
+                 item[1].values()|first
+                   if item[1].values()|first != None
+                 else ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
+                   if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
+                   and [item[0].key, item[1].keys()|first]|join(':') not in secretmanager_passwords_force_rotate
+                 else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
+                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
+             }
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
+  with_subelements:
+    - "{{ ssm_passwords }}"
+    - users
+
+- name: Check parameters which require updating
+  set_fact:
+    ssm_passwords_dict: |
+      {{ ssm_passwords_dict | combine({
+           item.key: {
+               'upload': ssm_passwords_dict[item.key].passwords|to_json != ssm_passwords_dict[item.key].value
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ ssm_passwords }}"
+
+- name: Create fact with updated parameters
+  set_fact:
+    ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
+
+- debug:
+   var: ssm_passwords_to_update
+
+# Not using community.aws.ssm_parameter as this requires some additional
+# parameters such as ssm:DescribeParameters at root level
+- name: Upload updated parameters
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
+    aws ssm put-parameter --name '{{ item.value.parameter }}' --type 'SecureString' --data-type 'text' --value '{{ item.value.passwords|to_json }}' --overwrite
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ ssm_passwords_to_update }}"
+
+- name: Update upload fact
+  set_fact:
+    ssm_passwords_dict: |
+      {{ ssm_passwords_dict | combine({
+           item.key: {
+               'upload': False
+           }
+         }, recursive=true) }}
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ ssm_passwords }}"

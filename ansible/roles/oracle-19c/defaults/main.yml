@@ -35,6 +35,13 @@ grid_install_script: grid_install.sh
 
 password_response_file: grid_pw.rsp
 
+db_ssm_passwords:
+  - key: "asm_passwords"
+    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    users:
+      - monitor:
+      - SYS:
+
 asmpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
 asmmonitorpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
 
