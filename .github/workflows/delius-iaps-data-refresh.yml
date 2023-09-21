@@ -55,7 +55,7 @@ jobs:
       - name: Set snapshot name string
         run: |
           echo DATETIME_STRING="$(echo $SOURCE_SNAPSHOT_IDENTIFIER | sed s/"rds:iaps-"//)" >> $GITHUB_ENV
-          echo SNAPSHOT_PROD_COPY_NAME="iaps-prod-snapshot-${{env.DATETIME_STRING}}" >> $GITHUB_ENV
+          echo SNAPSHOT_PROD_COPY_NAME="iaps-prod-snapshot-$(echo $SOURCE_SNAPSHOT_IDENTIFIER | sed s/"rds:iaps-"//)" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod-prod)
         run: |
