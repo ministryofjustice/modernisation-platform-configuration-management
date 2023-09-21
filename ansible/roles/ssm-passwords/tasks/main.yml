@@ -72,8 +72,8 @@
   set_fact:
     ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
 
-- debug:
-   var: ssm_passwords_to_update
+# - debug:
+#   var: ssm_passwords_to_update
 
 # Not using community.aws.ssm_parameter as this requires some additional
 # parameters such as ssm:DescribeParameters at root level
