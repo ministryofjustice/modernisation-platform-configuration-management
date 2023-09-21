@@ -44,7 +44,7 @@
                    if item[1].values()|first != None
                  else ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
                    if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
-                   and [item[0].key, item[1].keys()|first]|join(':') not in secretmanager_passwords_force_rotate
+                   and [item[0].key, item[1].keys()|first]|join(':') not in ssm_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
              }
