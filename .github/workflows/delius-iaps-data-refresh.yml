@@ -51,11 +51,10 @@ jobs:
           echo SOURCE_SNAPSHOT_IDENTIFIER=${{ github.event.inputs.manually_specified_snapshot_id }} >> $GITHUB_ENV
           echo SOURCE_SNAPSHOT_IDENTIFIER=${{ github.event.inputs.manually_specified_snapshot_id }} >> $GITHUB_OUTPUT
 
-
       - name: Set snapshot name string
         run: |
           echo DATETIME_STRING="$(echo $SOURCE_SNAPSHOT_IDENTIFIER | sed s/"rds:iaps-"//)" >> $GITHUB_ENV
-          echo SNAPSHOT_PROD_COPY_NAME="iaps-prod-snapshot-$(echo $SOURCE_SNAPSHOT_IDENTIFIER | sed s/"rds:iaps-"//)" >> $GITHUB_ENV
+          echo SNAPSHOT_PROD_COPY_NAME="iaps-prod-snapshot-$(echo $SOURCE_SNAPSHOT_IDENTIFIER | sed s/"rds:iaps-"//)-${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod-prod)
         run: |
@@ -87,7 +86,7 @@ jobs:
 
       - name: Set final snapshot name string
         run: |
-          echo FINAL_SNAPSHOT_PROD_COPY_NAME="iaps-refresh-ready-${{ env.DATETIME_STRING }}" >> $GITHUB_ENV
+          echo FINAL_SNAPSHOT_PROD_COPY_NAME="iaps-refresh-ready-${{ env.DATETIME_STRING }}-${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Copy snapshot (prod[shared]-preprod)
         run: |
