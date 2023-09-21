@@ -65,7 +65,6 @@ jobs:
             --region "eu-west-2"
 
       - name: Wait for RDS Snapshot to be ready
-        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           for run in {1..5}; do
             aws rds wait db-snapshot-available \
