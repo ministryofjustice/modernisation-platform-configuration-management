@@ -1,7 +1,6 @@
 ---
 artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 artefacts_s3_bucket_path: hmpps/oracle-oem-135
-ssm_parameters_prefix: oem
 artefact_dir: /u02
 app_dir: /u01/app/oracle/product
 oracle_inventory: /u01/app/oraInventory
@@ -45,3 +44,30 @@ oms_env:
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+
+emrepo_db_name: "{{ db_configs[emrepo] }}"
+oms_ssm_passwords:
+  - key: "emrep"
+    parameter: "/oracle/database/{{ emrepo_db_name.emrepo_db_name }}/passwords"
+    users:
+      - sys:
+      - system:
+  - key: "oem"
+    parameter: "/oracle/oem/passwords"
+    users:
+      - weblogic_admin:
+      - nodemanager:
+
+oms_secretsmanager_passwords:
+  - key: "emrep"
+    assume_role_name: ""
+    account_name: "{{ application }}-{{ aws_environment }}"
+    secret: "/oracle/database/{{ emrepo_db_name.emrepo_db_name }}/passwords"
+    users:
+      - sysman:
+  - key: "oem"
+    assume_role_name: ""
+    account_name: "{{ application }}-{{ aws_environment }}"
+    secret: "/oracle/oem/passwords"
+    users:
+      - agentreg:
