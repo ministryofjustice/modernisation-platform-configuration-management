@@ -10,7 +10,7 @@
 
 # Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
-- name: Get SecretManager Secrets
+- name: Get SecretsManager Secrets
   ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     set -e
@@ -74,7 +74,7 @@
                    if item[1].values()|first != None
                  else secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first]
                    if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
-                   and [item[0].key, item[1].keys()|first]|join(':') not in secretmanager_passwords_force_rotate
+                   and [item[0].key, item[1].keys()|first]|join(':') not in secretsmanager_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
              }
@@ -108,7 +108,7 @@
 # community.aws.secretsmanager_secret doesn't work brilliantly. It requires
 # resource policy to be explicitly set and needs more permissions than
 # expected. Using cli instead
-- name: Update SecretManager Secrets from named account
+- name: Update SecretsManager Secrets from named account
   ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     set -e
