@@ -1,5 +1,5 @@
 ---
-secretmanager_passwords:
+secretsmanager_passwords:
 # - key: "unique_key_for_ansible_dictionary1_cross_account" e.g. my_password
 #   assume_role_name: EC2OracleEnterpriseManagementSecretsRole
 #   account_name: "my-aws-account-name1"      e.g. hmpps-oem-test
@@ -9,10 +9,10 @@ secretmanager_passwords:
 #     - myuser2
 # - key: "unique_key_for_ansible_dictionary2_same_account"
 #   assume_role_name: ""
-#   account_name: "{{ application }}-{{ aws_environment }}""
+#   account_name: "{{ application }}-{{ aws_environment }}"
 #   secret: "my-secretsmanager-secret-name2"
 #   users:
 #     - myuser3
 
-secretmanager_passwords_force_rotate: ""
+secretsmanager_passwords_force_rotate: ""
 # include the secret key and username to force rotation, e.g. "unique_key_for_ansible_dictionary1:myuser1"

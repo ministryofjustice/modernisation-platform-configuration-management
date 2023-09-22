@@ -1,3 +1,10 @@
-ssm_parameters_prefix: database
 stage: /u02/stage
 temp_dir: /u02/stage/temp
+rcvcat_db_name: "{{ db_configs[rcvcat] }}"
+rc_ssm_passwords:
+  - key: "rc"
+    parameter: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
+    users:
+      - rcvcatowner:
+      - sys:
+      - system:

@@ -1,5 +1,14 @@
 This role installs Oracle 19c. It assumes the installation disks `\u01` and `\u02` have already been setup (with `disks` role for example).
 
+### Pre-requisites
+
+An `asm-passwords` placeholder SSM Parameter is created in terraform prior to
+running role.  The parameter name should be
+/ec2/{{ hostname }}/asm-passwords.
+The initial value should contain the word "placeholder". Terraform should
+ignore subsequent changes to the parameter value since this role will auto
+generate a password and store it there.
+
 ### Ansible Tags
 
 Some tasks are optional and can be included in the play by adding the appropriate tag at the command line. Currently these are:

@@ -1,0 +1,11 @@
+---
+- name: Create test ansible directory
+  ansible.builtin.file:
+    path: "~/ansible"
+    state: directory
+
+- name: Copy test ansible script
+  ansible.builtin.copy:
+    src: ansible.sh
+    dest: "~/ansible.sh"
+    mode: "0755"
