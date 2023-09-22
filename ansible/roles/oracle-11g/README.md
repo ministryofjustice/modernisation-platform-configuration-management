@@ -11,3 +11,12 @@ and either use:
 
 - ec2provision tag if the EC2 name has changed.  This will reconfigure oracle
 - ec2patch tag if the EC2 name hasn't change.  This is less disruptive.
+
+### Pre-requisites
+
+An `asm-passwords` placeholder SSM Parameter is created in terraform prior to
+running role.  The parameter name should be
+/ec2/{{ hostname }}/asm-passwords.
+The initial value should contain the word "placeholder". Terraform should
+ignore subsequent changes to the parameter value since this role will auto
+generate a password and store it there.
