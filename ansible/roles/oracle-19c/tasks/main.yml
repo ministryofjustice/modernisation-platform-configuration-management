@@ -10,6 +10,12 @@
     - oracle_19c_download
     - oracle_19c_download_software
 
+- import_tasks: get_facts.yml
+  tags:
+    - ec2provision
+    - oracle_db_get_facts
+    - oracle_19c_install_grid
+
 - import_tasks: pre_install_tasks.yml
   tags:
     - ec2provision

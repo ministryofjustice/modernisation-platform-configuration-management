@@ -15,15 +15,20 @@ agentpatcher_patch: p33355570_135000_Generic.zip
 agentpatcher_version: 13.9.5.5.0
 agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
 oem_secretsmanager_passwords:
-  - key: "oem_passwords"
+  - key: "oem"
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
     secret: "/oracle/oem/passwords"
     users:
       - agentreg:
-  - key: "emrep_passwords"
+  - key: "emrep"
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
     secret: "/oracle/database/EMREP/passwords"
     users:
       - sysman:
+oem_ssm_passwords:
+  - key: "asm"
+    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    users:
+      - ASMSNMP:

@@ -1,7 +1,6 @@
 ---
 artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 artefacts_s3_bucket_path: hmpps/oracle-11g-software
-ssm_parameters_prefix: database
 oracle_home: /u01/app/oracle/product/11.2.0.4
 oracle_inventory: /u01/app/oraInventory
 
@@ -26,3 +25,10 @@ database_home: "{{ oracle_home }}/db_1"
 database_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin"
+
+db_ssm_passwords:
+  - key: "asm"
+    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    users:
+      - ASMSNMP:
+      - SYS:

@@ -1,17 +1,14 @@
 ---
-- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
-  set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["Name"] }}'
-
-- name: Set SSM parameters weblogic path facts
-  set_fact:
-    ssm_parameters_path_database_asmsys_password: "{{ ssm_parameters_path }}/ASMSYS"
-    ssm_parameters_path_database_asmsnmp_password: "{{ ssm_parameters_path }}/ASMSNMP"
+- name: Get SSM parameters
+  import_role:
+    name: ssm-passwords
+  vars:
+    ssm_passwords: "{{ db_ssm_passwords }}"
 
 - name: Get SSM parameters
   set_fact:
-    database_asmsys_password: "{{ lookup('aws_ssm', ssm_parameters_path_database_asmsys_password, region=ansible_ec2_placement_region) }}"
-    database_asmsnmp_password: "{{ lookup('aws_ssm', ssm_parameters_path_database_asmsnmp_password, region=ansible_ec2_placement_region) }}"
+    database_asmsys_password: "{{ ssm_passwords_dict['asm'].passwords['SYS'] }}"
+    database_asmsnmp_password: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
 
 - block:
     - name: Get DB instances
