@@ -42,9 +42,6 @@ db_ssm_passwords:
       - ASMSNMP:
       - ASMSYS:
 
-asmpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
-asmmonitorpassword: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=2') }}{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=12') }}"
-
 grid_env:
   ORACLE_HOME: "{{ grid_home }}"
   PATH: "{{ grid_home }}/bin:{{ oracle_path }}"
