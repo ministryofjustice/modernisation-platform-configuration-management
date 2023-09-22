@@ -7,8 +7,8 @@
 
 - name: Get SSM parameters
   set_fact:
-    database_asmsys_password: "{{ ssm_passwords_dict['asm_passwords'].passwords['SYS'] }}"
-    database_asmsnmp_password: "{{ ssm_passwords_dict['asm_passwords'].passwords['ASMSNMP'] }}"
+    database_asmsys_password: "{{ ssm_passwords_dict['asm'].passwords['SYS'] }}"
+    database_asmsnmp_password: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
 
 - block:
     - name: Get DB instances
