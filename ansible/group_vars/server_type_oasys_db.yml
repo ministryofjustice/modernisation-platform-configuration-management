@@ -79,19 +79,3 @@ oracle_inventory: /u01/app/oraInventory
 database_home: /u01/app/oracle/product/19c/db_1
 grid_home: /u01/app/oracle/product/19c/gridhome_1
 
-
-
-
-# preprod oasys in aws needs to
-# grab db backups from prod storage account strpdnomsazcopyorabkup  on a weekly basis
-# so need:
-(deps)
- az login, cli
- az creds as ssm params
- aws cli
- 
-(do weekly)
-az login  
-generate sas token for strpdnomsazcopyorabkup and put as ssm param (update db az sas token script does this)
-download backup
-probably some oracle command?
