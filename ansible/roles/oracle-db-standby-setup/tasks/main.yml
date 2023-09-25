@@ -18,14 +18,6 @@
     - always
   when: db_primary_name is defined and db_standby_name is defined
 
-- name: Add generate sas token script
-  ansible.builtin.template:
-    src: "update-db-az-sas-token.sh.j2"
-    dest: "/usr/local/bin/update-db-az-sas-token.sh"
-    owner: oracle
-    group: oinstall
-    mode: 0755
-
 - import_tasks: prepare_primary_for_standby.yml
   tags:
     - oracle-db-standby-setup-on-primary
