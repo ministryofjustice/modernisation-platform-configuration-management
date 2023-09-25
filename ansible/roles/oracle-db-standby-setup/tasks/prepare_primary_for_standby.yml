@@ -1,6 +1,6 @@
 ---
 - name: Setup Primary database for HA
-  block:    
+  block:
     - name: Copy setup files for execution
       ansible.builtin.template:
         src: "{{ item }}.j2"
