@@ -3,17 +3,23 @@
   debug:
     var: rcvcat_db_name
 
+- name: Get SecretsManager secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
+
 - name: Get SSM parameters
   import_role:
     name: ssm-passwords
   vars:
     ssm_passwords: "{{ rc_ssm_passwords }}"
 
-- name: Get SSM parameters
+- name: Get passwords
   set_fact:
     db_sys_password: "{{ ssm_passwords_dict['rc'].passwords['sys'] }}"
     db_system_password: "{{ ssm_passwords_dict['rc'].passwords['system'] }}"
-    db_rcatowner_password: "{{ ssm_passwords_dict['rc'].passwords['rcvcatowner'] }}"
+    db_rcatowner_password: "{{ secretsmanager_passwords_dict['rc'].passwords['rcvcatowner'] }}"
 
 - name: Check parameters
   set_fact:
