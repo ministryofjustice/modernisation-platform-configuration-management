@@ -30,7 +30,7 @@
 
     - name: Run aws cli installer
       shell: |
-        {{ awscli_installer_dir }}/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+        {{ awscli_installer_dir }}/aws/install --bin-dir /bin --install-dir /usr/local/aws-cli --update
 
     - name: Cleanup installer files
       ansible.builtin.file:
