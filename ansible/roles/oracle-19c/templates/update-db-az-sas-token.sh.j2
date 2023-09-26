@@ -3,7 +3,7 @@ set -e
 
 application={{application}}
 environment={{aws_environment}}
-db_name=$(hostname)
+db_name={{ ec2.tags["Name"] }}
 expiry=$(date -d "60 days" +%Y-%m-%d) # default 60 days
 
 if [[ -z $environment || -z $db_name || -z $expiry ]]; then
