@@ -1,5 +1,6 @@
 stage: /u02/stage
 temp_dir: /u02/stage/temp
+rcvcat: "RCVCAT"
 rcvcat_db_name: "{{ db_configs[rcvcat] }}"
 rc_ssm_passwords:
   - key: "rc"
@@ -7,6 +8,7 @@ rc_ssm_passwords:
     users:
       - sys:
       - system:
+
 rc_secretsmanager_passwords:
   - key: "rc"
     assume_role_name: ""

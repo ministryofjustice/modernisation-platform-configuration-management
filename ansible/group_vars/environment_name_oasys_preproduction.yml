@@ -46,7 +46,11 @@ rman_backup_cron:
       minute: "30"
       hour: "*"
       job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
-# db_configs:
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: PPRCVCAT
+
 #   PPOASYS:
 #     db_name: OASPROD
 #     db_unique_name: PPOASYS

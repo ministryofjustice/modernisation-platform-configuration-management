@@ -1,4 +1,12 @@
 ---
+- name: Get SecretsManager secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
+  tags:
+    - ec2provision
+
 - import_tasks: rman-backup-setup.yml
   tags:
     - ec2provision
