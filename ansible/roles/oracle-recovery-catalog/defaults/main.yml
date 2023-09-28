@@ -1,5 +1,10 @@
 stage: /u02/stage
 temp_dir: /u02/stage/temp
+
+# define database details in db_configs map typically defined in
+# an environment specific group_vars. RCVCAT database must be
+# defined for the role to run
+db_configs: {}
 rcvcat: "RCVCAT"
 rcvcat_db_name: "{{ db_configs[rcvcat] }}"
 rc_ssm_passwords:

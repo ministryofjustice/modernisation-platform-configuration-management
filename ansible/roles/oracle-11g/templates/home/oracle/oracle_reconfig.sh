@@ -6,8 +6,8 @@ echo "+++Setting up Oracle HAS as Oracle user"
 unset ORAENV_ASK
 
 # retrieve password from parameter store
-password_ASMSYS="{{ database_asmsys_password }}"
-password_ASMSNMP="{{ database_asmsnmp_password }}"
+password_ASMSYS="{{ asmpassword }}"
+password_ASMSNMP="{{ asmmonitorpassword }}"
 
 # reconfigure Oracle HAS
 source oraenv <<< +ASM
