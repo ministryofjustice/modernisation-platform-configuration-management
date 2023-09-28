@@ -2,11 +2,11 @@
 - import_tasks: get_facts.yml
   tags:
     - always
-  when: rcvcat is defined
+  when: db_configs[rcvcat] is defined
 
 - import_tasks: catalog_db_setup.yml
   tags:
     - amibuild
     - ec2provision
     - catalog_db_setup
-  when: rcvcat is defined
+  when: db_configs[rcvcat] is defined
