@@ -10,6 +10,11 @@ catalog_parameter: ""
 recovery_catalog_defined_check: 0
 oem_account_name: "hmpps-oem-{{ aws_environment }}"
 oem_assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
+
+# define database details in db_configs map typically defined in
+# an environment specific group_vars. RCVCAT database must be
+# defined for the role to run
+db_configs: {}
 rcvcat: "RCVCAT"
 rcvcat_db_name: "{{ db_configs[rcvcat] }}"
 

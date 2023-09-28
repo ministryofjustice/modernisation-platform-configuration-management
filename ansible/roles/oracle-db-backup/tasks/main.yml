@@ -6,11 +6,12 @@
     secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
   tags:
     - ec2provision
+  when: db_configs[rcvcat] is defined
 
 - import_tasks: rman-backup-setup.yml
   tags:
     - ec2provision
-  when: rman_backup_script|length > 0
+  when: rman_backup_script|length > 0 and db_configs[rcvcat] is defined
 
 - import_tasks: rman-adhoc-backup.yml
   tags:
