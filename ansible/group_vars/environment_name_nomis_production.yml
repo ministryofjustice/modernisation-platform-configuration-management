@@ -20,6 +20,7 @@ db_configs:
     port: 1521
     tns_name: TRDATP
     asm_disk_groups: DATA,FLASH
+    s3_bucket: nomis-db-backup-bucket20220427111226918600000001
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
       
@@ -31,6 +32,7 @@ db_configs:
     port: 1521
     tns_name: DRNDH
     asm_disk_groups: DATA,FLASH
+    s3_bucket: nomis-db-backup-bucket20220427111226918600000001
     service:
       - { name: NDH_TAF, role: PRIMARY }
 
