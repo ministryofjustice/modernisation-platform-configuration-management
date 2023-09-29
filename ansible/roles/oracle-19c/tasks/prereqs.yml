@@ -37,6 +37,14 @@
     msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one data disk"
   when: oracle_data_diskgroup|length == 0
 
+- name: Add generate sas token script
+  ansible.builtin.template:
+    src: "update-db-az-sas-token.sh.j2"
+    dest: "/usr/local/bin/update-db-az-sas-token.sh"
+    owner: oracle
+    group: oinstall
+    mode: 0755
+
 - name: Fail when flash disks are not defined
   fail:
     msg: "Please define disks_partition variable with oracle_group and oracle_label defined with at least one flash disk"

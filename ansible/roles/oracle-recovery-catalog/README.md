@@ -16,7 +16,6 @@ This is typically defined within `group_vars`.  For example:
 db_configs:
   RCVCAT:
     rcvcat_db_name: TRCVCAT
-    rcvcat_user_name: rcvcatowner
 ```
 
 # Example

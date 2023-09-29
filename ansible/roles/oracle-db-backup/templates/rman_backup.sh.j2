@@ -79,6 +79,22 @@ set_ora_env () {
   export NLS_DATE_FORMAT=YYMMDDHH24MI
 }
 
+get_rcat_creds () {
+  account_id=$(aws sts get-caller-identity --query Account --output text)
+  secret_account_id="{{ account_ids[oem_account_name] }}"
+  if [[ $account_id != $secret_account_id ]]; then
+    role_arn="arn:aws:iam::${account_id}:role/{{ oem_assume_role_name }}"
+    session="ansible-${TARGET_DB}"
+    creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
+    export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
+    export AWS_SECRET_ACCESS_KEY=$(echo "${creds}" | tail -1 | cut -f2)
+    export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
+  fi
+  secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ rcvcat_passwords_secret_name }}"
+  # using egrep as jq might not be installed
+  aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | egrep -o '"rcvcatowner":[^"]*"[^"]*"' | cut -d\" -f4
+}
+
 validate () {
   ACTION=$1
   case "$ACTION" in
@@ -127,8 +143,8 @@ validate () {
                        then
                          error "Catalog mode is $CATALOGMODE, specify catalog db"
                        else
-			                   RCATOWNER=`aws ssm get-parameter --name "/database/recovery-catalog-owner/username" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
-			                   RCATOWNER_PASSWORD=`aws ssm get-parameter --name "/database/recovery-catalog-owner/password" --with-decryption  --query Parameter.Value |  sed -e 's/^"//' -e 's/"$//'`
+                         RCATOWNER="rcvcatowner"
+                         RCATOWNER_PASSWORD=$(get_rcat_creds)
                          CATALOG_CONNECT=$RCATOWNER/$RCATOWNER_PASSWORD@$CATALOG_DB
                        fi
                      fi
