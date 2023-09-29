@@ -8,6 +8,11 @@ dns_search_domains:
   - azure.hmpp.root
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
 
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+  
 db_configs:
   PCNOM:
     ssm_parameter_path: "/oracle/database/CNOMP"
