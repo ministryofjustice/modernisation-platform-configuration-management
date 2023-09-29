@@ -12,7 +12,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
-  
+
 db_configs:
   PCNOM:
     ssm_parameter_path: "/oracle/database/CNOMP"
@@ -25,7 +25,7 @@ db_configs:
     port: 1521
     tns_name: TRDATP
     asm_disk_groups: DATA,FLASH
-    s3_bucket: nomis-db-backup-bucket20220427111226918600000001
+    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
       
@@ -37,7 +37,7 @@ db_configs:
     port: 1521
     tns_name: DRNDH
     asm_disk_groups: DATA,FLASH
-    s3_bucket: nomis-db-backup-bucket20220427111226918600000001
+    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: NDH_TAF, role: PRIMARY }
 
@@ -50,6 +50,7 @@ db_configs:
     port: 1521
     tns_name: DRTRDAT
     asm_disk_groups: DATA,FLASH
+    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
       
@@ -61,6 +62,7 @@ db_configs:
     port: 1521
     tns_name: DRNDH
     asm_disk_groups: DATA,FLASH
+    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: NDH_TAF, role: PRIMARY }
 
