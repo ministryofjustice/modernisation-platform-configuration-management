@@ -12,6 +12,29 @@ db_configs:
   PCNOM:
     ssm_parameter_path: "/oracle/database/CNOMP"
 
+  TRDATP:
+    db_name: TRDATP
+    db_unique_name: TRDATP
+    instance_name: TRDATP
+    host_name: pdpdl00037.azure.hmpp.root
+    port: 1521
+    tns_name: TRDATP
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+      
+  NDHP:
+    db_name: NDHP
+    db_unique_name: NDHP
+    instance_name: NDHP
+    host_name: pdpdl00037.azure.hmpp.root
+    port: 1521
+    tns_name: DRNDH
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+
+
   DRTRDAT:
     db_name: TRDATP
     db_unique_name: DRTRDAT
