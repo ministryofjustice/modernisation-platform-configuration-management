@@ -25,7 +25,7 @@ db_configs:
     port: 1521
     tns_name: TRDATP
     asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    storage_account_name: strpdnomsazcopyorabkup
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
       
@@ -35,12 +35,11 @@ db_configs:
     instance_name: NDHP
     host_name: pdpdl00037.azure.hmpp.root
     port: 1521
-    tns_name: DRNDH
+    tns_name: NDHP
     asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    storage_account_name: strpdnomsazcopyorabkup
     service:
       - { name: NDH_TAF, role: PRIMARY }
-
 
   DRTRDAT:
     db_name: TRDATP
