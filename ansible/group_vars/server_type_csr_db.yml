@@ -68,6 +68,17 @@ db_configs:
     service:
       - { name: IWFM_TAF, role: PRIMARY }
 
+  PPIWFM:
+    db_name: PPIWFM
+    db_unique_name: PPIWFM
+    instance_name: PPIWFM
+    host_name: pp-csr-db-a
+    port: 1521
+    tns_name: PPIWFM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: IWFM_TAF, role: PRIMARY }
+
 # Oracle common variables
 oracle_install_user: oracle
 oracle_install_group: oinstall
