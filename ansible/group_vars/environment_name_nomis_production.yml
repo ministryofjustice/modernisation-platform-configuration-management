@@ -11,3 +11,26 @@ PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
 db_configs:
   PCNOM:
     ssm_parameter_path: "/oracle/database/CNOMP"
+
+  DRTRDAT:
+    db_name: TRDATP
+    db_unique_name: DRTRDAT
+    instance_name: DRTRDAT
+    host_name: prod-nomis-db-1-b
+    port: 1521
+    tns_name: DRTRDAT
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+      
+  DRNDH:
+    db_name: NDHP
+    db_unique_name: DRNDH
+    instance_name: DRNDH
+    host_name: prod-nomis-db-1-b
+    port: 1521
+    tns_name: DRNDH
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+
