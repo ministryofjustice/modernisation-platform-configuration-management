@@ -8,13 +8,13 @@
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item.key: {
-             'parameter': item.parameter,
-             'value': lookup('amazon.aws.aws_ssm', item.parameter, region='eu-west-2')
+             'parameter': item.value.parameter,
+             'value': lookup('amazon.aws.aws_ssm', item.value.parameter, region='eu-west-2')
            }
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 # If this fails, the SSM parameter doesn't exist or isn't valid json
 - name: Prepare any placeholder parameters
@@ -27,7 +27,7 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 # The if statement:
 # - use the password defined in the ssm_passwords variable if there is one
@@ -57,8 +57,8 @@
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
-    - "{{ ssm_passwords }}"
-    - users
+    - "{{ ssm_passwords | dict2items }}"
+    - value.users
 
 - name: Check parameters which require updating
   set_fact:
@@ -70,7 +70,7 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 - name: Create fact with updated parameters
   set_fact:
@@ -99,4 +99,4 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"

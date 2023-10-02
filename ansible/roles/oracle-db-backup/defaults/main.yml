@@ -27,7 +27,7 @@ adhoc_backup_for: "HA"
 # The rman-backup script requires OEM creds retrieved from hmpps-oem account
 rcvcat_passwords_secret_name: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
 rc_secretsmanager_passwords:
-  - key: "rc"
+  rc:
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
     secret: "{{ rcvcat_passwords_secret_name }}"

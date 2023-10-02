@@ -42,11 +42,11 @@ weblogic_other_form_servers:
 weblogic_all_form_servers: "{{ weblogic_other_form_servers + weblogic_additional_form_servers }}"
 
 weblogic_ssm_passwords:
-  - key: "weblogic"
+  weblogic:
     parameter: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
       - weblogic: auto
-  - key: "db"
+  db:
     parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - tagsar:

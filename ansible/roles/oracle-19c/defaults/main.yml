@@ -36,7 +36,7 @@ grid_install_script: grid_install.sh
 password_response_file: grid_pw.rsp
 
 db_ssm_passwords:
-  - key: "asm"
+  asm:
     parameter: "/ec2/{{ ec2_name }}/asm-passwords"
     users:
       - ASMSNMP: auto
