@@ -50,13 +50,13 @@ oms_ssm_passwords:
   - key: "emrep"
     parameter: "/oracle/database/{{ emrepo_db_name.emrepo_db_name }}/passwords"
     users:
-      - sys:
-      - system:
+      - sys: auto
+      - system: auto
   - key: "oem"
     parameter: "/oracle/oem/passwords"
     users:
-      - weblogic_admin:
-      - nodemanager:
+      - weblogic_admin: auto
+      - nodemanager: auto
 
 oms_secretsmanager_passwords:
   - key: "emrep"
@@ -64,10 +64,10 @@ oms_secretsmanager_passwords:
     account_name: "{{ application }}-{{ aws_environment }}"
     secret: "/oracle/database/{{ emrepo_db_name.emrepo_db_name }}/passwords"
     users:
-      - sysman:
+      - sysman: auto
   - key: "oem"
     assume_role_name: ""
     account_name: "{{ application }}-{{ aws_environment }}"
     secret: "/oracle/oem/passwords"
     users:
-      - agentreg:
+      - agentreg: auto

@@ -38,11 +38,11 @@ variable accordingly
       - key: "oem_passwords"
         parameter: "/ec2/oracle/oem/passwords"
         users:
-          - agentreg:
+          - agentreg: auto # auto generated if not present
       - key: "emrep_passwords"
         parameter: "/ec2/oracle/database/EMREP/passwords"
         users:
-          - sysman:
+          - sysman: # password must be set outside of code
 ```
 
 The role will automatically generate passwords and update the

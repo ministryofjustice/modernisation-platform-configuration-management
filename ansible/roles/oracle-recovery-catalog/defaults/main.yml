@@ -11,8 +11,8 @@ rc_ssm_passwords:
   - key: "rc"
     parameter: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
     users:
-      - sys:
-      - system:
+      - sys: auto
+      - system: auto
 
 rc_secretsmanager_passwords:
   - key: "rc"
@@ -20,4 +20,4 @@ rc_secretsmanager_passwords:
     account_name: "{{ application }}-{{ aws_environment }}"
     secret: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
     users:
-      - rcvcatowner:
+      - rcvcatowner: auto
