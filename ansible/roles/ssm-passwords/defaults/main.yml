@@ -4,12 +4,12 @@ ssm_passwords:
 #   parameter: "my-ssm-password-name1"  e.g. /ec2/oracle/oem/passwords"
 #   users:  # list of users and optional passwords (don't commit)
 #     - myuser1: myfixedvalue
-#     - myuser2
+#     - myuser2: auto # automatically generated if not present
 # - key: "unique_key_for_ansible_dictionary2"
 #   account_name: "my-aws-account-name2"
 #   parameter: "my-ssm-password-name2"
 #   users:
-#     - myuser3
+#     - myuser3: # password must be set outside of code
 
 ssm_passwords_force_rotate: ""
 # include the key and username to force rotation, e.g. "unique_key_for_ansible_dictionary1:myuser1"

@@ -45,7 +45,7 @@ weblogic_ssm_passwords:
   - key: "weblogic"
     parameter: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
-      - weblogic:
+      - weblogic: auto
   - key: "db"
     parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:

@@ -63,13 +63,13 @@ Ensure the secret has been shared with EC2 instances in this account.
         assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/oem/passwords"
         users:
-          - agentreg:
+          - agentreg: auto # password auto generated if not present
       - key: "emrep_passwords"
         account_name: "hmpps-oem-{{ environment }}"
         assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/database/EMREP/passwords"
         users:
-          - sysman:
+          - sysman: # password must be set outside of code
 ```
 
 The role will automatically generate passwords and update the

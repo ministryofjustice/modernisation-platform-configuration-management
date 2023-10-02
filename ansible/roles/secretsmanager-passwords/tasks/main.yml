@@ -62,7 +62,8 @@
 # The if statement:
 # - use the password defined in the secretsmanager_passwords variable if there is one
 # - else use existing password defined in the secretsmanager_secret and force_rotate not set
-# - else generate random password
+# - else generate random password if the value is set to auto in ssm_passwords
+# - else fail
 - name: Generate any missing passwords
   set_fact:
     secretsmanager_passwords_dict: |
@@ -71,15 +72,18 @@
              'passwords': {
                item[1].keys()|first:
                  item[1].values()|first
-                   if item[1].values()|first != None
+                   if item[1].values()|first != None and item[1].values()|first != 'auto'
                  else secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first]
                    if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
                    and [item[0].key, item[1].keys()|first]|join(':') not in secretsmanager_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
+                   if item[1].values()|first == 'auto'
+                 else None
              }
            }
          }, recursive=true) }}
+  failed_when: secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first] == None
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
