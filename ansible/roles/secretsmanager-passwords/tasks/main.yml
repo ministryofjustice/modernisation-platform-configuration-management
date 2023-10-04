@@ -59,6 +59,9 @@
     label: "{{ item.key }}"
   loop: "{{ secretsmanager_passwords | dict2items }}"
 
+# If this fails, either set user to 'auto', or temporary set the password in ansible,
+# or manually add the user's password to the given secret
+#
 # The if statement:
 # - use the password defined in the secretsmanager_passwords variable if there is one
 # - else use existing password defined in the secretsmanager_secret and force_rotate not set
@@ -69,7 +72,7 @@
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item[0].key: {
-             'passwords': {
+             'newpasswords': {
                item[1].keys()|first:
                  item[1].values()|first
                    if item[1].values()|first != None and item[1].values()|first != 'auto'
@@ -80,10 +83,16 @@
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=14')
                    if item[1].values()|first == 'auto'
                  else None
+             },
+             'oldpasswords': {
+               item[1].keys()|first:
+                 secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first]
+                   if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
+                 else ''
              }
            }
          }, recursive=true) }}
-  failed_when: secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first] == None
+  failed_when: secretsmanager_passwords_dict[item[0].key].newpasswords[item[1].keys()|first] == None
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
@@ -95,7 +104,8 @@
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item.key: {
-               'upload': secretsmanager_passwords_dict[item.key].passwords|to_json != secretsmanager_passwords_dict[item.key].value
+               'passwords' : secretsmanager_passwords_dict[item.key].passwords | combine(secretsmanager_passwords_dict[item.key].newpasswords),
+               'upload': secretsmanager_passwords_dict[item.key].newpasswords != secretsmanager_passwords_dict[item.key].oldpasswords
            }
          }, recursive=true) }}
   loop_control:

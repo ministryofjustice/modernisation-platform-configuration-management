@@ -39,7 +39,7 @@
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item[0].key: {
-             'passwords': {
+             'newpasswords': {
                item[1].keys()|first:
                  item[1].values()|first
                    if item[1].values()|first != None and item[1].values()|first != 'auto'
@@ -50,10 +50,16 @@
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=14')
                    if item[1].values()|first == 'auto'
                  else None
+             },
+             'oldpasswords': {
+               item[1].keys()|first:
+                 ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
+                   if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
+                 else ''
              }
            }
          }, recursive=true) }}
-  failed_when: ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first] == None
+  failed_when: ssm_passwords_dict[item[0].key].newpasswords[item[1].keys()|first] == None
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
@@ -65,7 +71,8 @@
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item.key: {
-               'upload': ssm_passwords_dict[item.key].passwords|to_json != ssm_passwords_dict[item.key].value
+               'passwords' : ssm_passwords_dict[item.key].passwords | combine(ssm_passwords_dict[item.key].newpasswords),
+               'upload': ssm_passwords_dict[item.key].newpasswords != ssm_passwords_dict[item.key].oldpasswords
            }
          }, recursive=true) }}
   loop_control:
