@@ -15,20 +15,20 @@
     PATH=$PATH:/usr/local/bin
     set -e
     account_id=$(aws sts get-caller-identity --query Account --output text)
-    secret_account_id="{{ account_ids[item.account_name] }}"
+    secret_account_id="{{ account_ids[item.value.account_name] }}"
     if [[ $account_id != $secret_account_id ]]; then
-      role_arn="arn:aws:iam::${account_id}:role/{{ item.assume_role_name }}"
+      role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
       session="{{ item.key }}-ansible"
       creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
       export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
       export AWS_SECRET_ACCESS_KEY=$(echo "${creds}" | tail -1 | cut -f2)
       export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
     fi
-    secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ item.secret }}"
+    secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ item.value.secret }}"
     aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords }}"
+  loop: "{{ secretsmanager_passwords | dict2items }}"
   check_mode: false
   changed_when: false
   register: get_secrets_shell
@@ -51,14 +51,17 @@
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item.key: {
-             'config': item,
+             'config': item.value,
              'passwords': {} if 'placeholder' in secretsmanager_passwords_dict[item.key].value else secretsmanager_passwords_dict[item.key].value|from_json
            }
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords }}"
+  loop: "{{ secretsmanager_passwords | dict2items }}"
 
+# If this fails, either set user to 'auto', or temporary set the password in ansible,
+# or manually add the user's password to the given secret
+#
 # The if statement:
 # - use the password defined in the secretsmanager_passwords variable if there is one
 # - else use existing password defined in the secretsmanager_secret and force_rotate not set
@@ -69,7 +72,7 @@
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item[0].key: {
-             'passwords': {
+             'newpasswords': {
                item[1].keys()|first:
                  item[1].values()|first
                    if item[1].values()|first != None and item[1].values()|first != 'auto'
@@ -77,30 +80,37 @@
                    if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
                    and [item[0].key, item[1].keys()|first]|join(':') not in secretsmanager_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
-                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
+                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=14')
                    if item[1].values()|first == 'auto'
                  else None
+             },
+             'oldpasswords': {
+               item[1].keys()|first:
+                 secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first]
+                   if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
+                 else ''
              }
            }
          }, recursive=true) }}
-  failed_when: secretsmanager_passwords_dict[item[0].key].passwords[item[1].keys()|first] == None
+  failed_when: secretsmanager_passwords_dict[item[0].key].newpasswords[item[1].keys()|first] == None
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
-    - "{{ secretsmanager_passwords }}"
-    - users
+    - "{{ secretsmanager_passwords | dict2items }}"
+    - value.users
 
 - name: Check secrets which require updating
   set_fact:
     secretsmanager_passwords_dict: |
       {{ secretsmanager_passwords_dict | combine({
            item.key: {
-               'upload': secretsmanager_passwords_dict[item.key].passwords|to_json != secretsmanager_passwords_dict[item.key].value
+               'passwords' : secretsmanager_passwords_dict[item.key].passwords | combine(secretsmanager_passwords_dict[item.key].newpasswords),
+               'upload': secretsmanager_passwords_dict[item.key].newpasswords != secretsmanager_passwords_dict[item.key].oldpasswords
            }
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords }}"
+  loop: "{{ secretsmanager_passwords | dict2items }}"
 
 - name: Check secrets which require updating
   set_fact:
@@ -135,4 +145,4 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ secretsmanager_passwords }}"
+  loop: "{{ secretsmanager_passwords | dict2items }}"

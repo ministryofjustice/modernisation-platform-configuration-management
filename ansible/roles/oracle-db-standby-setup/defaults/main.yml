@@ -4,3 +4,18 @@ temp_dir: /u02/stage/temp
 duplicate_target_db_cmd: "duplicate target database for standby "
 standby_creation_cmd_filename: "standby_creation.cmd"
 rman_backup_location: /u03/backup/rman
+
+# The db_configs map must be defined and have an entry
+# corresponding to oracle-db-name.  Define in group_vars.
+db_configs: {}
+db_primary_name: None
+db_standby_name: None
+db_primary: "{{ db_configs[ db_primary_name ] }}"
+db_standby: "{{ db_configs[ db_standby_name ] }}"
+
+# ensure sys password is defined in the standby DB passwords SSM parameter
+db_ssm_passwords:
+  db:
+    parameter: "/oracle/database/{{ db_standby.db_name }}/passwords"
+    users:
+      - sys:

@@ -8,13 +8,13 @@
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item.key: {
-             'parameter': item.parameter,
-             'value': lookup('amazon.aws.aws_ssm', item.parameter, region='eu-west-2')
+             'parameter': item.value.parameter,
+             'value': lookup('amazon.aws.aws_ssm', item.value.parameter, region='eu-west-2')
            }
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 # If this fails, the SSM parameter doesn't exist or isn't valid json
 - name: Prepare any placeholder parameters
@@ -27,7 +27,7 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 # The if statement:
 # - use the password defined in the ssm_passwords variable if there is one
@@ -39,7 +39,7 @@
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item[0].key: {
-             'passwords': {
+             'newpasswords': {
                item[1].keys()|first:
                  item[1].values()|first
                    if item[1].values()|first != None and item[1].values()|first != 'auto'
@@ -47,30 +47,37 @@
                    if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
                    and [item[0].key, item[1].keys()|first]|join(':') not in ssm_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
-                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=15')
+                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=14')
                    if item[1].values()|first == 'auto'
                  else None
+             },
+             'oldpasswords': {
+               item[1].keys()|first:
+                 ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
+                   if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
+                 else ''
              }
            }
          }, recursive=true) }}
-  failed_when: ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first] == None
+  failed_when: ssm_passwords_dict[item[0].key].newpasswords[item[1].keys()|first] == None
   loop_control:
     label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
   with_subelements:
-    - "{{ ssm_passwords }}"
-    - users
+    - "{{ ssm_passwords | dict2items }}"
+    - value.users
 
 - name: Check parameters which require updating
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
            item.key: {
-               'upload': ssm_passwords_dict[item.key].passwords|to_json != ssm_passwords_dict[item.key].value
+               'passwords' : ssm_passwords_dict[item.key].passwords | combine(ssm_passwords_dict[item.key].newpasswords),
+               'upload': ssm_passwords_dict[item.key].newpasswords != ssm_passwords_dict[item.key].oldpasswords
            }
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"
 
 - name: Create fact with updated parameters
   set_fact:
@@ -99,4 +106,4 @@
          }, recursive=true) }}
   loop_control:
     label: "{{ item.key }}"
-  loop: "{{ ssm_passwords }}"
+  loop: "{{ ssm_passwords | dict2items }}"

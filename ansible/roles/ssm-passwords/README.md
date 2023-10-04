@@ -35,18 +35,23 @@ variable accordingly
     name: secretsmanager-passwords
   vars:
     ssm_passwords:
-      - key: "oem_passwords"
+      oem_passwords:
         parameter: "/ec2/oracle/oem/passwords"
         users:
           - agentreg: auto # auto generated if not present
-      - key: "emrep_passwords"
+      emrep_passwords:
         parameter: "/ec2/oracle/database/EMREP/passwords"
         users:
           - sysman: # password must be set outside of code
 ```
 
 The role will automatically generate passwords and update the
-secret value.
+secret value. This will be available to access in subsequent ansible
+code using the `ssm_passwords_dict` fact:
+
+```
+agentregpassword: "{{ ssm_passwords_dict['oem_passwords'].passwords['agentreg'] }}"
+```
 
 See OEM secrets for an example of how this is used in practice.
 

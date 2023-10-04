@@ -58,13 +58,13 @@ Ensure the secret has been shared with EC2 instances in this account.
     name: secretsmanager-passwords
   vars:
     secretsmanager_passwords:
-      - key: "oem_passwords"
+      oem_passwords:
         account_name: "hmpps-oem-{{ environment }}"
         assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/oem/passwords"
         users:
           - agentreg: auto # password auto generated if not present
-      - key: "emrep_passwords"
+      emrep_passwords:
         account_name: "hmpps-oem-{{ environment }}"
         assume_role_name: EC2OracleEnterpriseManagementSecretsRole
         secret: "/ec2/oracle/database/EMREP/passwords"
@@ -74,6 +74,13 @@ Ensure the secret has been shared with EC2 instances in this account.
 
 The role will automatically generate passwords and update the
 secret value.
+The role will automatically generate passwords and update the
+secret value. This will be available to access in subsequent ansible
+code using the `secretsmanager_passwords_dict` fact:
+
+```
+agentregpassword: "{{ secretsmanager_passwords_dict['oem_passwords'].passwords['agentreg'] }}"
+```
 
 See OEM secrets for an example of how this is used in practice.
 

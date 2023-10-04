@@ -53,6 +53,15 @@ db_configs:
       - { name: NOMIS_APIRO, role: PRIMARY }
 ```
 
+Ensure "sys" password is stored in SSM Parameter in
+
+```
+/oracle/database/{{ db_name }}/passwords
+```
+
+This parameter should be created by terraform and then password set manually afterwards.
+
+
 # Example
 
 1. Setup primary database to support the new standby database

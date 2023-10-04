@@ -8,14 +8,14 @@ db_configs: {}
 rcvcat: "RCVCAT"
 rcvcat_db_name: "{{ db_configs[rcvcat] }}"
 rc_ssm_passwords:
-  - key: "rc"
+  rc:
     parameter: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
     users:
       - sys: auto
       - system: auto
 
 rc_secretsmanager_passwords:
-  - key: "rc"
+  rc:
     assume_role_name: ""
     account_name: "{{ application }}-{{ aws_environment }}"
     secret: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
