@@ -15,7 +15,7 @@ db_env:
 
 db_configs:
   PCNOM:
-    ssm_parameter_path: "/oracle/database/CNOMP"
+    db_name: PCNOM
 
   TRDATP:
     db_name: TRDATP
@@ -118,5 +118,3 @@ db_configs:
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO_TAF, role: PHYSICAL_STANDBY }
       - { name: OR_TAF, role: PHYSICAL_STANDBY }
-
-

@@ -43,7 +43,6 @@ db_configs:
     db_name: T1CNOM
     db_unique_name: T1CNOM
     instance_name: T1CNOM
-    ssm_parameter_path: "/oracle/database/CNOMT1"
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1CNOM
@@ -113,7 +112,6 @@ db_configs:
     db_name: T2CNOM
     db_unique_name: T2CNOM
     instance_name: T2CNOM
-    ssm_parameter_path: "/oracle/database/CNOMT2"
     host_name: t2-nomis-db-1-a
     port: 1521
     tns_name: T2CNOM
@@ -147,7 +145,7 @@ db_configs:
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
   T3CNOM:
-    ssm_parameter_path: "/oracle/database/CNOMT3"
+    db_name: T3CNOM
   RCVCAT:
     rcvcat_db_name: TRCVCAT
   # T2CNOMS1:
