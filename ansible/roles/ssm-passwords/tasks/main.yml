@@ -3,6 +3,13 @@
   set_fact:
     ssm_passwords_dict: "{{ ssm_passwords_dict|default({}) }}"
 
+# install so scripts can easily access passwords
+- name: Install jq
+  ansible.builtin.yum:
+    name: "jq"
+    state: present
+    enablerepo: "epel"
+
 - name: Get SSM Parameters
   set_fact:
     ssm_passwords_dict: |
