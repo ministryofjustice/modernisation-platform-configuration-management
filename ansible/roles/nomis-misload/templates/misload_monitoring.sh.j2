@@ -4,7 +4,7 @@ set -e
 
 export PATH=$PATH:/usr/local/bin
 
-misload_db={{ misload_db_name }}
+misload_db={{ misload_dbname }}
 
 get_misload_status() {
     sqlplus -s / as sysdba << EOF

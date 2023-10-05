@@ -2,14 +2,9 @@
 
 export PATH=$PATH:/usr/local/bin
 
-function get_ssm_value {
-    param=$1
-    aws ssm get-parameter --name $param --region "{{ ansible_ec2_placement_region }}" --with-decryption --query Parameter.Value --output text
-}
-
-username=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadusername")
-password=$(get_ssm_value  "/database/{{ ansible_hostname }}/misloadpassword")
-target="{{ misload_target }}"
+target=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
+username=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
+password=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
 misload_batch_file_path="{{ misload_batch_file_path }}"
 
 cd {{ oracle_admin_script_dir }}
@@ -19,7 +14,7 @@ export ORAENV_ASK=NO
 utc_time=$(date -u +"%Y-%m-%d %H:%M:%S")
 echo "misload_triggered $utc_time" > /opt/textfile_monitoring/misload_triggered.prom
 
-{{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u $username -p $password -t $target -b $misload_batch_file_path
+{{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u "$username" -p "$password" -t "$target" -b "$misload_batch_file_path"
 
 # echo "misload_running 0" > /opt/textfile_monitoring/misload_running.prom
 # echo "misload_start_time " `date '+%s'` > /opt/textfile_monitoring/misload_start_time.prom

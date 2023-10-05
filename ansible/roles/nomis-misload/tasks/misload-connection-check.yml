@@ -1,16 +1,4 @@
 ---
-- name: get value for misload target
-  set_fact:
-    misload_target: "{{ ec2.tags['misload-target'] }}"
-
-- name: debug winrm_target_check
-  ansible.builtin.debug:
-    msg: "{{ misload_target }}"
-
-- name: get ansible ansible_hostname
-  ansible.builtin.debug:
-    msg: "{{ ansible_hostname }}"
-
 - name: copy python file to /usr/local/share/
   ansible.builtin.copy:
     src: winrm_connection_check.py
