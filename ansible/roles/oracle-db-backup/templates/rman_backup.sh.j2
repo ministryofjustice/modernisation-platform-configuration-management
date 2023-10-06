@@ -91,8 +91,7 @@ get_rcat_creds () {
     export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
   fi
   secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ rcvcat_passwords_secret_name }}"
-  # using egrep as jq might not be installed
-  aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | egrep -o '"rcvcatowner":[^"]*"[^"]*"' | cut -d\" -f4
+  aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .rcvcatowner
 }
 
 validate () {

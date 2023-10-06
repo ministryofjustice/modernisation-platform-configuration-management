@@ -11,7 +11,7 @@ server_type_roles_list:
   - collectd-service-metrics
   #  - oracle-db-restore
   - fixngo-connected-metric
-  - misload
+  - nomis-misload
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

@@ -9,3 +9,13 @@ misload_monitoring_cron:
     minute: "30"
     hour: "*"
     job: "su oracle -c '/home/oracle/admin/misload_scripts/{{ misload_monitoring_script }}' | logger -p local3.info -t misload"
+
+misload_dbname: "{{ ec2.tags['misload-dbname'] }}"
+misload_ssm_parameter: "/oracle/database/{{ misload_dbname }}/misload-config"
+misload_ssm_passwords:
+  misload:
+    parameter: "{{ misload_ssm_parameter }}"
+    users:
+      - target:
+      - username:
+      - password:

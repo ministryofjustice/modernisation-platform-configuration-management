@@ -16,7 +16,7 @@ then
         echo "emcli add HAS target"
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
         echo "emcli add ASM target"
-        ASMSNMPPASSWORD=$(aws ssm get-parameter --name "{{ oem_ssm_passwords.asm.parameter }}" --query Parameter.Value --with-decryption --output text | egrep -o '"ASMSNMP":[^"]*"[^"]*"' | cut -d\" -f4)
+        ASMSNMPPASSWORD=$(aws ssm get-parameter --name "{{ oem_ssm_passwords.asm.parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .ASMSNMP)
         ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
         echo "emcli add Listener"
         ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME}"
@@ -39,7 +39,7 @@ then
         for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
         do
                 echo ${i}
-                DBPASSWORD=$(aws ssm get-parameter --name "/oracle/database/${i}/passwords" --query Parameter.Value --with-decryption --output text | egrep -o '"dbsnmp":[^"]*"[^"]*"' | cut -d\" -f4)
+                DBPASSWORD=$(aws ssm get-parameter --name "/oracle/database/${i}/passwords" --query Parameter.Value --with-decryption --output text | jq -r .dbsnmp)
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
                 # oracle_dbsys added  due to encountered bug 
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 

@@ -1,0 +1,28 @@
+---
+- name: Get misload config
+  import_role:
+    name: ssm-passwords
+  vars:
+    ssm_passwords: "{{ misload_ssm_passwords }}"
+  tags:
+    - always
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
+
+# included to prevent having to debug connections in the actual task if the target is not reachable
+- import_tasks: "misload-connection-check.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
+
+- import_tasks: "misload-config.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0
+
+- import_tasks: "misload-monitoring.yml"
+  tags:
+    - ec2provision
+    - ec2patch
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0

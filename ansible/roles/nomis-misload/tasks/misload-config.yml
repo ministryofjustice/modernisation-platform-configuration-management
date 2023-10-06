@@ -1,8 +1,4 @@
 ---
-- name: get value for misload target
-  set_fact:
-    misload_target: "{{ ec2.tags['misload-target'] }}"
-
 # this may be redundant as oem doesn't use these? was purely there for prometheus
 - name: create required folders for misload exec script to output log files
   ansible.builtin.file:

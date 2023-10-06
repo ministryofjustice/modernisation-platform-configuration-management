@@ -8,6 +8,13 @@
   set_fact:
     secretsmanager_passwords_dict: "{{ secretsmanager_passwords_dict|default({}) }}"
 
+# install so scripts can easily access passwords
+- name: Install jq
+  ansible.builtin.yum:
+    name: "jq"
+    state: present
+    enablerepo: "epel"
+
 # Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
 - name: Get SecretsManager Secrets
