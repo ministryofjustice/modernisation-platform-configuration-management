@@ -56,29 +56,6 @@ server_type_roles_list:
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
-db_configs:
-  T3IWFM:
-    db_name: T3IWFM
-    db_unique_name: T3IWFM
-    instance_name: T3IWFM
-    host_name: t3-csr-db-a
-    port: 1521
-    tns_name: T3IWFM
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: IWFM_TAF, role: PRIMARY }
-
-  PPIWFM:
-    db_name: PPIWFM
-    db_unique_name: PPIWFM
-    instance_name: PPIWFM
-    host_name: pp-csr-db-a
-    port: 1521
-    tns_name: PPIWFM
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: IWFM_TAF, role: PRIMARY }
-
 # Oracle common variables
 oracle_install_user: oracle
 oracle_install_group: oinstall

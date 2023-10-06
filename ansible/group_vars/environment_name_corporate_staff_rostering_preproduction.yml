@@ -40,3 +40,13 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PPRCVCAT
+  PPIWFM:
+    db_name: PPIWFM
+    db_unique_name: PPIWFM
+    instance_name: PPIWFM
+    host_name: pp-csr-db-a
+    port: 1521
+    tns_name: PPIWFM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: IWFM_TAF, role: PRIMARY }

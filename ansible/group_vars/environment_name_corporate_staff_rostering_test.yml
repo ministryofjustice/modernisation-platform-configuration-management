@@ -44,3 +44,13 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: TRCVCAT
+  T3IWFM:
+    db_name: T3IWFM
+    db_unique_name: T3IWFM
+    instance_name: T3IWFM
+    host_name: t3-csr-db-a
+    port: 1521
+    tns_name: T3IWFM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: IWFM_TAF, role: PRIMARY }
