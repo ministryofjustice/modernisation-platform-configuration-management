@@ -74,6 +74,7 @@
 # - else use existing password defined in the secretsmanager_secret and force_rotate not set
 # - else generate random password if the value is set to auto in ssm_passwords
 # - else fail
+# Oracle passwords must start with letter and contain at least one digit
 - name: Generate any missing passwords
   set_fact:
     secretsmanager_passwords_dict: |
@@ -87,7 +88,8 @@
                    if item[1].keys()|first in secretsmanager_passwords_dict[item[0].key].passwords
                    and [item[0].key, item[1].keys()|first]|join(':') not in secretsmanager_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
-                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=14')
+                 + lookup('ansible.builtin.password', '/dev/null chars=digits length=1')
+                 + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=13')
                    if item[1].values()|first == 'auto'
                  else None
              },
