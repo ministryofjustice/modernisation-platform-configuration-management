@@ -11,7 +11,8 @@
 
 - name: Set ASM Path Version Component
   set_fact:
-    asm_version_component: "{{ get_asmpath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+    #asm_version_component: "{{ get_asmpath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+    asm_version_component: "{{ get_asmpath.stdout_lines[-1].split(':')[1].split('/')[-2] }}"
 
 - name: Get Database Path from OraTab
   shell: |
@@ -21,7 +22,8 @@
 
 - name: Set Database Path Version Component
   set_fact:
-    database_version_component: "{{ get_databasepath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+    #database_version_component: "{{ get_databasepath.stdout_lines[-1] | regex_replace('.*/([\\d\\.]+)/.*','\\1') }}"
+    database_version_component: "{{ get_databasepath.stdout_lines[-1].split(':')[1].split('/')[-2] }}"
 
 # Copy the oracle_vars_dir directory to standby host
 - name: Copy oracle_vars_dir directory from localhost to standby host
