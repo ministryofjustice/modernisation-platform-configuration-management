@@ -5,7 +5,7 @@
     epel_rpm_url: https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
     epel_gpg_key_filename: RPM-GPG-KEY-EPEL-6.txt
     epel_gpg_key_url: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-6.txt
-  when: ansible_distribution_major_version == '6' 
+  when: ansible_distribution_major_version == '6'
 
 - name: Set RHEL7+ epel facts
   set_fact:
@@ -18,7 +18,7 @@
 - name: Fail if unexpected OS
   fail:
     msg: "Unsupported OS {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
-  when: ansible_distribution_major_version not in ['6', '7', '8', '9'] 
+  when: ansible_distribution_major_version not in ['6', '7', '8', '9']
 
 - name: Get SELinux state
   ansible.builtin.shell: getenforce || true
@@ -53,7 +53,7 @@
       ansible.builtin.rpm_key:
         state: present
         key: "/root/epel/{{ epel_gpg_key_filename }}"
-   
+
     - name: Install epel RPM from S3
       ansible.builtin.yum:
         state: present
@@ -68,7 +68,7 @@
   when: artefacts_s3_bucket_name is defined
 
 - name: Install from URL
-  block: 
+  block:
     - name: Set SELinux state to Permissive
       ansible.builtin.shell: setenforce Permissive
       when: epel_selinux_mode.stdout|lower == "enforcing"
