@@ -51,6 +51,7 @@ run_ansible() {
   else
     cd $ansible_dir/${ansible_repo}
     git pull
+    git checkout "$branch"
   fi
   cd $ansible_dir
 
