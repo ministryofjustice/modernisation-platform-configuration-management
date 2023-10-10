@@ -1,0 +1,7 @@
+---
+- import_tasks: install-from-rpm.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+  when: ansible_distribution in ['RedHat', 'OracleLinux']
