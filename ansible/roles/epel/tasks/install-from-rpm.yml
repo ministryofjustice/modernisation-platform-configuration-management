@@ -60,7 +60,7 @@
         name: "/root/epel/{{ epel_rpm_filename }}"
 
   always:
-    - name: Restore SELinux state to {{ epel_selinux_mode.stdout }}
+    - name: Restore SELinux state to Enforcing
       ansible.builtin.shell: setenforce Enforcing
       when: epel_selinux_mode.stdout|lower == "enforcing"
 

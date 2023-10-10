@@ -1,7 +1,20 @@
 ---
+# try the easy way first
+- name: Add EPEL repository
+  ansible.builtin.yum:
+    name: epel-release
+    state: present
+  ignore_errors: yes
+  register: epel_yum
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+
+# otherwise install from RPM
 - import_tasks: install-from-rpm.yml
   tags:
     - amibuild
     - ec2provision
     - ec2patch
-  when: ansible_distribution in ['RedHat', 'OracleLinux']
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and epel_yum is failed
