@@ -1,0 +1,92 @@
+---
+- name: Set RHEL6 epel facts
+  set_fact:
+    epel_rpm_filename: epel-release-6-8.noarch.rpm
+    epel_rpm_url: https://dl.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    epel_gpg_key_filename: RPM-GPG-KEY-EPEL-6.txt
+    epel_gpg_key_url: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-6.txt
+  when: ansible_distribution_major_version == '6'
+
+- name: Set RHEL7+ epel facts
+  set_fact:
+    epel_rpm_filename: "epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    epel_rpm_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    epel_gpg_key_filename: "RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}.txt"
+    epel_gpg_key_url: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}.txt"
+  when: ansible_distribution_major_version in ['7', '8', '9']
+
+- name: Fail if unexpected OS
+  fail:
+    msg: "Unsupported OS {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
+  when: ansible_distribution_major_version not in ['6', '7', '8', '9']
+
+- name: Get SELinux state
+  ansible.builtin.shell: getenforce || true
+  changed_when: false
+  check_mode: false
+  register: epel_selinux_mode
+
+# The fedoraproject URL sometimes gives 403s so safer to use S3 method
+- name: Install from S3
+  block:
+    - name: Create rpm directory
+      ansible.builtin.file:
+        path: "/root/epel"
+        state: directory
+
+    - name: Copy from S3
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "/root/epel/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - "{{ epel_rpm_filename }}"
+        - "{{ epel_gpg_key_filename }}"
+
+    - name: Temporarily set SELinux state to Permissive
+      ansible.builtin.shell: setenforce Permissive
+      when: epel_selinux_mode.stdout|lower == "enforcing"
+
+    - name: Import rpm key from S3
+      ansible.builtin.rpm_key:
+        state: present
+        key: "/root/epel/{{ epel_gpg_key_filename }}"
+
+    - name: Install epel RPM from S3
+      ansible.builtin.yum:
+        state: present
+        name: "/root/epel/{{ epel_rpm_filename }}"
+
+  always:
+    - name: Restore SELinux state to Enforcing
+      ansible.builtin.shell: setenforce Enforcing
+      when: epel_selinux_mode.stdout|lower == "enforcing"
+
+  # block
+  when: artefacts_s3_bucket_name is defined
+
+- name: Install from URL
+  block:
+    - name: Set SELinux state to Permissive
+      ansible.builtin.shell: setenforce Permissive
+      when: epel_selinux_mode.stdout|lower == "enforcing"
+
+    - name: Import rpm key from URL
+      ansible.builtin.rpm_key:
+        state: present
+        key: "{{ epel_gpg_key_url }}"
+
+    - name: Install epel RPM from URL
+      ansible.builtin.yum:
+        state: present
+        name: "{{ epel_rpm_url }}"
+
+  always:
+    - name: Restore SELinux state to Enforcing
+      ansible.builtin.shell: setenforce Enforcing
+      when: epel_selinux_mode.stdout|lower == "enforcing"
+
+  # block
+  when: artefacts_s3_bucket_name is not defined
