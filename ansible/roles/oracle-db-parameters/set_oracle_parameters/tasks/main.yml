@@ -357,18 +357,18 @@
 
 # Additional Non-SPFILE Parameters:  SQL*Net network configuration parameters set-up
 - name: Set SQL*Net Network Parameters If Required
-  include: sqlnet_parameters.yml
+  include_tasks: sqlnet_parameters.yml
   when: sqlnet_parameters is defined
 
 # Additional Non-SPFILE Parameters:  Data Guard configuration parameters set-up
 - name: Set Data Guard Parameters If Required
-  include: data_guard_parameters.yml
+  include_tasks: data_guard_parameters.yml
   when: data_guard_parameters is defined
 
 # Additional Non-SPFILE Parameters: AWR configuration parameters set-up
 # We only need to run this on the Primary Database and Only if Management Packs are enabled
 - name: Set AWR Configuration if Required
-  include: awr_parameters.yml
+  include_tasks: awr_parameters.yml
   when:
     - database_parameters.control_management_pack_access in ['DIAGNOSTICS','DIAGNOSTIC+TUNING']
     - database_primary_sid is defined
