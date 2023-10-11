@@ -26,7 +26,7 @@
 - name: Create CSV List of Database Parameters
   set_fact:
     parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size','control_file_record_keep_time'\" }}"
-
+    
 - name: Get List of Current Database Parameter Values
   script: get_parameter_values.sh {{ database_sid }} "{{ parameter_csv }}"
   register: current_parameter_values
@@ -48,9 +48,11 @@
   block:
     # The RMAN Retention Policy is only defined on the primary database so
     # check which group that is
-    - name: Get Primary Database Group
+
+    - name: Change target host group name if not ending with delius_primarydb
       set_fact:
-        primarydb_group: "{{ target_host.split('_')[0] + '_primarydb' }}"
+        delius_primarydb: "{{ target_host | replace (target_host.split('_')[-2] + '_' + target_host.split('_')[-1], 'delius_primarydb') }}"
+      when: target_host is not search ('delius_primarydb')
 
     - name: Get Specified RMAN Recovery Window
       set_fact:
