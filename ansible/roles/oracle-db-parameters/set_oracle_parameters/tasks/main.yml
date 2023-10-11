@@ -119,7 +119,7 @@
 # When setting the parameters, numeric values and booleans need to be unquoted and everything else should be single quoted
 # Note that we require some special handling for boolean case sensitivity as Ansible will convert true or false strings to booleans
 - name: Set Parameter
-  script: set_parameter_values.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
+  script: set_parameter_values.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('(?i)^(\d+|true|false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
   register: setout
   with_items: "{{ database_parameters }}"
   when:
@@ -128,7 +128,7 @@
     - database_parameters_spfile[item] == 'NORESTART'
 
 - name: Set Parameter In Spfile
-  script: set_parameter_values_spfile.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('^(\d+|(?i)true|(?i)false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
+  script: set_parameter_values_spfile.sh {{ database_sid }} "{{ item }}"  "{{ database_parameters[item] | regex_replace('(?i)^(\d+|true|false)$','{NOBEGINQUOTE}\1{NOENDQUOTE}') | regex_replace('^(.*)$',"'\1'") | regex_replace("'{NOBEGINQUOTE}|{NOENDQUOTE}'") }}"
   register: setout_spfile
   with_items: "{{ database_parameters }}"
   when:
