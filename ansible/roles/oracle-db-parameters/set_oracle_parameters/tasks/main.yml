@@ -26,7 +26,7 @@
 - name: Create CSV List of Database Parameters
   set_fact:
     parameter_csv: "{{ database_parameters | dictsort | map(attribute='0') | map('regex_replace', '^(.*)$', \"'\\1'\") | join(',') + \",'sga_max_size','control_file_record_keep_time'\" }}"
-    
+
 - name: Get List of Current Database Parameter Values
   script: get_parameter_values.sh {{ database_sid }} "{{ parameter_csv }}"
   register: current_parameter_values
