@@ -39,12 +39,6 @@
     - app_db_username|length > 0
     - app_db_password|length > 0
     - app_db_name|length > 0
-- debug:
-    var: app_db_name
-- debug:
-    var: app_db_username
-- debug:
-    var: app_db_password
 
 - name: Fail if missing SSM parameters or tags
   fail:
