@@ -13,7 +13,7 @@
   vars:
     ssm_passwords:
       db:
-        parameter: "/oracle/database/{{ item }}/passwords"
+        parameter: "/oracle/database/{{ db_name }}/passwords"
         users:
           - sys
 
@@ -29,25 +29,25 @@
 
 - name: Fail if missing SSM parameters
   ansible.builtin.fail:
-    msg: Ensure SYS password is in SSM for {{ item }} database
+    msg: Ensure SYS password is in SSM for {{ db_name }} database
   when: not  db_sys_password_set |default(false)
 
-- name: Drop restore point in database {{ item }}
+- name: Drop restore point in database {{ db_name }}
   become_user: "{{ oracle_install_user }}"
   ansible.builtin.shell: |
     set -eo pipefail
     main() {
       . ~/.bash_profile
       . oraenv <<< {{ db_sid }}
-      sqlplus sys/{{ db_sys_password }}@{{ item }} as sysdba @{{ stage }}/drop_restore_point.sql
+      sqlplus sys/{{ db_sys_password }}@{{ db_name }} as sysdba @{{ stage }}/drop_restore_point.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-restore-point
 
-- name: Check restore point dropped successfully or not from {{ item }}
-  ansible.builtin.shell: grep "Restore point dropped." {{ stage }}/{{ item }}_restore_point.log  | wc -l
+- name: Check restore point dropped successfully or not from {{ db_name }}
+  ansible.builtin.shell: grep "Restore point dropped." {{ stage }}/{{ db_name }}_restore_point.log  | wc -l
   register: restore_point_check
 
 - name: Fail if missing SSM parameters
   ansible.builtin.fail:
-    msg: Drop restore point failed for {{ item }}
+    msg: Drop restore point failed for {{ db_name }}
   when: restore_point_check.stdout == "0"

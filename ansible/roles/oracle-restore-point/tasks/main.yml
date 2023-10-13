@@ -10,7 +10,9 @@
     apply:
       tags:
         - create_restore_point
-  with_items: "{{ db_tns_list.split(',') }}"
+  loop_control:
+    loop_var: db_name
+  loop: "{{ db_tns_list.split(',') }}"
   when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "create"
 
 - name: Drop restore point from databases specified by TNS
@@ -19,5 +21,7 @@
     apply:
       tags:
         - drop_restore_point
-  with_items: "{{ db_tns_list.split(',') }}"
+  loop_control:
+    loop_var: db_name
+  loop: "{{ db_tns_list.split(',') }}"
   when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "drop"
