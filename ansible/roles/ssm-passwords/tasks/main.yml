@@ -1,7 +1,7 @@
 ---
 - name: Prepare ssm_passwords_dict fact
   set_fact:
-    ssm_passwords_dict: "{{ ssm_passwords_dict|default({}) }}"
+    ssm_passwords_dict: {}
 
 # install so scripts can easily access passwords
 - name: Install jq
