@@ -13,27 +13,29 @@
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
-           item.key: {
-             'parameter': item.value.parameter,
-             'value': lookup('amazon.aws.aws_ssm', item.value.parameter, region='eu-west-2')
+           param.key: {
+             'parameter': param.value.parameter,
+             'value': lookup('amazon.aws.aws_ssm', param.value.parameter, region='eu-west-2')
            }
          }, recursive=true) }}
   loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ ssm_passwords | dict2items }}"
+    loop_var: param
+    label: "{{ param.key }}"
+  loop: "{{ ssm_passwords | dict2params }}"
 
 # If this fails, the SSM parameter doesn't exist or isn't valid json
 - name: Prepare any placeholder parameters
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
-           item.key: {
-             'passwords': {} if 'placeholder' in ssm_passwords_dict[item.key].value else ssm_passwords_dict[item.key].value|from_json
+           param.key: {
+             'passwords': {} if 'placeholder' in ssm_passwords_dict[param.key].value else ssm_passwords_dict[param.key].value|from_json
            }
          }, recursive=true) }}
   loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ ssm_passwords | dict2items }}"
+    loop_var: param
+    label: "{{ param.key }}"
+  loop: "{{ ssm_passwords | dict2params }}"
 
 # The if statement:
 # - use the password defined in the ssm_passwords variable if there is one
@@ -45,51 +47,53 @@
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
-           item[0].key: {
+           param[0].key: {
              'newpasswords': {
-               item[1].keys()|first:
-                 item[1].values()|first
-                   if item[1].values()|first != None and item[1].values()|first != 'auto'
-                 else ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
-                   if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
-                   and [item[0].key, item[1].keys()|first]|join(':') not in ssm_passwords_force_rotate
+               param[1].keys()|first:
+                 param[1].values()|first
+                   if param[1].values()|first != None and param[1].values()|first != 'auto'
+                 else ssm_passwords_dict[param[0].key].passwords[param[1].keys()|first]
+                   if param[1].keys()|first in ssm_passwords_dict[param[0].key].passwords
+                   and [param[0].key, param[1].keys()|first]|join(':') not in ssm_passwords_force_rotate
                  else lookup('ansible.builtin.password', '/dev/null chars=ascii_letters length=1')
                  + lookup('ansible.builtin.password', '/dev/null chars=digits length=1')
                  + lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=13')
-                   if item[1].values()|first == 'auto'
+                   if param[1].values()|first == 'auto'
                  else None
              },
              'oldpasswords': {
-               item[1].keys()|first:
-                 ssm_passwords_dict[item[0].key].passwords[item[1].keys()|first]
-                   if item[1].keys()|first in ssm_passwords_dict[item[0].key].passwords
+               param[1].keys()|first:
+                 ssm_passwords_dict[param[0].key].passwords[param[1].keys()|first]
+                   if param[1].keys()|first in ssm_passwords_dict[param[0].key].passwords
                  else ''
              }
            }
          }, recursive=true) }}
-  failed_when: ssm_passwords_dict[item[0].key].newpasswords[item[1].keys()|first] == None
+  failed_when: ssm_passwords_dict[param[0].key].newpasswords[param[1].keys()|first] == None
   loop_control:
-    label: "{{ item[0].key }}:{{ item[1].keys()|first }}"
+    loop_var: param
+    label: "{{ param[0].key }}:{{ param[1].keys()|first }}"
   with_subelements:
-    - "{{ ssm_passwords | dict2items }}"
+    - "{{ ssm_passwords | dict2params }}"
     - value.users
 
 - name: Check parameters which require updating
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
-           item.key: {
-               'passwords' : ssm_passwords_dict[item.key].passwords | combine(ssm_passwords_dict[item.key].newpasswords),
-               'upload': ssm_passwords_dict[item.key].newpasswords != ssm_passwords_dict[item.key].oldpasswords
+           param.key: {
+               'passwords' : ssm_passwords_dict[param.key].passwords | combine(ssm_passwords_dict[param.key].newpasswords),
+               'upload': ssm_passwords_dict[param.key].newpasswords != ssm_passwords_dict[param.key].oldpasswords
            }
          }, recursive=true) }}
   loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ ssm_passwords | dict2items }}"
+    loop_var: param
+    label: "{{ param.key }}"
+  loop: "{{ ssm_passwords | dict2params }}"
 
 - name: Create fact with updated parameters
   set_fact:
-    ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2items | selectattr('value.upload', 'equalto', true) }}"
+    ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2params | selectattr('value.upload', 'equalto', true) }}"
 
 # - debug:
 #   var: ssm_passwords_to_update
@@ -99,19 +103,21 @@
 - name: Upload updated parameters
   ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
-    aws ssm put-parameter --name '{{ item.value.parameter }}' --type 'SecureString' --data-type 'text' --value '{{ item.value.passwords|to_json }}' --overwrite
+    aws ssm put-parameter --name '{{ param.value.parameter }}' --type 'SecureString' --data-type 'text' --value '{{ param.value.passwords|to_json }}' --overwrite
   loop_control:
-    label: "{{ item.key }}"
+    loop_var: param
+    label: "{{ param.key }}"
   loop: "{{ ssm_passwords_to_update }}"
 
 - name: Update upload fact
   set_fact:
     ssm_passwords_dict: |
       {{ ssm_passwords_dict | combine({
-           item.key: {
+           param.key: {
                'upload': False
            }
          }, recursive=true) }}
   loop_control:
-    label: "{{ item.key }}"
-  loop: "{{ ssm_passwords | dict2items }}"
+    loop_var: param
+    label: "{{ param.key }}"
+  loop: "{{ ssm_passwords | dict2params }}"
