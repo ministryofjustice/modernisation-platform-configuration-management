@@ -30,7 +30,7 @@
 
 - name: Get SSM parameters
   set_fact:
-    app_db_password: "{{ ssm_passwords_dict['app'].passwords[app_db_username] }}"
+    app_db_password: "{{ ssm_passwords_dict['db'].passwords[app_db_username] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
