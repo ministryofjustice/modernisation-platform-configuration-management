@@ -11,11 +11,7 @@
   import_role:
     name: ssm-passwords
   vars:
-    ssm_passwords:
-      db:
-        parameter: "/oracle/database/{{ db_name }}/passwords"
-        users:
-          - sys
+    ssm_passwords: "{{ db_ssm_passwords }}"
 
 - name: Get SSM parameters
   set_fact:
