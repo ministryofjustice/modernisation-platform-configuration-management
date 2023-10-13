@@ -1,5 +1,9 @@
 ---
-ssm_parameters_prefix: database
 stage: /u02/stage
 oracle_install_user: oracle
 oracle_install_group: oinstall
+db_ssm_passwords:
+  db:
+    parameter: "/oracle/database/{{ db_name }}/passwords"
+    users:
+      - sys:
