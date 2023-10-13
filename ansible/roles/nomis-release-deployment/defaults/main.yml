@@ -8,6 +8,16 @@ oracle_install_user: oracle
 oracle_install_group: oinstall
 app_db_username: oms_owner
 
+app_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+db_configs: {}
+db_config: "{{ db_configs[app_db_name] }}"
+
+app_ssm_passwords:
+  db:
+    parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    users:
+      - oms_owner:
+
 nomis_releases:
   # - { name: DB_V11.2.1.1.203.1, web_config_files: 0, db_patch_updated: 0 }
   # - { name: DB_V11.2.1.1.204, web_config_files: 0, db_patch_updated: 1 }

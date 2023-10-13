@@ -9,38 +9,28 @@
     path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
   register: app_server_file
 
-- name: If database server , get DB name from running process
-  ansible.builtin.shell: ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
-  register: db_name
+- name: DB servers facts
+  block:
+    - name: If database server , get DB name from running process
+      ansible.builtin.shell: ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
+      register: db_name
+
+    - name: Set db name from ec2 oracle-db-name tag
+      set_fact:
+        app_db_name: "{{ db_name.stdout }}"
+
+  # block
   when: db_server_file.stat.exists
 
-- name: Set db name from ec2 oracle-db-name tag
-  set_fact:
-    app_db_name: "{{ db_name.stdout }}"
-  when: db_server_file.stat.exists
-
-- name: Set db name from ec2 oracle-db-name tag
-  set_fact:
-    app_db_name: "{{ ec2.tags['oracle-db-name'] }}"
-  when: app_server_file.stat.exists
-
-- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
-  set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["oracle-db-name"] }}'
-  when: app_server_file.stat.exists
-
-- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
-  set_fact:
-    ssm_parameters_path: "/{{ ssm_parameters_prefix }}/{{ app_db_name }}"
-  when: db_server_file.stat.exists
-
-- name: Set SSM parameters path facts
-  set_fact:
-    ssm_parameters_path_app_db_password: "{{ ssm_parameters_path }}/{{ app_db_username }}"
+- name: Get SSM parameters
+  import_role:
+    name: ssm-passwords
+  vars:
+    ssm_passwords: "{{ app_ssm_passwords }}"
 
 - name: Get SSM parameters
   set_fact:
-    app_db_password: "{{ lookup('aws_ssm', ssm_parameters_path_app_db_password, region=ansible_ec2_placement_region) }}"
+    app_db_password: "{{ ssm_passwords_dict['app'].passwords[app_db_username] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
@@ -49,6 +39,12 @@
     - app_db_username|length > 0
     - app_db_password|length > 0
     - app_db_name|length > 0
+- debug:
+    var: app_db_name
+- debug:
+    var: app_db_username
+- debug:
+    var: app_db_password
 
 - name: Fail if missing SSM parameters or tags
   fail:
