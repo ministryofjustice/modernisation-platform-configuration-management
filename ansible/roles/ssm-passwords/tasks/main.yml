@@ -21,7 +21,7 @@
   loop_control:
     loop_var: param
     label: "{{ param.key }}"
-  loop: "{{ ssm_passwords | dict2params }}"
+  loop: "{{ ssm_passwords | dict2item }}"
 
 # If this fails, the SSM parameter doesn't exist or isn't valid json
 - name: Prepare any placeholder parameters
@@ -35,7 +35,7 @@
   loop_control:
     loop_var: param
     label: "{{ param.key }}"
-  loop: "{{ ssm_passwords | dict2params }}"
+  loop: "{{ ssm_passwords | dict2item }}"
 
 # The if statement:
 # - use the password defined in the ssm_passwords variable if there is one
@@ -74,7 +74,7 @@
     loop_var: param
     label: "{{ param[0].key }}:{{ param[1].keys()|first }}"
   with_subelements:
-    - "{{ ssm_passwords | dict2params }}"
+    - "{{ ssm_passwords | dict2item }}"
     - value.users
 
 - name: Check parameters which require updating
@@ -89,11 +89,11 @@
   loop_control:
     loop_var: param
     label: "{{ param.key }}"
-  loop: "{{ ssm_passwords | dict2params }}"
+  loop: "{{ ssm_passwords | dict2item }}"
 
 - name: Create fact with updated parameters
   set_fact:
-    ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2params | selectattr('value.upload', 'equalto', true) }}"
+    ssm_passwords_to_update: "{{ ssm_passwords_dict | dict2item | selectattr('value.upload', 'equalto', true) }}"
 
 # - debug:
 #   var: ssm_passwords_to_update
@@ -120,4 +120,4 @@
   loop_control:
     loop_var: param
     label: "{{ param.key }}"
-  loop: "{{ ssm_passwords | dict2params }}"
+  loop: "{{ ssm_passwords | dict2item }}"
