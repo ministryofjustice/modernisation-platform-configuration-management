@@ -97,6 +97,7 @@ run_ansible() {
   cd $ansible_dir/python-venv
   $python -m venv ansible
   source ansible/bin/activate
+  requirements_yml=requirements.yml
   if [[ $update == 1 ]]; then
     $python -m pip install --upgrade pip
     if [[ "$python" =~ 3.6 ]]; then
@@ -104,6 +105,7 @@ run_ansible() {
       $python -m pip install cryptography==2.3
       export LC_ALL=en_US.UTF-8
       $python -m pip install ansible-core==2.11.12
+      requirements_yml=requirements.rhel6.yml
     else
       $python -m pip install ansible==6.0.0
     fi
@@ -112,8 +114,8 @@ run_ansible() {
     echo "# Installing ansible requirements"
     cd $ansible_dir/${ansible_repo}/${ansible_repo_basedir}
     $python -m pip install -r requirements.txt
-    ansible-galaxy role install -r requirements.yml
-    ansible-galaxy collection install -r requirements.yml
+    ansible-galaxy role install -r $requirements_yml
+    ansible-galaxy collection install -r $requirements_yml
   fi
 
   # run ansible (comma after localhost deliberate)
