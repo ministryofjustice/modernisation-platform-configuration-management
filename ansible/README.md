@@ -13,6 +13,16 @@ Use `user_data` to provide a cloud init or shell script which runs
 ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example. This relies on
 tags to identify which roles to run.
 
+## Running ansible locally on a linux EC2 instance
+
+The `ansible-script` role installs a wrapper script ansible.sh in the /root/ directory.
+Use this to run ansible within a virtual environment pulling in appropriate group_vars.
+For example:
+
+```
+/root/ansible.sh site.yml --tags ec2patch
+```
+
 ## Installing on Mac
 
 Ensure you have python3.6+ installed on your local mac.
@@ -84,6 +94,8 @@ A generic [site.yml](/ansible/site.yml) is provided with dynamic inventories
 under [hosts/](/ansible/hosts/) folder. This creates groups based of the following
 tags:
 
+- ami
+- os-type
 - environment-name
 - server-type
 
