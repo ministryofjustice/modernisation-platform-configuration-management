@@ -7,32 +7,16 @@
     group: root
     mode: 0755
 
-- name: Get tag values for use in config file
-  set_fact:
-    name: "{{ ec2.tags.Name }}"
-    server_type: "{{ ec2.tags['server-type'] }}"
-    instance_id: "{{ ansible_ec2_instance_id }}"
+- name: Fail if tags not defined
+  fail:
+    msg: "Please ensure Name tag is defined"
+  when: ec2.tags['Name'] is not defined or ansible_ec2_instance_id is not defined
 
-# default cloudwatch-agent config file based on OS type (linux or windows)
-# NOTE: windows default config doesn't exist, this is being handled in the Windows instance user-data in terraform
-- name: Create OS specific amazon-cloudwatch-agent config file
+- name: Create amazon-cloudwatch-agent config file
   ansible.builtin.template:
-    src: "{{ ansible_system|lower }}.json.j2"
+    src: "{{ amazon_cloudwatch_agent_config_name }}"
     dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ amazon_cloudwatch_agent_config_file }}"
     owner: root
     group: root
     mode: 0755
-
-# additional settings for EC2 instances if they exist
-- name: template config files
-  ansible.builtin.template:
-    src: "{{ item|replace('-', '_') }}.json.j2"
-    dest: "{{ amazon_cloudwatch_agent_config_path }}/{{ item|replace('-', '_') }}.json"
-    owner: root
-    group: root
-    mode: 0755
-  loop: "{{ cloudwatch_agent_configs }}"
-  loop_control:
-    label: item
-  when: cloudwatch_agent_configs is defined # currently none defined
-
+  notify: restart amazon-cloudwatch-agent

@@ -13,6 +13,16 @@ Use `user_data` to provide a cloud init or shell script which runs
 ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example. This relies on
 tags to identify which roles to run.
 
+## Running ansible locally on a linux EC2 instance
+
+The `ansible-script` role installs a wrapper script ansible.sh in the /root/ directory.
+Use this to run ansible within a virtual environment pulling in appropriate group_vars.
+For example:
+
+```
+/root/ansible.sh site.yml --tags ec2patch
+```
+
 ## Installing on Mac
 
 Ensure you have python3.6+ installed on your local mac.
@@ -84,6 +94,8 @@ A generic [site.yml](/ansible/site.yml) is provided with dynamic inventories
 under [hosts/](/ansible/hosts/) folder. This creates groups based of the following
 tags:
 
+- ami
+- os-type
 - environment-name
 - server-type
 
@@ -132,4 +144,23 @@ ansible-playbook site.yml -e "role=amazon-cloudwatch-agent"
 
 # Run locally (the comma after localhost is important)
 ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_db.yml" --check
+```
+
+## Gotchas for RHEL6
+
+The ansible.builtin.yum task misbehaves when running from local MacOS on a RHEL6 server.
+Run ansible locally on the server instead.  Example error message when running on MacOS:
+
+```
+TASK [amazon-cloudwatch-agent : Install amazon-cloudwatch-agent] **********************************************************************************************
+fatal: [xxx]: FAILED! => {"changed": false, "msg": "ansible-core requires a minimum of Python2 version 2.7 or Python3 version 3.5. Current version: 2.6.6 (r266:84292, May 31 2023, 09:01:24) [GCC 4.4.7 20120313 (Red Hat 4.4.7-23)]"}
+```
+
+The `galaxy.ansible.com` recent updates have broken collection installation on RHEL6.
+Use requirements.rhel6.yml instead.  Example error:
+
+```
+# [WARNING]: Skipping Galaxy server https://galaxy.ansible.com/api/. Got an unexpected error when getting available versions of collection amazon.aws:
+# '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
+# ERROR! Unexpected Exception, this is probably a bug: '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
 ```
