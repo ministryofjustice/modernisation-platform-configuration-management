@@ -1,8 +1,10 @@
 ---
-- name: Import amazon cloudwatch agent RPM key
-  ansible.builtin.rpm_key:
-    state: present
-    key: "{{ amazon_cloudwatch_agent_gpg }}"
+# Not bothering to install RPM key as RPM doesn't seem to be signed
+# Plus it probably won't work if selinux enabled
+# - name: Import amazon cloudwatch agent RPM key
+#   ansible.builtin.rpm_key:
+#     state: present
+#     key: "{{ amazon_cloudwatch_agent_gpg }}"
 
 - name: Install amazon-cloudwatch-agent
   ansible.builtin.yum:
