@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+   Use this move plan to change the endpoint configuration for the
+   production environment.
+
+   Move Plan Modification TIPS:
+   1> DO NOT MAKE AN ADDITION TO THE MOVE PLAN. ONLY EDIT IT.
+   2> Every "configProperty" has an "itemMetadata" associated with it.
+   3> Element "itemMetadata" defines the type of value of the "configProperty".
+   4> Do not Edit "configProperty" of the type "READ_ONLY". This may lead to
+      an error during the T2P tool execution.
+   5> The value of the configProperty of the "ItemMetadata" type "password" must be
+      the absolute location of a file containing the password
+      for the property.
+      It is recommended to restrict access to this file using OS permissions,
+      ensuring that the user running the T2P process has read permission on it.
+--><movePlan>
+    <movableComponent>
+        <componentType>J2EEDomain</componentType>
+        <componentName>bifoundation_domain</componentName>
+        <version>11.1.1.9.0</version>
+        <id>CLONE2023101113001128</id>
+        <moveDescriptor>
+            <configProperty>
+                <name>Startup Mode</name>
+                <value>PRODUCTION</value>
+                <itemMetadata>
+                    <dataType>STRING</dataType>
+                    <scope>READ_WRITE</scope>
+                </itemMetadata>
+            </configProperty>
+            <configGroup>
+                <type>SERVER_CONFIG</type>
+                <configProperty id="Server1">
+                    <configProperty>
+                        <name>Server Name</name>
+                        <value>AdminServer</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Listen Address</name>
+                        <value>All Local Addresses</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Listen Port</name>
+                        <value>7001</value>
+                        <itemMetadata>
+                            <dataType>INTEGER</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+                <configProperty id="Server2">
+                    <configProperty>
+                        <name>Server Name</name>
+                        <value>bi_server1</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Listen Address</name>
+                        <value>All Local Addresses</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Listen Port</name>
+                        <value>9704</value>
+                        <itemMetadata>
+                            <dataType>INTEGER</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+            </configGroup>
+            <configGroup>
+                <type>MACHINE_CONFIG</type>
+                <configProperty id="Machine1">
+                    <configProperty>
+                        <name>Machine Name</name>
+                        <value>{{ weblogic_domain_hostname }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Node Manager Listen Address</name>
+                        <value>{{ weblogic_domain_hostname }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Node Manager Listen Port</name>
+                        <value>9556</value>
+                        <itemMetadata>
+                            <dataType>INTEGER</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+            </configGroup>
+            <configGroup>
+                <type>CLUSTER_CONFIG</type>
+                <configProperty id="Cluster1">
+                    <configProperty>
+                        <name>Cluster Name</name>
+                        <value>bi_cluster</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Messaging Mode</name>
+                        <value>unicast</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Cluster Address</name>
+                        <value/>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Unicast Channel</name>
+                        <value/>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Multicast Address</name>
+                        <value>239.192.0.0</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Multicast Port</name>
+                        <value>7001</value>
+                        <itemMetadata>
+                            <dataType>INTEGER</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+            </configGroup>
+            <configGroup>
+                <type>DATASOURCE</type>
+                <configProperty id="DataSource1">
+                    <configProperty>
+                        <name>DataSource Name</name>
+                        <value>mds-owsm</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Driver Class</name>
+                        <value>oracle.jdbc.OracleDriver</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Url</name>
+                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>User</name>
+                        <value>OAS_MDS</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Password File</name>
+                        <value>{{ stage }}/{{ oas_mds_password_file }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+                <configProperty id="DataSource2">
+                    <configProperty>
+                        <name>DataSource Name</name>
+                        <value>EPMSystemRegistry</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Driver Class</name>
+                        <value>oracle.jdbc.OracleDriver</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Url</name>
+                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>User</name>
+                        <value>OAS_BIPLATFORM</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Password File</name>
+                        <value>{{ stage }}/{{ oas_biplatform_password_file }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+                <configProperty id="DataSource3">
+                    <configProperty>
+                        <name>DataSource Name</name>
+                        <value>bip_datasource</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_ONLY</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Driver Class</name>
+                        <value>oracle.jdbc.OracleDriver</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Url</name>
+                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>User</name>
+                        <value>OAS_BIPLATFORM</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Password File</name>
+                        <value>{{ oas_biplatform_password_file }}</value> 
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+            </configGroup>
+            <configGroup>
+                <type>OPSS_SECURITY</type>
+            
+<!--             Uncomment the following configProperty section if you are migrating OPSS credentials and policy store to an LDAP store.
+                 <configProperty id="LDAP">
+                    <configProperty>
+                        <name>LDAP Url</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>LDAP User</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Password File</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Domain</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Jps Root</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                 </configProperty>
+-->
+
+
+<!--             Uncomment the following configProperty section if you are migrating OPSS credentials and policy store to a DB store.
+                 <configProperty id="DB">
+                    <configProperty>
+                        <name>DataSource Name</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>DataSource Jndi Name</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Driver Class</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Url</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>User</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Password File</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Domain</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Jps Root</name>
+                        <value></value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                 </configProperty>
+-->
+              </configGroup>
+        </moveDescriptor>
+        <movableComponent>
+            <componentType>BIEE-DOMAIN-CONFIG</componentType>
+            <Description>BI EE Domain XML file contains the BI topology details including each BI Oracle Instance.</Description>
+            <moveDescriptor>
+                <configGroup>
+                    <type>OracleInstances</type>
+                    <Description>Contains a property group for each host that is running BI components within the BI Domain</Description>
+                </configGroup>
+                <configGroup>
+                    <type>BIInstance</type>
+                    <Description>Contains domain wide configuration properties used by all hosts running BI components within the BI Domain</Description>
+                    <configProperty>
+                        <name>EmailOptions</name>
+                        <configProperty>
+                            <name>smtpServerName</name>
+                            <value>localhost</value>
+                            <itemMetadata>
+                                <dataType>STRING</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                        <configProperty>
+                            <name>port</name>
+                            <value>25</value>
+                            <itemMetadata>
+                                <dataType>INTEGER</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                        <configProperty>
+                            <name>fromDisplayName</name>
+                            <value>Oracle Business Intelligence</value>
+                            <itemMetadata>
+                                <dataType>STRING</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                        <configProperty>
+                            <name>emailAddressOfSender</name>
+                            <value>defaultuser@defaultmailserver.com</value>
+                            <itemMetadata>
+                                <dataType>STRING</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                    </configProperty>
+                    <configProperty>
+                        <name>MarketingOptions</name>
+                        <configProperty>
+                            <name>url</name>
+                            <value>http://localhost:8765</value>
+                            <itemMetadata>
+                                <dataType>STRING</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                    </configProperty>
+                    <configProperty>
+                        <name>SchedulerOptions</name>
+                        <configProperty>
+                            <name>dataSource</name>
+                            <value>dataSourceValue</value>
+                            <itemMetadata>
+                                <dataType>STRING</dataType>
+                                <scope>READ_WRITE</scope>
+                            </itemMetadata>
+                        </configProperty>
+                    </configProperty>
+                </configGroup>
+            </moveDescriptor>
+        </movableComponent>
+        <movableComponent>
+            <componentType>BI-PUBLISHER-CONFIG</componentType>
+            <Description>BI Publisher config files are xmlp-server.xml, datasources.xml,providers.xml, jms_cluster_config.properties and config properties specified in domain env</Description>
+            <moveDescriptor>
+                <configGroup>
+                    <type>XMLP-DATASOURCES</type>
+                    <Description>There will be a separate config list for each BI Publisher datasource configured</Description>
+                    <configProperty id="Samples Data Files">
+                        <name>dataSource</name>
+                        <configProperty>
+                            <name>file</name>
+                            <configProperty>
+                                <name>path</name>
+                                <value>/u01/app/oracle/Middleware/user_projects/domains/bifoundation_domain/config/bipublisher/repository/DemoFiles</value>
+                                <itemMetadata>
+                                    <dataType>STRING</dataType>
+                                    <scope>READ_WRITE</scope>
+                                </itemMetadata>
+                            </configProperty>
+                        </configProperty>
+                    </configProperty>
+                    <configProperty id="Oracle BI EE">
+                        <name>dataSource</name>
+                        <configProperty>
+                            <name>connection</name>
+                            <configProperty>
+                                <name>url</name>
+                                <value>jdbc:oraclebi://{{ weblogic_domain_hostname }}:9703/</value>
+                                <itemMetadata>
+                                    <dataType>STRING</dataType>
+                                    <scope>READ_WRITE</scope>
+                                </itemMetadata>
+                            </configProperty>
+                        </configProperty>
+                    </configProperty>
+                    <configProperty id="Oasys {{ environment }}">
+                        <name>dataSource</name>
+                        <configProperty>
+                            <name>connection</name>
+                            <configProperty>
+                                <name>url</name>
+                                <value>jdbc:oracle:thin:@{{ db_server }}:1521:{{ db_name }}</value>
+                                <itemMetadata>
+                                    <dataType>STRING</dataType>
+                                    <scope>READ_WRITE</scope>
+                                </itemMetadata>
+                            </configProperty>
+                            <configProperty>
+                                <name>username</name>
+                                <value>EOR</value>
+                                <itemMetadata>
+                                    <dataType>STRING</dataType>
+                                    <scope>READ_WRITE</scope>
+                                </itemMetadata>
+                            </configProperty>
+                        </configProperty>
+                    </configProperty>
+                </configGroup>
+                <configGroup>
+                    <type>XMLP-SCHEDULER-JMS-CONFIG</type>
+                    <Description>config list for BIPublisher scheduler cluster config properties</Description>
+                </configGroup>
+            </moveDescriptor>
+        </movableComponent>
+    </movableComponent>
+</movePlan>

@@ -1,0 +1,33 @@
+---
+- name: Check installed packages
+  ansible.builtin.package_facts:
+
+- block:
+    - name: Create jdk install directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/software/jdk
+
+    - name: Get jdk rpm binary from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "oasys-bip{{ item }}"
+        dest: "{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - /u01/software/jdk/jdk-7u80-linux-x64.rpm
+      when: image_builder_s3_bucket_name is defined
+
+    - name: Install jdk rpm binary
+      yum:
+        name: /u01/software/jdk/jdk-7u80-linux-x64.rpm
+        state: present
+
+  # block
+  when: ansible_facts.packages['jdk'] is not defined
