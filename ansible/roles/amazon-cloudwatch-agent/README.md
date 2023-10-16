@@ -1,28 +1,8 @@
-# FIXME: this page needs an extensive re-write
-
 # Cloudwatch Agent Role
 
 This role installs the Cloudwatch Agent on a Linux host and configures it to send metrics to Cloudwatch.
-
-If the group_vars for a host has the variable `cloudwatch_agent_configs` defined then this will deploy additional cloudwatch agent config files to the host. See files in /templates for examples. 
-
-Amazon Cloudwatch Agent config exection and start order is: 
-
-    1. ansible_system == 'linux' (the default ansible_system i.e. linux) via `/templates/linux.json.j2`
-    2. loops through values of `cloudwatch_agent_configs` in group_vars and deploys them to the host
-    
-e.g. if you have a group_vars entry like this:
-
-```
-cloudwatch_agent_configs:
-  - nomis-db
-```  
-  
-  then the file `templates/nomis-db.json.j2` will be deployed to the host.  
-
-# Cloudwatch Agent
-
 Metrics sent to Cloudwatch will all appear in the default CWAgent namespace
+
 ## Debugging on Linux
 
 ssm onto the machine/instance and run the following command to find out the running status of the agent:

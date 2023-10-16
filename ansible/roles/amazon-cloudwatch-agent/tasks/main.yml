@@ -13,6 +13,12 @@
     - ec2patch
   when: ansible_distribution in ['RedHat', 'OracleLinux']
 
+# Ensure any restarts done prior to start
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always
+
 - import_tasks: "start.yml"
   tags:
     - amazon-cloudwatch-agent-start
