@@ -5,6 +5,7 @@
     key: "{{ amazon_cloudwatch_agent_gpg }}"
 
 - name: Install amazon-cloudwatch-agent
-  ansible.builtin.package:
+  ansible.builtin.yum:
     name: "{{ amazon_cloudwatch_agent_package }}"
     state: present
+    disable_gpg_check: true # RPM doesn't appear to be signed even through GPG key provided

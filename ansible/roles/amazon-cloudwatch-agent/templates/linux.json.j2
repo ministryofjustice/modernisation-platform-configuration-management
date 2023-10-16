@@ -24,8 +24,12 @@
         "metrics_collection_interval": 60,
         "totalcpu": false,
         "append_dimensions": {
-          "name": "{{ name }}",
-          "server_type": "{{ server_type }}"
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
         }
       },
       "disk": {
@@ -38,8 +42,12 @@
           "*"
         ],
         "append_dimensions": {
-          "name": "{{ name }}",
-          "server_type": "{{ server_type }}"
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
         }
       },
       "diskio": {
@@ -51,8 +59,12 @@
           "*"
         ],
         "append_dimensions": {
-          "name": "{{ name }}",
-          "server_type": "{{ server_type }}"
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
         }
       },
       "mem": {
@@ -64,8 +76,12 @@
           "*"
         ],
         "append_dimensions": {
-          "name": "{{ name }}",
-          "server_type": "{{ server_type }}"
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
         }
       },
       "swap": {
@@ -77,11 +93,15 @@
           "*"
         ],
         "append_dimensions": {
-          "name": "{{ name }}",
-          "server_type": "{{ server_type }}"
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
         }
       }
-	  }
+    }
   },
   "logs": {
     "logs_collected": {
@@ -90,12 +110,12 @@
           {
             "file_path": "/var/log/messages",
             "log_group_name": "cwagent-var-log-messages",
-            "log_stream_name": "{{ instance_id }}"
+            "log_stream_name": "{{ ansible_ec2_instance_id }}"
           },
           {
             "file_path": "/var/log/secure",
             "log_group_name": "cwagent-var-log-secure",
-            "log_stream_name": "{{ instance_id }}"
+            "log_stream_name": "{{ ansible_ec2_instance_id }}"
           }
         ]
       }
