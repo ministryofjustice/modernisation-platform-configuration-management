@@ -1,29 +1,10 @@
 ---
-- name: check if amazon-cloudwatch-agent installed
-  ansible.builtin.shell: |
-    check_installed() {
-      check="$(amazon-cloudwatch-agent-ctl -m ec2 -a status)"
-      if [[ $check ]]
-      then 
-        return 0
-      else 
-        return 1
-      fi
-    }
-    check_installed
-  ignore_errors: true
-  register: agent_installed
+- name: Import amazon cloudwatch agent RPM key
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ amazon_cloudwatch_agent_gpg }}"
 
 - name: Install amazon-cloudwatch-agent
-  ansible.builtin.yum:
+  ansible.builtin.package:
     name: "{{ amazon_cloudwatch_agent_package }}"
     state: present
-    disable_gpg_check: true
-  when: agent_installed.rc == 1 and ansible_distribution_major_version != '6'
-
-- name: Install amazon-cloudwatch-agent on Rhel 6
-  ansible.builtin.shell: |
-    wget https://s3.amazonaws.com/amazoncloudwatch-agent/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
-    rpm -U ./amazon-cloudwatch-agent.rpm
-  become: true
-  when: agent_installed.rc == 1 and ansible_distribution_major_version == '6'
