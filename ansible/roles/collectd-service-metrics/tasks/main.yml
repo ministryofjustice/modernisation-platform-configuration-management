@@ -4,9 +4,3 @@
     - ec2provision
     - ec2patch
   when: ansible_distribution in ['RedHat', 'OracleLinux']
-
-- import_tasks: configure_amazon_cloudwatch_agent.yml
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ansible_distribution in ['RedHat', 'OracleLinux']

@@ -1,28 +1,18 @@
 ---
-- name: create folder for exec script to collect metrics
-  ansible.builtin.file:
-    path: "/opt/collectd"
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-- name: copy plugin files
-  ansible.builtin.copy:
-    src: "{{ item }}.conf"
-    dest: "/etc/collectd.d/{{ item }}.conf"
+- name: copy collectd config
+  ansible.builtin.template:
+    src: "collectd.conf.j2"
+    dest: "/etc/collectd.d/{{ collectd_script_name }}.conf"
     owner: root
     mode: 0644
-  loop:
-    - monitored_services
   notify:
     - restart collectd
 
-- name: template config files
+- name: copy collectd plugin script
   ansible.builtin.template:
-    src: "{{ item }}.sh.j2"
-    dest: "/opt/collectd/{{ item }}.sh"
+    src: "{{ collectd_script_name }}.sh.j2"
+    dest: "/usr/local/bin/{{ collectd_script_name }}.sh"
     owner: root
     mode: 0755
-  loop:
-    - monitored_services
+  notify:
+    - restart plugin script
