@@ -186,7 +186,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Url</name>
-                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <value>jdbc:oracle:thin:@{{ weblogic_db_hostname_a }}:1521/{{ weblogic_db_name }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_WRITE</scope>
@@ -202,7 +202,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Password File</name>
-                        <value>{{ stage }}/{{ oas_mds_password_file }}</value>
+                        <value>{{ oas_mds_password_file }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <password>true</password>
@@ -229,7 +229,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Url</name>
-                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <value>jdbc:oracle:thin:@{{ weblogic_db_hostname_a }}:1521/{{ weblogic_db_name }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_WRITE</scope>
@@ -245,7 +245,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Password File</name>
-                        <value>{{ stage }}/{{ oas_biplatform_password_file }}</value>
+                        <value>{{ oas_biplatform_password_file }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <password>true</password>
@@ -272,7 +272,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Url</name>
-                        <value>jdbc:oracle:thin:@{{ db_server }}:1521/{{ db_name }}</value>
+                        <value>jdbc:oracle:thin:@{{ weblogic_db_hostname_a }}:1521/{{ weblogic_db_name }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_WRITE</scope>
@@ -530,7 +530,7 @@
                             <name>connection</name>
                             <configProperty>
                                 <name>url</name>
-                                <value>jdbc:oracle:thin:@{{ db_server }}:1521:{{ db_name }}</value>
+                                <value>jdbc:oracle:thin:@{{ weblogic_db_hostname_a }}:1521:{{ weblogic_db_name }}</value>
                                 <itemMetadata>
                                     <dataType>STRING</dataType>
                                     <scope>READ_WRITE</scope>

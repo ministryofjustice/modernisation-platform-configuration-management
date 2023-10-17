@@ -42,7 +42,7 @@
       . ~/.bash_profile
       $WL_HOME//bi_rcu/bin/rcu -silent -createRepository  \
       -connectString  {{ bip_db_server }}:1521/{{ bip_db_name }} \
-      -dbUser SYS -dbRole SYSDBA -schemaPrefix TEST \
+      -dbUser SYS -dbRole SYSDBA -schemaPrefix OAS \
       -component BIPLATFORM -component MDS -f < /u01/stage/obiee_rcu_paramfile.txt
     }
     main 2>&1 | logger -p local3.info -t ansible-bip-repository
