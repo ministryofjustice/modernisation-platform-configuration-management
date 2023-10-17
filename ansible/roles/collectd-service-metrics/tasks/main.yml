@@ -1,11 +1,11 @@
 ---
-- import_tasks: configure_service_metrics.yml
+- import_tasks: configure_collectd.yml
   tags:
     - ec2provision
     - ec2patch
   when: ansible_distribution in ['RedHat', 'OracleLinux']
 
-- import_tasks: append_collectd_cloudwatch_config.yml
+- import_tasks: configure_amazon_cloudwatch_agent.yml
   tags:
     - ec2provision
     - ec2patch
