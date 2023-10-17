@@ -64,3 +64,15 @@ At some point we may simply decide to place the whole collectd_t domain into per
     permissive: true
 ```
 
+You can also grab AVC rules like this:
+
+```
+- name: capture selinux AVC rules from audit log around collectd
+  ansible.builtin.shell: |
+    result=$(grep 'AVC.*collectd\|collectd.*AVC' /var/log/audit/audit.log)
+    if [[ -z "$result" ]] || [[ "$result" != *"Nothing to do"* ]]; then
+      echo "No selinux AVC rules found for collectd"
+    else
+      echo "$result" | audit2allow -m collectd_selinux_policy > /opt/selinux/collectd_selinux_policy.te
+    fi
+```

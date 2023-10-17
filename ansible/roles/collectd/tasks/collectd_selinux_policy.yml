@@ -1,24 +1,34 @@
 ---
-- name: create folder for selinux policy file
-  ansible.builtin.file:
-    path: /opt/selinux
-    state: directory
-    mode: 0755
+- name: Get SELinux state
+  ansible.builtin.shell: getenforce || true
+  changed_when: false
+  check_mode: false
+  register: collectd_selinux_mode
 
-- name: copy selinux policy
-  copy:
-    src: "collectd_selinux_policy_rhel_{{ ansible_distribution_major_version }}.te"
-    dest: /opt/selinux/collectd_selinux_policy.te
-    mode: 0644
-  register: copy_selinux_policy
+- block:
+    - name: create folder for selinux policy file
+      ansible.builtin.file:
+        path: /opt/selinux
+        state: directory
+        mode: 0755
 
-- name: compile and load selinux policy
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      checkmodule -M -m -o /opt/selinux/collectd_selinux_policy.mod /opt/selinux/collectd_selinux_policy.te
-      semodule_package -o /opt/selinux/collectd_selinux_policy.pp -m /opt/selinux/collectd_selinux_policy.mod
-      semodule -i /opt/selinux/collectd_selinux_policy.pp
-    }
-    main 2>&1 | logger -p local3.info -t ansible-collectd
-  when: copy_selinux_policy.changed
+    - name: copy selinux policy
+      copy:
+        src: "collectd_selinux_policy_rhel_{{ ansible_distribution_major_version }}.te"
+        dest: /opt/selinux/collectd_selinux_policy.te
+        mode: 0644
+      register: copy_selinux_policy
+
+    - name: compile and load selinux policy
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          checkmodule -M -m -o /opt/selinux/collectd_selinux_policy.mod /opt/selinux/collectd_selinux_policy.te
+          semodule_package -o /opt/selinux/collectd_selinux_policy.pp -m /opt/selinux/collectd_selinux_policy.mod
+          semodule -i /opt/selinux/collectd_selinux_policy.pp
+        }
+        main 2>&1 | logger -p local3.info -t ansible-collectd
+      when: copy_selinux_policy.changed
+
+  # block
+  when: collectd_selinux_mode.stdout|lower == "enforcing" or collectd_selinux_mode.stdout|lower == "permissive"
