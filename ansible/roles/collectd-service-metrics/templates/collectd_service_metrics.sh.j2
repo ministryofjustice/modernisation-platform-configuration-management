@@ -1,49 +1,12 @@
 #!/bin/bash
+# Managed by collecd-service-metrics ansible role
 
-# Templated in from ansible
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
-MONITORED_SERVICES="{{ collectd_monitored_services | join(" ") }}"
 
-service_status() {
-    local SERVICE="$1"
-    {% if ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == '6' %}
-    # RHEL6 service check
-    if [[ $SERVICE == "amazon-ssm-agent" ]] || [[ $SERVICE == "amazon-cloudwatch-agent" ]]
-    then
-        service_status=$(sudo status $SERVICE | grep "running")
-        if [[ $service_status ]]
-        then
-            return 0
-        else
-            return 1
-        fi
-    else
-        service_status=$(sudo service $SERVICE status | grep -E "running|OK")
-        if [[ $service_status ]]
-        then
-            return 0
-        else
-            return 1
-        fi
-    fi
-    {% else %}
-    # RHEL7+ service check
-    systemctl is-active --quiet $SERVICE
-    {% endif %}
-}
-
-while sleep "$INTERVAL"
-do
-    for service in ${MONITORED_SERVICES}
-    do
-        service_status "$service" 
-        status=$?
-
-        service_name=${service//_}
-        service_name=${service_name//-}
-        echo "PUTVAL $HOSTNAME/$service_name/bool interval=$INTERVAL N:$status"
-    done
+while sleep "$INTERVAL"; do
+{% for item in collectd_monitored_services %}
+  ({{ item.shell_cmd }}) >/dev/null 2>&1
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/bool interval=$INTERVAL N:$?"
+{% endfor %}
 done
-
-# FIXME: test this script can handle amazon-ssm-agent and amazon-cloudwatch-agent services on Rhel6

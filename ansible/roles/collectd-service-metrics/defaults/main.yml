@@ -4,7 +4,13 @@ collectd_script_name: collectd_service_metrics
 collectd_script_user: ec2-user
 collectd_script_interval: 60
 
-# default set of services to monitor, should be overridden in group_vars
-collectd_monitored_services:
-  - amazon-ssm-agent
-  - amazon-cloudwatch-agent
+# Shell cmds work for both RHEL6 and RHEL7+
+collectd_monitored_services_role:
+  - metric_name: amazonssmagent
+    shell_cmd: "(status amazon-ssm-agent|grep running) || (systemctl is-active --quiet amazon-ssm-agent)"
+  - metric_name: amazoncloudwatchagent
+    shell_cmd: "(status amazon-cloudwatch-agent|grep running) || (systemctl is-active --quiet amazon-cloudwatch-agent)"
+collectd_monitored_services_servertype: []
+
+# add additional services by configuring collectd_monitored_services_servertype in the servertype groupvars
+collectd_monitored_services: "{{ collectd_monitored_services_role + collectd_monitored_services_servertype }}"
