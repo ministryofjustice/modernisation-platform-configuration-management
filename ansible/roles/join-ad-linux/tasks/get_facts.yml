@@ -12,7 +12,7 @@
 
 - name: Check parameters
   set_fact:
-    db_all_variables_set: true
+    all_variables_set: true
   when:
     - join_domain_linux_service_account_username|length > 0
     - join_domain_linux_service_account_password|length > 0
@@ -20,4 +20,4 @@
 - name: Fail if missing parameters
   fail:
     msg: Ensure all required parameters are set
-  when: not db_all_variables_set|default(false)
+  when: not all_variables_set|default(false)
