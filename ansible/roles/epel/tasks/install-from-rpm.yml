@@ -49,15 +49,18 @@
       ansible.builtin.shell: setenforce Permissive
       when: epel_selinux_mode.stdout|lower == "enforcing"
 
-    - name: Import rpm key from S3
-      ansible.builtin.rpm_key:
-        state: present
-        key: "/root/epel/{{ epel_gpg_key_filename }}"
+    # It's a pain to get this working on all OS variants
+    # - name: Import rpm key from S3
+    #   ansible.builtin.rpm_key:
+    #     state: present
+    #     key: "/root/epel/{{ epel_gpg_key_filename }}"
 
+    # disable GPG as we are self-hosting RPM
     - name: Install epel RPM from S3
       ansible.builtin.yum:
         state: present
         name: "/root/epel/{{ epel_rpm_filename }}"
+        disable_gpg_check: true
 
   always:
     - name: Restore SELinux state to Enforcing
