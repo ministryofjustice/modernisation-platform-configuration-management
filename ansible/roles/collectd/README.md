@@ -41,11 +41,19 @@ Further collectd Troubleshooting [here](https://collectd.org/wiki/index.php/Trou
 
 There is an additional task specifically to create a selinux policy for collectd. This is because collectd runs scripts via the exec plugin and selinux will block this by default. 
 
-Having loging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
+Having logging for collectd is NOT enabled. Most of the useful information goes to /var/log/messages anyway or with selinux to /var/log/audit/audit.log where you can see what's being blocked in relation to collectd
 
 There are selinux exceptions for collectd when it comes to Rhel 7 & 8. It _seems_ this isn't needed for Rhel 6 but there is an existing task to automatically scan the audit.log for issues and then create a policy file. 
 
 ### Some useful selinux commands for troubleshooting
+
+You might need to install some troubleshooting packages (e.g. not installed by
+default on Oracle Linux)
+
+```
+yum install audit setroubleshoot
+systemctl start auditd
+```
 
 `ls -Z /file/path` will tell you the selinux context of a file, this is useful to understand what context a file needs to be in to be accessed by a particular process
 
