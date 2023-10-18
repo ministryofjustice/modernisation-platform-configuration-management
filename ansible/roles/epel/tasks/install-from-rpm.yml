@@ -53,11 +53,13 @@
       ansible.builtin.rpm_key:
         state: present
         key: "/root/epel/{{ epel_gpg_key_filename }}"
+      when: not ansible_check_mode
 
     - name: Install epel RPM from S3
       ansible.builtin.yum:
         state: present
         name: "/root/epel/{{ epel_rpm_filename }}"
+      when: not ansible_check_mode
 
   always:
     - name: Restore SELinux state to Enforcing
