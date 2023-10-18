@@ -30,7 +30,8 @@
 
 - name: Set db name from ec2 oracle-db-name tag
   set_fact:
-    weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+    # weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+    weblogic_db_name: "T2BIPTE"
   when: weblogic_db_name is not defined
 
 - debug:
