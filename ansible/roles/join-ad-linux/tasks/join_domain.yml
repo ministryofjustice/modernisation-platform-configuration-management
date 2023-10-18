@@ -2,8 +2,8 @@
 - name: Configure sshd_config
   lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^PasswordAuthentication.*no'
-    line: 'PasswordAuthentication=yes'
+    regexp: "^PasswordAuthentication.*no"
+    line: "PasswordAuthentication=yes"
   notify: Restart SSSD service
 
 - name: Install pexpect for injecting secrets
