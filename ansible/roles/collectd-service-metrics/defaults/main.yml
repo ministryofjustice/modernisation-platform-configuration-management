@@ -10,7 +10,6 @@ collectd_monitored_services_role:
     shell_cmd: "(status amazon-ssm-agent|grep running) || (systemctl is-active --quiet amazon-ssm-agent)"
   - metric_name: amazoncloudwatchagent
     shell_cmd: "(status amazon-cloudwatch-agent|grep running) || (systemctl is-active --quiet amazon-cloudwatch-agent)"
-collectd_monitored_services_servertype: []
 
-# add additional services by configuring collectd_monitored_services_servertype in the servertype groupvars
-collectd_monitored_services: "{{ collectd_monitored_services_role + collectd_monitored_services_servertype }}"
+# add additional services using this variable in servertype group vars
+collectd_monitored_services_servertype: []

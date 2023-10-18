@@ -5,7 +5,11 @@ HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="{{ collectd_script_interval }}"
 
 while sleep "$INTERVAL"; do
-{% for item in collectd_monitored_services %}
+{% for item in collectd_monitored_services_role %}
+  ({{ item.shell_cmd }}) >/dev/null 2>&1
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/bool interval=$INTERVAL N:$?"
+{% endfor %}
+{% for item in collectd_monitored_services_servertype %}
   ({{ item.shell_cmd }}) >/dev/null 2>&1
   echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/bool interval=$INTERVAL N:$?"
 {% endfor %}
