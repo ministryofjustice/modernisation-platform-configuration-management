@@ -1,0 +1,30 @@
+---
+- name: Configure sshd_config
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication.*no"
+    line: "PasswordAuthentication=yes"
+  notify: Restart SSSD service
+
+- name: Install pexpect for injecting secrets
+  pip:
+    name: pexpect
+
+- name: Install required packages for joining to the domain
+  package:
+    name:
+      - realmd
+      - sssd
+      - samba-common-tools
+      - realmd
+      - oddjob
+      - oddjob-mkhomedir
+      - adcli
+      - krb5-workstation
+    state: present
+
+- name: Join instance to the domain
+  expect:
+    command: /bin/bash -c "/usr/sbin/realm join --user={{ join_domain_linux_service_account_username }}@{{ ad_domain|upper }} {{ ad_domain|lower }} -v"
+    responses:
+      Password for *: "{{ join_domain_linux_service_account_password }}"

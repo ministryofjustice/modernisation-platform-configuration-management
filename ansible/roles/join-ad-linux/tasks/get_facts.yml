@@ -1,0 +1,23 @@
+---
+- name: Get linux service account details
+  import_role:
+    name: ssm-passwords
+  vars:
+    ssm_passwords: "{{ service_account_ssm_passwords }}"
+
+- name: Set linux service account variables
+  set_fact:
+    join_domain_linux_service_account_username: "{{ ssm_passwords_dict['service_account'].passwords['username'] }}"
+    join_domain_linux_service_account_password: "{{ ssm_passwords_dict['service_account'].passwords['password'] }}"
+
+- name: Check parameters
+  set_fact:
+    all_variables_set: true
+  when:
+    - join_domain_linux_service_account_username|length > 0
+    - join_domain_linux_service_account_password|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not all_variables_set|default(false)
