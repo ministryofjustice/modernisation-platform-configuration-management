@@ -1,0 +1,18 @@
+#!/bin/bash
+# Managed by collectd-service-metrics ansible role
+# If manually editing, just kill script and collectd will respawn
+# e.g. pkill -u {{ collectd_script_user }} -f {{ collectd_script_path }}/{{ collectd_script_name }}.sh
+
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
+
+while sleep "$INTERVAL"; do
+{% for item in collectd_monitored_services_role %}
+  ({{ item.shell_cmd }}) >/dev/null 2>&1
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/bool interval=$INTERVAL N:$?"
+{% endfor %}
+{% for item in collectd_monitored_services_servertype %}
+  ({{ item.shell_cmd }}) >/dev/null 2>&1
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/bool interval=$INTERVAL N:$?"
+{% endfor %}
+done

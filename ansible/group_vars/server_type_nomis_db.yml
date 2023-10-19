@@ -24,9 +24,10 @@ oracle_inventory: /u01/app/oraInventory
 database_home: /u01/app/oracle/product/11.2.0.4/db_1
 grid_home: /u01/app/oracle/product/11.2.0.4/gridhome_1
 
-collectd_monitored_services:
-  - chronyd
-  - amazon-ssm-agent
-  - amazon-cloudwatch-agent
-  - oracle-ohasd
-  - oracleasm
+collectd_monitored_services_servertype:
+  - metric_name: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: oracleohasd
+    shell_cmd: "systemctl is-active oracle-ohasd"
+  - metric_name: oracleasm
+    shell_cmd: "systemctl is-active oracleasm"

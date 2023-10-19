@@ -7,5 +7,10 @@ server_type_roles_list:
   - domain-search
   - autoscale-group-hooks-state
   - ansible-script
+  - time
+
+collectd_monitored_services_servertype:
+  - metric_name: chronyd
+    shell_cmd: "service chronyd status"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

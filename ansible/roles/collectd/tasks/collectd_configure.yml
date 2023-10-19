@@ -5,6 +5,7 @@
     dest: "/etc/collectd.conf"
     owner: root
     mode: 0644
+  notify: restart collectd
 
 - name: add custom types file for bool types for collectd metrics
   ansible.builtin.copy:
@@ -12,8 +13,4 @@
     dest: /usr/share/collectd/types.db.custom
     owner: root
     mode: 0644
-# - name: Start collectd service
-#   ansible.builtin.service:
-#     name: collectd
-#     state: started
-#     enabled: yes
+  notify: restart collectd

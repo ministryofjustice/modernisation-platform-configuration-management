@@ -1,4 +1,11 @@
 ---
+- import_tasks: collectd_selinux_policy.yml
+  tags:
+    - ec2provision
+    - ec2patch
+    - collectd_selinux_policy
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version in ['7', '8']
+
 - import_tasks: collectd_install.yml
   tags:
     - ec2provision
@@ -11,7 +18,13 @@
     - ec2patch
   when: ansible_distribution in ['RedHat', 'OracleLinux']
 
-- import_tasks: collectd_selinux_policy.yml
+# Ensure any restarts done prior to start
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always
+
+- import_tasks: collectd_start.yml
   tags:
     - ec2provision
     - ec2patch

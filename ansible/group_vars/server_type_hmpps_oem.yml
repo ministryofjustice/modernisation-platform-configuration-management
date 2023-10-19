@@ -58,12 +58,13 @@ server_type_roles_list:
   - oracle-oms-setup
   - collectd-service-metrics
 
-collectd_monitored_services:
-  - chronyd
-  - amazon-ssm-agent
-  - amazon-cloudwatch-agent
-  - oracle-batch-status
-  - oracle-db-connected
+collectd_monitored_services_servertype:
+  - metric_name: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: oracleohasd
+    shell_cmd: "systemctl is-active oracle-ohasd"
+  - metric_name: oracleasm
+    shell_cmd: "systemctl is-active oracleasm"
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

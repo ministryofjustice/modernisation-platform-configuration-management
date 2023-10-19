@@ -20,3 +20,13 @@ collectd_monitored_services:
   - wls_nodemanager
   - wls_adminserver
   - wls_managedserver
+
+collectd_monitored_services_servertype:
+  - metric_name: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: wlsnodemanager
+    shell_cmd: "systemctl is-active wls_nodemanager"
+  - metric_name: wlsadminserver
+    shell_cmd: "systemctl is-active wls_adminserver"
+  - metric_name: wlsmanagedserver
+    shell_cmd: "systemctl is-active wls_managedserver"
