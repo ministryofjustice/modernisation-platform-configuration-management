@@ -7,7 +7,7 @@
 - name: Exit if rman catalog not specified
   fail:
     msg: "No rman catalog specified...exiting"
-  when: catalog is not defined
+  when: catalog is not defined and catalog_tns is not defined
 
 - name: Replace catalog with catalog_tns if defined
   set_fact:
