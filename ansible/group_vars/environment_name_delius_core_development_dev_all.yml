@@ -31,8 +31,8 @@ dependencies_bucket:
 # Only used for dupicating databases from source during migration using the oracle-db-duplicate role
 # Eventually these will be removed once the RMAN catalog database has been migrated across
 catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=10.161.98.92)(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=DCAT_TAF)))"
-source_db: "DNDA"
-s3_source_bucket: "eu-west-2-dlc-dev-oracledb-backups"
+source_db: "DMDNDA"
+s3_source_bucket: "eu-west-2-dmd-mis-dev-oracledb-backups"
 high_availability_count:
   delius: 0
   mis: 0
