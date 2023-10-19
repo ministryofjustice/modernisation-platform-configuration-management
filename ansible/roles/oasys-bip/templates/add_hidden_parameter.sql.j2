@@ -1,0 +1,9 @@
+set echo on
+spool {{ stage }}/add_hidden_parameter.log
+
+ALTER SYSTEM SET "_allow_insert_with_update_check"=TRUE scope=spfile;
+shutdown immediate 
+startup
+
+spool off 
+exit

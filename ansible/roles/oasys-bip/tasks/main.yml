@@ -10,42 +10,37 @@
         - weblogic_certificate_fix
         - weblogic_create_managed_app
         - weblogic_setup_log_rotate
+        - rcu
 
-    # - import_tasks: packages.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - weblogic_packages
+    - import_tasks: packages.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_packages
 
-    # - import_tasks: users.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - weblogic_users
+    - import_tasks: users.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_users
 
-    # - import_tasks: swap.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - weblogic_swap
+    - import_tasks: swap.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_swap
 
-    # - import_tasks: install-jdk.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - weblogic_install_jdk
+    - import_tasks: install-jdk.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_install_jdk
 
-    # - import_tasks: oracle-limits-update.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - oracle-limits-changes
-
-    # - import_tasks: rcu.yml
-    #   tags:
-    #     - amibuild
-    #     - ec2provision
-    #     - rcu
+    - import_tasks: oracle-limits-update.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - oracle-limits-changes
 
     - import_tasks: clone_bip_software.yml
       tags:
@@ -60,6 +55,11 @@
     - never
 
 - import_tasks: create_bip_database.yml
+  tags:
+    - bip_db_create
+    - never
+
+- import_tasks: rcu.yml
   tags:
     - bip_db_create
     - never

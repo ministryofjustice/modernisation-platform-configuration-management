@@ -9,11 +9,14 @@
 
 - name: Copy BIP database creation scripts
   template:
-    src: "create_bip_db.sh.j2"
-    dest: "{{ stage }}/create_bip_db.sh"
+    src: "{{ item }}.j2"
+    dest: "{{ stage }}/{{ item }}"
     owner: oracle
     group: oinstall
     mode: "0700"
+  loop:
+    - create_bip_db.sh
+    - add_hidden_parameter.sql
 
 - name: Create BIP database
   become_user: oracle
@@ -22,6 +25,8 @@
     main() {
       echo "# create_recovery_catalog_db.sh "
       {{ stage }}/create_bip_db.sh {{ db_name }} {{ db_sys_password }} {{ db_system_password }}
+      . oraenv <<< {{ db_name }}
+      sqlplus / as sysdba @add_hidden_parameter.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   async: 86400
