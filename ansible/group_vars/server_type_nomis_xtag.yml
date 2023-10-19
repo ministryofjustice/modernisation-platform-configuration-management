@@ -23,10 +23,10 @@ collectd_monitored_services:
 
 collectd_monitored_services_servertype:
   - metric_name: chronyd
-    shell_cmd: "systemctl is-active --quiet chronyd"
+    shell_cmd: "systemctl is-active chronyd"
   - metric_name: wlsnodemanager
-    shell_cmd: "systemctl is-active --quiet wls_nodemanager"
+    shell_cmd: "systemctl is-active wls_nodemanager"
   - metric_name: wlsadminserver
-    shell_cmd: "systemctl is-active --quiet wls_adminserver"
+    shell_cmd: "systemctl is-active wls_adminserver"
   - metric_name: wlsmanagedserver
-    shell_cmd: "systemctl is-active --quiet wls_managedserver"
+    shell_cmd: "systemctl is-active wls_managedserver"

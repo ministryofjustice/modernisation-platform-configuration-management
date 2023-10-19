@@ -11,6 +11,6 @@ server_type_roles_list:
 
 collectd_monitored_services_servertype:
   - metric_name: chronyd
-    shell_cmd: "systemctl is-active --quiet chronyd"
+    shell_cmd: "systemctl is-active chronyd"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

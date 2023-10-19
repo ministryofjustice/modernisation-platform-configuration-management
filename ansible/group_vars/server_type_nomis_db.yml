@@ -26,8 +26,8 @@ grid_home: /u01/app/oracle/product/11.2.0.4/gridhome_1
 
 collectd_monitored_services_servertype:
   - metric_name: chronyd
-    shell_cmd: "systemctl is-active --quiet chronyd"
+    shell_cmd: "systemctl is-active chronyd"
   - metric_name: oracleohasd
-    shell_cmd: "systemctl is-active --quiet oracle-ohasd"
+    shell_cmd: "systemctl is-active oracle-ohasd"
   - metric_name: oracleasm
-    shell_cmd: "systemctl is-active --quiet oracleasm"
+    shell_cmd: "systemctl is-active oracleasm"
