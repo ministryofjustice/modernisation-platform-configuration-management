@@ -1,11 +1,31 @@
 ---
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ db_ssm_passwords }}"
 
-- name: Get SSM parameters
-  set_fact:
-    asmpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSYS'] }}"
-    asmmonitorpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+
+    - name: secretsmanager passwords
+      set_fact:
+        asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSYS'] }}"
+        asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSNMP'] }}"
+
+  when: not use_ssm_params
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ db_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        asmpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSYS'] }}"
+        asmmonitorpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
+
+  when: use_ssm_params
