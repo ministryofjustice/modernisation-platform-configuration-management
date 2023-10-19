@@ -140,7 +140,7 @@
         jid: "{{ duplicate_cmd_output.ansible_job_id }}"
       register: duplicate_cmd_output_result
       until: duplicate_cmd_output_result.finished
-      delay: 960
+      delay: 120
       retries: 60
       become: yes
       become_user: oracle
