@@ -7,7 +7,7 @@
 - name: Exit if rman catalog not specified
   fail:
     msg: "No rman catalog specified...exiting"
-  when: catalog is not defined
+  when: catalog is not defined and catalog_tns is not defined
 
 - name: Replace catalog with catalog_tns if defined
   set_fact:
@@ -140,7 +140,7 @@
         jid: "{{ duplicate_cmd_output.ansible_job_id }}"
       register: duplicate_cmd_output_result
       until: duplicate_cmd_output_result.finished
-      delay: 960
+      delay: 120
       retries: 60
       become: yes
       become_user: oracle
