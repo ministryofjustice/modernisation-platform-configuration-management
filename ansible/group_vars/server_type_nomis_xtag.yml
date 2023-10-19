@@ -7,9 +7,10 @@ server_type_roles_list:
   - set-ec2-hostname
   - domain-search
   - ansible-script
-  - nomis-xtag-weblogic
   - collectd-service-metrics
   - autoscale-group-hooks-state
+
+# - nomis-xtag-weblogic
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
