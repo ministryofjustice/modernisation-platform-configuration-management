@@ -8,7 +8,7 @@
 - name: Exit out of the play if instance is already joined to the domain
   meta: end_host
   when:
-  - result.rc == 0
+    - result.rc == 0
 
 - name: Configure sshd_config
   lineinfile:
