@@ -1,0 +1,8 @@
+---
+ansible_python_interpreter: python3.9
+
+ami_roles_list:
+  - join-devtest-ad-linux
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
