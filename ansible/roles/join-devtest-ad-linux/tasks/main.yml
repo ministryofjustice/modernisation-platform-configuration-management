@@ -1,15 +1,9 @@
 ---
-- name: Set instance hostname
-  import_role:
-    name: set-ec2-hostname
-
 - name: Get linux service account details
   import_tasks: get_facts.yml
   tags:
     - ec2provision
-  when: ansible_distribution in ['RedHat']
 
 - import_tasks: join_domain.yml
   tags:
     - ec2provision
-  when: ansible_distribution in ['RedHat']

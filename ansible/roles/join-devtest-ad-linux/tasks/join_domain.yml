@@ -1,4 +1,15 @@
 ---
+- name: Check if instance is already joined to the domain
+  command: getent passwd {{ join_domain_linux_service_account_username }}@{{ ad_domain }}
+  changed_when: false
+  register: result
+  ignore_errors: yes
+
+- name: Exit out of the play if instance is already joined to the domain
+  meta: end_host
+  when:
+    - result.rc == 0
+
 - name: Configure sshd_config
   lineinfile:
     path: /etc/ssh/sshd_config
@@ -28,3 +39,13 @@
     command: /bin/bash -c "/usr/sbin/realm join --user={{ join_domain_linux_service_account_username }}@{{ ad_domain|upper }} {{ ad_domain|lower }} -v"
     responses:
       Password for *: "{{ join_domain_linux_service_account_password }}"
+
+- name: Validate the AD join
+  command: getent passwd {{ join_domain_linux_service_account_username }}@{{ ad_domain }}
+  register: result
+  ignore_errors: yes
+
+- name: Check the validation result
+  fail:
+    msg: "AD join validation failed, {{ result.stderr }}"
+  when: result.rc != 0
