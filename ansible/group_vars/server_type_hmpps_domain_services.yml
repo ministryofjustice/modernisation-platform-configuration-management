@@ -3,3 +3,5 @@ ansible_python_interpreter: python3.9
 
 server_type_roles_list:
   - join-devtest-ad-linux
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
