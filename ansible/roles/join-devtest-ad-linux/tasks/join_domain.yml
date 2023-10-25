@@ -40,6 +40,12 @@
     responses:
       Password for *: "{{ join_domain_linux_service_account_password }}"
 
+- name: Restart SSSD service
+  service:
+    name: sssd
+    state: restarted
+    enabled: yes
+
 - name: Validate the AD join
   command: getent passwd {{ join_domain_linux_service_account_username }}@{{ ad_domain }}
   register: result
@@ -49,3 +55,4 @@
   fail:
     msg: "AD join validation failed, {{ result.stderr }}"
   when: result.rc != 0
+
