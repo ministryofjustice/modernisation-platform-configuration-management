@@ -41,10 +41,7 @@
       Password for *: "{{ join_domain_linux_service_account_password }}"
 
 - name: Restart SSSD service
-  service:
-    name: sssd
-    state: restarted
-    enabled: yes
+  command: systemctl restart sshd
 
 - name: Validate the AD join
   command: getent passwd {{ join_domain_linux_service_account_username }}@{{ ad_domain }}
