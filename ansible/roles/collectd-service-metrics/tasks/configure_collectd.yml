@@ -1,7 +1,7 @@
 ---
 - name: copy collectd config
   ansible.builtin.template:
-    src: "collectd.conf.j2"
+    src: "{{ collectd_script_name }}.conf.j2"
     dest: "/etc/collectd.d/{{ collectd_script_name }}.conf"
     owner: root
     mode: 0644
@@ -11,7 +11,7 @@
 - name: copy collectd plugin script
   ansible.builtin.template:
     src: "{{ collectd_script_name }}.sh.j2"
-    dest: "/usr/local/bin/{{ collectd_script_name }}.sh"
+    dest: "{{ collectd_script_path }}/{{ collectd_script_name }}.sh"
     owner: root
     mode: 0755
   notify:
