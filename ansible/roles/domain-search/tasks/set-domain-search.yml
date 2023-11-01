@@ -22,7 +22,7 @@
     owner: root
   notify:
     - Restart network pre rhel8
-  when: (ansible_distribution in ['redhat', 'oraclelinux']) and (ansible_distribution_major_version in ['5', '6', '7'])
+  when: (ansible_distribution in ['RedHat', 'OracleLinux']) and (ansible_distribution_major_version in ['5', '6', '7'])
 
 # Cannot get the dhclient approach to work in RHEL8 so unfortunately have to go with this
 - name: Rhel8+
