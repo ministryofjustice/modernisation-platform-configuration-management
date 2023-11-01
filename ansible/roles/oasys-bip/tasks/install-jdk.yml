@@ -11,13 +11,14 @@
         group: oinstall
         mode: "0755"
       loop:
-        - /u01/software/jdk
+        - "{{ stage }}"
+        - "{{ stage }}/jdk"
 
     - name: Get jdk rpm binary from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
         object: "oasys-bip{{ item }}"
-        dest: "{{ item }}"
+        dest: "{{ stage }}"
         mode: get
         overwrite: latest
       loop:
@@ -26,7 +27,7 @@
 
     - name: Install jdk rpm binary
       yum:
-        name: /u01/software/jdk/jdk-7u80-linux-x64.rpm
+        name: "{{ stage}}/jdk/jdk-7u80-linux-x64.rpm"
         state: present
 
   # block
