@@ -1,0 +1,65 @@
+#!/bin/bash
+# Managed by collectd-oracle-db-connected ansible role
+# If manually editing, just kill script and collectd will respawn
+# e.g. pkill -u {{ collectd_script_user }} -f {{ collectd_script_path }}/{{ collectd_script_name }}.sh
+
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
+
+if [[ "$(whoami)" != "oracle" ]]
+then
+    echo "This script is expected to be run as the Oracle user" 1>&2
+    exit 1
+fi
+
+# We need to make sure this is in the path
+export PATH=${PATH}:/usr/local/bin
+
+get_sids() {
+  aws ec2 describe-tags --filters "Name=resource-id,Values={{ ansible_ec2_instance_id }}" "Name=key,Values=oracle-sids" --query Tags[0].Value --output=text
+}
+
+db_connected() {
+    # DB resources names are usually 'ora.${DB}.db' but some have a suffix after ${DB}
+    DB="$(crsctl status resource | grep -m1 -i ora\.${SID}.*\.db | cut -f2 -d=)"
+
+    # Check added to alert on not having a database resource BEFORE trying to get it's status
+    if [[ -z "$DB" ]]
+    then
+        echo "Failed to find a database resource for ${SID}" 1>&2
+        return 1
+    fi
+
+    # Worth noting here that crsctl exits with code 0 even if you try and find details of a database that doesn't exist
+    STATUS=$(timeout $INTERVAL crsctl status resource ${DB} -v | grep STATE_DETAILS | cut -f2 -d= | cut -f1 -d,)
+
+    case ${STATUS} in
+        "Open")
+            return 0
+            ;;
+        "Open,Readonly")
+            return 0
+            ;;
+        "Mounted (Closed)")
+            return 0
+            ;;
+        *)
+            # If this check returns a non-zero value then the database is not connected
+            return 1
+            ;;
+    esac
+}
+
+ORACLE_SID="+ASM"
+ORAENV_ASK="NO"
+. oraenv > /dev/null
+
+while sleep "$INTERVAL"; do
+  SIDS=$(get_sids)
+  if [[ "$SIDS" != "None" ]]; then
+    for SID in $(get_sids); do
+      db_connected $SID >/dev/null 2>&1
+      echo "PUTVAL $HOSTNAME/exec-db_connected/bool-$SID interval=$INTERVAL N:$?"
+    done
+  fi
+done
