@@ -32,3 +32,22 @@
 
   # block
   when: collectd_selinux_mode.stdout|lower == "enforcing" or collectd_selinux_mode.stdout|lower == "permissive"
+
+- name: Check if permissive state applied already
+  ansible.builtin.stat:
+    path: /root/.ansible-collectd-selinux
+  register: ansible_collectd_selinux_installed
+
+- name: Enable permissive mode for collectd
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      if [[ ! -e /root/.ansible-collectd-selinux ]]; then
+        semanage permissive -a collectd_t > /root/.ansible-collectd-selinux
+      fi
+    }
+    main 2>&1 | logger -p local3.info -t ansible-collectd
+  when:
+   - collectd_selinux_mode.stdout|lower == "enforcing" or collectd_selinux_mode.stdout|lower == "permissive"
+   - not ansible_collectd_selinux_installed.stat.exists
+   - collectd_selinux_permissive|bool
