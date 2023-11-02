@@ -1,0 +1,13 @@
+- name: Install audit package
+  yum:
+    name: audit
+    state: present
+    lock_timeout: 60
+  retries: 3
+  delay: 10
+
+- name: Start auditd
+  service:
+    name: auditd
+    state: started
+    enabled: yes
