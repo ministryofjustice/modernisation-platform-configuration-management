@@ -21,9 +21,17 @@
     PATH=$PATH:/usr/local/bin
     set -e
     account_id=$(aws sts get-caller-identity --query Account --output text)
+    {% if item.value.account_name is defined %}
     secret_account_id="{{ account_ids[item.value.account_name] }}"
+    {% else %}
+    secret_account_id=$account_id
+    {% endif %}
     if [[ $account_id != $secret_account_id ]]; then
-      role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
+    {% if item.value.assume_role_name is defined %}
+    role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
+    {% else %}
+    role_arn="arn:aws:iam::${account_id}:role/ec2-database-role-t2-oasys-db-b"
+    {% endif %}
       session="{{ item.key }}-ansible"
       creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
       export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
