@@ -39,6 +39,7 @@ use_ssm_params: false
 db_secretsmanager_passwords:
   asm:
     parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    secret: "/ec2/{{ ec2_name }}/asm-passwords"
     users:
       - ASMSNMP: auto
       - ASMSYS: auto
