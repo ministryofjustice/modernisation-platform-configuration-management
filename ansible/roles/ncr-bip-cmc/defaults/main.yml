@@ -17,3 +17,15 @@ s3:
     sapcar: SAPCAR_1324-80000935.EXE
 
 ssm_parameters_prefix: "bip-cmc"
+
+bip_cmc_secretsmanager_passwords:
+  bip_cmc:
+    account_name: "nomis-combined-reporting-{{ aws_environment }}"
+    secret: "/t1-ncr-bip-cmc/passwords"
+    users:
+      - cms_cluster_key:
+      - cms_admin_password:
+      - cms_db_password:
+      - lcm_password:
+      - product_key:
+      - auditing_db_password:

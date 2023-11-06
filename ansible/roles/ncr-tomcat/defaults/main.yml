@@ -22,3 +22,14 @@ tomcat_post_install_directories:
   custom_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom
   biprws_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom
   webapps_root: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/ROOT
+
+tomcat_secretsmanager_passwords:
+  tomcat:
+    account_name: "nomis-combined-reporting-{{ aws_environment }}"
+    secret: "/t1-ncr-bip/passwords"
+    users:
+      - cluster_key:
+      - admin_password:
+      - db_password:
+      - lcm_password:
+      - product_key:
