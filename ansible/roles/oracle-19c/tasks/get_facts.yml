@@ -4,8 +4,16 @@
     name: ssm-passwords
   vars:
     ssm_passwords: "{{ db_ssm_passwords }}"
+  when: ec2.tags.application is defined and ec2.tags.application != 'delius-core'
 
 - name: Get SSM parameters
   set_fact:
     asmpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSYS'] }}"
     asmmonitorpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
+  when: ssm_passwords_dict is defined
+
+- name: Set Random Password Specifically For Delius
+  set_fact:
+    asmpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16') }}"
+    asmmonitorpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16')}}"
+  when: ssm_passwords_dict is not defined
