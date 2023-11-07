@@ -59,7 +59,7 @@ while sleep "$INTERVAL"; do
   if [[ "$SIDS" != "None" ]]; then
     for SID in $(get_sids); do
       db_connected $SID >/dev/null 2>&1
-      echo "PUTVAL $HOSTNAME/exec-db_connected/bool-$SID interval=$INTERVAL N:$?"
+      echo "PUTVAL $HOSTNAME/oracle_db_connected/exitcode-$SID interval=$INTERVAL N:$?"
     done
   fi
 done
