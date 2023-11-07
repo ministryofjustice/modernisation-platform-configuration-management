@@ -31,7 +31,7 @@
       register: prereqs
       failed_when: prereqs is changed
 
-    - name: "sample task in case the String present in the file"
+    - name: "Check prereqs have passed"
       debug: msg="All product pre requesites have passed"
       when: prereqs is not changed
 
