@@ -18,25 +18,25 @@
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
     regexp: "^clusterkey="
-    line: "clusterkey={{ bip_cms_cluster_key }}"
+    line: "clusterkey={{ cms_cluster_key }}"
 
 - name: Ensure cms admin password is set in response file
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
     regexp: "^cmspassword="
-    line: "cmspassword={{ bip_cms_admin_password }}"
+    line: "cmspassword={{ cms_admin_password }}"
 
 - name: Ensure cms db password is set in response file
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
     regexp: "^existingcmsdbpassword="
-    line: "existingcmsdbpassword={{ bip_cms_db_password }}"
+    line: "existingcmsdbpassword={{ cms_db_password }}"
 
 - name: Ensure lcm password is set in response file
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
     regexp: "^lcmpassword="
-    line: "lcmpassword={{ bip_lcm_password }}"
+    line: "lcmpassword={{ lcm_password }}"
 
 - name: Ensure node name is set in response file
   ansible.builtin.lineinfile:
@@ -48,4 +48,4 @@
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
     regexp: "^productkey="
-    line: "productkey={{ bip_product_key }}"
+    line: "productkey={{ product_key }}"
