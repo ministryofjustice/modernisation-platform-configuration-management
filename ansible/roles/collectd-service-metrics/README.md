@@ -18,6 +18,12 @@ Intro to Collectd networking [here](https://collectd.org/wiki/index.php/Networki
 
 ## Finding metrics in Cloudwatch
 
-Metrics collected by the Cloudwatch agent will appear in the 'metrics' panel under the CWAgent namespace as <cloudwatch_agent_config/metrics/metrics_collected/collectd/name_prefix>_<collectd_plugin_name>_value e.g. collectd_cpu_value, collectd_wlsadminserver_value, collectd_amazonssmagent_value etc.
+Metrics collected by the Cloudwatch agent will appear in the 'metrics' panel under the CWAgent namespace 
+
+```
+metric:        collectd_service_status_value
+type:          exitcode
+type_instance: Name of service, e.g. amazonssmagent
+```
 
 Cloudwatch metrics are easily filtered by instance_id so you can see all the metrics for a particular instance.
