@@ -18,10 +18,10 @@
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/tomcat_response.ini"
     regexp: "^productkey="
-    line: "productkey={{ tomcat_product_key }}"
+    line: "productkey={{ product_key }}"
 
 - name: Ensure CMS password is set in response file
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/tomcat_response.ini"
     regexp: "^remotecmsadminpassword="
-    line: "remotecmsadminpassword={{ tomcat_cms_password }}"
+    line: "remotecmsadminpassword={{ cms_admin_password }}"
