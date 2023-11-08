@@ -1,5 +1,4 @@
 ---
-
 - name: Get secretsmanager passwords
   block:
     - name: secretsmanager passwords
@@ -29,7 +28,7 @@
         asmpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSYS'] }}"
         asmmonitorpassword: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
       when: ssm_passwords_dict is defined
-      
+
     - name: Set Random Password Specifically For Delius
       set_fact:
         asmpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16') }}"
