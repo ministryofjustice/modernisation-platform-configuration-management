@@ -27,10 +27,11 @@
     secret_account_id=$account_id
     {% endif %}
     if [[ $account_id != $secret_account_id ]]; then
+      # this could be improved to look up role dynamically, would require permissions for ec2s to look at iam roles and instance profile 
     {% if item.value.assume_role_name is defined %}
-    role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
+      role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
     {% else %}
-    role_arn="arn:aws:iam::${account_id}:role/ec2-database-role-t2-oasys-db-b"
+      role_arn="arn:aws:iam::${account_id}:role/{{ assume_ec2_role_name_prefix }}-{{ ec2.tags['Name'] }}"
     {% endif %}
       session="{{ item.key }}-ansible"
       creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
@@ -143,7 +144,11 @@
     PATH=$PATH:/usr/local/bin
     set -e
     account_id=$(aws sts get-caller-identity --query Account --output text)
-    secret_account_id="{{ account_ids[item.value.config.account_name] }}"
+    {% if item.value.config.account_name is defined %}
+      secret_account_id="{{ account_ids[item.value.config.account_name] }}"
+    {% else %}
+      secret_account_id="{{ account_ids[ec2.tags['Name']] }}"
+    {% endif %}
     if [[ $account_id != $secret_account_id ]]; then
       echo "ERROR: cannot update secret in other account" >&2
       exit 1
