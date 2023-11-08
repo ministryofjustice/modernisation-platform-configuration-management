@@ -19,6 +19,17 @@ When a new tool is introduced, a new directory should be created for that tool.
 
 `teams` directory should store the code that is team specfic only (e.g. roles that are specific to one team only, ansible playbooks)
 
+## ⚠️ RHEL6 Compatibility
+
+If you locally execute roles that use the ansible yum modules against remote RHEL6 instance, then you may encounter error messages like below
+
+```
+fatal: [i-00a2ec208cf0b4455]: FAILED! => {"changed": false, "msg": "ansible-core requires a minimum of Python2 version 2.7 or Python3 version 3.5. Current version: 2.6.6 (r266:84292, Jun 11 2019, 11:01:44) [GCC 4.4.7 20120313 (Red Hat 4.4.7-23)]"}
+```
+
+A workaround for this is to install ansible-core 2.12 on your local machine e.g. `pip install ansible-core==2.12`
+
 ## How to use this repository
 
 The code in this repository should work as a library and should be called outside of this repository.
+
