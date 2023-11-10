@@ -1,8 +1,12 @@
 #!/usr/bin/python
-import os, sys, inspect
+import os
+import sys
+import inspect
+
 
 def _getPathToThisFile():
-  return os.path.dirname(inspect.getabsfile( inspect.currentframe() ))
+    return os.path.dirname(inspect.getabsfile(inspect.currentframe()))
+
 
 sys.path.append(_getPathToThisFile())
 
@@ -13,11 +17,12 @@ WLSAdminPW = psw
 
 try:
     connect(WLSAdminUN, WLSAdminPW, WLSAdminUrl)
-    #saved_stdout = sys.stdout
-    #sys.stdout = open('_stdout.log', 'w')
-    
+    # saved_stdout = sys.stdout
+    # sys.stdout = open('_stdout.log', 'w')
+
     try:
-        grantPermission(codeBaseURL="file:${oracle.deployed.app.dir}/bipublisher_11.1.1${oracle.deployed.app.ext}", permTarget="context=APPLICATION,name=obi", permClass="oracle.security.jps.service.policystore.PolicyStoreAccessPermission", permActions="containsAppRole")
+        grantPermission(codeBaseURL="file:${oracle.deployed.app.dir}/bipublisher_11.1.1${oracle.deployed.app.ext}", permTarget="context=APPLICATION,name=obi",
+                        permClass="oracle.security.jps.service.policystore.PolicyStoreAccessPermission", permActions="containsAppRole")
 
     except:
         print >> sys.stdout, "Entry for BI Publisher already exist."
@@ -25,8 +30,8 @@ try:
         print >> sys.stdout, "Entry for BI Publisher has been added successfully."
 
     sys.stdout.close()
-    #os.remove('_stdout.log')
-    #sys.stdout = saved_stdout
+    # os.remove('_stdout.log')
+    # sys.stdout = saved_stdout
     disconnect()
     # explicitly exit without errors. patching system requires this.
     exit()
