@@ -1,0 +1,39 @@
+#!/bin/bash
+if [ $# -lt 1 ]
+then
+        echo "Execute the script with dump file TAG name. "
+        echo "csr_preprod_refresh_from_prod.sh <TAG>"
+
+        exit 1
+fi
+
+export TAG=$1
+export ORAENV_ASK=NO
+export ORACLE_SID={{ db_sid }}
+. oraenv
+
+sqlplus "/ as sysdba" @1_PREPROD_REFRESH_FROM_PROD.sql
+if [ `grep ORA- 1_PREPROD_REFRESH_FROM_PROD.log| wc -l ` -gt 0 ]
+then
+	echo "Job failed while running 1_PREPROD_REFRESH_FROM_PROD.sql"
+	exit 1
+fi
+
+/u02/backup/db_schemas_import.sh IWFMPP HMPS_CUSTOM:CUSTOM_MO,IWFM_REGION1,IWFM_REGION2,IWFM_REGION3,IWFM_REGION4,IWFM_REGION5,IWFM_REGION6 ADHOC_REFRESH  $TAG
+
+if [ `grep ORA- *${TAG}_import.log| egrep -v "39082|31684"| wc -l ` -gt 0 ]
+then
+	echo "Job failed in import , please resolve and if needed rerun the import. Post import completion run 3_PREPROD_REFRESH_FROM_PROD.sql manually as sysdba"
+	exit 1
+fi
+
+sqlplus "/ as sysdba" @3_PREPROD_REFRESH_FROM_PROD.sql
+
+if [ `grep ORA- 3_PREPROD_REFRESH_FROM_PROD.log | wc -l ` -gt 0 ]
+then
+	echo "Job failed during post import step. Verify the output and run the failed steps manually. "
+	exit 1
+else
+	echo "Refresh completed successfully. "
+	exit 0
+fi
