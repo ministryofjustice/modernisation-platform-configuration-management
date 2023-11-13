@@ -4,6 +4,7 @@
   tags:
     - ec2provision
 
-# - import_tasks: csr-adhoc-schema-refresh-from-prod.yml
-#   tags:
-#     - ec2provision
+- import_tasks: csr-adhoc-schema-refresh-from-prod.yml
+  tags:
+    - production_script_copy
+    - never

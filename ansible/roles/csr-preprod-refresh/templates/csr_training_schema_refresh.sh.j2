@@ -263,11 +263,11 @@ do
          SELECT SUBSTR(lower,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(lower) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 3
          UNION ALL
          SELECT SUBSTR(upper,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(upper) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 3
-         -- UNION ALL
-         -- SELECT SUBSTR(special,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(special) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 2
+         UNION ALL
+         SELECT SUBSTR(special,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(special) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 2
         );
 
-      v_sql_stmt:='create user $SCHEMA profile '||r1.profile||' identified by '|| password ||
+      v_sql_stmt:='create user $SCHEMA profile '||r1.profile||' identified by P'|| password ||
                   ' default tablespace '||r1.default_tablespace||
                   ' temporary tablespace '||r1.temporary_tablespace||
                   ' quota unlimited on '||r1.default_tablespace||';';

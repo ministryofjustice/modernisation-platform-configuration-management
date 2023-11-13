@@ -1,0 +1,49 @@
+#!/bin/bash
+if [ $# -lt 4 ]
+then
+        echo "Execute the script with three parameters. "
+        echo "preprd_adhoc_db_schemas_import.sh <ORACLE_SID> <REMAP SCHEMAS SEPERATED BY COMMAS> <DB DIRECTORY NAME> <TAG>"
+        echo "For remap schemas use : like impdp and for schemas where no remapping needed use the schema names without :"
+        echo "preprod_db_schemas_import.sh IWFMPP HMPS_CUSTOM:CUSTOM_MO,IWFM_REGION1 DATA_PUMP_DIR TAG"
+
+        exit 1
+fi
+export ORACLE_SID=$1
+export SCHEMAS=$2
+export DIRNAME=$3
+export TAG=$4
+export ORAENV_ASK=NO
+. oraenv
+echo $ORACLE_SID $ORACLE_HOME
+x=`sqlplus -s " / as sysdba" << EOF
+set feedback off heading off echo off verify off
+select count(1) from dba_directories where directory_name ='${DIRNAME}';
+exit
+EOF`
+DIRPATH=`sqlplus -s " / as sysdba" << EOF
+set feedback off heading off echo off verify off
+select directory_path from dba_directories where directory_name ='${DIRNAME}';
+exit
+EOF`
+if [ ${CNT} -eq 1 ]
+then
+
+    for i in $(echo $SCHEMAS | sed "s/,/ /g")
+    do
+            aws s3 cp s3://{{ s3_bucket }}/${i}_${TAG}.dmp ${DIRPATH}
+            if [ `echo $i | grep ":"| wc -l ` -eq 0 ]
+            then
+                    impdp userid="'/as sysdba'" directory=${DIRNAME} dumpfile=${i}_${TAG}.dmp logfile=${i}_${TAG}_import.log
+            elif [ `echo $i | grep -o ":"| wc -l ` -eq 1 ]
+            then
+                    export DNAME=`echo $i | grep ":"| awk -F':' '{ print $1}'`
+                    impdp userid="'/as sysdba'" directory=${DIRNAME} dumpfile=${DNAME}_${TAG}.dmp logfile=${DNAME}_${TAG}_import.log remap_schema=${i}
+            else
+                    echo "Remap schemas specified incorrectly for $i"
+            fi
+
+    done
+else
+    echo "Directory does not exist in database, please create the directory as sys and Rerun with correct value."
+    exit 1
+fi
