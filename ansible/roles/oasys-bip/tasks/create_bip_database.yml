@@ -24,8 +24,8 @@
     set -eo pipefail
     main() {
       echo "# create_recovery_catalog_db.sh "
-      {{ stage }}/create_bip_db.sh {{ db_name }} {{ db_sys_password }} {{ db_system_password }}
-      . oraenv <<< {{ db_name }}
+      {{ stage }}/create_bip_db.sh {{ bip_db_name }} {{ bipdb_sys_password }} {{ bipdb_system_password }}
+      . oraenv <<< {{ bip_db_name }}
       sqlplus / as sysdba @add_hidden_parameter.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db

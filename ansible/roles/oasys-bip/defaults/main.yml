@@ -1,12 +1,25 @@
 ---
-ssm_parameters_prefix: "weblogic"
+# Following tags must be set on the ASG
+# oasys-environment: t2
+# bip-db-name:       T2BIPINF
+# bip-db-hostname:   t2-oasys-db-a
+# oasys-db-name:     T2OASYS
+# oasys-db-hostname: t2-oasys-db-a
+#
+# Following tags must be set on the DB
+# bip-db-name: T2BIPINF
+
+oasys_environment: "{{ ec2.tags['oasys-environment'] }}"
+bip_db_name: "{{ ec2.tags['bip-db-name'] }}"
+bip_db_server: "{{ ec2.tags['bip-db-hostname'] }}"
+oasys_db_name: "{{ ec2.tags['oasys-db-name'] }}"
+oasys_db_server: "{{ ec2.tags['oasys-db-hostname'] }}"
+
 weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 weblogic_servername: "{{ ansible_facts.hostname }}"
 middleware_home: /u01/app/oracle/Middleware
 wl_home: /u01/app/oracle/Middleware/wlserver_10.3
 stage: /u01/stage
-bip_db_server: 10.26.12.211 #should be part of ec2 instance tag
-bip_db_name: T2BIPIN2 #should be part of ec2 instance tag
 oracle_install_user: oracle
 oracle_install_group: oinstall
 domain_name: bifoundation_domain
@@ -16,5 +29,26 @@ oas_biplatform_password_file: "{{ stage }}/oas_biplatform_password.txt"
 weblogic_password_file: "{{ stage }}/weblogic_password.txt"
 admin_password_file: "{{ stage }}/weblogic_password.txt"
 bip_repository_file: bip_repository_12Oct2023.tar
-oasys_db: T2OASYS
-oasys_db_server: t2-oasys-db-a
+weblogic_admin_username: weblogic
+
+bip_weblogic_secretsmanager_secrets:
+  bipweb:
+    secret: "/oracle/bip/{{ oasys_environment }}/passwords"
+    users:
+      - weblogic:
+  bipdbshared:
+    secret: "/oracle/database/{{ bip_db_name }}/bip-passwords"
+    users:
+      - sys:
+      - mds:
+      - biplatform:
+
+bip_db_secretsmanager_secrets:
+  bipdbshared:
+    secret: "/oracle/database/{{ bip_db_name }}/bip-passwords"
+    users:
+      - sys:
+  bipdb:
+    secret: "/oracle/database/{{ bip_db_name }}/passwords"
+    users:
+      - system:
