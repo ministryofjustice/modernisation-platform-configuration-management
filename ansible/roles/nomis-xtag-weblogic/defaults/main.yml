@@ -29,12 +29,18 @@ weblogic_servers:
   - { name: AdminServer }
 
 db_config: "{{ db_configs[weblogic_db_name] }}"
-xtag_ssm_passwords:
+
+use_ssm_params: false
+xtag_secretsmanager_passwords:
   weblogic:
     parameter: "/oracle/weblogic/{{ nomis_environment }}/passwords"
+    secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
       - weblogic: auto
   db:
     parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - xtag:
+
+xtag_ssm_passwords: "{{ xtag_secretsmanager_passwords }}"
