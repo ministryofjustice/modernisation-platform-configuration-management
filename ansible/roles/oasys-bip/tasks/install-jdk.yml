@@ -18,7 +18,7 @@
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
         object: "oasys-bip{{ item }}"
-        dest: "{{ stage }}"
+        dest: "{{ stage }}/jdk/jdk-7u80-linux-x64.rpm"
         mode: get
         overwrite: latest
       loop:
