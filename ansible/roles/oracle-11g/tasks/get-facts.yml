@@ -16,7 +16,7 @@
   when: not use_ssm_params
 
 - name: Get SSM parameters
-  block: 
+  block:
     - name: Get SSM parameters
       import_role:
         name: ssm-passwords
