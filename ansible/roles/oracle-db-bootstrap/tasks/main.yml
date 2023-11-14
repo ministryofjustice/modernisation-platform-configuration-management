@@ -49,24 +49,39 @@
   tags: always
 
 - name: (main) Gather installation facts
-  include_tasks: check-installation.yml
+  include_tasks:
+    file: check-installation.yml
+    apply:
+      tags: always
   tags: always
 
 - name: (main) Reconfigure our config that was set during ami build
-  include_tasks: reconfigure-instance.yml
+  include_tasks:
+    file: reconfigure-instance.yml
+    apply:
+      tags: always
   tags: always
 
 - name: (main) Setup required database passwords in SSM parameter store
-  include_tasks: create-ssm-passwords.yml
+  include_tasks:
+    file: create-ssm-passwords.yml
+    apply:
+      tags: always
   tags: always
 
 - name: (main) Reconfigure asm
-  include_tasks: reconfigure-asm.yml
+  include_tasks:
+    file: reconfigure-asm.yml
+    apply:
+      tags: always
   tags: always
 
 - block:
     - name: (main) Configure out database
-      include_tasks: create-database.yml
+      include_tasks:
+        file: create-database.yml
+        apply:
+          tags: always
 
     - name: (main) Create our check file so we don't run this again
       file:
@@ -83,7 +98,10 @@
   tags: always
 
 - name: (main) Setup TAF Service Name
-  include_tasks: set-taf-service.yml
+  include_tasks:
+    file: set-taf-service.yml
+    apply:
+      tags: always
   when:
     - database_type != "standby"
   tags: always
@@ -174,11 +192,17 @@
   tags: always
 
 - name: Ensure Password File is in ASM
-  include_tasks: move_password_file_to_asm.yml
+  include_tasks:
+    file: move_password_file_to_asm.yml
+    apply:
+      tags: always
   tags: always
 
 - name: (main) Get environment-specific configuration variables
-  include_tasks: get-env-config.yml
+  include_tasks:
+    file: get-env-config.yml
+    apply:
+      tags: always
   tags: always
 
 # Install all one-off patches specified for this environment
