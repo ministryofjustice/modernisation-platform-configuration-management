@@ -1,4 +1,5 @@
 ---
+
 - name: Add nginx yum repo
   yum_repository:
     name: nginx
@@ -21,5 +22,57 @@
   template:
     src: etc/nginx/nginx.conf.j2
     dest: /etc/nginx/nginx.conf
+  handlers:
+    - test nginx config
+  tags:
+    - amibuild
+
+- meta: flush_handlers
+  tags:
+    - amibuild
+
+- name: Create ssl directory in /etc/nginx
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: nginx
+    group: nginx
+  tags:
+    - amibuild
+
+- name: Generate a private key
+  community.crypto.openssl_privatekey:
+    path: /etc/nginx/ssl/nginx.key
+    type: RSA
+    size: 2048
+  tags:
+    - amibuild
+
+- name: Generate a self-signed certificate with a variable for the expiry
+  community.crypto.x509_certificate:
+    path: /etc/nginx/ssl/nginx.crt
+    privatekey_path: /etc/nginx/ssl/nginx.key
+    common_name: "{{ NDH_PROXY_HOST }}"
+    force: yes
+    selfsigned: yes
+    key_size: 2048
+    valid_days: "{{ nginx_ssl_valid_days }}"
+  tags:
+    - amibuild
+
+- name: add NDH_PROXY_HOST to /etc/hosts for loopback
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^(127\.0\.0\.1.*)$'
+    line: '\1 {{ NDH_PROXY_HOST }}'
+    backrefs: yes
+  tags:
+    - amibuild
+
+- name: Start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: yes
+    state: started
   tags:
     - amibuild
