@@ -1,0 +1,26 @@
+---
+
+- name: Add nginx yum repo
+  yum_repository:
+    name: nginx
+    description: nginx repo
+    baseurl: https://nginx.org/packages/rhel/7/$basearch/
+    gpgcheck: no
+    enabled: yes
+  tags:
+    - amibuild
+
+- name: Enable nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: yes
+    state: stopped
+  tags:
+    - amibuild
+
+- name: Add nginx proxy config
+  template:
+    src: etc/nginx/nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  tags:
+    - amibuild
