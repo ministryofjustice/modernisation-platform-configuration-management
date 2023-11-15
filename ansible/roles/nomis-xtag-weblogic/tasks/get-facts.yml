@@ -1,14 +1,35 @@
 ---
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ xtag_ssm_passwords }}"
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ xtag_secretsmanager_passwords }}"
 
-- name: Get SSM parameters
-  set_fact:
-    weblogic_admin_password: "{{ ssm_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
-    weblogic_db_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_username] }}"
+    - name: secretsmanager passwords
+      set_fact:
+        weblogic_admin_password: "{{ secretsmanager_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
+        weblogic_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[weblogic_db_username] }}"
+
+  when: not use_ssm_params
+  
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ xtag_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        weblogic_admin_password: "{{ ssm_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
+        weblogic_db_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_username] }}"
+      when: ssm_passwords_dict is defined
+
+  when: use_ssm_params
 
 - debug:
     msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"
@@ -19,7 +40,7 @@
 - debug:
     msg: "Configuring NDH EMS server to {{ ndh_ems_server }}"
 
-- name: Check all SSM parameters and tags are set
+- name: Check all secrets and tags are set
   set_fact:
     weblogic_all_variables_set: true
   when:
@@ -31,7 +52,7 @@
     - weblogic_db_hostname_b|length > 0
     - ndh_ems_server|length > 0
 
-- name: Fail if missing SSM parameters or tags
+- name: Fail if missing secrets or tags
   fail:
-    msg: Ensure all required SSM parameters and tags are set
+    msg: Ensure all required secrets and tags are set
   when: not weblogic_all_variables_set|default(false)
