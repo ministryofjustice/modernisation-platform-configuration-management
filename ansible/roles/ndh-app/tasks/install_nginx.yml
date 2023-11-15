@@ -51,7 +51,7 @@
   community.crypto.x509_certificate:
     path: /etc/nginx/ssl/nginx.crt
     privatekey_path: /etc/nginx/ssl/nginx.key
-    common_name: "{{ NDH_PROXY_HOST }}"
+    common_name: "{{ ndh_proxy_host }}"
     force: yes
     selfsigned: yes
     key_size: 2048
@@ -59,11 +59,11 @@
   tags:
     - amibuild
 
-- name: add NDH_PROXY_HOST to /etc/hosts for loopback
+- name: add ndh_proxy_host to /etc/hosts for loopback
   lineinfile:
     path: /etc/hosts
     regexp: '^(127\.0\.0\.1.*)$'
-    line: '\1 {{ NDH_PROXY_HOST }}'
+    line: '\1 {{ ndh_proxy_host }}'
     backrefs: yes
   tags:
     - amibuild
