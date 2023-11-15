@@ -26,14 +26,14 @@ http {
 
     server {
         listen 127.0.0.1:443 ssl;
-        ssl_certificate /etc/nginx/nginx.crt;
-        ssl_certificate_key /etc/nginx/nginx.key;
+        ssl_certificate /etc/nginx/ssl/nginx.crt;
+        ssl_certificate_key /etc/nginx/ssl/nginx.key;
         ssl_protocols TLSv1.1;
         server_name test;
         location / {
                 proxy_set_header Host $host;
-                proxy_redirect https://${{ ndh_proxy_host }}:443/ https://${{ ndh_proxy_host }}/;
-                proxy_pass https://${{ ndelius_proxy_pass }}/;
+                proxy_redirect https://{{ ndh_proxy_host }}:443/ https://{{ ndh_proxy_host }}/;
+                proxy_pass https://{{ ndelius_proxy_pass }}/;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
     }

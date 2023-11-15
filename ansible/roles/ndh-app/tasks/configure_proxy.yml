@@ -21,7 +21,7 @@
   template:
     src: etc/nginx/nginx.conf.j2
     dest: /etc/nginx/nginx.conf
-  handlers:
+  notify:
     - test nginx config
   tags:
     - amibuild
@@ -47,17 +47,33 @@
   tags:
     - amibuild
 
-- name: Generate a self-signed certificate with a variable for the expiry
+- name: Create a CSR for the ndh_proxy_host
+  community.crypto.openssl_csr:
+    path: /etc/nginx/ssl/nginx.csr
+    privatekey_path: /etc/nginx/ssl/nginx.key
+    common_name: "{{ ndh_proxy_host }}"
+
+- name: Generate a self-signed certificate
   community.crypto.x509_certificate:
     path: /etc/nginx/ssl/nginx.crt
     privatekey_path: /etc/nginx/ssl/nginx.key
-    common_name: "{{ ndh_proxy_host }}"
+    csr_path: /etc/nginx/ssl/nginx.csr
+    provider: selfsigned
     force: yes
-    selfsigned: yes
-    key_size: 2048
-    valid_days: "{{ nginx_ssl_valid_days }}"
   tags:
     - amibuild
+
+# - name: Read certificate contents
+#   slurp:
+#     src: /etc/nginx/ssl/nginx.crt
+#   register: cert_contents
+
+# - name: Put the certificate into an SSM parameter
+#   ansible.builtin.shell: |
+#     PATH=$PATH:/usr/local/bin
+#     aws ssm put-parameter --name /ndh/{{ ndh_proxy_host }}/nginx.crt --value "{{ (cert_contents.content | b64decode) }}" --type SecureString --overwrite
+#   tags:
+#     - amibuild
 
 - name: add ndh_proxy_host to /etc/hosts for loopback
   lineinfile:
