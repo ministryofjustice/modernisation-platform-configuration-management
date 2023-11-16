@@ -3,7 +3,7 @@
   ansible.builtin.yum_repository:
     name: nginx
     description: nginx repo
-    baseurl: https://nginx.org/packages/rhel/7/$basearch/
+    baseurl: https://nginx.org/packages/rhel/{{ ansible_distribution_major_version }}/$basearch/
     gpgcheck: no
     enabled: yes
   tags:
