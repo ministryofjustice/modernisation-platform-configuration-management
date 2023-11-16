@@ -24,7 +24,7 @@ weblogic_admin_username: weblogic
 weblogic_db_username: oms_owner
 weblogic_db_tagsar_username: tagsar
 db_config: "{{ db_configs[weblogic_db_name] }}"
-rms_ssm_parameter: "/oracle/weblogic/{{ nomis_environment }}/rms"
+rms_secret_path: "/oracle/weblogic/{{ nomis_environment }}/rms"
 
 weblogic_additional_form_servers:
   - { name: WLS_FORMS1A, port: 9011, properties_src: WLS_FORMS1X }
@@ -41,13 +41,18 @@ weblogic_other_form_servers:
 
 weblogic_all_form_servers: "{{ weblogic_other_form_servers + weblogic_additional_form_servers }}"
 
-weblogic_ssm_passwords:
+use_ssm_params: false
+weblogic_secretsmanager_passwords:
   weblogic:
     parameter: "/oracle/weblogic/{{ nomis_environment }}/passwords"
+    secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
       - weblogic: auto
   db:
     parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - tagsar:
       - oms_owner:
+
+weblogic_ssm_passwords: "{{ weblogic_secretsmanager_passwords }}"

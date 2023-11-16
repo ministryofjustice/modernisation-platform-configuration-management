@@ -1,16 +1,38 @@
 ---
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ weblogic_ssm_passwords }}"
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ weblogic_secretsmanager_passwords }}"
 
-- name: Get SSM parameters
-  set_fact:
-    weblogic_admin_password: "{{ ssm_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
-    weblogic_db_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_username] }}"
-    weblogic_db_tagsar_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_tagsar_username] }}"
-    weblogic_rms: "{{ lookup('aws_ssm', rms_ssm_parameter , region='eu-west-2') }}"
+    - name: secretsmanager passwords
+      set_fact:
+        weblogic_admin_password: "{{ secretsmanager_passwords_dict['weblogic'].passwords['weblogic_admin_username'] }}"
+        weblogic_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[weblogic_db_username] }}"
+        weblogic_db_tagsar_password: "{{ secretsmanager_passwords_dict['db'].passwords[weblogic_db_tagsar_username] }}"
+        weblogic_rms: "{{ lookup('amazon.aws.aws_secret', rms_secret_path, region='eu-west-2') }}" # should retrieve all secrets in the same way
+
+  when: not use_ssm_params
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ weblogic_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        weblogic_admin_password: "{{ ssm_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
+        weblogic_db_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_username] }}"
+        weblogic_db_tagsar_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_tagsar_username] }}"
+        weblogic_rms: "{{ lookup('aws_ssm', rms_secret_path , region='eu-west-2') }}" # should retrieve all secrets in the same way
+      when: ssm_passwords_dict is defined
+
+  when: use_ssm_params
 
 # Ensure the secrets are uploaded, e.g.
 # aws ssm put-parameter --name '/oracle/weblogic/t3/rms' --type SecureString --data-type text --value '{"hosts": "notimplemented.azure.noms.root", "key": "notimplemented"}' --profile nomis-test --overwrite
