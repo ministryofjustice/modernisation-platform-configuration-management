@@ -1,3 +1,0 @@
-Takes the value of `fixngo-connection-targets` from hosts in an environment and pings them using netcat to return a 'connected' metric. If ALL connections fail then the metric will return 1 (disconnected), if any of the connections return a 'Connected' result then the metric will return 0 (connected). This is to allow for targets that are (sometimes) a bit flacky and to avoid false alarms.
-
-In the modernisation-platform-environments repo you can add this tag (e.g. fixngo-connection-targets = "<ip address> <port> <ip address> <port>") and an associated alarm config to set up an alarm which will trigger if connection from that EC2 instance to the target IP address is lost.
