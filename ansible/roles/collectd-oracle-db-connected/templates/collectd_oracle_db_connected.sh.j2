@@ -57,7 +57,7 @@ ORAENV_ASK="NO"
 while sleep "$INTERVAL"; do
   SIDS=$(get_sids)
   if [[ "$SIDS" != "None" ]]; then
-    for SID in $(get_sids); do
+    for SID in $SIDS; do
       db_connected $SID >/dev/null 2>&1
       echo "PUTVAL $HOSTNAME/oracle_db_connected/exitcode-$SID interval=$INTERVAL N:$?"
     done
