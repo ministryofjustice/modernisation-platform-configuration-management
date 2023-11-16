@@ -1,11 +1,18 @@
 ---
 - name: Add nginx yum repo
-  yum_repository:
+  ansible.builtin.yum_repository:
     name: nginx
     description: nginx repo
     baseurl: https://nginx.org/packages/rhel/7/$basearch/
     gpgcheck: no
     enabled: yes
+  tags:
+    - amibuild
+
+- name: Install nginx
+  ansible.builtin.package:
+    name: nginx
+    state: latest
   tags:
     - amibuild
 
@@ -18,7 +25,7 @@
     - amibuild
 
 - name: Add nginx proxy config
-  template:
+  ansible.builtin.template:
     src: etc/nginx/nginx.conf.j2
     dest: /etc/nginx/nginx.conf
   notify:
@@ -31,7 +38,7 @@
     - amibuild
 
 - name: Create ssl directory in /etc/nginx
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/ssl
     state: directory
     owner: nginx
@@ -63,20 +70,8 @@
   tags:
     - amibuild
 
-# - name: Read certificate contents
-#   slurp:
-#     src: /etc/nginx/ssl/nginx.crt
-#   register: cert_contents
-
-# - name: Put the certificate into an SSM parameter
-#   ansible.builtin.shell: |
-#     PATH=$PATH:/usr/local/bin
-#     aws ssm put-parameter --name /ndh/{{ ndh_proxy_host }}/nginx.crt --value "{{ (cert_contents.content | b64decode) }}" --type SecureString --overwrite
-#   tags:
-#     - amibuild
-
 - name: add ndh_proxy_host to /etc/hosts for loopback
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: '^(127\.0\.0\.1.*)$'
     line: '\1 {{ ndh_proxy_host }}'
