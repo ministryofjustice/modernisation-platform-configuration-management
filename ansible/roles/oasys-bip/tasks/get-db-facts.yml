@@ -1,0 +1,28 @@
+---
+- name: Get secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ bip_db_secretsmanager_secrets }}"
+
+- name: Set secret facts
+  set_fact:
+    bipdb_sys_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['sys'] }}"
+    bipdb_system_password: "{{ secretsmanager_passwords_dict['bipdb'].passwords['system'] }}"
+
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ bip_db_name }}  variable is defined in db_configs fact"
+  when: db_configs[bip_db_name] is not defined
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - bipdb_sys_password|length > 0
+    - bipdb_system_password| length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)

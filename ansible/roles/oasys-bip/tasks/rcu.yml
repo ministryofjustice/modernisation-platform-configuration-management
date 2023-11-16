@@ -1,0 +1,51 @@
+---
+- name: Create stage directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - "{{ stage }}"
+    - "{{ wl_home }}/bi_rcu"
+
+- name: Get RCU install software from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "oasys-bip/u01/software/rcu/rcuHome.zip"
+    dest: "{{ stage }}/rcuHome.zip"
+    mode: get
+    overwrite: latest
+
+- name: Extract archives into target directory
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "{{stage }}/rcuHome.zip"
+    dest: "{{ wl_home }}/bi_rcu"
+    remote_src: true
+    keep_newer: true
+
+- name: Copy weblogic install config
+  ansible.builtin.template:
+    src: "bip_password.tmp.j2"
+    dest: "{{stage }}/obiee_rcu_paramfile.txt"
+    owner: oracle
+    group: oinstall
+
+- name: Create BIP repository
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . ~/.bash_profile
+      $WL_HOME//bi_rcu/bin/rcu -silent -createRepository  \
+      -connectString  {{ bip_db_server }}:1521/{{ bip_db_name }} \
+      -dbUser SYS -dbRole SYSDBA -schemaPrefix OAS \
+      -component BIPLATFORM -component MDS -f < /u01/stage/obiee_rcu_paramfile.txt
+    }
+    main 2>&1 | logger -p local3.info -t ansible-bip-repository
+  async: 86400
+  poll: 60
+  when: not ansible_check_mode

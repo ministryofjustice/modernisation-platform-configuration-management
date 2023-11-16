@@ -1,0 +1,39 @@
+---
+- name: Install the latest version of required packages
+  ansible.builtin.package:
+    name:
+      - bind-utils
+      - binutils
+      - compat-libcap1
+      # - compat-libstdc++-33
+      # - compat-libstdc++-33.i686
+      - dos2unix
+      - gcc
+      - gcc-c++
+      - glibc
+      - glibc-devel
+      - glibc.i686
+      - ksh
+      - libaio-devel
+      - libgcc
+      - libstdc++
+      - libstdc++-devel
+      - libstdc++.i686
+      - libXmu
+      - libXp.i686
+      - libXt.i686
+      - libXtst.i686
+      - make
+      - nfs-utils
+      - openssh-clients
+      - pam
+      - psmisc
+      - rng-tools
+      - smartmontools
+      - sysstat
+      - util-linux-ng
+      - xorg-x11-apps
+      - xorg-x11-utils
+      - xorg-x11-xauth
+      - expect
+    state: latest

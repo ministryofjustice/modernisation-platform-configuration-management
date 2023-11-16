@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+   Use this move plan to change the endpoint configuration for the
+   production environment.
+
+   Move Plan Modification TIPS:
+   1> DO NOT MAKE AN ADDITION TO THE MOVE PLAN. ONLY EDIT IT.
+   2> Every "configProperty" has an "itemMetadata" associated with it.
+   3> Element "itemMetadata" defines the type of value of the "configProperty".
+   4> Do not Edit "configProperty" of the type "READ_ONLY". This may lead to
+      an error during the T2P tool execution.
+   5> The value of the configProperty of the "ItemMetadata" type "password" must be
+      the absolute location of a file containing the password
+      for the property.
+      It is recommended to restrict access to this file using OS permissions,
+      ensuring that the user running the T2P process has read permission on it.
+--><movePlan>
+    <movableComponent>
+        <componentType>NodeManager</componentType>
+        <componentName>nodemanager</componentName>
+        <version>11.1.1.9.0</version>
+        <id>CLONE20231010121257628</id>
+        <moveDescriptor>
+            <configGroup>
+                <type>NODEMANAGER_PROPERTIES</type>
+                <configProperty>
+                    <name>Listen Address</name>
+                    <value>{{ weblogic_domain_hostname }}</value>
+                    <itemMetadata>
+                        <dataType>STRING</dataType>
+                        <scope>READ_WRITE</scope>
+                    </itemMetadata>
+                </configProperty>
+                <configProperty>
+                    <name>Listen Port</name>
+                    <value>9556</value>
+                    <itemMetadata>
+                        <dataType>INTEGER</dataType>
+                        <scope>READ_WRITE</scope>
+                    </itemMetadata>
+                </configProperty>
+            </configGroup>
+            <configGroup>
+                <type>DOMAINS</type>
+                <configProperty id="Domain1">
+                    <configProperty>
+                        <name>Domain Name</name>
+                        <value>bifoundation_domain</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Domain Location</name>
+                        <value>/u01/app/oracle/Middleware/user_projects/domains/bifoundation_domain</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>AdminServer Listen Address</name>
+                        <value>{{ weblogic_domain_hostname }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>AdminServer Listen Port</name>
+                        <value>7001</value>
+                        <itemMetadata>
+                            <dataType>INTEGER</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>AdminServer User Name</name>
+                        <value>weblogic</value> 
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>AdminServer Password File</name>
+                        <value>{{ weblogic_password_file }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Custom Trust Keystore File</name>
+                        <value/>
+                        <Description>Provide the value of Custom Trust KeyStore File of the domain, if value of the config property "AdminServer Listen Port" mentioned above represents SSL port of the server.</Description>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Node Manager User Name</name>
+                        <value>weblogic</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                    <configProperty>
+                        <name>Node Manager Password File</name>
+                        <value>{{ weblogic_password_file }}</value>
+                        <itemMetadata>
+                            <dataType>STRING</dataType>
+                            <password>true</password>
+                            <scope>READ_WRITE</scope>
+                        </itemMetadata>
+                    </configProperty>
+                </configProperty>
+            </configGroup>
+        </moveDescriptor>
+    </movableComponent>
+</movePlan>

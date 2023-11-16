@@ -1,0 +1,41 @@
+---
+- name: Get secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ bip_weblogic_secretsmanager_secrets }}"
+
+- name: Set secret facts
+  set_fact:
+    weblogic_admin_password: "{{ secretsmanager_passwords_dict['bipweb'].passwords['weblogic'] }}"
+    bipdb_sys_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['sys'] }}"
+    bipdb_biplatform_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['biplatform'] }}"
+    bipdb_mds_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['mds'] }}"
+
+- debug:
+    msg: "Configuring BIP DB {{ bip_db_name }} on {{ bip_db_server }}"
+
+- debug:
+    msg: "Configuring OASys DB {{ oasys_db_name }} on {{ oasys_db_server }}"
+
+- debug:
+    msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"
+
+- name: Check all SSM parameters and tags are set
+  set_fact:
+    weblogic_all_variables_set: true
+  when:
+    - weblogic_admin_username|length > 0
+    - weblogic_admin_password|length > 0
+    - bip_db_name|length > 0
+    - bip_db_server|length > 0
+    - oasys_db_name|length > 0
+    - oasys_db_server|length > 0
+    - bipdb_sys_password|length> 0
+    - bipdb_biplatform_password|length> 0
+    - bipdb_mds_password|length> 0
+
+- name: Fail if missing SSM parameters or tags
+  fail:
+    msg: Ensure all required SSM parameters and tags are set
+  when: not weblogic_all_variables_set|default(false)

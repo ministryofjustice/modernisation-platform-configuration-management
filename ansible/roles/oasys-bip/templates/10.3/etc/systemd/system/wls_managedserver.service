@@ -1,0 +1,13 @@
+[Unit]
+Description=WebLogic managed server Service
+
+[Service]
+Type=simple
+After=wls_adminserver
+TimeoutStartSec=180
+ExecStart={{ scripts_dir }}/startManagedWebLogic.sh
+ExecStartPost={{ scripts_dir }}/waitManagedWebLogic.sh
+ExecStop={{ scripts_dir }}/stopManagedWebLogic.sh
+
+[Install]
+WantedBy=multi-user.target

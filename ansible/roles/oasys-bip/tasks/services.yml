@@ -1,0 +1,71 @@
+---
+- name: Stop Weblogic and nodemanager
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . {{ wl_home }}/server/bin/setWLSEnv.sh
+      {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh
+      kill -9 `ps -ef | grep weblogic.NodeManager|grep -v grep | awk  '{ print $2 " " $3 }'`
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-bip
+  when: not ansible_check_mode
+
+- name: Create  scripts install directory
+  ansible.builtin.file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+
+- name: Copy nodemanager systemd helper scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+    owner: oracle
+    group: oinstall
+  loop:
+    - "{{ scripts_dir }}/startNodeManager.sh"
+    - "{{ scripts_dir }}/waitNodeManager.sh"
+    - "{{ scripts_dir }}/stopNodeManager.sh"
+    - "{{ scripts_dir }}/startWebLogic.sh"
+    - "{{ scripts_dir }}/waitWebLogic.sh"
+    - "{{ scripts_dir }}/stopWebLogic.sh"
+    - "{{ scripts_dir }}/startManagedWebLogic.sh"
+    - "{{ scripts_dir }}/waitManagedWebLogic.sh"
+    - "{{ scripts_dir }}/stopManagedWebLogic.sh"
+    - "{{ scripts_dir }}/wait_for_entry_in_log.sh"
+    - "{{ scripts_dir }}/set_ms_log_rotation.py"
+
+- name: Copy weblogic systemd service
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+  loop:
+    - /etc/systemd/system/wls_nodemanager.service
+    - /etc/systemd/system/wls_adminserver.service
+    - /etc/systemd/system/wls_managedserver.service
+
+- name: Run systemd reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable wls_nodemanager service
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+    - wls_managedserver
+
+- name: Start weblogic services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+    - wls_managedserver

@@ -1,0 +1,40 @@
+#!/usr/bin/python
+import os
+import sys
+import inspect
+
+
+def _getPathToThisFile():
+    return os.path.dirname(inspect.getabsfile(inspect.currentframe()))
+
+
+sys.path.append(_getPathToThisFile())
+
+WLSAdminUrl = sys.argv[1]
+WLSAdminUN = sys.argv[2]
+psw = raw_input('Please enter password: ')
+WLSAdminPW = psw
+
+try:
+    connect(WLSAdminUN, WLSAdminPW, WLSAdminUrl)
+    # saved_stdout = sys.stdout
+    # sys.stdout = open('_stdout.log', 'w')
+
+    try:
+        grantPermission(codeBaseURL="file:${oracle.deployed.app.dir}/bipublisher_11.1.1${oracle.deployed.app.ext}", permTarget="context=APPLICATION,name=obi",
+                        permClass="oracle.security.jps.service.policystore.PolicyStoreAccessPermission", permActions="containsAppRole")
+
+    except:
+        print >> sys.stdout, "Entry for BI Publisher already exist."
+    else:
+        print >> sys.stdout, "Entry for BI Publisher has been added successfully."
+
+    sys.stdout.close()
+    # os.remove('_stdout.log')
+    # sys.stdout = saved_stdout
+    disconnect()
+    # explicitly exit without errors. patching system requires this.
+    exit()
+except:
+    dumpStack()
+    raise
