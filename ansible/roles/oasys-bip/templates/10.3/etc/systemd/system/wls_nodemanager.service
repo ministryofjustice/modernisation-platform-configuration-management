@@ -1,0 +1,12 @@
+[Unit]
+Description=WebLogic NodeManager Service
+
+[Service]
+Type=simple
+TimeoutStartSec=60
+ExecStart={{ scripts_dir }}/startNodeManager.sh
+ExecStartPost={{ scripts_dir }}/waitNodeManager.sh
+ExecStop={{ scripts_dir }}/stopNodeManager.sh
+
+[Install]
+WantedBy=multi-user.target

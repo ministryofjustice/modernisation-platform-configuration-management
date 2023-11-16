@@ -41,7 +41,7 @@
         path: "{{ item }}"
         owner: oracle
         group: oinstall
-        mode: "0700"
+        mode: '0700'
       loop:
         - "{{ stage }}/pasteBinary.sh"
         - "{{ stage }}/cloningclient.jar"
@@ -218,7 +218,7 @@
 
     - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
       ansible.builtin.pause:
-        minutes: 15
+        minutes: 10
 
     - name: Oracle BIP NodeManager config cloning
       become_user: oracle
@@ -247,6 +247,10 @@
         mode: "0600"
         remote_src: true
 
+    - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+      ansible.builtin.pause:
+        minutes: 10
+
     - name: Enable Standalone BI Publisher to Add Privileges for Application Roles
       become_user: oracle
       ansible.builtin.shell: |
@@ -257,6 +261,19 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-bip
       when: not ansible_check_mode
+
+    - name: Stop Weblogic and nodemanager 
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+            . {{ wl_home }}/server/bin/setWLSEnv.sh
+            {{ domain_home }}/{{ domain_name }}/bin/stoptWebLogic.sh
+            kill -9 `ps -ef | grep weblogic.NodeManager|grep -v grep | awk  '{ print $2 " " $3 }'`
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-bip
+      when: not ansible_check_mode
+
 
   # block
   when: not BIP_software_installed.stat.exists

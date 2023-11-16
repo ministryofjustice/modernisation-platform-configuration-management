@@ -47,6 +47,29 @@
         - amibuild
         - ec2provision
 
+    - import_tasks: services.yml
+      tags:
+        - amibuild
+        - ec2provision
+
+    - include_tasks:
+        file: setup-log-rotate.yml
+        apply:
+          tags:
+            - ec2provision
+            - weblogic_setup_log_rotate
+      tags:
+        - ec2provision
+        - weblogic_setup_log_rotate
+      loop_control:
+        loop_var: weblogic_managed_app_list
+      loop: "{{ weblogic_servers }}"
+
+    - import_tasks: cleanup.yml
+      tags:
+        - amibuild
+        - ec2provision
+
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "7"
 
 - import_tasks: get-db-facts.yml

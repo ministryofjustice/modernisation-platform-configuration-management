@@ -1,0 +1,43 @@
+---
+- name: Set weblogic managed app facts
+  set_fact:
+    weblogic_managed_app: "{{ weblogic_managed_app_list.name }}"
+
+- name: Start services if not already running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_nodemanager
+    - wls_adminserver
+    - wls_managedserver
+
+- block:
+    - name: Copy log setup managed app configuration files
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ stage }}/{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ weblogic_managed_app }}.properties"
+
+    - name: Configure log setup
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "# configure log setup app {{ weblogic_managed_app }}"
+          java weblogic.WLST {{ scripts_dir }}/set_ms_log_rotation.py -p {{ stage }}/{{ weblogic_managed_app }}.properties
+        }
+        main 2>&1 | logger -s -p local3.info -t ansible-xtag-weblogic
+
+  always:
+    - name: Remove temporary install files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ stage }}/{{ weblogic_managed_app }}.properties"
