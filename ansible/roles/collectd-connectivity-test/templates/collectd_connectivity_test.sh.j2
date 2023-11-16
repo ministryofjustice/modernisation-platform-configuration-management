@@ -1,0 +1,28 @@
+#!/bin/bash
+# Managed by collectd-connectivity-test ansible role
+# If manually editing, just kill script and collectd will respawn
+# e.g. pkill -u {{ collectd_script_user }} -f {{ collectd_script_path }}/{{ collectd_script_name }}.sh
+
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
+CONNECTIVITY_TIMEOUT={{ connectivity_test_connect_timeout }}
+
+get_targets() {
+  aws ec2 describe-tags --filters "Name=resource-id,Values={{ ansible_ec2_instance_id }}" "Name=key,Values=connectivity-tests" --query Tags[0].Value --output=text
+}
+
+connectivity_test() {
+  ip=$(echo $1 | cut -d: -f1)
+  port=$(echo $1 | cut -d: -f2)
+  ncat -vzw "$CONNECTIVITY_TIMEOUT" $ip $port
+}
+
+while sleep "$INTERVAL"; do
+  targets=$(get_targets)
+  if [[ "$targets" != "None" ]]; then
+    for target in $targets; do
+      connectivity_test $target >/dev/null 2>&1
+      echo "PUTVAL $HOSTNAME/connectivity_test/exitcode-$target interval=$INTERVAL N:$?"
+    done
+  fi
+done

@@ -1,6 +1,0 @@
----
-- import_tasks: "fixngo-connected-metric.yml"
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ec2.tags['fixngo-connection-targets'] is defined and ansible_facts['distribution'] == "RedHat"
