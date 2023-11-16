@@ -41,7 +41,7 @@
         path: "{{ item }}"
         owner: oracle
         group: oinstall
-        mode: '0700'
+        mode: "0700"
       loop:
         - "{{ stage }}/pasteBinary.sh"
         - "{{ stage }}/cloningclient.jar"
@@ -262,7 +262,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-bip
       when: not ansible_check_mode
 
-    - name: Stop Weblogic and nodemanager 
+    - name: Stop Weblogic and nodemanager
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -273,7 +273,6 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-bip
       when: not ansible_check_mode
-
 
   # block
   when: not BIP_software_installed.stat.exists

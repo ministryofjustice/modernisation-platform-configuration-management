@@ -1,5 +1,4 @@
 ---
-
 - name: Create  scripts install directory
   ansible.builtin.file:
     path: "{{ scripts_dir }}"
@@ -50,7 +49,7 @@
     - wls_adminserver
     - wls_managedserver
 
-- name: Start weblogic services 
+- name: Start weblogic services
   ansible.builtin.service:
     name: "{{ item }}"
     state: started
