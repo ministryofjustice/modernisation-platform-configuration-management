@@ -1,4 +1,17 @@
 ---
+
+- name: Stop Weblogic and nodemanager
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      . {{ wl_home }}/server/bin/setWLSEnv.sh
+      {{ domain_home }}/{{ domain_name }}/bin/stopWebLogic.sh
+      kill -9 `ps -ef | grep weblogic.NodeManager|grep -v grep | awk  '{ print $2 " " $3 }'`
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-bip
+  when: not ansible_check_mode
+
 - name: Create  scripts install directory
   ansible.builtin.file:
     path: "{{ scripts_dir }}"
