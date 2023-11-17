@@ -5,16 +5,24 @@ export PATH=$PATH:/usr/local/bin
 target=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
 username=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
 password=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
+
+if [[ -z $target || $target == "null" || $target == "None" ||
+      -z $username || $username == "null" || $username == "None" ||
+      -z $password || $password == "null" || $password == "None" ]]; then
+  echo "Could not retrieve config from {{ misload_ssm_parameter }}"
+  echo "misload_status 1" > /opt/textfile_monitoring/misload_status.prom
+  exit 1
+fi
+
+echo "misload_running 0" > /opt/textfile_monitoring/misload_triggered.prom
+
 misload_batch_file_path="{{ misload_batch_file_path }}"
 
 cd {{ oracle_admin_script_dir }}
 export ORACLE_SID={{ misload_dbname }}
 export ORAENV_ASK=NO
 . oraenv
-utc_time=$(date -u +"%Y-%m-%d %H:%M:%S")
-echo "misload_triggered $utc_time" > /opt/textfile_monitoring/misload_triggered.prom
 
 {{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u "$username" -p "$password" -t "$target" -b "$misload_batch_file_path"
-
-# echo "misload_running 0" > /opt/textfile_monitoring/misload_running.prom
-# echo "misload_start_time " `date '+%s'` > /opt/textfile_monitoring/misload_start_time.prom
+echo "misload_status $?" > /opt/textfile_monitoring/misload_status.prom
+rm -f /opt/textfile_monitoring/misload_triggered.prom
