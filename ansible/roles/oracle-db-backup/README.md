@@ -1,6 +1,8 @@
 # Overview
 
 Role for configuring scheduled oracle DB backups, or taking adhoc backups
+Status of backups is stored in /opt/textfile_monitoring for monitoring, e.g.
+see collectd-textfile-monitoring role.
 
 # Pre-requisite for scheduled backup  
 

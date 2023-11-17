@@ -18,9 +18,11 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 collectd_monitored_services_servertype:
-  - metric_name: chronyd
+  - metric_name: service_status_os
+    metric_dimension: chronyd
     shell_cmd: "service chronyd status"
-  - metric_name: weblogichealthcheck
+  - metric_name: service_status_app
+    metric_dimension: weblogic-healthcheck
     shell_cmd: "service weblogic-healthcheck status"
 
 use_ssm_params: true

@@ -10,7 +10,8 @@ server_type_roles_list:
   - time
 
 collectd_monitored_services_servertype:
-  - metric_name: chronyd
+  - metric_name: service_status_os
+    metric_dimension: chronyd
     shell_cmd: "service chronyd status"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

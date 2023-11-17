@@ -8,11 +8,12 @@ INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
 
 while sleep "$INTERVAL"; do
   now=$(date +%s)
-  for file in {{ collectd_textfile_monitoring_paths }}; do
+  for file in /opt/textfile_monitoring/*.prom /opt/textfile_monitoring/*.metric /opt/textfile_monitoring/*/*.prom /opt/textfile_monitoring/*/*.metric; do
 {% raw %}
     if [[ -e "$file" ]]; then
       IFS=$'\n'
-      metrics=($(grep -E "^[[:alnum:]_]+[[:space:]]+[[:digit:]]+" "$file"))
+      metrics=($(grep -E "^[[:alnum:]_-:]+[[:space:]]+[[:digit:]]+" "$file"))
+      metric_name=$(dirname $file | sed 's|^/opt/||g' | sed 's|/|_|g')
       unset IFS
       file_last_modified=$(date -r "$file" +%s)
       secs_since_last_modified=$((now - file_last_modified))
@@ -20,8 +21,8 @@ while sleep "$INTERVAL"; do
       num_metrics=${#metrics[@]}
       for ((i=0; i<num_metrics; i++)); do
         metric=(${metrics[i]})
-        echo "PUTVAL $HOSTNAME/textfile_monitoring/gauge-${metric[0]} interval=$INTERVAL N:${metric[1]}"
-        echo "PUTVAL $HOSTNAME/textfile_monitoring/duration-${metric[0]} interval=$INTERVAL N:${secs_since_last_modified}"
+        echo "PUTVAL $HOSTNAME/${metric_name}/gauge-${metric[0]} interval=$INTERVAL N:${metric[1]}"
+        echo "PUTVAL $HOSTNAME/${metric_name}/duration-${metric[0]} interval=$INTERVAL N:${secs_since_last_modified}"
       done
     fi
 {% endraw %}

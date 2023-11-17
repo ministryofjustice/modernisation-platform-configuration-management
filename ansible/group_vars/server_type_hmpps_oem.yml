@@ -59,11 +59,14 @@ server_type_roles_list:
   - collectd-service-metrics
 
 collectd_monitored_services_servertype:
-  - metric_name: chronyd
+  - metric_name: service_status_os
+    metric_dimension: chronyd
     shell_cmd: "systemctl is-active chronyd"
-  - metric_name: oracleohasd
+  - metric_name: service_status_app
+    metric_dimension: oracle-ohasd
     shell_cmd: "systemctl is-active oracle-ohasd"
-  - metric_name: oracleasm
+  - metric_name: service_status_app
+    metric_dimension: oracleasm
     shell_cmd: "systemctl is-active oracleasm"
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
