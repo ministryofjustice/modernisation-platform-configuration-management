@@ -8,7 +8,7 @@ password=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Pa
 misload_batch_file_path="{{ misload_batch_file_path }}"
 
 cd {{ oracle_admin_script_dir }}
-export ORACLE_SID=T1MIS
+export ORACLE_SID={{ misload_dbname }}
 export ORAENV_ASK=NO
 . oraenv
 utc_time=$(date -u +"%Y-%m-%d %H:%M:%S")
