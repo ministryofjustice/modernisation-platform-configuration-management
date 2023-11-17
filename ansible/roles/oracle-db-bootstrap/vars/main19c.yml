@@ -7,7 +7,8 @@ oracle_grid_oracle_base: "{{ oracle_root }}/app/grid"
 oracle_grid_oracle_home: "{{ oracle_database_oracle_base }}/product/19c/gridhome_1"
 oracle_patch_installer_directory: "{{ oracle_stage }}/patches"
 oracle_dbca_template_file: "database19c"
-database_sid: "{{ database_primary_sid }}"
+database_sid: "{{ database_primary_sid | default(database_standby_sid) }}"
+database_unique_name: "{{ database_primary_unique | default(database_standby_unique) }}"
 
 # Moved from main.yml
 service_user_name: "oracle"
@@ -19,7 +20,7 @@ bash_profile: |
   alias cp='cp -iv'
 
   export ORACLE_HOSTNAME={{ ansible_fqdn }}
-  export ORACLE_UNQNAME={{ database_primary_unique }}
+  export ORACLE_UNQNAME={{ database_unique_name }}
   export ORACLE_BASE={{ oracle_database_oracle_base }}
   export ORACLE_HOME={{ oracle_database_oracle_home }}
   export ORACLE_SID={{ database_sid }}
