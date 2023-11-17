@@ -47,7 +47,7 @@ Metrics collected by the Cloudwatch agent will appear in the 'metrics' panel und
 ```
 metric:        collectd_service_status_value  (the metric_name)
 type:          exitcode (fixed, 0 = ok, non-zero = error)
-type_instance: iName of service, e.g. amazonssmagent (the metric_dimension)
+type_instance: Name of service, e.g. amazonssmagent (the metric_dimension)
 ```
 
 Cloudwatch metrics are easily filtered by instance_id so you can see all the metrics for a particular instance.
