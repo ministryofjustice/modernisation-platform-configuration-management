@@ -21,8 +21,9 @@ roles_list:
   - packages
   - message-of-the-day
   - amazon-ssm-agent
-  #- amazon-cloudwatch-agent # currently nomis specific
   - amazon-cli
+  - ansible-script
+  - epel
   # - hugepages has issues
   - disks
   - azure-cli
@@ -31,6 +32,12 @@ roles_list:
   # - oracle-db-standby-setup # manually run on a standby
   - oracle-secure-backup
   - oracle-db-backup
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
+  - collectd-oracle-db-connected
+  - collectd-textfile-monitoring
 
 packages_yum_install:
   - zip-3.0-23.el8
