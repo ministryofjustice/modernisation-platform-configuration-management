@@ -37,7 +37,6 @@
         app_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[app_db_username] }}"
 
   when: not use_ssm_params
-  
 
 - name: Get SSM params
   block:

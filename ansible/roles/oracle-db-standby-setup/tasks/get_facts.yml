@@ -34,7 +34,6 @@
       set_fact:
         db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
   when: not use_ssm_params
-  
 
 - name: Get SSM params
   block:

@@ -13,7 +13,6 @@
         join_domain_linux_service_account_password: "{{ secretsmanager_passwords_dict['service_account'].passwords['password'] }}"
 
   when: not use_ssm_params
-  
 
 - name: Get SSM params
   block:
@@ -30,7 +29,7 @@
       when: ssm_passwords_dict is defined
 
   when: use_ssm_params
-  
+
 - name: Check secrets
   set_fact:
     all_variables_set: true

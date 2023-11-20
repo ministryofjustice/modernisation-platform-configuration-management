@@ -19,7 +19,6 @@
 #       when: secretsmanager_passwords_dict is defined
 
 #   when: not use_ssm_params
-  
 
 # - name: Get SSM params
 #   block:
@@ -40,7 +39,7 @@
 #       when: ssm_passwords_dict is defined
 
 #   when: use_ssm_params
-  
+
 - name: Get misload config
   import_role:
     name: ssm-passwords

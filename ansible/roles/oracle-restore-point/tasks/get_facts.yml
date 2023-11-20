@@ -25,7 +25,6 @@
     msg: Ensure all required SSM parameters and tags are set
   when: not db_all_variables_set |default(false)
 
-
 - name: Get secretsmanager passwords
   block:
     - name: secretsmanager passwords
@@ -39,7 +38,6 @@
         db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
       when: secretsmanager_passwords_dict is defined
   when: not use_ssm_params
-  
 
 - name: Get SSM params
   block:
@@ -54,7 +52,6 @@
         db_sys_password: "{{ ssm_passwords_dict['db'].passwords['sys'] }}"
       when: ssm_passwords_dict is defined
   when: use_ssm_params
-
 
 - name: Check password is extracted
   ansible.builtin.set_fact:
