@@ -1,13 +1,13 @@
 ---
 - name: Fail if variables not defined
   fail:
-    msg: "Please run get-ec2-facts role to collect facts, and ensure db_backup_s3_bucket_name is defined"
-  when: ansible_ec2_iam_instance_profile_role is not defined or db_backup_s3_bucket_name is not defined
+    msg: "Please run get-ec2-facts role to collect facts, and ensure osbws_config.s3_bucket_name is defined"
+  when: ansible_ec2_iam_instance_profile_role is not defined or osbws_config.s3_bucket_name is not defined
 
 - name: Configure osbws_argfile
   ansible.builtin.template:
     src: osbws_argfile
-    dest: "{{ osw_stage_dir }}/osbws_argfile"
+    dest: "{{ osw_stage_dir }}/{{ osbws_config.name }}_argfile"
     mode: 0644
     owner: oracle
     group: oinstall
@@ -16,7 +16,7 @@
 - name: Copy install script
   ansible.builtin.template:
     src: install.sh
-    dest: "{{ osw_stage_dir }}/install.sh"
+    dest: "{{ osw_stage_dir }}/{{ osbws_config.name }}_install.sh"
     mode: 0755
     owner: oracle
     group: oinstall
@@ -26,16 +26,16 @@
   become: true
   become_user: oracle
   shell: |
-    {{ osw_stage_dir }}/install.sh
+    {{ osw_stage_dir }}/{{ osbws_config.name }}_install.sh
   when: osbws_argfile.changed or osbws_install_script.changed
 
 - name: Update osbws config
   become: true
   become_user: oracle
   ansible.builtin.lineinfile:
-    path: "{{ database_home }}/dbs/osbws.ora"
+    path: "{{ database_home }}/dbs/{{ osbws_config.name }}.ora"
     regexp: "^OSB_WS_BUCKET="
-    line: "OSB_WS_BUCKET={{ db_backup_s3_bucket_name }}"
+    line: "OSB_WS_BUCKET={{ osbws_config.s3_bucket_name }}"
     create: yes
 
 - name: Set OSB_WS_CHUNK_SIZE
@@ -47,9 +47,24 @@
     line: "OSB_WS_CHUNK_SIZE={{ oracle_osbws_chunk_size }}"
   when: oracle_osbws_chunk_size is defined
 
-- name: Run test
+- name: Run sbttest
   become: true
   become_user: oracle
   shell: |
-    export OSB_WS_PFILE={{ database_home }}/dbs/osbws.ora
+    export OSB_WS_PFILE={{ database_home }}/dbs/{{ osbws_config.name }}.ora
     {{ database_home }}/bin/sbttest /tmp/foo -libname {{ database_home }}/lib/libosbws.so
+  check_mode: false
+  changed_when: false
+  when: osbws_config.run_sbttest is defined and osbws_config.run_sbttest
+
+- name: Check GetBucketLocation permission
+  shell: |
+    aws s3api get-bucket-location --bucket {{ osbws_config.s3_bucket_name }}
+  check_mode: false
+  changed_when: false
+
+- name: Check GetObject permission
+  shell: |
+    file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key blah /dev/null 2>&1 | grep "NoSuchKey")
+  check_mode: false
+  changed_when: false
