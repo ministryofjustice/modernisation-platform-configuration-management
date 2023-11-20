@@ -1,0 +1,15 @@
+set echo on
+spool {{ stage }}/add_hidden_parameter.log
+
+ALTER SYSTEM SET "_allow_insert_with_update_check"=TRUE scope=spfile;
+ALTER SYSTEM SET shared_pool_size=150M SCOPE=SPFILE;
+ALTER SYSTEM SET session_cached_cursors=100 SCOPE=SPFILE;
+ALTER SYSTEM SET processes=500 SCOPE=SPFILE;
+ALTER SYSTEM SET open_cursors=800 SCOPE=SPFILE;
+ALTER SYSTEM SET db_files=600 SCOPE=SPFILE;
+alter system set log_archive_dest_1='location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name={{ bip_db_name }}';
+shutdown immediate 
+startup
+
+spool off 
+exit

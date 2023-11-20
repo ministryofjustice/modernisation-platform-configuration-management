@@ -4,11 +4,14 @@
     name: secretsmanager-passwords
   vars:
     secretsmanager_passwords: "{{ bip_db_secretsmanager_secrets }}"
+    bip_db_server: "{{ ansible_facts.hostname }}"
 
 - name: Set secret facts
   set_fact:
     bipdb_sys_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['sys'] }}"
     bipdb_system_password: "{{ secretsmanager_passwords_dict['bipdb'].passwords['system'] }}"
+    bipdb_biplatform_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['biplatform'] }}"
+    bipdb_mds_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['mds'] }}"
 
 - name: Fail if missing parameters
   fail:
@@ -21,6 +24,8 @@
   when:
     - bipdb_sys_password|length > 0
     - bipdb_system_password| length > 0
+    - bipdb_biplatform_password|length> 0
+    - bipdb_mds_password|length> 0
 
 - name: Fail if missing parameters
   fail:

@@ -16,17 +16,18 @@
     mode: "0700"
   loop:
     - create_bip_db.sh
-    - add_hidden_parameter.sql
+    - bip_db_parameters.sql
 
 - name: Create BIP database
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
     main() {
-      echo "# create_recovery_catalog_db.sh "
+      export PATH=/usr/local/bin:$PATH
+      echo "# create_bip_db.sh "
       {{ stage }}/create_bip_db.sh {{ bip_db_name }} {{ bipdb_sys_password }} {{ bipdb_system_password }}
       . oraenv <<< {{ bip_db_name }}
-      sqlplus / as sysdba @add_hidden_parameter.sql
+      sqlplus / as sysdba @{{ stage }}/bip_db_parameters.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-db
   async: 86400
