@@ -1,14 +1,11 @@
 ---
 - name: Create stage directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ stage }}/bi_rcu"
     state: directory
     owner: oracle
     group: oinstall
     mode: "0755"
-  loop:
-    - "{{ stage }}"
-    - "{{ wl_home }}/bi_rcu"
 
 - name: Get RCU install software from S3 bucket
   amazon.aws.aws_s3:
@@ -23,14 +20,14 @@
     owner: oracle
     group: oinstall
     src: "{{stage }}/rcuHome.zip"
-    dest: "{{ wl_home }}/bi_rcu"
+    dest: "{{ stage }}/bi_rcu"
     remote_src: true
     keep_newer: true
 
-- name: Copy weblogic install config
+- name: Copy config password file
   ansible.builtin.template:
     src: "bip_password.tmp.j2"
-    dest: "{{stage }}/obiee_rcu_paramfile.txt"
+    dest: "{{ stage }}/obiee_rcu_paramfile.txt"
     owner: oracle
     group: oinstall
 
@@ -40,7 +37,7 @@
     set -eo pipefail
     main() {
       . ~/.bash_profile
-      $WL_HOME//bi_rcu/bin/rcu -silent -createRepository  \
+      {{ stage }}//bi_rcu/bin/rcu -silent -createRepository  \
       -connectString  {{ bip_db_server }}:1521/{{ bip_db_name }} \
       -dbUser SYS -dbRole SYSDBA -schemaPrefix OAS \
       -component BIPLATFORM -component MDS -f < /u01/stage/obiee_rcu_paramfile.txt
