@@ -5,7 +5,15 @@
     - amibuild
     - ec2provision
 
-- import_tasks: install-software.yml
+- include_tasks:
+    file: install-software.yml
+    apply:
+      tags:
+        - ec2provision
+        - osw-install-software
   tags:
-    - osw-install-software
     - ec2provision
+    - osw-install-software
+  loop_control:
+    loop_var: osbws_config
+  loop: "{{ osbws_configs + osbws_additional_configs }}"
