@@ -24,3 +24,45 @@
   fail:
     msg: Ensure all required SSM parameters and tags are set
   when: not db_all_variables_set |default(false)
+
+
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+
+    - name: secretsmanager passwords
+      set_fact:
+        db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
+      when: secretsmanager_passwords_dict is defined
+  when: not use_ssm_params
+  
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ db_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        db_sys_password: "{{ ssm_passwords_dict['db'].passwords['sys'] }}"
+      when: ssm_passwords_dict is defined
+  when: use_ssm_params
+
+
+- name: Check password is extracted
+  ansible.builtin.set_fact:
+    db_sys_password_set: true
+  when:
+    - db_sys_password |length > 0
+
+- name: Fail if missing secrets
+  ansible.builtin.fail:
+    msg: Ensure SYS password exists for {{ db_name }} database
+  when: not  db_sys_password_set |default(false)

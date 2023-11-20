@@ -2,8 +2,12 @@
 stage: /u02/stage
 oracle_install_user: oracle
 oracle_install_group: oinstall
-db_ssm_passwords:
+use_ssm_params: false
+db_secretsmanager_passwords:
   db:
     parameter: "/oracle/database/{{ db_name }}/passwords"
+    secret: "/oracle/database/{{ db_name }}/passwords"
     users:
       - sys:
+
+db_ssm_passwords: "{{ db_secretsmanager_passwords }}"

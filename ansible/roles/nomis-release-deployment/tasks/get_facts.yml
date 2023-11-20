@@ -24,17 +24,37 @@
   # block
   when: db_server_file.stat.exists
 
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ app_ssm_passwords }}"
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ app_secretsmanager_passwords }}"
 
-- name: Get SSM parameters
-  set_fact:
-    app_db_password: "{{ ssm_passwords_dict['db'].passwords[app_db_username] }}"
+    - name: secretsmanager passwords
+      set_fact:
+        app_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[app_db_username] }}"
 
-- name: Check all SSM parameters and tags are set
+  when: not use_ssm_params
+  
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ app_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        app_db_password: "{{ ssm_passwords_dict['db'].passwords[app_db_username] }}"
+      when: ssm_passwords_dict is defined
+
+  when: use_ssm_params
+
+- name: Check all secrets and tags are set
   set_fact:
     app_all_variables_set: true
   when:
