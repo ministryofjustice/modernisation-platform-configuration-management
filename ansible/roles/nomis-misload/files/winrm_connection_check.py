@@ -12,8 +12,10 @@ def check_winrm_connection(target, username, password, port):
         else:
             print("Unable to establish WinRM connection. Status code: {}".format(
                 r.status_code))
+            exit(r.status_code)
     except Exception as e:
         print("An error occurred while trying to establish WinRM connection:", str(e))
+        exit(1)
 
 
 def main():
