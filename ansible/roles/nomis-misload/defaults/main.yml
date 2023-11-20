@@ -11,11 +11,15 @@ misload_monitoring_cron:
     job: "su oracle -c '/home/oracle/admin/misload_scripts/{{ misload_monitoring_script }}' | logger -p local3.info -t misload"
 
 misload_dbname: "{{ ec2.tags['misload-dbname'] }}"
-misload_ssm_parameter: "/oracle/database/{{ misload_dbname }}/misload-config"
-misload_ssm_passwords:
+misload_secret_parameter: "/oracle/database/{{ misload_dbname }}/misload-config"
+use_ssm_params: false
+misload_secretsmanager_passwords:
   misload:
-    parameter: "{{ misload_ssm_parameter }}"
+    parameter: "{{ misload_secret_parameter }}"
+    secret: "{{ misload_secret_parameter }}"
     users:
       - target:
       - username:
       - password:
+
+misload_ssm_passwords: "{{ misload_secretsmanager_passwords }}"

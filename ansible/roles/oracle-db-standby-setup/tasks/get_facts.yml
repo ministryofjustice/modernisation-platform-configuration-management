@@ -22,15 +22,32 @@
     msg: Cannot have both storage_account_name and s3_bucket defined in the primary db_config
   when: db_primary.storage_account_name is defined and db_primary.s3_bucket is defined
 
-- name: Get DB passwords
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ db_ssm_passwords }}"
+- name: Get secretsmanager passwords
+  block:
+    - name: secretsmanager passwords
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
 
-- name: Set sys password fact
-  set_fact:
-    db_sys_password: "{{ ssm_passwords_dict['db'].passwords['sys'] }}"
+    - name: secretsmanager passwords
+      set_fact:
+        db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
+  when: not use_ssm_params
+
+- name: Get SSM params
+  block:
+    - name: Get SSM parameters
+      import_role:
+        name: ssm-passwords
+      vars:
+        ssm_passwords: "{{ db_ssm_passwords }}"
+
+    - name: Get SSM parameters
+      set_fact:
+        db_sys_password: "{{ ssm_passwords_dict['db'].passwords['sys'] }}"
+      when: ssm_passwords_dict is defined
+  when: use_ssm_params
 
 - block:
     - name: Get Egress Ip

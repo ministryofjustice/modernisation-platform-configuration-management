@@ -2,14 +2,14 @@
 
 export PATH=$PATH:/usr/local/bin
 
-target=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
-username=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
-password=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
+target=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
+username=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
+password=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
 
 if [[ -z $target || $target == "null" || $target == "None" ||
       -z $username || $username == "null" || $username == "None" ||
       -z $password || $password == "null" || $password == "None" ]]; then
-  echo "Could not retrieve config from {{ misload_ssm_parameter }}"
+  echo "Could not retrieve config from {{ misload_secret_parameter }}"
   echo "misload_status 1" > /opt/textfile_monitoring/misload_status.prom
   exit 1
 fi

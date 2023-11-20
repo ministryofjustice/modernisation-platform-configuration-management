@@ -2,8 +2,8 @@
 
 export PATH=$PATH:/usr/local/bin
 
-target=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
-username=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
-password=$(aws ssm get-parameter --name "{{ misload_ssm_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
+target=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .target)
+username=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .username)
+password=$(aws ssm get-parameter --name "{{ misload_secret_parameter }}" --query Parameter.Value --with-decryption --output text | jq -r .password)
 
 {{ ansible_python_interpreter }} /usr/local/share/winrm_connection_check.py -u "$username" -p "$password" -t "$target"
