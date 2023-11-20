@@ -24,7 +24,7 @@
     remote_src: true
     keep_newer: true
 
-- name: Copy config password file 
+- name: Copy config password file
   ansible.builtin.template:
     src: "bip_password.tmp.j2"
     dest: "{{ stage }}/obiee_rcu_paramfile.txt"
