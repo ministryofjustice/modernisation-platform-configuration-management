@@ -51,8 +51,16 @@ server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
+  - ansible-script
+  - epel
   - oracle-19c
   - tcp-keepalive
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
+  - collectd-oracle-db-connected
+  - collectd-textfile-monitoring
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

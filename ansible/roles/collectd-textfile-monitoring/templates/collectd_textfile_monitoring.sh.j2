@@ -12,7 +12,7 @@ while sleep "$INTERVAL"; do
 {% raw %}
     if [[ -e "$file" ]]; then
       IFS=$'\n'
-      metrics=($(grep -E "^[[:alnum:]_-:]+[[:space:]]+[[:digit:]]+" "$file"))
+      metrics=($(grep -E "^[[:alnum:][:punct:]]+[[:space:]]+[[:digit:]]+" "$file" | grep -v ^#))
       metric_name=$(dirname $file | sed 's|^/opt/||g' | sed 's|/|_|g')
       unset IFS
       file_last_modified=$(date -r "$file" +%s)

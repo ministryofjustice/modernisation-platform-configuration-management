@@ -12,8 +12,10 @@ def run_batch_file(target, port, username, password, batch_file):
         else:
             print("Unable to execute the batch file. Status code: {}".format(
                 r.status_code))
+            exit(r.status_code)
     except Exception as e:
         print("An error occurred while trying to execute the batch file:", str(e))
+        exit(1)
 
 
 def main():
