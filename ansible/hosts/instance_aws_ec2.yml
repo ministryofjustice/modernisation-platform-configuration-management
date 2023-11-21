@@ -29,5 +29,7 @@ keyed_groups:
     prefix: environment-name
   - key: tags['environment-name'] + '_' + tags['delius-environment-name'] + '_' + tags['database']
     prefix: environment-name
+  - key: tags['environment-name'] + '_' + tags['delius-environment-name'] + '_' + tags['database'].split('_')[0] + '_dbs'
+    prefix: environment-name
 
 strict: no
