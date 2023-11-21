@@ -1,5 +1,4 @@
 ---
-# needs testing
 # - name: Get secretsmanager passwords
 #   block:
 #     - name: secretsmanager passwords
@@ -39,15 +38,6 @@
 #       when: ssm_passwords_dict is defined
 
 #   when: use_ssm_params
-
-- name: Get misload config
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ misload_ssm_passwords }}"
-  tags:
-    - always
-  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
 
 # included to prevent having to debug connections in the actual task if the target is not reachable
 - import_tasks: "misload-connection-check.yml"
