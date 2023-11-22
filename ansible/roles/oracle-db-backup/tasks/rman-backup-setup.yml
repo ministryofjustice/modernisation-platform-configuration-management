@@ -21,7 +21,7 @@
     state: directory
     recurse: yes
   loop:
-    - /opt/textfile_monitoring/rman-backup
+    - /opt/textfile_monitoring/rman_backup
     - /home/oracle/admin/rman_scripts/logs
     - /home/oracle/admin/rman_scripts/status
 
@@ -34,7 +34,6 @@
     mode: "0700"
   loop:
     - "{{ rman_backup_script }}"
-    - "{{ rman_backup_monitoring_script }}"
 
 - name: setup rman database backup level 0
   ansible.builtin.cron:
@@ -55,13 +54,3 @@
     user: root
     job: "su oracle -c '{{ backup_command }} 1' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_1 | list }}"
-
-- name: setup rman backup monitoring job
-  ansible.builtin.cron:
-    name: "{{ item.name }}"
-    weekday: "{{ item.weekday }}"
-    minute: "{{ item.minute }}"
-    hour: "{{ item.hour }}"
-    user: root
-    job: "{{ item.job }}"
-  loop: "{{ rman_backup_cron.monitoring | list }}"
