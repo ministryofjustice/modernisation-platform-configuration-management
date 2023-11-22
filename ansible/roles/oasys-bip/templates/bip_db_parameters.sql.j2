@@ -7,7 +7,9 @@ ALTER SYSTEM SET session_cached_cursors=100 SCOPE=SPFILE;
 ALTER SYSTEM SET processes=500 SCOPE=SPFILE;
 ALTER SYSTEM SET open_cursors=800 SCOPE=SPFILE;
 ALTER SYSTEM SET db_files=600 SCOPE=SPFILE;
-alter system set log_archive_dest_1='location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name={{ bip_db_name }}';
+ALTER SYSTEM SET  log_archive_dest_1='location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name={{ bip_db_name }}';
+ALTER PROFILE default LIMIT PASSWORD_LIFE_TIME UNLIMITED;
+
 shutdown immediate 
 startup
 
