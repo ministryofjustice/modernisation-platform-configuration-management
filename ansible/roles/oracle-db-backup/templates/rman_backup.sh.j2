@@ -414,11 +414,11 @@ do
     if [[ $? -eq 0 ]]; then
       info "Rman reported errors for $TARGET_DB"
       echo "$TARGET_DB,$(date +%s),0,$(date),Errors" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
-      echo "${TARGET_DB} 1" > /opt/textfile_monitoring/rman-backup/${TARGET_DB}.prom
+      echo "${TARGET_DB} 1" > /opt/textfile_monitoring/rman_backup/${TARGET_DB}.prom
     else
       info "Backup of $TARGET_DB completed successfully"
       echo "$TARGET_DB,$(date +%s),1,$(date),Success" > /home/oracle/admin/rman_scripts/status/status.${TARGET_DB}
-      echo "${TARGET_DB} 0" > /opt/textfile_monitoring/rman-backup/${TARGET_DB}.prom
+      echo "${TARGET_DB} 0" > /opt/textfile_monitoring/rman_backup/${TARGET_DB}.prom
       find /home/oracle/admin/rman_scripts/logs -name "*cmd" -mtime +15 -exec rm {} \;
       find /home/oracle/admin/rman_scripts/logs -name "*log" -mtime +15 -exec rm {} \;
     fi
