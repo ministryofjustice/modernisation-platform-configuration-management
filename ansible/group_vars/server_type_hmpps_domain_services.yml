@@ -6,4 +6,3 @@ server_type_roles_list:
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
-use_ssm_params: true
