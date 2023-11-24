@@ -59,12 +59,14 @@
 
 - name: Check GetBucketLocation permission
   shell: |
+    PATH=$PATH:/usr/local/bin
     aws s3api get-bucket-location --bucket {{ osbws_config.s3_bucket_name }}
   check_mode: false
   changed_when: false
 
 - name: Check GetObject permission
   shell: |
+    PATH=$PATH:/usr/local/bin
     file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key blah /dev/null 2>&1 | grep "NoSuchKey")
   check_mode: false
   changed_when: false

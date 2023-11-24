@@ -12,6 +12,36 @@
     is_aws_environment: "{{ aws_uri_check.status == 200 }}"
   tags: always
 
+# We use the Oracle Inventory to get the Grid and Database Oracle Homes to avoid hardcoding these
+- name: Find Oracle Inventory Location
+  shell: |
+         awk -F= '/inventory_loc/{print $2}' /etc/oraInst.loc
+  register: get_ora_inventory
+  changed_when: false
+
+# Using the inventory we distinguish between Grid and Database Homes depending on whether the grep flag -v
+# has been used to include or exclude the attribute 'CRS=true' respectively in the inventory XML file
+#
+# (We use basic Linux commands to parse the XML since the Ansible XML Module requires LXML library)
+- name: Get Oracle Homes from Inventory
+  shell: |
+         grep {{ grep_exclude }} "CRS=\"true\"" {{ get_ora_inventory.stdout }}/ContentsXML/inventory.xml | \
+         sed 's/\/>$//' | grep -v "REMOVED=\"T\"" | \
+         awk '{for(i=1;i<=NF;i++){if($i~"IDX="){IDX=$i}}}{for(i=1;i<=NF;i++){if($i~"LOC="){LOC=$i}}}{print IDX,LOC}' | \
+         sed 's/"//g' | tr -d 'IDX=' | tr -d 'LOC='  | sort -n -k1 | tail -1 | cut -d ' ' -f2
+  register: get_oracle_homes
+  loop: ["","-v"]
+  loop_control:
+     loop_var: grep_exclude
+  changed_when: false
+
+- set_fact:
+    oracle_database_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','-v') | first ).stdout | trim }}"
+    oracle_grid_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','') | first ).stdout | trim }}"
+
+- debug:
+    msg: "Grid Home: {{ oracle_grid_oracle_home }};  Database Home {{ oracle_database_oracle_home }}"
+
 - block:
     - name: (main) Find db version file
       find:
