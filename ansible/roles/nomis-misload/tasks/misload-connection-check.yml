@@ -10,13 +10,3 @@
     src: connection_check.sh.j2
     dest: /usr/local/share/connection_check.sh
     mode: 755
-
-- name: run connection Check
-  become_user: root
-  ansible.builtin.shell: |
-    . /usr/local/share/connection_check.sh
-  register: connection_check
-
-- name: debug connection_check
-  ansible.builtin.debug:
-    msg: "{{ connection_check.rc }}"
