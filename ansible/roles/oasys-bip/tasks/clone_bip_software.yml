@@ -192,7 +192,7 @@
         hidden: True
       register: collected_files
 
-    - name: remove collected files from nodemenager directory
+    - name: remove collected files mbase.bin and mbase.lck
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
@@ -201,7 +201,7 @@
           collected_files.files
         }}
 
-    - name: Collect file details for cleanup for mbase.bin and mbase.lck files
+    - name: Collect file details from nodemanager directory for cleanup
       ansible.builtin.find:
         path: "{{ wl_home }}/common/nodemanager/"
         hidden: True
@@ -218,7 +218,7 @@
 
     - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
       ansible.builtin.pause:
-        minutes: 10
+        minutes: 15
 
     - name: Oracle BIP NodeManager config cloning
       become_user: oracle
@@ -249,7 +249,7 @@
 
     - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
       ansible.builtin.pause:
-        minutes: 10
+        minutes: 15
 
     - name: Enable Standalone BI Publisher to Add Privileges for Application Roles
       become_user: oracle

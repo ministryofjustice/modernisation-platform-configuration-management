@@ -13,7 +13,7 @@
     bipdb_mds_password: "{{ secretsmanager_passwords_dict['bipdbshared'].passwords['mds'] }}"
 
 - debug:
-    msg: "Configuring BIP DB {{ bip_db_name }} on {{ bip_db_server }}"
+    msg: "Configuring BIP DB {{ bip_db_name }} on {{ oasys_db_server }}"
 
 - debug:
     msg: "Configuring OASys DB {{ oasys_db_name }} on {{ oasys_db_server }}"
