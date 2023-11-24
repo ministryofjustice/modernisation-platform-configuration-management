@@ -192,7 +192,7 @@
         hidden: True
       register: collected_files
 
-    - name: remove collected files mbase.bin and mbase.lck 
+    - name: remove collected files mbase.bin and mbase.lck
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
