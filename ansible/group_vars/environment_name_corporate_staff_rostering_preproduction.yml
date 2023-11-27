@@ -19,8 +19,8 @@ osbws_additional_configs:
 
 # rman details
 rman_backup_script: rman_backup.sh
-recovery_catalog: 1
-recovery_catalog_server: "{{ OMS_SERVER }}"
+recovery_catalog: 0
+#recovery_catalog_server: "{{ OMS_SERVER }}"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
@@ -48,3 +48,23 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: IWFM_TAF, role: PRIMARY }
+
+db_sid: PPIWFM
+refresh_script: csr_training_schema_refresh.sh
+training_schema_refresh_cron:
+  iwfm_train_refresh:
+    - name: iwfm_train_refresh
+      weekday: "6"
+      minute: "00"
+      hour: "06"
+      dump_file: iwfm_train3_06042023.dmp
+      source_schema: iwfm_train3
+      target_schema: iwfm_train4
+  train_custom_refresh:
+    - name: train_custom_refresh
+      weekday: "6"
+      minute: "00"
+      hour: "06"
+      dump_file: train_custom3_06042023.dmp
+      source_schema: train_custom3
+      target_schema: train_custom4

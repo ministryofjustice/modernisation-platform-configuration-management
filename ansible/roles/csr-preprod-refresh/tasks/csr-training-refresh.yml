@@ -1,0 +1,44 @@
+---
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - /home/oracle/admin/scripts
+    - /home/oracle/admin/logs
+
+- name: copy scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/admin/scripts/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ refresh_script }}"
+    - "{{ adhoc_refresh_script }}"
+    - "csr_training_schema_export.sh"
+    - "preprod_adhoc_db_schemas_import.sh"
+
+- name: setup iwfm_train schema refresh
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    weekday: "{{ item.weekday }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    user: root
+    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }} -i {{ db_sid }} -d refresh_dump_dir -f {{ item.dump_file }} -t '{{ item.target_schema }}' -s {{ item.source_schema }}' 2>&1 | logger -p local3.info -t iwfm_train_refresh"
+  loop: "{{ training_schema_refresh_cron.iwfm_train_refresh | list }}"
+
+- name: setup iwfm_train schema refresh
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    weekday: "{{ item.weekday }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    user: root
+    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }} -i {{ db_sid }} -d refresh_dump_dir -f {{ item.dump_file }} -t '{{ item.target_schema }}' -s {{ item.source_schema }}' 2>&1 | logger -p local3.info -t iwfm_train_refresh"
+  loop: "{{ training_schema_refresh_cron.train_custom_refresh | list }}"
