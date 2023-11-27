@@ -146,7 +146,7 @@ recreate_schema () {
         digits    VARCHAR2(10) := '0123456789';
         lower     VARCHAR2(26) := 'abcdefghijklmnopqrstuvwxyz';
         upper     VARCHAR2(26) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        special   VARCHAR2(32) := '_#';
+        special   VARCHAR2(32) := '_';
 
         begin
         for r1 in c1
@@ -187,6 +187,19 @@ EOF
         rm schema_recreation.sql schema_recreation.log
 }
 
+# ------------------------------------------------------------------------------
+# Update schema passwords from AWS secret manager
+# ------------------------------------------------------------------------------
+change_password () {
+  SCHEMA=$1
+  cat /dev/null > password_change.sql
+  PASSWORD=`aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .${SCHEMA}`
+  echo "alter user ${SCHEMA} identified by ${PASSWORD};" >> password_change.sql
+  echo "exit" >> password_change.sql
+  sqlplus -s "/ as sysdba" @password_change.sql
+  rm password_change.sql
+  info "End"
+}
 #@@END_FUNCTION_DECLARATION#
 
 #@@START_FUNCTIONS#
@@ -313,12 +326,14 @@ do
         then
                 recreate_schema ${i}
                 impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${i}_${TAG}.dmp logfile=${i}_${TAG}_import.log
+                change_password ${i}
         elif [ `echo $i | grep -o ":"| wc -l ` -eq 1 ]
         then
                 SNAME=`echo $i | grep ":"| awk -F':' '{ print $1}'`
                 TNAME=`echo $i | grep ":"| awk -F':' '{ print $2}'`
                 recreate_schema ${TNAME}
                 impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${SNAME}_${TAG}.dmp logfile=${SNAME}_${TAG}_import.log remap_schema=${i}
+                change_password ${TNAME}
         else
                 echo "Remap schemas specified incorrectly for $i"
         fi
