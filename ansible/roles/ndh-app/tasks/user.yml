@@ -3,15 +3,16 @@
 - name: create tibco group
   ansible.builtin.group:
     name: tibco
-    gid: 10002
     state: present
 
 # create tibco user
 - name: create tibco user
   ansible.builtin.user:
     name: tibco
-    uid: 10002
     state: present
-    groups: tibco
+    groups:
+      - tibco
+      - wheel
     create_home: true
     home: "/opt/tibco"
+    append: yes
