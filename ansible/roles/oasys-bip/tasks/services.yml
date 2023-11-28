@@ -1,6 +1,7 @@
 ---
 - name: Run command to create the necessary links and cache to the most recent shared libraries
-  ansible.builtin.shell:  ldconfig
+  become_user: oracle
+  ansible.builtin.shell: ldconfig
 
 - name: Stop Weblogic and nodemanager
   become_user: oracle
