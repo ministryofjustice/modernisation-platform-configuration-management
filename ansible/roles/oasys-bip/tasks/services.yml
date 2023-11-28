@@ -1,6 +1,6 @@
 ---
 - name: Reload necessary links and cache to the most recent shared libraries
-  ansible.builtin.shell: ldconfig 
+  ansible.builtin.shell: ldconfig
 
 - name: Stop Weblogic and nodemanager
   become_user: oracle
