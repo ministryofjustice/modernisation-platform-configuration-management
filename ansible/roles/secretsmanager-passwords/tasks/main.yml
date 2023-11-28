@@ -23,16 +23,8 @@
     account_id=$(aws sts get-caller-identity --query Account --output text)
     {% if item.value.account_name is defined %}
     secret_account_id="{{ account_ids[item.value.account_name] }}"
-    {% else %}
-    secret_account_id=$account_id
-    {% endif %}
     if [[ $account_id != $secret_account_id ]]; then
-      # this could be improved to look up role dynamically, would require permissions for ec2s to look at iam roles and instance profile 
-    {% if item.value.assume_role_name is defined %}
       role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
-    {% else %}
-      role_arn="arn:aws:iam::${account_id}:role/{{ assume_ec2_role_name_prefix }}-{{ ec2.tags['Name'] }}"
-    {% endif %}
       session="{{ item.key }}-ansible"
       creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
       export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
@@ -40,7 +32,21 @@
       export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
     fi
     secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ item.value.secret }}"
-    aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text
+    {% else %}
+    secret_arn="{{ item.value.secret }}"
+    {% endif %}
+    secret_value=$(aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text 2>/dev/null || true)
+    if [[ -z $secret_value ]]; then
+      secret_error=$(aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text 2>&1 || true)
+      if [[ $secret_error == *AWSCURRENT* ]]; then
+        echo "secret not set placeholder"
+      else
+        echo $secret_error >&2
+        exit 1
+      fi
+    else
+      echo "$secret_value"
+    fi
   loop_control:
     label: "{{ item.key }}"
   loop: "{{ secretsmanager_passwords | dict2items }}"
@@ -139,20 +145,18 @@
 # community.aws.secretsmanager_secret doesn't work brilliantly. It requires
 # resource policy to be explicitly set and needs more permissions than
 # expected. Using cli instead
-- name: Update SecretsManager Secrets from named account
+- name: Update SecretsManager Secrets
   ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     set -e
-    account_id=$(aws sts get-caller-identity --query Account --output text)
     {% if item.value.config.account_name is defined %}
-      secret_account_id="{{ account_ids[item.value.config.account_name] }}"
-    {% else %}
-      secret_account_id="{{ account_ids[ec2.tags['Name']] }}"
-    {% endif %}
+    account_id=$(aws sts get-caller-identity --query Account --output text)
+    secret_account_id="{{ account_ids[item.value.config.account_name] }}"
     if [[ $account_id != $secret_account_id ]]; then
       echo "ERROR: cannot update secret in other account" >&2
       exit 1
     fi
+    {% endif %}
     aws secretsmanager put-secret-value --secret-id "{{ item.value.config.secret }}" --secret-string '{{ item.value.passwords|to_json }}'
   loop: "{{ secretsmanager_passwords_to_update }}"
 
