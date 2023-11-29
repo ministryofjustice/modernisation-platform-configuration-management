@@ -38,7 +38,7 @@
 
     - name: Unzip database psu patch software
       ansible.builtin.unarchive:
-        src: "{{ stage }}/{{ psu_patch }}"
+        src: "{{ stage }}/{{ oracle_patch.psu_patch }}"
         dest: "{{ stage }}/psu"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"

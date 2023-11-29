@@ -21,3 +21,11 @@
         asmmonitorpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16')}}"
 
   when: oracle_19c_asm_passwords_delius_workaround
+
+- name: Oracle patch variable
+  set_fact:
+    oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
+        
+- name: Oracle patch variable
+  set_fact:
+    opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"
