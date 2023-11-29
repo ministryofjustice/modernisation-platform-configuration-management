@@ -18,17 +18,16 @@ oem_secretsmanager_passwords:
   oem:
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
-    secret: "/oracle/oem/passwords"
+    secret: "/oracle/oem/shared-passwords"
     users:
       - agentreg:
   emrep:
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
-    secret: "/oracle/database/EMREP/passwords"
+    secret: "/oracle/database/EMREP/shared-passwords"
     users:
       - sysman:
-oem_ssm_passwords:
   asm:
-    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
+    secret: "/ec2/{{ ec2_name }}/asm-passwords"
     users:
       - ASMSNMP:
