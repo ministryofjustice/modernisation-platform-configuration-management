@@ -6,6 +6,7 @@
 <entry key="db.hostname">{{ ec2.tags['oracle-db-hostname'] }}</entry>
 <entry key="db.port">{{ ords_db_port }}</entry>
 <entry key="db.sid">{{ ec2.tags['oracle-db-sid'] }}</entry>
+<entry key="jdbc.MaxLimit">30</entry>
 <entry key="security.requestValidationFunction">wwv_flow_epg_include_modules.authorize</entry>
 <entry key="security.validationFunctionType">plsql</entry>
 <entry key="security.externalSessionTrustedOrigins">{{ ords_trusted_origins[ec2.tags["oasys-environment"]] }}</entry>
