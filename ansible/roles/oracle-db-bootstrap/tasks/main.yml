@@ -15,7 +15,7 @@
 # We use the Oracle Inventory to get the Grid and Database Oracle Homes to avoid hardcoding these
 - name: Find Oracle Inventory Location
   shell: |
-         awk -F= '/inventory_loc/{print $2}' /etc/oraInst.loc
+    awk -F= '/inventory_loc/{print $2}' /etc/oraInst.loc
   register: get_ora_inventory
   changed_when: false
 
@@ -25,14 +25,14 @@
 # (We use basic Linux commands to parse the XML since the Ansible XML Module requires LXML library)
 - name: Get Oracle Homes from Inventory
   shell: |
-         grep {{ grep_exclude }} "CRS=\"true\"" {{ get_ora_inventory.stdout }}/ContentsXML/inventory.xml | \
-         sed 's/\/>$//' | grep -v "REMOVED=\"T\"" | \
-         awk '{for(i=1;i<=NF;i++){if($i~"IDX="){IDX=$i}}}{for(i=1;i<=NF;i++){if($i~"LOC="){LOC=$i}}}{print IDX,LOC}' | \
-         sed 's/"//g' | tr -d 'IDX=' | tr -d 'LOC='  | sort -n -k1 | tail -1 | cut -d ' ' -f2
+    grep {{ grep_exclude }} "CRS=\"true\"" {{ get_ora_inventory.stdout }}/ContentsXML/inventory.xml | \
+    sed 's/\/>$//' | grep -v "REMOVED=\"T\"" | \
+    awk '{for(i=1;i<=NF;i++){if($i~"IDX="){IDX=$i}}}{for(i=1;i<=NF;i++){if($i~"LOC="){LOC=$i}}}{print IDX,LOC}' | \
+    sed 's/"//g' | tr -d 'IDX=' | tr -d 'LOC='  | sort -n -k1 | tail -1 | cut -d ' ' -f2
   register: get_oracle_homes
-  loop: ["","-v"]
+  loop: ["", "-v"]
   loop_control:
-     loop_var: grep_exclude
+    loop_var: grep_exclude
   changed_when: false
 
 - set_fact:
