@@ -13,12 +13,8 @@ db_standby_name: None
 db_primary: "{{ db_configs[ db_primary_name ] }}"
 db_standby: "{{ db_configs[ db_standby_name ] }}"
 
-use_ssm_params: false
 db_secretsmanager_passwords:
   db:
-    parameter: "/oracle/database/{{ db_standby.db_name }}/passwords"
     secret: "/oracle/database/{{ db_standby.db_name }}/passwords"
     users:
       - sys:
-
-db_ssm_passwords: "{{ db_secretsmanager_passwords }}"
