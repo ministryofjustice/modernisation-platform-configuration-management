@@ -35,16 +35,14 @@ grid_install_script: grid_install.sh
 
 password_response_file: grid_pw.rsp
 
-use_ssm_params: false
+oracle_19c_asm_passwords_delius_workaround: false
+
 db_secretsmanager_passwords:
   asm:
-    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
     secret: "/ec2/{{ ec2_name }}/asm-passwords"
     users:
       - ASMSNMP: auto
       - ASMSYS: auto
-
-db_ssm_passwords: "{{ db_secretsmanager_passwords }}"
 
 grid_env:
   ORACLE_HOME: "{{ grid_home }}"

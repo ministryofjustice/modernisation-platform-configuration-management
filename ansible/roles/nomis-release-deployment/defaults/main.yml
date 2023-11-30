@@ -1,7 +1,6 @@
 ---
 artefacts_s3_bucket_name: ec2-image-builder-nomis20220314103938567000000001
 artefacts_s3_bucket_path: nomis_weblogic_releases
-ssm_parameters_prefix: database
 stage: /u01/releases
 tag: /u01/tag
 oracle_install_user: oracle
@@ -12,15 +11,11 @@ app_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 db_configs: {}
 db_config: "{{ db_configs[app_db_name] }}"
 
-use_ssm_params: false
 app_secretsmanager_passwords:
   db:
-    parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - oms_owner:
-
-app_ssm_passwords: "{{ app_secretsmanager_passwords }}"
 
 nomis_releases:
   # - { name: DB_V11.2.1.1.203.1, web_config_files: 0, db_patch_updated: 0 }

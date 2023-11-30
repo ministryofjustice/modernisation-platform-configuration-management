@@ -24,13 +24,9 @@ database_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin"
 
-use_ssm_params: false
 db_secretsmanager_passwords:
   asm:
-    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
     secret: "/ec2/{{ ec2_name }}/asm-passwords"
     users:
       - ASMSNMP: auto
       - ASMSYS: auto
-
-db_ssm_passwords: "{{ db_secretsmanager_passwords }}"

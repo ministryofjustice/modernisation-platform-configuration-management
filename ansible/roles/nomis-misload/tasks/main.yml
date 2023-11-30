@@ -1,43 +1,21 @@
 ---
-# - name: Get secretsmanager passwords
-#   block:
-#     - name: secretsmanager passwords
-#       import_role:
-#         name: secretsmanager-passwords
-#       vars:
-#         secretsmanager_passwords: "{{ misload_secretsmanager_passwords }}"
-#       tags:
-#         - always
-#       when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
+- name: secretsmanager passwords
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ misload_secretsmanager_passwords }}"
+  tags:
+    - always
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
 
-#     - name: secretsmanager passwords
-#       set_fact:
-#         misload_target: "{{ secretsmanager_passwords_dict['misload'].passwords['target'] }}"
-#         misload_username: "{{ secretsmanager_passwords_dict['misload'].passwords['username'] }}"
-#         misload_password: "{{ secretsmanager_passwords_dict['misload'].passwords['password'] }}"
-#       when: secretsmanager_passwords_dict is defined
-
-#   when: not use_ssm_params
-
-# - name: Get SSM params
-#   block:
-#     - name: Get SSM parameters
-#       import_role:
-#         name: ssm-passwords
-#       vars:
-#         ssm_passwords: "{{ misload_ssm_passwords }}"
-#       tags:
-#         - always
-#       when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
-
-#     - name: Get SSM parameters
-#       set_fact:
-#         misload_target: "{{ ssm_passwords_dict['misload'].passwords['target'] }}"
-#         misload_username: "{{ ssm_passwords_dict['misload'].passwords['username'] }}"
-#         misload_password: "{{ ssm_passwords_dict['misload'].passwords['password'] }}"
-#       when: ssm_passwords_dict is defined
-
-#   when: use_ssm_params
+- name: secretsmanager passwords
+  set_fact:
+    misload_target: "{{ secretsmanager_passwords_dict['misload'].passwords['target'] }}"
+    misload_username: "{{ secretsmanager_passwords_dict['misload'].passwords['username'] }}"
+    misload_password: "{{ secretsmanager_passwords_dict['misload'].passwords['password'] }}"
+  tags:
+    - always
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"
 
 # included to prevent having to debug connections in the actual task if the target is not reachable
 - import_tasks: "misload-connection-check.yml"
