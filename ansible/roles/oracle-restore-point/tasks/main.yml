@@ -1,19 +1,18 @@
 ---
-- name: Get facts for playbook execution
-  ansible.builtin.import_tasks: get_facts.yml
-  tags:
-    - always
-
 - name: Create restore point on databases specified by TNS
   ansible.builtin.include_tasks:
     file: create_restore_point.yml
     apply:
       tags:
         - create_restore_point
+        - never
   loop_control:
     loop_var: db_name
   loop: "{{ db_tns_list.split(',') }}"
-  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "create"
+  tags:
+    - create_restore_point
+    - never
+  when: db_tns_list is defined and restore_point_name is defined
 
 - name: Drop restore point from databases specified by TNS
   ansible.builtin.include_tasks:
@@ -21,7 +20,11 @@
     apply:
       tags:
         - drop_restore_point
+        - never
   loop_control:
     loop_var: db_name
   loop: "{{ db_tns_list.split(',') }}"
-  when: db_server_file.stat.exists and db_tns_list is defined and restore_point_name is defined and action == "drop"
+  tags:
+    - drop_restore_point
+    - never
+  when: db_tns_list is defined and restore_point_name is defined
