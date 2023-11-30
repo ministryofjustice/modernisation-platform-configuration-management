@@ -1,4 +1,7 @@
 ---
+- debug:
+    msg: "database_home: {{ database_home }}; grid_home: {{ grid_home }}"
+
 # create via users-and-groups role before running this role
 - name: Check oracle user already exists
   ansible.builtin.getent:
