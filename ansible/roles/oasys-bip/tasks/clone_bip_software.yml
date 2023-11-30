@@ -247,6 +247,14 @@
         mode: "0600"
         remote_src: true
 
+    - name: Fix startManagedWebLogic.sh
+      ansible.builtin.template:
+        src: "startManagedWebLogic.sh.j2"
+        dest: "{{domain_home}}/{{domain_name}}/bin/startManagedWebLogic.sh"
+        owner: oracle
+        group: oinstall
+        mode: "0750"
+
     - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
       ansible.builtin.pause:
         minutes: 15
