@@ -1,0 +1,29 @@
+#!/bin/bash
+if [ $# -lt 4 ]
+then
+        echo "Execute the script with three parameters. "
+        echo "prod_adhoc_db_schemas_export.sh <ORACLE_SID> <SCHEMAS SEPERATED BY COMMAS> <DB DIRECTORY NAME> <TAG>"
+        exit 1
+fi
+export ORACLE_SID=$1
+export SCHEMAS=$2
+export DIRNAME=$3
+export TAG=$4
+export ORAENV_ASK=NO
+. oraenv
+echo $ORACLE_SID $ORACLE_HOME
+CNT=`sqlplus -s " / as sysdba" << EOF
+set feedback off heading off echo off verify off
+select count(1) from dba_directories where directory_name ='${DIRNAME}';
+exit
+EOF`
+if [ ${CNT} -eq 0 ]
+then
+        echo "Directory does not exist in database, please create the directory as sys and Rerun with correct value."
+        exit 1
+fi
+for i in $(echo $SCHEMAS | sed "s/,/ /g")
+do
+        expdp userid="'/ as sysdba'" directory=${DIRNAME} dumpfile=${i}_${TAG}.dmp logfile=${i}_${TAG}_export.log schemas=${i} compression=ALL
+        aws s3 cp ${i}_${TAG}.dmp  s3://{{ s3_bucket }}/
+done

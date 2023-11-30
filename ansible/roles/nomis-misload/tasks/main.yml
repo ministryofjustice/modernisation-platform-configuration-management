@@ -50,10 +50,4 @@
   tags:
     - ec2provision
     - ec2patch
-  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0
-
-- import_tasks: "misload-monitoring.yml"
-  tags:
-    - ec2provision
-    - ec2patch
-  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat" and connection_check.rc == 0
+  when: ec2.tags['misload-dbname'] is defined and ansible_facts['distribution'] == "RedHat"

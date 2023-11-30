@@ -5,3 +5,56 @@ dns_zone_internal: corporate-staff-rostering.hmpps-production.modernisation-plat
 dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
+
+database_home: /u01/app/oracle/product/19c/db_1
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+
+osbws_additional_configs:
+  - name: osbws_prod
+    s3_bucket_name: csr-db-backup-bucket20230822131807238100000001
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "5"
+      minute: "30"
+      hour: "19"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "0,1,2,3,4,6"
+      minute: "30"
+      hour: "19"
+      # job: command generated in rman-backup-setup
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: PPRCVCAT
+  PIWFM:
+    db_name: PIWFM
+    db_unique_name: PIWFM
+    instance_name: PIWFM
+    host_name: pd-csr-db-a
+    port: 1521
+    tns_name: PPIWFM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: IWFM_TAF, role: PRIMARY }
+
+  DRIWFM:
+    db_name: PIWFM
+    db_unique_name: DRIWFM
+    instance_name: DRIWFM
+    host_name: pd-csr-db-b
+    port: 1521
+    tns_name: DRIWFM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: IWFM_TAF, role: PRIMARY }

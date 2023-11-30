@@ -47,26 +47,28 @@
     line: "OSB_WS_CHUNK_SIZE={{ oracle_osbws_chunk_size }}"
   when: oracle_osbws_chunk_size is defined
 
+# For backing up, ensure bucket s3:GetObject s3:GetBucketLocation s3:PutOject
 - name: Run sbttest
   become: true
   become_user: oracle
-  shell: |
+  ansible.builtin.shell: |
     export OSB_WS_PFILE={{ database_home }}/dbs/{{ osbws_config.name }}.ora
     {{ database_home }}/bin/sbttest /tmp/foo -libname {{ database_home }}/lib/libosbws.so
   check_mode: false
   changed_when: false
   when: osbws_config.run_sbttest is defined and osbws_config.run_sbttest
 
+# For restore, ensure bucket allows s3:GetBucketLocation and s3:GetObject
 - name: Check GetBucketLocation permission
-  shell: |
+  ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     aws s3api get-bucket-location --bucket {{ osbws_config.s3_bucket_name }}
   check_mode: false
   changed_when: false
 
 - name: Check GetObject permission
-  shell: |
+  ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
-    file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key blah /dev/null 2>&1 | grep "NoSuchKey")
+    file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key deliberate-missing-key /dev/null 2>&1 | grep "NoSuchKey")
   check_mode: false
   changed_when: false
