@@ -46,13 +46,10 @@
 - name: Check RMAN Retention Policy
   when: catalog is not defined
   block:
-    # The RMAN Retention Policy is only defined on the primary database so
-    # check which group that is
-
     - name: Change target host group name if not ending with delius_primarydb
       set_fact:
-        primarydb_group: "{{ target_host | replace (target_host.split('_')[-2] + '_' + target_host.split('_')[-1], 'delius_primarydb') }}"
-
+        primarydb_group: "{{ group_names | select('match','environment_name_.*' + ( project_name | default('UNSET'))  + '.*' + ( simple_environment_name | default('UNSET')) + '.*_dbs$') | first | default('') | replace('_dbs$','_primarydb') }}"  
+  
     - name: Get Specified RMAN Recovery Window
       set_fact:
         recovery_window: "{{ hostvars[groups[primarydb_group][0]]['rman_retention_policy'] | regex_replace('RECOVERY WINDOW OF (\\d+) DAYS','\\1') }}"
@@ -69,7 +66,7 @@
         recovery_window: "{{ get_rman_retention.stdout | regex_replace('.*CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF (\\d+) DAYS.*','\\1')}}"
       when:
         - get_rman_retention is defined
-        - get_rman_retention.stdout is search('.*CONFIGURE RETENTION POLICY TO RECOVERY WINDOW.*')
+        - (get_rman_retention.stdout | default('')) is search('.*CONFIGURE RETENTION POLICY TO RECOVERY WINDOW.*')
 
     # If we have not yet found the size of the Recovery Window it is probably because the database
     # is using REDUNDANCY rather than RECOVERY WINDOW, so just default the size to zero.

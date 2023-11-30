@@ -244,7 +244,6 @@
         name: oracle-db-patches/oneoffpatch
       vars:
         install_absent_patches: true
-        target_host: localhost
 
     # Do not set Standby Database Parameters at Boot time as database will
     # not exist at this point.   Any custom parameters will be applied
@@ -252,18 +251,14 @@
     - name: Set Database Custom Parameters
       include_role:
         name: oracle-db-parameters/set_oracle_parameters
-      vars:
-        target_host: localhost
       when:
         - database_type != "standby"
 
     # Only need to schedule database autotasks on Primary Database
-    # (Defaults will be kept if not configured in hmpps-env-configs)
+    # (Defaults will be kept if not in configuration)
     - name: Schedule Database Autotasks
       include_role:
         name: oracle-db-autotasks/configure_oracle_autotasks
-      vars:
-        target_host: localhost
       when:
         - database_type == "primary"
 
