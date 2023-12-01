@@ -222,6 +222,7 @@
   tags: always
 
 - name: Ensure Password File is in ASM
+  when: database_type != "standby"
   include_tasks:
     file: move_password_file_to_asm.yml
     apply:
