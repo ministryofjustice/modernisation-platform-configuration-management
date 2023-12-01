@@ -253,7 +253,7 @@
       include_role:
         name: oracle-db-parameters/set_oracle_parameters
       when:
-        - database_type != "standby"
+        - database_type == "primary"
 
     # Only need to schedule database autotasks on Primary Database
     # (Defaults will be kept if not in configuration)
@@ -267,5 +267,4 @@
   become_user: oracle
   when:
     - oradb_installed or database_type == "standby"
-    - database_duplicated
   tags: always
