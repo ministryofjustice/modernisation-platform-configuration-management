@@ -59,6 +59,7 @@ oracle_asm_flash_disks:
 oracle_externaljob_rdbms_path: "{{ oracle_home }}/db_1/rdbms/admin"
 oracle_externaljob_file: externaljob.ora
 
+oracle_ru_patch: SEP2023 # override this in group_vars
 
 oracle_patch_details:
   APR2023:
@@ -74,3 +75,6 @@ oracle_patch_details:
     oracle_release_update: 35642822
     oracle_ojvm_patch: 35648110
     psu_patch: p35058172_190000_Linux-x86-64.zip
+
+oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
+opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"

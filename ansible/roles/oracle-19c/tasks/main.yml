@@ -3,18 +3,25 @@
   tags:
     - always
 
-- import_tasks: get_facts.yml
-  tags:
-    - ec2provision
-    - oracle_db_get_facts
-    - oracle_19c_install_grid
-
 - import_tasks: download_software.yml
   tags:
     - ec2provision
     - amibuild
     - oracle_19c_download
     - oracle_19c_download_software
+
+- import_tasks: get_facts.yml
+  tags:
+    - ec2provision
+    - oracle_db_get_facts
+    - oracle_19c_download_patch
+    - oracle_19c_install_grid
+
+- import_tasks: download_patch.yml
+  tags:
+    - ec2provision
+    - ec2patch
+    - oracle_19c_download_patch
 
 - import_tasks: pre_install_tasks.yml
   tags:
