@@ -119,3 +119,25 @@ db_configs:
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO_TAF, role: PHYSICAL_STANDBY }
       - { name: OR_TAF, role: PHYSICAL_STANDBY }
+
+# OEM server
+OMS_SERVER: pcmcl00041.azure.hmpp.root
+OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
