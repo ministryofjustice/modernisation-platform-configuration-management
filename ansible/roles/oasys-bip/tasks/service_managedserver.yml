@@ -1,0 +1,6 @@
+- name: Start weblogic managed server
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_managedserver
