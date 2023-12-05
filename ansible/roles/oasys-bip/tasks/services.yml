@@ -72,15 +72,18 @@
     - wls_nodemanager
     - wls_adminserver
 
-- name: Pause for 1 minute to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+- name: Pause for 30 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
   ansible.builtin.pause:
-    minutes: 1
-# - name: Start weblogic managed server
-#   ansible.builtin.service:
-#     name: "{{ item }}"
-#     state: started
-#   loop:
-#     - wls_managedserver
+    minutes: 30
+
+- name: Start weblogic managed server
+  become: yes
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - wls_managedserver
+
 # - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
 #   ansible.builtin.pause:
 #     minutes: 15
