@@ -334,7 +334,7 @@ restore_db_passwords () {
   SYSTEMDBUSERS=(sys system dbsnmp)
   if [ "$HMPPS_ROLE" = "delius" ]
   then
-    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_api_pool delius_audit_pool mms_pool contact_search_pool)
+    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool contact_search_pool)
     # Add Probation Integration Services by looking up the Usernames by their path in the SSM Parameter Store (there may be several of these)
     # Note that the name contains hyphens in the parameter store, but the actual DB account uses underscores in place of these
     SSMNAME="/${ENVIRONMENT}/${APPLICATION}/probation-integration/"
