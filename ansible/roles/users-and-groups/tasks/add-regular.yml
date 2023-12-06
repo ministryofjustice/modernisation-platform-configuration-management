@@ -36,9 +36,9 @@
       'home': item.home | default('/home/' + item.name),
       'state': item.state | default('present'),
       'authorized_keys': item.authorized_keys | default(regular_users_authorized_keys[item.name]|default(omit))
-    }] }}"
+      }] }}"
   vars:
-    item: 
+    item:
       group: "{{ loop_item[0].key }}"
       name: "{{ loop_item[1] }}"
   when: item.group in regular_groups_for_adding_users
@@ -58,7 +58,7 @@
       'home': item.home | default('/home/' + item.name),
       'state': item.state | default('present'),
       'authorized_keys': item.authorized_keys | default(regular_users_authorized_keys[item.name]|default(omit))
-    }] }}"
+      }] }}"
   loop_control:
     label: "{{ item.name }}"
   loop: "{{ users_and_groups_regular | selectattr('name', 'defined') }}"
