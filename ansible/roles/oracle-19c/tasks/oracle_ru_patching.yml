@@ -1,4 +1,4 @@
---- 
+---
 - name: Get OPatch Version
   ansible.builtin.shell: |
     export ORACLE_HOME={{ grid_home }}
@@ -7,9 +7,8 @@
 
 - name: Upgrade OPatch
   block:
-
-    - name: Backup previous OPatch folder 
-      ansible.builtin.archive: 
+    - name: Backup previous OPatch folder
+      ansible.builtin.archive:
         path: "{{ item }}/OPatch"
         dest: "{{ item }}/OPatch_{{ bkpdate }}.zip"
         format: zip
@@ -50,4 +49,3 @@
   environment:
     ORACLE_HOME: "{{ grid_home }}"
     PATH: "{{ grid_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
-
