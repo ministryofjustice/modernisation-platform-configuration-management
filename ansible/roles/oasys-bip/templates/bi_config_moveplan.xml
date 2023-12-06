@@ -33,7 +33,7 @@
                 <configProperty id="Server1">
                     <configProperty>
                         <name>Server Name</name>
-                        <value>AdminServer</value>
+                        <value>{{ admin_server }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_ONLY</scope>
@@ -49,7 +49,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Listen Port</name>
-                        <value>7001</value>
+                        <value>{{ admin_port }}</value>
                         <itemMetadata>
                             <dataType>INTEGER</dataType>
                             <scope>READ_WRITE</scope>
@@ -59,7 +59,7 @@
                 <configProperty id="Server2">
                     <configProperty>
                         <name>Server Name</name>
-                        <value>bi_server1</value>
+                        <value>{{ managed_server }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_ONLY</scope>
@@ -157,7 +157,7 @@
                     </configProperty>
                     <configProperty>
                         <name>Multicast Port</name>
-                        <value>7001</value>
+                        <value>{{ admin_port }}</value>
                         <itemMetadata>
                             <dataType>INTEGER</dataType>
                             <scope>READ_WRITE</scope>

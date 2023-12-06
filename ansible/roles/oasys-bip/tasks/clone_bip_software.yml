@@ -216,7 +216,7 @@
           collected_files.files
         }}
 
-    - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+    - name: Pause for 15 minutes. Sometimes the cloning can go wrong without a delay. Not sure why.
       ansible.builtin.pause:
         minutes: 15
 
@@ -238,10 +238,10 @@
       poll: 30
       when: not ansible_check_mode
 
-    - name: Boot.properties file creation for bi_server1
+    - name: Boot.properties file creation for managed server
       ansible.builtin.copy:
-        src: "{{ domain_home }}/{{ domain_name }}/servers/AdminServer/security/boot.properties"
-        dest: "{{ domain_home }}/{{ domain_name }}/servers/bi_server1/security/boot.properties"
+        src: "{{ domain_home }}/{{ domain_name }}/servers/{{ admin_server }}/security/boot.properties"
+        dest: "{{ domain_home }}/{{ domain_name }}/servers/{{ managed_server }}/security/boot.properties"
         owner: oracle
         group: oinstall
         mode: "0600"
@@ -255,7 +255,7 @@
         group: oinstall
         mode: "0750"
 
-    - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+    - name: Pause for 1 minute. Not sure why.
       ansible.builtin.pause:
         minutes: 1
 

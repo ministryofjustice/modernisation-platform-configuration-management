@@ -33,7 +33,7 @@ adminPassword = configProps.get("admin.password")
 adminURL = configProps.get("admin.url")
 msName = configProps.get("ms.name")
 
-# Connect to the AdminServer.
+# Connect to the {{ admin_server }}.
 connect(adminUsername, adminPassword, adminURL)
 
 edit()

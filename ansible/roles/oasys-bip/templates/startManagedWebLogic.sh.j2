@@ -32,9 +32,9 @@ usage()
 
 #  Set SERVER_NAME to the name of the server you wish to start up.
 
-DOMAIN_NAME="bifoundation_domain"
+DOMAIN_NAME="{{ domain_name }}"
 
-ADMIN_URL="http://t1-oasys-bip-b.oasys.hmpps-test.modernisation-platform.internal:7001"
+ADMIN_URL="http://$(hostname --fqdn):{{ admin_port }}"
 
 #  Set WLS_USER equal to your system username and WLS_PW equal
 
@@ -54,7 +54,7 @@ export WLS_PW
 
 #  set JAVA_OPTIONS=-Dweblogic.attribute=value -Djava.attribute=value
 
-JAVA_OPTIONS="-Dweblogic.security.SSL.trustedCAKeyStore=\"/u01/app/oracle/Middleware/wlserver_10.3/server/lib/cacerts\" ${JAVA_OPTIONS}"
+JAVA_OPTIONS="-Dweblogic.security.SSL.trustedCAKeyStore=\"{{ wl_home }}/server/lib/cacerts\" ${JAVA_OPTIONS}"
 export JAVA_OPTIONS
 
 #  Set JAVA_VM to the java virtual machine you want to run.  For instance:
@@ -97,7 +97,7 @@ export ADMIN_URL
 SERVER_NAME="${SERVER_NAME}"
 export SERVER_NAME
 
-DOMAIN_HOME="/u01/app/oracle/Middleware/user_projects/domains/bifoundation_domain"
+DOMAIN_HOME="{{ domain_home }}/{{ domain_name }}"
 
 if [ "$1" = "" ] ; then
         #  Call Weblogic Server with our default params since the user did not specify any other ones
