@@ -44,4 +44,5 @@
 
 - import_tasks: configure_proxy.yml
   tags:
-    - amibuild
+    - ec2provision
+  when: ndelius_proxy_pass is defined
