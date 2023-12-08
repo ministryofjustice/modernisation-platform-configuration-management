@@ -18,6 +18,7 @@
     awk -F= '/inventory_loc/{print $2}' /etc/oraInst.loc
   register: get_ora_inventory
   changed_when: false
+  tags: always
 
 # Using the inventory we distinguish between Grid and Database Homes depending on whether the grep flag -v
 # has been used to include or exclude the attribute 'CRS=true' respectively in the inventory XML file
@@ -34,13 +35,16 @@
   loop_control:
     loop_var: grep_exclude
   changed_when: false
+  tags: always
 
 - set_fact:
     oracle_database_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','-v') | first ).stdout | trim }}"
     oracle_grid_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','') | first ).stdout | trim }}"
+  tags: always
 
 - debug:
     msg: "Grid Home: {{ oracle_grid_oracle_home }};  Database Home {{ oracle_database_oracle_home }}"
+  tags: always
 
 - block:
     - name: (main) Find db version file
