@@ -1,7 +1,7 @@
 ---
 - name: Set apex secret path
   set_fact:
-    apex_secret_path: "{{ db_secret_prefix }}/{{ ords_db_sid }}/apex-passwords"
+    apex_secret_path: "{{ secret_db_prefix }}/{{ ords_db_sid }}/apex-passwords"
 
 - name: Get apex secrets
   set_fact:
