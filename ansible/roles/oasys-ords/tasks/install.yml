@@ -51,7 +51,7 @@
     - name: copy ords.war to eor.war
       copy:
         src: "{{ oasys_ords_dir }}/ords.war"
-        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
+        dest: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps/eor.war"
         remote_src: yes
         group: "{{ ords_install_group }}"
         mode: 0755
@@ -59,7 +59,7 @@
     - name: Copy oasys application images folder
       copy:
         src: "{{ oasys_ords_dir }}/i"
-        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/"
+        dest: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps/"
         remote_src: yes
         directory_mode: yes
         group: "{{ ords_install_group }}"
@@ -75,12 +75,12 @@
     - name: Set config directory for ORDS install
       ansible.builtin.shell:
         cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war configdir {{ oasys_ords_tomcat_dir }}/config"
-        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+        chdir: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps"
 
     - name: Install EOR application
       ansible.builtin.shell:
         cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
-        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+        chdir: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps"
 
   become: true
   become_user: "{{ ords_install_user }}"
