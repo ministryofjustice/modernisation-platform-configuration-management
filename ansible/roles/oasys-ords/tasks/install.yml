@@ -1,21 +1,17 @@
 ---
-- name: Set SSM parameters path fact from ec2 ssm-parameters-prefix and Name tag
+- name: Set apex secret path
   set_fact:
-    ssm_parameters_path: '/{{ ssm_parameters_prefix }}/{{ ec2.tags["oasys-environment"] }}'
+    apex_secret_path: "{{ secret_db_prefix }}/{{ ords_db_sid }}/apex-passwords"
 
-- name: Set SSM parameters database path facts
+- name: Get apex secrets
   set_fact:
-    #ssm_parameters_path_db_sys_password: "{{ ssm_parameters_path }}/{{ primary_database }}/syspassword"
-    ssm_parameters_path_db_apex_public_user_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_public_userpassword"
-    ssm_parameters_path_db_apex_listener_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_listenerpassword"
-    ssm_parameters_path_db_apex_rest_public_password: "{{ ssm_parameters_path }}/{{ ords_db_sid }}/apex_rest_publicpassword"
+    apex_secrets: "{{ lookup('amazon.aws.aws_secret', apex_secret_path, region=ansible_ec2_placement_region) }}"
 
-- name: Get SSM parameters
+- name: Set apex secrets
   set_fact:
-    #database_sys_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_sys_password, region=ansible_ec2_placement_region) }}"
-    database_apex_public_user_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_public_user_password, region=ansible_ec2_placement_region) }}"
-    database_apex_listener_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_listener_password, region=ansible_ec2_placement_region) }}"
-    database_apex_rest_public_password: "{{ lookup('aws_ssm', ssm_parameters_path_db_apex_rest_public_password, region=ansible_ec2_placement_region) }}"
+    database_apex_public_user_password: "{{ apex_secrets.public_user }}"
+    database_apex_listener_password: "{{ apex_secrets.listener }}"
+    database_apex_rest_public_password: "{{ apex_secrets.rest_public }}"
 
 - name: install xfsprogs
   yum:
@@ -55,7 +51,7 @@
     - name: copy ords.war to eor.war
       copy:
         src: "{{ oasys_ords_dir }}/ords.war"
-        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/eor.war"
+        dest: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps/eor.war"
         remote_src: yes
         group: "{{ ords_install_group }}"
         mode: 0755
@@ -63,7 +59,7 @@
     - name: Copy oasys application images folder
       copy:
         src: "{{ oasys_ords_dir }}/i"
-        dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/"
+        dest: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps/"
         remote_src: yes
         directory_mode: yes
         group: "{{ ords_install_group }}"
@@ -79,12 +75,12 @@
     - name: Set config directory for ORDS install
       ansible.builtin.shell:
         cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war configdir {{ oasys_ords_tomcat_dir }}/config"
-        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+        chdir: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps"
 
     - name: Install EOR application
       ansible.builtin.shell:
         cmd: "{{ oasys_ords_tomcat_dir }}/jre-9.0.4/bin/java -jar eor.war setup --silent --parameterFile {{ oasys_ords_dir }}/params/ords_params_silent.properties"
-        chdir: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps"
+        chdir: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps"
 
   become: true
   become_user: "{{ ords_install_user }}"
