@@ -33,12 +33,6 @@
     - ec2provision
     - deploy_release
 
-- name: Rename keepalive back to end outage
-  ansible.builtin.import_tasks: rename_keepalive_end_outage.yml
-  when: app_server_file.stat.exists
-  tags:
-    - end_outage
-
 # - name: Start streams (Import oracle-streams role, WIP)
 
 - name: Drop oracle restore point post successful validation
