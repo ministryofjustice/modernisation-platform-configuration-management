@@ -2,9 +2,15 @@
   ansible.builtin.pause:
     minutes: 20
 
+- name: systemd daemon reload
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
 - name: Start weblogic managed server
-  ansible.builtin.service:
-    name: "{{ item }}"
-    state: started
-  loop:
-    - wls_managedserver
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: wls_managedserver
+  register: start_wls_managedserver
+  until: start_wls_managedserver is not failed
+  retries: 6
+  delay: 600
