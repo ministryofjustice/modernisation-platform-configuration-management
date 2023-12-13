@@ -7,8 +7,8 @@
 
 - name: RU patch upgrade
   block:
-    - name: Kill sqlplus sessions if there are any 
-      ansible.builtin.shell: | 
+    - name: Kill sqlplus sessions if there are any
+      ansible.builtin.shell: |
         if [ `ps -fu oracle | grep sqlplus | grep -v grep | wc -l` -gt 0 ]
         then
           ps -fu oracle | grep sqlplus | grep -v grep | gawk '{print $2}' | xargs kill -9
@@ -34,8 +34,8 @@
         remote_src: yes
 
     - name: Deploy OPatch
-      ansible.builtin.shell: | 
-        $ORACLE_HOME/OPatch/opatchauto apply "{{ stage }}/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_release_update }}" 
+      ansible.builtin.shell: |
+        $ORACLE_HOME/OPatch/opatchauto apply "{{ stage }}/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_release_update }}"
       register: ru_patch_upgrade
       async: 9600
       poll: 0
