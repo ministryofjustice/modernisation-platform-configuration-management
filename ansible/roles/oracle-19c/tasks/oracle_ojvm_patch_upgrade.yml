@@ -32,26 +32,37 @@
       . oraenv
       srvctl start home -oraclehome {{ database_home }} -statefile /tmp/instances.txt
 
-    - name: Copy datapatch upgrade script 
-      template:
-        src: "{{ item }}.j2"
-        dest: "{{ stage }}/{{ item }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        mode: "0700"
-      loop:
-        - "run_datapatch.sh"
+  - name: Copy datapatch upgrade script 
+    template:
+      src: "{{ item }}.j2"
+      dest: "{{ stage }}/{{ item }}"
+      owner: "{{ oracle_install_user }}"
+      group: "{{ oracle_install_group }}"
+      mode: "0700"
+    loop:
+      - "run_datapatch.sh"
 
   - name: Run datapatch
     ansible.builtin.shell: "{{ stage }}/run_datapatch.sh"
+    register: datapatch_upgrade
+    async: 9600
+    poll: 0
+
+  - name: Wait for datapatch upgrade to complete
+    ansible.builtin.async_status:
+      jid: "{{ datapatch_upgrade.ansible_job_id }}"
+    register: datapatch_upgrade
+    until: datapatch_upgrade.finished
+    delay: 60
+    retries: 180
 
   - name: Restart databases 
     ansible.builtin.shell: | 
       export ORACLE_SID=+ASM
       export ORAENV_ASK=NO
       . oraenv
-      srvctl stophome -oraclehome {{ database_home }} -statefile /tmp/instances.txt
-      srvctl starthome -oraclehome {{ database_home }} -statefile /tmp/instances.txt
+      srvctl stop home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
+      srvctl start home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
 
   #block
   when: ojvm_patch_version_check.stdout == "0"
