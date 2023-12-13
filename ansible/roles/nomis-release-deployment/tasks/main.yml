@@ -33,13 +33,6 @@
     - ec2provision
     - deploy_release
 
-- name: Start Nomis weblogic app
-  ansible.builtin.import_tasks: start_nomis_app.yml
-  when: app_server_file.stat.exists
-  tags:
-    - ec2provision
-    - start_application
-
 - name: Rename keepalive back to end outage
   ansible.builtin.import_tasks: rename_keepalive_end_outage.yml
   when: app_server_file.stat.exists
