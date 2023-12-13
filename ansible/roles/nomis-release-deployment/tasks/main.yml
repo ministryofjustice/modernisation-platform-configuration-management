@@ -4,12 +4,6 @@
   tags:
     - always
 
-- name: Remove keepalive
-  ansible.builtin.import_tasks: rename_keepalive_start_outage.yml
-  when: app_server_file.stat.exists
-  tags:
-    - start_outage
-
 - name: Stop_nomis_weblogic
   ansible.builtin.import_tasks: stop_nomis_app.yml
   when: app_server_file.stat.exists
