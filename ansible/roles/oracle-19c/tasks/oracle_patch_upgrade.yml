@@ -1,0 +1,55 @@
+---
+- name: Get RU patch details
+  ansible.builtin.shell: |
+    export ORACLE_HOME={{ grid_home }}
+    {{ grid_home }}/OPatch/opatch lspatches | grep {{ oracle_patch.patch_string }} | wc -l
+  register: grid_patch_version_check
+
+- name: RU patch upgrade
+  block:
+    - name: Kill sqlplus sessions if there are any 
+      ansible.builtin.shell: | 
+        if [ `ps -fu oracle | grep sqlplus | grep -v grep | wc -l` -gt 0 ]
+        then
+          ps -fu oracle | grep sqlplus | grep -v grep | gawk '{print $2}' | xargs kill -9
+        fi
+
+    - name: Download Oracle 19c PSU patch from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "{{ stage }}/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - "{{ oracle_patch.psu_patch }}"
+
+    - name: Unarchive RU patch
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ oracle_patch.psu_patch }}"
+        dest: "{{ stage }}"
+        owner: oracle
+        group: oinstall
+        mode: u=rwx,g=rx,o=rx
+        remote_src: yes
+
+    - name: Deploy OPatch
+      ansible.builtin.shell: | 
+        $ORACLE_HOME/OPatch/opatchauto apply "{{ stage }}/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_release_update }}" 
+      register: ru_patch_upgrade
+      async: 1800
+      poll: 0
+
+    - name: Wait for RU patch upgrade to complete
+      ansible.builtin.async_status:
+        jid: "{{ ru_patch_upgrade.ansible_job_id }}"
+      register: ru_patch_upgrade
+      until: ru_patch_upgrade.finished
+      delay: 60
+      retries: 60
+
+  #block
+  when: grid_patch_version_check.stdout == "0"
+  environment:
+    ORACLE_HOME: "{{ grid_home }}"
+    PATH: "{{ grid_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"

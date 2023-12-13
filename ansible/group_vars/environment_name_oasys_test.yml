@@ -11,7 +11,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
-oracle_ru_patch: APR2023
+oracle_ru_patch: SEP2023
 
 ords_trusted_origins:
   oasys-test: "https://t2.oasys.service.justice.gov.uk/eor,https://t2-int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
@@ -21,6 +21,7 @@ ords_trusted_origins:
 # OEM server
 OMS_SERVER: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0
+
 
 # rman details
 rman_backup_script: rman_backup.sh

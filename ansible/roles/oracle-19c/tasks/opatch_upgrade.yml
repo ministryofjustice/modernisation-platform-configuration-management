@@ -2,7 +2,7 @@
 - name: Get OPatch Version
   ansible.builtin.shell: |
     export ORACLE_HOME={{ grid_home }}
-    {{ grid_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ opatch_version }} | wc -l
+    {{ grid_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oracle_patch.opatch_version }} | wc -l
   register: grid_required_version_check
 
 - name: Upgrade OPatch
@@ -32,7 +32,7 @@
 
     - name: Unarchive Opatch
       ansible.builtin.unarchive:
-        src: "{{ stage }}/{ opatch_zip }}"
+        src: "{{ stage }}/{{ opatch_zip }}"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall
