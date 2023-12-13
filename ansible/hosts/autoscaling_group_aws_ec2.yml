@@ -23,9 +23,13 @@ compose:
 keyed_groups:
   - key: tags['environment-name']
     prefix: environment-name
+  - key: tags['environment-name'] + '-' + tags[application + '-environment']
+    prefix: environment-name
   - key: tags['ami']
     prefix: ami
   - key: tags['server-type']
+    prefix: server-type
+  - key: tags['server-type'] + '-' + tags[application + '-environment']
     prefix: server-type
   - key: tags['os-type'] | lower
     prefix: os-type
