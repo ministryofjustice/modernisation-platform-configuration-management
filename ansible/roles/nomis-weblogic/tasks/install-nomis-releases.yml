@@ -1,5 +1,5 @@
 ---
-- name: Create releases directory
+- name: Create releases directory and directories required by app_patch
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -8,6 +8,11 @@
     mode: "0755"
   loop:
     - /u01/releases
+    - /u01/tag/forms
+    - /u01/tag/reports
+    - /u01/tag/static
+    - /u01/tag/tagsar
+    - /u01/tag/utils/scripts
 
 - name: Copy release scripts
   ansible.builtin.template:
@@ -29,17 +34,16 @@
   register: s3_release_objects
   when: nomis_releases|length == 0
 
-- name: Extract release from s3 object
+- name: Update nomis_releases fact from S3 file list
   set_fact:
     nomis_releases: "{{ nomis_releases + [item.split('/')[1].split('.')[:-1] | join('.')] }}"
-  loop: "{{ s3_release_objects.s3_keys }}"
-  when: nomis_releases|length == 0
+  loop: "{{ s3_release_objects.s3_keys|default([]) }}"
 
-- name: Check /home/oracle/tag_release_detail
+- name: Check /home/oracle/tag_release_detail for deployed releases
   become_user: oracle
   ansible.builtin.lineinfile:
     path: /home/oracle/tag_release_detail
-    line: item
+    line: "{{ item }}"
     create: yes
   check_mode: true
   register: tag_release_detail
@@ -132,6 +136,7 @@
          set -eo pipefail
          main() {
            . ~/.bash_profile
+           echo /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} xxx {{ weblogic_db_name }}
            /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} {{ weblogic_db_password }} {{ weblogic_db_name }}
          }
          main 2>&1 | logger -p local3.info -t ansible-weblogic
@@ -143,9 +148,9 @@
       become_user: oracle
       ansible.builtin.lineinfile:
         path: /home/oracle/tag_release_detail
-        line: item.item
+        line: "{{ item.item }}"
         create: yes
       loop_control:
         label: "{{ item.item }}"
-      loop: "{{ deploy_shell.results|default([]) | unique }}"
+      loop: "{{ deploy_shell.results|default([]) }}"
       when: not item.failed
