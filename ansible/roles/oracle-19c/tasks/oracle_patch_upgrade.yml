@@ -1,10 +1,10 @@
 ---
 - name: Get Oracle Grid Infrastructure patch details
   become_user: "{{ oracle_install_user }}"
-  become: yes 
+  become: yes
   ansible.builtin.shell: |
     export ORACLE_HOME={{ grid_home }}
-    ${ORACLE_HOME}/OPatch/opatch lspatches | grep Database | grep {{ oracle_patch.patch_string }}| wc -l 
+    ${ORACLE_HOME}/OPatch/opatch lspatches | grep Database | grep {{ oracle_patch.patch_string }}| wc -l
   register: grid_patch_version_check
 
 - name: RU patch upgrade
