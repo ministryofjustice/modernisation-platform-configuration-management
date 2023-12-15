@@ -1,12 +1,17 @@
 ---
 - name: Get OJVM patch details
+  become_user: "{{ oracle_install_user }}"
+  become: yes
   ansible.builtin.shell: |
     export ORACLE_HOME={{ database_home }}
-    {{ database_home }}/OPatch/opatch lspatches | grep {{ oracle_patch.ojvm_patch_string }} | wc -l
+    ${ORACLE_HOME}/OPatch/opatch lspatches | grep OJVM | grep {{ oracle_patch.patch_string }}| wc -l
   register: ojvm_patch_version_check
 
 - name: OJVM patch upgrade
   block:
+    - name: Shutdown databases before applying OJVM patch
+      ansible.builtin.shell: date
+
     - name: Shutdown databases before applying OJVM patch
       ansible.builtin.shell: |
         export ORACLE_SID=+ASM
@@ -67,6 +72,3 @@
   when: ojvm_patch_version_check.stdout == "0"
   become: yes
   become_user: "{{ oracle_install_user }}"
-  environment:
-    ORACLE_HOME: "{{ database_home }}"
-    PATH: "{{ database_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
