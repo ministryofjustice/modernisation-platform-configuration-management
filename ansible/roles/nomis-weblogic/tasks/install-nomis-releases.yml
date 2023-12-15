@@ -113,7 +113,7 @@
     keep_newer: true
   loop: "{{ download_release|default([]) }}"
 
-- name: Check release has FormsSources, Static, Reports files.
+- name: Check if release contains FormsSources, Static, Reports files
   ansible.builtin.find:
     paths: "/u01/releases/{{ item }}"
     patterns: "*.fmb,*.pll,*.htm,*.gif,*.html,*.rdf"
@@ -121,7 +121,7 @@
   register: patches_files_found
   loop: "{{ download_release|default([]) }}"
 
-- name: Set fact for releases to apply
+- name: Set apply fact to releases containing FormFormsSources, Static, Reports files
   set_fact:
     apply_release: "{{ apply_release|default([]) + [item.item] }}"
   loop_control:
@@ -144,7 +144,7 @@
       loop: "{{ apply_release }}"
 
   always:
-    - name: Update /home/oracle/tag_release_detail
+    - name: Update /home/oracle/tag_release_detail to record deployed releases
       become_user: oracle
       ansible.builtin.lineinfile:
         path: /home/oracle/tag_release_detail
