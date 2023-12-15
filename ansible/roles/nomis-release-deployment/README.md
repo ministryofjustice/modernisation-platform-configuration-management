@@ -1,6 +1,7 @@
 # Overview
 
-Use this role to deploy Nomis syscon releases
+Use this role to deploy Nomis syscon releases to the database.
+Use nomis-weblogic role to deploy Nomis syscon releases to the web server.
 
 # Pre-requisites
 
@@ -43,7 +44,7 @@ export limit_db=t1-nomis-db-1-a
 export limit_web=i-08ecc3e07d3783464,i-0fedd176694815eb2
 ```
 
-A. Start Outage and stop application
+A. Start Outage and stop Web application
 
 First sanity check ansible and server to run against
 
@@ -51,7 +52,9 @@ First sanity check ansible and server to run against
 no_proxy="*" ansible -m shell -a "service weblogic-healthcheck status" $limit_web
 ```
 
-Then run for real
+Then run for real. This will remove the keepalive.htm file first.  This
+must be done by stopping weblogic-healthcheck service.  And then a little while
+later the services are stopped.
 
 ```
 no_proxy="*" ansible -m shell -a "service weblogic-healthcheck stop" $limit_web
@@ -63,26 +66,36 @@ no_proxy="*" ansible -m shell -a "service weblogic-node-manager start; service w
 
 B. Take database restore point
 
-WIP on these roles - After oracle-restore-point role restore_point tag to add, if streams configured app tables involved in release tag stop_streams to append. (These tags to run on DB servers)
-
 ```
-no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=nomis-release-deployment -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags create_restore_point
+no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=oracle-restore-point -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags create_restore_point
 ```
 
-C. Deploy release on database server (DO NOT RUN FROM WEB SERVER AS ORACLE VERSIONS ARE DIFFERENT)
+C. Deploy releases on database server 
+
+The default is to apply all patches present on the S3 bucket that follow the `last_nomis_release` variable.
 
 ```
- no_proxy="*" ansible-playbook site.yml --limit t1-nomis-db-1-a  -e force_role=nomis-release-deployment --tags deploy_release
+no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=nomis-release-deployment --tags ec2patch
 ```
 
-D. Deploy release on Web servers
+Alternatively, you can specify a list on the command line like this
+
 ```
- no_proxy="*" ansible-playbook site.yml --limit t1-nomis-web-1-a  -e force_role=nomis-release-deployment --tags deploy_release
+no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=nomis-release-deployment --tag ec2patch  -e '{"nomis_releases": ["DB_V11.2.1.1.220", "DB_V11.2.1.1.221"]}' -v
+```
+
+D. Deploy releases on Web servers
+
+The weblogic servers will use SQL to query which patches to install. Install like this:
+
+```
+no_proxy="*" ansible-playbook site.yml --limit $limit_web -e force_role=nomis-weblogic --tags ec2patch
 ```
 
 E. Start application on Web servers
 
 ```
+echo "Starting all weblogic services, this will take ages"
 no_proxy="*" ansible -m shell -a "service weblogic-all start" $limit_web
 no_proxy="*" ansible -m shell -a "service weblogic-all healthcheck" $limit_web
 ```
@@ -93,23 +106,20 @@ If there is issue, you can use repair to restart failed processes
 no_proxy="*" ansible -m shell -a "service weblogic-all repair" $limit_web
 ```
 
-F. Post shakedown end outage .
+F. Post shakedown end outage
 
 ```
-echo "Starting all weblogic services, this will take ages"
 no_proxy="*" ansible -m shell -a "service weblogic-healthcheck start" $limit_web
 echo "Waiting 2 minutes for load balancer to detect healthy hosts..."
 sleep 120
 ```
 
-G. Start streams if previously stopped (Run on DB server)
+G. Start streams if previously stopped
+
+# Do this manually until `oracle-streams` role is created
+
+H. Post successful validation drop the restore point
 
 ```
- no_proxy="*" ansible-playbook site.yml --limit t1-nomis-db-1-a  -e force_role=nomis-release-deployment --tags start_streams
-```
-
-H. Post successful validation drop the restore point (Run on DB server)
-
-```
-no_proxy="*" ansible-playbook site.yml --limit t1-nomis-db-1-a  -e force_role=nomis-release-deployment -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags drop_restore_point
+no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=oracle-restore-point -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags drop_restore_point
 ```

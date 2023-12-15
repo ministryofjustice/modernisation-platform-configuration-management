@@ -4,46 +4,9 @@
   tags:
     - always
 
-- name: Create oracle restore point before release deployment
-  ansible.builtin.include_role:
-    name: oracle-restore-point
-    apply:
-      tags:
-        - create_restore_point
-  vars:
-    restore_point_name: "{{ restore_point_name }}"
-    db_tns_list: "{{ db_tns_list }}"
-    action: create
+- name: Get facts for playbook execution
+  ansible.builtin.import_tasks: tasks/install-nomis-releases.yml
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "7"
   tags:
-    - create_restore_point
-
-# - name: Stop streams (Import oracle-streams role, WIP)
-
-- name: Deploy nomis releases
-  ansible.builtin.include_tasks:
-    file: nomis_deploy_release.yml
-    apply:
-      tags:
-        - ec2provision
-        - deploy_release
-  loop_control:
-    loop_var: nomis_release
-  loop: "{{ nomis_releases }}"
-  tags:
-    - ec2provision
-    - deploy_release
-
-# - name: Start streams (Import oracle-streams role, WIP)
-
-- name: Drop oracle restore point post successful validation
-  ansible.builtin.include_role:
-    name: oracle-restore-point
-    apply:
-      tags:
-        - drop_restore_point
-  vars:
-    restore_point_name: "{{ restore_point_name }}"
-    db_tns_list: "{{ db_tns_list }}"
-    action: drop
-  tags:
-    - drop_restore_point
+    - ec2patch
+    - install_nomis_releases
