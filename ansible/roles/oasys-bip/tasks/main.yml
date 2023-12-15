@@ -64,7 +64,7 @@
       loop_control:
         loop_var: weblogic_managed_app_list
       loop: "{{ weblogic_servers }}"
-    
+
     - import_tasks: service_managedserver.yml
       tags:
         - amibuild
