@@ -4,11 +4,6 @@
     path: /etc/oratab
   register: db_server_file
 
-- name: Check server has APP components
-  ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
-  register: app_server_file
-
 - name: DB servers facts
   block:
     - name: If database server , get DB name from running process
