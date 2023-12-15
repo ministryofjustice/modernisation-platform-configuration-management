@@ -1,0 +1,151 @@
+---
+- name: Create releases directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/releases
+
+- name: Copy release scripts
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - /u01/releases/tag_release_deployment.sh
+    - /u01/tag/utils/scripts/compform.sh
+
+- name: Get S3 file list after nomis_weblogic_releases/{{ forms_sources_tgz_release }}.zip
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    mode: list
+    prefix: "nomis_weblogic_releases/DB_V11"
+    marker: "nomis_weblogic_releases/{{ forms_sources_tgz_release }}.zip"
+  register: s3_release_objects
+  when: nomis_releases|length == 0
+
+- name: Extract release from s3 object
+  set_fact:
+    nomis_releases: "{{ nomis_releases + [item.split('/')[1].split('.')[:-1] | join('.')] }}"
+  loop: "{{ s3_release_objects.s3_keys }}"
+  when: nomis_releases|length == 0
+
+- name: Check /home/oracle/tag_release_detail
+  become_user: oracle
+  ansible.builtin.lineinfile:
+    path: /home/oracle/tag_release_detail
+    line: item
+    create: yes
+  check_mode: true
+  register: tag_release_detail
+  loop: "{{ nomis_releases | unique }}"
+
+- name: Run SQL to get status of unreleased releases
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile > /dev/null
+    get_status() {
+      sqlplus  -s {{ weblogic_db_username }}/{{ weblogic_db_password }}@{{ weblogic_db_name }} <<EOF
+      set head off feedback off
+      select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '{{ item.item }}';
+      exit
+    EOF
+    }
+    status=$(get_status | egrep -o "RELEASE_STATUS=[[:digit:]]+" | cut -d= -f2)
+    if [[ -z $status ]]; then
+      echo "Unexpected sql output for {{ item.item }}: $status" >&2
+      exit 1
+    fi
+    echo $status
+  changed_when: false
+  check_mode: false
+  register: release_status_shell
+  loop_control:
+    label: "{{ item.item }}"
+  loop: "{{ tag_release_detail.results|default([]) }}"
+  when: item.changed
+
+- name: Set fact for releases to download and extract
+  set_fact:
+    download_release: "{{ download_release|default([]) + [item.item.item] }}"
+  loop_control:
+    label: "{{ item.item.item }}"
+  loop: "{{ release_status_shell.results|default([]) }}"
+  when: item.stdout|int != 0
+
+- name: Download nomis release zip from S3
+  become_user: oracle
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "nomis_weblogic_releases/{{ item }}.zip"
+    dest: "/u01/releases/{{ item }}.zip"
+    mode: get
+    permission: "public-read"
+    overwrite: latest
+  loop: "{{ download_release|default([]) }}"
+
+- name: Extract release zip
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/releases/{{ item }}.zip"
+    dest: "/u01/releases"
+    remote_src: true
+    keep_newer: true
+  loop: "{{ download_release|default([]) }}"
+
+- name: Extract release tar
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/releases/{{ item }}.tar"
+    dest: "/u01/releases"
+    remote_src: true
+    keep_newer: true
+  loop: "{{ download_release|default([]) }}"
+
+- name: Check release has FormsSources, Static, Reports files.
+  ansible.builtin.find:
+    paths: "/u01/releases/{{ item }}"
+    patterns: "*.fmb,*.pll,*.htm,*.gif,*.html,*.rdf"
+    recurse: true
+  register: patches_files_found
+  loop: "{{ download_release|default([]) }}"
+
+- name: Set fact for releases to apply
+  set_fact:
+    apply_release: "{{ apply_release|default([]) + [item.item] }}"
+  loop_control:
+    label: "{{ item.item }}"
+  loop: "{{ patches_files_found.results|default([]) }}"
+  when: item.matched > 0
+
+- block:
+    - name: Deploy tag release
+      become_user: oracle
+      ansible.builtin.shell: |
+         set -eo pipefail
+         main() {
+           . ~/.bash_profile
+           /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} {{ weblogic_db_password }} {{ weblogic_db_name }}
+         }
+         main 2>&1 | logger -p local3.info -t ansible-weblogic
+      register: deploy_shell
+      loop: "{{ apply_release }}"
+
+  always:
+    - name: Update /home/oracle/tag_release_detail
+      become_user: oracle
+      ansible.builtin.lineinfile:
+        path: /home/oracle/tag_release_detail
+        line: item.item
+        create: yes
+      loop_control:
+        label: "{{ item.item }}"
+      loop: "{{ deploy_shell.results|default([]) | unique }}"
+      when: not item.failed
