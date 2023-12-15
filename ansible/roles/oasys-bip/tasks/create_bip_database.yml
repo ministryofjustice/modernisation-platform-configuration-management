@@ -18,6 +18,15 @@
     - create_bip_db.sh
     - bip_db_parameters.sql
 
+- name: Copy config password file
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/u01/app/oracle/product/19c/db_1/network/admin/{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - sqlnet.ora
+
 - name: Create BIP database
   become_user: oracle
   ansible.builtin.shell: |
