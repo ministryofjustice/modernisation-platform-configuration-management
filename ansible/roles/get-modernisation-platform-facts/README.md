@@ -4,8 +4,26 @@ Note that the `environment_management` secret stored in `modernisation_platform`
 is not shared with EC2 instances. So this role relies on a copy being stored
 as a SSM parameter `account_ids`.
 
-See nomis for an example of how this parameter is created using the
-`baseline` and `baseline_presets` module.
+For applications that use baseline module (Nomis, Oasys etc.), the value
+is automatically created via the `baseline` module. Otherwise, add terraform
+like this
+
+```
+resource "aws_ssm_parameter" "account_ids" {
+  name        = "account_ids"
+  description = "Selected modernisation platform AWS account IDs for use by ansible"
+  type        = "SecureString"
+  key_id      = data.aws_kms_key.general_shared.arn
+  value = jsonencode({
+    for key, value in local.environment_management.account_ids :
+    key => value if contains(["hmpps-oem-${local.environment}"], key)
+  })
+
+  tags = merge(local.tags, {
+    Name = "account_ids"
+  })
+}
+```
 
 Facts are set as follows:
 - `account_ids` is a map of account IDs where account name is the key
