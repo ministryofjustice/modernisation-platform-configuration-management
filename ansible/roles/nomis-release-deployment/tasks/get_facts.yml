@@ -4,25 +4,20 @@
     path: /etc/oratab
   register: db_server_file
 
-- name: Check server has APP components
-  ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/user_projects/domains/NomisDomain
-  register: app_server_file
+- name: Fail if no DB components found
+  fail:
+    msg: Please run this role against a database
+  when: not db_server_file.stat.exists
 
-- name: DB servers facts
-  block:
-    - name: If database server , get DB name from running process
-      ansible.builtin.shell: ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
-      changed_when: false
-      check_mode: false
-      register: db_name
+- name: Find database name from running process
+  ansible.builtin.shell: ps -ef | grep pmon | grep NOM| grep -v grep | awk -F_ '{ print $3 }'
+  changed_when: false
+  check_mode: false
+  register: db_name
 
-    - name: Set db name from ec2 oracle-db-name tag
-      set_fact:
-        app_db_name: "{{ db_name.stdout }}"
-
-  # block
-  when: db_server_file.stat.exists
+- name: Set app_db_name fact
+  set_fact:
+    app_db_name: "{{ db_name.stdout }}"
 
 - name: Get secretsmanager passwords
   import_role:
@@ -42,7 +37,7 @@
     - app_db_password|length > 0
     - app_db_name|length > 0
 
-- name: Fail if missing SSM parameters or tags
+- name: Fail if missing secrets or tags
   fail:
-    msg: Ensure all required SSM parameters and tags are set
+    msg: Ensure all required secrets and tags are set
   when: not app_all_variables_set|default(false)

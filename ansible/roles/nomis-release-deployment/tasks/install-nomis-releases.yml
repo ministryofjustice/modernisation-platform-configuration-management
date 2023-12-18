@@ -1,0 +1,123 @@
+---
+- name: Create releases directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/releases
+
+- name: Get S3 file list after nomis_weblogic_releases/{{ last_nomis_release }}.zip
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    mode: list
+    prefix: "nomis_weblogic_releases/DB_V11"
+    marker: "nomis_weblogic_releases/{{ last_nomis_release }}.zip"
+  register: s3_release_objects
+  when: nomis_releases|length == 0
+
+- name: Update nomis_releases fact from S3 file list
+  set_fact:
+    nomis_releases: "{{ nomis_releases + [item.split('/')[1].split('.')[:-1] | join('.')] }}"
+  loop: "{{ s3_release_objects.s3_keys|default([]) }}"
+
+- name: Run SQL to get status of unreleased releases
+  become_user: oracle
+  ansible.builtin.shell: |
+    . ~/.bash_profile > /dev/null
+    get_status() {
+      sqlplus  -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} <<EOF
+      set head off feedback off
+      select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '{{ item }}';
+      exit
+    EOF
+    }
+    status=$(get_status | egrep -o "RELEASE_STATUS=[[:digit:]]+" | cut -d= -f2)
+    if [[ -z $status ]]; then
+      echo "Unexpected sql output for {{ item }}: $status" >&2
+      exit 1
+    fi
+    echo $status
+  changed_when: false
+  check_mode: false
+  register: release_status_shell
+  loop_control:
+    label: "{{ item }}"
+  loop: "{{ nomis_releases | unique }}"
+
+- name: Set fact for releases to download and extract
+  set_fact:
+    download_release: "{{ download_release|default([]) + [item.item] }}"
+  loop_control:
+    label: "{{ item.item }}"
+  loop: "{{ release_status_shell.results|default([]) }}"
+  when: item.stdout|int == 0
+
+- name: Download nomis release zip from S3
+  become_user: oracle
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "nomis_weblogic_releases/{{ item }}.zip"
+    dest: "/u01/releases/{{ item }}.zip"
+    mode: get
+    permission: "public-read"
+    overwrite: latest
+  loop: "{{ download_release|default([]) }}"
+
+- name: Extract release zip
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/releases/{{ item }}.zip"
+    dest: "/u01/releases"
+    remote_src: true
+    keep_newer: true
+  loop: "{{ download_release|default([]) }}"
+
+- name: Extract release tar
+  ansible.builtin.unarchive:
+    owner: oracle
+    group: oinstall
+    src: "/u01/releases/{{ item }}.tar"
+    dest: "/u01/releases"
+    remote_src: true
+    keep_newer: true
+  loop: "{{ download_release|default([]) }}"
+
+- block:
+    - name: Deploy release
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        get_status() {
+          sqlplus  -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} <<EOF
+          set head off feedback off
+          select 'RELEASE_STATUS='||count(1) from db_patches where profile_code='TAG' and profile_value like '{{ item }}';
+          exit
+        EOF
+        }
+        insert_status() {
+          sqlplus  -s {{ app_db_username }}/{{ app_db_password }}@{{ app_db_name }} <<EOF
+          set head off feedback off
+          insert into db_patches (profile_code,profile_value ) values ('TAG','{{ item }}');
+          commit;
+          exit
+        EOF
+        }
+        main() {
+          . ~/.bash_profile
+          cd /u01/releases/{{ item }}
+
+          echo {{ item }}: ./db_patch.sh -d {{ app_db_name }} -p xxx
+          # ./db_patch.sh -d {{ app_db_name }} -p {{ app_db_password }}
+          # insert_status
+          status=$(get_status | egrep -o "RELEASE_STATUS=[[:digit:]]+" | cut -d= -f2)
+          if [[ -z $status || $status -eq 0 ]]; then
+            echo "Failed deployment"
+            exit 1
+          fi
+        }
+        main 2>&1 | logger -p local3.info -t ansible-nomis-release-deployment
+      loop: "{{ download_release|default([]) }}"
