@@ -133,13 +133,13 @@
     - name: Deploy tag release
       become_user: oracle
       ansible.builtin.shell: |
-         set -eo pipefail
-         main() {
-           . ~/.bash_profile
-           echo /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} xxx {{ weblogic_db_name }}
-           /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} {{ weblogic_db_password }} {{ weblogic_db_name }}
-         }
-         main 2>&1 | logger -p local3.info -t ansible-weblogic
+        set -eo pipefail
+        main() {
+          . ~/.bash_profile
+          echo /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} xxx {{ weblogic_db_name }}
+          /u01/releases/tag_release_deployment.sh /u01/releases {{ item }} {{ weblogic_db_username }} {{ weblogic_db_password }} {{ weblogic_db_name }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
       register: deploy_shell
       loop: "{{ apply_release }}"
 
