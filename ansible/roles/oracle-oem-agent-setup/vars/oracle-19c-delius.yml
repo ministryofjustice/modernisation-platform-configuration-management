@@ -1,0 +1,10 @@
+
+---
+# Specific Delius Database configuration overrides
+# (to match legacy configuration of directory paths)
+
+oem_secretsmanager_passwords:
+  asm:
+    secret: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment-name'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+    users:
+      - asmsnmp:

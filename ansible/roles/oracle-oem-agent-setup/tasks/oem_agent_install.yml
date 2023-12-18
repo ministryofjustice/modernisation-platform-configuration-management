@@ -41,11 +41,16 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          {{ stage }}/AgentPull.sh AGENT_BASE_DIR={{ oem_agent_base }} LOGIN_USER=sysman LOGIN_PASSWORD={{ oem_sysman_password }} PLATFORM="Linux x86-64" AGENT_REGISTRATION_PASSWORD={{ oem_agent_password }} VERSION={{ OEM_AGENT_VERSION }}
+          OEM_SYSMAN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:{{ region }}:{{ account_ids[oem_secretsmanager_passwords.oem.account_name] }}:secret:{{ oem_secretsmanager_passwords.oem.secret }}" --query "SecretString" | jq -r 'fromjson | .agentreg')
+          {{ stage }}/AgentPull.sh AGENT_BASE_DIR={{ oem_agent_base }} LOGIN_USER=sysman LOGIN_PASSWORD=${OEM_SYSMAN_PASSWORD} PLATFORM="Linux x86-64" AGENT_REGISTRATION_PASSWORD={{ oem_agent_password }} VERSION={{ OEM_AGENT_VERSION }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-install
       async: 86400
       poll: 60
+      environment: 
+        AWS_ACCESS_KEY_ID: "{{ em_secrets_role.sts_creds.access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ em_secrets_role.sts_creds.secret_key }}"
+        AWS_SESSION_TOKEN: "{{ em_secrets_role.sts_crteds.session_token }}"
 
   # block
   become: true
