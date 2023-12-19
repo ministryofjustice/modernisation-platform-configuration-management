@@ -80,7 +80,7 @@
   loop_control:
     label: "{{ item.item.item }}"
   loop: "{{ release_status_shell.results|default([]) }}"
-  when: item.stdout|int != 0
+  when: item.stdout|default('0')|int != 0
 
 - name: Download nomis release zip from S3
   become_user: oracle
@@ -91,6 +91,7 @@
     mode: get
     permission: "public-read"
     overwrite: latest
+  check_mode: true
   loop: "{{ download_release|default([]) }}"
 
 - name: Extract release zip
@@ -101,6 +102,7 @@
     dest: "/u01/releases"
     remote_src: true
     keep_newer: true
+  check_mode: true
   loop: "{{ download_release|default([]) }}"
 
 - name: Extract release tar
@@ -111,6 +113,7 @@
     dest: "/u01/releases"
     remote_src: true
     keep_newer: true
+  check_mode: true
   loop: "{{ download_release|default([]) }}"
 
 - name: Check if release contains FormsSources, Static, Reports files
@@ -141,7 +144,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
       register: deploy_shell
-      loop: "{{ apply_release }}"
+      loop: "{{ apply_release|default([]) }}"
 
   always:
     - name: Update /home/oracle/tag_release_detail to record deployed releases
