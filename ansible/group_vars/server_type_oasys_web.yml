@@ -46,3 +46,11 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: xfs
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "service chronyd status"
+  - metric_name: service_status_app
+    metric_dimension: tomcat-healthcheck
+    shell_cmd: "service tomcat status"
