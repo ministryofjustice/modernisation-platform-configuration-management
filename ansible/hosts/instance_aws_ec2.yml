@@ -12,7 +12,7 @@ hostnames:
 
 compose:
   ansible_host: instance_id
-  application: tags['environment-name'].split('-')[:-1]|join('-')
+  application: tags['application']
   aws_environment: tags['environment-name'].split('-')|last
   ec2_name: tags['Name']
 
