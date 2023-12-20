@@ -2,9 +2,15 @@
 ---
 # Specific Delius Database configuration overrides
 # (to match legacy configuration of directory paths)
+#
+# We use the 'db' key to indicate that passwords for those users are found at the top level of the secret
 
 oem_secretsmanager_passwords:
   asm:
-    secret: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment-name'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+    secret: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
     users:
       - asmsnmp:
+  db:
+    secret: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+    users:
+      - dbsnmp:

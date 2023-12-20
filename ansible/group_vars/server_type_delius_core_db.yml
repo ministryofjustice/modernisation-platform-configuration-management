@@ -12,8 +12,8 @@ ami_roles_list:
   - users-and-groups # Add oracle user and associated groups
   - sudoers
   - get-ec2-facts # e.g. populate var ec2 metadata, instance and tag info fact called ec2
-  #  - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
-  #  - domain-search # for ec2provision and ec2patch only
+  - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
+  - domain-search # for ec2provision and ec2patch only
   - disable-ipv6 # disable ipv6 in sysctl
   - disable-firewall
   - packages # Perform any updates to existing if there are no new packages to install
