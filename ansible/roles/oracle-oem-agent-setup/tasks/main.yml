@@ -1,12 +1,11 @@
 ---
-
 - name: Include Application-specific Variable Overrides if Applicable
   include_vars: "{{ item }}"
   with_first_found:
-     - files:
-          - "oracle-19c-{{ ec2.tags['application'] }}.yml"
-          - "defaults.yml"
-       paths: "vars"
+    - files:
+        - "oracle-19c-{{ ec2.tags['application'] }}.yml"
+        - "defaults.yml"
+      paths: "vars"
 
 - name: Get account_ids JSON
   set_fact:
