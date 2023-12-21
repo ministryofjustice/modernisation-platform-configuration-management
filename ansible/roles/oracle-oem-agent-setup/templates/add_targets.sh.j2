@@ -43,7 +43,9 @@ then
                 # We select the appropriate Secrets ID depending on whether the oem_secretsmanager_passwords.db variable is defined
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ ( oem_secretsmanager_passwords.db.secret | default('')) if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r .dbsnmp)
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
-                # oracle_dbsys added  due to encountered bug                
+                # oracle_dbsys added  due to encountered bug     
+                TARGET_EXISTS=$(./emcli get_targets -targets=oracle_dbsys)
+                echo "TE: ${TARGET_EXISTS}"           
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
                 then 
 	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"

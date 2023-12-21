@@ -43,10 +43,6 @@
          dest: "{{ agent_install_response_file }}"
          mode: "0600"
 
-    - name: Get account_ids JSON
-      set_fact:
-        account_ids: "{{ lookup('aws_ssm', 'account_ids', region='eu-west-2') }}"
-
     - name: Add Passwords to Response File
       ansible.builtin.shell: |
         set -eo pipefail
