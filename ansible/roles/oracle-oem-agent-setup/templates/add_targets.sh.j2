@@ -16,7 +16,7 @@ then
         echo "emcli add HAS target"
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
         echo "emcli add ASM target"
-        # Search needs to use case insensitive keys so we convert all to lowercase
+        # Search needs to use case sensitive keys so we convert all to lowercase (as different apps use different case)
         ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.asm.secret }}" --query SecretString | jq -r 'fromjson | to_entries | map({key: .key | ascii_downcase, value: .value}) | from_entries | .asmsnmp')
         ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
         echo "emcli add Listener"
@@ -40,7 +40,8 @@ then
         for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
         do
                 echo ${i}
-                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.asm.secret if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r .dbsnmp)
+                # We select the appropriate Secrets ID depending on whether the oem_secretsmanager_passwords.db variable is defined
+                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.db.secret if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r .dbsnmp)
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
                 # oracle_dbsys added  due to encountered bug 
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 

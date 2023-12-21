@@ -1,7 +1,4 @@
 ---
-- debug:
-    var: account_ids
-
 - name: Fail if account ids lookup table not defined
   fail:
     msg: "Account_ids lookup not found, please check get-modernisation-platform-facts role ran successfully"
@@ -16,9 +13,6 @@
   ansible.builtin.yum:
     name: "jq"
     state: present
-
-- debug:
-    var: secretsmanager_passwords
 
 # Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
