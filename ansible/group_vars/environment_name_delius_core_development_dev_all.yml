@@ -46,3 +46,11 @@ OEM_AGENT_VERSION: 13.5.0.0.0
 dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
 dns_zone_internal: delius.hmpps-development.modernisation-platform.internal
+# Enable Oracle Native Network Encryption (ignored for TCPS connections)
+# Note that these parameters must be set in the database sqlnet.ora file, not the grid one
+sqlnet_parameters:
+  database:
+    SQLNET.ENCRYPTION_SERVER: REQUIRED
+    SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
+    SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
+    IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
