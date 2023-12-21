@@ -43,8 +43,18 @@ then
                 # We select the appropriate Secrets ID depending on whether the oem_secretsmanager_passwords.db variable is defined
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ ( oem_secretsmanager_passwords.db.secret | default('')) if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r .dbsnmp)
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:dbsnmp;password:${DBPASSWORD};Role:Normal" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
-                # oracle_dbsys added  due to encountered bug 
-                if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
+                # Poll for creation of oracle_dbsys as it sometimes takes a few seconds to appear
+                DBSYS_POLL_COUNT=0
+                while [[ ${DBSYS_POLL_COUNT} -lt 60 ]]; do
+                    TARGET_EXISTS=$(./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l)
+                    if [[ $TARGET_EXISTS -gt 0 ]]; then
+                       break
+                    fi
+                    DBSYS_POLL_COUNT=$((DBSYS_POLL_COUNT+10))
+                    sleep 10
+                done
+                # oracle_dbsys added  due to encountered bug                
+                if [ ${DBSYS_POLL_COUNT} -eq 0 ] 
                 then 
 	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
 		        ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
