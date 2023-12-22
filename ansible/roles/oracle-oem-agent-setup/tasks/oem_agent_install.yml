@@ -89,11 +89,11 @@
 
 - name: Copy Script to fix SELinux File Labels on Agent Startup Script
   ansible.builtin.copy:
-     src: selinux_label_gcstartup.sh
-     dest: "{{ stage }}/selinux_label_gcstartup.sh"
-     owner: root
-     group: root
-     mode: "0700"
+    src: selinux_label_gcstartup.sh
+    dest: "{{ stage }}/selinux_label_gcstartup.sh"
+    owner: root
+    group: root
+    mode: "0700"
 
 - name: Fix SELinux File Labels on Agent Startup Script
   ansible.builtin.shell: |
