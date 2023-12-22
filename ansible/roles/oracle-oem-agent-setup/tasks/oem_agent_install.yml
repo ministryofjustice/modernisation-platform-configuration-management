@@ -39,9 +39,9 @@
 
     - name: Copy Response File to Install OEM Agent
       ansible.builtin.template:
-         src: agent_install.j2
-         dest: "{{ agent_install_response_file }}"
-         mode: "0600"
+        src: agent_install.j2
+        dest: "{{ agent_install_response_file }}"
+        mode: "0600"
 
     - name: Add Passwords to Response File
       ansible.builtin.shell: |
@@ -54,7 +54,7 @@
           echo "AGENT_REGISTRATION_PASSWORD=${OEM_AGENT_PASSWORD}" >> {{ agent_install_response_file }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-install-rsp-file
-      environment: 
+      environment:
         AWS_ACCESS_KEY_ID: "{{ em_secrets_role.sts_creds.access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ em_secrets_role.sts_creds.secret_key }}"
         AWS_SESSION_TOKEN: "{{ em_secrets_role.sts_creds.session_token }}"
@@ -70,11 +70,10 @@
       poll: 60
 
   always:
-
-     - name: Remove Response File
-       file:
-          path: "{{ agent_install_response_file }}"
-          state: absent
+    - name: Remove Response File
+      file:
+        path: "{{ agent_install_response_file }}"
+        state: absent
 
   # block
   become: true

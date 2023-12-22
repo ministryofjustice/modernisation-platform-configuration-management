@@ -49,7 +49,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
       async: 86400
       poll: 60
-      environment: 
+      environment:
         AWS_ACCESS_KEY_ID: "{{ em_secrets_role.sts_creds.access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ em_secrets_role.sts_creds.secret_key }}"
         AWS_SESSION_TOKEN: "{{ em_secrets_role.sts_creds.session_token }}"
