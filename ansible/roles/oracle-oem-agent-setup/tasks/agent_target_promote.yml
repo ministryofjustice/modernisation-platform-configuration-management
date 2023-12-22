@@ -48,11 +48,11 @@
           {{ stage }}/add_targets.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
-      async: 86400
+      async: 3600
       poll: 60
 
   always:
-    - name: Remove add_targets.sh
+    - name: Remove temporary files
       file:
         dest: "{{ stage }}/emcli_setup.sh"
         state: absent

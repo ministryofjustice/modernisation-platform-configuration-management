@@ -41,7 +41,6 @@ then
         do
                 echo ${i}
                 DB_ROLE=$(srvctl config database -d ${i} | awk -F: '/Database role/{print $2}' | xargs)
-                # We use dbsnmp for monitoring primary databases and SYS for monitoring standby databases
                 if [[ "$DB_ROLE" == "PRIMARY" ]]; then
                   MONITORING_USER={{ db_monitoring_secret_primary_username }}
                   MONITORING_ROLE={{ db_monitoring_secret_primary_role }}
@@ -49,7 +48,7 @@ then
                   MONITORING_USER={{ db_monitoring_secret_standby_username }}
                   MONITORING_ROLE={{ db_monitoring_secret_standby_role }}
                 fi
-                SECRETNAME="{{ db_monitoring_passwords_secret_name }}"
+                SECRETNAME="{{ db_monitoring_secret_name }}"
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER})
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
                 # oracle_dbsys added  due to encountered bug     
