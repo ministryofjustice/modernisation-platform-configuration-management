@@ -79,28 +79,41 @@
   become: true
   become_user: oracle
 
-- name: Execute root.sh
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/root.sh
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script
+- name: Post-Install OEM 13.5 agent Root Actions
+  block:
 
-- name: Copy Script to fix SELinux File Labels on Agent Startup Script
-  ansible.builtin.copy:
-     src: selinux_label_gcstartup.sh
-     dest: "{{ stage }}/selinux_label_gcstartup.sh"
-     owner: root
-     group: root
-     mode: "0700"
+    - name: Execute root.sh
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/root.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script
 
-- name: Fix SELinux File Labels on Agent Startup Script
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      {{ stage }}/selinux_label_gcstartup.sh
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-oem-selinux-label-gcstartup-script
-  register: run_selinux_label_gcstartup
-  changed_when: run_selinux_label_gcstartup.stdout is search('.*changed.*')
+    - name: Copy Script to fix SELinux File Labels on Agent Startup Script
+      ansible.builtin.copy:
+        src: selinux_label_gcstartup.sh
+        dest: "{{ stage }}/selinux_label_gcstartup.sh"
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Fix SELinux File Labels on Agent Startup Script
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ stage }}/selinux_label_gcstartup.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-selinux-label-gcstartup-script
+      register: run_selinux_label_gcstartup
+      changed_when: run_selinux_label_gcstartup.stdout is search('.*changed.*')
+
+  always:
+    # Presense of the SELinux fix script may prevent agent patching, so ensure it is removed
+    - name: Remove SELinux Fix Script from Staging Directory
+      file:
+        path: "{{ stage }}/selinux_label_gcstartup.sh"
+        state: absent
+
+  # block
+  become: false
