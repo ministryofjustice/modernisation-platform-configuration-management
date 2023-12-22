@@ -49,7 +49,7 @@ then
                   MONITORING_ROLE={{ db_monitoring_secret_standby_role }}
                 fi
                 SECRETNAME="{{ db_monitoring_secret_name }}"
-                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER})
+                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER}")
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
                 # oracle_dbsys added  due to encountered bug     
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
