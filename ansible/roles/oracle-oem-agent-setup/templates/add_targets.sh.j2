@@ -5,6 +5,16 @@ STAGE={{ stage }}/emcli
 HOSTNAME=`hostname`
 HOST_FQDN_NAME=$(hostname --fqdn)
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
+
+# For delius hosts, we cannot use the hostname to determine the lifecycle status, so we use the tags instead
+if [[ "{{ ec2.tags['application'] }}" == "delius" ]]; then
+   LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
+   # First character must be made uppercase
+   LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
+   # Oracle does not support a Preproduction status so use Staging instead
+   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
+ fi
+
 INVENTORY_LOC=/u01/app/oraInventory
 cd ${STAGE}
 if [ `grep "^+ASM" /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
@@ -12,7 +22,7 @@ then
         echo "emcli add target Grid Infrastructure home"
         GRID_HOME_NAME=`grep grid  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
         echo "emcli add HAS target"
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
         echo "emcli add ASM target"
@@ -20,7 +30,7 @@ then
         ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.asm.secret }}" --query SecretString | jq -r 'fromjson | to_entries | map({key: .key | ascii_downcase, value: .value}) | from_entries | .asmsnmp')
         ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
         echo "emcli add Listener"
-        ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME}"
+        ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
 fi
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
@@ -28,7 +38,7 @@ then
         echo "emcli add target database homes"
         DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         DB_HOME=`grep ${i} ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
 fi
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
@@ -36,7 +46,7 @@ then
         echo "emcli add target database homes"
         DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         DB_HOME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }}"
         for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
         do
                 echo ${i}
@@ -46,7 +56,7 @@ then
                 [[ "$MONITORING_USER" == "sys" ]] && MONITORING_ROLE=SYSDBA || MONITORING_ROLE=normal
                 # We select the appropriate Secrets ID depending on whether the oem_secretsmanager_passwords.db variable is defined
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ ( oem_secretsmanager_passwords.db.secret | default('')) if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r ".${MONITORING_USER}")
-                ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
+                ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
                 # oracle_dbsys added  due to encountered bug     
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
                 then 
