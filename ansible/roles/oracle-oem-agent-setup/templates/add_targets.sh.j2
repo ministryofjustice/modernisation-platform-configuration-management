@@ -17,8 +17,8 @@ then
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
         echo "emcli add ASM target"
         # Search needs to use case sensitive keys so we convert all to lowercase (as different apps use different case)
-        ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.asm.secret }}" --query SecretString | jq -r 'fromjson | to_entries | map({key: .key | ascii_downcase, value: .value}) | from_entries | .asmsnmp')
-        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
+        ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ asm_monitoring_secret_name }}" --query SecretString --output text | jq -r .{{ asm_monitoring_secret_username }})
+        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:{{ asm_monitoring_secret_username|lower }};password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
         echo "emcli add Listener"
         ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME}"
 fi
@@ -42,10 +42,15 @@ then
                 echo ${i}
                 DB_ROLE=$(srvctl config database -d ${i} | awk -F: '/Database role/{print $2}' | xargs)
                 # We use dbsnmp for monitoring primary databases and SYS for monitoring standby databases
-                [[ "$DB_ROLE" == "PRIMARY" ]] && MONITORING_USER=dbsnmp || MONITORING_USER=sys
-                [[ "$MONITORING_USER" == "sys" ]] && MONITORING_ROLE=SYSDBA || MONITORING_ROLE=normal
-                # We select the appropriate Secrets ID depending on whether the oem_secretsmanager_passwords.db variable is defined
-                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ ( oem_secretsmanager_passwords.db.secret | default('')) if (oem_secretsmanager_passwords['db'] is defined) else "/oracle/database/${i}/passwords" }}" --query SecretString --output text | jq -r ".${MONITORING_USER}")
+                if [[ "$DB_ROLE" == "PRIMARY" ]]; then
+                  MONITORING_USER={{ db_monitoring_secret_primary_username }}
+                  MONITORING_ROLE={{ db_monitoring_secret_primary_role }}
+                else
+                  MONITORING_USER={{ db_monitoring_secret_standby_username }}
+                  MONITORING_ROLE={{ db_monitoring_secret_standby_role }}
+                fi
+                SECRETNAME="{{ db_monitoring_passwords_secret_name }}"
+                DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER})
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};"
                 # oracle_dbsys added  due to encountered bug     
                 if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 

@@ -71,3 +71,11 @@ disks_mount:
     fstype: swap
 
 oracle_19c_asm_passwords_delius_workaround: true
+
+asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+asm_monitoring_secret_username: "asmsnmp"
+db_monitoring_secret_name: "{{ asm_monitoring_secret_name }}"
+db_monitoring_secret_primary_username: "dbsnmp"
+db_monitoring_secret_primary_role: "normal"
+db_monitoring_secret_standby_username: "sys"
+db_monitoring_secret_standby_role: "SYSDBA"
