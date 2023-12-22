@@ -24,11 +24,11 @@ then
         GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
         ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
         echo "emcli add HAS target"
-        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS}"
+        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
         echo "emcli add ASM target"
         # Search needs to use case sensitive keys so we convert all to lowercase (as different apps use different case)
         ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ oem_secretsmanager_passwords.asm.secret }}" --query SecretString | jq -r 'fromjson | to_entries | map({key: .key | ascii_downcase, value: .value}) | from_entries | .asmsnmp')
-        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME}"
+        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:asmsnmp;password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
         echo "emcli add Listener"
         ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
 fi
