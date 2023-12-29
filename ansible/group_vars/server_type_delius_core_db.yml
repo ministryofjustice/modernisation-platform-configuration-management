@@ -74,6 +74,8 @@ oracle_19c_asm_passwords_delius_workaround: true
 
 asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
 asm_monitoring_secret_username: "asmsnmp"
+
+# We use dbsnmp for monitoring primary databases and SYS for monitoring standby databases
 db_monitoring_secret_name: "{{ asm_monitoring_secret_name }}"
 db_monitoring_secret_primary_username: "dbsnmp"
 db_monitoring_secret_primary_role: "normal"
