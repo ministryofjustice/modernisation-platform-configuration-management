@@ -24,7 +24,7 @@ jobs:
           sudo pip3 install awscli
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a  # v4.0.1
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
@@ -78,7 +78,7 @@ jobs:
             --values-to-add "${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}"
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef  # v2.0.0
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a  # v4.0.1
         with:
           role-to-assume: "arn:aws:iam::${{ secrets.IAPS_PREPRODUCTION_ACCOUNT_ID }}:role/ci-data-refresher"
           role-session-name: githubactionsrolesession
