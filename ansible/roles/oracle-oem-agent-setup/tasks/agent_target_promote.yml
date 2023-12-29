@@ -30,7 +30,7 @@
     - name: Copy add targets shell script template
       template:
         src: "{{ item }}.j2"
-        dest: "{{ app_dir }}/{{ item }}"
+        dest: "{{ app_dir }}/emcli/{{ item }}"
         mode: u=rwx,g=r,o=r
       loop:
         - emcli_setup.sh
@@ -43,9 +43,9 @@
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
           echo "running emcli_setup.sh"
-          {{ app_dir }}/emcli_setup.sh
+          {{ app_dir }}/emcli/emcli_setup.sh
           echo "running add_targets.sh"
-          {{ app_dir }}/add_targets.sh
+          {{ app_dir }}/emcli/add_targets.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
       async: 3600

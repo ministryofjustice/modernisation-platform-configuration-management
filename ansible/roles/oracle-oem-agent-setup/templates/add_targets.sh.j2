@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PATH=/usr/local/bin:${PATH}
-STAGE={{ stage }}/emcli
+EMCLI_DIR={{ app_dir }}/emcli
 HOSTNAME=`hostname`
 HOST_FQDN_NAME=$(hostname --fqdn)
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
@@ -16,7 +16,7 @@ if [[ "{{ ec2.tags['application'] }}" == "delius" ]]; then
  fi
 
 INVENTORY_LOC=/u01/app/oraInventory
-cd ${STAGE}
+cd ${EMCLI_DIR}
 if [ `grep "^+ASM" /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
 then
         echo "emcli add target Grid Infrastructure home"
