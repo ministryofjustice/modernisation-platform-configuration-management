@@ -27,11 +27,12 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
+    # EMCLI Setup script contains a password so ensure it is not readable by other users
     - name: Copy add targets shell script template
       template:
         src: "{{ item }}.j2"
-        dest: "{{ app_dir }}/emcli/{{ item }}"
-        mode: u=rwx,g=r,o=r
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
       loop:
         - emcli_setup.sh
         - add_targets.sh
@@ -43,14 +44,25 @@
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
           echo "running emcli_setup.sh"
-          {{ app_dir }}/emcli/emcli_setup.sh
+          {{ stage }}/emcli_setup.sh
           echo "running add_targets.sh"
-          {{ app_dir }}/emcli/add_targets.sh
+          {{ stage }}/add_targets.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
       async: 3600
       poll: 60
 
+  always:
+     
+    #  - name: Remove setup scripts from staging area
+    #    ansible.builtin.file:
+    #       src: "{{ stage }}/{{ item }}" 
+    #       state: absent
+    #    loop:
+    #     - emcli_setup.sh
+    #     - add_targets.sh
+       
+ 
   # block
   become: true
   become_user: oracle
