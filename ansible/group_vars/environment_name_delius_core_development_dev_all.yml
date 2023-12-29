@@ -41,10 +41,12 @@ high_availability_count:
 spg_document_rest_service_admin_url: "https://alfresco.mis-dev.delius.probation.hmpps.dsd.io/alfresco/service/admin-spg"
 spg_document_rest_service_public_url: "https://alfresco.mis-dev.delius.probation.hmpps.dsd.io/alfresco/service/noms-spg"
 # Enable Oracle Native Network Encryption (ignored for TCPS connections)
-# Note that these parameters must be set in the database sqlnet.ora file, not the grid one
+# Note that
+# (1) These parameters must be set in the database sqlnet.ora file, not the grid one
+# (2) Add time of writing there is an Oracle documentation bug - docs omit mandatory SQLNET prefix for IGNORE_ANO_ENCRYPTION_FOR_TCPS
 sqlnet_parameters:
   database:
     SQLNET.ENCRYPTION_SERVER: REQUIRED
     SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
     SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
-    IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
+    SQLNET.IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
