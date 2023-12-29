@@ -53,14 +53,14 @@
       poll: 60
 
   # always:
-     
-    #  - name: Remove setup scripts from staging area
-    #    ansible.builtin.file:
-    #       src: "{{ stage }}/{{ item }}"
-    #       state: absent
-    #    loop:
-    #     - emcli_setup.sh
-    #     - add_targets.sh
+
+  #  - name: Remove setup scripts from staging area
+  #    ansible.builtin.file:
+  #       src: "{{ stage }}/{{ item }}"
+  #       state: absent
+  #    loop:
+  #     - emcli_setup.sh
+  #     - add_targets.sh
 
   # block
   become: true
