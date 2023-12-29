@@ -9,35 +9,15 @@
 
 - name: OEM 13.5 agent Deinstall
   block:
-    - name: Get emcli from OMS server
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          cd {{ stage }}/emcli
-          wget -P /u02/stage/emcli --quiet --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emclikit-get
-
-    - name: Install emcli
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          ${JAVA_HOME}/bin/java -jar {{ stage }}/emcli/emclikit.jar -install_dir={{ stage }}/emcli
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
-
     - name: Deinstall oem agent
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          echo "emcli setup"
-          {{ stage }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -password="{{ oem_sysman_password }}" -dir="{{ stage }}/emcli/conf" -trustall -noregister 
           echo "Stop OEM agent"
           {{ oem_agent_base }}/agent_inst/bin/emctl stop agent 
           echo "Delete agent and monitored targets from OMS repository"
-          {{ stage }}/emcli/emcli  delete_target -name="{{ ansible_fqdn }}:3872"  -type="oracle_emd" -delete_monitored_targets -async
+          {{ app_dir }}/emcli/emcli  delete_target -name="{{ ansible_fqdn }}:3872"  -type="oracle_emd" -delete_monitored_targets -async
           echo "Deinstall OEM agent"
           {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/perl/bin/perl {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/sysman/install/AgentDeinstall.pl -agentHome {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}
         }

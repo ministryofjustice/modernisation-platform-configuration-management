@@ -3,7 +3,7 @@
   block:
     - name: Create directories
       ansible.builtin.file:
-        path: "{{ stage }}/emcli/conf"
+        path: "{{ app_dir }}/emcli/conf"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         state: directory
@@ -13,8 +13,8 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          cd {{ stage }}/emcli
-          wget -P /u02/stage/emcli --quiet --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
+          cd {{ app_dir }}/emcli
+          wget -P {{ app_dir }}/emcli --quiet --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emclikit-get
 
@@ -23,14 +23,14 @@
         set -eo pipefail
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          ${JAVA_HOME}/bin/java -jar {{ stage }}/emcli/emclikit.jar -install_dir={{ stage }}/emcli
+          ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
 
     - name: Copy add targets shell script template
       template:
         src: "{{ item }}.j2"
-        dest: "{{ stage }}/{{ item }}"
+        dest: "{{ app_dir }}/{{ item }}"
         mode: u=rwx,g=r,o=r
       loop:
         - emcli_setup.sh
@@ -43,19 +43,13 @@
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
           echo "running emcli_setup.sh"
-          {{ stage }}/emcli_setup.sh
+          {{ app_dir }}/emcli_setup.sh
           echo "running add_targets.sh"
-          {{ stage }}/add_targets.sh
+          {{ app_dir }}/add_targets.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
       async: 3600
       poll: 60
-
-  always:
-    - name: Remove temporary files
-      file:
-        dest: "{{ stage }}/emcli_setup.sh"
-        state: absent
 
   # block
   become: true
