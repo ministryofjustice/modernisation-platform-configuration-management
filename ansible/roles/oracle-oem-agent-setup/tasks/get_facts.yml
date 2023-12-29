@@ -9,6 +9,7 @@
   set_fact:
     oem_sysman_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['sysman'] }}"
     oem_agent_password: "{{ secretsmanager_passwords_dict['oem'].passwords['agentreg'] }}"
+  no_log: true
 
 - name: Check parameters
   set_fact:
