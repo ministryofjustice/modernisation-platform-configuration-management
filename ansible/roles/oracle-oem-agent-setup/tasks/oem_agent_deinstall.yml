@@ -25,6 +25,11 @@
       async: 86400
       poll: 60
 
+    - name: Remove EMCLI
+      ansible.builtin.file:
+         src: "{{ app_dir }}/emcli"
+         state: absent
+
   # block
   become: true
   become_user: oracle
