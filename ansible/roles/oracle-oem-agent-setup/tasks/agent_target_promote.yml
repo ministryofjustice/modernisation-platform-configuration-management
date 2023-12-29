@@ -29,9 +29,12 @@
 
     - name: Copy add targets shell script template
       template:
-        src: "add_targets.sh.j2"
-        dest: "{{ stage }}/add_targets.sh"
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
         mode: u=rwx,g=r,o=r
+      loop:
+        - emcli_setup.sh
+        - add_targets.sh
 
     - name: Setup emcli, discover and promote targets
       ansible.builtin.shell: |
@@ -39,20 +42,20 @@
         . ~/.bash_profile
         main() {
           export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          echo "emcli setup"
-          OEM_SYSMAN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:{{ region }}:{{ account_ids[oem_secretsmanager_passwords.oem.account_name] }}:secret:{{ oem_secretsmanager_passwords.emrep.secret }}" --query "SecretString" | jq -r 'fromjson | .sysman')
-          echo ${OEM_SYSMAN_PASSWORD} | {{ stage }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -dir="{{ stage }}/emcli/conf" -trustall -noregister 
-          # Now we must unset the role which we used to access OEM Secrets, so we can access local account secrets instead
-          unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+          echo "running emcli_setup.sh"
+          {{ stage }}/emcli_setup.sh
+          echo "running add_targets.sh"
           {{ stage }}/add_targets.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
-      async: 86400
+      async: 3600
       poll: 60
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ em_secrets_role.sts_creds.access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ em_secrets_role.sts_creds.secret_key }}"
-        AWS_SESSION_TOKEN: "{{ em_secrets_role.sts_creds.session_token }}"
+
+  always:
+    - name: Remove temporary files
+      file:
+        dest: "{{ stage }}/emcli_setup.sh"
+        state: absent
 
   # block
   become: true

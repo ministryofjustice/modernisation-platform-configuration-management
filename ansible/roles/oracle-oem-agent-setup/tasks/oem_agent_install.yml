@@ -43,22 +43,6 @@
         dest: "{{ agent_install_response_file }}"
         mode: "0600"
 
-    - name: Add Passwords to Response File
-      ansible.builtin.shell: |
-        set -eo pipefail
-        . ~/.bash_profile
-        main() {
-          OEM_SYSMAN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:{{ region }}:{{ account_ids[oem_secretsmanager_passwords.oem.account_name] }}:secret:{{ oem_secretsmanager_passwords.emrep.secret }}" --query "SecretString" | jq -r 'fromjson | .sysman')
-          OEM_AGENT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "arn:aws:secretsmanager:{{ region }}:{{ account_ids[oem_secretsmanager_passwords.oem.account_name] }}:secret:{{ oem_secretsmanager_passwords.oem.secret }}" --query "SecretString" | jq -r 'fromjson | .agentreg')
-          echo "LOGIN_PASSWORD=${OEM_SYSMAN_PASSWORD}" >> {{ agent_install_response_file }}
-          echo "AGENT_REGISTRATION_PASSWORD=${OEM_AGENT_PASSWORD}" >> {{ agent_install_response_file }}
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-install-rsp-file
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ em_secrets_role.sts_creds.access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ em_secrets_role.sts_creds.secret_key }}"
-        AWS_SESSION_TOKEN: "{{ em_secrets_role.sts_creds.session_token }}"
-
     - name: Install OEM agent
       ansible.builtin.shell: |
         set -eo pipefail

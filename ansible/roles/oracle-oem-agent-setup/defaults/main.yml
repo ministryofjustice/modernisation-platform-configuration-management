@@ -15,6 +15,7 @@ agent_ru_patch_number: 35437910
 agentpatcher_patch: p33355570_135000_Generic.zip
 agentpatcher_version: 13.9.5.5.0
 agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+
 oem_secretsmanager_passwords:
   oem:
     account_name: "hmpps-oem-{{ aws_environment }}"
@@ -28,7 +29,11 @@ oem_secretsmanager_passwords:
     secret: "/oracle/database/EMREP/shared-passwords"
     users:
       - sysman:
-  asm:
-    secret: "/ec2/{{ ec2_name }}/asm-passwords"
-    users:
-      - ASMSNMP:
+
+asm_monitoring_secret_name: "/ec2/{{ ec2_name }}/asm-passwords"
+asm_monitoring_secret_username: "ASMSNMP"
+db_monitoring_secret_name: "/oracle/database/_DBNAME_/passwords" # _DBNAME_ is placeholder
+db_monitoring_secret_primary_username: dbsnmp
+db_monitoring_secret_primary_role: normal
+db_monitoring_secret_standby_username: dbsnmp
+db_monitoring_secret_standby_role: normal
