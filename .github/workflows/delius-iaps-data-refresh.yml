@@ -119,7 +119,7 @@ jobs:
       - name: Generate token
         if: ${{ github.event.inputs.trigger_mp_workflow == 'true' }}
         id: generate_token
-        uses: tibdex/github-app-token@v1.8.0
+        uses: tibdex/github-app-token@v2.1.0
         with:
           app_id: ${{ secrets.HMPPS_BOT_APP_ID }}
           private_key: ${{ secrets.HMPPS_BOT_PRIVATE_KEY }}
