@@ -24,7 +24,6 @@ weblogic_admin_username: weblogic
 weblogic_db_username: oms_owner
 weblogic_db_tagsar_username: tagsar
 db_config: "{{ db_configs[weblogic_db_name] }}"
-rms_secret_path: "/oracle/weblogic/{{ nomis_environment }}/rms"
 
 weblogic_additional_form_servers:
   - { name: WLS_FORMS1A, port: 9011, properties_src: WLS_FORMS1X }
@@ -41,18 +40,27 @@ weblogic_other_form_servers:
 
 weblogic_all_form_servers: "{{ weblogic_other_form_servers + weblogic_additional_form_servers }}"
 
-use_ssm_params: false
 weblogic_secretsmanager_passwords:
   weblogic:
-    parameter: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
       - weblogic: auto
   db:
-    parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - tagsar:
       - oms_owner:
+  rms:
+    secret: "/oracle/weblogic/{{ nomis_environment }}/rms"
+    users:
+      - hosts:
+      - key:
 
-weblogic_ssm_passwords: "{{ weblogic_secretsmanager_passwords }}"
+# define the latest set of forms sources + the last associated release it contains
+forms_sources_tgz: /u01/tag/FormsSources/2023-09-18.tgz
+forms_sources_tgz_release: DB_V11.2.1.1.219
+
+# set nomis_releases if want to apply a specific patch rather than checking all available patches on S3
+nomis_releases: []
+#nomis_releases:
+#  - DB_V11.2.1.1.220

@@ -1,0 +1,87 @@
+---
+# Note these tasks can also be used elsewhere via import_role
+
+- name: Include uid and gid vars
+  ansible.builtin.include_vars:
+    dir: vars
+    files_matching: "{{ item }}-regular-.*.yml$"
+  loop: "{{ users_and_groups_regular_vars_prefixes }}"
+
+- name: Calculate list of groups
+  ansible.builtin.set_fact:
+    regular_groups_1: "{{ users_and_groups_regular | map(attribute='group') }}"
+    regular_groups_2: "{{ users_and_groups_regular | selectattr('groups', 'defined') | map(attribute='groups') | flatten }}"
+
+- name: Add regular groups
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+    system: no
+    gid: "{{ regular_gids[item]|default(omit) }}"
+  loop: "{{ (regular_groups_1 + regular_groups_2) | unique }}"
+
+- name: Calculate groups where we will add all members
+  ansible.builtin.set_fact:
+    regular_groups_for_adding_users: "{{ users_and_groups_regular | rejectattr('name', 'defined') | selectattr('group', 'defined') | map(attribute='group') }}"
+    users_regular: []
+
+- name: Add group members to user list fact
+  ansible.builtin.set_fact:
+    users_regular: "{{ users_regular + [{
+      'name': item.name,
+      'group': item.group,
+      'groups': item.groups|default([]) + regular_groups_additional_groups[item.group]|default([]),
+      'uid': item.uid | default(regular_uids[item.name]|default(omit)),
+      'create_home': item.create_home | default(true),
+      'home': item.home | default('/home/' + item.name),
+      'state': item.state | default('present'),
+      'authorized_keys': item.authorized_keys | default(regular_users_authorized_keys[item.name]|default(omit))
+      }] }}"
+  vars:
+    item:
+      group: "{{ loop_item[0].key }}"
+      name: "{{ loop_item[1] }}"
+  when: item.group in regular_groups_for_adding_users
+  loop_control:
+    loop_var: loop_item
+    label: "{{ item.name }}:{{ item.group }}"
+  loop: "{{ regular_groups_members | dict2items | subelements('value') }}"
+
+- name: Add regular users to user list fact
+  set_fact:
+    users_regular: "{{ users_regular + [{
+      'name': item.name,
+      'group': item.group,
+      'groups': item.groups|default([]) + regular_groups_additional_groups[item.group]|default([]),
+      'uid': item.uid | default(regular_uids[item.name]|default(omit)),
+      'create_home': item.create_home | default(true),
+      'home': item.home | default('/home/' + item.name),
+      'state': item.state | default('present'),
+      'authorized_keys': item.authorized_keys | default(regular_users_authorized_keys[item.name]|default(omit))
+      }] }}"
+  loop_control:
+    label: "{{ item.name }}"
+  loop: "{{ users_and_groups_regular | selectattr('name', 'defined') }}"
+
+- name: Update regular users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    group: "{{ item.group }}"
+    groups: "{{ item.groups }}"
+    uid: "{{ item.uid|default(omit) }}"
+    create_home: "{{ item.create_home }}"
+    home: "{{ item.home }}"
+    state: "{{ item.state }}"
+    system: no
+  loop_control:
+    label: "{{ item.name }}:{{ item.group }}"
+  loop: "{{ users_regular }}"
+
+- name: Update authorized keys
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.authorized_keys }}"
+  loop_control:
+    label: "{{ item.name }}"
+  loop: "{{ users_regular | rejectattr('state', 'equalto', 'absent') | selectattr('authorized_keys', 'defined') }}"
+  when: not ansible_check_mode

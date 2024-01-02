@@ -1,56 +1,20 @@
 ---
 artefacts_s3_bucket_name: ec2-image-builder-nomis20220314103938567000000001
 artefacts_s3_bucket_path: nomis_weblogic_releases
-ssm_parameters_prefix: database
-stage: /u01/releases
-tag: /u01/tag
-oracle_install_user: oracle
-oracle_install_group: oinstall
-app_db_username: oms_owner
 
-app_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+# app_db_name set in get_facts.yml
+app_db_username: oms_owner
 db_configs: {}
 db_config: "{{ db_configs[app_db_name] }}"
 
-use_ssm_params: false
 app_secretsmanager_passwords:
   db:
-    parameter: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
     users:
       - oms_owner:
 
-app_ssm_passwords: "{{ app_secretsmanager_passwords }}"
-
-nomis_releases:
-  # - { name: DB_V11.2.1.1.203.1, web_config_files: 0, db_patch_updated: 0 }
-  # - { name: DB_V11.2.1.1.204, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.205, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.206, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.207, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.208, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.209, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.210, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.211, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.212, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.213, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.213.1, web_config_files: 0, db_patch_updated: 0 }
-  # - { name: DB_V11.2.1.1.214, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.214.1, web_config_files: 0, db_patch_updated: 0 }
-  # Releases deployed on prod on 16Sep2023 DB_V11.2.1.1.215, DB_V11.2.1.1.216, DB_V11.2.1.1.217, DB_V11.2.1.1.218, DB_V11.2.1.1.219
-  # - { name: DB_V11.2.1.1.215, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.216, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.217, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.218, web_config_files: 0, db_patch_updated: 1 }
-  # - { name: DB_V11.2.1.1.219, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.220, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.221, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.222, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.223, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.224, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.225, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.226, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.227, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.228, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.229, web_config_files: 0, db_patch_updated: 1 }
-  - { name: DB_V11.2.1.1.230, web_config_files: 0, db_patch_updated: 1 }
+# set nomis_releases if want to apply a specific patch rather than checking all available patches on S3 (all patches after last_nomis_release)
+last_nomis_release: "DB_V11.2.1.1.219"
+nomis_releases: []
+# nomis_releases:
+#   - DB_V11.2.1.1.220

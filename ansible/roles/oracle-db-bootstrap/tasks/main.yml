@@ -12,6 +12,40 @@
     is_aws_environment: "{{ aws_uri_check.status == 200 }}"
   tags: always
 
+# We use the Oracle Inventory to get the Grid and Database Oracle Homes to avoid hardcoding these
+- name: Find Oracle Inventory Location
+  shell: |
+    awk -F= '/inventory_loc/{print $2}' /etc/oraInst.loc
+  register: get_ora_inventory
+  changed_when: false
+  tags: always
+
+# Using the inventory we distinguish between Grid and Database Homes depending on whether the grep flag -v
+# has been used to include or exclude the attribute 'CRS=true' respectively in the inventory XML file
+#
+# (We use basic Linux commands to parse the XML since the Ansible XML Module requires LXML library)
+- name: Get Oracle Homes from Inventory
+  shell: |
+    grep {{ grep_exclude }} "CRS=\"true\"" {{ get_ora_inventory.stdout }}/ContentsXML/inventory.xml | \
+    sed 's/\/>$//' | grep -v "REMOVED=\"T\"" | \
+    awk '{for(i=1;i<=NF;i++){if($i~"IDX="){IDX=$i}}}{for(i=1;i<=NF;i++){if($i~"LOC="){LOC=$i}}}{print IDX,LOC}' | \
+    sed 's/"//g' | tr -d 'IDX=' | tr -d 'LOC='  | sort -n -k1 | tail -1 | cut -d ' ' -f2
+  register: get_oracle_homes
+  loop: ["", "-v"]
+  loop_control:
+    loop_var: grep_exclude
+  changed_when: false
+  tags: always
+
+- set_fact:
+    oracle_database_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','-v') | first ).stdout | trim }}"
+    oracle_grid_oracle_home: "{{ ( get_oracle_homes.results | selectattr('grep_exclude','equalto','') | first ).stdout | trim }}"
+  tags: always
+
+- debug:
+    msg: "Grid Home: {{ oracle_grid_oracle_home }};  Database Home {{ oracle_database_oracle_home }}"
+  tags: always
+
 - block:
     - name: (main) Find db version file
       find:
@@ -192,6 +226,7 @@
   tags: always
 
 - name: Ensure Password File is in ASM
+  when: database_type != "standby"
   include_tasks:
     file: move_password_file_to_asm.yml
     apply:
@@ -214,7 +249,6 @@
         name: oracle-db-patches/oneoffpatch
       vars:
         install_absent_patches: true
-        target_host: localhost
 
     # Do not set Standby Database Parameters at Boot time as database will
     # not exist at this point.   Any custom parameters will be applied
@@ -222,18 +256,14 @@
     - name: Set Database Custom Parameters
       include_role:
         name: oracle-db-parameters/set_oracle_parameters
-      vars:
-        target_host: localhost
       when:
-        - database_type != "standby"
+        - database_type == "primary"
 
     # Only need to schedule database autotasks on Primary Database
-    # (Defaults will be kept if not configured in hmpps-env-configs)
+    # (Defaults will be kept if not in configuration)
     - name: Schedule Database Autotasks
       include_role:
         name: oracle-db-autotasks/configure_oracle_autotasks
-      vars:
-        target_host: localhost
       when:
         - database_type == "primary"
 
@@ -241,5 +271,4 @@
   become_user: oracle
   when:
     - oradb_installed or database_type == "standby"
-    - database_duplicated
   tags: always

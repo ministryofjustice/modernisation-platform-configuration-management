@@ -1,10 +1,31 @@
 ---
-# Define which users to create using this variable.  Groups are automatically
-# created if they are referenced by a user. For example:
+# Define which system users to create using this variable.  Groups are
+# automatically created if they are referenced by a user. For example:
 # users_and_groups_system:
 # - { name: oracle, group: oinstall }
 # - { group: mygroup }  # if just a group required
 users_and_groups_system: []
 
-# override this to load a different uid/gid vars file
-users_and_groups_system_vars_prefix: "default"
+# Define which regular users to create using this variable.  Although you can
+# specify individual users in the same way as `users_and_groups_system`, it
+# is recommended just to specify group and all group members will be added.
+# users_and_groups_regular:
+# - group: studio-webops
+users_and_groups_regular: []
+
+# Override these in vars/
+system_uids: {} # username -> uid
+system_gids: {} # group -> gid
+regular_uids: {} # username -> uid
+regular_gids: {} # group -> gid
+regular_users_authorized_keys: {} # username -> key (multi-line string)
+regular_groups_additional_groups: {} # username -> groups
+regular_groups_members: {} # group -> list of usernames
+
+# Define which files to read in from /vars
+users_and_groups_system_vars_prefixes:
+  - "default"
+  - "{{ ec2.tags['business-unit'] | lower }}"
+users_and_groups_regular_vars_prefixes:
+  - "default"
+  - "{{ ec2.tags['business-unit'] | lower }}"

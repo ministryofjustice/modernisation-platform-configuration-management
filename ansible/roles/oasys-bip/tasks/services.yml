@@ -1,4 +1,7 @@
 ---
+- name: Reload necessary links and cache to the most recent shared libraries
+  ansible.builtin.shell: ldconfig
+
 - name: Stop Weblogic and nodemanager
   become_user: oracle
   ansible.builtin.shell: |
@@ -19,7 +22,7 @@
     group: oinstall
     mode: "0700"
 
-- name: Copy nodemanager systemd helper scripts
+- name: Copy weblogic systemd helper scripts
   ansible.builtin.template:
     src: "10.3{{ item }}"
     dest: "{{ item }}"
@@ -53,7 +56,7 @@
     daemon_reload: true
 
 - name: Enable wls_nodemanager service
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: yes
   loop:
@@ -62,24 +65,24 @@
     - wls_managedserver
 
 - name: Start weblogic services
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
   loop:
     - wls_nodemanager
     - wls_adminserver
+# - name: Pause for 30 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+#   ansible.builtin.pause:
+#     minutes: 30
 
-- name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
-  ansible.builtin.pause:
-    minutes: 15
+# - name: Start weblogic managed server
+#   become: yes
+#   ansible.builtin.service:
+#     name: "{{ item }}"
+#     state: started
+#   loop:
+#     - wls_managedserver
 
-- name: Start weblogic services
-  ansible.builtin.service:
-    name: "{{ item }}"
-    state: started
-  loop:
-    - wls_managedserver
-
-- name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
-  ansible.builtin.pause:
-    minutes: 15
+# - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+#   ansible.builtin.pause:
+#     minutes: 15

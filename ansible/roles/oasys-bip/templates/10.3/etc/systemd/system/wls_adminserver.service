@@ -1,9 +1,9 @@
 [Unit]
 Description=WebLogic Admin Server
+After=wls_nodemanager.service
 
 [Service]
 Type=simple
-After=wls_nodemanager
 TimeoutStartSec=300
 ExecStart={{ scripts_dir }}/startWebLogic.sh
 ExecStartPost={{ scripts_dir }}/waitWebLogic.sh

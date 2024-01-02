@@ -10,12 +10,8 @@ Define mapping between user to uid, and group to gid, in `vars/`. For example:
 - [default-system-gids.yml](/ansible/roles/users-and-groups/vars/default-system-gids.yml)
 - [default-system-uids.yml](/ansible/roles/users-and-groups/vars/default-system-uids.yml)
 
-A custom mapping can be created if necessary.  For example, create
-`vars/myapp-system-gids.yml` and `vars/myapp-system-uids.yml` and set
-
-```
-users_and_groups_system_vars_prefix: myapp
-```
+A custom mapping can be created if necessary for a given business unit or application.  For example, create
+`vars/hmpps-system-gids.yml` and `vars/hmpps-system-uids.yml` and set
 
 ### Adding users and groups
 
@@ -55,6 +51,25 @@ Option 2. Import from another role
           - wheel
 ```
 
-## Non-System Users
+## Regular Users
 
-Not implemented yet.
+Users should add their ssh public keys to the relevant business unit vars file, e.g.
+Also assign a unique UID for consistency across servers. Suggest the username is set
+to the user's GitHub id.
+
+- [hmpps-regular-users.yml](/ansible/roles/users-and-groups/vars/hmpps-regular-users.yml)
+
+Define group details such as group membership in relevant business unit vars file, e.g.
+
+- [hmpps-regular-groups.yml](/ansible/roles/users-and-groups/vars/hmpps-regular-groups.yml)
+
+Suggest the group names follow GitHub group ids.
+
+Finally, define which users and groups to add by defining a variable in the relevant
+server-type or environment_name group vars, e.g.
+
+```
+users_and_groups_regular:
+  - group: studio-webops
+  - group: syscon-nomis
+```

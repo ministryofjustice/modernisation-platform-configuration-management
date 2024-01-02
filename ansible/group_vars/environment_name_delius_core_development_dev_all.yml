@@ -31,7 +31,7 @@ catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(R
 source_db: "DMDNDA"
 s3_source_bucket: "eu-west-2-dmd-mis-dev-oracledb-backups"
 high_availability_count:
-  delius: 1
+  delius: 2
   mis: 0
   misboe: 0
   misdsd: 0
@@ -40,3 +40,11 @@ high_availability_count:
 # Establish the vars here as a temporary measure
 spg_document_rest_service_admin_url: "https://alfresco.mis-dev.delius.probation.hmpps.dsd.io/alfresco/service/admin-spg"
 spg_document_rest_service_public_url: "https://alfresco.mis-dev.delius.probation.hmpps.dsd.io/alfresco/service/noms-spg"
+# Enable Oracle Native Network Encryption (ignored for TCPS connections)
+# Note that these parameters must be set in the database sqlnet.ora file, not the grid one
+sqlnet_parameters:
+  database:
+    SQLNET.ENCRYPTION_SERVER: REQUIRED
+    SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
+    SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
+    IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"

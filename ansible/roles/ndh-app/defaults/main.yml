@@ -1,13 +1,33 @@
+ndh_environment: "{{ ec2.tags['ndh-environment'] }}"
 ndh_app_bucket: "nomis-data-hub-software20230309164626754200000003"
 ndh_app_object: "/ndh-installation-files/LinuxAppsServer/Appsdirs.zip"
 
-test_domain_name: "t1"
-test_app_host: "t1-ndh-app"
-test_host_os: "Red Hat Enterprise Linux Server"
-test_host_os_version: "7.9"
-test_ems_host: "t1-ndh-ems"
-test_ems_port_1: "7222"
-test_ems_port_2: "7224"
+# following parameters are set in get_facts
+#ndh_admin_user:
+#ndh_admin_pass:
+#ndh_harkemsadmin_ssl_pass:
 
-ndh_proxy_host: "test"
-ndelius_proxy_pass: "interface.test.probation.service.justice.gov.uk"
+# override these default in environment group_vars if necessary
+ndh_domain_name: "{{ ndh_environment }}"
+ndh_ems_host: "{{ ndh_ems_host_a }}"
+ndh_ems_host_a: "{{ ndh_environment }}-ndh-ems-a"
+ndh_ems_host_b: "{{ ndh_environment }}-ndh-ems-b"
+ndh_app_host: "{{ ndh_app_host_a }}"
+ndh_app_host_a: "{{ ndh_environment }}-ndh-app-a"
+ndh_app_host_b: "{{ ndh_environment }}-ndh-app-b"
+ndh_ems_port_1: "7222"
+ndh_ems_port_2: "7224"
+ndh_host_os: "RHEL"
+ndh_host_os_version: "7.9"
+ndh_proxy_host: "{{ ndh_environment }}"
+
+# set this to probation interface URL in relevant environment group_vars
+#ndelius_proxy_pass:
+
+ndh_secretsmanager_passwords:
+  ndh-shared:
+    secret: "/ndh/{{ ndh_environment }}/shared"
+    users:
+      - admin_user:
+      - admin_pass:
+      - harkemsadmin_ssl_pass:

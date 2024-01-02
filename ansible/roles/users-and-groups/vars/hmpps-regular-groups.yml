@@ -1,0 +1,22 @@
+# define all non-system groups in use in hmpps accounts here
+
+# define gid if you want consistency across servers
+regular_gids:
+  studio-webops: 2001
+  syscon-nomis: 2051
+
+# define any additional groups that team members should be added to
+regular_groups_additional_groups:
+  studio-webops:
+    - wheel
+  syscon-nomis:
+    - wheel
+
+# define members of each group
+regular_groups_members:
+  studio-webops:
+    - drobinson-moj
+    - Sandhya1874
+    - KarenMoss1510
+  syscon-nomis:
+    - vinnydigital

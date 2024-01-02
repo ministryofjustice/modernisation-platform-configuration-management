@@ -14,7 +14,14 @@
   tags:
     - ec2provision
     - oracle_db_get_facts
+    - oracle_19c_download_patch
     - oracle_19c_install_grid
+
+- import_tasks: download_patch.yml
+  tags:
+    - ec2provision
+    - ec2patch
+    - oracle_19c_download_patch
 
 - import_tasks: pre_install_tasks.yml
   tags:
@@ -45,3 +52,8 @@
     - ec2provision
     - oracle_19c_install
     - oracle_19c_post_install
+
+- import_tasks: oracle_ru_upgrade.yml
+  tags:
+    - oracle_19c_RU_upgrade
+    - never

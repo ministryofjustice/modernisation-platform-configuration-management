@@ -44,3 +44,11 @@ disks_mount:
     fstype: xfs
 
 image_builder_s3_bucket_name: devtest-oasys-20230411143832198800000001
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "service chronyd status"
+  - metric_name: service_status_app
+    metric_dimension: managedserver-healthcheck
+    shell_cmd: "service wls_managedserver status"

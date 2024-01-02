@@ -25,8 +25,13 @@
       then
         echo "Service {{ database_taf_service }} already running"
       else
-        echo "Issue starting {{ database_taf_service }}" 
-        exit 1
+        if [[ "${STARTRESULT}" =~ "CRS-2800" || "${STARTRESULT}" =~ "ORA-19838" ]]
+        then
+           echo "Service {{ database_taf_service }} cannot be started as database {{ database_primary_unique }} is not available.  Skipping..."
+        else
+           echo "Issue starting {{ database_taf_service }}" 
+           exit 1
+        fi
       fi
     else
       echo "Started service {{ database_taf_service }}"

@@ -1,0 +1,21 @@
+#!/bin/bash
+export ORAENV_ASK=NO
+echo -e "set head off \n select 'OPEN_MODE='||decode (open_mode,'READ WRITE',0,-1) from v\$database; \n select '=VERSION='|| version from v\$instance; \n  exit" > {{ stage }}/db_check.sql
+for i in `ps -fe| grep pmon| grep -v "+ASM"| grep -v grep | awk -F_ '{ print $3 }'`
+do
+    export ORACLE_SID=$i
+    . oraenv >/dev/null
+    DB_STATUS=`sqlplus -s "/ as sysdba" @{{ stage }}/db_check.sql`
+    DB_OPEN=`echo $DB_STATUS| awk -F= '{ print $2 }'`
+    DB_VERSION=`echo $DB_STATUS| awk -F= '{ print $4 }'`
+    if [ ${DB_OPEN} == 0 ]
+    then
+        if [ ${DB_VERSION} == "19.0.0.0.0" ]
+        then
+            echo "Running datapatch for " $i
+            $ORACLE_HOME/OPatch/datapatch -verbose &
+        fi
+    fi
+done
+wait
+echo "All databases successfully upgraded with latest patch"

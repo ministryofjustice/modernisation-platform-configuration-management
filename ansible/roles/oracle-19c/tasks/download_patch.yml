@@ -1,0 +1,10 @@
+---
+- name: Download Oracle 19c patches from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ oracle_patch.psu_patch }}"

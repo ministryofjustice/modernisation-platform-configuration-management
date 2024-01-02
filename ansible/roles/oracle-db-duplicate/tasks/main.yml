@@ -4,6 +4,12 @@
     msg: "Cannot refresh any production database !"
   when: database_primary_sid | regex_search('PRD.*')
 
+- debug:
+    msg: |
+      ENVIRONMENT: "{{ environment_name }}"
+      APPLICATION: "{{ project_name }}"
+      REGION: "{{ region }}"
+
 - name: Exit if rman catalog not specified
   fail:
     msg: "No rman catalog specified...exiting"
@@ -63,7 +69,7 @@
         group: oinstall
         mode: 0544
         remote_src: yes
-        force: no
+        force: yes
 
     - name: Replace with s3 source bucket {{ s3_source_bucket }}
       replace:
@@ -131,6 +137,7 @@
         ENVIRONMENT: "{{ environment_name }}"
         APPLICATION: "{{ project_name }}"
         REGION: "{{ region }}"
+        HMPPS_ROLE: "{{ (group_names | select('match','environment_name_.*' + ( project_name | default('UNSET'))  + '.*' + ( simple_environment_name | default('UNSET')) + '.*_dbs$') | first | default('') ).split('_')[-2] | default('') }}"
       register: duplicate_cmd_output
       become: yes
       become_user: oracle
