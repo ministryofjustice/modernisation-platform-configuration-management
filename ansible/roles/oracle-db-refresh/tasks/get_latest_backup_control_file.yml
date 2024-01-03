@@ -21,18 +21,8 @@
     . /usr/local/bin/oraenv
     {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
     "
-  register: latest_backup_control_file
 
-- name: Print the latest backup control file
-  debug:
-    msg: "{{ latest_backup_control_file.stdout }}"
-
-- name: Write the latest backup control file to a file
-  copy:
-    content: "{{ latest_backup_control_file.stdout }}"
-    dest: "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
-
-- name: Copy the latest backup control file to the runner
+- name: Copy the latest backup control file handle details to the runner
   fetch:
     src: /tmp/latest_backup_control_file.txt
     dest: "${GITHUB_WORKSPACE:-/tmp}/{{ ORACLE_DB_REFRESH_FILE }}"
