@@ -1,3 +1,4 @@
+spool /tmp/latest_backup_control_file.txt
 with controlfile_details as
   ( select db_key, max(completion_time) completion_time 
     from rcvcatowner.RC_BACKUP_CONTROLFILE
