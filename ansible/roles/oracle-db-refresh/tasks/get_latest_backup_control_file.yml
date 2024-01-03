@@ -1,0 +1,49 @@
+---
+
+- name: Check if ORACLE_DB_REFRESH_DB_NAME is defined
+  fail:
+    msg: "ORACLE_DB_REFRESH_DB_NAME is not defined"
+  when: ORACLE_DB_REFRESH_DB_NAME == ""
+
+- name: Install SQL Script
+  template:
+    src: get_latest_backup_control_file.sql.j2
+    dest: /tmp/get_latest_backup_control_file.sql
+
+- name: Set ORACLE_HOME environment variable to grid_home
+  set_fact:
+    ORACLE_HOME: "{{ grid_home }}"
+
+- name: Run SQL Script - Get Latest Backup Control File
+  shell: |
+    sudo su - oracle -c "
+    export OAENV_ASK=NO
+    export ORACLE_SID={{ ORACLE_DB_REFRESH_DB_NAME }}
+    export ORACLE_HOME={{ ORACLE_HOME }}
+    {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
+    "
+  register: latest_backup_control_file
+
+- name: Print the latest backup control file
+  debug:
+    msg: "{{ latest_backup_control_file.stdout }}"
+
+- name: Write the latest backup control file to a file
+  copy:
+    content: "{{ latest_backup_control_file.stdout }}"
+    dest: "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
+
+- name: Copy the latest backup control file to the runner
+  fetch:
+    src: /tmp/latest_backup_control_file.txt
+    dest: "${GITHUB_WORKSPACE}/{{ ORACLE_DB_REFRESH_FILE }}"
+    flat: yes
+    fail_on_missing: yes
+
+- name: Remove the control file and SQL script
+  file:
+    path: "{{ item }}"
+    state: absent 
+  loop:
+    - "/tmp/get_latest_backup_control_file.sql"
+    - "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
