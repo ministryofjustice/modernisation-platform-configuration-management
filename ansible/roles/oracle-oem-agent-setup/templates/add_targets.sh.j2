@@ -74,7 +74,7 @@ fi
 function set_internal_target_properties()
 {
 INTERNAL_TARGET_TYPE=$1
-INTERNAL_TARGET=$(${AGENT_HOME}/bin/emctl config agent listtargets | grep ", ${INTERNAL_TARGET_TYPE}]" | cut -d, -f1 | sed 's/^\[//')
+INTERNAL_TARGET=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", ${INTERNAL_TARGET_TYPE}]" | cut -d, -f1 | sed 's/^\[//')
 LIFECYCLE=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${INTERNAL_TARGET}'" -search="PROPERTY_NAME='orcl_gtp_lifecycle_status'" -columns="PROPERTY_VALUE" -script -noheader)
 # We change the subseparator from colon as the agent (oracle_emd) target already contains a colon
 [[ -z ${LIFECYCLE} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${INTERNAL_TARGET}@@${INTERNAL_TARGET_TYPE}@@LifeCycle Status@@${LIFECYCLE_STATUS}"
