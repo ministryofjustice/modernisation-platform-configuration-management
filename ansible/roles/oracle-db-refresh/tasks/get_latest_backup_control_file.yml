@@ -35,14 +35,14 @@
 - name: Copy the latest backup control file to the runner
   fetch:
     src: /tmp/latest_backup_control_file.txt
-    dest: "${GITHUB_WORKSPACE}/{{ ORACLE_DB_REFRESH_FILE }}"
+    dest: "${GITHUB_WORKSPACE:-/tmp}/{{ ORACLE_DB_REFRESH_FILE }}"
     flat: yes
     fail_on_missing: yes
 
-- name: Remove the control file and SQL script
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - "/tmp/get_latest_backup_control_file.sql"
-    - "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
+# - name: Remove the control file and SQL script
+#   file:
+#     path: "{{ item }}"
+#     state: absent
+#   loop:
+#     - "/tmp/get_latest_backup_control_file.sql"
+#     - "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
