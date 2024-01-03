@@ -1,0 +1,12 @@
+set head off echo off feedback off 
+spool /tmp/{{ ORACLE_DB_REFRESH_FILE }}
+with controlfile_details as
+  ( select db_key, max(completion_time) completion_time 
+    from rcvcatowner.RC_BACKUP_CONTROLFILE
+    where db_name = '{{ ORACLE_DB_REFRESH_DB_NAME }}' group by db_key
+  )
+select a.HANDLE 
+from rcvcatowner.RC_BACKUP_PIECE a, controlfile_details b
+where a.db_key =b.db_key 
+and a.completion_time=b.completion_time;
+exit
