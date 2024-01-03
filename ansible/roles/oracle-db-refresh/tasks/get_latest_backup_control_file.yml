@@ -17,7 +17,7 @@
   shell: |
     sudo su - oracle -c "
     export OAENV_ASK=NO
-    export ORACLE_SID={{ ORACLE_DB_REFRESH_DB_NAME }}
+    export ORACLE_SID={{ rcvcat }}
     export ORACLE_HOME={{ ORACLE_HOME }}
     {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
     "
