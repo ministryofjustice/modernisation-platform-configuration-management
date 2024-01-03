@@ -24,7 +24,7 @@
 
 - name: Copy the latest backup control file handle details to the runner
   fetch:
-    src: /tmp/latest_backup_control_file.txt
+    src: /tmp/{{ ORACLE_DB_REFRESH_FILE }}
     dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ ORACLE_DB_REFRESH_FILE }}"
     flat: yes
     fail_on_missing: yes

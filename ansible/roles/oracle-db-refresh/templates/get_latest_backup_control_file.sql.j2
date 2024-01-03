@@ -1,5 +1,5 @@
 set head off echo off feedback off 
-spool /tmp/latest_backup_control_file.txt
+spool /tmp/{{ ORACLE_DB_REFRESH_FILE }}
 with controlfile_details as
   ( select db_key, max(completion_time) completion_time 
     from rcvcatowner.RC_BACKUP_CONTROLFILE
