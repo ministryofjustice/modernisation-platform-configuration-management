@@ -1,6 +1,7 @@
 # Overview
 
 Use this role to install Oracle Enterprise Manager agent on target servers 
+
 # Pre-requisites
  
   1. OMS detail stored in environment file 
@@ -8,19 +9,9 @@ Use this role to install Oracle Enterprise Manager agent on target servers
       OMS_SERVER: oem.test.nomis.service.justice.gov.uk
       OEM_AGENT_VERSION: 13.5.0.0.0
 
-  2. SSM entries for sysman and agent registration exists in account same as target. 
-      Entries needed 
-        - /oem/agentregpassword 
-        - /oem/sysmanpassword
+  2. Cross-account access to hmpps-oem configured
 
-      
-  2. For ASM monitoring SSM already has ASMSNMP password stored in below format - 
-
-      /database/{hostname}/ASMSNMP
-
-  3. For Database monitoring SSM already has dbsnmp password stored in below format - 
-
-      /database/{hostname}/{db sid}/dbsnmp
+  3. ASM and Database monitoring username/passwords configured in secret
 
 # Example
 
