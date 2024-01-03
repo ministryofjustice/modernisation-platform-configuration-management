@@ -1,5 +1,4 @@
 ---
-
 - name: Check if ORACLE_DB_REFRESH_DB_NAME is defined
   fail:
     msg: "ORACLE_DB_REFRESH_DB_NAME is not defined"
@@ -43,7 +42,7 @@
 - name: Remove the control file and SQL script
   file:
     path: "{{ item }}"
-    state: absent 
+    state: absent
   loop:
     - "/tmp/get_latest_backup_control_file.sql"
     - "/tmp/{{ ORACLE_DB_REFRESH_FILE }}"
