@@ -18,7 +18,7 @@
     sudo su - oracle -c "
     export OAENV_ASK=NO
     export ORACLE_SID={{ rcvcat_db_name.rcvcat_db_name }}
-    . /usr/local/bin/oraenv
+    . /usr/local/bin/oraenv <<< $ORACLE_SID
     {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
     "
 
