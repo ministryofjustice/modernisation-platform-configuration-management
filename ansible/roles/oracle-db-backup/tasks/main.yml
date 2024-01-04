@@ -1,20 +1,24 @@
 ---
-- name: Get SecretsManager secrets
-  import_role:
-    name: secretsmanager-passwords
-  vars:
-    secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
-  tags:
-    - ec2provision
-    - oracle_db_backup_secrets
-  when: db_configs[rcvcat] is defined
+- name: Oracle db backup
+  block:
+    - name: Get SecretsManager secrets
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
+      tags:
+        - ec2provision
+        - oracle_db_backup_secrets
+      when: db_configs[rcvcat] is defined
 
-- import_tasks: rman-backup-setup.yml
-  tags:
-    - ec2provision
-  when: rman_backup_script|length > 0 and db_configs[rcvcat] is defined
+    - import_tasks: rman-backup-setup.yml
+      tags:
+        - ec2provision
+      when: rman_backup_script|length > 0 and db_configs[rcvcat] is defined
 
-- import_tasks: rman-adhoc-backup.yml
-  tags:
-    - rman-adhoc-backup
-    - never
+    - import_tasks: rman-adhoc-backup.yml
+      tags:
+        - rman-adhoc-backup
+        - never
+
+  when: aws_environment not 'development'
