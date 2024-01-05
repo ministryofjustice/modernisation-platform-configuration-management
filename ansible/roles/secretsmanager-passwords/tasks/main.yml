@@ -11,10 +11,9 @@
 # install jq so scripts can easily access passwords
 - name: JQ Installation Block
   block:
-
     - name: Get Installed Packages
       ansible.builtin.yum:
-          list: installed
+        list: installed
       register: get_installed
 
     # Normally we would not need to have a when condition with the yum module.
@@ -30,7 +29,7 @@
     # jq should now be available regardless of the calling user - fail if not
     - name: Re-Check Installed Packages
       ansible.builtin.yum:
-          list: installed
+        list: installed
       register: recheck_installed
 
     - fail:
