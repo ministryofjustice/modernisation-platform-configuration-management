@@ -111,8 +111,8 @@
           cd /u01/releases/{{ item }}
 
           echo {{ item }}: ./db_patch.sh -d {{ app_db_name }} -p xxx
-          # ./db_patch.sh -d {{ app_db_name }} -p {{ app_db_password }}
-          # insert_status
+          ./db_patch.sh -d {{ app_db_name }} -p {{ app_db_password }}
+          insert_status
           status=$(get_status | egrep -o "RELEASE_STATUS=[[:digit:]]+" | cut -d= -f2)
           if [[ -z $status || $status -eq 0 ]]; then
             echo "Failed deployment"
