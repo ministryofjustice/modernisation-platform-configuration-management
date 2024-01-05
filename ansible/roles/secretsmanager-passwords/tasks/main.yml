@@ -8,11 +8,34 @@
   set_fact:
     secretsmanager_passwords_dict: "{{ secretsmanager_passwords_dict|default({}) }}"
 
-# install so scripts can easily access passwords
-- name: Install jq
-  ansible.builtin.yum:
-    name: "jq"
-    state: present
+# install jq so scripts can easily access passwords
+- name: JQ Installation Block
+  block:
+
+    - name: Get Installed Packages
+      ansible.builtin.yum:
+          list: installed
+      register: get_installed
+
+    # Normally we would not need to have a when condition with the yum module.
+    # However, if we call this role as a non-root user it will fail even if jq
+    # is already installed.  We use the when condition to skip the task altogether if
+    # jq is already installed, so that no root-specific task action is required.
+    - name: Install jq
+      ansible.builtin.yum:
+        name: "jq"
+        state: present
+      when: ( get_installed.results | selectattr('name','equalto','jq') | first | default({}) ) == {}
+
+    # jq should now be available regardless of the calling user - fail if not
+    - name: Re-Check Installed Packages
+      ansible.builtin.yum:
+          list: installed
+      register: recheck_installed
+
+    - fail:
+        msg: "Could not install jq."
+      when: ( recheck_installed.results | selectattr('name','equalto','jq') | first | default({}) ) == {}
 
 # Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
