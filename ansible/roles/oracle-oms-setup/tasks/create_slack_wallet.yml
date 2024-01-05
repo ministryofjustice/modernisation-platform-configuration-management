@@ -1,0 +1,174 @@
+---
+
+# This play creates an Oracle Wallet and populates it with SSL Certificates from slack.com
+# This is only required if we are intending to make Slack notification calls from within 
+# the OEM database, which requires a Diagnostics Pack licence for the target.
+# However, it is harmless to create the wallet on all OEM hosts even if it remains unused.
+
+- name: Configure Wallet for Storing Slack Certificates
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:  
+
+    - name: Initialize Dictionary of Certificates
+      set_fact:
+        certificate_dict: {}
+    
+    - name: Get Path to ORAPKI Utility
+      shell: |
+            export PATH=$PATH:/usr/local/bin
+            . oraenv >/dev/null
+            which orapki
+      environment:
+          ORAENV_ASK: 'NO'
+          ORACLE_SID: EMREP
+      register: get_orapki
+      changed_when: false
+
+    - name: Set Path to ORAPKI Utility
+      set_fact:
+         orapki: "{{ get_orapki.stdout | trim }}"
+
+    - name: Set fact for wallet directory
+      set_fact: 
+        slack_wallet_dir: "{{ app_dir }}/wallets/slack_wallet"
+
+    - name: Create Slack Wallet Directory and Temporary Working Directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        recurse: yes
+      loop:
+        - "{{ slack_wallet_dir }}"
+        - "{{ temp }}/slack"
+
+    - name: Fetch Slack SSL Certificates
+      shell: |
+        echo Q | openssl s_client -connect slack.com:443 -tls1_2 -showcerts > {{ temp }}/slack/slack_certs.txt
+      changed_when: false
+                    
+    - name: Get List of Any Pre-Existing Individual Certificate Files
+      find:
+        paths: "{{ temp }}/slack"
+        patterns: slack.[0-9][0-9].crt
+      register: files_to_delete
+
+    - name: Remove Any Pre-Existing Individual Cerificate Files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ files_to_delete.files }}"
+
+    - name: Split Certificate Output into Individual Certificate Files
+      shell: |
+        awk 'BEGIN{INFLAG=0}
+        /-----BEGIN CERTIFICATE-----/{INFLAG=1}
+        {if(INFLAG==1){print $0}}
+        /-----END CERTIFICATE-----/{INFLAG=0}' {{ temp }}/slack/slack_certs.txt | csplit --prefix='{{ temp }}/slack/slack.' --suffix-format='%02d.crt' --elide-empty-files  - "/-----END CERTIFICATE-----/+1" {*}
+      changed_when: false
+
+    - name: Write the Slack Wallet password to a temporary file for creation of the wallet
+      copy:
+        content: "{{ slack_wallet_password }}"
+        dest: "{{ temp }}/slack/slack_wallet.conf"
+        mode: '0600' 
+
+    - name: Create Wallet if it does not already exist
+      shell: |
+        {{ orapki }} wallet create -wallet {{ slack_wallet_dir }} -pwd <(cat {{ temp }}/slack/slack_wallet.conf) -auto_login
+      args:
+        creates: "{{ slack_wallet_dir }}/cwallet.sso"
+        executable: /usr/bin/bash
+      register: orapki_out
+          
+    - name: Get List of Certificate Files
+      find:
+        paths: "{{ temp }}/slack"
+        patterns: slack.[0-9][0-9].crt
+        excludes: slack.00.crt
+        file_type: file
+        recurse: no
+      register: certificate_files
+
+    - name: Add Supplementary Certificate Attributes with Default Values
+      set_fact:
+        tmp_certificate: >
+          {{ 
+            {item.path:
+              {'filename':item.path,
+              'md5sum':''}
+              } 
+          }}
+      with_items: "{{ certificate_files.files }}"
+      register: tmp_certificates
+
+    - name: Create Dictionary of Certificates Available to be Loaded into Wallet
+      set_fact:
+        certificate_dict: "{{ certificate_dict | combine(item) }}"
+      with_items: "{{ tmp_certificates.results | map(attribute='ansible_facts.tmp_certificate') | list }}"
+
+    - name: Calculate Checksums for all Certificates Available to be Loaded
+      include_tasks: calculate_certificate_checksum.yml
+      vars:
+        certificate_filename: "{{ item.key }}"
+      with_dict: "{{ certificate_dict }}"
+
+    - name: Get List of Trusted Certificate DNs Already in the Wallet
+      shell: |
+        {{ orapki }} wallet display -wallet {{ slack_wallet_dir }} | awk -F: 'BEGIN{TRUSTED=0}
+          /Trusted Certificates/{TRUSTED=1}
+          /Subject/{if(TRUSTED==1){print $2}}' | sed 's/^\s*//'
+      register: certificate_dn
+      changed_when: false
+
+    - name: Generate Checksums for Certificates Already in the Wallet
+      shell: |
+        {{ orapki }} wallet export -wallet {{ slack_wallet_dir }} -dn "{{ item }}" -cert {{ temp }}/slack/cert.out 1>/dev/null; echo $(cat {{ temp }}/slack/cert.out) | sed 's/\s*//g' | md5sum
+      register: certificate_dn_cksum
+      with_items: "{{ certificate_dn.stdout_lines }}"
+      changed_when: false
+
+    - name: Initialize List of Installed Certificate Checksums
+      set_fact:
+        installed_certificate_cksum: []
+
+    - name: Populate List of Installed Certificate Checksums
+      set_fact:
+        installed_certificate_cksum: "{{ installed_certificate_cksum + [item.stdout] }}"
+      with_items: "{{ certificate_dn_cksum.results }}"
+
+    - name: Add Absent Certificates into the Wallet
+      shell: |
+        {{ orapki }} wallet add -wallet {{ slack_wallet_dir }} -trusted_cert -cert {{ item.value.filename }} -pwd <(cat {{ temp }}/slack/slack_wallet.conf)
+      with_dict: "{{ certificate_dict }}"
+      when: item.value.md5sum not in installed_certificate_cksum
+      args:
+         executable: /usr/bin/bash
+          
+  always:
+
+    - name: Remove Password File
+      file:
+        path: "{{ temp }}/slack/slack_wallet.conf"
+        state: absent
+      changed_when: false
+
+    - name: Get List of Individual Certificate Files
+      find:
+        paths: "{{ temp }}/slack"
+        patterns: slack.[0-9][0-9].crt
+      register: files_to_delete
+      changed_when: false
+
+    - name: Remove Any Individual Cerificate Files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ files_to_delete.files }}"
+      changed_when: false
+
+    - name: Remove Aggregate Certificate File
+      file:
+        path: "{{ temp }}/slack/slack_certs.txt"
+        state: absent
+      changed_when: false
