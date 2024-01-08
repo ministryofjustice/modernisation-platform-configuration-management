@@ -17,6 +17,7 @@
     weblogic_admin_password: "{{ secretsmanager_passwords_dict['oem'].passwords['weblogic_admin'] }}"
     nodemanager_password: "{{ secretsmanager_passwords_dict['oem'].passwords['nodemanager'] }}"
     oem_agent_password: "{{ secretsmanager_passwords_dict['oem_shared'].passwords['agentreg'] }}"
+    slack_wallet_password: "{{ secretsmanager_passwords_dict['oem'].passwords['slack_wallet'] }}"
 
 - name: Check parameters
   set_fact:
@@ -29,6 +30,7 @@
     - weblogic_admin_password|length > 0
     - nodemanager_password|length > 0
     - oem_agent_password|length > 0
+    - slack_wallet_password|length > 0
 
 - name: Fail if missing parameters
   fail:
