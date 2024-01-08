@@ -45,7 +45,7 @@
     path: /home/oracle/tag_release_detail
     line: "{{ item }}"
     create: yes
-  check_mode: true
+  check_mode: false
   register: tag_release_detail
   loop: "{{ nomis_releases | unique }}"
 
@@ -91,7 +91,7 @@
     mode: get
     permission: "public-read"
     overwrite: latest
-  check_mode: true
+  check_mode: false
   loop: "{{ download_release|default([]) }}"
 
 - name: Extract release zip
@@ -102,7 +102,7 @@
     dest: "/u01/releases"
     remote_src: true
     keep_newer: true
-  check_mode: true
+  check_mode: false
   loop: "{{ download_release|default([]) }}"
 
 - name: Extract release tar
@@ -113,7 +113,7 @@
     dest: "/u01/releases"
     remote_src: true
     keep_newer: true
-  check_mode: true
+  check_mode: false
   loop: "{{ download_release|default([]) }}"
 
 - name: Check if release contains FormsSources, Static, Reports files

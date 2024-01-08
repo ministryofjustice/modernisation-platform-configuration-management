@@ -75,6 +75,7 @@
     remote_src: true
     keep_newer: true
   loop: "{{ download_release|default([]) }}"
+  when: not ansible_check_mode
 
 - name: Extract release tar
   ansible.builtin.unarchive:
@@ -85,6 +86,7 @@
     remote_src: true
     keep_newer: true
   loop: "{{ download_release|default([]) }}"
+  when: not ansible_check_mode
 
 - block:
     - name: Deploy release
