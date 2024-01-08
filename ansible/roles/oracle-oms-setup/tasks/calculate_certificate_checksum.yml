@@ -1,11 +1,10 @@
 ---
-
-- name: Get Checksum for file {{ certificate_filename }} 
+- name: Get Checksum for file {{ certificate_filename }}
   shell: |
-         echo $(cat {{ certificate_filename }}) | sed 's/\s*//g' | md5sum 
+    echo $(cat {{ certificate_filename }}) | sed 's/\s*//g' | md5sum
   register: certificate_checksum
   changed_when: false
 
-- name: Record Certificate Checksum in Dictionary 
+- name: Record Certificate Checksum in Dictionary
   set_fact:
-     certificate_dict: "{{ certificate_dict|combine({certificate_filename: {'md5sum': certificate_checksum.stdout }}, recursive=true) }}"
+    certificate_dict: "{{ certificate_dict|combine({certificate_filename: {'md5sum': certificate_checksum.stdout }}, recursive=true) }}"
