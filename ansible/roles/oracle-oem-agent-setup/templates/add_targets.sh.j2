@@ -17,10 +17,10 @@ if [[ "${APPLICATION}" == "delius" ]]; then
 fi
 
 # We use CONTACT to determine which Slack channel to route incidents
-if [[ $LIFECYCLE_STATUS="Production" || $LIFECYCLE_STATUS="MissionCritical" ]]; then
-   CONTACT="${APPLICATION}-aws-oracle-prod-alerts"
+if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
+   CONTACT="#${APPLICATION}-aws-oracle-prod-alerts"
 else
-   CONTACT="${APPLICATION}-aws-oracle-dev-alerts"
+   CONTACT="#${APPLICATION}-aws-oracle-dev-alerts"
 fi
 
 TARGET_PROPERTIES="orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:${APPLICATION};orcl_gtp_contact:${CONTACT};"
@@ -118,14 +118,14 @@ fi
 
 # If this is an OEM target then change the Line of Business and Contact accordingly
 if [[ -z ${OEM_TARGET} ]]; then
-   TARGET_LINE_OF_BUSINESS=APPLICATION
-   TARGET_CONTACT=CONTACT
+   TARGET_LINE_OF_BUSINESS=${APPLICATION}
+   TARGET_CONTACT=${CONTACT}
 else
    TARGET_LINE_OF_BUSINESS="oem"
    if [[ $LIFECYCLE_STATUS="Production" || $LIFECYCLE_STATUS="MissionCritical" ]]; then
-      CONTACT="#oem-aws-oracle-prod-alerts"
+      TARGET_CONTACT="#oem-aws-oracle-prod-alerts"
    else
-      CONTACT="#oem-aws-oracle-dev-alerts"
+      TARGET_CONTACT="#oem-aws-oracle-dev-alerts"
    fi
 fi
 
@@ -134,8 +134,9 @@ EXISTING_LINE_OF_BUSINESS=$(./emcli list -resource=TargetProperties -search="TAR
 [[ -z ${EXISTING_LINE_OF_BUSINESS} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Line of Business@@${TARGET_LINE_OF_BUSINESS}" ${PROPAGATE}
 
 # Do not override an existing contact
+echo "TARGET_NAME: $TARGET_NAME;  TARGET_TYPE: $TARGET_TYPE"
 EXISTING_CONTACT=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${TARGET_NAME}'" -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -columns="PROPERTY_VALUE" -script -noheader)
-[[ -z $EXISTING_CONTACT} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Contact@@${TARGET_CONTACT}" ${PROPAGATE}
+[[ -z ${EXISTING_CONTACT} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Contact@@${TARGET_CONTACT}" ${PROPAGATE}
 }
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
@@ -174,12 +175,23 @@ set_target_properties host "${TARGET_NAME}"
 TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", oracle_emd]" | cut -d, -f1 | sed 's/^\[//')
 set_target_properties oracle_emd "${TARGET_NAME}"
 
+# Check if High Availability Services are running and add HAS target if one does not already exist
+HAS_PROCESS_RUNNING=$(ps -ef | grep init.ohasd | grep -vc grep)
+if [[ ${HAS_PROCESS_RUNNING} -gt 0 ]]; then
+   HAS_TARGET_EXISTS=$({{ agent_home }}/bin/emctl config agent listtargets | grep -c ", has]")
+   if [[ ${HAS_TARGET_EXISTS} -eq 0 ]]; then
+      ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host=${HOST_FQDN_NAME}
+      set_target_properties has "has_${HOST_FQDN_NAME}"
+   fi
+fi
+
 # For any remaining targets in OEM which do not have Contact properties set, assign those as internal OEM (as opposed to Application) targets
 IFS=$'\n'
 for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separator:|");
 do
         TARGET_TYPE=$(echo "$TARGET" | cut -d"|" -f3)
         TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
+        echo "HERE: $TARGET_NAME of type $TARGET_TYPE"
         EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
                             -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
         # Group targets do not have properties
