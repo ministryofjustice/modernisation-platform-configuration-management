@@ -160,10 +160,10 @@ then
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER}")
                 ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};${TARGET_PROPERTIES}"
                 # oracle_dbsys added  due to encountered bug     
-                if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
+                if [[ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ]] && [[ "$DB_ROLE" == "PRIMARY" ]];
                 then 
 	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
-		        ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
+		             ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
                 fi
                 set_target_properties oracle_dbsys "${i}_sys"
         done
