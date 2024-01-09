@@ -46,3 +46,9 @@
   tags:
     - ec2provision
   when: ndelius_proxy_pass is defined
+
+# run any handlers before progressing to next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always
