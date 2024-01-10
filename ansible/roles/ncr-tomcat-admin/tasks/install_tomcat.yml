@@ -14,12 +14,11 @@
     path: /etc/init.d/SAPBOBJEnterpriseXI40
   register: setupinit_folder_check
 
-- name: Install BIP
+- name: Install Tomcat
   block:
     - name: Perform pre-requesite checks
       become_user: bobj
       ansible.builtin.shell: "/u02/software/BIP_4_3_SP1/setup.sh -InstallDir /u01/app/bobj/BIP4/ -pre_requisite_check /u02/software/BIP_4_3_SP1/prereq_checks.ini /u02/software/BIP_4_3_SP1/failedPrereqs.txt"
-      ignore_errors: true
 
     - name: Run Silent Installation
       become_user: bobj

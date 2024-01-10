@@ -5,6 +5,8 @@ sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
 sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
 sap_jvm_unpack_base_directory: /opt/sap/java
 
+ncr_environment: "{{ ec2.tags['ncr-environment'] }}"
+
 s3:
   bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
   packages_prefix: BIP/
@@ -20,11 +22,6 @@ ssm_parameters_prefix: "bip"
 
 bip_secretsmanager_passwords:
   bip:
-    account_name: "nomis-combined-reporting-{{ aws_environment }}"
-    secret: "/t1-ncr-bip/passwords"
+    secret: "/ec2/ncr-bip/{{ ncr_environment }}/passwords"
     users:
-      - cms_cluster_key:
-      - cms_admin_password:
-      - cms_db_password:
-      - lcm_password:
-      - product_key:
+      - bip: auto
