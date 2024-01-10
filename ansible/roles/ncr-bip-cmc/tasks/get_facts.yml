@@ -7,12 +7,12 @@
 
 - name: Set password facts
   set_fact:
-    cms_cluster_key: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[cms_cluster_key] }}"
-    cms_admin_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[cms_admin_password] }}"
-    cms_db_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[cms_db_password] }}"
-    lcm_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[lcm_password] }}"
-    product_key: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[product_key] }}"
-    auditing_db_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords[auditing_db_password] }}"
+    cms_cluster_key: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['cms_cluster_key'] }}"
+    cms_admin_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['cms_admin_password'] }}"
+    cms_db_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['cms_db_password'] }}"
+    lcm_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['lcm_password'] }}"
+    product_key: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['product_key'] }}"
+    auditing_db_password: "{{ secretsmanager_passwords_dict['bip_cmc'].passwords['auditing_db_password'] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
