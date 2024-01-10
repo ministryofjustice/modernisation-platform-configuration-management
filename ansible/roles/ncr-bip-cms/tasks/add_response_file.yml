@@ -8,44 +8,44 @@
 
 - name: Copy response file
   ansible.builtin.template:
-    src: u02/software/BIP_4_3_SP1/cmc_response.ini
-    dest: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    src: u02/software/BIP_4_3_SP1/cms_response.ini
+    dest: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     owner: bobj
     group: binstall
     mode: "0755"
 
 - name: Ensure cms cluster key is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^clusterkey="
     line: "clusterkey={{ cms_cluster_key }}"
 
 - name: Ensure cms admin password is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^cmspassword="
     line: "cmspassword={{ cms_admin_password }}"
 
 - name: Ensure lcm password is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^lcmpassword="
     line: "lcmpassword={{ lcm_password }}"
 
 - name: Ensure cms db password is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^existingcmsdbpassword="
     line: "existingcmsdbpassword={{ cms_db_password }}"
 
 - name: Ensure auditing db password is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^existingauditingdbpassword="
     line: "existingauditingdbpassword={{ auditing_db_password }}"
 
 - name: Ensure product key is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/cmc_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^productkey="
     line: "productkey={{ product_key }}"

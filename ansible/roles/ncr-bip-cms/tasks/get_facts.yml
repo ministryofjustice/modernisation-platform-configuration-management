@@ -1,0 +1,31 @@
+---
+- name: Get BIP secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ bip_cms_secretsmanager_passwords }}"
+
+- name: Set password facts
+  set_fact:
+    cms_cluster_key: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[cms_cluster_key] }}"
+    cms_admin_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[cms_admin_password] }}"
+    cms_db_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[cms_db_password] }}"
+    lcm_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[lcm_password] }}"
+    product_key: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[product_key] }}"
+    auditing_db_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords[auditing_db_password] }}"
+
+- name: Check all SSM parameters and tags are set
+  set_fact:
+    bip_cms_all_variables_set: true
+  when:
+    - cms_cluster_key|length > 0
+    - cms_admin_password|length > 0
+    - lcm_password|length > 0
+    - cms_db_password|length > 0
+    - auditing_db_password|length > 0
+    - product_key|length > 0
+
+- name: Fail if missing SSM parameters or tags
+  fail:
+    msg: Ensure all required SSM parameters and tags are set
+  when: not bip_cms_all_variables_set|default(false)
