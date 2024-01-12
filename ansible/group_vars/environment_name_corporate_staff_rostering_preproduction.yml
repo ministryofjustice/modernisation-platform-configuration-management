@@ -50,22 +50,16 @@ db_configs:
     service:
       - { name: IWFM_TAF, role: PRIMARY }
 
-db_sid: PPIWFM
-refresh_script: csr_training_schema_refresh.sh
-training_schema_refresh_cron:
-  iwfm_train_refresh:
-    - name: iwfm_train_refresh
-      weekday: "6"
-      minute: "00"
-      hour: "06"
-      dump_file: iwfm_train3_06042023.dmp
-      source_schema: iwfm_train3
-      target_schema: iwfm_train4
-  train_custom_refresh:
-    - name: train_custom_refresh
-      weekday: "6"
-      minute: "00"
-      hour: "06"
-      dump_file: train_custom3_06042023.dmp
-      source_schema: train_custom3
-      target_schema: train_custom4
+REFRESH_DB:
+  pp-csr-db-a:
+    db_name: PPIWFM
+    cron: 
+      - name: Weekly data refresh for training schema's 
+        weekday: "6"
+        minute: "00"
+        hour: "06"
+    files: 
+      - csr_preprod_schema_refresh_from_prod.sh
+      - csr_weekly_training_schema_refresh.sh
+      - csr_schema_refresh.sh
+      - csr_training_schema_export.sh

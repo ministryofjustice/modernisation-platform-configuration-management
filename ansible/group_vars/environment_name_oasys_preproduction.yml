@@ -78,3 +78,25 @@ db_configs:
   #       }
   #   service:
   #     - { name: BIPINF_TAF, role: PRIMARY }
+
+REFRESH_DB:
+  pp-oasys-db-a:
+    db_name: PPOASYS 
+    azure_storage: https://strpdnomsazcopyorabkup.blob.core.windows.net/pdodl00011-oasprod
+    extra_file_list: Create_XDB_SYSTEM_PARAMETER.sql
+    azure_backup_directory: /u03/backup/rman
+    cron: 
+      - name: azcopy backup restore 
+        weekday: "0"
+        minute: "00"
+        hour: "07"
+      - name: preprod database refresh 
+        weekday: "0"
+        minute: "00"
+        hour: "07"
+    files:
+      - azcopy_backup_restore.sh
+      - initPPOASYS.ora
+      - PPOASYS_post_refresh_steps.sh
+      - db_refresh.sh
+  

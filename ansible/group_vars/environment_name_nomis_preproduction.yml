@@ -10,11 +10,119 @@ dns_search_domains:
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
 
 db_configs:
-  PPCNOM:
-    db_name: PPCNOM
   RCVCAT:
     rcvcat_db_name: PPRCVCAT
+  PPCNOM:
+    db_name: PPCNOM
+    db_unique_name: PPCNOM
+    instance_name: PPCNOM
+    host_name: preprod-nomis-db-1-a
+    port: 1521
+    tns_name: PPCNOM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+
+  PPTRDAT:
+    db_name: PPTRDAT
+    db_unique_name: PPTRDAT
+    instance_name: PPTRDAT
+    host_name: preprod-nomis-db-1-a
+    port: 1521
+    tns_name: PPTRDAT
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+
+  PPNDH:
+    db_name: PPNDH
+    db_unique_name: PPNDH
+    instance_name: PPNDH
+    host_name: preprod-nomis-db-1-a
+    port: 1521
+    tns_name: PPNDH
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+
+  PPMIS:
+    db_name: PPMIS
+    db_unique_name: MISP
+    instance_name: MISP
+    host_name: preprod-nomis-db-2-a
+    port: 1521
+    tns_name: MISP
+    asm_disk_groups: DATA,FLASH
+    s3_bucket: s3-bucket20220427111226925000000002
+    service:
+      - { name: MIS_TAF, role: PRIMARY }
+
+  PPCNMAUD:
+    db_name: PPCNMAUD
+    db_unique_name: PPCNMAUD
+    instance_name: PPCNMAUD
+    host_name: preprod-nomis-db-2-a
+    port: 1521
+    tns_name: PPCNMAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: CNMAUD_TAF, role: PRIMARY }
+
+  PPCNOMHA:
+    db_name: CNOMPP
+    db_unique_name: PPCNOMHA
+    instance_name: PPCNOMHA
+    host_name: preprod-nomis-db-1-b
+    port: 1521
+    tns_name: PCNOMHA
+    s3_bucket: s3-bucket20220929161938056300000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: STANDBY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: STANDBY }
 
 osbws_additional_configs:
   - name: osbws_prod
     s3_bucket_name: nomis-db-backup-bucket20220427111226918600000001
+
+REFRESH_DB:
+  PPCNOM:
+    azure_storage: https://strpdnomsazcopyorabkup.blob.core.windows.net/pdpdl00035-cnomp
+    azure_backup_directory: /u03/backup/rman
+    cron: 
+      - name: azcopy backup restore 
+        weekday: "0"
+        minute: "00"
+        hour: "08"
+      - name: preprod database refresh 
+        weekday: "0"
+        minute: "00"
+        hour: "11"
+    files:
+      - azcopy_backup_restore.sh
+      - initPPCNOM.ora
+      - PPCNOM_post_refresh_steps.sh
+      - db_refresh.sh
+    
+  PPMIS:
+    azure_storage: https://strpdnomsazcopyorabkup.blob.core.windows.net/pdpdl00036-misp
+    azure_backup_directory: /u03/backup/rman
+    cron: 
+      - name: azure backup restore 
+        weekday: "0"
+        minute: "00"
+        hour: "07"
+      - name: preprod database refresh 
+        weekday: "0"
+        minute: "00"
+        hour: "13"
+    files:
+      - azcopy_backup_restore.sh
+      - initPPMIS.ora
+      - PPMIS_post_refresh_steps.sh
+      - db_refresh.sh
