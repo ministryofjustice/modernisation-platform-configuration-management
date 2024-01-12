@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 export PATH=/usr/local/bin:${PATH}
 EMCLI_DIR={{ app_dir }}/emcli
 HOSTNAME=`hostname`
@@ -34,7 +36,7 @@ then
         GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
         ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         echo "emcli add HAS target"
-        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};${TARGET_PROPERTIES};"
+        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};${TARGET_PROPERTIES}"
         echo "emcli add ASM target"
         # Search needs to use case sensitive keys so we convert all to lowercase (as different apps use different case)
         ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ asm_monitoring_secret_name }}" --query SecretString --output text | jq -r .{{ asm_monitoring_secret_username }})
@@ -122,21 +124,15 @@ if [[ -z ${OEM_TARGET} ]]; then
    TARGET_CONTACT=${CONTACT}
 else
    TARGET_LINE_OF_BUSINESS="oem"
-   if [[ $LIFECYCLE_STATUS="Production" || $LIFECYCLE_STATUS="MissionCritical" ]]; then
+   if [[ "$LIFECYCLE_STATUS" == "Production" ]] || [[ "$LIFECYCLE_STATUS" == "MissionCritical" ]]; then
       TARGET_CONTACT="#oem-aws-oracle-prod-alerts"
    else
       TARGET_CONTACT="#oem-aws-oracle-dev-alerts"
    fi
 fi
 
-# Do not override an existing line of business
-EXISTING_LINE_OF_BUSINESS=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${TARGET_NAME}'" -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_line_of_bus'" -columns="PROPERTY_VALUE" -script -noheader)
-[[ -z ${EXISTING_LINE_OF_BUSINESS} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Line of Business@@${TARGET_LINE_OF_BUSINESS}" ${PROPAGATE}
-
-# Do not override an existing contact
-echo "TARGET_NAME: $TARGET_NAME;  TARGET_TYPE: $TARGET_TYPE"
-EXISTING_CONTACT=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${TARGET_NAME}'" -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -columns="PROPERTY_VALUE" -script -noheader)
-[[ -z ${EXISTING_CONTACT} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Contact@@${TARGET_CONTACT}" ${PROPAGATE}
+./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Line of Business@@${TARGET_LINE_OF_BUSINESS}" ${PROPAGATE}
+./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Contact@@${TARGET_CONTACT}" ${PROPAGATE}
 }
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
@@ -170,20 +166,15 @@ then
 fi
 
 # Set the Properties for Internal Targets if Not Already Set
-TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", host]" | cut -d, -f1 | sed 's/^\[//')
-set_target_properties host "${TARGET_NAME}"
-TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", oracle_emd]" | cut -d, -f1 | sed 's/^\[//')
-set_target_properties oracle_emd "${TARGET_NAME}"
+HOST_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", host]" | cut -d, -f1 | sed 's/^\[//')
+set_target_properties host "${HOST_TARGET_NAME}"
+AGENT_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", oracle_emd]" | cut -d, -f1 | sed 's/^\[//')
+set_target_properties oracle_emd "${AGENT_TARGET_NAME}"
 
-# Check if High Availability Services are running and add HAS target if one does not already exist
-HAS_PROCESS_RUNNING=$(ps -ef | grep init.ohasd | grep -vc grep)
-if [[ ${HAS_PROCESS_RUNNING} -gt 0 ]]; then
-   HAS_TARGET_EXISTS=$({{ agent_home }}/bin/emctl config agent listtargets | grep -c ", has]")
-   if [[ ${HAS_TARGET_EXISTS} -eq 0 ]]; then
-      ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host=${HOST_FQDN_NAME}
-      set_target_properties has "has_${HOST_FQDN_NAME}"
-   fi
-fi
+# Set the Properties for the Agent Oracle Home if Not Already Set
+AGENT_ORACLE_HOME=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${AGENT_TARGET_NAME}'" -search="PROPERTY_NAME='AgentOracleHome'" -column="PROPERTY_VALUE" -script -noheader)
+AGENT_ORACLE_HOME_TARGET=$(./emcli list -resource="Targets" -search="HOST_NAME='${HOST_FQDN_NAME}'" -search="TARGET_TYPE='oracle_home'" -columns='TARGET_NAME' -script -noheader | xargs -I '{}' ./emcli list -resource="TargetProperties" -search="TARGET_NAME='{}'" -search="TARGET_TYPE='oracle_home'" -search="PROPERTY_NAME='INSTALL_LOCATION'" -columns="PROPERTY_VALUE,TARGET_NAME" -script -noheader | grep -E "^${AGENT_ORACLE_HOME}\s+" | cut -f2)
+set_target_properties oracle_home "${AGENT_ORACLE_HOME_TARGET}"
 
 # For any remaining targets in OEM which do not have Contact properties set, assign those as internal OEM (as opposed to Application) targets
 IFS=$'\n'
@@ -191,7 +182,6 @@ for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separa
 do
         TARGET_TYPE=$(echo "$TARGET" | cut -d"|" -f3)
         TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
-        echo "HERE: $TARGET_NAME of type $TARGET_TYPE"
         EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
                             -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
         # Group targets do not have properties
