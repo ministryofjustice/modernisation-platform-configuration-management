@@ -7,13 +7,23 @@ HOST_FQDN_NAME=$(hostname --fqdn)
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
 
 # For delius hosts, we cannot use the hostname to determine the lifecycle status, so we use the tags instead
-if [[ "{{ ec2.tags['application'] }}" == "delius" ]]; then
+APPLICATION="{{ ec2.tags['application'] }}"
+if [[ "${APPLICATION}" == "delius" ]]; then
    LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
    # First character must be made uppercase
    LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
    # Oracle does not support a Preproduction status so use Staging instead
    [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
- fi
+fi
+
+# We use CONTACT to determine which Slack channel to route incidents
+if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
+   CONTACT="#${APPLICATION}-aws-oracle-prod-alerts"
+else
+   CONTACT="#${APPLICATION}-aws-oracle-dev-alerts"
+fi
+
+TARGET_PROPERTIES="orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:${APPLICATION};orcl_gtp_contact:${CONTACT};"
 
 INVENTORY_LOC=/u01/app/oraInventory
 cd ${EMCLI_DIR}
@@ -22,15 +32,15 @@ then
         echo "emcli add target Grid Infrastructure home"
         GRID_HOME_NAME=`grep grid  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+        ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         echo "emcli add HAS target"
-        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+        ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};${TARGET_PROPERTIES}"
         echo "emcli add ASM target"
         # Search needs to use case sensitive keys so we convert all to lowercase (as different apps use different case)
         ASMSNMPPASSWORD=$(aws secretsmanager get-secret-value --secret-id "{{ asm_monitoring_secret_name }}" --query SecretString --output text | jq -r .{{ asm_monitoring_secret_username }})
-        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:{{ asm_monitoring_secret_username|lower }};password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+        ./emcli add_target -name="+ASM_${HOST_FQDN_NAME}" -type="osm_instance" -host="${HOST_FQDN_NAME}" -credentials="UserName:{{ asm_monitoring_secret_username|lower }};password:${ASMSNMPPASSWORD};Role:sysdba" -properties="SID:+ASM;Port:1521;OracleHome:${GRID_HOME};MachineName:${HOST_FQDN_NAME};${TARGET_PROPERTIES}"
         echo "emcli add Listener"
-        ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+        ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME};${TARGET_PROPERTIES}"
 fi
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
@@ -38,15 +48,97 @@ then
         echo "emcli add target database homes"
         DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         DB_HOME=`grep ${i} ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
 fi
+
+function is_lifecycle_upgrade()
+{
+# This function is used to determine if a change in target Lifecycle Status is considered an Upgrade of importance.
+# If the Lifecycle has already been set we only automatically change it if it is to increase its importance.  
+# (Downgrading of a target importance is risky as incidents may be missed, so should only be done manually).
+OLD_LIFECYCLE=$1
+NEW_LIFECYCLE=$2
+case "$OLD_LIFECYCLE" in
+  None|Development) 
+     UPGRADE=true;
+     ;;
+  Test)
+     case "$NEW_LIFECYCLE" in
+       Staging|Production|MissionCritical)
+          UPGRADE=true;
+          ;;
+       *)
+          UPGRADE=false;
+          ;;
+     esac
+     ;;
+  Staging)
+     case "$NEW_LIFECYCLE" in
+       Production|MissionCritical)
+          UPGRADE=true;
+          ;;
+       *)
+          UPGRADE=false;
+          ;;
+     esac 
+     ;;
+  Production)
+     case "$NEW_LIFECYCLE" in
+       MissionCritical)
+          UPGRADE=true;
+          ;;
+       *)
+          UPGRADE=false;
+          ;;
+     esac 
+     ;;
+   *)
+     UPGRADE=false
+     ;;
+esac
+echo $UPGRADE
+}
+
+# Set Properties for Targets
+function set_target_properties()
+{
+TARGET_TYPE=$1
+TARGET_NAME=$2
+OEM_TARGET=$3   # Optional parameter to identify OEM rather than Application targets
+
+# If the target is a Database System then we want to propagate the properties to all members of the target
+[[ ${TARGET_TYPE} == "oracle_dbsys" ]] && PROPAGATE="-propagate_to_members" || PROPAGATE="" 
+EXISTING_LIFECYCLE=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${TARGET_NAME}'" -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_lifecycle_status'" -columns="PROPERTY_VALUE" -script -noheader)
+# We change the subseparator from colon as the agent (oracle_emd) target already contains a colon
+
+# We will only change a LIFECYCLE if it upgrades it to a more important status
+if [[ -z ${EXISTING_LIFECYCLE} ]] && [[ "$(is_lifecycle_upgrade ${EXISTING_LIFECYCLE} ${LIFECYCLE_STATUS})" == "true" ]]; then
+    ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@LifeCycle Status@@${LIFECYCLE_STATUS}" ${PROPAGATE}
+fi
+
+# If this is an OEM target then change the Line of Business and Contact accordingly
+if [[ -z ${OEM_TARGET} ]]; then
+   TARGET_LINE_OF_BUSINESS=${APPLICATION}
+   TARGET_CONTACT=${CONTACT}
+else
+   TARGET_LINE_OF_BUSINESS="oem"
+   if [[ "$LIFECYCLE_STATUS" == "Production" ]] || [[ "$LIFECYCLE_STATUS" == "MissionCritical" ]]; then
+      TARGET_CONTACT="#oem-aws-oracle-prod-alerts"
+   else
+      TARGET_CONTACT="#oem-aws-oracle-dev-alerts"
+   fi
+fi
+
+./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Line of Business@@${TARGET_LINE_OF_BUSINESS}" ${PROPAGATE}
+./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Contact@@${TARGET_CONTACT}" ${PROPAGATE}
+}
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
 then
         echo "emcli add target database homes"
         DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
         DB_HOME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }}"
+        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
         do
                 echo ${i}
@@ -60,27 +152,39 @@ then
                 fi
                 SECRETNAME="{{ db_monitoring_secret_name }}"
                 DBPASSWORD=$(aws secretsmanager get-secret-value --secret-id "${SECRETNAME/_DBNAME_/$i}" --query SecretString --output text | jq -r ".${MONITORING_USER}")
-                ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:{{ ec2.tags['application'] }};"
+                ./emcli add_target -name="${i}" -type="oracle_database" -host="${HOST_FQDN_NAME}" -credentials="UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}" -properties="SID:${i};Port:1521;OracleHome:${DB_HOME};MachineName:${HOST_FQDN_NAME};${TARGET_PROPERTIES}"
                 # oracle_dbsys added  due to encountered bug     
-                if [ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ] 
+                if [[ `./emcli get_targets -targets=oracle_dbsys | grep ${i} | wc -l` -eq 0 ]] && [[ "$DB_ROLE" == "PRIMARY" ]];
                 then 
 	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
-		        ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
+		             ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
                 fi
+                set_target_properties oracle_dbsys "${i}_sys"
         done
 fi
 
-## Set Properties for pre-existing Internal targets (host and oracle_emd targets are created automatically when agent installed)
-function set_internal_target_properties()
-{
-INTERNAL_TARGET_TYPE=$1
-INTERNAL_TARGET=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", ${INTERNAL_TARGET_TYPE}]" | cut -d, -f1 | sed 's/^\[//')
-LIFECYCLE=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${INTERNAL_TARGET}'" -search="PROPERTY_NAME='orcl_gtp_lifecycle_status'" -columns="PROPERTY_VALUE" -script -noheader)
-# We change the subseparator from colon as the agent (oracle_emd) target already contains a colon
-[[ -z ${LIFECYCLE} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${INTERNAL_TARGET}@@${INTERNAL_TARGET_TYPE}@@LifeCycle Status@@${LIFECYCLE_STATUS}"
-LINE_OF_BUSINESS=$(./emcli list -resource=TargetProperties -search="TARGET_NAME='${INTERNAL_TARGET}'" -search="PROPERTY_NAME='orcl_gtp_line_of_bus'" -columns="PROPERTY_VALUE" -script -noheader)
-[[ -z ${LINE_OF_BUSINESS} ]] && ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${INTERNAL_TARGET}@@${INTERNAL_TARGET_TYPE}@@Line of Business@@{{ ec2.tags['application'] }}"
-}
+# Set the Properties for Internal Targets if Not Already Set
+HOST_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", host]" | cut -d, -f1 | sed 's/^\[//')
+set_target_properties host "${HOST_TARGET_NAME}"
+AGENT_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", oracle_emd]" | cut -d, -f1 | sed 's/^\[//')
+set_target_properties oracle_emd "${AGENT_TARGET_NAME}"
 
-set_internal_target_properties host
-set_internal_target_properties oracle_emd
+# Set the Properties for the Agent Oracle Home if Not Already Set
+AGENT_ORACLE_HOME=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${AGENT_TARGET_NAME}'" -search="PROPERTY_NAME='AgentOracleHome'" -column="PROPERTY_VALUE" -script -noheader)
+AGENT_ORACLE_HOME_TARGET=$(./emcli list -resource="Targets" -search="HOST_NAME='${HOST_FQDN_NAME}'" -search="TARGET_TYPE='oracle_home'" -columns='TARGET_NAME' -script -noheader | xargs -I '{}' ./emcli list -resource="TargetProperties" -search="TARGET_NAME='{}'" -search="TARGET_TYPE='oracle_home'" -search="PROPERTY_NAME='INSTALL_LOCATION'" -columns="PROPERTY_VALUE,TARGET_NAME" -script -noheader | grep -E "^${AGENT_ORACLE_HOME}\s+" | cut -f2)
+set_target_properties oracle_home "${AGENT_ORACLE_HOME_TARGET}"
+
+# For any remaining targets in OEM which do not have Contact properties set, assign those as internal OEM (as opposed to Application) targets
+IFS=$'\n'
+for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separator:|");
+do
+        TARGET_TYPE=$(echo "$TARGET" | cut -d"|" -f3)
+        TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
+        EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
+                            -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
+        # Group targets do not have properties
+        if [[ -z ${EXISTING_CONTACT} ]] && [[ "${TARGET_TYPE}" != "group" ]]; then
+            set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" oem_target
+        fi
+done
+unset IFS
