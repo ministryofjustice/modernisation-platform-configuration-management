@@ -17,7 +17,7 @@
     - name: Get jdk rpm binary from S3 bucket
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "hmpps/oasys-bip{{ item }}"
+        object: "{{ oasys_bip_s3_bucket }}{{ item }}"
         dest: "{{ stage }}/jdk/jdk-7u80-linux-x64.rpm"
         mode: get
         overwrite: latest

@@ -23,7 +23,7 @@
     - name: Download software for Oracle BI Publisher cloning for Oasys
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "hmpps/oasys-bip/bipclone/{{ item }}"
+        object: "{{ oasys_bip_s3_bucket }}/bipclone/{{ item }}"
         dest: "{{ stage}}/{{ item }}"
         mode: get
         overwrite: latest

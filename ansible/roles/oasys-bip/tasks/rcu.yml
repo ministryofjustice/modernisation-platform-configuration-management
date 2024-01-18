@@ -10,7 +10,7 @@
 - name: Get RCU install software from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "hmpps/oasys-bip/u01/software/rcu/rcuHome.zip"
+    object: "{{ oasys_bip_s3_bucket }}/u01/software/rcu/rcuHome.zip"
     dest: "{{ stage }}/rcuHome.zip"
     mode: get
     overwrite: latest
