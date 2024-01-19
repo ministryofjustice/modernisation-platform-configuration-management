@@ -56,4 +56,25 @@ sqlnet_parameters:
     SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
     SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
     SQLNET.IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
+# The oracle_ru_patch is the Oracle Release update to use for *initial build* only.
+# Subsequent patching will use the oracle_software variable defined for
+# the primary database.
 oracle_ru_patch: OCT2023
+# When we create the file there MUST NOT be spaces at the start of lines
+oem_metrics: 
+  oracle_database: 
+    input_file: |
+        START_RECORD 1
+        metric , db_alert_log
+        column , genericErrStack
+        key_columns , ;
+        warning_threshold , " "
+        critical_threshold , "ORA-0*[0-9]{1,6}"
+        END_RECORD 1
+    custom_properties:
+       alert_log_filter_expression:  "DUMMY_FILTER_EXPRESSION"
+# We cannot set the Alert Log Filter Expression using emcli
+# This expression is defined in MGMT_COLL_ITEM_PROPERTIES
+# where OBJECT_GUID is the TARGET_GUID
+# and COLL_NAME is "db_alertlog_coll_12" or "db_alertlog_call_pre11"
+# and PROPERTY_NAME is "ignorePattern"
