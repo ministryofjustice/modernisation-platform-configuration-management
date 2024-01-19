@@ -22,7 +22,7 @@
 
 - name: get artefects
   amazon.aws.aws_s3:
-    bucket: "{{ s3_bucket }}"
+    bucket: "{{ image_builder_s3_bucket_name }}"
     object: "{{ oasys_ords_s3_bucket }}/{{ item.obj }}"
     dest: "/tmp/{{ item.obj }}"
     mode: get
