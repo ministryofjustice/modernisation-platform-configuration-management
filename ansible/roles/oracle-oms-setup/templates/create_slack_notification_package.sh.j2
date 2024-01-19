@@ -49,7 +49,7 @@ create or replace PACKAGE BODY slack_notification AS
       highest priority channel to ensure messages are not lost).
     */
    l_slack_channel         VARCHAR2(100);
-   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#delius-aws-oracle-prod-alerts-test';
+   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#delius-aws-oracle-prod-alerts';
    l_use_default_channel   BOOLEAN DEFAULT FALSE;
    
   BEGIN
