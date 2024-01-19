@@ -337,7 +337,7 @@ restore_db_passwords () {
   SYSTEMDBUSERS=(sys system dbsnmp)
   if [ "$APPLICATION" = "delius" ]
   then
-    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool contact_search_pool)
+    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool)
     # Add Probation Integration Services by looking up the Usernames by their path in the AWS Secrets (there may be several of these)
     # We suppress any lookup errors for integration users as these may not exist
     PROBATION_INTEGRATION_USERS=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --query SecretString --output text 2>/dev/null | jq -r 'keys | join(" ")')
@@ -363,7 +363,7 @@ restore_db_passwords () {
     # Ignore absense of Audit Preservation and Probation Integration Users as they may not exist in all environments
     if [[ -z ${USERPASS} && $(exists_in_list "${USER}" " " "delius_audit_pool ${PROBATION_INTEGRATION_USERS[*]}") != "Found" ]];
     then
-       error "Password for $USER in AWS Secret  ${SECRET_ID} does not exist"
+       info "Password for $USER in AWS Secret  ${SECRET_ID} does not exist"
     fi
     if [[ -z ${USERPASS} && $(exists_in_list "${USER}" " " "delius_audit_pool ${PROBATION_INTEGRATION_USERS[*]}") == "Found" ]];
     then
