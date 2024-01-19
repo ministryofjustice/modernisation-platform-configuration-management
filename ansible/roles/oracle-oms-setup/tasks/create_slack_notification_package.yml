@@ -1,16 +1,14 @@
 ---
-
 - name: Download and Install Slack Notification Package
   become: yes
   become_user: "{{ oracle_install_user }}"
   block:
-
     # ACL script does not contain a password
     - name: Create ACL for Slack Notifications
       ansible.builtin.script: create_slack_acl.sh
       environment:
-        ORAENV_ASK: 'NO'
-        ORACLE_SID: 'EMREP'
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
 
     # Restrict privileges on this script as it contains SYSMAN password
     # and Slack Token - should only be readable by oracle
@@ -24,14 +22,14 @@
 
     - name: Create Slack Notification Package
       ansible.builtin.shell: |
-            set -eo pipefail
-            main() {
-              {{ stage }}/create_slack_notification_package.sh
-            }
-            main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+        set -eo pipefail
+        main() {
+          {{ stage }}/create_slack_notification_package.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
       environment:
-        ORAENV_ASK: 'NO'
-        ORACLE_SID: 'EMREP'
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
 
     - pause:
         seconds: 20
@@ -50,8 +48,7 @@
           ====================================================================================
 
   always:
-
     - name: Clean up Installation Script
       file:
-         path: "{{ stage }}/create_slack_notification_package.sh"
-         state: absent
+        path: "{{ stage }}/create_slack_notification_package.sh"
+        state: absent
