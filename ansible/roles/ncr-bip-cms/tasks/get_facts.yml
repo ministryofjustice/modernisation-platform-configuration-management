@@ -13,6 +13,7 @@
     lcm_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords['lcm_password'] }}"
     product_key: "{{ secretsmanager_passwords_dict['bip_cms'].passwords['product_key'] }}"
     auditing_db_password: "{{ secretsmanager_passwords_dict['bip_cms'].passwords['auditing_db_password'] }}"
+    sia_name: "{{ secretsmanager_passwords_dict['bip_cms'].passwords['sia_name'] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
@@ -24,6 +25,7 @@
     - cms_db_password|length > 0
     - auditing_db_password|length > 0
     - product_key|length > 0
+    - sia_name|length > 0
 
 - name: Fail if missing SSM parameters or tags
   fail:
