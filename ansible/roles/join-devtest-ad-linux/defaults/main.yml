@@ -1,9 +1,36 @@
 ---
-service_account_secretsmanager_passwords:
-  service_account:
-    secret: "/join_domain_linux_service_account/passwords"
-    users:
-      - username:
-      - password:
 
-ad_domain: AZURE.NOMS.ROOT
+# define ad_domain_name_fqdn in appropriate group_vars to enable role
+#ad_domain_name_fqdn: azure.noms.root
+sshd_disable_pubkey_authentication: true
+
+ad_domains:
+  azure.noms.root:
+    secret_account_name: hmpps-domain-services-test
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.noms.root/shared-passwords"
+    domain_name_fqdn: azure.noms.root
+    domain_name_netbios: AZURE
+    domain_join_username: svc_join_domain
+  azure.hmpp.root:
+    secret_account_name: hmpps-domain-services-production
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    domain_name_fqdn: azure.hmpp.root
+    domain_name_netbios: HMPP
+    domain_join_username: svc_join_domain
+
+ad_domain: "{{ ad_domains[ad_domain_name_fqdn] }}"
+
+# ad_join_user defined like this since a variable cannot be used as a dictionary key
+ad_join_user:
+  - key: "{{ ad_domain.domain_join_username }}"
+    value:
+
+ad_secretsmanager_passwords:
+  ad_shared_passwords:
+    account_name: "{{ ad_domain.secret_account_name }}"
+    assume_role_name: "{{ ad_domain.secret_role_name }}"
+    secret: "{{ ad_domain.secret_name }}"
+    users:
+      - "{{ ad_join_user | items2dict }}"

@@ -2,8 +2,21 @@
 - name: Get linux service account details
   import_tasks: get_facts.yml
   tags:
-    - ec2provision
+    - always
+  when:
+    - ad_domain_name_fqdn is defined
+    - ansible_distribution in ['RedHat', 'OracleLinux']
 
-- import_tasks: join_domain.yml
+- import_tasks: join_domain_rhel.yml
   tags:
     - ec2provision
+    - ec2patch
+  when:
+    - ad_domain_name_fqdn is defined
+    - ansible_distribution in ['RedHat', 'OracleLinux']
+
+# Ensure handlers run before the next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always
