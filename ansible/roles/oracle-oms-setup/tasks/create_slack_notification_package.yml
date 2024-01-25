@@ -1,0 +1,54 @@
+---
+- name: Download and Install Slack Notification Package
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:
+    # ACL script does not contain a password
+    - name: Create ACL for Slack Notifications
+      ansible.builtin.script: create_slack_acl.sh
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
+
+    # Restrict privileges on this script as it contains SYSMAN password
+    # and Slack Token - should only be readable by oracle
+    - name: Create Slack Notification Installation Script
+      template:
+        src: create_slack_notification_package.sh.j2
+        dest: "{{ stage }}/create_slack_notification_package.sh"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+
+    - name: Create Slack Notification Package
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ stage }}/create_slack_notification_package.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
+
+    - pause:
+        seconds: 20
+        prompt: |
+          ====================================================================================
+            As of OEM 13.5 Oracle does not provide an API to define Notification methods.
+            This step must therefore be done manually through the Console as follows
+
+              Setup --> Notifications --> Scripts and SNMPv1 Traps
+
+              Add "PL/SQL Procedure"(Go)
+
+              Add Name and Description
+              For PL/SQL Procedure add:
+                 SYSMAN.SLACK_NOTIFICATION.INCIDENT_PROC
+          ====================================================================================
+
+  always:
+    - name: Clean up Installation Script
+      file:
+        path: "{{ stage }}/create_slack_notification_package.sh"
+        state: absent
