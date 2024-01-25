@@ -76,6 +76,7 @@ oracle_patch_details:
     psu_patch: p35742441_190000_Linux-x86-64.zip
     patch_string: "19.21.0.0.231017"
 
-#oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
-oracle_patch: OCT2023
+
+oracle_ru_patch: OCT2023  # override this in group_vars when rolling out a new patch
+oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
 opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"
