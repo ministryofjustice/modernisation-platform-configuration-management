@@ -22,7 +22,11 @@ ami_roles_list:
   - disable-ipv6 # disable ipv6 in sysctl
   - disable-firewall
   - packages # Perform any updates to existing if there are no new packages to install
-  # - amazon-ssm-agent # for ec2patch only (if version has changed)
+  - amazon-ssm-agent
+  - amazon-cli
+  - time
+  - message-of-the-day
+  - tcp-keepalive
   - disks
   - oracle-19c
   # - oracle-secure-backup
