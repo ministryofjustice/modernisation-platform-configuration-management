@@ -80,6 +80,7 @@ set_ora_env () {
 }
 
 get_rcat_creds () {
+(
   account_id=$(aws sts get-caller-identity --query Account --output text)
   secret_account_id="{{ account_ids[oem_account_name] }}"
   if [[ $account_id != $secret_account_id ]]; then
@@ -92,6 +93,7 @@ get_rcat_creds () {
   fi
   secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ rcvcat_passwords_secret_name }}"
   aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .rcvcatowner
+)
 }
 
 validate () {
