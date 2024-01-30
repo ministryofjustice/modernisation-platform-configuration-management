@@ -9,13 +9,6 @@
     - ec2provision
     - oracle_db_users
 
-- import_tasks: get-facts.yml
-  tags:
-    - ec2provision
-    - oracle_db_get_facts
-    - oracle_db_reconfigure_has
-    - oracle_db_restore_databases
-
 - name: Set selinux to permissive mode
   import_role:
     name: selinux-config
@@ -35,6 +28,13 @@
   tags:
     - amibuild
     - oracle_db_configure_asm
+
+- import_tasks: get-facts.yml
+  tags:
+    - ec2provision
+    - oracle_db_get_facts
+    - oracle_db_reconfigure_has
+    - oracle_db_restore_databases
 
 - import_tasks: install-grid.yml
   tags:
