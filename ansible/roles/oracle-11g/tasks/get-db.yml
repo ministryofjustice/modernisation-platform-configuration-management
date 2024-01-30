@@ -1,0 +1,44 @@
+---
+- block:
+    - name: Get DB instances
+      ansible.builtin.shell: |
+        source oraenv <<< +ASM > /dev/null
+        crsctl stat res -t | egrep -o 'ora.*.db$' | cut -d. -f2 | sed 's/[[:alnum:]]*/\U&/1' || true
+      become_user: oracle
+      changed_when: false
+      check_mode: false
+      environment: "{{ grid_env }}"
+      register: db_instances_shell
+
+    - name: Set DB instances fact
+      set_fact:
+        db_instances: "{{ db_instances_shell.stdout_lines }}"
+
+  # block
+  when: db_instances is not defined
+
+- block:
+    - name: Get DB services
+      ansible.builtin.shell: |
+        source oraenv <<< +ASM > /dev/null
+        crsctl stat res -t | egrep -o 'ora.*.*.svc$' | cut -d. -f2,3 | sed 's/[[:alnum:]]*/\U&/1' || true
+      become_user: oracle
+      changed_when: false
+      check_mode: false
+      environment: "{{ grid_env }}"
+      register: db_services_shell
+
+    - name: Set DB services fact
+      set_fact:
+        db_services: "{{ db_services_shell.stdout_lines }}"
+
+  # block
+  when: db_services is not defined
+
+- name: Debug DB instances fact
+  ansible.builtin.debug:
+    var: db_instances
+
+- name: Debug DB service facts
+  ansible.builtin.debug:
+    var: db_services

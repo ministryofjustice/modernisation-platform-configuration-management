@@ -19,6 +19,13 @@
     - ec2provision
     - oracle_db_selinux_permissive
 
+- import_tasks: get-facts.yml
+  tags:
+    - ec2provision
+    - oracle_db_get_facts
+    - oracle_db_reconfigure_has
+    - oracle_db_restore_databases
+
 - import_tasks: install-base-software.yml
   tags:
     - amibuild
@@ -28,13 +35,6 @@
   tags:
     - amibuild
     - oracle_db_configure_asm
-
-- import_tasks: get-facts.yml
-  tags:
-    - ec2provision
-    - oracle_db_get_facts
-    - oracle_db_reconfigure_has
-    - oracle_db_restore_databases
 
 - import_tasks: install-grid.yml
   tags:
@@ -91,6 +91,13 @@
   tags:
     - ec2provision
     - oracle_db_reconfigure_has
+
+- import_tasks: get-db.yml
+  tags:
+    - ec2provision
+    - oracle_db_get_facts
+    - oracle_db_reconfigure_has
+    - oracle_db_restore_databases
 
 - import_tasks: restore-databases.yml
   tags:
