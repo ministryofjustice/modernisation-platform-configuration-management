@@ -181,6 +181,8 @@
     {% endif %}
     aws secretsmanager put-secret-value --secret-id "{{ item.value.config.secret }}" --secret-string '{{ item.value.passwords|to_json }}'
   loop: "{{ secretsmanager_passwords_to_update }}"
+  loop_control:
+    label: "{{ item.key }}"
 
 - name: Update upload fact
   set_fact:
