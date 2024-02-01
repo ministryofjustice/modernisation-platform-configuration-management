@@ -36,15 +36,15 @@
     - amibuild
     - oracle_db_configure_asm
 
-# - import_tasks: install-grid.yml
-#   tags:
-#     - amibuild
-#     - oracle_db_install_grid
+- import_tasks: install-grid.yml
+  tags:
+    - amibuild
+    - oracle_db_install_grid
 
-# - import_tasks: install-database.yml
-#   tags:
-#     - amibuild
-#     - oracle_db_install_database
+- import_tasks: install-database.yml
+  tags:
+    - amibuild
+    - oracle_db_install_database
 
 - import_tasks: upgrade-opatch.yml
   tags:
