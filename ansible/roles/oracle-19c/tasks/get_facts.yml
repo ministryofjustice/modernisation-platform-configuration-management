@@ -1,5 +1,6 @@
 ---
 - name: Get secretsmanager passwords
+  when: not ec2.tags['delius-environment'] is defined
   block:
     - name: secretsmanager passwords
       import_role:
@@ -12,12 +13,26 @@
         asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSYS'] }}"
         asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSNMP'] }}"
 
-  when: not oracle_19c_asm_passwords_delius_workaround
-
-- block:
-    - name: Set Random Password Specifically For Delius
+- name: Get secretsmanager passwords (Delius)
+  when: ec2.tags['delius-environment'] is defined
+  block:
+    - name: Setup Secrets Dictionary Variable (Delius)
       set_fact:
-        asmpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16') }}"
-        asmmonitorpassword: "{{ lookup('password','/dev/null chars=ascii_lowercase,ascii_uppercase,digits length=16')}}"
+        db_secretsmanager_passwords:
+          asm:
+            secret: "{{ asm_monitoring_secret_name }}"
 
-  when: oracle_19c_asm_passwords_delius_workaround
+    - name: Combine ASM Users To Secret Dictionary (Delius)
+      set_fact:
+        db_secretsmanager_passwords: "{{ db_secretsmanager_passwords |  combine({ 'asm': { 'users': [{asm_monitoring_secret_username: 'auto'}] + [{asm_sys_secret_username: 'auto'}] }}, recursive=true) }}"
+
+    - name: secretsmanager passwords (Delius)
+      import_role:
+        name: secretsmanager-passwords
+      vars:
+        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+
+    - name: Set Password Variables (Delius)
+      set_fact:
+        asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_sys_secret_username] }}"
+        asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_monitoring_secret_username] }}"

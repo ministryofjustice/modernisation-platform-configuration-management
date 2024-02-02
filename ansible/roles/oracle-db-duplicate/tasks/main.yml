@@ -93,11 +93,6 @@
     rman_datetime_option: "-t '{{ restore_datetime }}'"
   when: (restore_datetime is defined) and (restore_datetime|length > 0)
 
-- name: Set ssm parameter when variable is not null
-  set_fact:
-    ssm_parameter_option: "-p {{ ssm_parameter }}"
-  when: ssm_parameter is defined
-
 - name: Set spfile parameters when variable is not null
   set_fact:
     spfile_parameters_option: "-f {% for item in database_parameters | dict2items %}{{ item.key}}='{{ item.value }}'\n{% endfor %} "
@@ -120,7 +115,7 @@
 
     - name: Generate Command to Run RMAN Script
       set_fact:
-        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ database_primary_sid }} -s {{ source_db }} -c "{{ catalog }}" {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} {{ ssm_parameter_option|default() }} "{{ spfile_parameters_option|default()|trim }}"'
+        run_rman_script: '/home/oracle/admin/rman_scripts/rman_duplicate.sh -d  {{ database_primary_sid }} -s {{ source_db }} -c "{{ catalog }}" {{ local_disk_backup | default() }} {{ rman_datetime_option | default() }} "{{ spfile_parameters_option|default()|trim }}"'
 
     - name: Show Script to Run
       debug:

@@ -484,7 +484,6 @@ info "Retrieving arguments"
 
 TARGET_DB=UNSPECIFIED
 DATETIME=LATEST
-SSM_PARAMETER=UNSPECIFIED
 SPFILE_PARAMETERS=UNSPECIFIED
 while getopts "d:s:c:t:p:f:l" opt
 do
@@ -493,7 +492,6 @@ do
     s) SOURCE_DB=$OPTARG ;;
     c) CATALOG_DB=$OPTARG ;;
     t) DATETIME=${OPTARG} ;;
-    p) SSM_PARAMETER=${OPTARG} ;;
     f) SPFILE_PARAMETERS=${OPTARG} ;;
     l) LOCAL_DISK_BACKUP=TRUE ;;
     *) usage ;;
@@ -504,7 +502,6 @@ info "Target         = $TARGET_DB"
 info "Source         = $SOURCE_DB"
 info "Catalog db     = $CATALOG_DB"
 info "Restore Datetime = ${DATETIME}"
-info "SSM parameter    = ${SSM_PARAMETER}"
 [[ "${LOCAL_DISK_BACKUP}" == "TRUE" ]] && info "Local Disk Backup = ENABLED"
 target_db=$(echo "${TARGET_DB}" | tr '[:upper:]' '[:lower:]')
 source_db=$(echo "${SOURCE_DB}" | tr '[:upper:]' '[:lower:]')
