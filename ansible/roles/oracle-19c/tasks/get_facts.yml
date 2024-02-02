@@ -16,7 +16,6 @@
 - name: Get secretsmanager passwords (Delius)
   when: ec2.tags['delius-environment'] is defined
   block:
-
     - name: Setup Secrets Dictionary Variable (Delius)
       set_fact:
         db_secretsmanager_passwords:
