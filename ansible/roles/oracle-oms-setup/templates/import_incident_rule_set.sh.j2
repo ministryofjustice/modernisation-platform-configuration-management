@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -x
+
+. ~/.bash_profile
+
+export ORACLE_HOME=/u01/app/oracle/product/mw135
+export JAVA_HOME=$ORACLE_HOME/jdk/jre
+
+RULE_SET_BASE_NAME="Rule set for {{ ec2.tags['application'] }}"
+
+{{ emcli }} import_incident_rule_set -import_file={{ stage }}/rule_set.xml  -alt_rule_set_name="${RULE_SET_BASE_NAME}"
+RC=$?
+[[ $RC -eq 2 ]] && [[ '{{ replace_existing_rule_set | default('false')}}' == 'false' ]] && exit 2
+if [[ $RC -eq 2 ]]; then  
+  # The rule set already exists.  As of 13c Oracle do not provide EMCLI functionality
+  # to delete the rule set, so we instead disable the existing rule set and create
+  # a new one
+  RULE_SET_CREATE_FLAG=1
+  RULE_SET_NAME=${RULE_SET_BASE_NAME}
+  while [[ RULE_SET_CREATE_FLAG -ne 0 ]]; do
+     {{ emcli }} modify_incident_rule -action=disable -type=ruleset -rule_set_name="${RULE_SET_NAME}"
+     VERSION_NUMBER=${RULE_SET_NAME##*[^0-9]}
+     NEXT_VERSION=$((VERSION_NUMBER+1))
+     RULE_SET_NAME="${RULE_SET_BASE_NAME} VERSION ${NEXT_VERSION}"
+     {{ emcli }} import_incident_rule_set -import_file={{ stage }}/rule_set.xml  -alt_rule_set_name="${RULE_SET_NAME}"
+     RC=$?
+     # We loop again if the version already exists; exit the loop for any other return codes
+     [[ $RC -eq 2 ]] && RULE_SET_CREATE_FLAG=1 || RULE_SET_CREATE_FLAG=0
+  done
+  [[ $RC -ne 0 ]] && exit $RC
+  echo "Imported new version of existing rule set."
+else  
+  [[ $RC -ne 0 ]] && exit $RC
+  echo "Imported initial version of rule set."
+fi
+
+# Enable the newly imported rule set
+{{ emcli }} modify_incident_rule -action=enable -type=ruleset -rule_set_name="${RULE_SET_NAME}"

@@ -1,0 +1,33 @@
+---
+- name: Import Incident Rule Set for {{ application }} Targets
+  block:
+    # EMCLI Login script contains a password so ensure it is not readable by other users
+    - name: Copy Incident Rule Set Import scripts
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+      loop:
+        - emcli_login.sh
+        - import_incident_rule_set.sh
+        - rule_set.xml
+
+    - name: Run Incident Rule Set Import
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        echo "running import_incident_rule_set.sh"
+        {{ stage }}/import_incident_rule_set.sh
+
+  always:
+    - name: Remove Incident Rule Set scripts from Staging Area
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - import_incident_rule_set.sh
+        - rule_set.xml

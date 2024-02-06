@@ -1,0 +1,38 @@
+---
+- name: Create Dynamic Group for {{ application }} Targets
+  block:
+    # EMCLI Login script contains a password so ensure it is not readable by other users
+    - name: Copy group creation scripts
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+      loop:
+        - emcli_login.sh
+        - create_group.sh
+    - name: Run Dynamic Group Creation Script
+      ansible.builtin.shell: |
+        echo "To resolve - Error: Some required configuration is missing, corrupt, inaccessible, or insecure (access permissions are too liberal)."
+        echo "Resolve the problem and run setup."
+        chown -R oracle:oinstall /u01/app/oracle/product/gc_inst135/em/EMGC_OMS1/sysman/emcli/setup/.emcli
+
+    - name: Run Dynamic Group Creation Script
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        echo "running create_group.sh"
+        {{ stage }}/create_group.sh
+      register: run_group_creation
+      changed_when: run_group_creation.stdout is search('.*dynamic group created.*')
+
+  always:
+    - name: Remove Group Creation scripts from Staging Area
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - create_group.sh

@@ -49,7 +49,7 @@ create or replace PACKAGE BODY slack_notification AS
       highest priority channel to ensure messages are not lost).
     */
    l_slack_channel         VARCHAR2(100);
-   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#delius-aws-oracle-prod-alerts';
+   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#shef_dba;
    l_use_default_channel   BOOLEAN DEFAULT FALSE;
    
   BEGIN
@@ -82,7 +82,7 @@ create or replace PACKAGE BODY slack_notification AS
       END LOOP;
     END IF;
 
-    INSERT INTO z_timezone VALUES (l_target_timezone);
+    -- INSERT INTO z_timezone VALUES (l_target_timezone);
     
     COMMIT;
 
@@ -242,7 +242,7 @@ create or replace PACKAGE BODY slack_notification AS
                  'Event Reported Date: ' || to_char(event_msg.event_payload.reported_date, 'DD-MON-YY HH24:MI:SS')||chr(10)||
                  'Categories: '||l_categories_new||chr(10);
 
-    l_param := 'channel=#delius-aws-oracle-prod-alerts'||chr(38);
+    l_param := 'channel=#shef_dba'||chr(38);
     l_param := l_param||l_message;
 
     l_http_request  := utl_http.begin_request
