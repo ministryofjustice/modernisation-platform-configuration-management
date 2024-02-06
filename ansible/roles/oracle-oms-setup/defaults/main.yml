@@ -23,8 +23,7 @@ oem_install_response_file: oem_install.rsp
 oem_configure_response_file: oem_configure.rsp
 weblogic_admin_username: weblogic
 emcli: "{{ oem_mw_home }}/bin/emcli"
-# application: "{{ ec2.tags['application'] }}"
-application: DBA
+application: "{{ ec2.tags['application'] }}"
 ruleset_name: "AWS Incident management rule set for {{ application }} targets"
 
 # Variables for OMS RU patching
