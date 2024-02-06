@@ -7,21 +7,30 @@ HOST_FQDN_NAME=$(hostname --fqdn)
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
 
 # For delius hosts, we cannot use the hostname to determine the lifecycle status, so we use the tags instead
-APPLICATION="{{ ec2.tags['application'] }}"
+APPLICATION="hmpps-oem"
 if [[ "${APPLICATION}" == "delius" ]]; then
    LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
    # First character must be made uppercase
    LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
    # Oracle does not support a Preproduction status so use Staging instead
    [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
+   if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
+      CONTACT="#${APPLICATION}-aws-oracle-prod-alerts"
+   else
+      CONTACT="#${APPLICATION}-aws-oracle-dev-alerts"
+   fi
+else 
+   # Oracle does not support a Preproduction status so use Staging instead
+   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
+   if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
+      CONTACT="#dba_alerts_prod"
+   else
+      CONTACT="#dba_alerts_devtest"
+   fi
 fi
 
 # We use CONTACT to determine which Slack channel to route incidents
-if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
-   CONTACT="#${APPLICATION}-aws-oracle-prod-alerts"
-else
-   CONTACT="#${APPLICATION}-aws-oracle-dev-alerts"
-fi
+
 
 TARGET_PROPERTIES="orcl_gtp_lifecycle_status:${LIFECYCLE_STATUS};orcl_gtp_line_of_bus:${APPLICATION};orcl_gtp_contact:${CONTACT};"
 
