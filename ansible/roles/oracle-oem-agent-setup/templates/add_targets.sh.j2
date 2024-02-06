@@ -7,7 +7,7 @@ HOST_FQDN_NAME=$(hostname --fqdn)
 [[ `hostname` = t* ]] && LIFECYCLE_STATUS="Test" || LIFECYCLE_STATUS="Production"
 
 # For delius hosts, we cannot use the hostname to determine the lifecycle status, so we use the tags instead
-APPLICATION="hmpps-oem"
+APPLICATION="{{ ec2.tags['application'] }}"
 if [[ "${APPLICATION}" == "delius" ]]; then
    LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
    # First character must be made uppercase
