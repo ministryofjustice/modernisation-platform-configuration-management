@@ -28,11 +28,11 @@
       register: run_group_creation
       changed_when: run_group_creation.stdout is search('.*dynamic group created.*')
 
-  # always:
-  #   - name: Remove Group Creation scripts from Staging Area
-  #     ansible.builtin.file:
-  #       path: "{{ stage }}/{{ item }}"
-  #       state: absent
-  #     loop:
-  #       - emcli_login.sh
-  #       - create_group.sh
+  always:
+    - name: Remove Group Creation scripts from Staging Area
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - create_group.sh
