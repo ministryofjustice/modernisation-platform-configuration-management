@@ -29,7 +29,7 @@ http {
         ssl_certificate /etc/nginx/ssl/nginx.crt;
         ssl_certificate_key /etc/nginx/ssl/nginx.key;
         ssl_protocols TLSv1.1;
-        server_name test;
+        server_name {{ ndh_proxy_host }};
         location / {
                 proxy_set_header Host $host;
                 proxy_redirect https://{{ ndh_proxy_host }}:443/ https://{{ ndh_proxy_host }}/;
