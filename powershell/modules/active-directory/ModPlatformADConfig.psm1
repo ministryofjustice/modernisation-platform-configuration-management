@@ -28,7 +28,7 @@ function Get-ModPlatformADConfig {
 
   $ModPlatformADConfigs = @{
     "azure.noms.root" = @{
-      "environment-name-tags" = @(
+      "EnvironmentNameTags" = @(
         "hmpps-domain-services-development",
         "hmpps-domain-services-test",
         "planetfm-development",
@@ -36,15 +36,15 @@ function Get-ModPlatformADConfig {
         "corporate-staff-rostering-development",
         "corporate-staff-rostering-test"
       )
-      "secretAccountName" = "hmpps-domain-services-test"
-      "secretName" = "/microsoft/AD/azure.noms.root/shared-passwords"
-      "secretRoleName" = "EC2HmppsDomainSecretsRole"
-      "domainNameFQDN" = "azure.noms.root"
-      "domainNameNetbios" = "AZURE"
-      "domainJoinUsername" = "svc_join_domain"
+      "SecretAccountName" = "hmpps-domain-services-test"
+      "SecretName" = "/microsoft/AD/azure.noms.root/shared-passwords"
+      "SecretRoleName" = "EC2HmppsDomainSecretsRole"
+      "DomainNameFQDN" = "azure.noms.root"
+      "DomainNameNetbios" = "AZURE"
+      "DomainJoinUsername" = "svc_join_domain"
     }
     "azure.hmpp.root" = @{
-      "environment-name-tags" = @(
+      "EnvironmentNameTags" = @(
         "hmpps-domain-services-preproduction",
         "hmpps-domain-services-production",
         "planetfm-preproduction",
@@ -52,12 +52,12 @@ function Get-ModPlatformADConfig {
         "corporate-staff-rostering-preproduction",
         "corporate-staff-rostering-production"
       ) 
-      "secretAccountName" = "hmpps-domain-services-production"
-      "secretName" = "/microsoft/AD/azure.hmpp.root/shared-passwords"
-      "secretRoleName" = "EC2HmppsDomainSecretsRole"
-      "domainNameFQDN" = "azure.hmpp.root"
-      "domainNameNetbios" = "HMPP"
-      "domainJoinUsername" = "svc_join_domain"
+      "SecretAccountName" = "hmpps-domain-services-production"
+      "SecretName" = "/microsoft/AD/azure.hmpp.root/shared-passwords"
+      "SecretRoleName" = "EC2HmppsDomainSecretsRole"
+      "DomainNameFQDN" = "azure.hmpp.root"
+      "DomainNameNetbios" = "HMPP"
+      "DomainJoinUsername" = "svc_join_domain"
     }
   }
 
@@ -76,7 +76,7 @@ function Get-ModPlatformADConfig {
   }
 
   foreach ($Config in $ModPlatformADConfigs.GetEnumerator() ) {
-    if ($Config.Value["environment-name-tags"].Contains($EnvironmentNameTag)) {
+    if ($Config.Value["EnvironmentNameTags"].Contains($EnvironmentNameTag)) {
       return $Config
     }
   }
