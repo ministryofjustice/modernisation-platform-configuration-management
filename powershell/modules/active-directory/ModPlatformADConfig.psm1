@@ -62,24 +62,24 @@ function Get-ModPlatformADConfig {
   if ($DomainNameFQDN -ne $null -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
     return $ModPlatformADConfigs.[string]$DomainNameFQDN
   }  
-  $token = Invoke-RestMethod -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
-  $instanceId = Invoke-RestMethod -Headers @{"X-aws-ec2-metadata-token" = $token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
-  $tagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$instanceId"
-  $tags = "$tagsRaw" | ConvertFrom-Json
-  $domainNameTag = ($tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
-  $environmentNameTag = ($tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
+  $Token = Invoke-RestMethod -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+  $InstanceId = Invoke-RestMethod -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+  $Tags = "$TagsRaw" | ConvertFrom-Json
+  $DomainNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
+  $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
 
-  if ($domainNameTag -ne $null -and $ModPlatformADConfigs.containsKey($domainNameTag)) {
-    return $ModPlatformADConfigs.[string]$domainNameTag
+  if ($DomainNameTag -ne $null -and $ModPlatformADConfigs.containsKey($DomainNameTag)) {
+    return $ModPlatformADConfigs.[string]$DomainNameTag
   }
 
-  foreach ($config in $ModPlatformADConfigs.GetEnumerator() ) {
-    if ($config.Value["environment-name-tags"].Contains($environmentNameTag)) {
-      return $config
+  foreach ($Config in $ModPlatformADConfigs.GetEnumerator() ) {
+    if ($Config.Value["environment-name-tags"].Contains($EnvironmentNameTag)) {
+      return $Config
     }
   }
 
-  Write-Error "No matching configuration for environment-name $environmentNameTag"
+  Write-Error "No matching configuration for environment-name $EnvironmentNameTag"
 }
 
 Export-ModuleMember -Function Get-ModPlatformADConfig
