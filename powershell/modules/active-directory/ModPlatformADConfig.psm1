@@ -59,7 +59,7 @@ function Get-ModPlatformADConfig {
     }
   }
 
-  If ($DomainNameFQDN -ne $null -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
+  if ($DomainNameFQDN -ne $null -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
     return $ModPlatformADConfigs.[string]$DomainNameFQDN
   }  
   $token = Invoke-RestMethod -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
@@ -69,12 +69,12 @@ function Get-ModPlatformADConfig {
   $domainNameTag = ($tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
   $environmentNameTag = ($tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
 
-  If ($domainNameTag -ne $null -and $ModPlatformADConfigs.containsKey($domainNameTag)) {
+  if ($domainNameTag -ne $null -and $ModPlatformADConfigs.containsKey($domainNameTag)) {
     return $ModPlatformADConfigs.[string]$domainNameTag
   }
 
-  ForEach ($config in $ModPlatformADConfigs.GetEnumerator() ) {
-    If ($config.Value["environment-name-tags"].Contains($environmentNameTag)) {
+  foreach ($config in $ModPlatformADConfigs.GetEnumerator() ) {
+    if ($config.Value["environment-name-tags"].Contains($environmentNameTag)) {
       return $config
     }
   }
