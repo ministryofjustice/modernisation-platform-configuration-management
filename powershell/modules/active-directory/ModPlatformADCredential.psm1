@@ -58,3 +58,5 @@ function Get-ModPlatformADCredential {
   $DomainJoinPasswordSecureString = ConvertTo-SecureString $SecretValue.$DomainJoinUsername -AsPlainText -Force
   New-Object System.Management.Automation.PSCredential ("$DomainNameNetbios\$DomainJoinUsername", $DomainJoinPasswordSecureString)
 }
+
+Export-ModuleMember -Function Get-ModPlatformADCredential
