@@ -109,6 +109,7 @@ function Add-ModPlatformADComputer {
 }
 
 function Remove-ModPlatformADComputer {
+<#
 .SYNOPSIS
     Remove host from existing domain
 
@@ -135,6 +136,7 @@ function Remove-ModPlatformADComputer {
   # Do nothing if host not part of domain
   if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
     return $false
+  }
 
   # Install powershell features if missing
   if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
@@ -147,3 +149,7 @@ function Remove-ModPlatformADComputer {
   Remove-Computer -DomainName $ModPlatformADConfig.DomainNameFQDN -Credential $credentials -Verbose -Force
   return $true
 }
+
+Export-ModuleMember -Function Rename-ModPlatformADComputer
+Export-ModuleMember -Function Add-ModPlatformADComputer
+Export-ModuleMember -Function Remove-ModPlatformADComputer
