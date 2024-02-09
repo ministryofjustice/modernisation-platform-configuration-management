@@ -116,12 +116,9 @@ function Remove-ModPlatformADComputer {
     Remove host from existing domain
 
 .DESCRIPTION
-    Join the host to the domain defined by the ModPlatformADConfig parameter
-    using the credentials provided in the ModPlatformADCredential parameter 
-    Returns true if successful and a reboot required, false if already joined
-
-.PARAMETER ModPlatformADConfig
-    HashTable as returned from Get-ModPlatformADConfig function
+    Remove the host from the current domain using the credentials provided
+    in the ModPlatformADCredential parameter.
+    Returns true if successful and a reboot required, false if already removed.
 
 .PARAMETER ModPlatformADCredential
     AD credential as returned from Get-ModPlatformADCredential function.
@@ -153,9 +150,9 @@ function Remove-ModPlatformADComputer {
   }
 
   # Join the domain
-  $DomainNameFQDN = ${ModPlatformADConfig.DomainNameFQDN}
+  $DomainNameFQDN = (Get-WmiObject -Class Win32_ComputerSystem).Domain
   Write-Host "INFO: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
-  Remove-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
+  Remove-Computer -Credential $ModPlatformADCredential -Verbose -Force
   return $true
 }
 
