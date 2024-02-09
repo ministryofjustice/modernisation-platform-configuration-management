@@ -12,6 +12,35 @@ Install git on EC2 if not already in AMI, e.g.
 choco install git.install -y
 ```
 
+## Directory structure and Naming
+
+### Modules
+
+A module contains a collection of functions available for use 
+in other modules or scripts. There is a helper script for creating
+the manifest file.  Create a directory for each module under
+`powershell/Modules/` folder.
+
+Please add a README.md to the module directory.
+Please add powershell comments to exported functions to enable `Get-Help`:
+
+```
+Get-Help Get-ModPlatformADConfig
+```
+
+### Scripts
+
+Put scripts in a `powershell/Scripts` folder. For example, active
+directory related scripts in `powershell/Scripts/ModPlatformAD`
+
+### Naming
+
+Be consistent. Pascal case (capitalize the first letter of each word) except keywords
+and operators which are in lower case.
+
+Verbs: https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7.4
+Formatting: https://poshcode.gitbook.io/powershell-practice-and-style/style-guide/code-layout-and-formatting
+
 ## Using powershell to provision an EC2 instance
 
 There is a wrapper script `Run-GitScript.ps1` for cloning the repo,
