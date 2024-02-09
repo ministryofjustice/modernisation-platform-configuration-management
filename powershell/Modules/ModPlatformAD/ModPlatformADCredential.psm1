@@ -26,7 +26,7 @@ function Get-ModPlatformADCredential {
 
   [CmdletBinding()]
   param (
-    [hashtable]$ModPlatformADConfig,
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
     [string]$AccountIdsSSMParameterName = "account_ids"
   )
 

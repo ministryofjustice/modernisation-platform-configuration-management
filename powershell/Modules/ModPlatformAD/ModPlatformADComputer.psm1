@@ -84,8 +84,8 @@ function Add-ModPlatformADComputer {
 
   [CmdletBinding()]
   param (
-    [hashtable]$ModPlatformADConfig,
-    [System.Management.Automation.PSCredential]$ModPlatformADCredential
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
   
   $ErrorActionPreference = "Stop"
@@ -135,8 +135,8 @@ function Remove-ModPlatformADComputer {
 
   [CmdletBinding()]
   param (
-    [hashtable]$ModPlatformADConfig,
-    [System.Management.Automation.PSCredential]$ModPlatformADCredential
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [Parameter(Mandatory=$true)]System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
 
   $ErrorActionPreference = "Stop"
@@ -153,8 +153,9 @@ function Remove-ModPlatformADComputer {
   }
 
   # Join the domain
-  Write-Host "INFO: Removing $env:COMPUTERNAME from ${ModPlatformADConfig.DomainNameFQDN} domain"
-  Remove-Computer -DomainName $ModPlatformADConfig.DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
+  $DomainNameFQDN = ${ModPlatformADConfig.DomainNameFQDN}
+  Write-Host "INFO: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
+  Remove-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
   return $true
 }
 
