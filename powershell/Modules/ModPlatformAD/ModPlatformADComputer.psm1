@@ -45,7 +45,7 @@ function Rename-ModPlatformADComputer {
     $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
   } elseif ($NewHostname -eq "instanceId") {
     $NewHostname = $InstanceId
-  }  
+  }
   if ($NewHostname -ne $env:COMPUTERNAME) {
     if (-not $ModPlatformADCredential) {
       Rename-Computer -NewName $NewHostname -Force
@@ -66,7 +66,7 @@ function Add-ModPlatformADComputer {
 
 .DESCRIPTION
     Join the host to the domain defined by the ModPlatformADConfig parameter
-    using the credentials provided in the ModPlatformADCredential parameter 
+    using the credentials provided in the ModPlatformADCredential parameter
     Returns true if successful and a reboot required, false if already joined
 
 .PARAMETER ModPlatformADConfig
@@ -87,15 +87,17 @@ function Add-ModPlatformADComputer {
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
     [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
-  
+
   $ErrorActionPreference = "Stop"
+
+  $DomainNameFQDN = $ModPlatformADConfig.DomainNameFQDN
 
   # Check if already domain joined
   if ((Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
     $ExistingDomain = (Get-WmiObject -Class Win32_ComputerSystem).Domain
-    if ($ExistingDomain -eq $ModPlatformADConfig.DomainNameFQDN) {
+    if ($ExistingDomain -eq $DomainNameFQDN) {
       return $false
-    } 
+    }
   }
 
   # Install powershell features if missing
@@ -105,8 +107,9 @@ function Add-ModPlatformADComputer {
   }
 
   # Join the domain
-  Write-Host "INFO: Joining $env:COMPUTERNAME to ${ModPlatformADConfig.DomainNameFQDN} domain"
-  Add-Computer -DomainName $ModPlatformADConfig.DomainNameFQDN -Credential $credentials -Verbose -Force
+
+  Write-Host "INFO: Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
+  Add-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
   return $true
 }
 
