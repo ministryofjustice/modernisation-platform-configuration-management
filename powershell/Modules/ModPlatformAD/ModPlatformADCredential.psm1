@@ -55,7 +55,7 @@ function Get-ModPlatformADCredential {
   $env:AWS_SECRET_ACCESS_KEY = $Tmp_AWS_SECRET_ACCESS_KEY
   $env:AWS_SESSION_TOKEN = $Tmp_AWS_SESSION_TOKEN
   $DomainJoinUsername = $ModPlatformADConfig.DomainJoinUsername
-  if (-Not $SecretValue.Contains($DomainJoinUsername)) {
+  if (-Not $SecretValue -contains $DomainJoinUsername) {
     Write-Error "Password secret ${SecretArn} does not contain domain join username ${DomainJoinUsername}"
   }
   $DomainJoinPassword = $SecretValue.$DomainJoinUsername
