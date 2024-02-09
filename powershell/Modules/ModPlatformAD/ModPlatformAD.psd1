@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '1.0.0.0'
+ModuleVersion = '1.0.0.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -33,7 +33,7 @@ Copyright = '(c) 2024 Crown Copyright (Ministry of Justice)'
 Description = 'Modernisation Platform ModPlatformAD module'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.4.1'
+PowerShellVersion = '5.1.0.0'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''

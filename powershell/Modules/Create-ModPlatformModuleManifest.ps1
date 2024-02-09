@@ -22,7 +22,8 @@
 param (
   [Parameter(Mandatory=$true)][string]$ModuleName,
   $ModuleVersion,
-  $Description
+  $Description,
+  $PowerShellVersion
 )
 
 $ManifestParameters = @{
@@ -69,6 +70,9 @@ if ($ModuleVersion) {
 } 
 if ($Description) {
   $ManifestParameters["Description"] = $Description
+}
+if ($PowerShellVersion) {
+  $ManifestParameters["PowerShellVersion"] = $PowerShellVersion
 }
 
 # Automatically detect functions to export
