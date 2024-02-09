@@ -21,9 +21,7 @@ param (
   [string]$AccountIdsSSMParameterName = "account_ids"
 )
 
-Import-Module ModPlatformADConfig
-Import-Module ModPlatformADCredential
-Import-Module ModPlatformADComputer
+Import-Module ModPlatformAD
 
 Write-Output "ok"
 exit 1
