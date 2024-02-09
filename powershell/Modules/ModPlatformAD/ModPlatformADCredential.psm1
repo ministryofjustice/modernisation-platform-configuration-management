@@ -27,7 +27,7 @@ function Get-ModPlatformADCredential {
   [CmdletBinding()]
   param (
     [hashtable]$ModPlatformADConfig,
-    [string]$AccountIdsSSMParameterName
+    [string]$AccountIdsSSMParameterName = "account_ids"
   )
 
   $ErrorActionPreference = "Stop"
