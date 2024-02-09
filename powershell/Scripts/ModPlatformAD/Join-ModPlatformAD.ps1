@@ -25,6 +25,9 @@ Import-Module ModPlatformADConfig
 Import-Module ModPlatformADCredential
 Import-Module ModPlatformADComputer
 
+Write-Output "ok"
+exit 1
+
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
