@@ -27,7 +27,7 @@ function Rename-ModPlatformADComputer {
   [CmdletBinding()]
   param (
     [string]$NewHostname,
-    [hashtable]$ModPlatformADCredential
+    [System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
 
   $ErrorActionPreference = "Stop"
@@ -85,7 +85,7 @@ function Add-ModPlatformADComputer {
   [CmdletBinding()]
   param (
     [hashtable]$ModPlatformADConfig,
-    [hashtable]$ModPlatformADCredential
+    [System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
   
   $ErrorActionPreference = "Stop"
@@ -132,6 +132,12 @@ function Remove-ModPlatformADComputer {
 .OUTPUTS
     boolean
 #>
+
+  [CmdletBinding()]
+  param (
+    [hashtable]$ModPlatformADConfig,
+    [System.Management.Automation.PSCredential]$ModPlatformADCredential
+  )
 
   $ErrorActionPreference = "Stop"
 
