@@ -17,7 +17,7 @@
 
 [CmdletBinding()]
 param (
-  [string]$DomainNameFQDN
+  [string]$DomainNameFQDN,
   [string]$AccountIdsSSMParameterName = "account_ids"
 )
 
