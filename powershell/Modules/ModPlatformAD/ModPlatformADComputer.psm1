@@ -136,7 +136,7 @@ function Remove-ModPlatformADComputer {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [Parameter(Mandatory=$true)]System.Management.Automation.PSCredential]$ModPlatformADCredential
+    [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
 
   $ErrorActionPreference = "Stop"
