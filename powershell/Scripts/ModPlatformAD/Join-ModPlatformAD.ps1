@@ -23,9 +23,6 @@ param (
 
 Import-Module ModPlatformAD
 
-Write-Output "ok"
-exit 1
-
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
