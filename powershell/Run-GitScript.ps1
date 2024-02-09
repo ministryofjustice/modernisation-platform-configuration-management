@@ -1,5 +1,6 @@
 param (
-  [Parameter(Mandatory=$true)][string]$Script,
+  #[Parameter(Mandatory=$true)][string]$Script,
+  [string]$Script = "ModPlatformAD/Join-ModPlatformAD",
   [string]$GitOrg = "ministryofjustice",
   [string]$GitRepo = "modernisation-platform-configuration-management",
   [string]$GitBranch = "hmpps/DSOS-2581/add-active-directory-scripts",
@@ -13,23 +14,27 @@ if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
-$TempPath = $null
+git config --system core.longpaths true
+
 if (-Not $GitSourcePath) {
-  $TempPath = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-  Write-Output "Creating temporary directory ${TempPath}"
-  $TempPathItem = New-Item -ItemType Directory -Path $TempPath
-  $GitSourcePath = $TempPath
+  $GitSourcePath = [System.IO.Path]::GetTempPath()
 }
 
-if (-not (Test-Path -Path (Join-Path $GitSourcePath $GitRepo))) {
-  Set-Location -Path $GitSourcePath
+$env:GIT_REDIRECT_STDERR="2>&1"
+Set-Location -Path $GitSourcePath
+if (-not (Test-Path -Path $GitRepo)) {
   Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git"
-  $env:GIT_REDIRECT_STDERR="2>&1"
   git clone "https://github.com/${GitOrg}/${GitRepo}.git"
+  Set-Location -Path $GitRepo
+} else {
+  Set-Location -Path $GitRepo
+  git checkout main
+  git pull
 }
-Set-Location -Path (Join-Path $GitSourcePath $GitRepo)
-git checkout $GitBranch
-$ModulePath = Join-Path $GitSourcePath $GitRepo "powershell/Modules"
-$env:PSModulePath = "${env:PSModulePath}:${ModulePath}"
+if ($GitBranch -ne "main") {
+  git checkout "${GitBranch}"
+}
+$ModulePath = Join-Path (Join-Path $GitSourcePath $GitRepo) (Join-Path "powershell" "Modules")
+$env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 
 . powershell/Scripts/$Script

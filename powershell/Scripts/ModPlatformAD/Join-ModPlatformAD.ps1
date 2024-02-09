@@ -30,6 +30,6 @@ $ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig -Acco
 if (Rename-ModPlatformADComputer -NewHostname "tag:Name" -ModPlatformADCredential $ADCredential) {
   exit 3010 # triggers reboot if running from SSM Doc
 }
-if (Add-ModPlatformADComputer -$ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
   exit 3010 # triggers reboot if running from SSM Doc
 }

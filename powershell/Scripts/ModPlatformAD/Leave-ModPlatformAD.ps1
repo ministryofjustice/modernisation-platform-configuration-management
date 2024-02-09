@@ -27,6 +27,6 @@ $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
 $ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig -AccountIdsSSMParameterName $AccountIdsSSMParameterName
-if (Remove-ModPlatformADComputer -$ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+if (Remove-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
   exit 3010 # triggers reboot if running from SSM Doc
 }
