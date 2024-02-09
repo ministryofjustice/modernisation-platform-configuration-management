@@ -77,7 +77,7 @@ function Get-ModPlatformADConfig {
 
   foreach ($Config in $ModPlatformADConfigs.GetEnumerator() ) {
     if ($Config.Value["EnvironmentNameTags"].Contains($EnvironmentNameTag)) {
-      return $Config
+      return $Config.Value
     }
   }
 
