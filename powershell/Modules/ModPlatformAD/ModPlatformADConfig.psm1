@@ -61,7 +61,7 @@ function Get-ModPlatformADConfig {
     }
   }
 
-  if ($DomainNameFQDN -ne $null -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
+  if ($DomainNameFQDN -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
     return $ModPlatformADConfigs.[string]$DomainNameFQDN
   }  
   $Token = Invoke-RestMethod -ConnectionTimeoutSeconds 2 -OperationTimeoutSeconds 2 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
@@ -71,7 +71,7 @@ function Get-ModPlatformADConfig {
   $DomainNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
 
-  if ($DomainNameTag -ne $null -and $ModPlatformADConfigs.containsKey($DomainNameTag)) {
+  if ($DomainNameTag -and $ModPlatformADConfigs.containsKey($DomainNameTag)) {
     return $ModPlatformADConfigs.[string]$DomainNameTag
   }
 

@@ -37,7 +37,7 @@ function Rename-ModPlatformADComputer {
   $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
   $Tags = "$TagsRaw" | ConvertFrom-Json
 
-  if ($NewHostname -eq $null) {
+  if (-not $NewHostname) {
     $NewHostname = $env:COMPUTERNAME
   } elseif ($NewHostname -eq "keep-existing") {
     $NewHostname = $env:COMPUTERNAME
@@ -47,7 +47,7 @@ function Rename-ModPlatformADComputer {
     $NewHostname = $InstanceId
   }  
   if ($NewHostname -ne $env:COMPUTERNAME) {
-    if ($ModPlatformADCredential -eq $null) {
+    if (-not $ModPlatformADCredential) {
       Rename-Computer -NewName $NewHostname -Force
     } else {
       Rename-Computer -NewName $NewHostname -DomainCredential $ModPlatformADCredential -Force

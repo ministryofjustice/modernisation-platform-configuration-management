@@ -13,9 +13,6 @@
 
 .EXAMPLE
     Join-ModPlatformAD
-
-.OUTPUTS
-    HashTable
 #>
 
 [CmdletBinding()]

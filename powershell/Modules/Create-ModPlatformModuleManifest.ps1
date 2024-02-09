@@ -40,10 +40,10 @@ $ErrorActionPreference = "Stop"
 $ManifestPath = "${ModuleName}/${ModuleName}.psd1"
 
 # Overwrite default manifest parameters with existing values with incremented version
-if ((Get-ChildItem $ManifestPath -ErrorAction SilentlyContinue) -ne $null) {
+if (Get-ChildItem $ManifestPath -ErrorAction SilentlyContinue) {
   $ManifestParameters.Keys.Clone() | ForEach-Object {
     $ExistingValue = (Select-String -Path $ManifestPath -Pattern "${_} = '" -Raw).Split("'")[1]
-    if ($ExistingValue -ne $null) {
+    if ($ExistingValue) {
       if ($_ -eq "ModuleVersion") {
         # increment existing version number 
         $Version = [version]$ExistingValue
@@ -60,14 +60,14 @@ if ((Get-ChildItem $ManifestPath -ErrorAction SilentlyContinue) -ne $null) {
   } 
 }
 
-if ($ModuleVersion -ne $null) {
+if ($ModuleVersion) {
   $Version = [version]$ModuleVersion
   if ($Version.Revision -gt 9 -or $Version.Build -gt 9 -or $Version.Minor -gt 9) {
     Write-Error "Invalid version - revision/build/minor must not exceed 9"
   }
   $ManifestParameters["ModuleVersion"] = $ModuleVersion
 } 
-if ($Description -ne $null) {
+if ($Description) {
   $ManifestParameters["Description"] = $Description
 }
 
