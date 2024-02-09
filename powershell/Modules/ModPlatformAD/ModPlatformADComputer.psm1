@@ -154,7 +154,7 @@ function Remove-ModPlatformADComputer {
 
   # Join the domain
   Write-Host "INFO: Removing $env:COMPUTERNAME from ${ModPlatformADConfig.DomainNameFQDN} domain"
-  Remove-Computer -DomainName $ModPlatformADConfig.DomainNameFQDN -Credential $credentials -Verbose -Force
+  Remove-Computer -DomainName $ModPlatformADConfig.DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
   return $true
 }
 

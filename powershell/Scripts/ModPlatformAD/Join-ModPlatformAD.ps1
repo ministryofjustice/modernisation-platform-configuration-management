@@ -21,7 +21,7 @@ param (
   [string]$AccountIdsSSMParameterName = "account_ids"
 )
 
-Import-Module ModPlatformAD
+Import-Module ModPlatformAD -Force
 
 $ErrorActionPreference = "Stop"
 
