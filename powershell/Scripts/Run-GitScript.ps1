@@ -16,7 +16,7 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .EXAMPLE
-    Run-GitScript.ps1 ModPlatformAD/Join-ModPlatformAD
+    Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN": "azure.noms.root"}
 #>
 
 param (
