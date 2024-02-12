@@ -11,6 +11,7 @@ $Tags = "$TagsRaw" | ConvertFrom-Json
 $ServerTypeTag = ($Tags.Tags | Where-Object  {$_.Key -eq "server-type"}).Value
 $Script = ". ServerType/${ServerTypeTag}.ps1"
 
+ServerTypeTag = "HmppsDomainServicesTest"
 if (-not $ServerTypeTag) {
   Write-Error "Missing or blank server-type tag"
 } elseif (-not (Get-ChildItem $Script -ErrorAction SilentlyContinue)) {
