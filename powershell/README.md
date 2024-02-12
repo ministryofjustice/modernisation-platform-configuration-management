@@ -61,6 +61,7 @@ tasks:
           Set-Location -Path ([System.IO.Path]::GetTempPath())
           $GitBranch = "main"
           $Script = "ModPlatformAD/Join-ModPlatformAD.ps1"
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Invoke-WebRequest "https://raw.githubusercontent.com/ministryofjustice/modernisation-platform-configuration-management/${GitBranch}/powershell/Scripts/Run-GitScript.ps1" -OutFile "Run-GitScript.ps1"
           . ./Run-GitScript.ps1 $Script -GitBranch $GitBranch
 ```
