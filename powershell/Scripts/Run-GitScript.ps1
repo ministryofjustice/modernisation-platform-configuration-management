@@ -6,7 +6,8 @@
     Clone repo, configure modules and run given powershell script
 
 .PARAMETER Script
-    Relative path of script from Modules/Scripts directory
+    Optionally provide a script to run.
+    Specify relative path of script from Modules/Scripts directory
 
 .PARAMETER GitBranch
     Git branch to checkout, e.g. main
@@ -19,7 +20,7 @@
 #>
 
 param (
-  [Parameter(Mandatory=$true)][string]$Script,
+  [string]$Script,
   [string]$GitBranch = "main",
   [string]$GitCloneDir
 )
@@ -56,4 +57,7 @@ $ModulePath = Join-Path (Join-Path $GitCloneDir $GitRepo) (Join-Path "powershell
 if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
-. powershell/Scripts/$Script
+Set-Location -Path powershell/Scripts
+if ($Script) {
+  . $Script
+}
