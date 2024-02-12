@@ -39,3 +39,22 @@ required_patches:
     database_patch: true
     datapatch_required: true
 fsfo_mode: disabled
+host_oem_metrics: 
+  oracle_database: 
+    input_file: |
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , "81"
+        critical_threshold , "90"
+        END_RECORD 1
+  oracle_listener:
+     input_file: |
+        START_RECORD 1
+        metric , Response
+        column , tnsPing
+        key_columns , ;
+        warning_threshold , "500"
+        critical_threshold , "1200"
+        END_RECORD 1    
