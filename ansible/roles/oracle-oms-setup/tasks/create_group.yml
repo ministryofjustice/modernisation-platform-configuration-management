@@ -30,9 +30,9 @@
       changed_when: run_group_creation.stdout is search('.*dynamic group created.*')
       loop: "{{ application_groups }}"
       loop_control:
-         loop_var: application_name
+        loop_var: application_name
       environment:
-         APPLICATION: "{{ application_name }}"
+        APPLICATION: "{{ application_name }}"
 
   always:
     - name: Remove Group Creation scripts from Staging Area
