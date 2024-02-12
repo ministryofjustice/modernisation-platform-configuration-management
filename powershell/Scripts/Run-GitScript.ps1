@@ -58,6 +58,7 @@ if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
 Set-Location -Path powershell/Scripts
+Get-Location
 if ($Script) {
   . $Script
 }
