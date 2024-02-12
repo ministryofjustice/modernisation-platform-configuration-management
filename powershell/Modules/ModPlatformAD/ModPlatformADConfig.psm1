@@ -61,8 +61,12 @@ function Get-ModPlatformADConfig {
     }
   }
 
-  if ($DomainNameFQDN -and $ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
-    return $ModPlatformADConfigs.[string]$DomainNameFQDN
+  if ($DomainNameFQDN) {
+    if ($ModPlatformADConfigs.ContainsKey($DomainNameFQDN)) {
+      return $ModPlatformADConfigs.[string]$DomainNameFQDN
+    } else {
+      Write-Error "No matching configuration for domain name $DomainNameFQDN"
+    }
   }  
   $Token = Invoke-RestMethod -TimeoutSec 2 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
   $InstanceId = Invoke-RestMethod -TimeoutSec 2 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
@@ -71,8 +75,12 @@ function Get-ModPlatformADConfig {
   $DomainNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
 
-  if ($DomainNameTag -and $ModPlatformADConfigs.containsKey($DomainNameTag)) {
-    return $ModPlatformADConfigs.[string]$DomainNameTag
+  if ($DomainNameTag) {
+    if ($ModPlatformADConfigs.containsKey($DomainNameTag)) {
+      return $ModPlatformADConfigs.[string]$DomainNameTag
+    } else {
+      Write-Error "No matching configuration for domain name $DomainNameTag"
+    }
   }
 
   foreach ($Config in $ModPlatformADConfigs.GetEnumerator() ) {
@@ -80,7 +88,6 @@ function Get-ModPlatformADConfig {
       return $Config.Value
     }
   }
-
   Write-Error "No matching configuration for environment-name $EnvironmentNameTag"
 }
 
