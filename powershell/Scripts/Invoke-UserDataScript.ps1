@@ -9,13 +9,13 @@ $InstanceId = Invoke-RestMethod -TimeoutSec 2 -Headers @{"X-aws-ec2-metadata-tok
 $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
 $Tags = "$TagsRaw" | ConvertFrom-Json
 $ServerTypeTag = ($Tags.Tags | Where-Object  {$_.Key -eq "server-type"}).Value
-$Script = ". ServerType/${ServerTypeTag}.ps1"
+$ServerTypeTag = "HmppsDomainServicesTest"
+$UserDataScript = ". UserDataScripts/${ServerTypeTag}.ps1"
 
-ServerTypeTag = "HmppsDomainServicesTest"
 if (-not $ServerTypeTag) {
   Write-Error "Missing or blank server-type tag"
-} elseif (-not (Get-ChildItem $Script -ErrorAction SilentlyContinue)) {
-  Write-Error "Could not find $Script"
+} elseif (-not (Get-ChildItem $UserDataScript -ErrorAction SilentlyContinue)) {
+  Write-Error "Could not find $UserDataScript"
 } else {
-  . $Script
+  . $UserDataScript
 }
