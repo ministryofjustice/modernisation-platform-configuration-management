@@ -18,6 +18,7 @@
     nodemanager_password: "{{ secretsmanager_passwords_dict['oem'].passwords['nodemanager'] }}"
     oem_agent_password: "{{ secretsmanager_passwords_dict['oem_shared'].passwords['agentreg'] }}"
     slack_wallet_password: "{{ secretsmanager_passwords_dict['oem'].passwords['slack_wallet'] }}"
+    slack_token: "{{ secretsmanager_passwords_dict['emrep_shared'].passwords['slack_token'] }}"
 
 - name: Check parameters
   set_fact:
@@ -31,6 +32,7 @@
     - nodemanager_password|length > 0
     - oem_agent_password|length > 0
     - slack_wallet_password|length > 0
+    - slack_token|length > 0
 
 - name: Fail if missing parameters
   fail:

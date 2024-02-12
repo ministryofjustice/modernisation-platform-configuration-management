@@ -1,1 +1,0 @@
-This role is for joining linux instances to a domain. 

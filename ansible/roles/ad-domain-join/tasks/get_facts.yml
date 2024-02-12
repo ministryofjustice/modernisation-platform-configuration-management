@@ -1,0 +1,15 @@
+---
+- name: Fail if ad_domain not defined
+  fail:
+    msg: "Please ensure ad_domain_name_fqdn is defined and contained within ad_domains dictionary"
+  when: ad_domain is not defined
+
+- name: Get secretsmanager passwords
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ ad_secretsmanager_passwords }}"
+
+- name: Set secretsmanager facts
+  set_fact:
+    domain_join_password: "{{ secretsmanager_passwords_dict['ad_shared_passwords'].passwords[ad_domain.domain_join_username] }}"

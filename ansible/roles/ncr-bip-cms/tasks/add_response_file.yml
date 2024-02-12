@@ -49,3 +49,9 @@
     path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^productkey="
     line: "productkey={{ product_key }}"
+
+- name: Ensure node name is set in response file
+  ansible.builtin.lineinfile:
+    path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
+    regexp: "^sianame="
+    line: "sianame={{ sia_name }}1"

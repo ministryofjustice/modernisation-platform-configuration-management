@@ -1,0 +1,14 @@
+#!/bin/bash
+
+. ~/.bash_profile
+export JAVA_HOME=$ORACLE_HOME/jdk/jre
+
+
+if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec {{ application }} ) -gt 0 ] ; then
+   echo "{{ application }} group already exists."
+else
+   {{ emcli }} create_dynamic_group -name={{ application }} -properties="orcl_gtp_line_of_bus:{{ application }}"
+   if [[ $? -eq 0 ]]; then
+      echo "New {{ application }} dynamic group created."
+   fi
+fi

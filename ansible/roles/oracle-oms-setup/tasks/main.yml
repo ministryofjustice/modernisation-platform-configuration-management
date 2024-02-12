@@ -50,6 +50,26 @@
     - ec2provision
     - oracle_oem_patch_upgrade
 
+- import_tasks: create_group.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - incident_rule_group
+
+- import_tasks: import_incident_rule_set.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - incident_rule_set
+
 - import_tasks: create_slack_wallet.yml
   tags:
+    - amibuild
+    - ec2provision
     - create_slack_wallet
+
+- import_tasks: create_slack_notification_package.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - create_slack_notification_package
