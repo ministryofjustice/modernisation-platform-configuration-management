@@ -1,1 +1,1 @@
-Get-Location
+. ../ModPlatformAD/Join-ModPlatformAD.ps1
