@@ -10,7 +10,7 @@ $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
 $Tags = "$TagsRaw" | ConvertFrom-Json
 $ServerTypeTag = ($Tags.Tags | Where-Object  {$_.Key -eq "server-type"}).Value
 $ServerTypeTag = "HmppsDomainServicesTest"
-$UserDataScript = ". UserDataScripts/${ServerTypeTag}.ps1"
+$UserDataScript = "UserDataScripts/${ServerTypeTag}.ps1"
 
 if (-not $ServerTypeTag) {
   Write-Error "Missing or blank server-type tag"
