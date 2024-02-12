@@ -21,6 +21,7 @@
 
 param (
   [string]$Script,
+  [hashtable]$ScriptArgs,
   [string]$GitBranch = "main",
   [string]$GitCloneDir
 )
@@ -61,7 +62,7 @@ if ($Script) {
   $RelativeScriptDir = Split-Path -Parent $Script
   $ScriptFilename = Split-Path -Leaf $Script
   Set-Location -Path "powershell/Scripts/$RelativeScriptDir"
-  . ./$ScriptFilename
+  . ./$ScriptFilename @ScriptArgs
 } else {
   Set-Location -Path powershell/Scripts
 }
