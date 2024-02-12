@@ -9,6 +9,9 @@
     Optionally provide a script to run.
     Specify relative path of script from Modules/Scripts directory
 
+.PARAMETER ScriptArgs
+    Optionally provide arguments to the script in hashtable format
+
 .PARAMETER GitBranch
     Git branch to checkout, e.g. main
 
