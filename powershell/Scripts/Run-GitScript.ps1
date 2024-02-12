@@ -16,7 +16,7 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .EXAMPLE
-    Run-GitScript.ps1 ModPlatformAD/Join-ModPlatformAD 
+    Run-GitScript.ps1 ModPlatformAD/Join-ModPlatformAD
 #>
 
 param (
@@ -57,7 +57,11 @@ $ModulePath = Join-Path (Join-Path $GitCloneDir $GitRepo) (Join-Path "powershell
 if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
-Set-Location -Path powershell/Scripts
 if ($Script) {
-  . ./$Script
+  $RelativeScriptDir = Split-Path -Parent $Script
+  $ScriptFilename = Split-Path -Leaf $Script
+  Set-Location "powershell/Scripts/$RelativeScriptDir"
+  . ./$ScriptFilename
+} else {
+  Set-Location -Path powershell/Scripts
 }
