@@ -3,4 +3,4 @@
 
 # Install RD Licensing component and activate
 $ErrorActionPreference = "Stop"
-Install-WindowsFeature AD-Domain-Services –IncludeAllSubFeature -IncludeManagementTools
+Install-WindowsFeature AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
