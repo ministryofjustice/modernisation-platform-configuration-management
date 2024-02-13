@@ -35,10 +35,10 @@ $GitRepo = "modernisation-platform-configuration-management"
 
 if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
   Write-Error "Please install git, e.g. choco install git.install -y"
-  exit 1
+  Exit 1
 }
 
-if (-Not $GitCloneDir) {
+if (-not $GitCloneDir) {
   $GitCloneDir = [System.IO.Path]::GetTempPath()
 }
 
@@ -66,6 +66,7 @@ if ($Script) {
   $ScriptFilename = Split-Path -Leaf $Script
   Set-Location -Path "powershell/Scripts/$RelativeScriptDir"
   . ./$ScriptFilename @ScriptArgs
+  Exit $LASTEXITCODE
 } else {
   Set-Location -Path powershell/Scripts
 }
