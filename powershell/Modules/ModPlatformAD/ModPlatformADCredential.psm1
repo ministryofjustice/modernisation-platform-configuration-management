@@ -32,7 +32,7 @@ function Get-ModPlatformADCredential {
 
   $ErrorActionPreference = "Stop"
 
-  $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
+  $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --region "eu-west-2" --output text
   $AccountIds = "$AccountIdsRaw" | ConvertFrom-Json
   $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
   $SecretName = $ModPlatformADConfig.SecretName
@@ -49,7 +49,7 @@ function Get-ModPlatformADCredential {
   $env:AWS_ACCESS_KEY_ID = $Creds.Credentials.AccessKeyId
   $env:AWS_SECRET_ACCESS_KEY = $Creds.Credentials.SecretAccessKey
   $env:AWS_SESSION_TOKEN = $Creds.Credentials.SessionToken
-  $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
+  $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --region "eu-west-2" --output text
   $SecretValue = "$SecretValueRaw" | ConvertFrom-Json
   $env:AWS_ACCESS_KEY_ID = $Tmp_AWS_ACCESS_KEY_ID
   $env:AWS_SECRET_ACCESS_KEY = $Tmp_AWS_SECRET_ACCESS_KEY
