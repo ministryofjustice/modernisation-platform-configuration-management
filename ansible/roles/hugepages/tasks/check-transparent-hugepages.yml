@@ -5,7 +5,7 @@
   check_mode: false
   register: meminfo
 
-- name: Fail if transparent huge pages still enabled
+- name: Skip set hugepages if transparent huge pages still enabled
   ansible.builtin.debug:
     msg: "Tranparent huge pages must be disabled.  Reboot is required to enable if grubby has been updated. HUGEPAGES SETUP NOT COMPLETE"
   when: not meminfo.stdout | regex_search("AnonHugePages:\ *0")
