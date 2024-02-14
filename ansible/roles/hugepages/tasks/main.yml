@@ -11,3 +11,4 @@
   tags:
     - ec2provision
     - ec2patch
+  when: meminfo.stdout | regex_search("AnonHugePages:\ *0")
