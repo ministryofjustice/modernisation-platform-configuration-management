@@ -107,7 +107,7 @@ function Get-ModPlatformADConfig {
           break
         }
       }
-      return $ConfigCopy
+      Return $ConfigCopy
     } else {
       Write-Error "No matching configuration for domain ${Key}"
     }

@@ -31,8 +31,8 @@ $ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig -Acco
 $Renamed = Rename-ModPlatformADComputer -NewHostname $NewHostname -ModPlatformADCredential $ADCredential
 if ($Renamed) {
   Write-Output "Renamed computer to ${Renamed}"
-  exit 3010 # triggers reboot if running from SSM Doc
+  Exit 3010 # triggers reboot if running from SSM Doc
 }
 if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-  exit 3010 # triggers reboot if running from SSM Doc
+  Exit 3010 # triggers reboot if running from SSM Doc
 }
