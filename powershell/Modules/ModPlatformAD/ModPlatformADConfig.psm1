@@ -63,7 +63,7 @@ function Get-ModPlatformADConfig {
     "EC2HmppsDomainSecretsRole" = @{
       "EnvironmentNameTags" = @(
         "hmpps-domain-services-development",
-        "hmpps-domain-services-testTODO",
+        "hmpps-domain-services-test",
         "hmpps-domain-services-preproduction",
         "hmpps-domain-services-production",
         "planetfm-development",
