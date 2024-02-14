@@ -180,10 +180,12 @@
     label: "{{ item.item }}"
   when: item.stdout is defined
 
+# Behaviour changed in Ansible 2.10 --> 2.15 Upgrade:  must do a list concatenation entirely
+# within {{}} otherwise the list is converted to a string
 - name: Detect if Restart Required
   set_fact:
     restart_database_instance: yes
-  with_items: "{{ setout_spfile.results }} + {{ setout_sga_target_spfile.results }} + {{ setout_sga_maxsize_spfile.results }}"
+  with_items: "{{ setout_spfile.results + setout_sga_target_spfile.results + setout_sga_maxsize_spfile.results }}"
   when: item is search('.*stdout*.')
 
 - name: Restart Database Instance If Required
