@@ -27,17 +27,17 @@ application: "{{ ec2.tags['application'] }}"
 ruleset_name: "AWS Incident management rule set for {{ application }} targets"
 
 # Variables for OMS RU patching
-oms_ru_patch: p35437906_135000_Generic.zip
-oms_ru_patch_number: 35437906
+oms_ru_patch: p35861059_135000_Generic.zip
+oms_ru_patch_number: 35861059
 omspatcher_patch: p19999993_135000_Generic.zip
-oms_opatch_patch: p28186730_1394212_Generic.zip
-oms_opatch_version: 13.9.4.2.12
-omspatcher_version: 13.9.5.14.0
+oms_opatch_patch: p28186730_1394214_Generic.zip
+oms_opatch_version: 13.9.4.2.14
+omspatcher_version: 13.9.5.17.0
 omspatcher_stage: "{{ stage }}/omspatcher_stage"
-agent_ru_patch: p35437910_135000_Generic.zip
-agent_ru_patch_number: 35437910
+agent_ru_patch: p35861076_135000_Generic.zip
+agent_ru_patch_number: 35861076
 agentpatcher_patch: p33355570_135000_Generic.zip
-agentpatcher_version: 13.9.5.5.0
+agentpatcher_version: 13.9.5.6.0
 agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
 
 oms_env:
