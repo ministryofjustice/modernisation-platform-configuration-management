@@ -1,0 +1,100 @@
+---
+# Create a named Credential OEM_HOST_SSH which may be used by the Central Agent
+# for local authentication to the host where OMS is running.  This uses an SSH
+# key rather than a password.
+
+# SSSD needs to be installed as OEM uses the pam_sss.so library provided.
+# The daemon itself does not need to be enabled or started.
+- name: Install SSSD
+  yum:
+    name: sssd
+    state: present
+    disable_gpg_check: true
+
+# By default ssh-rsa is not an accepted authentication method in the OpenSSH
+# server which is installed by default in OL/RH7.4 and above.
+# Add it to the list of accepted methods.
+- name: Allow ssh-rsa Authentication in OpenSSH
+  lineinfile:
+      path: /etc/crypto-policies/back-ends/opensshserver.config
+      regexp: '^(.*-oPubkeyAcceptedKeyTypes=)(?!ssh-rsa,)(.+)$'
+      line: '\1ssh-rsa,\2'
+      backrefs: true
+  register: add_ssh_rsa
+
+# A restart if require to pick up the OpenSSH Config changes
+- name: Restart SSHD service
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+  when: add_ssh_rsa.changed
+
+- name: Create SSH Directory for Oracle
+  file:
+     path: "/home/{{ oracle_install_user }}/.ssh"
+     owner: "{{ oracle_install_user }}"
+     group: "{{ oracle_install_group }}"
+     state: directory
+     mode: '0700'
+
+- name: Generate an RSA private key
+  community.crypto.openssh_keypair:
+    path: "/home/{{ oracle_install_user }}/.ssh/oem_ssh_key"
+    comment: For use by OEM Central Agent for local authentication
+    size: 4096
+    type: rsa
+  become: true
+  become_user: oracle
+
+- name: Read Public key
+  slurp:
+     src: "/home/{{ oracle_install_user }}/.ssh/oem_ssh_key.pub"
+  register: read_public_key
+
+- name: Authorize the Public Key for Agent Connections
+  authorized_key:
+     user: "{{ oracle_install_user }}"
+     state: present
+     key: "{{ read_public_key.content | b64decode }}"
+
+- name: Create HostSSHCreds
+  block:
+    # EMCLI Login script contains a password so ensure it is not readable by other users
+    - name: Copy EMCLI Login Script
+      ansible.builtin.template:
+        src: emcli_login.sh.j2
+        dest: "{{ stage }}/emcli_login.sh"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+
+    # If the credential already exists then do not treat that as an error
+    - name: Run HostSSHCreds Creation
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        # Get Hostname as it is known to the Central Agent
+        HOST_TARGET=$({{ emctl }} config agent listtargets | grep -E "^.*, host]$" | cut -d, -f1 | tr -d ' []')
+        echo "Adding OEM_HOST_SSH CREDENTIALS for the ${HOST_TARGET} host"
+        function create_credential()
+        {
+           {{ emcli }} create_named_credential -cred_name=OEM_HOST_SSH -auth_target_type=host -cred_type=HostSSHCreds -attributes="USERNAME:{{ oracle_install_user }};SSH_PVT_KEY:pvtkey" -target_name="${HOST_TARGET}" -input_file="pvtkey:/home/{{ oracle_install_user }}/.ssh/oem_ssh_key" -target_type=host -cred_scope=instance
+           RC=$?
+        }
+        CREATE_CREDENTIAL=$(create_credential)
+        ALREADY_EXISTS_MESSAGE="Error occurred: Credential name OEM_HOST_SSH exists."
+        if [[ ${CREATE_CREDENTIAL} =~ ${ALREADY_EXISTS_MESSAGE} ]]; then
+           # If the credential already exists then drop and replace it since the key may have been changed
+           {{ emcli }} delete_named_credential -cred_owner=SYSMAN -cred_name=OEM_HOST_SSH
+           create_credential
+        fi
+        exit $RC
+      register: run_hostsshcreds_creation
+      changed_when: run_hostsshcreds_creation.stdout is search('.*Credential OEM_HOST_SSH created.*')
+
+  always:
+    - name: Remove EMCLI login scripts from Staging Area
+      ansible.builtin.file:
+        path: emcli_login.sh
+        state: absent
