@@ -93,6 +93,14 @@
       register: run_hostsshcreds_creation
       changed_when: run_hostsshcreds_creation.stdout is search('.*Credential OEM_HOST_SSH created.*')
 
+    - name: Set Preferred Host Credentials for the OEM Database
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        {{ emcli }} set_preferred_credential -set_name=DBHostCreds -target_name=EMREP -target_type=oracle_database -credential_name=OEM_HOST_SSH
+      register: set_preferred_credentials
+
   always:
     - name: Remove EMCLI login scripts from Staging Area
       ansible.builtin.file:
