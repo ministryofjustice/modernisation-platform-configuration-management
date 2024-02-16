@@ -6,7 +6,11 @@
     Clone repo, configure modules and run given powershell script
 
 .PARAMETER Script
-    Relative path of script from Modules/Scripts directory
+    Optionally provide a script to run.
+    Specify relative path of script from Modules/Scripts directory
+
+.PARAMETER ScriptArgs
+    Optionally provide arguments to the script in hashtable format
 
 .PARAMETER GitBranch
     Git branch to checkout, e.g. main
@@ -15,11 +19,12 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .EXAMPLE
-    Run-GitScript.ps1 ModPlatformAD/Join-ModPlatformAD 
+    Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN": "azure.noms.root"}
 #>
 
 param (
-  [Parameter(Mandatory=$true)][string]$Script,
+  [string]$Script,
+  [hashtable]$ScriptArgs,
   [string]$GitBranch = "main",
   [string]$GitCloneDir
 )
@@ -30,10 +35,10 @@ $GitRepo = "modernisation-platform-configuration-management"
 
 if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
   Write-Error "Please install git, e.g. choco install git.install -y"
-  exit 1
+  Exit 1
 }
 
-if (-Not $GitCloneDir) {
+if (-not $GitCloneDir) {
   $GitCloneDir = [System.IO.Path]::GetTempPath()
 }
 
@@ -56,4 +61,12 @@ $ModulePath = Join-Path (Join-Path $GitCloneDir $GitRepo) (Join-Path "powershell
 if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
-. powershell/Scripts/$Script
+if ($Script) {
+  $RelativeScriptDir = Split-Path -Parent $Script
+  $ScriptFilename = Split-Path -Leaf $Script
+  Set-Location -Path "powershell/Scripts/$RelativeScriptDir"
+  . ./$ScriptFilename @ScriptArgs
+  Exit $LASTEXITCODE
+} else {
+  Set-Location -Path powershell/Scripts
+}

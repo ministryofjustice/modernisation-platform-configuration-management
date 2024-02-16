@@ -33,7 +33,7 @@ Get-Help Get-ModPlatformADConfig
 Put scripts in a `powershell/Scripts` folder. For example, active
 directory related scripts in `powershell/Scripts/ModPlatformAD`
 
-### Naming
+### Naming
 
 Be consistent. Pascal case (capitalize the first letter of each word) except keywords
 and operators which are in lower case.
@@ -61,8 +61,10 @@ tasks:
           Set-Location -Path ([System.IO.Path]::GetTempPath())
           $GitBranch = "main"
           $Script = "ModPlatformAD/Join-ModPlatformAD.ps1"
+          $ScriptArgs = @{"NewHostname" = "tag:Name"}
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 # since powershell 4 uses Tls1 as default
           Invoke-WebRequest "https://raw.githubusercontent.com/ministryofjustice/modernisation-platform-configuration-management/${GitBranch}/powershell/Scripts/Run-GitScript.ps1" -OutFile "Run-GitScript.ps1"
-          . ./Run-GitScript.ps1 $Script -GitBranch $GitBranch
+          . ./Run-GitScript.ps1 $Script -ScriptArgs $ScriptArgs -GitBranch $GitBranch
 ```
 
 This example downloads the wrapper script and executes it with an example script.
