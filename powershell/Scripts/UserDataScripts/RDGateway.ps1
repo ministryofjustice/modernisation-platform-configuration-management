@@ -15,12 +15,12 @@ $CAP = @{
   "IdleTimeout" = 120
   "SessionTimeout" = 480
   "SessionTimeoutAction" = 0
-  "UserGroups" = "Domain Users@${$DomainNameNetbios}"
+  "UserGroups" = "Domain Users@${DomainNameNetbios}"
 }
 $RAP = @{
   "Name" = "default"
   "ComputerGroupType" = 2
-  "UserGroups" = "Domain Users@${$DomainNameNetbios}"
+  "UserGroups" = "Domain Users@${DomainNameNetbios}"
 }
 
 Import-Module ModPlatformRemoteDesktop -Force
