@@ -36,19 +36,22 @@ function Set-ModPlatformRDGatewayCAP() {
   )
 
   if (-not (Test-Path -Path "RDS:\GatewayServer\CAP\${Name}")) {
-    New-Item -Path "RDS:\GatewayServer\CAP" -Name $Name -AuthMethod $AuthMethod -UserGroups $UserGroups
+    Write-Output "RDGateway: Creating ${Name} CAP"
+    New-Item -Path "RDS:\GatewayServer\CAP" -Name $Name -AuthMethod $AuthMethod -UserGroups $UserGroups | out-null
   } else {
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\AuthMethod" -Value $AuthMethod
+    Write-Output "RDGateway: Updating ${Name} CAP"
+    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\AuthMethod" -Value $AuthMethod | out-null
     if (-not (Test-Path -Path "RDS:\GatewayServer\CAP\${Name}\UserGroups\${UserGroups}")) {
-      New-Item "RDS:\GatewayServer\CAP\${Name}\UserGroups" -Name $UserGroups
+      Write-Output "RDGateway: Adding new UserGroups ${UserGroups} to ${Name} CAP"
+      New-Item "RDS:\GatewayServer\CAP\${Name}\UserGroups" -Name $UserGroups | out-null
     }
   }
-  Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\Status" -Value $Status
+  Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\Status" -Value $Status | out-null
   if ($IdleTimeout) {
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\IdleTimeout" -Value $IdleTimeout
+    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\IdleTimeout" -Value $IdleTimeout | out-null
   }
   if ($SessionTimeout -or $SessionTimeoutAction) {
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\SessionTimeout" -Value $SessionTimeout -SessionTimeoutAction $SessionTimeoutAction
+    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\SessionTimeout" -Value $SessionTimeout -SessionTimeoutAction $SessionTimeoutAction | out-null
   }
 }
 
@@ -65,11 +68,14 @@ function Set-ModPlatformRDGatewayRAP() {
   )
 
   if (-not (Test-Path -Path "RDS:\GatewayServer\RAP\${Name}")) {
-    New-Item -Path "RDS:\GatewayServer\RAP" -Name $Name -ComputerGroupType $ComputerGroupType -UserGroups $UserGroups
+    Write-Output "RDGateway: Creating ${Name} RAP"
+    New-Item -Path "RDS:\GatewayServer\RAP" -Name $Name -ComputerGroupType $ComputerGroupType -UserGroups $UserGroups | out-null
   } else {
-    Set-Item -Path "RDS:\GatewayServer\RAP\${Name}\ComputerGroupType" -Value $ComputerGroupType
+    Write-Output "RDGateway: Updating ${Name} RAP"
+    Set-Item -Path "RDS:\GatewayServer\RAP\${Name}\ComputerGroupType" -Value $ComputerGroupType | out-null
     if (-not (Test-Path -Path "RDS:\GatewayServer\RAP\${Name}\UserGroups\${UserGroups}")) {
-      New-Item "RDS:\GatewayServer\RAP\${Name}\UserGroups" -Name $UserGroups
+      Write-Output "RDGateway: Adding new UserGroups ${UserGroups} to ${Name} RAP"
+      New-Item "RDS:\GatewayServer\RAP\${Name}\UserGroups" -Name $UserGroups | out-null
     }
   }
 }
