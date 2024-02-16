@@ -16,10 +16,10 @@
 # Add it to the list of accepted methods.
 - name: Allow ssh-rsa Authentication in OpenSSH
   lineinfile:
-      path: /etc/crypto-policies/back-ends/opensshserver.config
-      regexp: '^(.*-oPubkeyAcceptedKeyTypes=)(?!ssh-rsa,)(.+)$'
-      line: '\1ssh-rsa,\2'
-      backrefs: true
+    path: /etc/crypto-policies/back-ends/opensshserver.config
+    regexp: "^(.*-oPubkeyAcceptedKeyTypes=)(?!ssh-rsa,)(.+)$"
+    line: '\1ssh-rsa,\2'
+    backrefs: true
   register: add_ssh_rsa
 
 # A restart if require to pick up the OpenSSH Config changes
@@ -31,11 +31,11 @@
 
 - name: Create SSH Directory for Oracle
   file:
-     path: "/home/{{ oracle_install_user }}/.ssh"
-     owner: "{{ oracle_install_user }}"
-     group: "{{ oracle_install_group }}"
-     state: directory
-     mode: '0700'
+    path: "/home/{{ oracle_install_user }}/.ssh"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    mode: "0700"
 
 - name: Generate an RSA private key
   community.crypto.openssh_keypair:
@@ -48,14 +48,14 @@
 
 - name: Read Public key
   slurp:
-     src: "/home/{{ oracle_install_user }}/.ssh/oem_ssh_key.pub"
+    src: "/home/{{ oracle_install_user }}/.ssh/oem_ssh_key.pub"
   register: read_public_key
 
 - name: Authorize the Public Key for Agent Connections
   authorized_key:
-     user: "{{ oracle_install_user }}"
-     state: present
-     key: "{{ read_public_key.content | b64decode }}"
+    user: "{{ oracle_install_user }}"
+    state: present
+    key: "{{ read_public_key.content | b64decode }}"
 
 - name: Create HostSSHCreds
   block:
