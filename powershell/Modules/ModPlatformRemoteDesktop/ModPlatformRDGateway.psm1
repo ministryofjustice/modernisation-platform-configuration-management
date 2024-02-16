@@ -8,6 +8,7 @@ function Add-ModPlatformRDGateway() {
 
   $ErrorActionPreference = "Stop"
 
+  Write-Output "RDGateway: Installing feature if not already installed"
   $InstallRDGatewayResult = Install-WindowsFeature -Name RDS-Gateway -IncludeAllSubFeature  -IncludeManagementTools
 
   Import-Module RemoteDesktopServices
