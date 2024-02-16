@@ -8,7 +8,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $DomainNameNetbios = $ADConfig.DomainNameNetbios
 
-CAP = @{
+$CAP = @{
   "Name" = "default"
   "AuthMethod" = 1
   "Status" = 1
@@ -17,7 +17,7 @@ CAP = @{
   "SessionTimeoutAction" = 0
   "UserGroups" = "Domain Users@${$DomainNameNetbios}"
 }
-RAP = @{
+$RAP = @{
   "Name" = "default"
   "ComputerGroupType" = 2
   "UserGroups" = "Domain Users@${$DomainNameNetbios}"
