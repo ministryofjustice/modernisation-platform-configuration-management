@@ -3,25 +3,25 @@
 # This play installs the script and configures a cron job to run it every minute.
 - name: Create Script Directory
   file:
-     path: "{{ notification_script_directory }}"
-     state: directory
+    path: "{{ notification_script_directory }}"
+    state: directory
 
 - name: Copy Notification Script
   copy:
-     src: check_em_incident.sh
-     dest: "{{ notification_script_directory }}/check_em_incident.sh"
-     mode: '0700'
+    src: check_em_incident.sh
+    dest: "{{ notification_script_directory }}/check_em_incident.sh"
+    mode: "0700"
 
 - name: Copy Notification Schedule
   copy:
-     src: monitoring_schedule
-     dest: "{{ notification_script_directory }}/monitoring_schedule"
-     mode: '0600'
+    src: monitoring_schedule
+    dest: "{{ notification_script_directory }}/monitoring_schedule"
+    mode: "0600"
 
 # We use flock to prevent more than one concurrent execution of the monitoring check script.
 # If the script is already running when a new one tries to start, the new one exists with success status.
 - name: Schedule Notification Script Cron Every Minute
   cron:
-     name: check_em_incidents
-     user: oracle
-     job: "/usr/bin/flock --nonblock --conflict-exit-code 0 {{ notification_script_directory }}/lock_file -c {{ notification_script_directory }}/check_em_incident.sh >> {{ notification_script_directory }}/check_em_incident.log 2>&1"
+    name: check_em_incidents
+    user: oracle
+    job: "/usr/bin/flock --nonblock --conflict-exit-code 0 {{ notification_script_directory }}/lock_file -c {{ notification_script_directory }}/check_em_incident.sh >> {{ notification_script_directory }}/check_em_incident.log 2>&1"

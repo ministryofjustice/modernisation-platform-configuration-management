@@ -30,32 +30,32 @@ database_locked_statistics:
     table_names:
       - DOC_MIGRATION_QUEUE_TAB: ALL
 fsfo_mode: disabled
-host_oem_metrics: 
+host_oem_metrics:
   oracle_database:
     all:
       input_file: |
-          START_RECORD 1
-          metric , problemTbsp
-          column , pctUsed
-          key_columns , ;
-          warning_threshold , 81
-          critical_threshold , 90
-          END_RECORD 1
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
     DMDNDA:
       input_file: |
-          START_RECORD 1
-          metric , problemTbsp
-          column , pctUsed
-          key_columns , ;
-          warning_threshold , 81
-          critical_threshold , 90
-          END_RECORD 1
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
   oracle_listener:
-     all:
-        input_file: |
-            START_RECORD 1
-            metric , Response
-            column , tnsPing
-            warning_threshold , 500
-            critical_threshold , 1200
-            END_RECORD 1    
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , Response
+        column , tnsPing
+        warning_threshold , 500
+        critical_threshold , 1200
+        END_RECORD 1
