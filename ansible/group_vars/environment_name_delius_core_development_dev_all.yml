@@ -60,7 +60,6 @@ sqlnet_parameters:
 # Subsequent patching will use the oracle_software variable defined for
 # the primary database.
 oracle_ru_patch: OCT2023
-# When we create the file there MUST NOT be spaces at the start of lines
 all_oem_metrics: 
   oracle_database: 
     all:
@@ -76,7 +75,7 @@ all_oem_metrics:
           critical_threshold ,ORA-0*[0-9]{1,6}
           END_RECORD 1
       custom_properties:
-          alert_log_filter_expression:  "DUMMY_FILTER_EXPRESSION"
+          alert_log_filter_expression:  '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process J\d+.*ORA-1013$'
   has:
     all:
        input_file: |
@@ -101,34 +100,3 @@ all_oem_metrics:
           warning_threshold , COMPLETE_INTERMEDIATE|PARTIALLY_UNKNOWN|PARTIALLY_OFFLINE|PARTIALLY_INTERMEDIATE
           critical_threshold , COMPLETE_UNKNOWN|COMPLETE_OFFLINE|ADD|DOWN
           END_RECORD 3
-           
-# We cannot set the Alert Log Filter Expression using emcli
-# This expression is defined in MGMT_COLL_ITEM_PROPERTIES
-# where OBJECT_GUID is the TARGET_GUID
-# and COLL_NAME is "db_alertlog_coll_12" or "db_alertlog_call_pre11"
-# and PROPERTY_NAME is "ignorePattern"
-
-
-# update sysman.mgmt_coll_item_properties
-# set property_value = '.*ORA-0*(54|1142|1146)\D.*'
-# where property_name = 'ignorePattern'
-# and (object_guid,metric_guid) in
-# (
-# select mcip.object_guid,mcip.metric_guid
-# from sysman.em_targets et
-# inner join sysman.mgmt_coll_item_properties mcip
-# on et.target_guid = mcip.object_guid
-# inner join sysman.mgmt_metrics mm
-# on mcip.metric_guid = mm.metric_guid
-# and et.category_prop_1 = mm.category_prop_1
-# and et.type_meta_ver = mm.type_meta_ver
-# where et.target_name = 'DMDNDA'
-# and et.target_type = 'oracle_database'
-# and mcip.coll_name like 'db_alertlog_coll%'
-# and mcip.property_name = 'ignorePattern'
-# and mm.metric_name = 'db_alert_log'
-# );
-
-
-# Original Value:
-#  .*ORA-0*(54|1142|1146)\D.*
