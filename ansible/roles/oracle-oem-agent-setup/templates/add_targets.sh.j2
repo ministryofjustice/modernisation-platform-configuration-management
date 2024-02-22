@@ -186,7 +186,7 @@ do
            # Group targets do not have properties - exclude group targets
            if [[ "${TARGET_TYPE}" != "group" ]]; then
               # For unknown targets we default the Slack channel to one for OEM Alerts
-              set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" "hmpps-oem" "#hmpps-oem-internal-alerts"
+              set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" "hmpps-oem" "#hmpps-oem-alerts"
           fi
         fi
 done

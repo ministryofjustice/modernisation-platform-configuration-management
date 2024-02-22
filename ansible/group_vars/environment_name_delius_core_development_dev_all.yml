@@ -64,16 +64,44 @@ oracle_ru_patch: OCT2023
 all_oem_metrics: 
   oracle_database: 
     all:
+      schedule:
+         db_alertlog_coll_12:
+            collectionStatus: enabled
       input_file: |
           START_RECORD 1
           metric , db_alert_log
           column , genericErrStack
           key_columns , ;
-          warning_threshold ,; 
+          warning_threshold , " "
           critical_threshold ,ORA-0*[0-9]{1,6}
           END_RECORD 1
       custom_properties:
-        alert_log_filter_expression:  "DUMMY_FILTER_EXPRESSION"
+          alert_log_filter_expression:  "DUMMY_FILTER_EXPRESSION"
+  has:
+    all:
+       input_file: |
+          START_RECORD 1
+          metric , resource_status
+          column , crs_event_composite_status
+          key_columns , resource_ora.diskmon.type_ora.diskmon;
+          warning_threshold , undefined
+          critical_threshold , undefined
+          END_RECORD 1
+          START_RECORD 2
+          metric , resource_status
+          column , crs_event_composite_status
+          key_columns , resource_ora.ons.type_ora.ons;
+          warning_threshold , undefined
+          critical_threshold , undefined
+          END_RECORD 2
+          START_RECORD 3
+          metric , resource_status
+          column , crs_event_composite_status
+          key_columns , ;
+          warning_threshold , COMPLETE_INTERMEDIATE|PARTIALLY_UNKNOWN|PARTIALLY_OFFLINE|PARTIALLY_INTERMEDIATE
+          critical_threshold , COMPLETE_UNKNOWN|COMPLETE_OFFLINE|ADD|DOWN
+          END_RECORD 3
+           
 # We cannot set the Alert Log Filter Expression using emcli
 # This expression is defined in MGMT_COLL_ITEM_PROPERTIES
 # where OBJECT_GUID is the TARGET_GUID
