@@ -6,7 +6,7 @@ environment_name: delius-core-dev
 simple_environment_name: dev
 ndelius_version: "5.8.10"
 # No catalog at present in modernisation platform, comment out for testing
-#catalog: DCAT
+catalog: DEVRCVCAT
 data_classification: unclassified-data
 database_autotasks:
   sql_tuning_advisor: disabled
@@ -20,6 +20,7 @@ database_parameters:
   compatible: 19.14.0
 oracle_osbws_chunk_size: 104857600
 emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
+emcli: /u01/app/oracle/product/emcli/emcli
 # Buckets
 db_backup_s3_bucket_name: "{{ simple_environment_name }}-oracle-database-backups"
 dependencies_bucket:
