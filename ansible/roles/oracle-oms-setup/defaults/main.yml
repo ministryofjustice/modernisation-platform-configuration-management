@@ -34,6 +34,10 @@ emcli: "{{ oem_mw_home }}/bin/emcli"
 application_groups: ["delius", "nomis", "oasys", "corporate-staff-rostering", "hmpps-oem"]
 emctl: "{{ oem_agent_base }}/agent_inst/bin/emctl"
 
+# For targets without Diagnostics pack the following directory is used to
+# install a shell script which can send notifications for incidents.
+notification_script_directory: /home/oracle/admin/em
+
 # Variables for OMS RU patching
 oms_ru_patch: p35861059_135000_Generic.zip
 oms_ru_patch_number: 35861059

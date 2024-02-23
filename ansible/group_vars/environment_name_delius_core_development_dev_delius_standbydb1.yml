@@ -3,3 +3,14 @@
 database_standby_unique: DMDNDAS1
 database_standby_sid: DMDNDAS1
 active_data_guard: false
+# We ignore the MOUNTED state for Standby Databases - this is not an error
+host_oem_metrics:
+  oracle_database:
+    DMDNDAS1:
+      input_file: |
+        START_RECORD 1
+        metric , Response
+        column , State
+        warning_threshold ,THRESHOLD_UNSET
+        critical_threshold ,DOWN|UNKNOWN.*
+        END_RECORD 1
