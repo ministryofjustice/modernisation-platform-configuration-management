@@ -22,7 +22,11 @@ ami_roles_list:
   - disable-ipv6 # disable ipv6 in sysctl
   - disable-firewall
   - packages # Perform any updates to existing if there are no new packages to install
-  # - amazon-ssm-agent # for ec2patch only (if version has changed)
+  - amazon-ssm-agent
+  - amazon-cli
+  - time
+  - message-of-the-day
+  - tcp-keepalive
   - disks
   - oracle-19c
   # - oracle-secure-backup
@@ -43,23 +47,8 @@ disks_partition:
     oracle_group: data
     oracle_label: DATA01
   - ebs_device_name: /dev/sdf
-    oracle_group: data
-    oracle_label: DATA02
-  - ebs_device_name: /dev/sdg
-    oracle_group: data
-    oracle_label: DATA03
-  - ebs_device_name: /dev/sdh
-    oracle_group: data
-    oracle_label: DATA04
-  - ebs_device_name: /dev/sdi
-    oracle_group: data
-    oracle_label: DATA05
-  - ebs_device_name: /dev/sdj
     oracle_group: flash
     oracle_label: FLASH01
-  - ebs_device_name: /dev/sdk
-    oracle_group: flash
-    oracle_label: FLASH02
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -71,5 +60,3 @@ disks_mount:
   - ebs_device_name: /dev/sds
     dir: swap
     fstype: swap
-
-use_ssm_params: true

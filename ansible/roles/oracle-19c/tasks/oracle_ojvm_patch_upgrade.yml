@@ -1,0 +1,77 @@
+---
+- name: Get OJVM patch details
+  become_user: "{{ oracle_install_user }}"
+  become: yes
+  ansible.builtin.shell: |
+    export ORACLE_HOME={{ database_home }}
+    ${ORACLE_HOME}/OPatch/opatch lspatches | grep OJVM | grep {{ oracle_patch.patch_string }}| wc -l
+  register: ojvm_patch_version_check
+
+- name: OJVM patch upgrade
+  block:
+    - name: Shutdown databases before applying OJVM patch
+      ansible.builtin.shell: date
+
+    - name: Shutdown databases before applying OJVM patch
+      ansible.builtin.shell: |
+        export ORACLE_SID=+ASM
+        export ORAENV_ASK=NO
+        . oraenv
+        srvctl stop home -oraclehome {{ database_home }} -statefile /tmp/instances.txt
+
+    - name: Deploy OJVM Patch
+      ansible.builtin.shell: |
+        cd "{{ stage }}/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_ojvm_patch }}" 
+        export ORACLE_SID=`grep {{ database_home }} /etc/oratab | grep  "^[^#;]" | awk -F: '{ print $1 }' | head -1`
+        . oraenv
+        $ORACLE_HOME/OPatch/opatch apply -silent
+      register: ojvm_patch_upgrade
+      async: 1800
+      poll: 60
+
+    - name: Start databases before applying OJVM patch
+      ansible.builtin.shell: |
+        export ORACLE_SID=+ASM
+        export ORAENV_ASK=NO
+        . oraenv
+        srvctl start home -oraclehome {{ database_home }} -statefile /tmp/instances.txt
+
+    - name: Copy datapatch upgrade script
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      loop:
+        - "run_datapatch.sh"
+
+    - name: Run datapatch
+      ansible.builtin.shell: "{{ stage }}/run_datapatch.sh"
+      register: datapatch_upgrade
+      async: 9600
+      poll: 0
+
+    - name: Wait for datapatch upgrade to complete
+      ansible.builtin.async_status:
+        jid: "{{ datapatch_upgrade.ansible_job_id }}"
+      register: datapatch_upgrade
+      until: datapatch_upgrade.finished
+      delay: 60
+      retries: 180
+
+    - name: Restart databases
+      ansible.builtin.shell: |
+        export ORACLE_SID=+ASM
+        export ORAENV_ASK=NO
+        . oraenv
+        srvctl stop home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
+        srvctl start home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
+
+  #block
+  when: ojvm_patch_version_check.stdout == "0"
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  environment:
+    ORACLE_HOME: "{{ grid_home }}"
+    PATH: "{{ grid_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"

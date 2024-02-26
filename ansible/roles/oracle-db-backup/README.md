@@ -28,12 +28,6 @@ rman_backup_cron:
       minute: "30"
       hour: "07"
       # job: command generated in rman-backup-setup
-  monitoring:
-    - name: rman_backup_monitoring
-      weekday: "*"
-      minute: "30"
-      hour: "*"
-      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
 Example:
 no_proxy="*" ansible-playbook site.yml --limit test-oem-a -e force_role=oracle-db-backup

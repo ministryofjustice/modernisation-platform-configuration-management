@@ -1,35 +1,14 @@
 ---
-- name: Get secretsmanager passwords
-  block:
-    - name: secretsmanager passwords
-      import_role:
-        name: secretsmanager-passwords
-      vars:
-        secretsmanager_passwords: "{{ xtag_secretsmanager_passwords }}"
+- name: secretsmanager passwords
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ xtag_secretsmanager_passwords }}"
 
-    - name: secretsmanager passwords
-      set_fact:
-        weblogic_admin_password: "{{ secretsmanager_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
-        weblogic_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[weblogic_db_username] }}"
-
-  when: not use_ssm_params
-  
-
-- name: Get SSM params
-  block:
-    - name: Get SSM parameters
-      import_role:
-        name: ssm-passwords
-      vars:
-        ssm_passwords: "{{ xtag_ssm_passwords }}"
-
-    - name: Get SSM parameters
-      set_fact:
-        weblogic_admin_password: "{{ ssm_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
-        weblogic_db_password: "{{ ssm_passwords_dict['db'].passwords[weblogic_db_username] }}"
-      when: ssm_passwords_dict is defined
-
-  when: use_ssm_params
+- name: secretsmanager passwords
+  set_fact:
+    weblogic_admin_password: "{{ secretsmanager_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
+    weblogic_db_password: "{{ secretsmanager_passwords_dict['db'].passwords[weblogic_db_username] }}"
 
 - debug:
     msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"

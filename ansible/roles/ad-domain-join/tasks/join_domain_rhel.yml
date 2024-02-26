@@ -1,0 +1,47 @@
+---
+- name: Configure sshd_config enable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication.*no"
+    line: "PasswordAuthentication=yes"
+  notify: Restart SSSD service
+
+- name: Configure sshd_config disable public key authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "PubkeyAuthentication.*yes"
+    line: "PubkeyAuthentication=no"
+  notify: Restart SSSD service
+  when: sshd_disable_pubkey_authentication
+
+- name: Install pexpect for injecting secrets
+  ansible.builtin.pip:
+    name: pexpect
+
+- name: Install required packages for joining to the domain
+  ansible.builtin.package:
+    name:
+      - realmd
+      - sssd
+      - samba-common-tools
+      - realmd
+      - oddjob
+      - oddjob-mkhomedir
+      - adcli
+      - krb5-workstation
+    state: present
+
+- name: Check if instance is already joined to the domain
+  ansible.builtin.command: getent passwd {{ ad_domain.domain_join_username }}@{{ ad_domain.domain_name_fqdn }}
+  changed_when: false
+  check_mode: false
+  ignore_errors: yes
+  register: getent_password
+  failed_when: false
+
+- name: Join instance to the domain
+  ansible.builtin.expect:
+    command: /bin/bash -c "/usr/sbin/realm join --user={{ ad_domain.domain_join_username }}@{{ ad_domain.domain_name_fqdn|upper }} {{ ad_domain.domain_name_fqdn|lower }} -v"
+    responses:
+      Password for *: "{{ domain_join_password }}"
+  when: getent_password.rc != 0

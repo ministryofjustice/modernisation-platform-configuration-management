@@ -1,0 +1,26 @@
+# Use this table to define monitoring notification times for
+# specific nodes.  For nodes we do not have Diagnostics pack
+# and cannot use Blackouts, we can specify the times of day
+# when we want to receive notifications (i.e. exclude AWS Stop/Start
+# environments overnight and at weekends)
+#
+# First Column is Regular Expression of Host Name
+#              or System Name
+# Second Column is Cron Expression Describing when we wish to
+# receive notifications for that Node. Note that the 1st (minutes)
+# column of the expression _must_ be "*" - i.e. only define monitoring
+# schedules in whole numbers of hours. Monitoring will occur at every
+# minute within those hours.
+#
+# If No Monitoring is Required for a Node then use "OFF" instead of a
+# Cron Expression
+#
+# If the Node is not matched then it is assumed to be monitored 24/7
+#
+dev-delius.*            * 7-19 * * 1-5
+DEVRCVCAT_sys           * * * * *
+DMD.{3}_sys             * 7-19 * * 1-5
+^DMDNDA_sys             * 7-19 * * 1-5
+EMREP_*_sys             * * * * *
+TRNDA_sys               * 7-19 * * 1-5
+TSTNDA_sys              * 8-23 * * 1-5

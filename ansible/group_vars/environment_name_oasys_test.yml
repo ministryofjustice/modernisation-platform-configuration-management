@@ -1,6 +1,6 @@
 ---
 ansible_aws_ssm_bucket_name: oasys-test20230403093247696000000001
-image_builder_s3_bucket_name: devtest-oasys-20230411143832198800000001
+image_builder_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 dns_zone_internal: oasys.hmpps-test.modernisation-platform.internal
 dns_search_domains:
   - hmpps-oem.hmpps-test.modernisation-platform.internal
@@ -11,6 +11,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+oracle_ru_patch: OCT2023
 
 ords_trusted_origins:
   oasys-test: "https://t2.oasys.service.justice.gov.uk/eor,https://t2-int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
@@ -38,12 +39,6 @@ rman_backup_cron:
       minute: "30"
       hour: "17"
       # job: command generated in rman-backup-setup
-  monitoring:
-    - name: rman_backup_monitoring
-      weekday: "*"
-      minute: "30"
-      hour: "*"
-      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
 db_configs:
   T1OASYS:

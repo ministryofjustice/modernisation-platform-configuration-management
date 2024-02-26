@@ -12,14 +12,14 @@ ami_roles_list:
   - users-and-groups # Add oracle user and associated groups
   - sudoers
   - get-ec2-facts # e.g. populate var ec2 metadata, instance and tag info fact called ec2
-  #  - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
-  #  - domain-search # for ec2provision and ec2patch only
+  - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
+  - domain-search # for ec2provision and ec2patch only
   - disable-ipv6 # disable ipv6 in sysctl
   - disable-firewall
   - packages # Perform any updates to existing if there are no new packages to install
   # - amazon-ssm-agent # for ec2patch only (if version has changed)
   - disks
-  - oracle-19c
+  - oracle-19c-delius
   - oracle-db-bootstrap
 
 ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
@@ -41,23 +41,8 @@ disks_partition:
     oracle_group: data
     oracle_label: DATA01
   - ebs_device_name: /dev/sdf
-    oracle_group: data
-    oracle_label: DATA02
-  - ebs_device_name: /dev/sdg
-    oracle_group: data
-    oracle_label: DATA03
-  - ebs_device_name: /dev/sdh
-    oracle_group: data
-    oracle_label: DATA04
-  - ebs_device_name: /dev/sdi
-    oracle_group: data
-    oracle_label: DATA05
-  - ebs_device_name: /dev/sdj
     oracle_group: flash
     oracle_label: FLASH01
-  - ebs_device_name: /dev/sdk
-    oracle_group: flash
-    oracle_label: FLASH02
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -70,4 +55,13 @@ disks_mount:
     dir: swap
     fstype: swap
 
-use_ssm_params: true
+asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+asm_monitoring_secret_username: "asmsnmp"
+asm_sys_secret_username: "sys"
+
+# We use dbsnmp for monitoring primary databases and SYS for monitoring standby databases
+db_monitoring_secret_name: "{{ asm_monitoring_secret_name }}"
+db_monitoring_secret_primary_username: "dbsnmp"
+db_monitoring_secret_primary_role: "normal"
+db_monitoring_secret_standby_username: "sys"
+db_monitoring_secret_standby_role: "SYSDBA"

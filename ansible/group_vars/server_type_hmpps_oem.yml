@@ -1,6 +1,8 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
+grid_home: /u01/app/oracle/product/19c/gridhome_1
+
 users_and_groups_system:
   - name: oracle
     group: oinstall
@@ -57,6 +59,7 @@ server_type_roles_list:
   - oracle-db-backup
   - oracle-oms-setup
   - collectd-service-metrics
+  - oracle-db-refresh
 
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
@@ -71,5 +74,3 @@ collectd_monitored_services_servertype:
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
-
-use_ssm_params: true

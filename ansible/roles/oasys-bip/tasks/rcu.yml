@@ -10,7 +10,7 @@
 - name: Get RCU install software from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "oasys-bip/u01/software/rcu/rcuHome.zip"
+    object: "{{ oasys_bip_s3_bucket }}/u01/software/rcu/rcuHome.zip"
     dest: "{{ stage }}/rcuHome.zip"
     mode: get
     overwrite: latest
@@ -26,10 +26,12 @@
 
 - name: Copy config password file
   ansible.builtin.template:
-    src: "bip_password.tmp.j2"
-    dest: "{{ stage }}/obiee_rcu_paramfile.txt"
+    src: "{{ item }}.j2"
+    dest: "{{ stage }}/{{ item }}"
     owner: oracle
     group: oinstall
+  loop:
+    - obiee_rcu_paramfile.txt
 
 - name: Create BIP repository
   become_user: oracle

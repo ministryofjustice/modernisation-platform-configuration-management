@@ -6,6 +6,7 @@ app_dir: /u01/app/oracle/product
 oem_agent_base: "{{ app_dir }}/oem-agent"
 oracle_install_user: oracle
 oracle_install_group: oinstall
+agent_install_response_file: /tmp/ansible-oracle-oem-agent-install.rsp
 artefact_dir: /u02
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
@@ -14,21 +15,25 @@ agent_ru_patch_number: 35437910
 agentpatcher_patch: p33355570_135000_Generic.zip
 agentpatcher_version: 13.9.5.5.0
 agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+
 oem_secretsmanager_passwords:
   oem:
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
-    secret: "/oracle/oem/passwords"
+    secret: "/oracle/oem/shared-passwords"
     users:
       - agentreg:
   emrep:
     account_name: "hmpps-oem-{{ aws_environment }}"
     assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
-    secret: "/oracle/database/EMREP/passwords"
+    secret: "/oracle/database/EMREP/shared-passwords"
     users:
       - sysman:
-oem_ssm_passwords:
-  asm:
-    parameter: "/ec2/{{ ec2_name }}/asm-passwords"
-    users:
-      - ASMSNMP:
+
+asm_monitoring_secret_name: "/ec2/{{ ec2_name }}/asm-passwords"
+asm_monitoring_secret_username: "ASMSNMP"
+db_monitoring_secret_name: "/oracle/database/_DBNAME_/passwords" # _DBNAME_ is placeholder
+db_monitoring_secret_primary_username: dbsnmp
+db_monitoring_secret_primary_role: normal
+db_monitoring_secret_standby_username: dbsnmp
+db_monitoring_secret_standby_role: normal

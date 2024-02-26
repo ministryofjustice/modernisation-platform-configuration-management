@@ -1,2 +1,29 @@
+ndh_environment: "{{ ec2.tags['nomis-data-hub-environment'] }}"
 ndh_ems_bucket: "nomis-data-hub-software20230309164626754200000003"
 ndh_ems_object: "/ndh-installation-files/LinuxEMSServer/EMSdirs.zip"
+
+# following parameters are set in get_facts
+#ndh_admin_user:
+#ndh_admin_pass:
+#ndh_harkemsadmin_ssl_pass:
+
+# override these default in environment group_vars if necessary
+ndh_domain_name: "{{ ndh_environment }}"
+ndh_ems_host: "{{ ndh_ems_host_a }}"
+ndh_ems_host_a: "{{ ndh_environment }}-ndh-ems-a"
+ndh_ems_host_b: "{{ ndh_environment }}-ndh-ems-b"
+ndh_app_host: "{{ ndh_app_host_a }}"
+ndh_app_host_a: "{{ ndh_environment }}-ndh-app-a"
+ndh_app_host_b: "{{ ndh_environment }}-ndh-app-b"
+ndh_ems_port_1: "7222"
+ndh_ems_port_2: "7224"
+ndh_host_os: "RHEL"
+ndh_host_os_version: "7.9"
+
+ndh_secretsmanager_passwords:
+  ndh-shared:
+    secret: "/ndh/{{ ndh_environment }}/shared"
+    users:
+      - admin_user:
+      - admin_pass:
+      - harkemsadmin_ssl_pass:

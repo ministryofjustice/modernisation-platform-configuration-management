@@ -1,17 +1,17 @@
 ---
 - name: create symbolic link for tomcat
   ansible.builtin.file:
-    src: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13"
+    src: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}"
     dest: "{{ oasys_ords_tomcat_dir }}/latest"
     state: link
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: 0755
 
-- name: copy params to /u01/app/apache/tomcat/apache-tomcat-9.0.13/webapps
+- name: copy params to /u01/app/apache/tomcat/{{ apache_version }}/webapps
   ansible.builtin.copy:
     src: "{{ oasys_ords_dir }}/params/ords_params.properties"
-    dest: "{{ oasys_ords_tomcat_dir }}/apache-tomcat-9.0.13/webapps/ords_params.properties"
+    dest: "{{ oasys_ords_tomcat_dir }}/{{ apache_version }}/webapps/ords_params.properties"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     remote_src: true

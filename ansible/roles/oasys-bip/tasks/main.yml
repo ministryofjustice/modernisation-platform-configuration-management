@@ -65,7 +65,7 @@
         loop_var: weblogic_managed_app_list
       loop: "{{ weblogic_servers }}"
 
-    - import_tasks: cleanup.yml
+    - import_tasks: service_managedserver.yml
       tags:
         - amibuild
         - ec2provision
@@ -86,3 +86,9 @@
   tags:
     - bip_db_create
     - never
+
+- import_tasks: cleanup.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - always

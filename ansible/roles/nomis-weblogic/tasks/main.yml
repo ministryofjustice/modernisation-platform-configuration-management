@@ -15,6 +15,7 @@
         - weblogic_create_additional_form_servers
         - weblogic_setup_cookie
         - weblogic_setup_log_rotate
+        - weblogic_install_nomis_releases
 
     - import_tasks: packages.yml
       tags:
@@ -111,6 +112,12 @@
       tags:
         - ec2provision
         - weblogic_certificate_fix
+
+    - import_tasks: install-nomis-releases.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - weblogic_install_nomis_releases
 
     - import_tasks: make-forms.yml
       tags:

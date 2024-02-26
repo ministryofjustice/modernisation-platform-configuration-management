@@ -1,0 +1,60 @@
+---
+# From hmpps-env-configs/delius-test/ansible/all.yml
+region: eu-west-2
+project_name: delius
+environment_name: delius-test
+simple_environment_name: test
+ndelius_version: "6.0.5"
+# No catalog at present in modernisation platform, comment out for testing
+#catalog: DCAT
+data_classification: unclassified-data
+database_autotasks:
+  sql_tuning_advisor: disabled
+  auto_space_advisor: disabled
+autotask_windows:
+  weekday:
+    start_time: "06:20"
+    duration_mins: 30
+database_parameters:
+  db_recovery_file_dest_size: 450G
+  compatible: 19.14.0
+oracle_osbws_chunk_size: 104857600
+emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
+# Buckets
+db_backup_s3_bucket_name: "{{ simple_environment_name }}-oracle-database-backups"
+dependencies_bucket:
+  name: mod-platform-image-artefact-bucket20230203091453221500000001
+  arn: arn:aws:s3:::mod-platform-image-artefact-bucket20230203091453221500000001
+# Only used for dupicating databases from source during migration using the oracle-db-duplicate role
+# Eventually these will be removed once the RMAN catalog database has been migrated across
+catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=10.161.98.92)(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=DCAT_TAF)))"
+# For development purposes we are cloning from delius-mis-dev even though the target is called "test"
+# (the DB content is not important and permissions are already set up for delius-mis-dev)
+source_db: "DMDNDA"
+s3_source_bucket: "eu-west-2-dmd-mis-dev-oracledb-backups"
+high_availability_count:
+  delius: 0
+  mis: 0
+  misboe: 0
+  misdsd: 0
+# Alfresco url's are normally extracted from legacy env-configs sub-projects/spg.tfvars terraform vars file
+# Location of these vars are not known until work on migrating Alfresco to mod platform has started
+# Establish the vars here as a temporary measure
+spg_document_rest_service_admin_url: "https://alfresco.test.delius.probation.hmpps.dsd.io/alfresco/service/admin-spg"
+spg_document_rest_service_public_url: "https://alfresco.test.delius.probation.hmpps.dsd.io/alfresco/service/admin-spg"
+# OEM server
+OMS_SERVER: dev-oem-a.hmpps-oem.hmpps-development.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+dns_search_domains:
+  - hmpps-oem.hmpps-development.modernisation-platform.internal
+dns_zone_internal: delius.hmpps-development.modernisation-platform.internal
+# Enable Oracle Native Network Encryption (ignored for TCPS connections)
+# Note that:
+# (1) These parameters must be set in the database sqlnet.ora file, not the grid one
+# (2) Add time of writing there is an Oracle documentation bug - docs omit mandatory SQLNET prefix for IGNORE_ANO_ENCRYPTION_FOR_TCPS
+sqlnet_parameters:
+  database:
+    SQLNET.ENCRYPTION_SERVER: REQUIRED
+    SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
+    SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
+    SQLNET.IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"

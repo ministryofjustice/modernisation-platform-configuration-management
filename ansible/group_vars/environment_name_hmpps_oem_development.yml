@@ -1,6 +1,7 @@
 ---
 ansible_aws_ssm_bucket_name: s3-bucket20230608141801676400000001
 image_builder_s3_bucket_name: hmpps-oem-software20230608132809146600000002
+db_backup_s3_bucket_name: dev-hmpps-oem-db-backup-bucket-20231207111547652400000001
 dns_zone_internal: hmpps-oem.hmpps-development.modernisation-platform.internal
 dns_search_domains:
   - nomis.hmpps-development.modernisation-platform.internal
@@ -8,3 +9,53 @@ dns_search_domains:
   - nomis-combined-reporting.hmpps-development.modernisation-platform.internal
   - corporate-staff-rostering.hmpps-development.modernisation-platform.internal
   - azure.noms.root
+
+emrepo: EMREP
+rcvcat: RCVCAT
+
+# OEM server
+OMS_SERVER: dev-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "5"
+      minute: "00"
+      hour: "17"
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "0,1,2,3,4,6"
+      minute: "30"
+      hour: "17"
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: DEVRCVCAT
+    service:
+      - { name: RCVCAT_TAF, role: PRIMARY }
+
+  EMREP:
+    emrepo_db_name: EMREP
+    parameters:
+      - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
+      - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
+      - { name: processes, value: 1000, db_restart_required: 1, scope: spfile }
+      - { name: pga_aggregate_target, value: 800M, db_restart_required: 0, scope: both }
+      - { name: db_recovery_file_dest_size, value: 40G, db_restart_required: 0, scope: both }
+      - {
+          name: log_archive_dest_1,
+          value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=emrep''"',
+          db_restart_required: 0,
+          scope: both,
+        }
+    service:
+      - { name: EMREP_TAF, role: PRIMARY }
+
+emcli: /u01/app/oracle/product/mw135/bin/emcli
+emctl_oem: /u01/app/oracle/product/mw135/bin/emctl
+emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl

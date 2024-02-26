@@ -59,7 +59,7 @@
                         </itemMetadata>
                     </configProperty>
                     <configProperty>
-                        <name>AdminServer Listen Address</name>
+                        <name>{{ admin_server }} Listen Address</name>
                         <value>{{ weblogic_domain_hostname }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
@@ -67,15 +67,15 @@
                         </itemMetadata>
                     </configProperty>
                     <configProperty>
-                        <name>AdminServer Listen Port</name>
-                        <value>7001</value>
+                        <name>{{ admin_server }} Listen Port</name>
+                        <value>{{ admin_port }}</value>
                         <itemMetadata>
                             <dataType>INTEGER</dataType>
                             <scope>READ_WRITE</scope>
                         </itemMetadata>
                     </configProperty>
                     <configProperty>
-                        <name>AdminServer User Name</name>
+                        <name>{{ admin_server }} User Name</name>
                         <value>weblogic</value> 
                         <itemMetadata>
                             <dataType>STRING</dataType>
@@ -83,7 +83,7 @@
                         </itemMetadata>
                     </configProperty>
                     <configProperty>
-                        <name>AdminServer Password File</name>
+                        <name>{{ admin_server }} Password File</name>
                         <value>{{ weblogic_password_file }}</value>
                         <itemMetadata>
                             <dataType>STRING</dataType>
@@ -94,7 +94,7 @@
                     <configProperty>
                         <name>Custom Trust Keystore File</name>
                         <value/>
-                        <Description>Provide the value of Custom Trust KeyStore File of the domain, if value of the config property "AdminServer Listen Port" mentioned above represents SSL port of the server.</Description>
+                        <Description>Provide the value of Custom Trust KeyStore File of the domain, if value of the config property "{{ admin_server }} Listen Port" mentioned above represents SSL port of the server.</Description>
                         <itemMetadata>
                             <dataType>STRING</dataType>
                             <scope>READ_WRITE</scope>

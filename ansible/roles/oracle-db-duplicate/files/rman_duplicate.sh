@@ -329,18 +329,20 @@ function exists_in_list() {
 
 restore_db_passwords () {
 
-  info "Looking up passwords to in aws ssm parameter to restore by sourcing /etc/environment"
-  . /etc/environment
+  info "Looking up passwords to in aws ssm secrets to restore"
+  INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+  APPLICATION=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=application" --query 'Tags[0].Value' --output text)
+  ENVIRONMENT_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=environment-name" --query 'Tags[0].Value' --output text)
+  DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=delius-environment" --query 'Tags[0].Value' --output text)
   SYSTEMDBUSERS=(sys system dbsnmp)
-  if [ "$HMPPS_ROLE" = "delius" ]
+  if [ "$APPLICATION" = "delius" ]
   then
-    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_api_pool delius_audit_pool mms_pool contact_search_pool)
-    # Add Probation Integration Services by looking up the Usernames by their path in the SSM Parameter Store (there may be several of these)
-    # Note that the name contains hyphens in the parameter store, but the actual DB account uses underscores in place of these
-    SSMNAME="/${ENVIRONMENT}/${APPLICATION}/probation-integration/"
-    PROBATION_INTEGRATION_USERS=$(aws ssm get-parameters-by-path --region ${REGION} --path ${SSMNAME} --recursive --query 'Parameters[?contains(Name,`db-username`) == `true`].[Name]' --output text  | awk -F/ '{print $(NF-1)}'  | tr '-' '_' | paste -sd ' ')
+    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool)
+    # Add Probation Integration Services by looking up the Usernames by their path in the AWS Secrets (there may be several of these)
+    # We suppress any lookup errors for integration users as these may not exist
+    PROBATION_INTEGRATION_USERS=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --query SecretString --output text 2>/dev/null | jq -r 'keys | join(" ")')
     DBUSERS+=( ${PROBATION_INTEGRATION_USERS[@]} )
-  elif [ "$HMPPS_ROLE" = "mis" ]
+  elif [ "$APPLICATION" = "mis" ]
   then
     DBUSERS+=(mis_landing ndmis_abc ndmis_cdc_subscriber ndmis_loader ndmis_working ndmis_data)
     DBUSERS+=(dfimis_landing dfimis_abc dfimis_subscriber dfimis_data dfimis_working dfimis_loader)
@@ -350,33 +352,18 @@ restore_db_passwords () {
   DBUSERS+=( ${SYSTEMDBUSERS[@]} )
   for USER in ${DBUSERS[@]}
   do
-    SUFFIX=${USER}_password
-    for SYSTEMDBUSER in ${SYSTEMDBUSERS[@]}
-    do
-      if [ "${USER}" = "${SYSTEMDBUSER}" ]
-      then
-        SUFFIX=oradb_${USER}_password
-        break
-      fi
-    done
-    # Pattern for AWS Parameter Store path for Probation Integration Users differs from other Oracle user accounts
+    # Pattern for AWS Secrets path for Probation Integration Users differs from other Oracle user accounts
     if [[ "$HMPPS_ROLE" == "delius" && $(exists_in_list "${USER}" " " "${PROBATION_INTEGRATION_USERS[*]}" ) == "Found" ]];
     then
-       SSMNAME="/${ENVIRONMENT}/${APPLICATION}/probation-integration/${USER//_/-}/db-password"
+       SECRET_ID="${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-delius-integration-passwords"
     else
-       # Pattern for AWS Parameter Store path for Elastic Search User differs from other Oracle user accounts
-      if  [[ "$HMPPS_ROLE" == "delius" && "${USER}" == "contact_search_pool" ]];
-      then
-         SSMNAME="/${ENVIRONMENT}/${APPLICATION}/elasticsearch/contact-search/database-password"
-      else
-         SSMNAME="/${ENVIRONMENT}/${APPLICATION}/${HMPPS_ROLE}-database/db/${SUFFIX}"
-      fi
+       SECRET_ID="${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-delius-dba-passwords"
     fi
-    USERPASS=`aws ssm get-parameters --region ${REGION} --with-decryption --name ${SSMNAME} | jq -r '.Parameters[].Value'`
+    USERPASS=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --query SecretString --output text | jq -r ".${USER}")
     # Ignore absense of Audit Preservation and Probation Integration Users as they may not exist in all environments
     if [[ -z ${USERPASS} && $(exists_in_list "${USER}" " " "delius_audit_pool ${PROBATION_INTEGRATION_USERS[*]}") != "Found" ]];
     then
-       error "Password for $USER in aws parameter store ${SSMNAME} does not exist"
+       info "Password for $USER in AWS Secret  ${SECRET_ID} does not exist"
     fi
     if [[ -z ${USERPASS} && $(exists_in_list "${USER}" " " "delius_audit_pool ${PROBATION_INTEGRATION_USERS[*]}") == "Found" ]];
     then
@@ -497,7 +484,6 @@ info "Retrieving arguments"
 
 TARGET_DB=UNSPECIFIED
 DATETIME=LATEST
-SSM_PARAMETER=UNSPECIFIED
 SPFILE_PARAMETERS=UNSPECIFIED
 while getopts "d:s:c:t:p:f:l" opt
 do
@@ -506,7 +492,6 @@ do
     s) SOURCE_DB=$OPTARG ;;
     c) CATALOG_DB=$OPTARG ;;
     t) DATETIME=${OPTARG} ;;
-    p) SSM_PARAMETER=${OPTARG} ;;
     f) SPFILE_PARAMETERS=${OPTARG} ;;
     l) LOCAL_DISK_BACKUP=TRUE ;;
     *) usage ;;
@@ -517,7 +502,6 @@ info "Target         = $TARGET_DB"
 info "Source         = $SOURCE_DB"
 info "Catalog db     = $CATALOG_DB"
 info "Restore Datetime = ${DATETIME}"
-info "SSM parameter    = ${SSM_PARAMETER}"
 [[ "${LOCAL_DISK_BACKUP}" == "TRUE" ]] && info "Local Disk Backup = ENABLED"
 target_db=$(echo "${TARGET_DB}" | tr '[:upper:]' '[:lower:]')
 source_db=$(echo "${SOURCE_DB}" | tr '[:upper:]' '[:lower:]')

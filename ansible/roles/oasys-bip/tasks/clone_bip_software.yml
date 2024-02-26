@@ -23,7 +23,7 @@
     - name: Download software for Oracle BI Publisher cloning for Oasys
       amazon.aws.aws_s3:
         bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "oasys-bip/bipclone/{{ item }}"
+        object: "{{ oasys_bip_s3_bucket }}/bipclone/{{ item }}"
         dest: "{{ stage}}/{{ item }}"
         mode: get
         overwrite: latest
@@ -192,7 +192,7 @@
         hidden: True
       register: collected_files
 
-    - name: remove collected files from nodemenager directory
+    - name: remove collected files mbase.bin and mbase.lck
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
@@ -201,7 +201,7 @@
           collected_files.files
         }}
 
-    - name: Collect file details for cleanup for mbase.bin and mbase.lck files
+    - name: Collect file details from nodemanager directory for cleanup
       ansible.builtin.find:
         path: "{{ wl_home }}/common/nodemanager/"
         hidden: True
@@ -216,9 +216,9 @@
           collected_files.files
         }}
 
-    - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+    - name: Pause for 15 minutes. Sometimes the cloning can go wrong without a delay. Not sure why.
       ansible.builtin.pause:
-        minutes: 10
+        minutes: 15
 
     - name: Oracle BIP NodeManager config cloning
       become_user: oracle
@@ -238,18 +238,26 @@
       poll: 30
       when: not ansible_check_mode
 
-    - name: Boot.properties file creation for bi_server1
+    - name: Boot.properties file creation for managed server
       ansible.builtin.copy:
-        src: "{{ domain_home }}/{{ domain_name }}/servers/AdminServer/security/boot.properties"
-        dest: "{{ domain_home }}/{{ domain_name }}/servers/bi_server1/security/boot.properties"
+        src: "{{ domain_home }}/{{ domain_name }}/servers/{{ admin_server }}/security/boot.properties"
+        dest: "{{ domain_home }}/{{ domain_name }}/servers/{{ managed_server }}/security/boot.properties"
         owner: oracle
         group: oinstall
         mode: "0600"
         remote_src: true
 
-    - name: Pause for 15 minutes to let admin server start properly in few cases even though it was running connecting to it was causing issues for few mins
+    - name: Fix startManagedWebLogic.sh
+      ansible.builtin.template:
+        src: "startManagedWebLogic.sh.j2"
+        dest: "{{domain_home}}/{{domain_name}}/bin/startManagedWebLogic.sh"
+        owner: oracle
+        group: oinstall
+        mode: "0750"
+
+    - name: Pause for 1 minute. Not sure why.
       ansible.builtin.pause:
-        minutes: 10
+        minutes: 1
 
     - name: Enable Standalone BI Publisher to Add Privileges for Application Roles
       become_user: oracle

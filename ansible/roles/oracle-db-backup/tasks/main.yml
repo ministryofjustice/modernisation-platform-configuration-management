@@ -6,6 +6,7 @@
     secretsmanager_passwords: "{{ rc_secretsmanager_passwords }}"
   tags:
     - ec2provision
+    - oracle_db_backup_secrets
   when: db_configs[rcvcat] is defined
 
 - import_tasks: rman-backup-setup.yml

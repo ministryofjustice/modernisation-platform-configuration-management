@@ -1,25 +1,12 @@
 ---
 oracle_admin_script_dir: "/home/oracle/admin/scripts"
 misload_batch_file_path: "F:\\MIS_Load_Script\\JOB_NOMIS_MIS_Load_D.bat"
-misload_monitoring_script: "misload_monitoring.sh"
-
-misload_monitoring_cron:
-  - name: misload_monitoring
-    weekday: "*"
-    minute: "30"
-    hour: "*"
-    job: "su oracle -c '/home/oracle/admin/misload_scripts/{{ misload_monitoring_script }}' | logger -p local3.info -t misload"
-
 misload_dbname: "{{ ec2.tags['misload-dbname'] }}"
 misload_secret_name: "/oracle/database/{{ misload_dbname }}/misload-config"
-use_ssm_params: false
 misload_secretsmanager_passwords:
   misload:
-    parameter: "{{ misload_secret_name }}"
     secret: "{{ misload_secret_name }}"
     users:
       - target:
       - username:
       - password:
-
-misload_ssm_passwords: "{{ misload_secretsmanager_passwords }}"

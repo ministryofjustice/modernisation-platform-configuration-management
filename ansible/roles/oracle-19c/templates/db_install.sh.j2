@@ -4,5 +4,5 @@ export TMP={{ temp }}
 export TMPDIR={{ temp }}
 export CV_ASSUME_DISTID=OL7.6
 echo "# Installing Oracle 19c database software"
-"{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/{{ oracle_combo_patch }}/{{ oracle_release_update }}" -applyOneOffs "{{ stage }}/psu/{{ oracle_combo_patch }}/{{ oracle_ojvm_patch }}" || true
+"{{ database_home }}/runInstaller" -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ database_response_file }} -applyRU "{{ stage }}/psu/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_release_update }}" -applyOneOffs "{{ stage }}/psu/{{ oracle_patch.oracle_combo_patch }}/{{ oracle_patch.oracle_ojvm_patch }}" || true
 exit 0

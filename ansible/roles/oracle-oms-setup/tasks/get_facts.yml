@@ -1,10 +1,4 @@
 ---
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ oms_ssm_passwords }}"
-
 - name: Get OEM secrets
   import_role:
     name: secretsmanager-passwords
@@ -15,14 +9,17 @@
   debug:
     var: emrepo_db_name
 
-- name: Get SSM parameters
+- name: Set password facts
   set_fact:
-    db_sys_password: "{{ ssm_passwords_dict['emrep'].passwords['sys'] }}"
-    db_system_password: "{{ ssm_passwords_dict['emrep'].passwords['system'] }}"
-    db_sysman_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['sysman'] }}"
-    weblogic_admin_password: "{{ ssm_passwords_dict['oem'].passwords['weblogic_admin'] }}"
-    nodemanager_password: "{{ ssm_passwords_dict['oem'].passwords['nodemanager'] }}"
-    oem_agent_password: "{{ secretsmanager_passwords_dict['oem'].passwords['agentreg'] }}"
+    db_sys_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['sys'] }}"
+    db_system_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['system'] }}"
+    db_sysman_password: "{{ secretsmanager_passwords_dict['emrep_shared'].passwords['sysman'] }}"
+    weblogic_admin_password: "{{ secretsmanager_passwords_dict['oem'].passwords['weblogic_admin'] }}"
+    nodemanager_password: "{{ secretsmanager_passwords_dict['oem'].passwords['nodemanager'] }}"
+    oem_agent_password: "{{ secretsmanager_passwords_dict['oem_shared'].passwords['agentreg'] }}"
+    slack_wallet_password: "{{ secretsmanager_passwords_dict['oem'].passwords['slack_wallet'] }}"
+    slack_token: "{{ secretsmanager_passwords_dict['emrep_shared'].passwords['slack_token'] }}"
+  no_log: true
 
 - name: Check parameters
   set_fact:
@@ -35,6 +32,8 @@
     - weblogic_admin_password|length > 0
     - nodemanager_password|length > 0
     - oem_agent_password|length > 0
+    - slack_wallet_password|length > 0
+    - slack_token|length > 0
 
 - name: Fail if missing parameters
   fail:

@@ -2,29 +2,51 @@
 
 export PATH=$PATH:/usr/local/bin
 
-secret_data=$(aws secretsmanager get-secret-value --secret-id "{{ misload_secret_name }}" --query SecretString --output text)
-target=$(echo $secret_data | jq -r .target)
-username=$(echo $secret_data | jq -r .username)
-password=$(echo $secret_data | jq -r .password)
+get_misload_status() {
+  sqlplus -s / as sysdba << EOF
+  set head off feedback off
+  select decode(count(1),0, '1','0')
+  from bodimis.etl_load_log
+  where to_char(load_start_datetime,'dd.mm.yyyy') = to_char(sysdate,'dd.mm.yyyy')
+  and error_flag='N';
+  exit
+EOF
+}
 
+trigger_misload() {
+  secret_data=$(aws secretsmanager get-secret-value --secret-id "{{ misload_secret_name }}" --query SecretString --output text)
+  target=$(echo $secret_data | jq -r .target)
+  username=$(echo $secret_data | jq -r .username)
+  password=$(echo $secret_data | jq -r .password)
 
-if [[ -z $target || $target == "null" || $target == "None" ||
-      -z $username || $username == "null" || $username == "None" ||
-      -z $password || $password == "null" || $password == "None" ]]; then
-  echo "Could not retrieve config from {{ misload_secret_name }}"
-  echo "misload_status 1" > /opt/textfile_monitoring/misload_status.prom
-  exit 1
-fi
+  if [[ -z $target || $target == "null" || $target == "None" ||
+        -z $username || $username == "null" || $username == "None" ||
+        -z $password || $password == "null" || $password == "None" ]]; then
+    echo "Could not retrieve config from {{ misload_secret_name }}"
+    return 1
+  fi
+
+  {{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u "$username" -p "$password" -t "$target" -b "{{ misload_batch_file_path }}"
+}
 
 echo "misload_running 0" > /opt/textfile_monitoring/misload_triggered.prom
-
-misload_batch_file_path="{{ misload_batch_file_path }}"
 
 cd {{ oracle_admin_script_dir }}
 export ORACLE_SID={{ misload_dbname }}
 export ORAENV_ASK=NO
 . oraenv
 
-{{ ansible_python_interpreter }} /usr/local/share/trigger_mis_load.py -u "$username" -p "$password" -t "$target" -b "$misload_batch_file_path"
-echo "misload_status $?" > /opt/textfile_monitoring/misload_status.prom
+trigger_misload
+misload_status=$?
+echo "misload_status $misload_status" > /opt/textfile_monitoring/misload_status.prom
+
+if [[ "$misload_status" == "0" ]]; then
+  misload_status=$(get_misload_status | tr -d '[:space:]')
+  if [[ -z $misload_status ]]; then
+    echo "misload_status 2" > /opt/textfile_monitoring/misload_status.prom
+  elif [[ "$misload_status" != 0 ]]; then
+    echo "misload_status $misload_status" > /opt/textfile_monitoring/misload_status.prom
+  fi
+fi
+
 rm -f /opt/textfile_monitoring/misload_triggered.prom

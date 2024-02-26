@@ -9,6 +9,10 @@ dns_search_domains:
   - azure.hmpp.root
 PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
 
+# OEM server
+OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
 db_configs:
   PPCNOM:
     db_name: PPCNOM
@@ -18,3 +22,22 @@ db_configs:
 osbws_additional_configs:
   - name: osbws_prod
     s3_bucket_name: nomis-db-backup-bucket20220427111226918600000001
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+exclude_db_backup: "PPCNOM|PPMIS"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup

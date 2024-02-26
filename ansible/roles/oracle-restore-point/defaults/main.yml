@@ -2,12 +2,6 @@
 stage: /u02/stage
 oracle_install_user: oracle
 oracle_install_group: oinstall
-use_ssm_params: false
-db_secretsmanager_passwords:
-  db:
-    parameter: "/oracle/database/{{ db_name }}/passwords"
-    secret: "/oracle/database/{{ db_name }}/passwords"
-    users:
-      - sys:
 
-db_ssm_passwords: "{{ db_secretsmanager_passwords }}"
+#db_tns_list:   # comma separate listed of db names that must be defined in db_configs. Pass in via cmdline
+db_configs: {}

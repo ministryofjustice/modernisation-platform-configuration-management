@@ -1,11 +1,9 @@
 ---
 # scheduled backups go directly to S3
 rman_backup_script: "rman_backup.sh" # override this as necessary in group_vars
-rman_backup_monitoring_script: "rman_backup_monitoring.sh"
 rman_backup_cron:
   backup_level_0: []
   backup_level_1: []
-  monitoring: []
 catalog_parameter: ""
 recovery_catalog_defined_check: 0
 oem_account_name: "hmpps-oem-{{ aws_environment }}"
@@ -25,7 +23,7 @@ adhoc_backup_label: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{
 adhoc_backup_for: "HA"
 
 # The rman-backup script requires OEM creds retrieved from hmpps-oem account
-rcvcat_passwords_secret_name: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/passwords"
+rcvcat_passwords_secret_name: "/oracle/database/{{ rcvcat_db_name.rcvcat_db_name }}/shared-passwords"
 rc_secretsmanager_passwords:
   rc:
     account_name: "hmpps-oem-{{ aws_environment }}"

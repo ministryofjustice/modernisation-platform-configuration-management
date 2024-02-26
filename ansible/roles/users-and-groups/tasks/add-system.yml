@@ -4,7 +4,8 @@
 - name: Include uid and gid vars
   ansible.builtin.include_vars:
     dir: vars
-    files_matching: "{{ users_and_groups_system_vars_prefix }}-system-.*.yml$"
+    files_matching: "{{ item }}-system-.*.yml$"
+  loop: "{{ users_and_groups_system_vars_prefixes }}"
 
 - name: Calculate list of groups
   ansible.builtin.set_fact:
@@ -16,15 +17,15 @@
     name: "{{ item }}"
     state: present
     system: yes
-    gid: "{{ system_gids[item] }}"
-  loop: "{{ (system_groups_1 + system_groups_2) | unique | intersect(system_gids.keys()) }}"
+    gid: "{{ system_gids[item]|default(omit) }}"
+  loop: "{{ (system_groups_1 + system_groups_2) | unique }}"
 
 - name: Add system users
   ansible.builtin.user:
     name: "{{ item.name }}"
     group: "{{ item.group }}"
     groups: "{{ item.groups | default([]) }}"
-    uid: "{{ item.uid | default(system_uids[item.name]) }}"
+    uid: "{{ item.uid | default(system_uids[item.name]|default(omit)) }}"
     create_home: "{{ item.create_home | default(true) }}"
     home: "{{ item.home | default('/home/' + item.name) }}"
     system: yes

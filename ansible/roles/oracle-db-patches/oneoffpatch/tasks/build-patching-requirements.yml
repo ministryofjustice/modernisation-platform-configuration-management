@@ -33,9 +33,13 @@
 # Some patches have multiple versions depending on the base DBRU level - we loop through all
 # defined versions of the patch in the environment configuration to find the name of the
 # file appropriate for the current version
+- name: Initialise Patch List
+  set_fact:
+    patch_list: []
+
 - name: Create List of Patches with their Possible Patch Files
   set_fact:
-    patch_list: "{{ ( patch_list | default([]) ) + [ {'patch_id':item.key,'patch_files':item.value.patch_files} ] }}"
+    patch_list: "{{ patch_list + [ {'patch_id':item.key,'patch_files':item.value.patch_files} ] }}"
   loop: "{{ required_patches | dict2items }}"
 
 - name: Get Grid Patch Filename

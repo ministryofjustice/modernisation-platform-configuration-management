@@ -1,0 +1,51 @@
+---
+- name: Get OPatch Version
+  ansible.builtin.shell: |
+    export ORACLE_HOME={{ grid_home }}
+    {{ grid_home }}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oracle_patch.opatch_version }} | wc -l
+  register: grid_required_version_check
+
+- name: Upgrade OPatch
+  block:
+    - name: Backup previous OPatch folder
+      ansible.builtin.archive:
+        path: "{{ item }}/OPatch"
+        dest: "{{ item }}/OPatch_{{ bkpdate }}.zip"
+        format: zip
+        remove: yes
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ database_home }}"
+        - "{{ grid_home }}"
+
+    - name: Download Oracle 19c PSU patch and OPatch files from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "{{ stage }}/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - "{{ psu_patch }}"
+        - "{{ opatch }}"
+
+    - name: Unarchive Opatch
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ opatch_zip }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        mode: u=rwx,g=rx,o=rx
+        remote_src: yes
+      loop:
+        - "{{ database_home }}"
+        - "{{ grid_home }}"
+
+  #block
+  when: grid_required_version_check == "0"
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment:
+    ORACLE_HOME: "{{ grid_home }}"
+    PATH: "{{ grid_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"

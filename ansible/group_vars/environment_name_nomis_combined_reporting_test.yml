@@ -12,6 +12,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+oracle_ru_patch: OCT2023
 
 # OEM server
 OMS_SERVER: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
@@ -34,12 +35,6 @@ rman_backup_cron:
       minute: "30"
       hour: "17"
       # job: command generated in rman-backup-setup
-  monitoring:
-    - name: rman_backup_monitoring
-      weekday: "*"
-      minute: "30"
-      hour: "*"
-      job: "su oracle -c '/home/oracle/admin/rman_scripts/{{ rman_backup_monitoring_script }}' | logger -p local3.info -t rman-backup"
 
 db_configs:
   T1BIPSYS:

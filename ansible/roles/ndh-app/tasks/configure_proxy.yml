@@ -6,23 +6,17 @@
     baseurl: https://nginx.org/packages/rhel/{{ ansible_distribution_major_version }}/$basearch/
     gpgcheck: no
     enabled: yes
-  tags:
-    - amibuild
 
 - name: Install nginx
   ansible.builtin.package:
     name: nginx
     state: latest
-  tags:
-    - amibuild
 
 - name: Enable nginx
   ansible.builtin.service:
     name: nginx
     enabled: yes
     state: stopped
-  tags:
-    - amibuild
 
 - name: Add nginx proxy config
   ansible.builtin.template:
@@ -30,12 +24,6 @@
     dest: /etc/nginx/nginx.conf
   notify:
     - test nginx config
-  tags:
-    - amibuild
-
-- meta: flush_handlers
-  tags:
-    - amibuild
 
 - name: Create ssl directory in /etc/nginx
   ansible.builtin.file:
@@ -43,16 +31,12 @@
     state: directory
     owner: nginx
     group: nginx
-  tags:
-    - amibuild
 
 - name: Generate a private key
   community.crypto.openssl_privatekey:
     path: /etc/nginx/ssl/nginx.key
     type: RSA
     size: 2048
-  tags:
-    - amibuild
 
 - name: Create a CSR for the ndh_proxy_host
   community.crypto.openssl_csr:
@@ -67,8 +51,6 @@
     csr_path: /etc/nginx/ssl/nginx.csr
     provider: selfsigned
     force: yes
-  tags:
-    - amibuild
 
 - name: add ndh_proxy_host to /etc/hosts for loopback
   ansible.builtin.lineinfile:
@@ -76,13 +58,9 @@
     regexp: '^(127\.0\.0\.1.*)$'
     line: '\1 {{ ndh_proxy_host }}'
     backrefs: yes
-  tags:
-    - amibuild
 
 - name: Start nginx
   ansible.builtin.service:
     name: nginx
     enabled: yes
     state: started
-  tags:
-    - amibuild

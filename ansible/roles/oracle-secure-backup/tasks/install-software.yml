@@ -22,12 +22,30 @@
     group: oinstall
   register: osbws_install_script
 
+- name: Get Stats of Library File Created when Oracle Home was Installed
+  stat:
+    path: "{{ database_home }}/lib/libserver19.a"
+  register: server_lib_file
+
+- name: Get Stats of Library File Created when OSBWS was Installed
+  stat:
+    path: "{{ database_home }}/lib/libosbws.so"
+  register: osbws_lib_file
+
+# Run the installation script for any of these conditions:
+# 1. The ARGFILE has been changed
+# 2. The Install Script has been changed
+# 3. The OSBWS Library file does not exist (probably due to previous install failure)
+# 4. The OSBWS Library file predates the Oracle Server Library file (probably due to previous install failure)
 - name: Run install script
   become: true
   become_user: oracle
   shell: |
     {{ osw_stage_dir }}/{{ osbws_config.name }}_install.sh
-  when: osbws_argfile.changed or osbws_install_script.changed
+  when: osbws_argfile.changed
+    or osbws_install_script.changed
+    or (not osbws_lib_file.stat.exists)
+    or (osbws_lib_file.stat.exists and (osbws_lib_file.stat.mtime < server_lib_file.stat.mtime))
 
 - name: Update osbws config
   become: true
@@ -47,24 +65,28 @@
     line: "OSB_WS_CHUNK_SIZE={{ oracle_osbws_chunk_size }}"
   when: oracle_osbws_chunk_size is defined
 
+# For backing up, ensure bucket s3:GetObject s3:GetBucketLocation s3:PutOject
 - name: Run sbttest
   become: true
   become_user: oracle
-  shell: |
+  ansible.builtin.shell: |
     export OSB_WS_PFILE={{ database_home }}/dbs/{{ osbws_config.name }}.ora
     {{ database_home }}/bin/sbttest /tmp/foo -libname {{ database_home }}/lib/libosbws.so
   check_mode: false
   changed_when: false
   when: osbws_config.run_sbttest is defined and osbws_config.run_sbttest
 
+# For restore, ensure bucket allows s3:GetBucketLocation and s3:GetObject
 - name: Check GetBucketLocation permission
-  shell: |
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
     aws s3api get-bucket-location --bucket {{ osbws_config.s3_bucket_name }}
   check_mode: false
   changed_when: false
 
 - name: Check GetObject permission
-  shell: |
-    file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key blah /dev/null 2>&1 | grep "NoSuchKey")
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
+    file=$(aws s3api get-object --bucket {{ osbws_config.s3_bucket_name }} --key deliberate-missing-key /dev/null 2>&1 | grep "NoSuchKey")
   check_mode: false
   changed_when: false

@@ -1,0 +1,63 @@
+---
+- name: Import Incident Rule Set for {{ application }} Targets
+  block:
+    # EMCLI Login script contains a password so ensure it is not readable by other users
+    - name: Copy Incident Rule Set Import scripts
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+      loop:
+        - emcli_login.sh
+        - import_incident_rule_set.sh
+        - rule_set.xml
+
+    - name: Run Incident Rule Set Import
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        echo "running import_incident_rule_set.sh"
+        {{ stage }}/import_incident_rule_set.sh
+
+    - pause:
+        seconds: 30
+        prompt: |
+          ====================================================================================
+            As of OEM 13.5 Oracle does not provide an API to order Inicident Rules.
+            This step must therefore be done manually through the Console as follows:
+
+              Setup --> Incidents --> Incident Rules --> Reorder Rule Sets
+
+              Place HMPPS OEM Rule Set in Order position 1 so that it supercedes any
+              other Rule Sets which have been defined.
+          ====================================================================================
+            As of OEM 13.5 Oracle does not provide an API to add Notification Rules to Inicident Rules.
+            This step must therefore be done manually through the Console as follows:
+
+             Setup --> Incidents --> Incident Rules
+
+             1. Select HMPPS OEM Rule Set and Edit
+
+             2. Select "Notification rule to slack" and Edit
+
+             3. Next to Step 2 of 4, and Add.   Under Advanced Notifications check the box
+                beside SLACK_NOTIFICATION (PL/SQL Procedure), and Continue.
+
+             4. Next --> Next --> Continue --> Save
+
+             Repeat the above for "Send Slack Notification for All Data Guard Incidents"
+
+          ====================================================================================
+
+  always:
+    - name: Remove Incident Rule Set scripts from Staging Area
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - import_incident_rule_set.sh
+        - rule_set.xml

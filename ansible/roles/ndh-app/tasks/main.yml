@@ -2,6 +2,8 @@
 - import_tasks: get_facts.yml
   tags:
     - ec2provision
+    - ndh_get_facts
+
 - import_tasks: templates.yml
   tags:
     - ec2provision
@@ -17,9 +19,9 @@
   tags:
     - amibuild
 
-#- import_tasks: user.yml
-#  tags:
-#    - amibuild
+- import_tasks: user.yml
+  tags:
+    - amibuild
 
 - import_tasks: prereqs.yml
   tags:
@@ -42,4 +44,11 @@
 
 - import_tasks: configure_proxy.yml
   tags:
-    - amibuild
+    - ec2provision
+  when: ndelius_proxy_pass is defined
+
+# run any handlers before progressing to next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always

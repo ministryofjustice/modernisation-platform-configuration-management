@@ -1,10 +1,4 @@
 ---
-- name: Get SSM parameters
-  import_role:
-    name: ssm-passwords
-  vars:
-    ssm_passwords: "{{ oem_ssm_passwords }}"
-
 - name: Get OEM secrets
   import_role:
     name: secretsmanager-passwords
@@ -15,11 +9,7 @@
   set_fact:
     oem_sysman_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['sysman'] }}"
     oem_agent_password: "{{ secretsmanager_passwords_dict['oem'].passwords['agentreg'] }}"
-    asmsnmp_password: "{{ ssm_passwords_dict['asm'].passwords['ASMSNMP'] }}"
-
-- name: Get private ip address of the ec2 instance
-  set_fact:
-    server_private_ip_address: "{{ ec2.private_ip_address }}"
+  no_log: true
 
 - name: Check parameters
   set_fact:
@@ -27,7 +17,6 @@
   when:
     - oem_sysman_password|length > 0
     - oem_agent_password|length > 0
-    - asmsnmp_password|length > 0
 
 - name: Fail if missing parameters
   fail:
