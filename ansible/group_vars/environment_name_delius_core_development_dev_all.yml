@@ -61,6 +61,10 @@ sqlnet_parameters:
 # Subsequent patching will use the oracle_software variable defined for
 # the primary database.
 oracle_ru_patch: OCT2023
+
+# We increase the frequency of HAS Resource Status collection from default of once per 24
+# hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
+# shortly after the host is restarted each morning.
 all_oem_metrics:
   oracle_database:
     all:
@@ -79,6 +83,10 @@ all_oem_metrics:
         alert_log_filter_expression: '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process J\d+.*ORA-1013$'
   has:
     all:
+      schedule:
+        resource_statusSiha:
+          collectionStatus: enabled
+          interval: "15 Minute"
       input_file: |
         START_RECORD 1
         metric , resource_status
