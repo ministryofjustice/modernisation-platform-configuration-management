@@ -27,6 +27,7 @@ osbws_additional_configs:
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
 recovery_catalog_server: "{{ OMS_SERVER }}"
+exclude_db_backup: "PPCNOM|PPMIS"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
