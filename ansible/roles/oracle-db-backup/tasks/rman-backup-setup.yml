@@ -43,7 +43,7 @@
     group: oinstall
     mode: "0600"
   when: exclude_db_backup is defined
-  
+
 - name: setup rman database backup level 0
   ansible.builtin.cron:
     name: "{{ item.name }}"
