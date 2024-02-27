@@ -1,5 +1,4 @@
 ---
-
 - name: Generate Housekeeping command parameters for scheduler
   ansible.builtin.set_fact:
     housekeeping_command: "/home/oracle/admin/scripts/{{ db_housekeeping_script }} -a {{ audit_housekeeping_period }}"
@@ -24,7 +23,7 @@
   loop:
     - "{{ db_housekeeping_script }}"
 
-- name: setup oracle housekeeping job 
+- name: setup oracle housekeeping job
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
