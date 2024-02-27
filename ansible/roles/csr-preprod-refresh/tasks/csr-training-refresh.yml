@@ -20,25 +20,16 @@
   loop:
     - "{{ refresh_script }}"
     - "{{ adhoc_refresh_script }}"
+    - "csr_schema_refresh.sh"
     - "csr_training_schema_export.sh"
     - "preprod_adhoc_db_schemas_import.sh"
 
-- name: setup iwfm_train schema refresh
+- name: setup iwfm_train3-4 & train_custom3-4 schema refresh
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
     minute: "{{ item.minute }}"
     hour: "{{ item.hour }}"
     user: root
-    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }} -i {{ db_sid }} -d refresh_dump_dir -f {{ item.dump_file }} -t '{{ item.target_schema }}' -s {{ item.source_schema }}' 2>&1 | logger -p local3.info -t iwfm_train_refresh"
-  loop: "{{ training_schema_refresh_cron.iwfm_train_refresh | list }}"
-
-- name: setup iwfm_train schema refresh
-  ansible.builtin.cron:
-    name: "{{ item.name }}"
-    weekday: "{{ item.weekday }}"
-    minute: "{{ item.minute }}"
-    hour: "{{ item.hour }}"
-    user: root
-    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }} -i {{ db_sid }} -d refresh_dump_dir -f {{ item.dump_file }} -t '{{ item.target_schema }}' -s {{ item.source_schema }}' 2>&1 | logger -p local3.info -t iwfm_train_refresh"
-  loop: "{{ training_schema_refresh_cron.train_custom_refresh | list }}"
+    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }}' 2>&1 | logger -p local3.info -t {{ item.name }}"
+  loop: "{{ training_schema_refresh_cron | list }}"
