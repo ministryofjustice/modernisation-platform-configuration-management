@@ -304,3 +304,14 @@ tns_entries:
       host_list:
         - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
       service_name: RCVCAT_TAF
+
+# Oracle database housekeeping
+audit_housekeeping_period: 30
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"
+      # job: command generated in

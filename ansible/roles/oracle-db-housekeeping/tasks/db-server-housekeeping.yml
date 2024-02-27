@@ -1,0 +1,34 @@
+---
+- name: Generate Housekeeping command parameters for scheduler
+  ansible.builtin.set_fact:
+    housekeeping_command: "/home/oracle/admin/scripts/{{ db_housekeeping_script }} -a {{ audit_housekeeping_period }}"
+
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - /home/oracle/admin/scripts
+
+- name: copy scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/home/oracle/admin/scripts/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ db_housekeeping_script }}"
+
+- name: setup oracle housekeeping job
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    weekday: "{{ item.weekday }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    user: root
+    job: "su oracle -c '{{ housekeeping_command }}' 2>&1 | logger -p local3.info -t db_server_housekeeping"
+  loop: "{{ housekeeping_cron.db_server_housekeeping | list }}"
