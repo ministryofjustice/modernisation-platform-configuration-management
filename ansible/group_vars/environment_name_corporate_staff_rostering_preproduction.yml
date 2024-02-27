@@ -72,3 +72,14 @@ training_schema_refresh_cron:
       dump_file: train_custom3_06042023.dmp
       source_schema: train_custom3
       target_schema: train_custom4
+
+# Oracle database housekeeping
+audit_housekeeping_period: 60
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"
+      # job: command generated in 

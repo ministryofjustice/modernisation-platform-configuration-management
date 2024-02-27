@@ -1,0 +1,111 @@
+#!/bin/bash
+#set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+export PATH=$PATH:/usr/local/bin
+
+usage () {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "  $THISSCRIPT -a <adump retention period in days>"
+  exit 1
+}
+
+set_ora_env () {
+  export ORAENV_ASK=NO
+  export ORACLE_SID=$1
+  . oraenv
+  export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+warning () {
+  T=$(date +"%D %T")
+  echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=$(date +"%D %T")
+  echo "ERROR : $THISSCRIPT : $T : $1"
+  exit $ERROR_STATUS
+}
+
+db_adrci_cleanup () {
+DB_SID=$(cat /etc/oratab | grep db_1 | head -1| awk -F: '{ print $1 }')
+set_ora_env ${DB_SID}
+echo "INFO: DB Home adrci purge started at `date`"
+adrci exec="show homes"|grep -v : | while read file_line
+do
+echo "INFO: adrci purging diagnostic destination " $file_line
+echo "INFO: purging ALERT older than 90 days"
+adrci exec="set homepath $file_line;purge -age $ALERT_RET -type ALERT"
+echo "INFO: purging INCIDENT older than 30 days"
+adrci exec="set homepath $file_line;purge -age $INCIDENT_RET -type INCIDENT"
+echo "INFO: purging TRACE older than 30 days"
+adrci exec="set homepath $file_line;purge -age $TRACE_RET -type TRACE"
+echo "INFO: purging CDUMP older than 30 days"
+adrci exec="set homepath $file_line;purge -age $CDUMP_RET -type CDUMP"
+echo "INFO: purging HM older than 30 days"
+adrci exec="set homepath $file_line;purge -age $HM_RET -type HM"
+done
+echo "INFO: adrci purge finished at `date`"
+}
+
+db_adump_cleanup() {
+for i in `find /u01/app/oracle/admin -name "adump"`
+do
+	echo "Performing housekeeping on " ${i}
+	echo "*********************************************************************"
+	find ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+done
+}
+
+asm_adump_cleanup() {
+set_ora_env +ASM
+echo "Performing housekeeping on " ${ORACLE_HOME}/rdbms/audit
+echo "*********************************************************************"
+find ${ORACLE_HOME}/rdbms/audit -name "+ASM_ora_*aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+}
+
+asm_adrci_cleanup () {
+set_ora_env +ASM
+echo "INFO: ASM Home adrci purge started at `date`"
+adrci exec="show homes"|grep -v : | while read file_line
+do
+echo "INFO: adrci purging diagnostic destination " $file_line
+echo "INFO: purging ALERT older than 90 days"
+adrci exec="set homepath $file_line;purge -age $ALERT_RET -type ALERT"
+echo "INFO: purging INCIDENT older than 30 days"
+adrci exec="set homepath $file_line;purge -age $INCIDENT_RET -type INCIDENT"
+echo "INFO: purging TRACE older than 30 days"
+adrci exec="set homepath $file_line;purge -age $TRACE_RET -type TRACE"
+echo "INFO: purging CDUMP older than 30 days"
+adrci exec="set homepath $file_line;purge -age $CDUMP_RET -type CDUMP"
+echo "INFO: purging HM older than 30 days"
+adrci exec="set homepath $file_line;purge -age $HM_RET -type HM"
+done
+echo "INFO: adrci purge finished at `date`"
+}
+
+# Main
+ADUMP_RET="UNSPECIFIED"
+while getopts "a:" opt
+do
+  case $opt in
+    a) ADUMP_RET=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+[ "${ADUMP_RET}" = "UNSPECIFIED" ] && usage
+cd $(dirname $0)
+
+ALERT_RET="129600" # 90 Days
+INCIDENT_RET="43200" # 30 Days
+TRACE_RET="43200" # 30 Days
+CDUMP_RET="43200" # 30 Days
+HM_RET="43200" # 30 Days
+db_adrci_cleanup
+db_adump_cleanup
+asm_adrci_cleanup
+asm_adump_cleanup

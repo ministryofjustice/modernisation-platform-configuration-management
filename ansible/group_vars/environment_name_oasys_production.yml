@@ -9,3 +9,14 @@ s3_bucket: prodpreprod-oasys-20230412084245180100000001
 
 ords_trusted_origins:
   production: "https://oasys.az.justice.gov.uk/eor,https://bridge-oasys.az.justice.gov.uk/eor,https://p-oasys.az.juistce.gov.uk/eor,https://www.oasys.service.justice.gov.uk/eor,https://int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
+
+# Oracle database housekeeping
+audit_housekeeping_period: 60
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"
+      # job: command generated in 
