@@ -54,4 +54,4 @@
   ansible.builtin.lineinfile:
     path: "{{ sap_bi_platform_extraction_directory }}/cms_response.ini"
     regexp: "^sianame="
-    line: "sianame={{ sia_name }}1"
+    line: "sianame={{ ncr_environment }}ncr{{ node }}"
