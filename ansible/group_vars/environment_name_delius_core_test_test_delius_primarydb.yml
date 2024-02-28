@@ -1,0 +1,82 @@
+---
+# From hmpps-env-configs/delius-test/ansible/delius_primarydb.yml
+database_global_database: TSTNDA
+database_taf_service: TSTNDA_TAF
+database_primary_unique: TSTNDA
+database_primary_sid: TSTNDA
+rman_level_0_backup_duration_target: "03:00"
+rman_retention_policy: RECOVERY WINDOW OF 28 DAYS
+cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo"
+delius_users:
+  amarke_ro:
+  mberridge_ro:
+  mwillis_ro:
+  pphillips_ro:
+  smitchell_ro:
+  mwetherall_ro:
+  rchalamalasetty_ro:
+  arichardson_ro:
+  eliddiard_ro:
+  jevans_ro:
+  ebrindley_ro:
+  mhalma_ro:
+  mryall_ro:
+  nmcmahon_ro:
+  mrees_ro:
+  ahaslehurst_ro:
+  rmahal_ro:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+  abritton_ro:
+  smcallister_ro:
+  ilakanu_ro:
+  swatson_ro:
+  mheywardchaplin_ro:
+  ahughes_ro:
+  wwang_ro:
+oracle_software:
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+database_parameters:
+  processes: 1500
+  compatible: 19.14.0
+database_locked_statistics:
+  - schema_name: DELIUS_APP_SCHEMA
+    table_names:
+      - DOC_MIGRATION_QUEUE_TAB: ALL
+fsfo_mode: disabled
+host_oem_metrics:
+  oracle_database:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
+    TSTNDA:
+      input_file: |
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
+  oracle_listener:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , Response
+        column , tnsPing
+        warning_threshold , 500
+        critical_threshold , 1200
+        END_RECORD 1

@@ -78,7 +78,33 @@ set_ora_env () {
   unset LD_LIBRARY_PATH
   export NLS_DATE_FORMAT=YYMMDDHH24MI
 }
- 
+
+get_catalog_connection () {
+  # Determine the rman password depending where the catalog database resides
+  if [[ ! ${CATALOG_DB} =~ ^\(DESCRIPTION.* ]]
+  then
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/EC2OracleEnterpriseManagementSecretsRole"
+    SESSION="catalog-ansible"
+    SECRET_ACCOUNT_ID=$(aws ssm get-parameters --with-decryption --name account_ids | jq -r .Parameters[].Value |  jq -r 'with_entries(if (.key|test("hmpps-oem.*$")) then ( {key: .key, value: .value}) else empty end)' | jq -r 'to_entries|.[0].value' )
+    CREDS=$(aws sts assume-role --role-arn "${ROLE_ARN}" --role-session-name "${SESSION}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
+    export AWS_ACCESS_KEY_ID=$(echo "${CREDS}" | tail -1 | cut -f1)
+    export AWS_SECRET_ACCESS_KEY=$(echo "${CREDS}" | tail -1 | cut -f2)
+    export AWS_SESSION_TOKEN=$(echo "${CREDS}" | tail -1 | cut -f3)
+    SECRET_ARN="arn:aws:secretsmanager:eu-west-2:${SECRET_ACCOUNT_ID}:secret:/oracle/database/${CATALOG_DB}/shared-passwords"
+    RMANUSER=rcvcatowner
+    RMANPASS=$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --query SecretString --output text | jq -r .rcvcatowner)
+  else
+    REGION=eu-west-2
+    SSMNAME="/${ENVIRONMENT}/${APPLICATION}/oracle-db-operation/rman/rman_password"
+    RMANUSER=rman19c
+    RMANPASS=`aws ssm get-parameters --region ${REGION} --with-decryption --name ${SSMNAME} | jq -r '.Parameters[].Value'`
+  fi
+  [ -z ${RMANPASS} ] && error "Password for rman catalog does not exist"
+  CATALOG_CONNECT=${RMANUSER}/${RMANPASS}@"${CATALOG_DB}"
+  CONNECT_TO_CATALOG=$(echo "connect catalog $CATALOG_CONNECT;")
+}
+
 validate () {
   ACTION=$1
   case "$ACTION" in
@@ -99,17 +125,7 @@ validate () {
              then
                error "Catalog not specified, please specify catalog db"
              else
-               . /etc/environment
-
-               SSMNAME="/${ENVIRONMENT}/${APPLICATION}/oracle-db-operation/rman/rman_password"
-               if [[ ${TARGET_DB} =~ .*OEM ]]
-               then
-                 SSMNAME="/${ENVIRONMENT}/${APPLICATION}/rman-database/db/rman_password"
-               fi 
-               RMANPASS=`aws ssm get-parameters --region ${REGION} --with-decryption --name ${SSMNAME} | jq -r '.Parameters[].Value'`
-               [ -z ${RMANPASS} ] && error "Password for rman in aws parameter store ${SSMNAME} does not exist"
-               CATALOG_CONNECT=rman19c/${RMANPASS}@"${CATALOG_DB}"
-               CONNECT_TO_CATALOG=$(echo "connect catalog $CATALOG_CONNECT;")						
+               get_catalog_connection
              fi
              info "Catalog ok"
              ;;
