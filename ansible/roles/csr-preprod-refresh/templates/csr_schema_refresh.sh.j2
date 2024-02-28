@@ -132,7 +132,7 @@ fi
 # ------------------------------------------------------------------------------
 validate_datapump_file () {
 info "Download datapump file $SOURCE_DPFILE"
-aws s3 cp s3://s3-bucket20230609110811735400000001/CSR_DB_REFRESH/${SOURCE_DPFILE} ${DPPATH}/
+aws s3 cp s3://{{ s3_bucket }}/${SOURCE_DPFILE} ${DPPATH}/
 if [ -z $SOURCE_DPFILE ]
 then
   error "No datapump file specified"
