@@ -65,6 +65,11 @@ oracle_ru_patch: OCT2023
 # We increase the frequency of HAS Resource Status collection from default of once per 24
 # hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
 # shortly after the host is restarted each morning.
+#
+# clusterware_alerts.ocrErrStack has been changes so that it ignores CRS-10134.
+# This should not be reported. See:
+#    SR 3-35688785101 : CRS-10134: Unsupported configuration detected for real-time scheduling requirements.
+# It is expected that this will be fixed in the 19.23 RU.  Revise afterwards.
 all_oem_metrics:
   oracle_database:
     all:
@@ -109,3 +114,9 @@ all_oem_metrics:
         warning_threshold , COMPLETE_INTERMEDIATE|PARTIALLY_UNKNOWN|PARTIALLY_OFFLINE|PARTIALLY_INTERMEDIATE
         critical_threshold , COMPLETE_UNKNOWN|COMPLETE_OFFLINE|ADD|DOWN
         END_RECORD 3
+        START_RECORD 4
+        metric , clusterware_alerts
+        column , ocrErrStack
+        key_columns , ;
+        warning_threshold: ,CRS-(1021|1022)
+        critical_threshold: ,CRS-(1006|1009|1011|10131|10132|10133|10135|10136|10137|10138|10139|1015|1016|1017|1018|1019|1021)
