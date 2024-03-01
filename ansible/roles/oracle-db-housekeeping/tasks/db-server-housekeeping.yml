@@ -1,4 +1,8 @@
 ---
+- name: Generate Housekeeping command parameters for scheduler
+  ansible.builtin.set_fact:
+    housekeeping_command: "/home/oracle/admin/scripts/{{ db_housekeeping_script }} -a {{ audit_housekeeping_period }}"
+
 - name: create script directory
   ansible.builtin.file:
     path: "{{ item }}"
@@ -8,7 +12,6 @@
     recurse: yes
   loop:
     - /home/oracle/admin/scripts
-    - /home/oracle/admin/logs
 
 - name: copy scripts
   ansible.builtin.template:
@@ -18,18 +21,14 @@
     group: oinstall
     mode: "0700"
   loop:
-    - "{{ refresh_script }}"
-    - "{{ adhoc_refresh_script }}"
-    - "csr_schema_refresh.sh"
-    - "csr_training_schema_export.sh"
-    - "preprod_adhoc_db_schemas_import.sh"
+    - "{{ db_housekeeping_script }}"
 
-- name: setup iwfm_train3-4 & train_custom3-4 schema refresh
+- name: setup oracle housekeeping job
   ansible.builtin.cron:
     name: "{{ item.name }}"
     weekday: "{{ item.weekday }}"
     minute: "{{ item.minute }}"
     hour: "{{ item.hour }}"
     user: root
-    job: "su oracle -c '/home/oracle/admin/scripts/{{ refresh_script }}' 2>&1 | logger -p local3.info -t {{ item.name }}"
-  loop: "{{ training_schema_refresh_cron | list }}"
+    job: "su oracle -c '{{ housekeeping_command }}' 2>&1 | logger -p local3.info -t db_server_housekeeping"
+  loop: "{{ housekeeping_cron.db_server_housekeeping | list }}"

@@ -54,7 +54,7 @@
   tags:
     - amibuild
     - ec2provision
-    - incident_rule_group
+    - dynamic_group
 
 - import_tasks: import_incident_rule_set.yml
   tags:
@@ -73,3 +73,15 @@
     - amibuild
     - ec2provision
     - create_slack_notification_package
+
+- import_tasks: setup_scripted_notifications.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - setup_scripted_notifications
+
+- import_tasks: configure_ssh.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - configure_ssh

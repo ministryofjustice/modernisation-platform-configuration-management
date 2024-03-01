@@ -54,21 +54,21 @@ db_configs:
       - { name: IWFM_TAF, role: PRIMARY }
 
 db_sid: PPIWFM
-refresh_script: csr_training_schema_refresh.sh
+refresh_script: csr_weekly_training_schema_refresh.sh
+iwfm_train_dumpfile: iwfm_train3_05012024.dmp
+train_custom_dumpfile: train_custom3_05012024.dmp
 training_schema_refresh_cron:
-  iwfm_train_refresh:
-    - name: iwfm_train_refresh
-      weekday: "6"
-      minute: "00"
-      hour: "06"
-      dump_file: iwfm_train3_06042023.dmp
-      source_schema: iwfm_train3
-      target_schema: iwfm_train4
-  train_custom_refresh:
-    - name: train_custom_refresh
-      weekday: "6"
-      minute: "00"
-      hour: "06"
-      dump_file: train_custom3_06042023.dmp
-      source_schema: train_custom3
-      target_schema: train_custom4
+  - name: iwfm_train_custom_refresh
+    weekday: "6"
+    minute: "00"
+    hour: "06"
+
+# Oracle database housekeeping
+audit_housekeeping_period: 60
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"

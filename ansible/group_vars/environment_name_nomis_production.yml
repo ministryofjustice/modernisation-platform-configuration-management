@@ -119,3 +119,14 @@ db_configs:
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO_TAF, role: PHYSICAL_STANDBY }
       - { name: OR_TAF, role: PHYSICAL_STANDBY }
+
+# Oracle database housekeeping
+audit_housekeeping_period: 60
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"
+      # job: command generated in

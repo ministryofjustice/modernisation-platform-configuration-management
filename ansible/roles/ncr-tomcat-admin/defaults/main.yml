@@ -5,7 +5,8 @@ sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
 sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
 sap_jvm_unpack_base_directory: /opt/sap/java
 
-ncr_environment: "{{ ec2.tags['ncr-environment'] }}"
+ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
+cms_name: "{{ ncr_environment }}-ncr-cms"
 
 s3:
   bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
@@ -27,6 +28,6 @@ tomcat_post_install_directories:
 
 tomcat_admin_secretsmanager_passwords:
   tomcat_admin:
-    secret: "/ec2/ncr-tomcat-admin/t1/passwords"
+    secret: "/ec2/ncr-tomcat-admin/{{ ncr_environment }}/passwords"
     users:
       - tomcat_admin: auto

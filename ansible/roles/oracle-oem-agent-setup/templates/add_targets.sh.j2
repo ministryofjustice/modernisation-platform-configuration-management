@@ -113,7 +113,8 @@ function set_target_properties()
 {
 TARGET_TYPE=$1
 TARGET_NAME=$2
-OEM_TARGET=$3   # Optional parameter to identify OEM rather than Application targets
+TARGET_LINE_OF_BUSINESS=$3
+TARGET_CONTACT=$4
 
 # If the target is a Database System then we want to propagate the properties to all members of the target
 [[ ${TARGET_TYPE} == "oracle_dbsys" ]] && PROPAGATE="-propagate_to_members" || PROPAGATE="" 
@@ -123,19 +124,6 @@ EXISTING_LIFECYCLE=$(./emcli list -resource=TargetProperties -search="TARGET_NAM
 # We will only change a LIFECYCLE if it upgrades it to a more important status
 if [[ -z ${EXISTING_LIFECYCLE} ]] && [[ "$(is_lifecycle_upgrade ${EXISTING_LIFECYCLE} ${LIFECYCLE_STATUS})" == "true" ]]; then
     ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@LifeCycle Status@@${LIFECYCLE_STATUS}" ${PROPAGATE}
-fi
-
-# If this is an OEM target then change the Line of Business and Contact accordingly
-if [[ -z ${OEM_TARGET} ]]; then
-   TARGET_LINE_OF_BUSINESS=${APPLICATION}
-   TARGET_CONTACT=${CONTACT}
-else
-   TARGET_LINE_OF_BUSINESS="oem"
-   if [[ "$LIFECYCLE_STATUS" == "Production" ]] || [[ "$LIFECYCLE_STATUS" == "MissionCritical" ]]; then
-      TARGET_CONTACT="#oem-aws-oracle-prod-alerts"
-   else
-      TARGET_CONTACT="#oem-aws-oracle-dev-alerts"
-   fi
 fi
 
 ./emcli set_target_property_value -subseparator=property_records="@@" -property_records="${TARGET_NAME}@@${TARGET_TYPE}@@Line of Business@@${TARGET_LINE_OF_BUSINESS}" ${PROPAGATE}
@@ -168,22 +156,23 @@ then
 	                ./emcli add_target -name="${i}_sys" -type="oracle_dbsys"
 		             ./emcli create_assoc -assoc_type="relies_on_key_component" -source="${i}_sys:oracle_dbsys" -dest="${i}:oracle_database"
                 fi
-                set_target_properties oracle_dbsys "${i}_sys"
+                set_target_properties oracle_dbsys "${i}_sys" "${APPLICATION}" "${CONTACT}"
         done
 fi
 
 # Set the Properties for Internal Targets if Not Already Set
 HOST_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", host]" | cut -d, -f1 | sed 's/^\[//')
-set_target_properties host "${HOST_TARGET_NAME}"
+set_target_properties host "${HOST_TARGET_NAME}" "${APPLICATION}" "${CONTACT}"
 AGENT_TARGET_NAME=$({{ agent_home }}/bin/emctl config agent listtargets | grep ", oracle_emd]" | cut -d, -f1 | sed 's/^\[//')
-set_target_properties oracle_emd "${AGENT_TARGET_NAME}"
+set_target_properties oracle_emd "${AGENT_TARGET_NAME}" "${APPLICATION}" "${CONTACT}"
 
 # Set the Properties for the Agent Oracle Home if Not Already Set
 AGENT_ORACLE_HOME=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${AGENT_TARGET_NAME}'" -search="PROPERTY_NAME='AgentOracleHome'" -column="PROPERTY_VALUE" -script -noheader)
 AGENT_ORACLE_HOME_TARGET=$(./emcli list -resource="Targets" -search="HOST_NAME='${HOST_FQDN_NAME}'" -search="TARGET_TYPE='oracle_home'" -columns='TARGET_NAME' -script -noheader | xargs -I '{}' ./emcli list -resource="TargetProperties" -search="TARGET_NAME='{}'" -search="TARGET_TYPE='oracle_home'" -search="PROPERTY_NAME='INSTALL_LOCATION'" -columns="PROPERTY_VALUE,TARGET_NAME" -script -noheader | grep -E "^${AGENT_ORACLE_HOME}\s+" | cut -f2)
-set_target_properties oracle_home "${AGENT_ORACLE_HOME_TARGET}"
+set_target_properties oracle_home "${AGENT_ORACLE_HOME_TARGET}" "${APPLICATION}" "${CONTACT}"
 
-# For any remaining targets in OEM which do not have Contact properties set, assign those as internal OEM (as opposed to Application) targets
+# For any remaining targets in OEM which do not have Contact or Line of Business properties already set, 
+# assign those as internal OEM (as opposed to Application) targets
 IFS=$'\n'
 for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separator:|");
 do
@@ -191,9 +180,14 @@ do
         TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
         EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
                             -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
-        # Group targets do not have properties
-        if [[ -z ${EXISTING_CONTACT} ]] && [[ "${TARGET_TYPE}" != "group" ]]; then
-            set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" oem_target
+        EXISTING_LINE_OF_BUSINESS=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
+                            -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_line_of_bus'" -script -noheader)
+        if [[ -z ${EXISTING_CONTACT} ]] || [[ -z ${EXISTING_LINE_OF_BUSINESS} ]]; then
+           # Group targets do not have properties - exclude group targets
+           if [[ "${TARGET_TYPE}" != "group" ]]; then
+              # For unknown targets we default the Slack channel to one for OEM Alerts
+              set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" "hmpps-oem" "#hmpps-oem-alerts"
+          fi
         fi
 done
 unset IFS

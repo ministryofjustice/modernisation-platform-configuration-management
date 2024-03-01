@@ -1,0 +1,9 @@
+#!/bin/bash
+#set -x
+export ORACLE_SID={{ db_sid }}
+export SCRIPT_DIR=/home/oracle/admin/scripts
+export DPDIR=refresh_dump_dir
+${SCRIPT_DIR}/csr_schema_refresh.sh -i ${ORACLE_SID} -d ${DPDIR} -f "{{ iwfm_train_dumpfile }}" -s iwfm_train3 -t iwfm_train3
+${SCRIPT_DIR}/csr_schema_refresh.sh -i ${ORACLE_SID} -d ${DPDIR} -f "{{ iwfm_train_dumpfile }}" -s iwfm_train3 -t iwfm_train4
+${SCRIPT_DIR}/csr_schema_refresh.sh -i ${ORACLE_SID} -d ${DPDIR} -f "{{ train_custom_dumpfile }}" -s train_custom3 -t train_custom3
+${SCRIPT_DIR}/csr_schema_refresh.sh -i ${ORACLE_SID} -d ${DPDIR} -f "{{ train_custom_dumpfile }}" -s train_custom3 -t train_custom4

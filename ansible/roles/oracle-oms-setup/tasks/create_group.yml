@@ -12,6 +12,7 @@
       loop:
         - emcli_login.sh
         - create_group.sh
+
     - name: Run Dynamic Group Creation Script
       ansible.builtin.shell: |
         echo "To resolve - Error: Some required configuration is missing, corrupt, inaccessible, or insecure (access permissions are too liberal)."
@@ -27,6 +28,11 @@
         {{ stage }}/create_group.sh
       register: run_group_creation
       changed_when: run_group_creation.stdout is search('.*dynamic group created.*')
+      loop: "{{ application_groups }}"
+      loop_control:
+        loop_var: application_name
+      environment:
+        APPLICATION: "{{ application_name }}"
 
   always:
     - name: Remove Group Creation scripts from Staging Area

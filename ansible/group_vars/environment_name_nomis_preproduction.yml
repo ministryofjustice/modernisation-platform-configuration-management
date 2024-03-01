@@ -27,6 +27,7 @@ osbws_additional_configs:
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
 recovery_catalog_server: "{{ OMS_SERVER }}"
+exclude_db_backup: "PPCNOM|PPMIS"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
@@ -40,3 +41,14 @@ rman_backup_cron:
       minute: "30"
       hour: "04"
       # job: command generated in rman-backup-setup
+
+# Oracle database housekeeping
+audit_housekeeping_period: 60
+db_housekeeping_script: db_server_housekeeping.sh
+housekeeping_cron:
+  db_server_housekeeping:
+    - name: database_server_housekeeping
+      weekday: "0"
+      minute: "30"
+      hour: "08"
+      # job: command generated in

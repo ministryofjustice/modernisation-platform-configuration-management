@@ -1,14 +1,21 @@
 #!/bin/bash
+#
+#  Creates OEM Dynamic Groups for each Application.  Membership of a group will
+#  decided based on the "Line of Business" property for each target.   As this is
+#  a dynamic group, new targets should be automatically assigned to it, provided this
+#  property is set to the appropriate value.
+#
+#  The name of the APPLICATION should match the value defined in tags.application in
+#  modernisation-platform/environments/<application>.json
 
 . ~/.bash_profile
 export JAVA_HOME=$ORACLE_HOME/jdk/jre
 
-
-if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec {{ application }} ) -gt 0 ] ; then
-   echo "{{ application }} group already exists."
+if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec ${APPLICATION} ) -gt 0 ] ; then
+   echo "${APPLICATION} group already exists."
 else
-   {{ emcli }} create_dynamic_group -name={{ application }} -properties="orcl_gtp_line_of_bus:{{ application }}"
+   {{ emcli }} create_dynamic_group -name=${APPLICATION} -properties="orcl_gtp_line_of_bus:${APPLICATION}"
    if [[ $? -eq 0 ]]; then
-      echo "New {{ application }} dynamic group created."
+      echo "New ${APPLICATION} dynamic group created."
    fi
 fi

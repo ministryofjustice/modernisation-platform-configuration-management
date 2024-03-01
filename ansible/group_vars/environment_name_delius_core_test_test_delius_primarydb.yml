@@ -1,31 +1,51 @@
 ---
-# From hmpps-env-configs/delius-core-dev/ansible/delius_primarydb.yml
-database_global_database: DMDNDA
-database_taf_service: DMDNDA_TAF
-database_primary_unique: DMDNDA
-database_primary_sid: DMDNDA
+# From hmpps-env-configs/delius-test/ansible/delius_primarydb.yml
+database_global_database: TSTNDA
+database_taf_service: TSTNDA_TAF
+database_primary_unique: TSTNDA
+database_primary_sid: TSTNDA
+rman_level_0_backup_duration_target: "03:00"
+rman_retention_policy: RECOVERY WINDOW OF 28 DAYS
+cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo"
 delius_users:
-  dbull_ro:
+  amarke_ro:
+  mberridge_ro:
+  mwillis_ro:
+  pphillips_ro:
+  smitchell_ro:
+  mwetherall_ro:
+  rchalamalasetty_ro:
+  arichardson_ro:
+  eliddiard_ro:
+  jevans_ro:
+  ebrindley_ro:
+  mhalma_ro:
+  mryall_ro:
   nmcmahon_ro:
   mrees_ro:
   ahaslehurst_ro:
-  bbuchan_ro:
-    ash_report: true
+  rmahal_ro:
   bbuchan_dba:
   rsingh_dba:
-    ash_report: true
   dreid_dba:
   sgandalwar_dba:
   kmoss_dba:
-  worr_sro:
-  nhodgkinson_rw:
+  abritton_ro:
+  smcallister_ro:
+  ilakanu_ro:
+  swatson_ro:
+  mheywardchaplin_ro:
+  ahughes_ro:
+  wwang_ro:
 oracle_software:
   version: "19.22"
   combo_patch: p36031453_190000_Linux-x86-64.zip
   opatch:
     version: 12.2.0.1.41
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
-audited_interaction_repo: TSTNDA
+database_parameters:
+  processes: 1500
+  compatible: 19.14.0
 database_locked_statistics:
   - schema_name: DELIUS_APP_SCHEMA
     table_names:
@@ -42,7 +62,7 @@ host_oem_metrics:
         warning_threshold , 81
         critical_threshold , 90
         END_RECORD 1
-    DMDNDA:
+    TSTNDA:
       input_file: |
         START_RECORD 1
         metric , problemTbsp
@@ -60,20 +80,3 @@ host_oem_metrics:
         warning_threshold , 500
         critical_threshold , 1200
         END_RECORD 1
-required_patches:
-  p26749785:
-    patch_files:
-      - target_version: "19.9"
-        filename: p26749785_199000DBRU_Generic.zip
-      - target_version: "19.16"
-        filename: p26749785_1916000DBRU_Generic.zip
-      - target_version: "19.18"
-        filename: p26749785_1918000DBRU_Generic.zip
-      - target_version: "19.20"
-        filename: p26749785_1920000DBRU_Generic.zip
-      - target_version: "19.22"
-        filename: p26749785_1922000DBRU_Generic.zip
-    description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
-    grid_patch: false
-    database_patch: true
-    datapatch_required: true

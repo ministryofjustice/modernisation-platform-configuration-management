@@ -1,11 +1,8 @@
 #!/bin/bash
 
-# Filename: csr_training_schema_refresh.sh
-
-#@@START_INITIALISATION#
-THISSCRIPT=`basename $0`
-SCRIPT_DIR=`dirname $0`
-SUFFIX=`date '+%d-%m-%y-%H%M%S'`
+THISSCRIPT=$(basename $0)
+SCRIPT_DIR=$(dirname $0)
+SUFFIX=$(date '+%d-%m-%y-%H%M%S')
 LOGFILE=${SCRIPT_DIR}/../logs/auto_refresh_schemas_${SUFFIX}.log
 SUCCESS_STATUS=0
 WARNING_STATUS=1
@@ -33,7 +30,7 @@ usage () {
 }
 
 info () {
-  T=`date +"%D %T"`
+  T=$(date +"%D %T")
   echo "INFO : $THISSCRIPT : $T : $1"
   if [ "$DEBUG_MODE" = "Y" ]
   then
@@ -42,12 +39,12 @@ info () {
 }
 
 warning () {
-  T=`date +"%D %T"`
+  T=$(date +"%D %T")
   echo "WARNING : $THISSCRIPT : $T : $1"
 }
 
 error () {
-  T=`date +"%D %T"`
+  T=$(date +"%D %T")
   echo "ERROR : $THISSCRIPT : $T : $1"
   exit $ERROR_STATUS
 }
@@ -65,13 +62,14 @@ set_ora_env () {
 validate_schema () {
   USERNAME=$1
   EXISTS=""
-  X=`sqlplus -s "/ as sysdba" <<EOF
+  X=$(sqlplus -s "/ as sysdba" <<EOF
      set feedback off heading off verify off echo off
      select 'EXISTS='||username
      from dba_users
      where username = upper('$USERNAME');
      exit
-EOF`
+EOF
+)
   eval $X
   [ -z $EXISTS ] && error "Schema $USERNAME does not exist in $ORACLE_SID" || info "Schema $USERNAME exists"
 }
@@ -105,84 +103,34 @@ EOF
 [ $? -ne 0 ] && error "PL/SQL to kill ${USERNAME} sessions error" || info "Instance ${USERNAME} sessions are now killed"
 }
 
-#@@END_FUNCTION_DECLARATION#
-
-#@@START_FUNCTIONS#
-
-#@@END_FUNCTIONS#
-
-#@@START_MAIN#
-
-############################################################################
-#
-# Main Routine
-#
-
-# ------------------------------------------------------------------------------
-# Check that we are running as the correct user (oracle)
-# ------------------------------------------------------------------------------
-info "Validating user"
-THISUSER=`id | cut -d\( -f2 | cut -d\) -f1`
-[ "$THISUSER" != "oracle" ] && error "Must be oracle to run this script"
-info "User ok"
-
-# ------------------------------------------------------------------------------
-# Execute users profile
-# ------------------------------------------------------------------------------
-export PATH=${PATH}:/usr/local/bin
-
-# ------------------------------------------------------------------------------
-# Check that we have been given all the required arguments
-# ------------------------------------------------------------------------------
-info "Retrieving arguments"
-
-[ -z "$1" ] && usage
-
-while getopts "i:d:f:s:t:" opt
-do
-  case $opt in
-    i) SID=$OPTARG ;;
-    d) DPDIR=$OPTARG ;;
-    f) SOURCE_DPFILE=$OPTARG ;;
-    s) SOURCE_SCHEMA=$OPTARG ;;
-    t) TARGET_SCHEMAS=$OPTARG ;;
-    *) usage ;;
-  esac
-done
-info "Start - check ${LOGFILE} for progress"
-exec 1>${LOGFILE} 2>&1
-ORACLE_SID=$SID
-
-info "Database sid = $SID"
-info "Datapump directory = $DPDIR"
-info "Source datapump file = $SOURCE_DPFILE"
-info "Source Schema = $SOURCE_SCHEMA"
-info "Target Schemas = $TARGET_SCHEMAS"
-
 # ------------------------------------------------------------------------------
 # Validate the datapump directory
 # ------------------------------------------------------------------------------
+validate_datapump_directory () {
 info "Source the Oracle environment for $ORACLE_SID"
-set_ora_env $ORACLE_SID
 info "Validate datapump directory $DPDIR"
 if [ -z $DPDIR ]
 then
   error "No datapump directory specified"
 else
-  X=`sqlplus -s "/ as sysdba" <<EOF
+  X=$(sqlplus -s "/ as sysdba" <<EOF
      set feedback off heading off echo off verify off
      select 'DPPATH='||directory_path
      from dba_directories
      where directory_name = upper('$DPDIR');
      exit
-EOF`
+EOF
+)
   eval $X
   [ -z ${DPPATH} ] && error "No directory for ${DPDIR}, investigate"
   [ ! -d $DPPATH ] && error "$DPDIR not a directory, investigate" || info "$DPDIR ($DPPATH) correct"
 fi
+}
+
 # ------------------------------------------------------------------------------
 # Validate the datapump file
 # ------------------------------------------------------------------------------
+validate_datapump_file () {
 info "Download datapump file $SOURCE_DPFILE"
 aws s3 cp s3://{{ s3_bucket }}/${SOURCE_DPFILE} ${DPPATH}/
 if [ -z $SOURCE_DPFILE ]
@@ -192,42 +140,29 @@ else
   ls ${DPPATH}/${SOURCE_DPFILE} > /dev/null 2>&1
   [ $? -ne 0 ] && error "Dumpfile $SOURCE_DPFILE does not exist" || info "Dumpfile $SOURCE_DPFILE exists"
 fi
-# ------------------------------------------------------------------------------
-# Validate source schema
-# ------------------------------------------------------------------------------
-info "Validate source schema $SOURCE_SCHEMA"
-if [ -z $SOURCE_SCHEMA ]
-then
-  error "No source schema speficied"
-else
-  validate_schema $SOURCE_SCHEMA
-fi
+}
 
 # ------------------------------------------------------------------------------
-# Validate target schemas
+# Update schema passwords from AWS secret manager
 # ------------------------------------------------------------------------------
-info "Validating target schemas"
-for SCHEMA in ${TARGET_SCHEMAS[@]}
+update_schema_passwords() {
+cat /dev/null > password_change.sql
+for SCHEMA in ${SOURCE_SCHEMA} ${TARGET_SCHEMAS[@]}
 do
-  validate_schema $SCHEMA
+	PASSWORD=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .${SCHEMA})
+  echo "alter user ${SCHEMA} identified by ${PASSWORD};" >> password_change.sql
 done
-
-# ------------------------------------------------------------------------------
-# Kill connected database sessions
-# ------------------------------------------------------------------------------
-info "Killing instance sessions connected as ${SOURCE_SCHEMA} ${TARGET_SCHEMAS[@]}"
-kill_sessions ${SOURCE_SCHEMA}
-#SCHEMAS=`echo $TARGET_SCHEMAS | awk '{ for (i=1; i<=NF; i++) printf("\x27%s\x27,",$i)}' | sed s/,$// | tr '[a-z]' '[A-Z]'`
-for SCHEMA in ${TARGET_SCHEMAS[@]}
-do
-  kill_sessions ${SCHEMA}
-done
+echo "exit" >> password_change.sql
+sqlplus -s "/ as sysdba" @password_change.sql
+rm password_change.sql
+}
 
 # ------------------------------------------------------------------------------
 # Drop and recreate schemas
 # ------------------------------------------------------------------------------
+recreate_schemas() {
 echo "spool schema_recreation.log" > schema_recreation.sql
-for SCHEMA in ${SOURCE_SCHEMA} ${TARGET_SCHEMAS[@]}
+for SCHEMA in ${TARGET_SCHEMAS[@]}
 do
   info "Drop and create $SCHEMA"
   sqlplus -s "/ as sysdba" <<EOF>> schema_recreation.sql
@@ -286,36 +221,110 @@ echo "exit" >> schema_recreation.sql
 sqlplus -s "/ as sysdba" @schema_recreation.sql
 [ $? -ne 0 ] && error "PL/SQL error to drop/create user $SCHEMA" || info "$SCHEMA dropped and created"
 rm schema_recreation.sql schema_recreation.log
+}
 
 # ------------------------------------------------------------------------------
 # Refresh schemas using datapump import
 # ------------------------------------------------------------------------------
-SUFFIX=`echo $SOURCE_DPFILE | cut -d'_' -f3 | cut -d'.' -f1`
-info "Importing source schema ${SOURCE_SCHEMA}"
-impdp "'/ as sysdba'" parallel=4 directory=$DPDIR schemas=$SOURCE_SCHEMA dumpfile=$SOURCE_DPFILE logfile=impdp_${SOURCE_SCHEMA}_${SUFFIX}.log
-# status=`grep "completed with 1 error(s)" ${DPPATH}/impdp_${SCHEMA}_${SUFFIX}.log | wc -l`
-# [ $status -eq 1 ] && info "Import success" || error "Import ${SCHEMA} failed" 
+import_schemas () {
+SUFFIX=$(echo $SOURCE_DPFILE | cut -d'_' -f3 | cut -d'.' -f1)
 info "Import success"
 for SCHEMA in ${TARGET_SCHEMAS[@]}
 do
   info "Importing schema ${SCHEMA}"
-  impdp "'/ as sysdba'" parallel=4 directory=$DPDIR schemas=$SOURCE_SCHEMA dumpfile=$SOURCE_DPFILE logfile=impdp_${SCHEMA}_${SUFFIX}.log remap_schema=${SOURCE_SCHEMA}:${SCHEMA}
-  # status=`grep "completed with 1 error(s)" ${DPPATH}/impdp_${SCHEMA}_${SUFFIX}.log | wc -l`
-  # [ $status -eq 1 ] && info "Import success" || error "Import ${SCHEMA} failed" 
+  if [ ${SOURCE_SCHEMA} == ${SCHEMA} ]
+  then
+       impdp "'/ as sysdba'" parallel=4 directory=$DPDIR schemas=$SOURCE_SCHEMA dumpfile=$SOURCE_DPFILE logfile=impdp_${SCHEMA}_${SUFFIX}.log
+  else
+       impdp "'/ as sysdba'" parallel=4 directory=$DPDIR schemas=$SOURCE_SCHEMA dumpfile=$SOURCE_DPFILE logfile=impdp_${SCHEMA}_${SUFFIX}.log remap_schema=${SOURCE_SCHEMA}:${SCHEMA}
+  fi
   info "Import success"
 done
+}
+
+############################################################################
+#
+# Main Routine
+#
 
 # ------------------------------------------------------------------------------
-# Update schema passwords from AWS secret manager
+# Check that we are running as the correct user (oracle)
 # ------------------------------------------------------------------------------
+info "Validating user"
+THISUSER=$(id | cut -d\( -f2 | cut -d\) -f1)
+[ "$THISUSER" != "oracle" ] && error "Must be oracle to run this script"
+info "User ok"
 
-cat /dev/null > password_change.sql
-for SCHEMA in ${SOURCE_SCHEMA} ${TARGET_SCHEMAS[@]}
+# ------------------------------------------------------------------------------
+# Execute users profile
+# ------------------------------------------------------------------------------
+export PATH=${PATH}:/usr/local/bin
+
+# ------------------------------------------------------------------------------
+# Check that we have been given all the required arguments
+# ------------------------------------------------------------------------------
+info "Retrieving arguments"
+
+[ -z "$1" ] && usage
+
+while getopts "i:d:f:s:t:" opt
 do
-	PASSWORD=`aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .${SCHEMA}`
-  echo "alter user ${SCHEMA} identified by ${PASSWORD};" >> password_change.sql
+  case $opt in
+    i) SID=$OPTARG ;;
+    d) DPDIR=$OPTARG ;;
+    f) SOURCE_DPFILE=$OPTARG ;;
+    s) SOURCE_SCHEMA=$OPTARG ;;
+    t) TARGET_SCHEMAS=$OPTARG ;;
+    *) usage ;;
+  esac
 done
-echo "exit" >> password_change.sql
-sqlplus -s "/ as sysdba" @password_change.sql
-rm password_change.sql
-info "End"
+info "Start - check ${LOGFILE} for progress"
+exec 1>${LOGFILE} 2>&1
+ORACLE_SID=$SID
+
+info "Database sid = $SID"
+info "Datapump directory = $DPDIR"
+info "Source datapump file = $SOURCE_DPFILE"
+info "Source Schema = $SOURCE_SCHEMA"
+info "Target Schemas = $TARGET_SCHEMAS"
+set_ora_env $ORACLE_SID
+
+# ------------------------------------------------------------------------------
+# Validate directory and data pump file
+# ------------------------------------------------------------------------------
+validate_datapump_directory
+validate_datapump_file
+
+# ------------------------------------------------------------------------------
+# Validate source schema
+# ------------------------------------------------------------------------------
+info "Validate source schema $SOURCE_SCHEMA"
+if [ -z $SOURCE_SCHEMA ]
+then
+  error "No source schema speficied"
+fi
+
+# ------------------------------------------------------------------------------
+# Validate target schemas
+# ------------------------------------------------------------------------------
+info "Validating target schemas"
+for SCHEMA in ${TARGET_SCHEMAS[@]}
+do
+  validate_schema $SCHEMA
+done
+
+# ------------------------------------------------------------------------------
+# Kill connected database sessions
+# ------------------------------------------------------------------------------
+info "Killing instance sessions connected as ${TARGET_SCHEMAS[@]}"
+for SCHEMA in ${TARGET_SCHEMAS[@]}
+do
+  kill_sessions ${SCHEMA}
+done
+
+# ------------------------------------------------------------------------------
+# Recreate schemas and import the schemas
+# ------------------------------------------------------------------------------
+recreate_schemas
+import_schemas
+update_schema_passwords
