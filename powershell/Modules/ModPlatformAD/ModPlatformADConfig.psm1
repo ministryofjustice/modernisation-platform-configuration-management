@@ -26,55 +26,43 @@ function Get-ModPlatformADConfig {
 
   $ErrorActionPreference = "Stop"
 
-  $ModPlatformADConfigs = @{
+  $ModPlatformADConfigsByDomainName = @{
     "azure.noms.root" = @{
-      "EnvironmentNameTags" = @(
-        "hmpps-domain-services-development",
-        "hmpps-domain-services-test",
-        "planetfm-development",
-        "planetfm-test",
-        "corporate-staff-rostering-development",
-        "corporate-staff-rostering-test"
-      )
+      "AccountIdsSSMParameterName" = "account_ids"
       "SecretAccountName" = "hmpps-domain-services-test"
       "SecretName" = "/microsoft/AD/azure.noms.root/shared-passwords"
+      "SecretRoleName" = "EC2HmppsDomainSecretsRole"
       "DomainNameFQDN" = "azure.noms.root"
       "DomainNameNetbios" = "AZURE"
       "DomainJoinUsername" = "svc_join_domain"
     }
     "azure.hmpp.root" = @{
-      "EnvironmentNameTags" = @(
-        "hmpps-domain-services-preproduction",
-        "hmpps-domain-services-production",
-        "planetfm-preproduction",
-        "planetfm-production",
-        "corporate-staff-rostering-preproduction",
-        "corporate-staff-rostering-production"
-      )
+      "AccountIdsSSMParameterName" = "account_ids"
       "SecretAccountName" = "hmpps-domain-services-production"
       "SecretName" = "/microsoft/AD/azure.hmpp.root/shared-passwords"
+      "SecretRoleName" = "EC2HmppsDomainSecretsRole"
       "DomainNameFQDN" = "azure.hmpp.root"
       "DomainNameNetbios" = "HMPP"
       "DomainJoinUsername" = "svc_join_domain"
     }
   }
 
-  $ModPlatformADSecretRoleName = @{
-    "EC2HmppsDomainSecretsRole" = @{
-      "EnvironmentNameTags" = @(
-        "hmpps-domain-services-development",
-        "hmpps-domain-services-test",
-        "hmpps-domain-services-preproduction",
-        "hmpps-domain-services-production",
-        "planetfm-development",
-        "planetfm-test",
-        "planetfm-preproduction",
-        "planetfm-production",
-        "corporate-staff-rostering-development",
-        "corporate-staff-rostering-test"
-        "corporate-staff-rostering-preproduction",
-        "corporate-staff-rostering-production"
-      )
+  $ModPlatformADConfigsByEnvironmentName = @{
+    "hmpps-domain-services-development" = @{"DomainName" = "azure.noms.root" }
+    "hmpps-domain-services-test" = @{"DomainName" = "azure.noms.root" }
+    "hmpps-domain-services-preproduction" = @{"DomainName" = "azure.hmpp.root" }
+    "hmpps-domain-services-production" = @{"DomainName" = "azure.hmpp.root" }
+    "planetfm-development" = @{"DomainName" = "azure.noms.root" }
+    "planetfm-test" = @{"DomainName" = "azure.noms.root" }
+    "planetfm-preproduction" = @{"DomainName" = "azure.hmpp.root" }
+    "planetfm-production" = @{"DomainName" = "azure.hmpp.root" }
+    "corporate-staff-rostering-development" = @{"DomainName" = "azure.noms.root" }
+    "corporate-staff-rostering-test" = @{"DomainName" = "azure.noms.root" }
+    "corporate-staff-rostering-preproduction" = @{"DomainName" = "azure.hmpp.root" }
+    "corporate-staff-rostering-production" = @{"DomainName" = "azure.hmpp.root" }
+    "core-shared-services-production" = @{
+      "AccountIdsSSMParameterName" = "/ad-fixngo/account_ids"
+      "SecretRoleName" = $null
     }
   }
 
@@ -85,35 +73,35 @@ function Get-ModPlatformADConfig {
   $DomainNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "domain-name"}).Value
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
 
+  $ModPlatformADConfigsByEnvironment = $null
+  if ($ModPlatformADConfigsByEnvironmentName.Contains($EnvironmentNameTag)) {
+    $ModPlatformADConfigsByEnvironment = $ModPlatformADConfigsByEnvironmentName[$EnvironmentNameTag]
+  }
+
   $Key = $null
   if ($DomainNameFQDN) {
     $Key = $DomainNameFQDN
   } elseif ($DomainNameTag) {
     $Key = $DomainNameTag
-  } else {
-    foreach ($Config in $ModPlatformADConfigs.GetEnumerator() ) {
-      if ($Config.Value["EnvironmentNameTags"].Contains($EnvironmentNameTag)) {
-        $Key = $Config.Key
-        break
-      }
+  } elseif ($ModPlatformADConfigsByEnvironment) {
+    if ($ModPlatformADConfigsByEnvironment.Contains("DomainName")) {
+      $Key = $ModPlatformADConfigsByEnvironment.DomainName
     }
   }
   if ($Key) {
-    if ($ModPlatformADConfigs.ContainsKey($Key)) {
-      $ConfigCopy = $ModPlatformADConfigs[$Key].Clone()
-      foreach ($Config in $ModPlatformADSecretRoleName.GetEnumerator() ) {
-        if ($Config.Value["EnvironmentNameTags"].Contains($EnvironmentNameTag)) {
-          $ConfigCopy["SecretRoleName"] = $Config.Key
-          break
+    if ($ModPlatformADConfigsByDomainName.ContainsKey($Key)) {
+      $ConfigCopy = $ModPlatformADConfigsByDomainName[$Key].Clone()
+      if ($ModPlatformADConfigsByEnvironment) {
+        ForEach ($ConfigKey in $ModPlatformADConfigsByEnvironment.Keys) {
+          $ConfigCopy[$ConfigKey] = $ModPlatformADConfigsByEnvironment[$ConfigKey]
         }
       }
       Return $ConfigCopy
     } else {
       Write-Error "No matching configuration for domain ${Key}"
     }
-  }
-  else {
-    Write-Error "No matching configuration for environment-name ${EnvironmentNameTag}"
+  } else {
+    Write-Error "Cannot find domain configuration, ensure environment-name or domain-name tag defined"
   }
 }
 
