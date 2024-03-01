@@ -26,7 +26,8 @@ param (
 
     Install-WindowsFeature AD-Domain-Services -IncludeManagementTools
 
-    # Get SafeModeAdministratorPassword from secrets of call ADCredential?
+    # placeholder - may need to be replaced
+    $SafeModeAdministratorPassword = aws secretsmanager get-secret-value --secret-id devtestDomainPassword --query 'SecretString' --output text
 
     Install-ADDSForest -DomainName $DomainName -InstallDNS -CreateDnsDelegation:$false -DatabasePath "C:\Windows\NTDS" -LogPath "C:\Windows\NTDS" -SYSVOLPath "C:\Windows\SYSVOL" -Force -SafeModeAdministratorPassword (ConvertTo-SecureString $SafeModeAdministratorPassword -AsPlainText -Force)
 
