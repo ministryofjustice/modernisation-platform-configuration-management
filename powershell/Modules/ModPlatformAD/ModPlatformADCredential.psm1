@@ -58,6 +58,7 @@ function Get-ModPlatformADCredential {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
   }
   $SecretValue = "$SecretValueRaw" | ConvertFrom-Json
+  $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
   $DomainJoinUsername = $ModPlatformADConfig.DomainJoinUsername
   $DomainJoinPassword = $SecretValue.$DomainJoinUsername
   if (-not $DomainJoinPassword) {
