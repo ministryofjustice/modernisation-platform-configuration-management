@@ -353,28 +353,33 @@ restore_db_passwords () {
   SYSTEMDBUSERS=(sys system dbsnmp)
   if [ "$APPLICATION" = "delius" ]
   then
-    DBUSERS+=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool)
+    APPLICATION_USERS=(delius_app_schema delius_pool delius_analytics_platform gdpr_pool delius_audit_dms_pool mms_pool)
     # Add Probation Integration Services by looking up the Usernames by their path in the AWS Secrets (there may be several of these)
     # We suppress any lookup errors for integration users as these may not exist
-    PROBATION_INTEGRATION_USERS=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --query SecretString --output text 2>/dev/null | jq -r 'keys | join(" ")')
-    DBUSERS+=( ${PROBATION_INTEGRATION_USERS[@]} )
-  elif [ "$APPLICATION" = "mis" ]
+    PROBATION_INTEGRATION_USERS=$(aws secretsmanager get-secret-value --secret-id ${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-${APPLICATION}-integration-passwords --query SecretString --output text 2>/dev/null | jq -r 'keys | join(" ")')
+  elif [ "$APPLICATION" = "delius-mis" ]
   then
-    DBUSERS+=(mis_landing ndmis_abc ndmis_cdc_subscriber ndmis_loader ndmis_working ndmis_data)
-    DBUSERS+=(dfimis_landing dfimis_abc dfimis_subscriber dfimis_data dfimis_working dfimis_loader)
+    APPLICATION_USERS=(mis_landing ndmis_abc ndmis_cdc_subscriber ndmis_loader ndmis_working ndmis_data)
+    APPLICATION_USERS+=(dfimis_landing dfimis_abc dfimis_subscriber dfimis_data dfimis_working dfimis_loader)
   fi
+  DBUSERS+=(${APPLICATION_USERS[@]} ${PROBATION_INTEGRATION_USERS[@]} )
+  SECRET_PREFIX="${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-${APPLICATION}"
 
   info "Change password for all db users"
   DBUSERS+=( ${SYSTEMDBUSERS[@]} )
   for USER in ${DBUSERS[@]}
   do
     # Pattern for AWS Secrets path for Probation Integration Users differs from other Oracle user accounts
-    if [[ "$HMPPS_ROLE" == "delius" && $(exists_in_list "${USER}" " " "${PROBATION_INTEGRATION_USERS[*]}" ) == "Found" ]];
+    if [[ "$APPLICATION" == "delius" && $(exists_in_list "${USER}" " " "${PROBATION_INTEGRATION_USERS[*]}" ) == "Found" ]];
     then
-       SECRET_ID="${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-delius-integration-passwords"
+      TYPE="integration"
+    elif [[ $(exists_in_list "${USER}" " " "${APPLICATION_USERS[*]}" ) == "Found" ]];
+    then
+      TYPE="application"
     else
-       SECRET_ID="${ENVIRONMENT_NAME}-${DELIUS_ENVIRONMENT}-delius-dba-passwords"
+      TYPE="dba"
     fi
+    SECRET_ID="${SECRET_PREFIX}-${TYPE}-passwords"
     USERPASS=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --query SecretString --output text | jq -r ".${USER}")
     # Ignore absense of Audit Preservation and Probation Integration Users as they may not exist in all environments
     if [[ -z ${USERPASS} && $(exists_in_list "${USER}" " " "delius_audit_pool ${PROBATION_INTEGRATION_USERS[*]}") != "Found" ]];
@@ -478,10 +483,7 @@ run_datapatch() {
 post_actions () {
   add_spfile_asm
   enable_bct
-  if [[ "${target_db}" != "${source_db}" ]]
-  then
-    restore_db_passwords
-  fi
+  restore_db_passwords
   # Ensure the archive deletion policy is set correctly for the primary database
   configure_rman_archive_deletion_policy
   # Ensure the tempfiles for temporary exist other wise recreate the temporary tablespace
