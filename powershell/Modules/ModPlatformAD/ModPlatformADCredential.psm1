@@ -23,7 +23,7 @@ function Get-ModPlatformADCredential {
 
   [CmdletBinding()]
   param (
-    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig
   )
 
   $ErrorActionPreference = "Stop"
