@@ -10,9 +10,6 @@ function Get-ModPlatformADCredential {
     domain join username. EC2 requires permissions to join the given role,
     a SSM parameter containing account IDs, and the aws cli.
 
-.PARAMETER AccountIdsSSMParameterName
-    Name of SSM parameter containing account IDs JSON. Default is account_ids
-
 .PARAMETER ModPlatformADCredential
     HashTable as returned from Get-ModPlatformADConfig function
 
@@ -26,18 +23,22 @@ function Get-ModPlatformADCredential {
 
   [CmdletBinding()]
   param (
-    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [string]$AccountIdsSSMParameterName = "account_ids"
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig
   )
 
   $ErrorActionPreference = "Stop"
 
+  $AccountIdsSSMParameterName = $ModPlatformADConfig.AccountIdsSSMParameterName
   $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
   $AccountIds = "$AccountIdsRaw" | ConvertFrom-Json
   $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
   $SecretName = $ModPlatformADConfig.SecretName
   $SecretArn = "arn:aws:secretsmanager:eu-west-2:${SecretAccountId}:secret:${SecretName}"
+  $SecretRoleName = $null
   if ($ModPlatformADConfig.ContainsKey("SecretRoleName")) {
+    $SecretRoleName = $ModPlatformADConfig.SecretRoleName
+  }
+  if ($SecretRoleName) {
     $AccountId = aws sts get-caller-identity --query Account --output text
     $SecretRoleName = $ModPlatformADConfig.SecretRoleName
     $RoleArn = "arn:aws:iam::${AccountId}:role/${SecretRoleName}"
