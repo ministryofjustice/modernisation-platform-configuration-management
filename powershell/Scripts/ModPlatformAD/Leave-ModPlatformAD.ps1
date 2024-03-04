@@ -17,8 +17,7 @@
 
 [CmdletBinding()]
 param (
-  [string]$DomainNameFQDN,
-  [string]$AccountIdsSSMParameterName = "account_ids"
+  [string]$DomainNameFQDN
 )
 
 Import-Module ModPlatformAD -Force
@@ -26,7 +25,7 @@ Import-Module ModPlatformAD -Force
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
-$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig -AccountIdsSSMParameterName $AccountIdsSSMParameterName
+$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig
 if (Remove-ModPlatformADComputer -ModPlatformADCredential $ADCredential) {
   Exit 3010 # triggers reboot if running from SSM Doc
 }

@@ -18,8 +18,7 @@
 [CmdletBinding()]
 param (
   [string]$NewHostname = "tag:Name",
-  [string]$DomainNameFQDN,
-  [string]$AccountIdsSSMParameterName = "account_ids"
+  [string]$DomainNameFQDN
 )
 
 Import-Module ModPlatformAD -Force
@@ -27,7 +26,7 @@ Import-Module ModPlatformAD -Force
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
-$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig -AccountIdsSSMParameterName $AccountIdsSSMParameterName
+$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig
 $Renamed = Rename-ModPlatformADComputer -NewHostname $NewHostname -ModPlatformADCredential $ADCredential
 if ($Renamed) {
   Write-Output "Renamed computer to ${Renamed}"
