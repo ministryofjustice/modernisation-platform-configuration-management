@@ -19,7 +19,7 @@ function Get-ModPlatformADSecret {
     $Password = ConvertTo-SecureString $ADSecret.svc_join_domain
 
 .OUTPUTS
-    HashTable
+    PSCustomObject
 #>
 
   [CmdletBinding()]
@@ -78,7 +78,7 @@ function Get-ModPlatformADJoinCredential {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -91,13 +91,13 @@ function Get-ModPlatformADJoinCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]$ModPlatformADSecret
+    [PSCustomObject]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
 
   if ($ModPlatformADSecret -eq $null) {
-    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $ModPlatformADConfig
   }
   $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
   $DomainJoinUsername = $ModPlatformADConfig.DomainJoinUsername
@@ -125,7 +125,7 @@ function Get-ModPlatformADAdminCredential {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -138,13 +138,13 @@ function Get-ModPlatformADAdminCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]$ModPlatformADSecret
+    [PSCustomObject]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
 
   if ($ModPlatformADSecret -eq $null) {
-    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $ModPlatformADConfig
   }
   $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
   $DomainAdminUsername = $ModPlatformADConfig.DomainAdminUsername
@@ -172,7 +172,7 @@ function Get-ModPlatformADSafeModeAdministratorPassword {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -185,13 +185,13 @@ function Get-ModPlatformADSafeModeAdministratorPassword {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]$ModPlatformADSecret
+    [PSCustomObject]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
 
   if ($ModPlatformADSecret -eq $null) {
-    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $ModPlatformADConfig
   }
   $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
   $DomainAdminUsername = $ModPlatformADConfig.DomainAdminUsername
