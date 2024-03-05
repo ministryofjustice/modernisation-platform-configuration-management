@@ -35,6 +35,7 @@ function Get-ModPlatformADConfig {
       "DomainNameFQDN" = "azure.noms.root"
       "DomainNameNetbios" = "AZURE"
       "DomainJoinUsername" = "svc_join_domain"
+      "DomainAdminUsername" = "svc_admin"
     }
     "azure.hmpp.root" = @{
       "AccountIdsSSMParameterName" = "account_ids"
@@ -44,6 +45,7 @@ function Get-ModPlatformADConfig {
       "DomainNameFQDN" = "azure.hmpp.root"
       "DomainNameNetbios" = "HMPP"
       "DomainJoinUsername" = "svc_join_domain"
+      "DomainAdminUsername" = "svc_admin"
     }
   }
 

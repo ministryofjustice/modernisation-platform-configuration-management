@@ -1,13 +1,13 @@
-function Get-ModPlatformADJoinCredential {
+function Get-ModPlatformADSecret {
 
 <#
 .SYNOPSIS
-    Retrieves a domain account credential that can be used for AD operations
+    Retrieves domain account secret from SecretsManager
 
 .DESCRIPTION
     Using configuration returned from Get-ModPlatformADConfig, this function
-    optionally assumes a role to access a secret containing the password of the
-    domain join username. EC2 requires permissions to join the given role,
+    optionally assumes a role to access a SecretsManager secret containing
+    domain secrets. EC2 requires permissions to join the given role,
     a SSM parameter containing account IDs, and the aws cli.
 
 .PARAMETER ModPlatformADConfig
@@ -15,10 +15,11 @@ function Get-ModPlatformADJoinCredential {
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
-    $ADCredential = Get-ModPlatformADJoinCredential $ADConfig
+    $ADSecret = Get-ModPlatformADJoinCredential $ADConfig
+    $Password = ConvertTo-SecureString $ADSecret.svc_join_domain
 
 .OUTPUTS
-    PSCredentialObject
+    HashTable
 #>
 
   [CmdletBinding()]
@@ -58,15 +59,150 @@ function Get-ModPlatformADJoinCredential {
   } else {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
   }
-  $SecretValue = "$SecretValueRaw" | ConvertFrom-Json
+  "$SecretValueRaw" | ConvertFrom-Json
+}
+
+function Get-ModPlatformADJoinCredential {
+
+<#
+.SYNOPSIS
+    Retrieves credential that can be used for joining Computers to the domain
+
+.DESCRIPTION
+    Using configuration returned from Get-ModPlatformADConfig, this function
+    optionally assumes a role to access a secret containing the password of the
+    domain join username. EC2 requires permissions to join the given role,
+    a SSM parameter containing account IDs, and the aws cli.
+
+.PARAMETER ModPlatformADConfig
+    HashTable as returned from Get-ModPlatformADConfig function
+
+.PARAMETER ModPlatformADSecret
+    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+
+.EXAMPLE
+    $ADConfig = Get-ModPlatformADConfig
+    $ADCredential = Get-ModPlatformADJoinCredential $ADConfig
+
+.OUTPUTS
+    PSCredentialObject
+#>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [hashtable]ModPlatformADSecret
+  )
+
+  $ErrorActionPreference = "Stop"
+
+  if ($ModPlatformADSecret -eq $null) {
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+  }
   $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
   $DomainJoinUsername = $ModPlatformADConfig.DomainJoinUsername
-  $DomainJoinPassword = $SecretValue.$DomainJoinUsername
+  $DomainJoinPassword = $ModPlatformADSecret.$DomainJoinUsername
   if (-not $DomainJoinPassword) {
-    Write-Error "Password secret ${SecretArn} does not contain domain join username ${DomainJoinUsername}"
+    Write-Error "Password secret does not contain domain join username ${DomainJoinUsername}"
   }
-  $DomainJoinPasswordSecureString = ConvertTo-SecureString $SecretValue.$DomainJoinUsername -AsPlainText -Force
+  $DomainJoinPasswordSecureString = ConvertTo-SecureString $DomainJoinPassword -AsPlainText -Force
   New-Object System.Management.Automation.PSCredential ("$DomainNameNetbios\$DomainJoinUsername", $DomainJoinPasswordSecureString)
 }
 
+function Get-ModPlatformADAdminCredential {
+
+<#
+.SYNOPSIS
+    Retrieves credential that can be used for administrating the domain
+
+.DESCRIPTION
+    Using configuration returned from Get-ModPlatformADConfig, this function
+    optionally assumes a role to access a secret containing the password of the
+    domain join username. EC2 requires permissions to join the given role,
+    a SSM parameter containing account IDs, and the aws cli.
+
+.PARAMETER ModPlatformADConfig
+    HashTable as returned from Get-ModPlatformADConfig function
+
+.PARAMETER ModPlatformADSecret
+    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+
+.EXAMPLE
+    $ADConfig = Get-ModPlatformADConfig
+    $ADCredential = Get-ModPlatformADAdminCredential $ADConfig
+
+.OUTPUTS
+    PSCredentialObject
+#>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [hashtable]ModPlatformADSecret
+  )
+
+  $ErrorActionPreference = "Stop"
+
+  if ($ModPlatformADSecret -eq $null) {
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+  }
+  $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
+  $DomainAdminUsername = $ModPlatformADConfig.DomainAdminUsername
+  $DomainAdminPassword = $ModPlatformADSecret.$DomainAdminUsername
+  if (-not $DomainAdminPassword) {
+    Write-Error "Password secret does not contain domain admin username ${DomainAdminUsername}"
+  }
+  $DomainAdminPasswordSecureString = ConvertTo-SecureString $DomainAdminPassword -AsPlainText -Force
+  New-Object System.Management.Automation.PSCredential ("$DomainNameNetbios\$DomainAdminUsername", $DomainAdminPasswordSecureString)
+}
+
+function Get-ModPlatformADSafeModeAdministratorPassword {
+
+<#
+.SYNOPSIS
+    Retrieves credential that can be used for administrating the domain
+
+.DESCRIPTION
+    Using configuration returned from Get-ModPlatformADConfig, this function
+    optionally assumes a role to access a secret containing the password of the
+    domain join username. EC2 requires permissions to join the given role,
+    a SSM parameter containing account IDs, and the aws cli.
+
+.PARAMETER ModPlatformADConfig
+    HashTable as returned from Get-ModPlatformADConfig function
+
+.PARAMETER ModPlatformADSecret
+    Optional HashTable containing secrets as returned from Get-ModPlatformADSecret
+
+.EXAMPLE
+    $ADConfig = Get-ModPlatformADConfig
+    $ADCredential = Get-ModPlatformADSafeModeAdministratorPassword $ADConfig
+
+.OUTPUTS
+    Secure-String
+#>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
+    [hashtable]ModPlatformADSecret
+  )
+
+  $ErrorActionPreference = "Stop"
+
+  if ($ModPlatformADSecret -eq $null) {
+    $ModPlatformADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $$ModPlatformADConfig
+  }
+  $DomainNameNetbios = $ModPlatformADConfig.DomainNameNetbios
+  $DomainAdminUsername = $ModPlatformADConfig.DomainAdminUsername
+  $SafeModeAdministratorPassword = $ModPlatformADSecret.SafeModeAdministratorPassword
+  if (-not $SafeModeAdministratorPassword) {
+    Write-Error "Password secret does not contain domain admin username ${SafeModeAdministratorPassword}"
+  }
+  ConvertTo-SecureString $SafeModeAdministratorPassword -AsPlainText -Force
+}
+
+Export-ModuleMember -Function Get-ModPlatformADSecret
 Export-ModuleMember -Function Get-ModPlatformADJoinCredential
+Export-ModuleMember -Function Get-ModPlatformADAdminCredential
+Export-ModuleMember -Function Get-ModPlatformADSafeModeAdministratorPassword
