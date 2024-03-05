@@ -91,7 +91,7 @@ function Get-ModPlatformADJoinCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
@@ -138,7 +138,7 @@ function Get-ModPlatformADAdminCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
@@ -185,7 +185,7 @@ function Get-ModPlatformADSafeModeAdministratorPassword {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [hashtable]ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
