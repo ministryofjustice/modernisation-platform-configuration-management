@@ -40,5 +40,5 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
 $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
 
-Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+Install-WindowsFeature -Name AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
 Write-Output "Install-ADDSDomainController -DomainName $ADConfig.DomainNameFQDN -InstallDns:$true -Credential $ADAdminCredential -SafeModeAdministratorPassword $ADSafeModeAdministratorPassword -NoRebootOnCompletion -Force"
