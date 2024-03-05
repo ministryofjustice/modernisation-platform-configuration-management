@@ -73,7 +73,7 @@ NestedModules = @('ModPlatformADComputer.psm1',
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Rename-ModPlatformADComputer', 'Add-ModPlatformADComputer', 
                'Remove-ModPlatformADComputer', 'Get-ModPlatformADConfig', 
-               'Get-ModPlatformADCredential'
+               'Get-ModPlatformADJoinCredential'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'

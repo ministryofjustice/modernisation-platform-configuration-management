@@ -1,4 +1,4 @@
-function Get-ModPlatformADCredential {
+function Get-ModPlatformADJoinCredential {
 
 <#
 .SYNOPSIS
@@ -15,7 +15,7 @@ function Get-ModPlatformADCredential {
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
-    $ADCredential = Get-ModPlatformADCredential $ADConfig
+    $ADCredential = Get-ModPlatformADJoinCredential $ADConfig
 
 .OUTPUTS
     PSCredentialObject
@@ -69,4 +69,4 @@ function Get-ModPlatformADCredential {
   New-Object System.Management.Automation.PSCredential ("$DomainNameNetbios\$DomainJoinUsername", $DomainJoinPasswordSecureString)
 }
 
-Export-ModuleMember -Function Get-ModPlatformADCredential
+Export-ModuleMember -Function Get-ModPlatformADJoinCredential

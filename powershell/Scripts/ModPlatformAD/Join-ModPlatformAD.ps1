@@ -26,7 +26,7 @@ Import-Module ModPlatformAD -Force
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
-$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig
+$ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $Renamed = Rename-ModPlatformADComputer -NewHostname $NewHostname -ModPlatformADCredential $ADCredential
 if ($Renamed) {
   Write-Output "Renamed computer to ${Renamed}"

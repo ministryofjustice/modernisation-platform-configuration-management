@@ -73,7 +73,7 @@ function Add-ModPlatformADComputer {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADCredential
-    AD credential as returned from Get-ModPlatformADCredential function.
+    AD credential as returned from Get-ModPlatformADJoinCredential function.
 
 .EXAMPLE
     Add-ModPlatformADComputer $ModPlatformADConfig $ModPlatformADCredential
@@ -124,7 +124,7 @@ function Remove-ModPlatformADComputer {
     Returns true if successful and a reboot required, false if already removed.
 
 .PARAMETER ModPlatformADCredential
-    AD credential as returned from Get-ModPlatformADCredential function.
+    AD credential as returned from Get-ModPlatformADJoinCredential function.
 
 .EXAMPLE
     Add-ModPlatformADComputer $ModPlatformADConfig $ModPlatformADCredential
