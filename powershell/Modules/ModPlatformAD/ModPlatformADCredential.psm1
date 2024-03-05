@@ -10,7 +10,7 @@ function Get-ModPlatformADCredential {
     domain join username. EC2 requires permissions to join the given role,
     a SSM parameter containing account IDs, and the aws cli.
 
-.PARAMETER ModPlatformADCredential
+.PARAMETER ModPlatformADConfig
     HashTable as returned from Get-ModPlatformADConfig function
 
 .EXAMPLE
