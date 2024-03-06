@@ -13,14 +13,14 @@
 
 [CmdletBinding()]
 param (
-  [string]$DomainName = "test.loc"
+  [string]$DomainNameFQDN = "test.loc"
 )
 
 Import-Module ModPlatformAD -Force
 
-$DomainNameString = ($DomainName -split "\." | ForEach-Object { "DC=$_" }) -join ","
+$ParentDN = ($DomainNameFQDN -split "\." | ForEach-Object { "DC=$_" }) -join ","
 
-New-ADOrganizationalUnit -Name "ModPlatformComputers" -Path $DomainNameString -Description "Modernisation Platform Computers" -ProtectedFromAccidentalDeletion $true
+New-ADOrganizationalUnit -Name "ModPlatformComputers" -Path $ParentDN -Description "Modernisation Platform Computers" -ProtectedFromAccidentalDeletion $true
 
 # set sub-level AD OU for Modernisation Platform Computers Environments
 $topLevelOU = "OU=ModPlatformComputers"
@@ -37,10 +37,10 @@ $ApiUrl = "https://api.github.com/repos/$repoOwner/$repoName/contents/$repoPAth"
 $Response = Invoke-RestMethod -Uri $ApiUrl
 
 $Response | Where-Object { $_.type -eq "dir" -and $excludeTerraformEnvironments -notcontains $_.name } | ForEach-Object { $_.name } | ForEach-Object {
-    New-ADOrganizationalUnit -Name $_ -Path "$topLevelOU,$DomainNameString" -Description "Modernisation Platform Computers $_" -ProtectedFromAccidentalDeletion $true
+    New-ADOrganizationalUnit -Name $_ -Path "$topLevelOU,$ParentDN" -Description "Modernisation Platform Computers $_" -ProtectedFromAccidentalDeletion $true
 
     ForEach ($environment in $environments) {
-        New-ADOrganizationalUnit -Name $environment -Path "OU=$_,$topLevelOU,$DomainNameString" -Description "Modernisation Platform Computers $_ $environment" -ProtectedFromAccidentalDeletion $true
+        New-ADOrganizationalUnit -Name $environment -Path "OU=$_,$topLevelOU,$ParentDN" -Description "Modernisation Platform Computers $_ $environment" -ProtectedFromAccidentalDeletion $true
     }
 }
 
