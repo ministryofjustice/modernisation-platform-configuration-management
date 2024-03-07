@@ -44,7 +44,7 @@ rman_backup_cron:
 
 db_configs:
   RCVCAT:
-    rcvcat_db_name: PDRCVCAT
+    rcvcat_db_name: RCVCAT
   PROASYS:
     db_name: OASYSPTC
     db_unique_name: PROASYS
@@ -79,7 +79,7 @@ db_configs:
       - { name: db_files, value: 600, db_restart_required: 0, scope: both }
       - {
           name: log_archive_dest_1,
-          value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=PDBIPINF''"',
+          value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=TRBIPINF''"',
           db_restart_required: 0,
           scope: both,
         }
@@ -103,19 +103,16 @@ tns_entries:
       port: 1521
       host_list:
         - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
       service_name: PROASYS
     - name: TROASYS
       port: 1521
       host_list:
         - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
       service_name: TROASYS
     - name: TRBIPINF
       port: 1521
       host_list:
         - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
       service_name: TRBIPINF
     - name: RCVCAT
       port: 1521
