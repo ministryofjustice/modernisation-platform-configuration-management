@@ -22,7 +22,7 @@ ords_trusted_origins:
 
 osbws_additional_configs:
   - name: osbws_prod
-    s3_bucket_name: {{ db_backup_s3_bucket_name }}
+    s3_bucket_name: { { db_backup_s3_bucket_name } }
 
 # rman details
 rman_backup_script: rman_backup.sh
