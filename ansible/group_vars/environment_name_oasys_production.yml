@@ -45,40 +45,29 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PDRCVCAT
-  PDOASYS:
-    db_name: OASPROD
-    db_unique_name: PDOASYS
-    instance_name: PDOASYS
-    host_name: pd-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-    port: 1521
-    tns_name: PDOASYS
-    s3_bucket: oasys-production20230403093924372800000001
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: OASYS_TAF, role: PRIMARY }
-  PTCOASYS:
+  PROASYS:
     db_name: OASYSPTC
-    db_unique_name: PTCOASYS
-    instance_name: PTCOASYS
+    db_unique_name: PROASYS
+    instance_name: PROASYS
     host_name: ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
     port: 1521
-    tns_name: PTCOASYS
+    tns_name: PROASYS
     s3_bucket: oasys-production20230403093924372800000001
     asm_disk_groups: DATA,FLASH
     service:
-      - { name: OASYS_TAF, role: PRIMARY }
-  TRNOASYS:
+      - { name: PRACTICE_OASYS_TAF, role: PRIMARY }
+  TROASYS:
     db_name: OASYSTRN
-    db_unique_name: TRNOASYS
-    instance_name: TRNOASYS
+    db_unique_name: TROASYS
+    instance_name: TROASYS
     host_name: ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
     port: 1521
-    tns_name: TRNOASYS
+    tns_name: TROASYS
     s3_bucket: oasys-production20230403093924372800000001
     asm_disk_groups: DATA,FLASH
     service:
-      - { name: OASYS_TAF, role: PRIMARY }
-  PDBIPINF:
+      - { name: TRAINING_OASYS_TAF, role: PRIMARY }
+  TRBIPINF:
     parameters:
       - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
       - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
@@ -107,3 +96,29 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+      
+tns_entries:
+  ptctrn:
+    - name: PROASYS
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PROASYS
+    - name: TROASYS
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: TROASYS
+    - name: TRBIPINF
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+        - ptctrn-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: TRBIPINF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        -  "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF
