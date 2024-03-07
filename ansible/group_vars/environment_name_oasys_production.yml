@@ -1,14 +1,92 @@
 ---
+# s3
 ansible_aws_ssm_bucket_name: oasys-production20230403093924372800000001
 image_builder_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+db_backup_s3_bucket_name: prod-oasys-db-backup-bucket-20230721150536339200000001
+s3_bucket: mod-platform-image-artefact-bucket20230203091453221500000001
+
+# domains
 dns_zone_internal: oasys.hmpps-production.modernisation-platform.internal
 dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
-s3_bucket: prodpreprod-oasys-20230412084245180100000001
+
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+oracle_ru_patch: OCT2023
 
 ords_trusted_origins:
-  production: "https://oasys.az.justice.gov.uk/eor,https://bridge-oasys.az.justice.gov.uk/eor,https://p-oasys.az.juistce.gov.uk/eor,https://www.oasys.service.justice.gov.uk/eor,https://int.oasys.service.justice.gov.uk/eor,http://localhost:8080/eor"
+  production: "https://oasys.az.justice.gov.uk/eor,https://bridge-oasys.az.justice.gov.uk/eor,https://p-oasys.az.justice.gov.uk/eor,https://www.oasys.service.justice.gov.uk/eor,https://int.oasys.service.justice.gov.uk/eor,https://oasys.service.justice.gov.uk/eor,http://localhost:8080/eor,https://a.oasys.service.justice.gov.uk/eor,https://a-int.oasys.service.justice.gov.uk/eor,https://b.oasys.service.justice.gov.uk/eor,https://b-int.oasys.service.justice.gov.uk/eor,https://oasys-ukwest.oasys.az.justice.gov.uk/eor"
+  ptc: "https://ptc.oasys.service.justice.gov.uk/eor,https://ptc-int.oasys.service.justice.gov.uk/eor,https://ptc-a.oasys.service.justice.gov.uk/eor,https://ptc-a-int.oasys.service.justice.gov.uk/eor,https://ptc-b.oasys.service.justice.gov.uk/eor,https://ptc-b-int.oasys.service.justice.gov.uk/eor,https://practice.bridge-oasys.az.justice.gov.uk/eor,https://practice.oasys.service.justice.gov.uk/eor,https://practice.p-oasys.az.justice.gov.uk/eor,https://practice.oasys.az.justice.gov.uk/eor"
+  trn: "https://trn.oasys.service.justice.gov.uk/eor,https://trn-int.oasys.service.justice.gov.uk/eor,https://trn-a.oasys.service.justice.gov.uk/eor,https://trn-a-int.oasys.service.justice.gov.uk/eor,https://trn-b.oasys.service.justice.gov.uk/eor,https://trn-b-int.oasys.service.justice.gov.uk/eor,https://training.bridge-oasys.az.justice.gov.uk/eor,https://training.oasys.service.justice.gov.uk/eor,https://training.p-oasys.az.justice.gov.uk/eor,https://training.oasys.az.justice.gov.uk/eor"
+
+osbws_additional_configs:
+  - name: osbws_prod
+    s3_bucket_name: { { db_backup_s3_bucket_name } }
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: RCVCAT
+  PROASYS:
+    db_name: OASYSPTC
+    db_unique_name: PROASYS
+    instance_name: PROASYS
+    host_name: ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+    port: 1521
+    tns_name: PROASYS
+    s3_bucket: oasys-production20230403093924372800000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: PRACTICE_OASYS_TAF, role: PRIMARY }
+  TROASYS:
+    db_name: OASYSTRN
+    db_unique_name: TROASYS
+    instance_name: TROASYS
+    host_name: ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+    port: 1521
+    tns_name: TROASYS
+    s3_bucket: oasys-production20230403093924372800000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: TRAINING_OASYS_TAF, role: PRIMARY }
+  TRBIPINF:
+    parameters:
+      - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
+      - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
+      - { name: processes, value: 500, db_restart_required: 1, scope: spfile }
+      - { name: pga_aggregate_target, value: 800M, db_restart_required: 0, scope: both }
+      - { name: db_recovery_file_dest_size, value: 40G, db_restart_required: 0, scope: both }
+      - { name: shared_pool_size, value: 300M, db_restart_required: 0, scope: both }
+      - { name: open_cursors, value: 800, db_restart_required: 0, scope: both }
+      - { name: db_files, value: 600, db_restart_required: 0, scope: both }
+      - {
+          name: log_archive_dest_1,
+          value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=TRBIPINF''"',
+          db_restart_required: 0,
+          scope: both,
+        }
+    service:
+      - { name: BIPINF_TAF, role: PRIMARY }
 
 # Oracle database housekeeping
 audit_housekeeping_period: 60
@@ -20,3 +98,26 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+tns_entries:
+  ptctrn:
+    - name: PROASYS
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PROASYS
+    - name: TROASYS
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: TROASYS
+    - name: TRBIPINF
+      port: 1521
+      host_list:
+        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: TRBIPINF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF
