@@ -24,8 +24,8 @@
         {{ stage }}/import_incident_rule_set.sh
       register: run_incident_rule_set_import
       failed_when:
-         - run_incident_rule_set_import.rc > 0
-         - not run_incident_rule_set_import.stderr is search('.*HMPPS OEM Rule Set.*already exists.*')
+        - run_incident_rule_set_import.rc > 0
+        - not run_incident_rule_set_import.stderr is search('.*HMPPS OEM Rule Set.*already exists.*')
 
     - pause:
         seconds: 30
