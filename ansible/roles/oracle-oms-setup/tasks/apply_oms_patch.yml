@@ -37,6 +37,25 @@
         path: "{{ omspatcher_stage }}/oms_property_file"
         state: absent
 
+    - name: Check status of OMS
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ oem_mw_home }}
+        {{ oem_mw_home }}/bin/emctl status oms | grep -c "^Oracle Management Server is Up" | cat
+      changed_when: false
+      register: oms_running
+
+    - name: Re-Start OMS After Patching
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oem_mw_home }}
+          {{ oem_mw_home }}/bin/emctl start oms
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+      when: oms_running.stdout == '0'
+
   # block
   become: true
   become_user: oracle
