@@ -14,9 +14,31 @@ db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
 
+OMS_SERVER: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "5"
+      minute: "30"
+      hour: "19"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "0,1,2,3,4,6"
+      minute: "30"
+      hour: "19"
+      # job: command generated in rman-backup-setup
+
+
 db_configs:
-  PCNOM:
-    db_name: PCNOM
+  RCVCAT:
+    rcvcat_db_name: PPRCVCAT
 
   TRDATP:
     db_name: TRDATP
