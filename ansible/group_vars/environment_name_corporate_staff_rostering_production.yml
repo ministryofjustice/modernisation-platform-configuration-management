@@ -73,3 +73,15 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+tns_entries:
+  pd:
+    - name: PPIWFM
+      port: 1521
+      host_list:
+        - pd-csr-db-a.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
+      service_name: IWFM_TAF
+    - name: RCVCAT
+      port: 1521
+      host_list: "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF

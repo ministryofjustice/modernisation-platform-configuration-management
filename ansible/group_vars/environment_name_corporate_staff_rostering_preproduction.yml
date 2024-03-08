@@ -72,3 +72,15 @@ housekeeping_cron:
       weekday: "0"
       minute: "30"
       hour: "08"
+
+tns_entries:
+  pp:
+    - name: PPIWFM
+      port: 1521
+      host_list:
+        - pp-csr-db-a.corporate-staff-rostering.hmpps-preproduction.modernisation-platform.internal
+      service_name: IWFM_TAF
+    - name: RCVCAT
+      port: 1521
+      host_list: "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF
