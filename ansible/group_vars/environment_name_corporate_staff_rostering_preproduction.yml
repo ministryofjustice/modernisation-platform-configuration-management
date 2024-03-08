@@ -23,8 +23,8 @@ OEM_AGENT_VERSION: 13.5.0.0.0
 
 # rman details
 rman_backup_script: rman_backup.sh
-recovery_catalog: 0
-#recovery_catalog_server: "{{ OMS_SERVER }}"
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
