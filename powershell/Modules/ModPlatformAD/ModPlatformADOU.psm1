@@ -57,13 +57,15 @@ function Set-OUsAndApplyGPOs {
     param (
         [Parameter(Mandatory=$true)]
         [psobject]$OUs,
+        [string]$ParentOUs = "",
         [string]$DomainNameFQDN # Adjust the base domain DN as necessary
     )
 
     $ParentDN = ($DomainNameFQDN -split "\." | ForEach-Object { "DC=$_" }) -join ","
     
     foreach ($ou in $OUs) {
-        $ouDN = "OU=$($ou.name),$ParentDN"
+        $currentOUDN = "OU=$($ou.name)"
+        $ouDN = if ($ParentOUs -eq "") { "$currentOUDN,$DomainDN" } else { "$currentOUDN,$ParentOUs,$DomainDN" }
         
         # Check and create OU if it doesn't exist
         if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouDN'" -ErrorAction SilentlyContinue)) {
@@ -86,7 +88,9 @@ function Set-OUsAndApplyGPOs {
         
         # Recursive call for children OUs, if any, with the current OU DN as the new parent DN
         if ($ou.children) {
-            CreateOUsAndApplyGPOs -OUs $ou.children -ParentDN $ouDN
+            $newParentOUs = if ($ParentOUs -eq "") { "$currentOUDN" } else { "$currentOUDN,$ParentOUs" }
+            # Increase indentation for child OUs for visual hierarchy
+            Set-OUHierarchy -OUs $ou.children -ParentOUs $newParentOUs -DomainNameFQDN $DomainNameFQDN
         }
     }
 }

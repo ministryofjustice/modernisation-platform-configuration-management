@@ -19,30 +19,15 @@
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory=$true)][string]$DomainNameFQDN
+    [Parameter(Mandatory=$true)][string]$DomainNameFQDN,
+    [Parameter(Mandatory=$true)][string]$ConfigFilePath
 )
 
 Import-Module ModPlatformAD -Force
 Import-Module powershell-yaml -Force
 
-$configFileName = ""
-
-switch($DomainNameFQDN) {
-    "prod.loc" {
-        $configFileName = "ADConfigProdPreProd.yaml"
-    }
-    "test.loc" {
-        $configFileName = "ADConfigDevTest.yaml"
-    }
-    default {
-        Write-Error "Invalid input value. Please provide either 'azure.hmpp.root' (Prod/PreProd) or 'azure.noms.root' (Dev/Test)."
-        exit 1
-    }
-}
-
 # Load YAML
-$yaml = Get-Content -Raw -Path $PSScriptRoot + "\$configFileName"
-$config = ConvertFrom-Yaml -InputObject $yaml
+$config = Get-Content -Raw -Path $ConfigFilePath | ConvertFrom-Yaml
 
 Set-OUsAndApplyGPOs -OUs $config.ActiveDirectory.OUs -DomainNameFQDN $config.ActiveDirectory.DomainNameFQDN
 
