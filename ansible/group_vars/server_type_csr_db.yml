@@ -73,3 +73,34 @@ oracle_install_group: oinstall
 oracle_inventory: /u01/app/oraInventory
 database_home: /u01/app/oracle/product/19c/db_1
 grid_home: /u01/app/oracle/product/19c/gridhome_1
+
+tns_entries:
+  pd:
+    - name: PDIWFM
+      port: 1521
+      host_list:
+        - pd-csr-db-a.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
+      service_name: PDIWFM
+
+    - name: DRIWFM
+      port: 1521
+      host_list:
+        - pd-csr-db-b.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
+      service_name: DRIWFM
+
+    - name: RCVCAT
+      port: 1521
+      host_list: "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF
+
+  pp:
+    - name: PPIWFM
+      port: 1521
+      host_list:
+        - pp-csr-db-a.corporate-staff-rostering.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPIWFM
+      
+    - name: RCVCAT
+      port: 1521
+      host_list: "{{ OMS_SERVER }}"
+      service_name: RCVCAT_TAF
