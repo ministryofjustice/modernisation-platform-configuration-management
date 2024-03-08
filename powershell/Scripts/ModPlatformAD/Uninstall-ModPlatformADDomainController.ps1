@@ -7,6 +7,10 @@
     By default derives the AD configuration from EC2 tags (environment-name or domain-name), or specify DomainNameFQDN parameter.
     EC2 requires permissions to get tags and the aws cli.
     Exits with 3010 if reboot required and script requires re-running. For use in SSM docs
+    Example retrieval of local admin password:
+      aws ssm get-parameter --name ec2-user_pem --with-decryption --query Parameter.Value --output text --profile hmpps-domain-services-test > tmp.key
+      aws ec2 get-password-data --instance-id i-0aa02abedd9572e19 --profile core-shared-services-production-ad --priv-launch-key tmp.key
+      rm tmp.key
 
 .PARAMETER DomainNameFQDN
     Optionally specify the FQDN of the domain name to join

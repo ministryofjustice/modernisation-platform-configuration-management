@@ -37,8 +37,14 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
   Exit 3010 # triggers reboot if running from SSM Doc
 }
 
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
-$ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
-
-Install-WindowsFeature -Name AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
-Write-Output "Install-ADDSDomainController -DomainName $ADConfig.DomainNameFQDN -InstallDns:$true -Credential $ADAdminCredential -SafeModeAdministratorPassword $ADSafeModeAdministratorPassword -NoRebootOnCompletion -Force"
+$DFSReplicationStatus = Get-Service "DFS Replication" -ErrorAction SilentlyContinue
+if ($DFSReplicationStatus -eq $null) {
+  $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
+  $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
+  Install-WindowsFeature -Name AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
+  Install-ADDSDomainController -DomainName $ADConfig.DomainNameFQDN -InstallDns:$true -Credential $ADAdminCredential -SafeModeAdministratorPassword $ADSafeModeAdministratorPassword -NoRebootOnCompletion -Force
+  Exit 3010 # triggers reboot if running from SSM Doc
+} else {
+  $Services='DNS','DFS Replication','Intersite Messaging','Kerberos Key Distribution Center','NetLogon',’Active Directory Domain Services’
+  ForEach ($Service in $Services) {Get-Service $Service | Select-Object Name, Status}
+}
