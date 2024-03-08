@@ -6,7 +6,7 @@
 #  Metric Extensions are found in the files/metric_extensions subdirectory with
 #  further subdirectories for Metric Extensions which are specific to a particular
 #  application (such as Delius) or common Metric Extensions which are more
-#  generic and may be applicable to multiple or all applications. 
+#  generic and may be applicable to multiple or all applications.
 #
 
 - name: Get Metric Extensions
@@ -19,20 +19,19 @@
   register: get_metric_extensions
   loop: "{{ application_groups + ['common'] }}"
   loop_control:
-     loop_var: application_name
+    loop_var: application_name
 
 - debug:
     var: get_metric_extensions
 
 - name: Populate List of Metric Extensions
   set_fact:
-     metric_extensions: "{{ get_metric_extensions.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
+    metric_extensions: "{{ get_metric_extensions.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
 
 - debug:
-     var: metric_extensions
+    var: metric_extensions
 
 - block:
-
     - name: Copy EMCLI Login Script
       ansible.builtin.template:
         src: emcli_login.sh.j2
@@ -44,8 +43,8 @@
     - name: Import Extensions
       include_tasks: import_metric_extension.yml
       vars:
-          metric_extension_path: "{{ metric_extension }}"
-          metric_extension_name: "{{ metric_extension.split('/')[-1] }}"
+        metric_extension_path: "{{ metric_extension }}"
+        metric_extension_name: "{{ metric_extension.split('/')[-1] }}"
       loop: "{{ metric_extensions }}"
       loop_control:
         loop_var: metric_extension
@@ -70,22 +69,22 @@
 
     - name: Get Versions
       debug:
-         var: get_metric_extensions_versions
+        var: get_metric_extensions_versions
 
     - name: Initialize Dictionary of Metric Extension Versions
       set_fact:
-         metric_extensions_versions: {}
+        metric_extensions_versions: {}
 
     - name: Create Dictionary of Metric Extension Versions
       set_fact:
-         metric_extensions_versions: "{{ metric_extensions_versions | combine({extension.split('|')[0]: extension.split('|')[1] }) }}"
+        metric_extensions_versions: "{{ metric_extensions_versions | combine({extension.split('|')[0]: extension.split('|')[1] }) }}"
       loop: "{{ get_metric_extensions_versions.stdout_lines | select('match','^EXTENSION=') | list | map('regex_replace','^EXTENSION=','') | list }}"
       loop_control:
-         loop_var: extension
-         
+        loop_var: extension
+
     - name: Show Versions
       debug:
-         var: metric_extensions_versions
+        var: metric_extensions_versions
 
     # All Metric Extensions are Designed for the Host Target
     # Note from EM 13c Licensing Doc: https://docs.oracle.com/cd/E63000_01/OEMLI/base_functionality.htm
@@ -93,18 +92,18 @@
     # Note: Metric Extensions are available free of charge only for the host target and not for other targets.
     - name: Save Latest Versions of Metric Extensions as Deployable Draft
       shell: |
-             echo "running emcli_login.sh"
-             . {{ stage }}/emcli_login.sh
-             {{ emcli }} save_metric_extension_draft -target_type="host" -name="{{ extension | regex_replace('\$','\\$') }}" -version="{{ metric_extensions_versions[extension] }}"
+        echo "running emcli_login.sh"
+        . {{ stage }}/emcli_login.sh
+        {{ emcli }} save_metric_extension_draft -target_type="host" -name="{{ extension | regex_replace('\$','\\$') }}" -version="{{ metric_extensions_versions[extension] }}"
       loop: "{{ metric_extensions_versions.keys() }}"
       loop_control:
-         loop_var: extension
+        loop_var: extension
       register: save_as_draft
-      failed_when: 
-         - save_as_draft.stderr != ''
-         - not save_as_draft.stderr is search('.*Only metric extensions in editable status can be saved as a deployable draft.*')
+      failed_when:
+        - save_as_draft.stderr != ''
+        - not save_as_draft.stderr is search('.*Only metric extensions in editable status can be saved as a deployable draft.*')
       changed_when:
-         - save_as_draft.stderr == ''
+        - save_as_draft.stderr == ''
 
     - pause:
         seconds: 30
@@ -128,13 +127,12 @@
           ====================================================================================
 
   always:
-
-     - name: Remove EMCLI Login Script
-       file:
-          path: "{{ stage }}/{{ file_name }}"
-          state: absent
-       loop:
-           - emcli_login.sh
-           - get_metric_extensions_versions.sql
-       loop_control:
-           loop_var: file_name 
+    - name: Remove EMCLI Login Script
+      file:
+        path: "{{ stage }}/{{ file_name }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - get_metric_extensions_versions.sql
+      loop_control:
+        loop_var: file_name

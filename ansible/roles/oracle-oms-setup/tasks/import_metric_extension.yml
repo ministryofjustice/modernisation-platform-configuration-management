@@ -1,37 +1,36 @@
 # Imports a Single Metric Extension
 - block:
-
     - name: Ensure Metric Build Directory is Empty
       file:
-         path: "{{ stage }}/metric_extension"
-         state: absent
+        path: "{{ stage }}/metric_extension"
+        state: absent
 
-    - name: Create New Metric Build Directory 
+    - name: Create New Metric Build Directory
       file:
-         path: "{{ stage }}/metric_extension"
-         state: directory
+        path: "{{ stage }}/metric_extension"
+        state: directory
 
     - name: Copy Metric Components
       ansible.builtin.copy:
         src: "{{ metric_extension_component }}"
         dest: "{{ stage }}/metric_extension"
       loop:
-          - "{{ metric_extension_path }}/collection"
-          - "{{ metric_extension_path }}/metadata"
-          - "{{ metric_extension_path }}/scripts"
-          - "{{ metric_extension_path}}/mea.xml"
+        - "{{ metric_extension_path }}/collection"
+        - "{{ metric_extension_path }}/metadata"
+        - "{{ metric_extension_path }}/scripts"
+        - "{{ metric_extension_path}}/mea.xml"
       loop_control:
-         loop_var: metric_extension_component
+        loop_var: metric_extension_component
 
     - name: Remove Previous Metric Extension Zip
       file:
-         path: "{{ stage }}/{{ metric_extension_name }}.zip"
-         state: absent
+        path: "{{ stage }}/{{ metric_extension_name }}.zip"
+        state: absent
 
     - name: Create Metric Extension Zip
       shell: |
-             cd {{ stage }}/metric_extension
-             zip -r ../{{ metric_extension_name }}.zip *
+        cd {{ stage }}/metric_extension
+        zip -r ../{{ metric_extension_name }}.zip *
 
     - name: Import Metric Extension
       become_user: oracle
@@ -42,8 +41,7 @@
       register: import_metric_extension
 
   always:
-
-     - name: Remove Metric Extension Zip File
-       file:
-          path: "{{ stage }}/{{ metric_extension_name }}.zip"
-          state: absent
+    - name: Remove Metric Extension Zip File
+      file:
+        path: "{{ stage }}/{{ metric_extension_name }}.zip"
+        state: absent
