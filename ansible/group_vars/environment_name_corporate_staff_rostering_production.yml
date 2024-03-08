@@ -17,6 +17,9 @@ osbws_additional_configs:
   - name: osbws_prod
     s3_bucket_name: csr-db-backup-bucket20230822131807238100000001
 
+OMS_SERVER: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
 # rman details
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
@@ -37,7 +40,7 @@ rman_backup_cron:
 
 db_configs:
   RCVCAT:
-    rcvcat_db_name: PPRCVCAT
+    rcvcat_db_name: PRCVCAT
   PIWFM:
     db_name: PIWFM
     db_unique_name: PIWFM
