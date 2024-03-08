@@ -1,0 +1,11 @@
+<TargetCollectionExt EXT_NAME="ME$AUDITED_INTERACTION_CHECKSUM_VALIDATION" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$AUDITED_INTERACTION_CHECKSUM_VALIDATION" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="4" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$AUDITED_INTERACTION_CHECKSUM_VALIDATION">
+		<Condition COLUMN_NAME="RANGE_END_DAYS_AGO" CRITICAL="4" OPERATOR="GT" OCCURRENCES="1" MESSAGE="No validated audit data for %keyValue% database for over %value% days." CLEAR_MESSAGE="Validated audit data for %keyValue% database found."/>
+		<Condition COLUMN_NAME="CHECKSUM_VALIDATION_STATUS" CRITICAL="Y" OPERATOR="NE" OCCURRENCES="1" MESSAGE="An error has been found validating the checksum for the %keyValue% database." CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
+		<Condition COLUMN_NAME="RANGE_DISCONTINUITY" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="A gap has been found in the audited interaction checksum validation range for the %keyValue% database." CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
