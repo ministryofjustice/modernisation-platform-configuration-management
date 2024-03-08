@@ -90,7 +90,8 @@ tns_entries:
 
     - name: RCVCAT
       port: 1521
-      host_list: "{{ OMS_SERVER }}"
+      host_list: 
+        - "{{ OMS_SERVER }}"
       service_name: RCVCAT_TAF
 
   pp:
@@ -102,5 +103,6 @@ tns_entries:
       
     - name: RCVCAT
       port: 1521
-      host_list: "{{ OMS_SERVER }}"
+      host_list: 
+        - "{{ OMS_SERVER }}"
       service_name: RCVCAT_TAF
