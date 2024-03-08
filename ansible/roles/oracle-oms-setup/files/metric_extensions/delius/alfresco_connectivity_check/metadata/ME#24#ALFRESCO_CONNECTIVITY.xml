@@ -1,0 +1,31 @@
+<TargetMetadataExt EXT_NAME="ME$ALFRESCO_CONNECTIVITY" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$ALFRESCO_CONNECTIVITY" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$ALFRESCO_CONNECTIVITY">Alfresco Connectivity</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$ALFRESCO_CONNECTIVITY">Check Connectivity to Alfresco from Within Database</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="CONNECTIVITY_STATUS" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_CONNECTIVITYCONNECTIVITY_STATUS">Connectivity Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="CONNECTIVITY_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_CONNECTIVITYCONNECTIVITY_MESSAGE">Connectivity Message</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/alfresco_connectivity.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

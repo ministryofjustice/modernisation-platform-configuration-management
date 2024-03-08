@@ -1,0 +1,73 @@
+<TargetMetadataExt EXT_NAME="ME$AUDITED_INTERACTION_CHECKSUM_VALIDATION" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$AUDITED_INTERACTION_CHECKSUM_VALIDATION" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATION">Audited Interaction Checksum Validation</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATION">Audited Interaction Data Repository Checksum Validation</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="CLIENT_DB" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONCLIENT_DB">Client Database</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RESETLOGS_DATE_TIME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRESETLOGS_DATE_TIME">Resetlogs Date Time</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RANGE_START_DATE_TIME" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRANGE_START_DATE_TIME">Range Start Date Time</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RANGE_END_DATE_TIME" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRANGE_END_DATE_TIME">Range End Date Time</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RANGE_START_DAYS_AGO" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRANGE_START_DAYS_AGO">Range Start Days Ago</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RANGE_END_DAYS_AGO" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRANGE_END_DAYS_AGO">Range End Days Ago</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ROW_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONROW_COUNT">Audited Interaction Rows Added</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="DATA_CHECKSUM" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONDATA_CHECKSUM">Data Checksum Value</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="CHECKSUM_VALIDATION_STATUS" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONCHECKSUM_VALIDATION_STATUS">Checksum Validation Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RANGE_DISCONTINUITY" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AUDITED_INTERACTION_CHECKSUM_VALIDATIONRANGE_DISCONTINUITY">Range Discontinuity</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/checksum_validation.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

@@ -85,3 +85,15 @@
     - amibuild
     - ec2provision
     - configure_ssh
+
+- import_tasks: configure_database_credentials.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - configure_database_credentials
+
+- import_tasks: import_metric_extensions.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - import_metric_extensions
