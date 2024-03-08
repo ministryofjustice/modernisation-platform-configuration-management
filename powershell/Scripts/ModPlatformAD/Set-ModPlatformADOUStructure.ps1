@@ -23,7 +23,10 @@ param (
     [Parameter(Mandatory=$true)][string]$ConfigFilePath
 )
 
+Install-Module -Name powershell-yaml -Force -SkipPublisherCheck
+
 Import-Module ModPlatformAD -Force
+
 Import-Module powershell-yaml -Force
 
 # Load YAML
