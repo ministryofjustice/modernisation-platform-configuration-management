@@ -34,7 +34,6 @@ $ADSecret = Get-ModPlatformADSecret -ModPlatformADConfig $ADConfig
 
 $DFSReplicationStatus = Get-Service "DFS Replication" -ErrorAction SilentlyContinue
 if ($DFSReplicationStatus -ne $null) {
-  Import-Module ADDSDeployment
   $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   Uninstall-ADDSDomainController -Credential $ADAdminCredential -NoRebootOnCompletion -DemoteOperationMasterRole -ForceRemoval -Force
