@@ -1,0 +1,11 @@
+<TargetCollectionExt EXT_NAME="ME$DEFUNCT_SSM_WORKER" EXT_VERSION="4" TARGET_TYPE="host"><CollectionItem NAME="ME$DEFUNCT_SSM_WORKER" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="6" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$DEFUNCT_SSM_WORKER">
+		<Condition COLUMN_NAME="Defunct_SSM_Process_Count" CRITICAL="0" OPERATOR="GT" OCCURRENCES="2" MESSAGE="%value% defunct SSM worker processes found" CLEAR_MESSAGE="Alert for defunct SSM worker processes is cleared"/>
+		<Condition COLUMN_NAME="Long_Running_Process_Count" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% SSM shell processes have been running for over a day." CLEAR_MESSAGE="Long running SSM shell processes have been cleared."/>
+		<Condition COLUMN_NAME="Long_Running_SSM_Session_Worker" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% SSM Session Worker processes active for over a day" CLEAR_MESSAGE="Alert for %columnName% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$MATERIALIZED_VIEW_REFRESH_TIME" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$MATERIALIZED_VIEW_REFRESH_TIME" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$MATERIALIZED_VIEW_REFRESH_TIME">
+		<Condition COLUMN_NAME="TIME_SINCE_OLDEST_MV_REFRESH" CRITICAL="30" WARNING="15" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The oldest Materialized View refresh was over %value% minutes ago." CLEAR_MESSAGE="All Materialized Views have refreshed within tolerance."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

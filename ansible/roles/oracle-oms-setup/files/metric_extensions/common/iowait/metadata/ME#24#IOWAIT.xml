@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$IOWAIT" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$IOWAIT" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$IOWAIT">IO Wait Time</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$IOWAIT">Percentage of Time Spent on IO Wait</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="IOWAIT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$IOWAITIOWAIT">IO Wait Time</Label>
+<Unit NLSID="mext_unit_nlsid_PERCENTAGE">PERCENTAGE</Unit>
+<UnitCategory>PERCENTAGE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/iostat.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

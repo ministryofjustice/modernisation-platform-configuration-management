@@ -1,0 +1,32 @@
+<TargetMetadataExt EXT_NAME="ME$BLOCKED_SESSIONS_COUNT" EXT_VERSION="7" TARGET_TYPE="host"><Metric NAME="ME$BLOCKED_SESSIONS_COUNT" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$BLOCKED_SESSIONS_COUNT">Blocked Sessions Count</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$BLOCKED_SESSIONS_COUNT">Count of blocked sessions</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="Session_Identifier" TYPE="NUMBER" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLOCKED_SESSIONS_COUNTSession_Identifier">Session Identifier</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Session_Number" TYPE="NUMBER" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLOCKED_SESSIONS_COUNTSession_Number">Session Number</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Blocked_Sessions" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLOCKED_SESSIONS_COUNTBlocked_Sessions">Blocked Sessions</Label>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/blocked_sessions_count.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

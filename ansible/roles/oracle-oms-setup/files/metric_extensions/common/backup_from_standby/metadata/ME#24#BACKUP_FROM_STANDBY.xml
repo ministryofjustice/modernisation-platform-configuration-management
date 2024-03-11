@@ -1,0 +1,48 @@
+<TargetMetadataExt EXT_NAME="ME$BACKUP_FROM_STANDBY" EXT_VERSION="3" TARGET_TYPE="host"><Metric NAME="ME$BACKUP_FROM_STANDBY" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$BACKUP_FROM_STANDBY">Backup from Standby</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$BACKUP_FROM_STANDBY">Run a trial no-op backup from standby database to check it works</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="RMAN_STATUS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_FROM_STANDBYRMAN_STATUS">RMAN Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ORA_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_FROM_STANDBYORA_COUNT">ORA Error Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_FROM_STANDBYERROR_COUNT">Error Count</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ORA_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_FROM_STANDBYORA_MESSAGE">ORA Message</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_FROM_STANDBYERROR_MESSAGE">Error Message</Label>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/backup_from_standby.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

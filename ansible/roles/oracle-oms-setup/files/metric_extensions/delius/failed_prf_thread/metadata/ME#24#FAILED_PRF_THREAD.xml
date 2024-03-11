@@ -1,0 +1,34 @@
+<TargetMetadataExt EXT_NAME="ME$FAILED_PRF_THREAD" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$FAILED_PRF_THREAD" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$FAILED_PRF_THREAD">Failed PRF Thread</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$FAILED_PRF_THREAD">Detect failure of custom performance monitoring threads</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="COMPONENT_ID" TYPE="NUMBER" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$FAILED_PRF_THREADCOMPONENT_ID">Component ID</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="THREAD_ID" TYPE="NUMBER" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$FAILED_PRF_THREADTHREAD_ID">Thread ID</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Status" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$FAILED_PRF_THREADStatus">Thread Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/prf_thread_status.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

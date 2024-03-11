@@ -1,0 +1,44 @@
+<TargetMetadataExt EXT_NAME="ME$BLACKOUT_AGE" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$BLACKOUT_AGE" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$BLACKOUT_AGE">Blackout Age</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$BLACKOUT_AGE">Report Age of Oldest Blackout on Host in Days</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="Host_Blackout" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLACKOUT_AGEHost_Blackout">Host and Blackout Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Hostname" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLACKOUT_AGEHostname">Hostname</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Blackout_Name" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLACKOUT_AGEBlackout_Name">Blackout Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Start_Date" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLACKOUT_AGEStart_Date">Start Date</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Blackout_Age" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BLACKOUT_AGEBlackout_Age">Blackout Age</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/blackout_age.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

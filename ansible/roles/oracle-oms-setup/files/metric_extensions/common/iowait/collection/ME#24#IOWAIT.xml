@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$IOWAIT" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$IOWAIT" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="10" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$IOWAIT">
+		<Condition COLUMN_NAME="IOWAIT" CRITICAL="70" WARNING="50" OPERATOR="GT" OCCURRENCES="2" MESSAGE="Time spent on IO is %value% percent" CLEAR_MESSAGE="Alert for IO Wait is cleared"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$FAILED_PRF_THREAD" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$FAILED_PRF_THREAD" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$FAILED_PRF_THREAD">
+		<Condition COLUMN_NAME="Status" CRITICAL="2" OPERATOR="EQ" OCCURRENCES="1" MESSAGE="Failed PRF thread for %keyValue%" CLEAR_MESSAGE="No failed PRF threads"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
