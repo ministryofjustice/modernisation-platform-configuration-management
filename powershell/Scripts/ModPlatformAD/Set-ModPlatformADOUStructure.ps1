@@ -29,8 +29,11 @@ Import-Module ModPlatformAD -Force
 
 Import-Module powershell-yaml -Force
 
+$ParentDN = ($DomainNameFQDN -split "\." | ForEach-Object { "DC=$_" }) -join ","
+
 # Load YAML
 $config = Get-Content -Raw -Path $ConfigFilePath | ConvertFrom-Yaml
 
-Set-OUsAndApplyGPOs -OUs $config.ActiveDirectory.OUs -DomainNameFQDN $config.ActiveDirectory.DomainNameFQDN
-
+foreach ($ou in $config.ActiveDirectory.OUs) {
+    Set-OUsAndApplyGPOs -OUs $Ou -DomainNameFQDN $ParentDN
+}

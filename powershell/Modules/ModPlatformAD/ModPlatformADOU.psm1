@@ -56,52 +56,27 @@ function New-ADOrganizationalUnit {
 function Set-OUsAndApplyGPOs {
     param (
         [Parameter(Mandatory=$true)]
-        [psobject]$OUs,
-        [string]$ParentOUs = "",
-        [string]$DomainNameFQDN # Adjust the base domain DN as necessary
+        [psobject]$Ou,
+        [Parameter(Mandatory=$true)]
+        [string]$Path # Adjust the base domain DN as necessary
     )
+    Write-Output "Creating OU: $($ou.name)"
+    Write-Output "Creating Path: $Path"
+    Write-Output "Description: $($ou.description)"
 
-    $ParentDN = ($DomainNameFQDN -split "\." | ForEach-Object { "DC=$_" }) -join ","
-    
-    foreach ($ou in $OUs) {
-        $currentOUDN = "OU=$($ou.name)"
-        $ouDN = if ($ParentOUs -eq "") { "$currentOUDN,$DomainDN" } else { "$currentOUDN,$ParentOUs,$DomainDN" }
-        
-        # Check and create OU if it doesn't exist
-        if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouDN'" -ErrorAction SilentlyContinue)) {
-            New-ADOrganizationalUnit -Name $ou.name -Path $ParentDN -ProtectedFromAccidentalDeletion $false
-            Write-Output "Created OU: $($ou.name) at $ouDN"
-        }
-        
-        # # Apply GPOs TODO: put this back in and test recursively down the stack
-        # foreach ($gpoName in $ou.GPOs) {
-        #     # Assuming GPOs already exist, find and link them to the OU
-        #     $gpo = Get-GPO -Name $gpoName -ErrorAction SilentlyContinue
-        #     if ($gpo) {
-        #         New-GPLink -Name $gpoName -Target $ouDN
-        #         Write-Output "Linked GPO: $gpoName to OU: $($ou.name)"
-        #     }
-        #     else {
-        #         Write-Output "GPO $gpoName does not exist and cannot be linked to OU: $($ou.name)"
-        #     }
-        # }
-        
-        # Recursive call for children OUs, if any, with the current OU DN as the new parent DN
-        if ($ou.children) {
-            $newParentOUs = if ($ParentOUs -eq "") { "$currentOUDN" } else { "$currentOUDN,$ParentOUs" }
-            # Increase indentation for child OUs for visual hierarchy
-            Set-OUHierarchy -OUs $ou.children -ParentOUs $newParentOUs -DomainNameFQDN $DomainNameFQDN
+    # Create the OU in AD
+    New-ADOrganizationalUnit -Name $ou.name -Path $path -Description $ou.description -PassThru
+
+    # Append the OU name to the path for the next level
+    $ouPath = "OU=$($ou.name),$path"
+
+    # If the OU has children, call the function recursively
+    if ($ou.children) {
+        foreach ($child in $ou.children) {
+            Create-OU -ou $child -path $ouPath
         }
     }
 }
-
-# Load YAML
-# $yamlContent = Get-Content -Path "path\to\your\file.yaml" -Raw
-# $adStructure = ConvertFrom-Yaml -Yaml $yamlContent
-
-# # Start the recursive creation and linking process
-# CreateOUsAndApplyGPOs -OUs $adStructure.ActiveDirectory.OUs
-
 
 Export-ModuleMember -Function New-ADOrganizationalUnit
 Export-ModuleMember -Function Set-OUsAndApplyGPOs
