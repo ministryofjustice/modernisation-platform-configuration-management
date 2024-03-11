@@ -36,6 +36,6 @@ $DFSReplicationStatus = Get-Service "DFS Replication" -ErrorAction SilentlyConti
 if ($DFSReplicationStatus -ne $null) {
   $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
-  Uninstall-ADDSDomainController -Credential $ADAdminCredential -NoRebootOnCompletion -Force
+  Uninstall-ADDSDomainController -Credential $ADAdminCredential -NoRebootOnCompletion -DemoteOperationMasterRole -ForceRemoval -Force
   Exit 3010 # triggers reboot if running from SSM Doc
 }
