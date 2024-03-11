@@ -9,6 +9,11 @@
         state: directory
         recurse: yes
 
+    - name: Remove previous download of emcli to allow download
+      file:
+        path: "{{ app_dir }}/emcli/emclikit.jar"
+        state: absent
+
     - name: Get emcli from OMS server
       ansible.builtin.shell: |
         set -eo pipefail
@@ -60,6 +65,7 @@
       loop:
         - emcli_setup.sh
         - add_targets.sh
+      tags: clean_up
 
   # block
   become: true
