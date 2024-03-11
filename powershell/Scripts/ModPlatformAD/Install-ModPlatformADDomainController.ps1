@@ -39,12 +39,26 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
 
 $DFSReplicationStatus = Get-Service "DFS Replication" -ErrorAction SilentlyContinue
 if ($DFSReplicationStatus -eq $null) {
+  Import-Module ADDSDeployment
   $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   Install-WindowsFeature -Name AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
-  Install-ADDSDomainController -DomainName $ADConfig.DomainNameFQDN -InstallDns:$true -Credential $ADAdminCredential -SafeModeAdministratorPassword $ADSafeModeAdministratorPassword -NoRebootOnCompletion -Force
+  Install-ADDSDomainController `
+   -DomainName $ADConfig.DomainNameFQDN `
+   -InstallDns:$true `
+   -Credential $ADAdminCredential `
+   -SafeModeAdministratorPassword $ADSafeModeAdministratorPassword `
+   -NoRebootOnCompletion `
+   -NoGlobalCatalog:$false `
+   -CreateDnsDelegation:$false `
+   -CriticalReplicationOnly:$false `
+   -DatabasePath "C:\Windows\NTDS" `
+   -LogPath "C:\Windows\NTDS" `
+   -SysvolPath "C:\Windows\SYSVOL" `
+   -SiteName "Default-First-Site-Name" `
+   -Force
   Exit 3010 # triggers reboot if running from SSM Doc
 } else {
-  $Services='DNS','DFS Replication','Intersite Messaging','Kerberos Key Distribution Center','NetLogon',’Active Directory Domain Services’
+  $Services='DNS','DFS Replication','Intersite Messaging','Kerberos Key Distribution Center','NetLogon','Active Directory Domain Services'
   ForEach ($Service in $Services) {Get-Service $Service | Select-Object Name, Status}
 }
