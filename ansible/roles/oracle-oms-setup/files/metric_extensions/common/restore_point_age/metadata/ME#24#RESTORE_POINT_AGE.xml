@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$RESTORE_POINT_AGE" EXT_VERSION="3" TARGET_TYPE="host"><Metric NAME="ME$RESTORE_POINT_AGE" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$RESTORE_POINT_AGE">Restore Point Age</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$RESTORE_POINT_AGE">Maximum Restore Point Age</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="max_restore_point_age" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEmax_restore_point_age">Maximum Restore Point Age</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/max_restore_point_age.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

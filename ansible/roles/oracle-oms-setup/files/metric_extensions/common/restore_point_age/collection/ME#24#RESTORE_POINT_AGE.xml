@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$RESTORE_POINT_AGE" EXT_VERSION="3" TARGET_TYPE="host"><CollectionItem NAME="ME$RESTORE_POINT_AGE" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$RESTORE_POINT_AGE">
+		<Condition COLUMN_NAME="max_restore_point_age" CRITICAL="21" WARNING="7" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE" CLEAR_MESSAGE="Alert for %columnName% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

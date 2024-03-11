@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$DEADLOCKS" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$DEADLOCKS" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$DEADLOCKS">
+		<Condition COLUMN_NAME="Deadlock_Count" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% deadlocks found" CLEAR_MESSAGE="Alert for deadock count is cleared"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

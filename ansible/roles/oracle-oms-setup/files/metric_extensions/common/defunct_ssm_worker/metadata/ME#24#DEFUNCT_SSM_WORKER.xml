@@ -1,0 +1,38 @@
+<TargetMetadataExt EXT_NAME="ME$DEFUNCT_SSM_WORKER" EXT_VERSION="4" TARGET_TYPE="host"><Metric NAME="ME$DEFUNCT_SSM_WORKER" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$DEFUNCT_SSM_WORKER">Defunct SSM Worker Processes</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$DEFUNCT_SSM_WORKER">Count Defunct SSM Worker Processes</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="Defunct_SSM_Process_Count" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$DEFUNCT_SSM_WORKERDefunct_SSM_Process_Count">Defunct SSM Process Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Long_Running_Process_Count" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$DEFUNCT_SSM_WORKERLong_Running_Process_Count">Long Running Process Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="Long_Running_SSM_Session_Worker" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$DEFUNCT_SSM_WORKERLong_Running_SSM_Session_Worker">Long Running SSM Session Worker</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/count_defunct_and_long_running_ssm_processes.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

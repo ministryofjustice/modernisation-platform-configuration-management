@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$DATA_GUARD_ACTIVE_TARGET" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$DATA_GUARD_ACTIVE_TARGET" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$DATA_GUARD_ACTIVE_TARGET">Data Guard Active Target</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$DATA_GUARD_ACTIVE_TARGET">Check that the Data Guard Active Target is the First Standby</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="Active_Target_1st_Standby" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$DATA_GUARD_ACTIVE_TARGETActive_Target_1st_Standby">Active Target is 1st Standby</Label>
+<Unit NLSID="mext_unit_nlsid_BOOLEAN">BOOLEAN</Unit>
+<UnitCategory>BOOLEAN</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/active_target.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

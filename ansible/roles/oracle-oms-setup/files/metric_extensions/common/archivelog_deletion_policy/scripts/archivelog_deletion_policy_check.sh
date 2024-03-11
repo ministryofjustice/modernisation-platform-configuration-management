@@ -4,17 +4,13 @@
 # instance where backups are not being run.
 #
 
-#  When the agent runs on engineering hosts the open file limit is set by the root user at boot time
-#  (unless agent is restarted manually), so the process limit may be less than that specified in .bash_profile.
-#  Check if this is the case and override the process limit if required to prevent an error being thrown.
-PROC_HARD_LIMIT=$(ulimit -Hn)
-PROFILE_PROC_LIMIT=$(grep -E "ulimit.*-u.*-n" ~/.bash_profile | sed -r 's/.*-n ([[:digit:]]+).*/\1/')
+. ~/.bash_profile
 
-if [[ ${PROFILE_PROC_LIMIT} -gt ${PROC_HARD_LIMIT} ]];
-then
-   source <(sed -r "s/ulimit -u ([[:digit:]]+) -n ([[:digit:]]+)/ulimit -u \1 -n ${PROC_HARD_LIMIT}/" ~/.bash_profile)
-else
-   . ~/.bash_profile
+# If run on an instance hosting OEM we need to explicitly set up the database environment
+if srvctl config database -d EMREP > /dev/null; then
+        export ORAENV_ASK=NO
+        export ORACLE_SID=EMREP
+        . oraenv >/dev/null
 fi
 
 # Check if Archivelog Deletion Policy requires a backup

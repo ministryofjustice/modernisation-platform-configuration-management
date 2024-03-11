@@ -1,0 +1,22 @@
+#!/bin/bash
+
+. ~/.bash_profile
+
+# Exit without failure if database is not up
+srvctl status database -d $ORACLE_SID >/dev/null || exit 0
+
+sqlplus -s / as sysdba<<EOSQL
+SET PAGES 0
+SET LINES 40
+SET FEEDBACK OFF
+SET ECHO OFF
+SELECT
+    s.value||'|'|| p.value
+FROM
+         v\$sysstat s
+    CROSS JOIN v\$parameter p
+WHERE
+        s.name = 'session pga memory'
+    AND p.name = 'pga_aggregate_limit';
+EXIT
+EOSQL

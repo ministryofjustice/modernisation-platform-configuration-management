@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$STANDBY_PARAMETER_COMPARISON" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$STANDBY_PARAMETER_COMPARISON" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$STANDBY_PARAMETER_COMPARISON">
+		<Condition COLUMN_NAME="STANDBY_VALUE" CRITICAL="ALWAYS_IN_ERROR_IF_DATA_FOUND" OPERATOR="NE" OCCURRENCES="1" MESSAGE="Mismatch in database parameters for %keyValue%" CLEAR_MESSAGE="No database parameter mismatch for %keyValue%"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

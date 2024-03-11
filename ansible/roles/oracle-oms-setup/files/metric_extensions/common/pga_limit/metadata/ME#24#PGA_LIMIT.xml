@@ -1,0 +1,44 @@
+<TargetMetadataExt EXT_NAME="ME$PGA_LIMIT" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$PGA_LIMIT" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$PGA_LIMIT">PGA_LIMIT</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$PGA_LIMIT">Percentage of pga_aggregate_limit currently in Use</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="session_pga_memory" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITsession_pga_memory">session_pga_memory</Label>
+<Unit NLSID="mext_unit_nlsid_BYTE">BYTE</Unit>
+<UnitCategory>DATA_SIZE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="pga_aggregate_limit" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_aggregate_limit">pga_aggregate_limit</Label>
+<Unit NLSID="mext_unit_nlsid_BYTE">BYTE</Unit>
+<UnitCategory>DATA_SIZE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="pga_limit_in_use" TYPE="NUMBER" COMPUTE_EXPR="(100*session_pga_memory)/pga_aggregate_limit">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_limit_in_use">pga_limit_in_use</Label>
+<Unit NLSID="mext_unit_nlsid_PERCENTAGE">PERCENTAGE</Unit>
+<UnitCategory>PERCENTAGE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/Untitled</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
