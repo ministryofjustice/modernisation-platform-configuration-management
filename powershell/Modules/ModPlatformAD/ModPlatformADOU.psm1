@@ -65,7 +65,7 @@ function Set-OUsAndApplyGPOs {
     Write-Output "Description: $($ou.description)"
 
     # Create the OU in AD
-    New-ADOrganizationalUnit -Name $ou.name -Path $path -Description $ou.description -PassThru
+    New-ADOrganizationalUnit -Name $ou.name -Path $path -Description $ou.description
 
     # Append the OU name to the path for the next level
     $ouPath = "OU=$($ou.name),$path"
@@ -73,7 +73,7 @@ function Set-OUsAndApplyGPOs {
     # If the OU has children, call the function recursively
     if ($ou.children) {
         foreach ($child in $ou.children) {
-            Create-OU -ou $child -path $ouPath
+            Set-OUsAndApplyGPOs -ou $child -path $ouPath
         }
     }
 }

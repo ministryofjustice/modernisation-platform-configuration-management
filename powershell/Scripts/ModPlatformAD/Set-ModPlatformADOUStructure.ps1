@@ -35,5 +35,5 @@ $ParentDN = ($DomainNameFQDN -split "\." | ForEach-Object { "DC=$_" }) -join ","
 $config = Get-Content -Raw -Path $ConfigFilePath | ConvertFrom-Yaml
 
 foreach ($ou in $config.ActiveDirectory.OUs) {
-    Set-OUsAndApplyGPOs -OUs $Ou -DomainNameFQDN $ParentDN
+    Set-OUsAndApplyGPOs -OU $Ou -Path $ParentDN
 }
