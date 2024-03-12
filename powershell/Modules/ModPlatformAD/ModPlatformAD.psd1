@@ -78,7 +78,7 @@ FunctionsToExport = 'Rename-ModPlatformADComputer', 'Add-ModPlatformADComputer',
                'Remove-ModPlatformADComputer', 'Get-ModPlatformADConfig', 
                'Get-ModPlatformADSecret', 'Get-ModPlatformADJoinCredential', 
                'Get-ModPlatformADAdminCredential', 
-               'Get-ModPlatformADSafeModeAdministratorPassword','Set-OUsAndApplyGPOs','Install-ModPlatformADDomain','New-ADOrganizationalUnit'
+               'Get-ModPlatformADSafeModeAdministratorPassword','Set-OUsAndApplyGPOs','Install-ModPlatformADDomain' #,'New-ADOrganizationalUnit'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
