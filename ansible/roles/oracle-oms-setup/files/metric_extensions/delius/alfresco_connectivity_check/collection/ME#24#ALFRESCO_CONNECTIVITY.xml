@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$ALFRESCO_CONNECTIVITY" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$ALFRESCO_CONNECTIVITY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$ALFRESCO_CONNECTIVITY">
+		<Condition COLUMN_NAME="CONNECTIVITY_STATUS" CRITICAL="SUCCESS" OPERATOR="NE" OCCURRENCES="1" MESSAGE="Alfresco connectivity has failed %CONNECTIVITY_MESSAGE%" CLEAR_MESSAGE="Alfresco connectivity status is %value%"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

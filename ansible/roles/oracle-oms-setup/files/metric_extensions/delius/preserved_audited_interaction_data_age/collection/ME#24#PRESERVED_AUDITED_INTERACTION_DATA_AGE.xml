@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$PRESERVED_AUDITED_INTERACTION_DATA_AGE" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$PRESERVED_AUDITED_INTERACTION_DATA_AGE" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$PRESERVED_AUDITED_INTERACTION_DATA_AGE">
+		<Condition COLUMN_NAME="data_age" CRITICAL="40" WARNING="30" OPERATOR="GT" OCCURRENCES="1" MESSAGE="Most recent AUDITED_INTERACTION data preserved for %keyValue% is %value% days old." CLEAR_MESSAGE="Most recent AUDITED_INTERACTION data preserved for %keyValue% is %value% days old."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

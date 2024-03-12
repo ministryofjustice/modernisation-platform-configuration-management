@@ -25,7 +25,7 @@ Import-Module ModPlatformAD -Force
 $ErrorActionPreference = "Stop"
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
-$ADCredential = Get-ModPlatformADCredential -ModPlatformADConfig $ADConfig
+$ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 if (Remove-ModPlatformADComputer -ModPlatformADCredential $ADCredential) {
   Exit 3010 # triggers reboot if running from SSM Doc
 }

@@ -22,7 +22,9 @@ ami_roles_list:
   - oracle-19c-delius
   - oracle-db-bootstrap
 
-ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+# ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+
+ansible_aws_ssm_bucket_name: ldap-dev-migration20240123173113114100000001
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"

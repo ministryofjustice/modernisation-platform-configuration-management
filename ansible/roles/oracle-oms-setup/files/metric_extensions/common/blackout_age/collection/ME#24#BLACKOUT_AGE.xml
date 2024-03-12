@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$BLACKOUT_AGE" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$BLACKOUT_AGE" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$BLACKOUT_AGE">
+		<Condition COLUMN_NAME="Blackout_Age" CRITICAL="2.5" WARNING="1.5" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% for %keyValue% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE_WITH_KEY" CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

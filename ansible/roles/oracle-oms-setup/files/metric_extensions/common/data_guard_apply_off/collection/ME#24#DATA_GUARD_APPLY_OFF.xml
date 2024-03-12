@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$DATA_GUARD_APPLY_OFF" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$DATA_GUARD_APPLY_OFF" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="6" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$DATA_GUARD_APPLY_OFF">
+		<Condition COLUMN_NAME="INTENDED_STATE" CRITICAL="APPLY-OFF" OPERATOR="CONTAINS" OCCURRENCES="1" MESSAGE="Redo Apply is disabled for the %keyValue% database." CLEAR_MESSAGE="Redo Apply is enabled for the %keyValue% database."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

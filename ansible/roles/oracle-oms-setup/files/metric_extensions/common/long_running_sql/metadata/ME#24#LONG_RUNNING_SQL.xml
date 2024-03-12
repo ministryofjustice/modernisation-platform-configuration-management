@@ -1,0 +1,24 @@
+<TargetMetadataExt EXT_NAME="ME$LONG_RUNNING_SQL" EXT_VERSION="3" TARGET_TYPE="host"><Metric NAME="ME$LONG_RUNNING_SQL" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$LONG_RUNNING_SQL">Long Running SQL</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$LONG_RUNNING_SQL">Detect longest running SQL still active in the database</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="LONGEST_CURRENTLY_ACTIVE_SQL" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$LONG_RUNNING_SQLLONGEST_CURRENTLY_ACTIVE_SQL">Longest Currently Active SQL</Label>
+<Unit NLSID="mext_unit_nlsid_SECOND">SECOND</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/long_running_sql.sql</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$ARCHIVELOG_DELETION_POLICY" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$ARCHIVELOG_DELETION_POLICY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$ARCHIVELOG_DELETION_POLICY">
+		<Condition COLUMN_NAME="OUTPUT_MESSAGE" CRITICAL="&#39;&#39;" OPERATOR="NE" OCCURRENCES="1" MESSAGE="%value%" CLEAR_MESSAGE="Archivelog Deletion Policy is OK"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

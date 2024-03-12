@@ -50,6 +50,10 @@
     - ec2provision
     - oracle_oem_patch_upgrade
 
+- name: Run Setup for the Central Agent
+  import_role:
+    name: oracle-oem-agent-setup
+
 - import_tasks: create_group.yml
   tags:
     - amibuild
@@ -85,3 +89,15 @@
     - amibuild
     - ec2provision
     - configure_ssh
+
+- import_tasks: configure_database_credentials.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - configure_database_credentials
+
+- import_tasks: import_metric_extensions.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - import_metric_extensions

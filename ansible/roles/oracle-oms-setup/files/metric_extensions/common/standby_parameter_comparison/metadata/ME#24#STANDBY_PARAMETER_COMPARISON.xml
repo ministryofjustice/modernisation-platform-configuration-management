@@ -1,0 +1,37 @@
+<TargetMetadataExt EXT_NAME="ME$STANDBY_PARAMETER_COMPARISON" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$STANDBY_PARAMETER_COMPARISON" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$STANDBY_PARAMETER_COMPARISON">Standby Parameter Comparison</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$STANDBY_PARAMETER_COMPARISON">Ensure Database Instance Parameters match between Primary and Standby</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="STANDBY_DATABASE" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$STANDBY_PARAMETER_COMPARISONSTANDBY_DATABASE">Standby Database</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="PARAMETER_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$STANDBY_PARAMETER_COMPARISONPARAMETER_NAME">Parameter Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="PRIMARY_VALUE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$STANDBY_PARAMETER_COMPARISONPRIMARY_VALUE">Primary Value</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="STANDBY_VALUE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$STANDBY_PARAMETER_COMPARISONSTANDBY_VALUE">Standby Value</Label>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/compare_parameters.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

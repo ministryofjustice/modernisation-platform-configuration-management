@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$USER_NOTES_REPLICATION" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$USER_NOTES_REPLICATION" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$USER_NOTES_REPLICATION">User Notes Replication</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$USER_NOTES_REPLICATION">Detect if User Notes are not being replicated by DMS</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="MISSING_NOTES_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$USER_NOTES_REPLICATIONMISSING_NOTES_COUNT">Missing Notes Count</Label>
+<Unit NLSID="EM_SYS_STANDARD_RATE_OPERATIONDAY">OPERATIONDAY</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/user_notes_replication.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

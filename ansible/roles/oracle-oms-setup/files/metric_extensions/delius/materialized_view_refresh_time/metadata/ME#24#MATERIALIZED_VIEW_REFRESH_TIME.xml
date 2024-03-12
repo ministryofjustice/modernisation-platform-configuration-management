@@ -1,0 +1,24 @@
+<TargetMetadataExt EXT_NAME="ME$MATERIALIZED_VIEW_REFRESH_TIME" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$MATERIALIZED_VIEW_REFRESH_TIME" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$MATERIALIZED_VIEW_REFRESH_TIME">Time Since Oldest Materialized View Refresh</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$MATERIALIZED_VIEW_REFRESH_TIME">Calculated in Minutes</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="TIME_SINCE_OLDEST_MV_REFRESH" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$MATERIALIZED_VIEW_REFRESH_TIMETIME_SINCE_OLDEST_MV_REFRESH">Time Since Oldest MV Refresh</Label>
+<Unit NLSID="mext_unit_nlsid_MINUTES">MINUTES</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/time_since_oldest_mv_refresh.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

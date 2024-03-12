@@ -1,0 +1,58 @@
+<TargetMetadataExt EXT_NAME="ME$ASM_DISKGROUP_USED" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$ASM_DISKGROUP_USED" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$ASM_DISKGROUP_USED">ASM_DISKGROUP_USED</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$ASM_DISKGROUP_USED">ASM Disk Group Used (Persists Across ASM Patching)</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="DISKGROUP" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ASM_DISKGROUP_USEDDISKGROUP">Disk Group</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="TOTAL_GB" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ASM_DISKGROUP_USEDTOTAL_GB">Total Disk Space</Label>
+<Unit NLSID="EM_SYS_STANDARD_DATASIZE_GB">GB</Unit>
+<UnitCategory>DATA_SIZE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="FREE_GB" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ASM_DISKGROUP_USEDFREE_GB">Free Disk Space</Label>
+<Unit NLSID="EM_SYS_STANDARD_DATASIZE_GB">GB</Unit>
+<UnitCategory>DATA_SIZE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="USED_GB" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ASM_DISKGROUP_USEDUSED_GB">Used Disk Space</Label>
+<Unit NLSID="EM_SYS_STANDARD_DATASIZE_GB">GB</Unit>
+<UnitCategory>DATA_SIZE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="USED_PCT" TYPE="NUMBER" COMPUTE_EXPR="__round((USED_GB/TOTAL_GB)*100,1)">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ASM_DISKGROUP_USEDUSED_PCT">Percentage Used</Label>
+<Unit NLSID="EM_SYS_STANDARD_PERCENT_PERCENT">PERCENTAGE</Unit>
+<UnitCategory>PERCENTAGE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/asm_diskgroup_usage.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

@@ -1,0 +1,11 @@
+<TargetCollectionExt EXT_NAME="ME$BACKUP_FROM_STANDBY" EXT_VERSION="3" TARGET_TYPE="host"><CollectionItem NAME="ME$BACKUP_FROM_STANDBY" UPLOAD="YES">
+	<Schedule START_TIME="13:00:00">
+		<WeekSchedule DAY_OF_WEEK="MON,TUE,WED,THU,FRI"/>
+	</Schedule>
+	<MetricColl NAME="ME$BACKUP_FROM_STANDBY">
+		<Condition COLUMN_NAME="RMAN_STATUS" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The RMAN Backup command finished with a non-zero status." CLEAR_MESSAGE="RMAN Backup completed successfully."/>
+		<Condition COLUMN_NAME="ORA_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="Incidence of %value% ORA- error messages have been found in RMAN output." CLEAR_MESSAGE="No ORA- error messages have been found in RMAN output."/>
+		<Condition COLUMN_NAME="ERROR_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The ERROR word has been seen %value% times in the RMAN output." CLEAR_MESSAGE="No ERROR reported in RMAN output."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

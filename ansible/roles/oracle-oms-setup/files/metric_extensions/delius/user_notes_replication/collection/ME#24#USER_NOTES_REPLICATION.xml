@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$USER_NOTES_REPLICATION" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$USER_NOTES_REPLICATION" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$USER_NOTES_REPLICATION">
+		<Condition COLUMN_NAME="MISSING_NOTES_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="Up to %value% user records have been added in the last day which appear to be audit stub users with missing notes." CLEAR_MESSAGE="Alert for %columnName% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
