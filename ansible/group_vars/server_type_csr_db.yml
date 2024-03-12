@@ -76,23 +76,23 @@ grid_home: /u01/app/oracle/product/19c/gridhome_1
 
 tns_entries:
   pd:
-    - name: PDIWFM
+    - name: PIWFM
       port: 1521
       host_list:
         - pd-csr-db-a.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
-      service_name: PDIWFM
+      service_name: PIWFM
 
-    - name: DRIWFM
+    - name: DIWFM
       port: 1521
       host_list:
         - pd-csr-db-b.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
-      service_name: DRIWFM
+      service_name: DIWFM
 
     - name: RCVCAT
       port: 1521
       host_list:
         - "{{ OMS_SERVER }}"
-      service_name: RCVCAT_TAF
+      service_name: RCV_TAF
 
   pp:
     - name: PPIWFM
@@ -105,4 +105,4 @@ tns_entries:
       port: 1521
       host_list:
         - "{{ OMS_SERVER }}"
-      service_name: RCVCAT_TAF
+      service_name: RCV_TAF
