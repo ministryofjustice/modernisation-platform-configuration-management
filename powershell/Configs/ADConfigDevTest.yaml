@@ -3,7 +3,9 @@ ActiveDirectory:
   OUs:
     - name: "ModPlatformComputers"
       description: "Modernisation Platform Computers"
-      GPOs:
+      GPOs: 
+        - "SetScreenSaverTimeout"
+        - "SetScreenSaverActive"
       children:
         - name: "corporate-staff-rostering"
           description: "Corporate Staff Rostering"
@@ -22,6 +24,7 @@ ActiveDirectory:
     - name: "ModPlatformUsers"
       description: "Modernisation Platform Users"
       GPOs:
+       - "SetScreenSaverTimeout"
       children:
         - name: "mod-platform-users"
           description: "Modernisation Platform Users"

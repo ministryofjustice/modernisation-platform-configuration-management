@@ -58,17 +58,26 @@ function Set-OUsAndApplyGPOs {
         [Parameter(Mandatory=$true)]
         [psobject]$Ou,
         [Parameter(Mandatory=$true)]
-        [string]$Path # Adjust the base domain DN as necessary
+        [string]$Path, # Adjusts the base domain DN as necessary
+        [bool]$ProtectedFromAccidentalDeletion = $false 
     )
-    Write-Output "Creating OU: $($ou.name)"
-    Write-Output "Creating Path: $Path"
-    Write-Output "Description: $($ou.description)"
+    Write-Debug "Creating OU: $($ou.name)"
+    Write-Debug "Creating Path: $Path"
+    Write-Debug "Description: $($ou.description)"
 
     # Create the OU in AD
-    # New-ADOrganizationalUnit -Name $ou.name -Path $path -Description $ou.description
+    New-ADOrganizationalUnit -Name $ou.name -Path $path -Description $ou.description -ProtectedFromAccidentalDeletion $ProtectedFromAccidentalDeletion
 
     # Append the OU name to the path for the next level
     $ouPath = "OU=$($ou.name),$path"
+
+    if ($ou.gpos) {
+        foreach ($gpo in $ou.gpos) {
+            Write-Debug "Applying GPO: $($gpo.name) to Target OU: $ouPath"
+            # Apply the GPO to the OU
+            New-GPLink -Name $gpo.name -Target $ouPath
+        }
+    }
 
     # If the OU has children, call the function recursively
     if ($ou.children) {
