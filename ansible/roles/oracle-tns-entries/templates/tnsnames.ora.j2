@@ -1,5 +1,4 @@
-{% for tns_entry in tns_entries[ env_name ] %}
-{% if tns_entry.name.startswith('LISTENER') %}
+{% for tns_entry in tns_entries[ env_name ] if tns_entry.name.startswith('LISTENER') %}
 {{ tns_entry.name }} =
     (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tns_entry.host_list }})(PORT = {{ tns_entry.port }}))
 {% else %}
