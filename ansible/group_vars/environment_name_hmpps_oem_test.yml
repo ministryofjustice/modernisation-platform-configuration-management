@@ -67,3 +67,27 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+tns_entries:
+  test:
+    - name: EMREP
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: EMREP
+    - name: TRCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: TRCVCAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+    - name: LISTENER_TRCVCAT
+      port: 1521
+      host_list: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+    - name: LISTENER_EMREP
+      port: 1521
+      host_list: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
