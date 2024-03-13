@@ -30,6 +30,10 @@
     remote_src: true
   when: tns_file.stat.exists
 
+- name: show templating results
+  debug:
+   msg: "{{ lookup('template', 'tnsnames.ora.j2) }}"
+
 - name: Generate tnsnames.ora file in staging area
   become_user: oracle
   ansible.builtin.template:
