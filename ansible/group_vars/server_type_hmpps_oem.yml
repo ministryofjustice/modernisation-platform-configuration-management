@@ -53,6 +53,8 @@ server_type_roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
+  - ansible-script
+  - epel
   - oracle-19c
   - oracle-secure-backup
   - oracle-recovery-catalog
@@ -60,6 +62,8 @@ server_type_roles_list:
   - oracle-db-housekeeping
   - oracle-oms-setup
   - collectd-service-metrics
+  - collectd-oracle-db-connected
+  - collectd-textfile-monitoring
   - oracle-db-refresh
 
 collectd_monitored_services_servertype:
@@ -69,9 +73,6 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_app
     metric_dimension: oracle-ohasd
     shell_cmd: "systemctl is-active oracle-ohasd"
-  - metric_name: service_status_app
-    metric_dimension: oracleasm
-    shell_cmd: "systemctl is-active oracleasm"
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
