@@ -73,9 +73,9 @@ function Set-OUsAndApplyGPOs {
 
     if ($ou.gpos) {
         foreach ($gpo in $ou.gpos) {
-            Write-Debug "Applying GPO: $($gpo.name) to Target OU: $ouPath"
+            Write-Debug "Applying GPO: $gpo to Target OU: $ouPath"
             # Apply the GPO to the OU
-            New-GPLink -Name $gpo.name -Target $ouPath
+            New-GPLink -Name $gpo -Target $ouPath
         }
     }
 

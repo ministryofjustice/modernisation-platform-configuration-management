@@ -35,6 +35,6 @@ Import-Module powershell-yaml -Force
 $config = Get-Content -Raw -Path $ConfigFilePath | ConvertFrom-Yaml
 
 foreach ($gpo in $config.GPOs) {
-    New-GPO -Name $gpo.Name -Domain $DomainNameFQDN -Comment $gpo.Description
+    New-GPO -Name $gpo.name -Domain $DomainNameFQDN -Comment $gpo.comment
     Set-GPRegistryValue -Name $gpo.name -Key $gpo.key -ValueName $gpo.valuename -Type $gpo.type -Value $gpo.value
 }
