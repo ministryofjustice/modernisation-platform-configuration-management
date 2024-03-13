@@ -74,5 +74,10 @@ collectd_monitored_services_servertype:
     metric_dimension: oracle-ohasd
     shell_cmd: "systemctl is-active oracle-ohasd"
 
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
