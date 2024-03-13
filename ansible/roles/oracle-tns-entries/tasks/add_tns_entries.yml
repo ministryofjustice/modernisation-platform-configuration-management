@@ -32,7 +32,7 @@
 
 - name: show templating results
   debug:
-   msg: "{{ lookup('template', 'tnsnames.ora.j2) }}"
+   msg: "{{ lookup('ansible.builtin.template', 'tnsnames.ora.j2) }}"
 
 - name: Generate tnsnames.ora file in staging area
   become_user: oracle
