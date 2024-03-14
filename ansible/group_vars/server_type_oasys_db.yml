@@ -99,3 +99,157 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_app
     metric_dimension: oracle-ohasd
     shell_cmd: "systemctl is-active oracle-ohasd"
+
+tns_entries:
+  t1:
+    - name: LISTENER_T1BIPINF
+      port: 1521
+      host_list: t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+    - name: T1OASYS
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1OASYS
+    - name: T1OASREP
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1OASREP
+    - name: T1MISTRN
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1MISTRN
+    - name: T1ONRAUD
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1ONRAUD
+    - name: T1ONRSYS
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1ONRSYS
+    - name: T1ONRBDS
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1ONRBDS
+    - name: T1BIPINF
+      port: 1521
+      host_list:
+        - t1-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPINF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+  t2:
+    - name: LISTENER_T2BIPINF
+      port: 1521
+      host_list: t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+    - name: T2OASYS
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2OASYS
+    - name: T2OASREP
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2OASREP
+    - name: T2MISTRN
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2MISTRN
+    - name: T2ONRAUD
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2ONRAUD
+    - name: T2ONRSYS
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2ONRSYS
+    - name: T2ONRBDS
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2ONRBDS
+    - name: T2BIPINF
+      port: 1521
+      host_list:
+        - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: T2BIPINF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+  pp:
+    - name: LISTENER_PPBIPINF
+      port: 1521
+      host_list: pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+    - name: PPOASYS
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASYS
+    - name: PPBIPINF
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBIPINF
+    - name: PPOBODS4
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOBODS4
+    - name: PPOASREP
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASREP
+    - name: PPMISTRN
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPMISTRN
+    - name: PPONRAUD
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRAUD
+    - name: PPONRSYS
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRSYS
+    - name: PPONRBDS
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRBDS
+    - name: PPMISTN2
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPMISTN2
+    - name: PPOASRP2
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASRP2
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a
+      service_name: rcv_taf
+    - name: AZURE_RCVCATP
+      port: 1521
+      host_list:
+        - 10.40.0.136
+      service_name: RCVCATP
