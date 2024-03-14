@@ -1,28 +1,27 @@
 {% for tns_entry in tns_entries[ env_name ] %}
 {{ tns_entry.name }} =
-  {% if tns_entry.name.startswith('LISTENER') %}
-{{ tns_entry.name }} =
+{% if tns_entry.name.startswith('LISTENER') %}
     (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tns_entry.host_list }})(PORT = {{ tns_entry.port }}))
-  {% else %}
+{% else %}
   (DESCRIPTION =
-    {% for host in tns_entry.host_list %}
+{% for host in tns_entry.host_list %}
     (ADDRESS = (PROTOCOL = TCP)(HOST = {{ host }})(PORT = {{ tns_entry.port }}))
-    {% endfor %}
-    {% if tns_entry.host_list|length > 1 %}
+{% endfor %}
+{% if tns_entry.host_list|length > 1 %}
     (FAILOVER = YES)
     (CONNECT_DATA =
-       (SERVICE_NAME = {{ tns_entry.service_name }})
-        (FAILOVER_MODE =
+      (SERVICE_NAME = {{ tns_entry.service_name }})
+      (FAILOVER_MODE =
         (TYPE = SELECT)
         (METHOD = BASIC)
-       )
-     )
-    {% else %}
+      )
+    )
+{% else %}
     (CONNECT_DATA =
-       (SERVICE_NAME = {{ tns_entry.service_name }})
-     )
-    {% endif %}
-  {% endif %}
+      (SERVICE_NAME = {{ tns_entry.service_name }})
+    )
+{% endif %}
   )
+{% endif %}
 
 {% endfor %}

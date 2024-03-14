@@ -81,3 +81,71 @@ oracle_inventory: /u01/app/oraInventory
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+tns_entries:
+  test:
+    - name: EMREP
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: EMREP
+    - name: TRCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: TRCVCAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCVCAT_TAF
+    - name: LISTENER_TRCVCAT
+      port: 1521
+      host_list: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+    - name: LISTENER_EMREP
+      port: 1521
+      host_list: test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+  prod:
+    - name: EMREP
+      port: 1521
+      host_list:
+        - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+      service_name: EMREP
+    - name: PRCVCAT
+      port: 1521
+      host_list:
+        - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+      service_name: PRCVCAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+      service_name: PRCVCAT
+    - name: LISTENER_PRCVCAT
+      port: 1521
+      host_list: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+    - name: LISTENER_EMREP
+      port: 1521
+      host_list: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+  preprod:
+    - name: EMREP
+      port: 1521
+      host_list:
+        - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+      service_name: EMREP
+    - name: PPRCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPRCVCAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+      service_name: RCV_TAF
+    - name: LISTENER_PPRCVCAT
+      port: 1521
+      host_list: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+    - name: LISTENER_EMREP
+      port: 1521
+      host_list: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
