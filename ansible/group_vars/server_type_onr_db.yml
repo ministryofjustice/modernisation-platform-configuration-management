@@ -1,5 +1,5 @@
 ---
-ansible_python_interpreter: /usr/bin/python3.6
+ansible_python_interpreter: /usr/bin/python3.9
 
 users_and_groups_system:
   - name: oracle
@@ -97,3 +97,79 @@ collectd_monitored_services_servertype:
   #   shell_cmd: "systemctl is-active oracle-ohasd"
 
 patch_vars_filename: oasys-patches-20211019.yml
+
+tns_entries:
+  pp:
+    - name: LISTENER_PPBIPINF
+      port: 1521
+      host_list: pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+    - name: PPOASYS
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASYS
+    - name: PPBIPINF
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBIPINF
+    - name: PPOBODS4
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOBODS4
+    - name: PPOASREP
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASREP
+    - name: PPMISTRN
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPMISTRN
+    - name: PPONRAUD
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRAUD
+    - name: PPONRSYS
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRSYS
+    - name: PPONRBDS
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPONRBDS
+    - name: PPMISTN2
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPMISTN2
+    - name: PPOASRP2
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPOASRP2
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a
+      service_name: rcv_taf
+    - name: AZURE_RCVCATP
+      port: 1521
+      host_list:
+        - 10.40.0.136
+      service_name: RCVCATP
+    - name: NOMISMIS
+      port: 1521
+      host_list:
+        - 10.27.4.204
+      service_name: MIS_TAF
+    - name: MISTRANS
+      port: 1521
+      host_list:
+        - pp-onr-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPMISTRN
