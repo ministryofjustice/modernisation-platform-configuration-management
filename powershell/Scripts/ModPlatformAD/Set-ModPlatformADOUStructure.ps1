@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Retrieve appropriate AD config for the given Modernisation Platform environment.
+    Applies the OU and GPO structure to the given domain based on a yaml config file.
 
 .DESCRIPTION
     Either pass in the domain name as a parameter, or derive the AD configuration
@@ -10,10 +10,14 @@
 .PARAMETER DomainNameFQDN
     Specify the FQDN of the domain name to join
 
-.EXAMPLE
-    $ADConfig = Get-ModPlatformADConfig
+.PARAMETER ConfigFilePath
+    Path to the yaml definition of the OU/GPO structure. See ../../Configs/ADConfigDevTest.yaml for example
 
-.OUTPUTS
+.EXAMPLE
+    ./Set-ModPlatformADOUStructure.ps1 -DomainNameFQDN "test.loc" -ConfigFilePath "../../Configs/ADConfigDevTest.yaml"
+
+.NOTES
+    GPO's referenced in the script have to have been created FIRST before running this, otherwise GPO's will not be applied
     
 #>
 

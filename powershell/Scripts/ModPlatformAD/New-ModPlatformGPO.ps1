@@ -16,6 +16,7 @@
     ./New-ModPlatformGPO.ps1 -DomainNameFQDN "test.loc" -ConfigFilePath "config.yaml"
 
 .OUTPUTS
+    Check Group Policy Management tools on the server to see the GPOs created
     
 #>
 
