@@ -1,0 +1,21 @@
+ActiveDirectory:
+  DomainNameFQDN: "prod.loc"
+  OUs:
+    - name: "ModPlatformComputers"
+      description: "Modernisation Platform Computers"
+      GPOs:
+      children:
+        - name: "corporate-staff-rostering"
+          description: "Corporate Staff Rostering"
+          children:
+            - name: "corporate-staff-rostering-preproduction"
+              description: "Corporate Staff Rostering Preproduction"
+            - name: "corporate-staff-rostering-production"
+              description: "Corporate Staff Rostering Production"
+        - name: "planetfm"
+          description: "PlanetFM"
+          children:
+            - name: "planetfm-preproduction"
+              description: "PlanetFM Preproduction"
+            - name: "planetfm-production"
+              description: "PlanetFM Production"
