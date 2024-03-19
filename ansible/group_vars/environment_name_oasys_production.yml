@@ -102,25 +102,3 @@ housekeeping_cron:
       hour: "08"
       # job: command generated in
 
-tns_entries:
-  ptctrn:
-    - name: PROASYS
-      port: 1521
-      host_list:
-        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-      service_name: PROASYS
-    - name: TROASYS
-      port: 1521
-      host_list:
-        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-      service_name: TROASYS
-    - name: TRBIPINF
-      port: 1521
-      host_list:
-        - ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
-      service_name: TRBIPINF
-    - name: RCVCAT
-      port: 1521
-      host_list:
-        - "{{ OMS_SERVER }}"
-      service_name: RCVCAT_TAF
