@@ -23,9 +23,9 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
 
-- name: Copy staged tnsnames.ora file in oracle home.
+- name: Copy staged sqlnet.ora file in oracle home.
   ansible.builtin.copy:
-    src: "{{ stage }}/tnsnames.ora"
+    src: "{{ stage }}/sqlnet.ora"
     dest: "{{ oracle_home }}/network/admin/sqlnet.ora"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
