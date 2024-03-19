@@ -19,7 +19,7 @@
 - name: Get oasys-sns file from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ s3_bucket }}"
-    object: "oasys-sns/oasys-sns.tar"
+    object: "hmpps/oasys-sns/oasys-sns.tar"
     dest: "{{ stage }}/oasys-sns.tar"
     mode: get
     permission: public-read
