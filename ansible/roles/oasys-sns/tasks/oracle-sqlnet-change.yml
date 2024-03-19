@@ -4,6 +4,16 @@
     path: "{{ oracle_home }}/network/admin/sqlnet.ora"
   register: sqlnet_file
 
+- name: Backup tnsnames.ora file before making changes
+  ansible.builtin.copy:
+    src: "{{ oracle_home }}/network/admin/sqlnet.ora"
+    dest: "{{ oracle_home }}/network/admin/sqlnet.ora_{{ bkpdate }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    backup: yes
+    remote_src: true
+  when: sqlnet_file.stat.exists 
+
 - name: Copy sqlnet.ora from template
   become_user: oracle
   ansible.builtin.template:
@@ -12,4 +22,11 @@
     mode: u=rwx,g=r,o=r
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
-  when: not sqlnet_file.stat.exists
+
+- name: Copy staged tnsnames.ora file in oracle home.
+  ansible.builtin.copy:
+    src: "{{ stage }}/tnsnames.ora"
+    dest: "{{ oracle_home }}/network/admin/sqlnet.ora"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: true
