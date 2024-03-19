@@ -83,3 +83,21 @@ oracle_inventory: /u01/app/oraInventory
 database_home: /u01/app/oracle/product/19c/db_1
 oracle_home: "{{ database_home }}"
 grid_home: /u01/app/oracle/product/19c/gridhome_1
+
+tns_entries:
+  t1:
+    - name: T1BIPSYS
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPSYS
+    - name: T1BIPAUD
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCV_TAF
