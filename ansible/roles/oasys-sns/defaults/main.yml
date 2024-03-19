@@ -1,2 +1,3 @@
 stage: /u01/stage
 oracle_home: "{{ database_home }}"
+bkpdate: "{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
