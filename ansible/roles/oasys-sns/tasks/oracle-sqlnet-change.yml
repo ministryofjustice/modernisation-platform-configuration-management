@@ -12,7 +12,7 @@
     group: "{{ oracle_install_group }}"
     backup: yes
     remote_src: true
-  when: sqlnet_file.stat.exists 
+  when: sqlnet_file.stat.exists
 
 - name: Copy sqlnet.ora from template
   become_user: oracle
