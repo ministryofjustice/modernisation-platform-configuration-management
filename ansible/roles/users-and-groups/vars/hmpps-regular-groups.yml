@@ -1,8 +1,8 @@
 # define all non-system groups in use in hmpps accounts here
 
 # define gid if you want consistency across servers
+# NOTE: ssm-user can be created by SSM Agent or this role. Avoid gid 1001
 regular_gids:
-  ssm-user: 2000
   studio-webops: 2001
   syscon-nomis: 2051
 

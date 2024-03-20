@@ -12,17 +12,6 @@
     regular_groups_1: "{{ users_and_groups_regular | map(attribute='group') }}"
     regular_groups_2: "{{ users_and_groups_regular | selectattr('groups', 'defined') | map(attribute='groups') | flatten }}"
 
-- name: Check if ssm-user exists
-  ansible.builtin.getent:
-    database: passwd
-    key: ssm-user
-  ignore_errors: true
-  failed_when: false
-  register: ssm_user
-
-- debug:
-    var: ssm_user
-
 - name: Calculate groups where we will add all members
   ansible.builtin.set_fact:
     regular_groups_for_adding_users: "{{ users_and_groups_regular | rejectattr('name', 'defined') | selectattr('group', 'defined') | map(attribute='group') }}"
