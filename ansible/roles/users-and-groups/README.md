@@ -73,3 +73,14 @@ users_and_groups_regular:
   - group: studio-webops
   - group: syscon-nomis
 ```
+
+To remove an existing user, just remove their group membership and re-run the role, e.g.
+the below will remove `drobinson-moj` user.
+
+```
+regular_groups_members:
+  studio-webops:
+    # - drobinson-moj
+    - Sandhya1874
+    - KarenMoss1510
+```

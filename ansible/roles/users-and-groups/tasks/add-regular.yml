@@ -12,6 +12,35 @@
     regular_groups_1: "{{ users_and_groups_regular | map(attribute='group') }}"
     regular_groups_2: "{{ users_and_groups_regular | selectattr('groups', 'defined') | map(attribute='groups') | flatten }}"
 
+- name: Check if ssm-user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: ssm-user
+  ignore_errors: true
+  failed_when: false
+
+# NOTE: when ssm-user is created it gets allocated as a
+# normal user with next available UID. This can conflict
+# with UIDs defined in vars so attempt to change it here.
+# Only works when running locally on server, e.g. via
+# ansible-script. You can't update the user when running
+# remotely as this is using SSM.
+- name: Update ssm-user UID
+  ansible.builtin.user:
+    name: ssm-user
+    uid: "{{ regular_uids['ssm-user'] }}"
+  when:
+    - getent_passwd["ssm-user"] is defined
+    - regular_uids["ssm-user"] is defined
+
+- name: Update ssm-user GID
+  ansible.builtin.group:
+    name: ssm-user
+    gid: "{{ regular_gids['ssm-user'] }}"
+  when:
+    - getent_passwd["ssm-user"] is defined
+    - regular_gids["ssm-user"] is defined
+
 - name: Add regular groups
   ansible.builtin.group:
     name: "{{ item }}"
@@ -24,6 +53,18 @@
   ansible.builtin.set_fact:
     regular_groups_for_adding_users: "{{ users_and_groups_regular | rejectattr('name', 'defined') | selectattr('group', 'defined') | map(attribute='group') }}"
     users_regular: []
+    users_regular_existing: []
+
+- name: Lookup existing group membership
+  ansible.builtin.getent:
+    database: group
+    split: ':'
+
+- name: Collate all existing group users
+  ansible.builtin.set_fact:
+    users_regular_existing: "{{ (users_regular_existing + ansible_facts.getent_group[item][2].split(',')) | unique }}"
+  when: item in ansible_facts.getent_group
+  loop: "{{ regular_groups_for_adding_users }}"
 
 - name: Add group members to user list fact
   ansible.builtin.set_fact:
@@ -62,6 +103,13 @@
   loop_control:
     label: "{{ item.name }}"
   loop: "{{ users_and_groups_regular | selectattr('name', 'defined') }}"
+
+- name: Remove regular users no longer in any groups
+  ansible.builtin.user:
+    name: "{{ item }}"
+    state: absent
+    system: no
+  loop: "{{ users_regular_existing | difference(users_regular | selectattr('name', 'defined') | map(attribute='name')) }}"
 
 - name: Update regular users
   ansible.builtin.user:

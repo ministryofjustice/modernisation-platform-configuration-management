@@ -2,14 +2,17 @@
 
 # define gid if you want consistency across servers
 regular_gids:
+  ssm-user: 2000
   studio-webops: 2001
   syscon-nomis: 2051
 
 # define any additional groups that team members should be added to
 regular_groups_additional_groups:
   studio-webops:
+    - studio-webops
     - wheel
   syscon-nomis:
+    - syscon-nomis
     - wheel
 
 # define members of each group
@@ -20,3 +23,11 @@ regular_groups_members:
     - KarenMoss1510
   syscon-nomis:
     - vinnydigital
+    - olusyscon
+    - paulmsys
+    - clausdk66
+    - CFraserSyscon
+    - Alowesyscon
+    - pthakur97
+    - sunilsyscon
+    - rs87099
