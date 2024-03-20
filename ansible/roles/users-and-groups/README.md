@@ -53,6 +53,9 @@ Option 2. Import from another role
 
 ## Regular Users
 
+Only use this if the standard ssm-user will not suffice, e.g. users require their
+own home directory or to use ssh over ssm.
+
 Users should add their ssh public keys to the relevant business unit vars file, e.g.
 Also assign a unique UID for consistency across servers. Suggest the username is set
 to the user's GitHub id.
@@ -72,4 +75,15 @@ server-type or environment_name group vars, e.g.
 users_and_groups_regular:
   - group: studio-webops
   - group: syscon-nomis
+```
+
+To remove an existing user, just remove their group membership and re-run the role, e.g.
+the below will remove `drobinson-moj` user.
+
+```
+regular_groups_members:
+  studio-webops:
+    # - drobinson-moj
+    - Sandhya1874
+    - KarenMoss1510
 ```

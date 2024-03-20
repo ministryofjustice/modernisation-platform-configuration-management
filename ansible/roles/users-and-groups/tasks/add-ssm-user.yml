@@ -1,0 +1,37 @@
+---
+# The ssm-user user is created by SSM agent when used for first time.
+# Try and fix ssm-user uid and gids to avoid conflicts later
+
+- name: Check if ssm-user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: ssm-user
+  ignore_errors: true
+  failed_when: false
+
+- name: Add ssm-user group if doesn't already exist
+  ansible.builtin.group:
+    name: ssm-user
+    state: present
+    system: yes
+    gid: 1001
+  when: getent_passwd["ssm-user"] is not defined
+
+- name: Add ssm-user user is doesn't already exist
+  ansible.builtin.user:
+    name: ssm-user
+    group: ssm-user
+    uid: 1001
+    create_home: true
+    home: /home/ssm-user
+    system: yes
+  when: getent_passwd["ssm-user"] is not defined
+
+- name: Configure ssm-user sudoers if user doesn't already exist
+  community.general.sudoers:
+    name: ssm-agent-users
+    state: present
+    user: ssm-user
+    nopassword: yes
+    commands: ALL
+  when: getent_passwd["ssm-user"] is not defined

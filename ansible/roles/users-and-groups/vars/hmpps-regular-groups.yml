@@ -1,6 +1,7 @@
 # define all non-system groups in use in hmpps accounts here
 
 # define gid if you want consistency across servers
+# NOTE: ssm-user can be created by SSM Agent or this role. Avoid gid 1001
 regular_gids:
   studio-webops: 2001
   syscon-nomis: 2051
@@ -8,8 +9,10 @@ regular_gids:
 # define any additional groups that team members should be added to
 regular_groups_additional_groups:
   studio-webops:
+    - studio-webops
     - wheel
   syscon-nomis:
+    - syscon-nomis
     - wheel
 
 # define members of each group
@@ -20,3 +23,11 @@ regular_groups_members:
     - KarenMoss1510
   syscon-nomis:
     - vinnydigital
+    - olusyscon
+    - paulmsys
+    - clausdk66
+    - CFraserSyscon
+    - Alowesyscon
+    - pthakur97
+    - sunilsyscon
+    - rs87099

@@ -24,6 +24,18 @@
   ansible.builtin.set_fact:
     regular_groups_for_adding_users: "{{ users_and_groups_regular | rejectattr('name', 'defined') | selectattr('group', 'defined') | map(attribute='group') }}"
     users_regular: []
+    users_regular_existing: []
+
+- name: Lookup existing group membership
+  ansible.builtin.getent:
+    database: group
+    split: ":"
+
+- name: Collate all existing group users
+  ansible.builtin.set_fact:
+    users_regular_existing: "{{ (users_regular_existing + ansible_facts.getent_group[item][2].split(',')) | unique }}"
+  when: item in ansible_facts.getent_group
+  loop: "{{ regular_groups_for_adding_users }}"
 
 - name: Add group members to user list fact
   ansible.builtin.set_fact:
@@ -62,6 +74,13 @@
   loop_control:
     label: "{{ item.name }}"
   loop: "{{ users_and_groups_regular | selectattr('name', 'defined') }}"
+
+- name: Remove regular users no longer in any groups
+  ansible.builtin.user:
+    name: "{{ item }}"
+    state: absent
+    system: no
+  loop: "{{ users_regular_existing | difference(users_regular | selectattr('name', 'defined') | map(attribute='name')) }}"
 
 - name: Update regular users
   ansible.builtin.user:

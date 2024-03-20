@@ -2,11 +2,21 @@
 # NOTE: please do not commit email addresssed in authorized keys
 
 # define a UID if you want consistency across servers
+# NOTE: ssm-user can be created by SSM Agent or this role. Avoid uid 1001
 regular_uids:
   drobinson-moj: 2001
   Sandhya1874: 2002
   KarenMoss1510: 2003
   vinnydigital: 2051
+  # 2052 grabbed by ssm-user on some EC2s
+  paulmsys: 2053
+  clausdk66: 2054
+  CFraserSyscon: 2055
+  Alowesyscon: 2056
+  pthakur97: 2057
+  sunilsyscon: 2058
+  rs87099: 2059
+  olusyscon: 2060
 
 # please do not commit email addresses
 # use ssh-rsa keys for older OS such as RHEL6
@@ -21,3 +31,20 @@ regular_users_authorized_keys:
   vinnydigital: |
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9R9sPmqwR8RcFNpK5PmZ0OyR0c8S1KaW8Kv/EihM0EOBpC/MtovI4NHQ03EztF5ZPdRUreZV5yBhgByQX7SmNYLex1y+WILc1s/otPSQz8qWG6CLdNJEPTNiyxhlkxEUlNwmMTeuQ5DQLmE8MEUG/2yk/qAAx7UYSE0E1Sdhih5JTCeHf72C6aHmA/4UMwMM282xf4rO2XkOmu1YOj/6ZLu+cbnJStuuy43hbozj4rEMZdHU+pKjNrlJf1RQY7ch1Fd0K3kIxoES5DlBIZAbXvP91ItuiHhg0bU7F3dk3x4ry97hBhcKjZDPUsPYradSG8fGcqgO1E8jatKd305LiZ0XDHzOKPzBXMEx6kt5dM6ydfy3L+XFXLuD0BTBPPIW6pWxAlnAk2jKsXz4d8Jbcs08YvWALIhVlL67aPb/CX32OG0bK+BgPZC61lqUTn2rX20X0VgN/XIYqzttuC2WqyRBKo6txRO4EnsANXWbVFOc7ZtKlCP3H5LCHlENMngc=
     ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMQFZK3svaYe8YTRx7B2pxYag/HZ1Zafbfqr0I7hbIbd
+  olusyscon: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHSG3wfE2KcDGRwzC/w0PJ2OKaL2p0kRpzIEzlc4sm80 OlumideAlabi@Syson
+  paulmsys: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAEk+CiJz92LtZdAq0TSNwlKSOii0bOXi4hWNRwH9eGW PaulMorris@Syscon
+  clausdk66: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJQ3OGnpysl3N8PF0XTSmA6pe3nShC/L0kS1WjrSPn3+ ClausAndresen@Syscon
+  CFraserSyscon: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILLg0dRW67UX0xNvEGhQk1mwcLRFEwOBix6atT02R2ub ClaireFraser@Syscon
+  Alowesyscon: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINNoFhKkUqYbRXH6R5JwyUxXswxL3T/wlmJJfTU/kfqk AdrianLowe@Syscon
+  pthakur97: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA+3T8yTi46hDpV0PgByhWhGmKJ0zlrkpgmwPcRkwgAy PrashantThakur@Syscon
+  sunilsyscon: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDAQa3RClx2kgKtp/8/WLodS3VP5D6rTTNCwvpwku0mF SunilGhadigaonkar@Syscon-NPPC3012
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFIJ52UN8rfuOe1mZxCu9Ipl4HWbZdXBMmT9A0LPzNCy SunilGhadigaonkar@Syscon-nplt5501
+  rs87099: |
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+0pP9a69LKo/pp6tFiYk9PR+aGxKCTWfT3PRr6/Cd0 RichardStubbs@Syscon
