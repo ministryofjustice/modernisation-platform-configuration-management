@@ -8,7 +8,6 @@
     key: ssm-user
   ignore_errors: true
   failed_when: false
-  register: ssm_user
 
 - name: Add ssm-user group if doesn't already exist
   ansible.builtin.group:
@@ -16,7 +15,7 @@
     state: present
     system: yes
     gid: 1001
-  when: getent_passwd["ssm-user"] is defined
+  when: getent_passwd["ssm-user"] is not defined
 
 - name: Add ssm-user user is doesn't already exist
   ansible.builtin.user:
@@ -26,4 +25,4 @@
     create_home: true
     home: /home/ssm-user
     system: yes
-  when: getent_passwd["ssm-user"] is defined
+  when: getent_passwd["ssm-user"] is not defined
