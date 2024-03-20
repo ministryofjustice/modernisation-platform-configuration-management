@@ -29,7 +29,7 @@
 - name: Lookup existing group membership
   ansible.builtin.getent:
     database: group
-    split: ':'
+    split: ":"
 
 - name: Collate all existing group users
   ansible.builtin.set_fact:
