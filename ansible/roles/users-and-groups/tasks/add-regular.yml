@@ -18,36 +18,10 @@
     key: ssm-user
   ignore_errors: true
   failed_when: false
+  register: ssm_user
 
-# NOTE: when ssm-user is created it gets allocated as a
-# normal user with next available UID. This can conflict
-# with UIDs defined in vars so attempt to change it here.
-# Only works when running locally on server, e.g. via
-# ansible-script. You can't update the user when running
-# remotely as this is using SSM.
-- name: Update ssm-user UID
-  ansible.builtin.user:
-    name: ssm-user
-    uid: "{{ regular_uids['ssm-user'] }}"
-  when:
-    - getent_passwd["ssm-user"] is defined
-    - regular_uids["ssm-user"] is defined
-
-- name: Update ssm-user GID
-  ansible.builtin.group:
-    name: ssm-user
-    gid: "{{ regular_gids['ssm-user'] }}"
-  when:
-    - getent_passwd["ssm-user"] is defined
-    - regular_gids["ssm-user"] is defined
-
-- name: Add regular groups
-  ansible.builtin.group:
-    name: "{{ item }}"
-    state: present
-    system: no
-    gid: "{{ regular_gids[item]|default(omit) }}"
-  loop: "{{ (regular_groups_1 + regular_groups_2) | unique }}"
+- debug:
+    var: ssm_user
 
 - name: Calculate groups where we will add all members
   ansible.builtin.set_fact:
