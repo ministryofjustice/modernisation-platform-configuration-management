@@ -25,67 +25,104 @@ For example:
 
 ## Installing on Mac
 
-Ensure you have python3.6+ installed on your local mac.
+Choose which version of python and ansible-core to use. The below
+example uses python3.9 and ansible-core 2.12 as this is compatible with some
+older OS.
 
-Install ansible. Brew or pip, e.g.
-
-```
-brew install ansible@6
-```
-
-or
+1. Optionally install a specific python versoin
 
 ```
-python -m pip install ansible==6.0.0
+brew install python@3.9
 ```
 
-From this repo's ansible/ directory, install all requirements:
+2. Install ansible using pip
 
 ```
-python -m pip install -r requirements.txt
+python3.9 -m pip install ansible-core==2.12
+```
+
+Check ansible is in current path and correct version using `ansible --version`.
+Check for matching core and python versions.
+
+```
+ansible [core 2.12.0]
+  python version = 3.9.6 (default, Nov 10 2023, 13:38:27) [Clang 15.0.0 (clang-1500.1.0.2.5)]
+```
+
+3. Optionally update PATH
+
+If ansible is not in the current path, or is showing an unexpected version,
+check where the installation by using uninstall option. Don't proceed with
+the uninstall when given the option.
+
+```
+python3.9 -m pip uninstall ansible-core
+
+Found existing installation: ansible-core 2.12.0
+Uninstalling ansible-core-2.12.0:
+  Would remove:
+    /opt/homebrew/bin/ansible
+...
+Proceed (Y/n)? n
+```
+
+Ensure the directory containing ansible binaries is in your path, e.g.
+Add following to  `~/.bash_profile`
+
+```
+PATH=/opt/homebrew/bin:$PATH
+```
+
+Open a new terminal window and re-check Step 2.
+
+4. Install requirements
+
+```
+python3.9 -m pip install -r requirements.txt
 ansible-galaxy role install -r requirements.yml
 ansible-galaxy collection install -r requirements.yml
 ```
 
-Run:
+Check boto and botocore installed:
 
 ```
-pip list
-pip3 list
+python3.9 -m pip list
 ```
 
-If the **boto3** and **botocore** packages are only listed in `pip3 list` you might hit some errors when running Ansible.
+5. Configure local environment
 
-To fix this, run:
+5.1. Paste in credentials
 
-```
-pip install boto3 botocore
-```
-
-Ensure your ~/.aws/config contains your environment details, example [config] (https://github.com/ministryofjustice/dso-useful-stuff/blob/main/aws-cli/.aws/config)
-
-Sign into [AWS SSO](https://moj.awsapps.com/start/) and select
-"Command line or programmatic access" on the account you want to run ansible
-against.
-Under Option 1: Set AWS environment variables, Click to copy these commands
-and paste into terminal.
+Sign into relevant AWS account via [AWS SSO](https://moj.awsapps.com/start/) and select access keys.
+Use Option 1: Set AWS environment variables.
+Click to copy these commands and paste into terminal.
 
 Check you can access the dynamic inventory
 
 ```
-ansible-inventory  --graph
+no_proxy="*" ansible-inventory  --graph
 ```
 
 This should show a list of EC2s in the account grouped by various tags. Run `ansible-playbook` like this:
 
 ```
-ansible-playbook site.yml --check
-```
-
-Or try below if you get `ERROR! A worker was found in a dead state`
-
-```
 no_proxy="*" ansible-playbook site.yml --check
+```
+
+5.2. Use aws-vault
+
+Use `aws-vault` to avoid having to paste in AWS environment variables:
+
+- ensure aws CLI installed and aws accounts are configured
+- install aws-vault `brew install aws-vault`
+
+The first time you use aws-vault, you will be prompted to enter a keychain password
+to protect the keychain. You will need to enter this password from time to time
+when using aws-vault. Note you can adjust the password timeout in KeyChain settings.
+
+```
+export no_proxy="*"
+aws-vault exec nomis-development -- ansible-inventory  --graph
 ```
 
 ## Running ansible against an EC2 instance post build
@@ -133,6 +170,8 @@ roles_list:
 Run ansible
 
 ```
+export no_proxy="*"
+
 # Run against all hosts in check mode
 ansible-playbook site.yml --check
 
@@ -144,6 +183,14 @@ ansible-playbook site.yml -e "role=amazon-cloudwatch-agent"
 
 # Run locally (the comma after localhost is important)
 ansible-playbook site.yml --connection=local -i localhost, -e "target=localhost" -e "@group_vars/server_type_nomis_db.yml" --check
+```
+
+To run against multiple environments, use aws-vault, e.g.
+```
+export no_proxy="*"
+for account in nomis-development nomis-test; do
+  aws-vault exec $account -- ansible-playbook site.yml -e role=users-and-groups --limit os_type_linux
+done
 ```
 
 ## Gotchas for RHEL6
