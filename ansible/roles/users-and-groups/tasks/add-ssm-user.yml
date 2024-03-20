@@ -26,3 +26,12 @@
     home: /home/ssm-user
     system: yes
   when: getent_passwd["ssm-user"] is not defined
+
+- name: Configure ssm-user sudoers if user doesn't already exist
+  community.general.sudoers:
+    name: ssm-agent-users
+    state: present
+    user: ssm-user
+    nopassword: yes
+    commands: ALL
+  when: getent_passwd["ssm-user"] is not defined
