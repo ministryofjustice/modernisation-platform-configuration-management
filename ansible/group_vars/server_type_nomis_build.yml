@@ -1,0 +1,33 @@
+---
+ansible_python_interpreter: /usr/local/bin/python3.9
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+
+server_type_roles_list:
+  - sudoers
+  - selinux-config
+  - users-and-groups
+  - set-ec2-hostname
+  - domain-search
+  - ansible-script
+  - azcopy
+  - disable-firewall
+  - epel
+  - disks
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
