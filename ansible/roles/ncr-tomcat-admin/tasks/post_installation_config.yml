@@ -1,9 +1,5 @@
 ### TOMCAT POST INSTALLATION CONFIGURATION
 ---
-- name: Run Setup
-  command: "sh {{ sap_bi_platform_installation_directory }}/sap_bobj/init/setupinit.sh"
-  become: true
-
 - name: Add tomcat config files
   ansible.builtin.template:
     src: "{{ item.src }}"
