@@ -167,6 +167,11 @@
       tags:
         - ec2provision
 
+    - import_tasks: cleanup-frmweb.yml
+      tags:
+        - ec2provision
+        - weblogic_cleanup_frmweb
+
     - include_tasks:
         file: setup-log-rotate.yml
         apply:
@@ -189,10 +194,5 @@
       tags:
         - ec2provision
         - weblogic_install_healthcheck
-
-    - import_tasks: cron-cleanup-tmp.yml
-      tags:
-        - ec2provision
-        - weblogic_cron_cleanup_tmp
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "6"
