@@ -1,0 +1,18 @@
+---
+- name: Copy frmweb cleanup script
+  ansible.builtin.template:
+    src: "10.3{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /home/oracle/admin/scripts/cleanup_frmweb.sh
+
+- name: Create frmweb cleanup cron
+  ansible.builtin.cron:
+    name: "cleanup tmp for weblogic"
+    user: root
+    minute: "0"
+    hour: "0"
+    job: "/home/oracle/admin/scripts/cleanup_frmweb.sh 2>&1 | logger -p local3.info -t nomis-weblogic-cleanup-frmweb"
