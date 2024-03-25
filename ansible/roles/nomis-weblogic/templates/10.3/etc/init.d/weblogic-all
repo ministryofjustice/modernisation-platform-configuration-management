@@ -52,6 +52,7 @@ stop() {
   done
   [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server stop
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager stop
+  pkill -9 -u oracle frmweb
 }
 
 status() {
