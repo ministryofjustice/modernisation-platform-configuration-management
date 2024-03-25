@@ -1,12 +1,12 @@
 ---
 - import_tasks: get_facts.yml
   tags:
-    - ec2provision
-    - ndh_get_facts
+    - always
 
 - import_tasks: templates.yml
   tags:
     - ec2provision
+    - ndh_templates
 
 - name: mount for reasons
   ansible.builtin.shell: mount -a
@@ -22,6 +22,7 @@
 - import_tasks: user.yml
   tags:
     - amibuild
+    - ndh_user
 
 - import_tasks: prereqs.yml
   tags:
