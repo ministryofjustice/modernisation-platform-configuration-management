@@ -21,3 +21,25 @@ db_configs:
     db_name: qa11g
   qa11r:
     db_name: qa11r
+
+# OEM server
+OMS_SERVER: dev-oem-a.hmpps-oem.hmpps-development.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 0
+recovery_catalog_server: "{{ OMS_SERVER }}"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "04"
+      # job: command generated in rman-backup-setup
