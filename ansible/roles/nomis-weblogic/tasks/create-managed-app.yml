@@ -4,7 +4,7 @@
     msg: "Error, please ensure weblogic_managed_app is defined"
   when: weblogic_managed_app is not defined
 
-- name: Check if managed app already configured
+- name: "{{ weblogic_managed_app }} Check if managed app already configured"
   ansible.builtin.stat:
     path: /etc/init.d/{{ weblogic_managed_app }}
   register: weblogic_created_managed_app_check
@@ -13,12 +13,12 @@
   block:
 
     # ensure everything is running
-    - name: {{ weblogic_managed_app }} Start services if not already running
+    - name: "{{ weblogic_managed_app }} Start services if not already running"
       ansible.builtin.service:
         name: weblogic-all
         state: started
 
-    - name: {{ weblogic_managed_app }} Copy managed app configuration files
+    - name: "{{ weblogic_managed_app }} Copy managed app configuration files"
       ansible.builtin.template:
         src: "10.3{{ item }}"
         dest: "{{ item }}"
@@ -27,7 +27,7 @@
       loop:
         - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
 
-    - name: {{ weblogic_managed_app }} Create managed app
+    - name: "{{ weblogic_managed_app }} Create managed app"
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -41,7 +41,7 @@
       async: 7200
       poll: 60
 
-    - name: {{ weblogic_managed_app }} Create managed app security directory
+    - name: "{{ weblogic_managed_app }} Create managed app security directory"
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -52,7 +52,7 @@
         - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security"
 
     # the boot.properties file is automatically updated by the weblogic server
-    - name: {{ weblogic_managed_app }} Copy managed app boot properties
+    - name: "{{ weblogic_managed_app }} Copy managed app boot properties"
       ansible.builtin.template:
         src: "10.3/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/AdminServer/security/boot.properties"
         dest: "{{ item }}"
@@ -62,7 +62,7 @@
       loop:
         - "/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/{{ weblogic_managed_app }}/security/boot.properties"
 
-    - name: {{ weblogic_managed_app }} Copy managed app init.d script
+    - name: "{{ weblogic_managed_app }} Copy managed app init.d script"
       vars:
         weblogic_managed_server_name: "{{ weblogic_managed_app }}"
       ansible.builtin.template:
@@ -71,7 +71,7 @@
         mode: "0755"
 
     # this ensures values in boot.properties become encrypted
-    - name: {{ weblogic_managed_app }} Restart service
+    - name: "{{ weblogic_managed_app }} Restart service"
       ansible.builtin.service:
         name: "{{ weblogic_managed_app }}"
         state: restarted
@@ -79,7 +79,7 @@
       poll: 20
 
   always:
-    - name: {{ weblogic_managed_app }} Remove temporary forms configuration files
+    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
@@ -91,7 +91,7 @@
 
 - name: Update managed app
   block:
-    - name: {{ weblogic_managed_app }} Update managed app init.d script
+    - name: "{{ weblogic_managed_app }} Update managed app init.d script"
       vars:
         weblogic_managed_server_name: "{{ weblogic_managed_app }}"
       ansible.builtin.template:
