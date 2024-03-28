@@ -23,6 +23,15 @@ wait_process() {
   timeout 290 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
 }
 
+stop_process() {
+  if [[ $(whoami) == "root" ]]; then
+    nohup su - oracle -c ". /u01/app/oracle/Middleware/wlserver_10.3/server/bin/setWLSEnv.sh && . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh && /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/stopManagedWebLogic.sh {{ weblogic_managed_server_name }}" 2>&1 | logger -p local3.info -t "$prog" &
+  else
+    echo -n "must be run as root"
+    return 1
+  fi
+}
+
 get_process_pids() {
   process_pids1=$(pgrep -u oracle -f "startManagedWebLogic.sh {{ weblogic_managed_server_name }}$" 2> /dev/null)
   process_pids2=$(pgrep -u oracle -f "weblogic.Name={{ weblogic_managed_server_name }} " 2> /dev/null)
@@ -67,6 +76,14 @@ stop() {
   echo -n $"Shutting down $prog: "
   if ! PIDS=$(get_process_pids); then
     echo -n "Already stopped"
+    echo_success
+    echo
+    return 0
+  fi
+  echo "init.d stopping $prog" | logger -p local3.info -t "$prog"
+  stop_process
+  sleep 2
+  if ! PIDS=$(get_process_pids); then
     echo_success
     echo
     return 0
