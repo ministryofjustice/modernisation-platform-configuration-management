@@ -19,7 +19,7 @@ start_process() {
   fi
 }
 
-wait_process() {
+wait_start_process() {
   timeout 290 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
 }
 
@@ -30,6 +30,10 @@ stop_process() {
     echo -n "must be run as root"
     return 1
   fi
+}
+
+wait_stop_process() {
+  timeout 15 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Done" "$prog:"
 }
 
 get_process_pids() {
@@ -58,7 +62,7 @@ start() {
     echo
     return 1
   fi
-  if ! wait_process; then
+  if ! wait_start_process; then
     echo "init.d failed waiting for $prog" | logger -p local3.info -t "$prog"
   fi
   if ! get_process_pids > /dev/null; then
@@ -82,7 +86,9 @@ stop() {
   fi
   echo "init.d stopping $prog" | logger -p local3.info -t "$prog"
   stop_process
-  sleep 2
+  if ! wait_stop_process; then
+    echo "init.d failed waiting to stop $prog" | logger -p local3.info -t "$prog"
+  fi
   if ! PIDS=$(get_process_pids); then
     echo_success
     echo
