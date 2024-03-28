@@ -9,7 +9,7 @@
     weblogic_managed_app: "{{ weblogic_form_server_config.name }}"
     weblogic_managed_app_port: "{{ weblogic_form_server_config.port }}"
 
-- name: {{ weblogic_managed_app }} Check if managed app already configured
+- name: Check if managed app already configured
   ansible.builtin.stat:
     path: /etc/init.d/{{ weblogic_managed_app }}
   register: weblogic_created_managed_app_check

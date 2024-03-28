@@ -4,7 +4,7 @@
     msg: "Error, please ensure weblogic_managed_app is defined"
   when: weblogic_managed_app is not defined
 
-- name: {{ weblogic_managed_app }} Check if managed app already configured
+- name: Check if managed app already configured
   ansible.builtin.stat:
     path: /etc/init.d/{{ weblogic_managed_app }}
   register: weblogic_created_managed_app_check
