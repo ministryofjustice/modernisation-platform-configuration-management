@@ -8,7 +8,7 @@
 # Source function library.
 . /etc/init.d/functions
 
-start() {
+start_parallel() {
   set -e
   echo $"Starting all weblogic processes: "
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
@@ -41,6 +41,22 @@ start() {
   set -e
 
   [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn start
+}
+
+start_sequential() {
+  set -e
+  echo $"Starting all weblogic processes: "
+  [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
+  [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
+  managed_services=$(find /etc/init.d/ -name 'WLS*')
+  for managed_service in $managed_services; do
+    $managed_service start
+  done
+  [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn start
+}
+
+start() {
+  start_sequential
 }
 
 stop() {
@@ -169,6 +185,12 @@ case "$1" in
     start
     repair
     ;;
+  start_sequential)
+    start_sequential
+    ;;
+  start_parallel)
+    start_parallel
+    ;;
   stop)
     stop
     ;;
@@ -185,7 +207,7 @@ case "$1" in
     repair
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status|healthcheck|repair}"
+    echo "Usage: $0 {start|stop|restart|status|healthcheck|repair|start_sequential|start_parallel}"
     exit 3
 esac
 
