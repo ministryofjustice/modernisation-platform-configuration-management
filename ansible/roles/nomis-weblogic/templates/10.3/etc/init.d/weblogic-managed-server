@@ -19,8 +19,23 @@ start_process() {
   fi
 }
 
-wait_process() {
-  timeout 290 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
+wait_start_process() {
+  # <IIOP> ... <[ACTIVE] ExecuteThread: '0' for queue: 'weblogic.kernel.Default (self-tuning)'> ... <IIOP subsystem enabled.>
+  # It can take an age for weblogic to progress from the above line in the logs
+  timeout 900 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Server started in RUNNING mode" "$prog:"
+}
+
+stop_process() {
+  if [[ $(whoami) == "root" ]]; then
+    nohup su - oracle -c ". /u01/app/oracle/Middleware/wlserver_10.3/server/bin/setWLSEnv.sh && . /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/setDomainEnv.sh && /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/bin/stopManagedWebLogic.sh {{ weblogic_managed_server_name }}" 2>&1 | logger -p local3.info -t "$prog" &
+  else
+    echo -n "must be run as root"
+    return 1
+  fi
+}
+
+wait_stop_process() {
+  timeout 15 /home/oracle/admin/scripts/wait_for_entry_in_log.sh /var/log/messages "Done" "$prog:"
 }
 
 get_process_pids() {
@@ -36,6 +51,7 @@ get_process_pids() {
 
 start() {
   echo -n $"Starting $prog: "
+  touch /var/lock/subsys/$prog
   if PIDS=$(get_process_pids); then
     echo -n "Already running"
     echo_success
@@ -47,15 +63,17 @@ start() {
     echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
-  if ! wait_process; then
+  if ! wait_start_process; then
     echo "init.d failed waiting for $prog" | logger -p local3.info -t "$prog"
   fi
   if ! get_process_pids > /dev/null; then
     echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   echo "init.d started $prog" | logger -p local3.info -t "$prog"
@@ -65,8 +83,19 @@ start() {
 
 stop() {
   echo -n $"Shutting down $prog: "
+  rm -f /var/lock/subsys/$prog
   if ! PIDS=$(get_process_pids); then
     echo -n "Already stopped"
+    echo_success
+    echo
+    return 0
+  fi
+  echo "init.d stopping $prog" | logger -p local3.info -t "$prog"
+  stop_process
+  if ! wait_stop_process; then
+    echo "init.d failed waiting to stop $prog" | logger -p local3.info -t "$prog"
+  fi
+  if ! PIDS=$(get_process_pids); then
     echo_success
     echo
     return 0

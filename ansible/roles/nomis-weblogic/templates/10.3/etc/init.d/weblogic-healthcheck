@@ -28,6 +28,7 @@ start_process() {
 
 start() {
   echo -n $"Starting $prog: "
+  touch /var/lock/subsys/$prog
   if PIDS=$(get_healthcheck_pid); then
     echo -n "healthcheck already running: $PIDS"
     echo_success
@@ -39,12 +40,14 @@ start() {
     echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   if ! get_healthcheck_pid > /dev/null; then
     echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   echo "init.d started $prog" | logger -p local3.info -t "$prog"
@@ -54,6 +57,7 @@ start() {
 
 stop() {
   echo -n $"Stopping $prog: "
+  rm -f /var/lock/subsys/$prog
   if ! PIDS=$(get_healthcheck_pid); then
     echo -n "Already stopped"
     echo_success

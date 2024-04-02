@@ -48,6 +48,7 @@ get_process_pids() {
 
 start() {
   echo -n $"Starting $prog: "
+  touch /var/lock/subsys/$prog
   if PIDS=$(get_process_pids); then
     echo -n "Already running"
     echo_success
@@ -58,11 +59,13 @@ start() {
   if ! start_process; then
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   if ! get_process_pids > /dev/null; then
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   echo_success
@@ -71,6 +74,7 @@ start() {
 
 stop() {
   echo -n $"Shutting down $prog: "
+  rm -f /var/lock/subsys/$prog
   if ! PIDS=$(get_process_pids); then
     echo -n "Already stopped"
     echo_success

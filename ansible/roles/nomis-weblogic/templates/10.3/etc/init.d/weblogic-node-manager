@@ -36,6 +36,7 @@ get_process_pids() {
 
 start() {
   echo -n $"Starting $prog: "
+  touch /var/lock/subsys/$prog
   if PIDS=$(get_process_pids); then
     echo -n "Already running"
     echo_success
@@ -47,6 +48,7 @@ start() {
     echo "init.d failed starting $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   if ! wait_process; then
@@ -56,6 +58,7 @@ start() {
     echo "init.d failed getting process pids for $prog" | logger -p local3.info -t "$prog"
     echo_failure
     echo
+    rm -f /var/lock/subsys/$prog
     return 1
   fi
   echo "init.d started $prog" | logger -p local3.info -t "$prog"
@@ -65,6 +68,7 @@ start() {
 
 stop() {
   echo -n $"Shutting down $prog: "
+  rm -f /var/lock/subsys/$prog
   if ! PIDS=$(get_process_pids); then
     echo -n "Already stopped"
     echo_success
