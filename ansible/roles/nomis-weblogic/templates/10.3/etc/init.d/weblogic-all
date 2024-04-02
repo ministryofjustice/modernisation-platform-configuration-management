@@ -8,9 +8,12 @@
 # Source function library.
 . /etc/init.d/functions
 
+prog="weblogic-all"
+
 start_parallel() {
   set -e
   echo $"Starting all weblogic processes: "
+  touch /var/lock/subsys/$prog
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
   [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
 
@@ -46,6 +49,7 @@ start_parallel() {
 start_sequential() {
   set -e
   echo $"Starting all weblogic processes: "
+  touch /var/lock/subsys/$prog
   [[ -x /etc/init.d/weblogic-node-manager ]] && /etc/init.d/weblogic-node-manager start
   [[ -x /etc/init.d/weblogic-server ]] &&  /etc/init.d/weblogic-server start
   managed_services=$(find /etc/init.d/ -name 'WLS*')
@@ -61,6 +65,7 @@ start() {
 
 stop() {
   echo $"Stopping all weblogic processes: "
+  rm -f /var/lock/subsys/$prog
   [[ -x /etc/init.d/opmn ]] && /etc/init.d/opmn stop
   managed_services=$(find /etc/init.d/ -name 'WLS*' | sort -r)
   for managed_service in $managed_services; do
