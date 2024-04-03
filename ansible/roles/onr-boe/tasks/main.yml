@@ -1,0 +1,39 @@
+---
+# - import_tasks: prereqs.yml
+#   tags:
+#     - always
+
+# - import_tasks: users.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#     - oracle_db_users
+
+- name: Set selinux to permissive mode
+  import_role:
+    name: selinux-config
+  vars:
+    selinux_state: permissive
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_selinux_permissive
+
+- import_tasks: get-facts.yml
+  tags:
+    - ec2provision
+    # - oracle_db_get_facts
+    # - oracle_db_reconfigure_has
+    # - oracle_db_restore_databases
+
+- import_tasks: download-software.yml
+  tags:
+    - amibuild
+    - ec2provision
+    # - oracle_db_get_base_software
+
+# - import_tasks: install-base-software.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#     - oracle_db_install_base_software
