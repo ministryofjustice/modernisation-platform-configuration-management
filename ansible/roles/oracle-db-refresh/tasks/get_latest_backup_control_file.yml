@@ -1,8 +1,8 @@
 ---
-- name: Check if ORACLE_DB_REFRESH_DB_NAME is defined
+- name: Check if SOURCE_DB is defined
   fail:
-    msg: "ORACLE_DB_REFRESH_DB_NAME is not defined"
-  when: ORACLE_DB_REFRESH_DB_NAME == ""
+    msg: "SOURCE_DB is not defined"
+  when: SOURCE_DB == ""
 
 - name: Install SQL Script
   template:
@@ -24,8 +24,8 @@
 
 - name: Copy the latest backup control file handle details to the runner
   fetch:
-    src: "/tmp/{{ ORACLE_DB_REFRESH_DB_NAME }}_control.txt"
-    dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ ORACLE_DB_REFRESH_DB_NAME }}_control.txt"
+    src: "/tmp/{{ SOURCE_DB }}_control.txt"
+    dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ SOURCE_DB }}_control.txt"
     flat: yes
     fail_on_missing: yes
 
@@ -34,5 +34,5 @@
     path: "{{ item }}"
     state: absent
   loop:
-    - "/tmp/{{ ORACLE_DB_REFRESH_DB_NAME }}_control.txt"
-    - "/tmp/{{ ORACLE_DB_REFRESH_DB_NAME }}"
+    - "/tmp/{{ SOURCE_DB }}_control.txt"
+    - "/tmp/get_latest_backup_control_file.sql"

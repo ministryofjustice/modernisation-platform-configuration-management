@@ -1,0 +1,18 @@
+---
+- name: Check if TARGET_DB is defined
+  fail:
+    msg: "TARGET_DB is not defined"
+  when: TARGET_DB == ""
+
+- name: Check if SOURCE_DB is defined
+  fail:
+    msg: "SOURCE_DB is not defined"
+  when: SOURCE_DB == ""
+
+- name: Copy the latest backup control file handle details to the runner
+  fetch:
+    src: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ SOURCE_DB }}_control.txt"
+    dest: "/tmp/{{ TARGET_DB }}_control.txt"
+    flat: yes
+    fail_on_missing: yes
+
