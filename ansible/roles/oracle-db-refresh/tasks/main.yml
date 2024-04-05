@@ -2,4 +2,9 @@
 - import_tasks: get_latest_backup_control_file.yml
   tags:
     - oracle_db_refresh
-    - oracle_db_refresh_get_latest_backup_control_file
+    - get_latest_backup_control_file
+
+- import_tasks: oracle_db_restore.yml
+  tags:
+    - oracle_db_refresh
+    - refresh_db
