@@ -46,24 +46,24 @@ disks_partition:
   - ebs_device_name: /dev/sde
     oracle_group: data
     oracle_label: DATA01
-  # - ebs_device_name: /dev/sdf
-  #   oracle_group: data
-  #   oracle_label: DATA02
-  # - ebs_device_name: /dev/sdg
-  #   oracle_group: data
-  #   oracle_label: DATA03
-  # - ebs_device_name: /dev/sdh
-  #   oracle_group: data
-  #   oracle_label: DATA04
-  # - ebs_device_name: /dev/sdi
-  #   oracle_group: data
-  #   oracle_label: DATA05
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdi
+    oracle_group: data
+    oracle_label: DATA05
   - ebs_device_name: /dev/sdj
     oracle_group: flash
     oracle_label: FLASH01
-  # - ebs_device_name: /dev/sdk
-  #   oracle_group: flash
-  #   oracle_label: FLASH02
+  - ebs_device_name: /dev/sdk
+    oracle_group: flash
+    oracle_label: FLASH02
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -100,4 +100,20 @@ tns_entries:
       port: 1521
       host_list:
         - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCV_TAF
+  pp:
+    - name: PPBIPSYS
+      port: 1521
+      host_list:
+        - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBIPSYS
+    - name: PPBIPAUD
+      port: 1521
+      host_list:
+        - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
       service_name: RCV_TAF
