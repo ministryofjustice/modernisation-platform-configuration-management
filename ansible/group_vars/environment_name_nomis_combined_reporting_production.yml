@@ -6,6 +6,12 @@ dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
 
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+oracle_ru_patch: OCT2023
+
 OMS_SERVER: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0
 
@@ -27,10 +33,6 @@ rman_backup_cron:
       hour: "19"
       # job: command generated in rman-backup-setup
 
-db_configs:
-  RCVCAT:
-    rcvcat_db_name: PRCVCAT
-
 # Oracle database housekeeping
 audit_housekeeping_period: 60
 db_housekeeping_script: db_server_housekeeping.sh
@@ -41,3 +43,8 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: PRCVCAT
+
+

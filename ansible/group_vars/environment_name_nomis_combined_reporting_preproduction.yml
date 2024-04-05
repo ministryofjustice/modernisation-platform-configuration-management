@@ -11,6 +11,16 @@ osbws_additional_configs:
   - name: osbws_prod
     s3_bucket_name: ncr-db-backup-bucket20230823123102902900000001
 
+oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
+db_env:
+  ORACLE_HOME: "{{ database_home }}"
+  PATH: "{{ database_home }}/bin:{{ oracle_path }}"
+oracle_ru_patch: OCT2023
+
+# OEM server
+OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+
 # Oracle database housekeeping
 audit_housekeeping_period: 60
 db_housekeeping_script: db_server_housekeeping.sh
@@ -21,3 +31,26 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 1
+recovery_catalog_server: "{{ OMS_SERVER }}"
+exclude_db_backup: "PPOASYS|PPOASREP|PPOASRP2|PPMISTRN|PPMISTN2"
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "0"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "1-6"
+      minute: "30"
+      hour: "07"
+      # job: command generated in rman-backup-setup
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: PPRCVCAT
