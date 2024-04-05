@@ -1,13 +1,19 @@
 ---
 - name: Install specified python requirements
   ansible.builtin.copy:
-    src: "{{ role_path }}/../../requirements.txt"
-    dest: "~/.ansible-configuration-management-requirements.txt"
+    src: "{{ role_path }}/../../{{ item }}"
+    dest: "~/.ansible-configuration-management-{{ item }}"
+  loop:
+    - requirements.txt
+    - constraints.rhel6.txt
 
 - name: Install specified python requirements using given python interpreter
   ansible.builtin.pip:
     executable: "{{ ansible_python_interpreter | regex_replace('python', 'pip') }}"
     requirements: "~/.ansible-configuration-management-requirements.txt"
+    extra_args: "{{ pip_extra_args }}"
+  vars:
+    pip_extra_args: "{% if '3.6' in ansible_python_interpreter %}-c ~/.ansible-configuration-management-constraints.rhel6.txt{% endif %}"
   when: ansible_python_interpreter is defined
 
 - name: Install specified python requirements using default pip
