@@ -1,13 +1,11 @@
 set head off echo off feedback off 
 spool /tmp/{{ SOURCE_DB }}_control.txt
-with controlfile_details as
-(
- select db_key, max(stamp) stamp from rcvcatowner.rc_backup_controlfile
- where autobackup_date is NULL and db_name = '{{ SOURCE_DB }}' 
- group by db_key
-)
-select a.HANDLE from rcvcatowner.rc_backup_piece a, controlfile_details b, rcvcatowner.rc_backup_controlfile c
-where a.db_key =b.db_key and a.stamp=b.stamp and a.stamp=c.stamp and a.db_key=c.db_key and a.set_stamp=c.set_stamp and  a.bs_key=c.bs_key
+select handle from
+ (select a.db_key,b.db_name, a.handle, a.tag, a.media, a.completion_time
+  from rcvcatowner.rc_backup_piece a , rcvcatowner.rc_backup_controlfile b
+  where a.db_key=b.db_key and a.set_stamp=b.set_stamp
+  and  a.tag like 'CONTROL%' and b.db_name='{{ SOURCE_DB }}' order by a.db_key, a.completion_time desc )
+where rownum=1
 /
-
+spool off 
 exit
