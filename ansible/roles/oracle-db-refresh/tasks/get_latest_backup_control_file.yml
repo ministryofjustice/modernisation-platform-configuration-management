@@ -21,6 +21,10 @@
     . /usr/local/bin/oraenv
     {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
     "
+    if [[ ! -s "/tmp/{{ SOURCE_DB }}_control.txt" ]]; then
+      echo "Empty control file - {{ SOURCE_DB }} backup not found in {{ rcvcat_db_name.rcvcat_db_name }}"
+      exit 1
+    fi
 
 - name: Copy the latest backup control file handle details to the runner
   fetch:
