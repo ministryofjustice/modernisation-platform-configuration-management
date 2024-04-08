@@ -6,7 +6,7 @@ sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
 sap_jvm_unpack_base_directory: /opt/sap/java
 
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
-cms_name: "{{ ncr_environment }}-ncr-cms"
+cms_name: "{{ ncr_environment }}-ncr-cms-1-a"
 
 s3:
   bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
@@ -18,7 +18,7 @@ s3:
     sap_jvm: SAPJVM8_94-80000202.SAR
     sapcar: SAPCAR_1324-80000935.EXE
 
-ssm_parameters_prefix: "tomcat"
+ssm_parameters_prefix: "web"
 
 tomcat_post_install_directories:
   tomcat: /u01/app/bobj/BIP4/sap_bobj/tomcat
@@ -26,8 +26,8 @@ tomcat_post_install_directories:
   biprws_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom
   webapps_root: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/ROOT
 
-tomcat_admin_secretsmanager_passwords:
-  tomcat_admin:
-    secret: "/ec2/ncr-tomcat-admin/{{ ncr_environment }}/passwords"
+web_secretsmanager_passwords:
+  web:
+    secret: "/ec2/ncr-web/{{ ncr_environment }}/passwords"
     users:
-      - tomcat_admin: auto
+      - web: auto

@@ -8,26 +8,26 @@
 
 - name: Copy response file
   ansible.builtin.template:
-    src: u02/software/BIP_4_3_SP1/tomcat_admin_response.ini
-    dest: "{{ sap_bi_platform_extraction_directory }}/tomcat_admin_response.ini"
+    src: u02/software/BIP_4_3_SP1/web_response.ini
+    dest: "{{ sap_bi_platform_extraction_directory }}/web_response.ini"
     owner: bobj
     group: binstall
     mode: "0755"
 
 - name: Ensure product key is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/tomcat_admin_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/web_response.ini"
     regexp: "^productkey="
     line: "productkey={{ product_key }}"
 
 - name: Ensure CMS password is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/tomcat_admin_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/web_response.ini"
     regexp: "^remotecmsadminpassword="
     line: "remotecmsadminpassword={{ cms_admin_password }}"
 
 - name: Ensure CMS name is set in response file
   ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/tomcat_admin_response.ini"
+    path: "{{ sap_bi_platform_extraction_directory }}/web_response.ini"
     regexp: "^remotecmsname="
     line: "remotecmsname={{ cms_name }}"

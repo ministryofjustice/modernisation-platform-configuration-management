@@ -23,6 +23,12 @@
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
+- import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+
 - import_tasks: retrieve_files.yml
   tags:
     - amibuild
@@ -40,13 +46,14 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
-# - import_tasks: install_tomcat.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: post_installation_config.yml
+- import_tasks: install_host_agent.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
+  
+# - import_tasks: install_bip.yml
 #   tags:
 #     - amibuild
 #     - ec2provision
