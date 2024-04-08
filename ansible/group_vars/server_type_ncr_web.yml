@@ -29,7 +29,7 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  - ncr-tomcat
+  - ncr-web
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
@@ -41,15 +41,17 @@ packages_yum_install:
   - nano
   - vim
   - make
+  - bind-utils
   - libstdc++.i686
   - libstdc++.x86_64
+  - gdb
   - glibc.i686
   - glibc.x86_64
   - libX11.i686
   - libX11.x86_64
   - libXext.i686
   - libXext.x86_64
-  - expat.i686
+  #- expat.i686
   - expat.x86_64
   - libxcrypt.i686
   - libgcc.i686
@@ -65,6 +67,11 @@ packages_yum_install:
   - libxcb.x86_64
   - libXau.i686
   - libXau.x86_64
+  - ksh
+  - nfs-utils
+  - psmisc
+  - tcsh
+  - uuidd
   - xz-libs.i686
 
 disks_mount:

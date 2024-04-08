@@ -9,7 +9,7 @@
   aws_s3:
     mode: get
     bucket: "{{ s3.bip_bucket_name }}"
-    object: "{{ s3.prefix }}{{ item }}"
+    object: "{{ s3.packages_prefix }}{{ item }}"
     dest: "{{ sap_host_agent_base_directory }}/{{ item|basename }}"
     overwrite: true
   with_items:
