@@ -1,0 +1,39 @@
+---
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ temp }}"
+    - "{{ stage }}"
+  tags:
+    - amibuild
+    - oracle_19c_download
+    - oracle_19c_create_dirs
+
+# - name: Download oracle prerequisite rpms from S3 bucket
+#   amazon.aws.aws_s3:
+#     bucket: "{{ artefacts_s3_bucket_name }}"
+#     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+#     dest: "{{ stage }}/{{ item }}"
+#     mode: get
+#     overwrite: latest
+#   loop:
+#     - "{{ oracle_prereq_rpm }}"
+#     - "{{ oracle_asmlib_rpm }}"
+#     - "{{ oracleasm_support_rpm }}"
+
+- name: Download Oracle 19c software from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ artefacts_s3_bucket_name }}"
+    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "{{ stage }}/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "{{ boe_software }}"
+    # - "{{ grid_software }}"
+    # - "{{ opatch }}"
