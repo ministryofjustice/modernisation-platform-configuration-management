@@ -26,13 +26,25 @@
 # - oracle_db_reconfigure_has
 # - oracle_db_restore_databases
 
-- import_tasks: download-software.yml
-  tags:
-    - amibuild
-    - ec2provision
-    # - oracle_db_get_base_software
-# - import_tasks: install-base-software.yml
+# - import_tasks: download-software.yml
 #   tags:
 #     - amibuild
 #     - ec2provision
-#     - oracle_db_install_base_software
+#     # - oracle_db_get_base_software
+# # - import_tasks: install-base-software.yml
+# #   tags:
+# #     - amibuild
+# #     - ec2provision
+# #     - oracle_db_install_base_software
+
+# - import_tasks: extract-software.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#     # - oracle_db_extract_base_software
+
+- ansible.builtin.import_role:
+    name: onr-get
+  tags:
+    - amibuild
+    - ec2provision
