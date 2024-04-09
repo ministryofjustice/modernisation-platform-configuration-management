@@ -1,0 +1,21 @@
+---
+# - name: Check if the BOE software has been extracted
+#   stat:
+#     path: "{{ app_dir }}"
+#   register: software_extracted
+
+# - name: Unpack the install files
+#   block:
+    - name: Unpack the BOE software
+      ansible.builtin.unarchive:
+        src: "{{ stage }}/{{ boe_software }}"
+        dest: "{{ app_dir }}"
+        remote_src: yes
+      # when: stage is defined
+  # when: not software_extracted.stat.exists
+  # rescue:
+  #   - name: Remove the unpacked BOE software
+  #     file:
+  #       path: "{{ app_dir }}/BOE"
+  #       state: absent
+  #     # when: stage is defined

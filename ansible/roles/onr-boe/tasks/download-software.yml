@@ -11,8 +11,8 @@
     - "{{ stage }}"
   tags:
     - amibuild
-    - oracle_19c_download
-    - oracle_19c_create_dirs
+    # - oracle_19c_download
+    # - oracle_19c_create_dirs
 
 # - name: Download oracle prerequisite rpms from S3 bucket
 #   amazon.aws.aws_s3:
@@ -26,7 +26,7 @@
 #     - "{{ oracle_asmlib_rpm }}"
 #     - "{{ oracleasm_support_rpm }}"
 
-- name: Download Oracle 19c software from S3 bucket
+- name: Download BOE software from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
