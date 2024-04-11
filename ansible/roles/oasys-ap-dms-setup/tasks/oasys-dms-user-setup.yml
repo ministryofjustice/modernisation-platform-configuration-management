@@ -1,16 +1,16 @@
 ---
-- name: Get {{ dms_user }} password 
-  ansible.builtin.shell: | 
+- name: Get {{ dms_user }} password
+  ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     aws secretsmanager get-secret-value --secret-id "/ec2/{{ ec2_name }}/asm-passwords" --query SecretString --output text | jq -r .{{ dms_user }}
-  register: dms_password_output 
+  register: dms_password_output
 
-- name: set  password variable 
+- name: set  password variable
   ansible.builtin.set_fact:
     dms_password: "{{ dms_password_output.stdout }}"
 
-- name:  Create {{ dms_user }} if password is not null 
-  block: 
+- name: Create {{ dms_user }} if password is not null
+  block:
     - name: Create stage directories
       ansible.builtin.file:
         owner: oracle
@@ -28,7 +28,7 @@
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
 
-    - name: Create {{ dms_user }} user in ASM 
+    - name: Create {{ dms_user }} user in ASM
       become_user: "{{ oracle_install_user }}"
       ansible.builtin.shell: |
         set -eo pipefail
