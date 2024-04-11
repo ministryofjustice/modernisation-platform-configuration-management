@@ -1,0 +1,17 @@
+set echo on 
+set serveroutput on
+spool {{ stage }}/dms_user_creation.log
+declare 
+    userexist integer;
+begin
+    select count(*) into userexist from v$pwfile_users where username=upper('{{ dms_user }}');
+    if (userexist = 0) then
+        execute immediate 'create user {{ dms_user }} identified by {{ dms_password }}';
+        execute immediate 'grant sysasm to {{ dms_user }}';
+        dbms_output.put_line('{{ dms_user }} created successfully');
+    else 
+        dbms_output.put_line('{{ dms_user }} already exists.');
+    end if;
+end;
+/
+exit
