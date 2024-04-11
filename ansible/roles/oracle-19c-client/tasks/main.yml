@@ -1,24 +1,42 @@
 ---
+# - name: debug value of {{ oracle_home }}
+#   debug:
+#     var: oracle_home
+
+- name: print value of {{ oracle_home }}
+  ansible.builtin.debug:
+    msg: "{{ oracle_home }}"
+
 - name: Check oracle 19c Client Software installed
   ansible.builtin.stat:
     path: "{{ oracle_home }}/bin/sqlplus"
   register: client_software_installed
 
-- block:
-    - import_tasks: download_software.yml
-      tags:
-        - amibuild
-        - oracle_client_software_download
+- name: print value of registered variable client_software_installed
+  ansible.builtin.debug:
+    var: client_software_installed
 
-    - import_tasks: install_client.yml
-      tags:
-        - amibuild
-        - oracle_client_install
+# - block:
+#     - import_tasks: download_software.yml
+#       tags:
+#         - amibuild
+#         - oracle_client_software_download
 
-    - import_tasks: cleanup.yml
-      tags:
-        - ec2provision
-        - oracle_client_cleanup
+#     - import_tasks: install_client.yml
+#       tags:
+#         - amibuild
+#         - oracle_client_install
 
-  # block
-  when: not client_software_installed.stat.exists
+#     - import_tasks: cleanup.yml
+#       tags:
+#         - ec2provision
+#         - oracle_client_cleanup
+
+#   # block
+#   when: not client_software_installed.stat.exists
+
+- name: just download the client software
+  import_tasks: download_software.yml
+
+- name: just install the client software
+  import_tasks: install_client.yml
