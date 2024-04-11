@@ -1,0 +1,43 @@
+---
+- name: Get {{ dms_user }} password
+  ansible.builtin.shell: |
+    PATH=$PATH:/usr/local/bin
+    aws secretsmanager get-secret-value --secret-id "/ec2/{{ ec2_name }}/asm-passwords" --query SecretString --output text | jq -r .{{ dms_user }}
+  register: dms_password_output
+
+- name: set  password variable
+  ansible.builtin.set_fact:
+    dms_password: "{{ dms_password_output.stdout }}"
+
+- name: Create {{ dms_user }} if password is not null
+  block:
+    - name: Create stage directories
+      ansible.builtin.file:
+        owner: oracle
+        group: oinstall
+        path: "{{ stage }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy dms_user_creation.sql script template
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.template:
+        src: "dms_user_creation.sql.j2"
+        dest: "{{ stage }}/dms_user_creation.sql"
+        mode: u=rwx,g=,o=
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+
+    - name: Create {{ dms_user }} user in ASM
+      become_user: "{{ oracle_install_user }}"
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          export ORACLE_SID=+ASM
+          . oraenv <<< $ORACLE_SID
+          sqlplus / as sysasm @{{ stage }}/dms_user_creation.sql
+        }
+        main 2>&1 | logger -p local3.info -t ansible-dms-user
+
+  when: dms_password|length > 0
