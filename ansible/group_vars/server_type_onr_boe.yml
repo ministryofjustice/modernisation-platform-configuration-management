@@ -2,6 +2,11 @@
 ansible_python_interpreter: /usr/local/bin/python3.6
 
 users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
   - name: bobj
     group: binstall
     groups:
@@ -24,13 +29,13 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  # - oracle-19c-client
-  # - oracle-tns-entries
+  # - oracle-19c-client # TODO: may need to create an 11.2.0 or 11c client role
+  # - oracle-tns-entries # TODO: see comment above
   # - ncr-bip
   - onr-boe
-  - collectd
-  - amazon-cloudwatch-agent
-  - amazon-cloudwatch-agent-collectd
+  # - collectd TODO: comment these back in, not needed yet
+  # - amazon-cloudwatch-agent
+  # - amazon-cloudwatch-agent-collectd
   # - collectd-service-metrics TODO: not defined yet
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
@@ -75,3 +80,9 @@ disks_mount:
   # - ebs_device_name: /dev/sds
   #   dir: swap
   #   fstype: swap
+
+# oracle client
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_home: /u01/app/oracle/product/19c/client_1
+oracle_inventory: /u01/app/oraInventory
