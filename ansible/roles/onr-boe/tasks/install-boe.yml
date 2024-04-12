@@ -1,0 +1,14 @@
+---
+- name: Create BOE Disk mount point
+  ansible.builtin.file:
+    path: /mnt/DATA_1
+    state: directory
+    mode: '0755'
+
+- name: Mount DATA_1 volume
+  ansible.builtin.mount:
+    src: "{{ app_dir }}/DATA_1"
+    path: /mnt/DATA_1
+    fstype: none
+    opts: bind
+    state: mounted
