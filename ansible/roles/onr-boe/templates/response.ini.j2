@@ -1,0 +1,217 @@
+# Installation Response File
+# ----------------------------------------------------------------------
+#
+
+[Manual Settings]
+# The name of the local server. This feature overrides the local server name
+# to the machine name specified. It must be manually set within the response file
+# or it will be defaulted to the local machine name.
+MACHINENAME=
+
+
+[Paths]
+# The path of the bobje directory. This feature is automically set by
+# the installation directory specified as a command line argument followed
+# by /bobje/.
+BOBJEDIR=
+
+# The path of the DISK_1 directory on the CD. This path defaults to the cd directory
+# pertaining to the install which has created the response file. It may be overwritten
+# by specifying the cd directory as an argument on the command line.
+CDDIR=
+
+# The path of the license directory.
+LICENSEDIR=
+
+
+[Product Information]
+# The current language with the following exceptions:
+#       1) "jp"         if the current language is "ja"         (Japanese)
+#       2) "chs"        if the current language is "zh_CN"      (Chinese - China)
+#       3) "cht"        if the current language is "zh_TW"      (Chinese - Taiwan)
+BOBJELANG="en"
+
+# The name of the product being installed.
+PRODUCTID_NAME="BusinessObjects"
+
+# The version of Business Objects Enterprise.
+BOBJEVERSION="12.0"
+
+# The version of the product being installed.
+PRODUCTID_VER="12.0"
+
+# The license key to install Business Objects Enterprise.
+BOBJELICENSEKEY=
+
+# The product id key. ( The product id is usually the same as the BOBJELICENSEKEY )
+PIDKEY=
+
+
+[Installation Information]
+# The installation function to perform. (i.e. install)
+FUNCTION=install
+
+# The type of installation. (i.e. new / custom / webtier )
+INSTALLTYPE="new"
+
+# A comma-delimited list of flags that describe the operating mode of the Installer
+# The following flags are supported:
+# install     - running a new install of the product
+# modify      - running a modify install on a previously installed product
+# remove      - running a uninstall of on a previously installed product
+# integrated  - the current install is running from within another installed (ie. integrated langpacks)
+# interactive - UI is enabled and can prompt for user response
+INSTALLMODE="install"
+
+# The name of the local server.
+LOCALNAMESERVER=
+
+# Whether to perform a user or system install.
+BOBJEINSTALLLOCAL="system"
+
+# The language packs to install.
+# Each language is specified using the short format and is seperated by a space.
+# Example: LANGPACKS_TO_INSTALL=en fr
+LANGPACKS_TO_INSTALL=en
+
+# List of all languages included in the product.
+# Each language is specified using the short format and is seperated by a comma.
+# Example: LANGUAGES_TO_INSTALL=en,fr
+LANGUAGES_TO_INSTALL=en
+
+# The Business Objects Enterprise username.
+BOBJEUSERNAME="bobj"
+
+# Specified servers to add.
+EXPANDSERVERS=
+
+
+[Tomcat]
+# Whether or not to install Tomcat.
+INSTALLTOMCAT=
+
+# The connection port.
+CONNECTORPORT="8080"
+
+# The redirection port.
+REDIRECTPORT="8443"
+
+# The shutdown port.
+SHUTDOWNPORT="8005"
+
+
+[Application Server]
+# The path of the Application Server directory (If an Application Server
+# is being installed). This path is automatically set using the installation
+# directory.
+AS_DIR=
+
+# The Application Server name.
+# Defaults to tomcat55 if Tomcat is to be installed.
+#AS_SERVER=tomcat55
+AS_SERVER=tomcat7
+
+# The instance of the Application Server. (e.g. localhost)
+# Defaults to localhost if Tomcat is to be installed.
+AS_INSTANCE=localhost
+
+# The Application Server port.
+AS_ADMIN_PORT=
+
+# The Application Server deployment action. (i.e. deploy or predeploy)
+WDEPLOYACTION=deploy
+
+
+[CMS Cluster]
+# Whether or not to cluster the CMS.
+CMSCLUSTER=
+
+# The CMS name to cluster to.
+CLUSTER_NAMESERVER=
+
+# The CMS port number to cluster to.
+CLUSTERPORTNUMBER="6400"
+
+
+[CMS]
+# The type of database. (e.g. MySQL, DB2, Oracle,SQL Anywhere)
+DBTYPE="SQLANYWHERE"
+
+# The service name of the CMS.
+SERVICENAME="BOE120"
+
+# The username to connect to the database.
+DATABASEUID="Administrator"
+
+# The password to connect to the database.
+DATABASEPWD="admin"
+
+# The name of the CMS server.
+CMSNAMESERVER=
+
+# The port number used to communicate with the CMS.
+CMSPORTNUMBER="6400"
+
+# The password used to connect to the CMS.
+CMSPASSWORD=""
+
+# The server intelligence agent node name.
+SIANODENAME=
+
+# The port used to communicate with the server intelligence agent.
+SIAPORTNUMBER="6410"
+
+# Whether or not to reinitialize the database.
+REINIT="yes"
+
+
+[SQLANYWHERE]
+# Whether or not to install SQL Anywhere
+INSTALLSQLANYWHERE="yes"
+
+# The port number used to communicate with the SQL Anywhere database.
+SERVICEPORT="2638"
+
+# The name of the server hosting the SQL Anywhere database.
+SQLANYWHEREHOSTNAME=
+
+# The root password for the SQL Anywhere database.
+SQLANYWHEREROOTPWD="admin"
+
+
+[Audit]
+# Whether or not auditing is enabled.
+AUDITINGENABLED=yes
+
+# The service audit name of the CMS.
+SERVICENAME_AUDIT="BOE120_AUDIT"
+
+# The port number used to communicate with the SQL Anywhere database.
+SERVICEPORT_AUDIT="2638"
+
+# The name of the server hosting the SQL Anywhere database.
+SQLANYWHEREHOSTNAME_AUDIT=
+
+# The audit username to connect to the database.
+DATABASEUID_AUDIT=
+
+# The audit password to connect to the database.
+DATABASEPWD_AUDIT=
+
+
+[Marketing Products]
+# This feature manually enables specified marketing products. Each marketing product
+# specified must be seperated by a comma.
+# For a custom install this field is used to enable those products which are different from a default new installation.
+# Example: ENABLEMP=BusinessObjects.MySQL,BusinessObjects.WebTierComponents
+ENABLEMP=
+
+# This feature manually disables specified marketing products. Each marketing product
+# specified must be seperated by a comma.
+# For a custom install this field is used to disable those products which are different from a default new installation.
+# Example: DISABLEMP=BusinessObjects.MySQL,BusinessObjects.WebTierComponents
+DISABLEMP=
+
+
+[New Settings]
+# All uncommented settings are added here.
