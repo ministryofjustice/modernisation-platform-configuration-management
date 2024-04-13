@@ -260,14 +260,14 @@ build_rman_command_file () {
   X=$(sqlplus -s "/ as sysdba" <<EOF
      whenever sqlerror exit 1
      set feedback off heading off verify off echo off
-     select 'CPU_COUNT='|| case when value < 5 then 2 else to_number(value)  end from  $V_PARAMETER where name = 'cpu_count';
+     select 'CPU_COUNT='|| value/2  from  $V_PARAMETER where name = 'cpu_count';
      exit
 EOF
 )
 
   [ $? -ne 0 ] && error "Cannot determine cpu count"
   eval $X
-  info "cpu count = $CPU_COUNT"
+  info "Channels used for backup = $CPU_COUNT"
 
   if [ "$CATALOGMODE" = "Y" ]
   then
