@@ -7,18 +7,18 @@
     owner: oracle
     group: oinstall
 
-- name: Install packages with yum command as those are not getting installed by ansible yum
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      yum -y install {{ item }}
-    }
-    main 2>&1 | logger -p local3.info -t ansible-yum-install
-  loop:
-    - libnsl
-    - libnsl2
-    - libnsl.i686
-    - libnsl2.i686
+# - name: Install packages with yum command as those are not getting installed by ansible yum
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     main() {
+#       yum -y install {{ item }}
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-yum-install
+#   loop:
+#     - libnsl
+#     - libnsl2
+#     - libnsl.i686
+#     - libnsl2.i686
 
 # - name: Install oracle prerequisite rpms
 #   yum:
