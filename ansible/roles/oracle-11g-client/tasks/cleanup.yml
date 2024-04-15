@@ -1,0 +1,11 @@
+---
+- name: Clean up installation files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    # - "{{ stage }}/{{ oracle_prereq_rpm }}"
+    # - "{{ stage }}/{{ opatch_zip }}"
+    # - "{{ stage }}/{{ oracle_release_update_zip }}"
+    - "{{ stage }}/{{ client_software }}"
+    - "{{ stage }}/{{ client_response_file }}"

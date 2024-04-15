@@ -1,0 +1,75 @@
+---
+- name: Create database response file
+  template:
+    src: "{{ client_response_file }}.j2"
+    dest: "{{ stage }}/{{ client_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Install packages with yum command as those are not getting installed by ansible yum
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      yum -y install {{ item }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-yum-install
+  loop:
+    - libnsl
+    - libnsl2
+    - libnsl.i686
+    - libnsl2.i686
+
+# - name: Install oracle prerequisite rpms
+#   yum:
+#     name: "{{ item }}"
+#     state: latest
+#     disable_gpg_check: true
+#     update_cache: true
+#   loop:
+#     - "{{ stage }}/{{ oracle_prereq_rpm }}"
+
+- name: Unzip Oracle 11g Client software
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ client_software }}"
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+
+# - name: Unzip Oracle 19c psu patch software
+#   ansible.builtin.unarchive:
+#     src: "{{ stage }}/{{ oracle_release_update_zip }}"
+#     dest: "{{ stage }}"
+#     owner: "{{ oracle_install_user }}"
+#     group: "{{ oracle_install_group }}"
+#     remote_src: yes
+
+# - name: Unzip OPatch in Oracle Client home
+#   ansible.builtin.unarchive:
+#     src: "{{ stage }}/{{ opatch_zip }}"
+#     dest: "{{ oracle_home }}"
+#     owner: "{{ oracle_install_user }}"
+#     group: "{{ oracle_install_group }}"
+#     remote_src: yes
+
+- name: Install Oracle 19c client server
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      export CV_ASSUME_DISTID=EL7.6
+      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client
+  become_user: oracle
+  async: 1800
+  poll: 30
+
+# - name: Run post install root script
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     main() {
+#       echo {{ oracle_inventory }}/orainstRoot.sh
+#       {{ oracle_inventory }}/orainstRoot.sh
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-oracle-client
