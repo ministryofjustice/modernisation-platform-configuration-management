@@ -29,6 +29,8 @@ http {
         ssl_certificate /etc/nginx/ssl/nginx.crt;
         ssl_certificate_key /etc/nginx/ssl/nginx.key;
         ssl_protocols TLSv1.1;
+        ssl_session_tickets off;
+        ssl_session_timeout 5s;
         proxy_read_timeout 120s;
         proxy_send_timeout 120s;
         proxy_connect_timeout 120s;
