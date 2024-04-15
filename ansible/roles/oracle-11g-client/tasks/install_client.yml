@@ -57,8 +57,8 @@
   ansible.builtin.shell: |
     set -eo pipefail
     main() {
-      export CV_ASSUME_DISTID=EL7.6
-      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }}
+      # export CV_ASSUME_DISTID=EL6.10 FIXME: maybe required, maybe not
+      {{ oracle_home }}/client/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }}
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle

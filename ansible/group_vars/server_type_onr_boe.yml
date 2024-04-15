@@ -78,12 +78,12 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: ext4
-  # - ebs_device_name: /dev/sds
-  #   dir: swap
-  #   fstype: swap
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
 
 # oracle client
 oracle_install_user: oracle
 oracle_install_group: oinstall
-oracle_home: /u01/app/oracle/product/11g/client_1
+oracle_home: /u01/app/oracle/product/11g
 oracle_inventory: /u01/app/oraInventory
