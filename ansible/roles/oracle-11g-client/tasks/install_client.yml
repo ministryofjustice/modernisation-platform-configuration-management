@@ -65,11 +65,13 @@
   async: 1800
   poll: 30
 
-# - name: Run post install root script
-#   ansible.builtin.shell: |
-#     set -eo pipefail
-#     main() {
-#       echo {{ oracle_inventory }}/orainstRoot.sh
-#       {{ oracle_inventory }}/orainstRoot.sh
-#     }
-#     main 2>&1 | logger -p local3.info -t ansible-oracle-client
+- name: Run post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ oracle_inventory }}/orainstRoot.sh
+      {{ oracle_inventory }}/orainstRoot.sh
+      echo {{ oracle_inventory }}/root.sh
+      {{ oracle_inventory }}/root.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client
