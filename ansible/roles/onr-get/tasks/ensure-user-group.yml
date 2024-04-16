@@ -1,0 +1,9 @@
+---
+- name: Ensure {{ boe_install_group }} group exists
+  ansible.builtin.group:
+    name: {{ boe_install_group }}
+
+- name: Ensure {{ boe_install_user }} user exists
+  ansible.builtin.user:
+    name: {{ boe_install_user }}
+    group: {{ boe_install_group }}
