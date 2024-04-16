@@ -56,8 +56,8 @@
         loop_var: oem_job
       changed_when: create_jobs.stdout is search('.*Creation of job.*was successful.*')
       failed_when:
-         - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
-         - not create_jobs.stderr is search('.*A job matching.*already exists.*')
+        - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
+        - not create_jobs.stderr is search('.*A job matching.*already exists.*')
 
   always:
     - name: Remove EMCLI Login Script
