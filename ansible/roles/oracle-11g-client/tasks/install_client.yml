@@ -50,11 +50,11 @@
 #     group: "{{ oracle_install_group }}"
 #     remote_src: yes
 
+# export CV_ASSUME_DISTID=EL6.10 FIXME: maybe required, maybe not
 - name: Install Oracle 11g client server
   ansible.builtin.shell: |
     set -eo pipefail
-    main() {
-      # export CV_ASSUME_DISTID=EL6.10 FIXME: maybe required, maybe not
+    main() {  
       {{ oracle_home }}/client/runInstaller -silent -waitforcompletion -responseFile {{ stage }}/{{ client_response_file }}
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
