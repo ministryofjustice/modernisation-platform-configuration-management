@@ -1,4 +1,9 @@
 ---
+- import_tasks: ensure-user-group.yml
+  tags:
+    - amibuild
+    - ec2provision
+
 - import_tasks: download-software.yml
   tags:
     - amibuild
