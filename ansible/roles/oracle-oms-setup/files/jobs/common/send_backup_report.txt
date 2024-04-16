@@ -1,0 +1,565 @@
+
+
+# Job Name.
+# Specify a unique name for each job.
+# This can be any name that is useful or meaningful to associate with this job.
+#
+# Note: A job name can also be specified on the emcli command line.
+# In that case a name need not be specified in the input file. 
+# If a name is specified in both places, the command line name is used. 
+
+# Description: (Optional) The user specified name of the job
+name=Send Backup Report
+
+
+# Job Type. 
+# Every job must have an associated job type.
+# Each job type performs a different task. 
+# Be sure to chose the correct job type for your needs. 
+#
+# Note: A job type can also be specified on the emcli command line.
+# In that case a type need not be specified in the input file. 
+# If a type is specified in both places, the command line type is used. 
+#
+# The OSCommand job type supports the following target types:
+#    aggregate_service, apm_ba_service, bea_alsb, cloud_bridge, cloud_resource_provider, cloud_service, cluster, composite_application_system, exa_rack, exalogic_control, exalogic_system, exalytics_machine, exalytics_system, gds_cloud, gds_gsm, gds_pool, gds_shard_director, gds_sharded_database, gds_shardgroup, gds_shardspace, generic_apache, generic_service, glassfish_cluster, glassfish_domain, glassfish_j2eeserver, has, host, iaas_adapter, j2ee_application, j2ee_application_cluster, j2ee_application_domain, j2ee_application_partition, java_virtual_machine, java_virtual_machine_alltargets, java_virtual_machine_pool, jboss_app_server, jboss_domain, jboss_j2eeserver, jboss_partition, jboss_server_group, jvm, metadata_repository, mwaas_zone, netapp_filer, oc4j, oc4j_cluster, oc4jjvm, opc_identity_domain, opcm_control, opcm_system, oracle_activitygraph, oracle_analytics, oracle_apache, oracle_apache_cluster, oracle_apm, oracle_base_zone, oracle_bc4j, oracle_beacon, oracle_bi_ans, oracle_bi_cc, oracle_bi_cluster_controller, oracle_bi_dac, oracle_bi_instance, oracle_bi_java_host, oracle_bi_presentation_services, oracle_bi_ps, oracle_bi_publisher, oracle_bi_sch, oracle_bi_scheduler, oracle_bi_server, oracle_bi_web, oracle_btm_sphere, oracle_btm_sys, oracle_camm_manager, oracle_cef, oracle_cef_cluster, oracle_cloud, oracle_cloud_adw, oracle_cloud_atp, oracle_cloud_auto_vm_cluster, oracle_cloud_db_service, oracle_cloud_dbcs, oracle_cloud_infrastructure, oracle_cloud_tenant, oracle_cloud_vm_cluster, oracle_cman, oracle_coherence, oracle_coherence_cache, oracle_coherence_cache_partition, oracle_coherence_node, oracle_coreid_access_server, oracle_coreid_identity_server, oracle_csa_collector, oracle_das_server, oracle_database, oracle_dbmachine, oracle_dbservice, oracle_dbsvc, oracle_dbsys, oracle_discussion, oracle_dsee, oracle_dsee_ent, oracle_em_proxy, oracle_emd, oracle_emsvrs_sys, oracle_end_user_service, oracle_eps_server, oracle_essbase, oracle_essbaseapp, oracle_exa_cisco_switch, oracle_exa_ilom, oracle_exa_kvm, oracle_exa_pdu, oracle_exadata, oracle_exadata_cloud_service, oracle_exadata_dbsys, oracle_exadata_grid, oracle_exadata_infrastructure, oracle_farsync, oracle_federation, oracle_forms, oracle_home, oracle_hybridcloud_connection, oracle_ias, oracle_ias_farm, oracle_ibnetwork, oracle_ibswitch, oracle_idm_repos, oracle_idm_server, oracle_integrationbpm, oracle_irm, oracle_jserv, oracle_knowledge, oracle_ldap, oracle_listener, oracle_oaam, oracle_oaam_cluster, oracle_oam, oracle_oam_cluster, oracle_oci_exadata_cloud_service, oracle_odi_j2eeagent, oracle_odi_standaloneagent, oracle_oim, oracle_oim_cluster, oracle_oms, oracle_oms_console, oracle_oms_pbs, oracle_otd_cluster, oracle_otd_instance, oracle_ovd, oracle_pdb, oracle_pdbexpress, oracle_personalization, oracle_portal, oracle_portaltools, oracle_remote_job_dispatcher, oracle_repapp, oracle_repbrd, oracle_repserv, oracle_reptools, oracle_ruei_collector, oracle_ruei_processor, oracle_ruei_reporter, oracle_ruei_sys, oracle_sb_cluster, oracle_sdpmessagingdriver, oracle_sdpmessagingdriver_email, oracle_sdpmessagingdriver_proxy, oracle_sdpmessagingdriver_smpp, oracle_sdpmessagingdriver_voicexml, oracle_sdpmessagingdriver_worklist, oracle_sdpmessagingdriver_xmpp, oracle_sdpmessagingserver, oracle_si_diskshelf, oracle_si_fabric, oracle_si_host_remote, oracle_si_host_remote_ssh, oracle_si_minicluster, oracle_si_netswitch, oracle_si_network, oracle_si_pdu, oracle_si_rack, oracle_si_server_http, oracle_si_server_ilom, oracle_si_server_ldom, oracle_si_server_map, oracle_si_server_os, oracle_si_ses_diskshelf, oracle_si_storage_server_cluster_zfssa, oracle_si_supercluster, oracle_si_switch_arista_snmp, oracle_si_switch_arista_ssh, oracle_si_switch_cisco_ios, oracle_si_switch_cisco_ios_snmp, oracle_si_switch_juniper_junos, oracle_si_switch_oracle_ib, oracle_si_switch_oracle_ib_snmp, oracle_si_virtual_platform_ldoms, oracle_si_virtual_platform_map, oracle_si_virtual_platform_zones, oracle_si_virtual_platform_zones_rad, oracle_si_virtual_server_ldom, oracle_si_virtual_server_map, oracle_si_virtual_server_os, oracle_si_virtual_server_zone, oracle_si_virtual_server_zone_rad, oracle_si_zfssa_diskshelf_server_akcli, oracle_si_zfssa_diskshelf_server_websvc, oracle_si_zfssa_storage_server, oracle_si_zfssa_storage_server_akcli, oracle_si_zfssa_storage_server_websvc, oracle_soa_composite, oracle_soa_composite_sys, oracle_soa_folder, oracle_soainfra, oracle_soainfra_cluster, oracle_soainfra_sys, oracle_social, oracle_social_cluster, oracle_social_instance, oracle_sso_server, oracle_ucm, oracle_webcache, oracle_webcenter, osb_server, osm_cluster, osm_instance, osm_ioserver, osm_proxy, rac_database, scheduler_service, scheduler_service_group, self_service_zone, snmp, wbem_cimom, webcache_cluster, webcenter_portal_app, weblogic_cluster, weblogic_domain, weblogic_domain_partition, weblogic_j2eeserver, weblogic_nodemanager, websphere_cluster, websphere_j2eeserver, wmq, wmq_cluster
+
+# Description: (Optional) The job type for this job
+type=OSCommand
+
+
+# Job Description. 
+# Specify a description for a job.
+# This can be anything that is useful or meaningful to describe this job.
+
+# Description: (Optional) The user specified description of the job
+description=Send Backup Report
+
+
+# Job Owner. 
+# Every job must have an owner.
+# Normally, this is the same user that creates the job.
+
+# Description: The job owner. The job owner is the user who creates the job.
+# Default: the logged in user
+# The job owner information displayed here is for documentation only and user is not expected to change it.
+owner=SYSMAN
+
+
+# Kind of Job. 
+# What kind of job is this, active or library?
+#
+# By default, all jobs are assumed to be active jobs.
+# If "create_library_job" is used, the resulting job will be a library job 
+# regardless of the setting in this file.
+
+# Description: (Optional) The kind of job
+# Legal Values: active, library
+kind=active
+
+
+# Target List. 
+# In a target list, each member is specified using the target name and type
+# in the following fashion: 
+#    target_name:target_type
+# To specify an element of the target list, the following notation is used:
+#    target_list=target_name:target_type
+# The suffix "_list" after the key word "target" signifies that the entry
+# is part of a list; subsequent entries will be appended to the list.
+#
+# The target target_name:target_type must exists in EM.
+#
+# The target list can only contain targets of the same target type. 
+# A cluster, group, domain or system target must not be intermixed 
+# with targets of the other target types.
+#
+# The OSCommand job type supports the following target types:
+#    aggregate_service, apm_ba_service, bea_alsb, cloud_bridge, cloud_resource_provider, cloud_service, cluster, composite_application_system, exa_rack, exalogic_control, exalogic_system, exalytics_machine, exalytics_system, gds_cloud, gds_gsm, gds_pool, gds_shard_director, gds_sharded_database, gds_shardgroup, gds_shardspace, generic_apache, generic_service, glassfish_cluster, glassfish_domain, glassfish_j2eeserver, has, host, iaas_adapter, j2ee_application, j2ee_application_cluster, j2ee_application_domain, j2ee_application_partition, java_virtual_machine, java_virtual_machine_alltargets, java_virtual_machine_pool, jboss_app_server, jboss_domain, jboss_j2eeserver, jboss_partition, jboss_server_group, jvm, metadata_repository, mwaas_zone, netapp_filer, oc4j, oc4j_cluster, oc4jjvm, opc_identity_domain, opcm_control, opcm_system, oracle_activitygraph, oracle_analytics, oracle_apache, oracle_apache_cluster, oracle_apm, oracle_base_zone, oracle_bc4j, oracle_beacon, oracle_bi_ans, oracle_bi_cc, oracle_bi_cluster_controller, oracle_bi_dac, oracle_bi_instance, oracle_bi_java_host, oracle_bi_presentation_services, oracle_bi_ps, oracle_bi_publisher, oracle_bi_sch, oracle_bi_scheduler, oracle_bi_server, oracle_bi_web, oracle_btm_sphere, oracle_btm_sys, oracle_camm_manager, oracle_cef, oracle_cef_cluster, oracle_cloud, oracle_cloud_adw, oracle_cloud_atp, oracle_cloud_auto_vm_cluster, oracle_cloud_db_service, oracle_cloud_dbcs, oracle_cloud_infrastructure, oracle_cloud_tenant, oracle_cloud_vm_cluster, oracle_cman, oracle_coherence, oracle_coherence_cache, oracle_coherence_cache_partition, oracle_coherence_node, oracle_coreid_access_server, oracle_coreid_identity_server, oracle_csa_collector, oracle_das_server, oracle_database, oracle_dbmachine, oracle_dbservice, oracle_dbsvc, oracle_dbsys, oracle_discussion, oracle_dsee, oracle_dsee_ent, oracle_em_proxy, oracle_emd, oracle_emsvrs_sys, oracle_end_user_service, oracle_eps_server, oracle_essbase, oracle_essbaseapp, oracle_exa_cisco_switch, oracle_exa_ilom, oracle_exa_kvm, oracle_exa_pdu, oracle_exadata, oracle_exadata_cloud_service, oracle_exadata_dbsys, oracle_exadata_grid, oracle_exadata_infrastructure, oracle_farsync, oracle_federation, oracle_forms, oracle_home, oracle_hybridcloud_connection, oracle_ias, oracle_ias_farm, oracle_ibnetwork, oracle_ibswitch, oracle_idm_repos, oracle_idm_server, oracle_integrationbpm, oracle_irm, oracle_jserv, oracle_knowledge, oracle_ldap, oracle_listener, oracle_oaam, oracle_oaam_cluster, oracle_oam, oracle_oam_cluster, oracle_oci_exadata_cloud_service, oracle_odi_j2eeagent, oracle_odi_standaloneagent, oracle_oim, oracle_oim_cluster, oracle_oms, oracle_oms_console, oracle_oms_pbs, oracle_otd_cluster, oracle_otd_instance, oracle_ovd, oracle_pdb, oracle_pdbexpress, oracle_personalization, oracle_portal, oracle_portaltools, oracle_remote_job_dispatcher, oracle_repapp, oracle_repbrd, oracle_repserv, oracle_reptools, oracle_ruei_collector, oracle_ruei_processor, oracle_ruei_reporter, oracle_ruei_sys, oracle_sb_cluster, oracle_sdpmessagingdriver, oracle_sdpmessagingdriver_email, oracle_sdpmessagingdriver_proxy, oracle_sdpmessagingdriver_smpp, oracle_sdpmessagingdriver_voicexml, oracle_sdpmessagingdriver_worklist, oracle_sdpmessagingdriver_xmpp, oracle_sdpmessagingserver, oracle_si_diskshelf, oracle_si_fabric, oracle_si_host_remote, oracle_si_host_remote_ssh, oracle_si_minicluster, oracle_si_netswitch, oracle_si_network, oracle_si_pdu, oracle_si_rack, oracle_si_server_http, oracle_si_server_ilom, oracle_si_server_ldom, oracle_si_server_map, oracle_si_server_os, oracle_si_ses_diskshelf, oracle_si_storage_server_cluster_zfssa, oracle_si_supercluster, oracle_si_switch_arista_snmp, oracle_si_switch_arista_ssh, oracle_si_switch_cisco_ios, oracle_si_switch_cisco_ios_snmp, oracle_si_switch_juniper_junos, oracle_si_switch_oracle_ib, oracle_si_switch_oracle_ib_snmp, oracle_si_virtual_platform_ldoms, oracle_si_virtual_platform_map, oracle_si_virtual_platform_zones, oracle_si_virtual_platform_zones_rad, oracle_si_virtual_server_ldom, oracle_si_virtual_server_map, oracle_si_virtual_server_os, oracle_si_virtual_server_zone, oracle_si_virtual_server_zone_rad, oracle_si_zfssa_diskshelf_server_akcli, oracle_si_zfssa_diskshelf_server_websvc, oracle_si_zfssa_storage_server, oracle_si_zfssa_storage_server_akcli, oracle_si_zfssa_storage_server_websvc, oracle_soa_composite, oracle_soa_composite_sys, oracle_soa_folder, oracle_soainfra, oracle_soainfra_cluster, oracle_soainfra_sys, oracle_social, oracle_social_cluster, oracle_social_instance, oracle_sso_server, oracle_ucm, oracle_webcache, oracle_webcenter, osb_server, osm_cluster, osm_instance, osm_ioserver, osm_proxy, rac_database, scheduler_service, scheduler_service_group, self_service_zone, snmp, wbem_cimom, webcache_cluster, webcenter_portal_app, weblogic_cluster, weblogic_domain, weblogic_domain_partition, weblogic_j2eeserver, weblogic_nodemanager, websphere_cluster, websphere_j2eeserver, wmq, wmq_cluster
+
+# Fill in the target list before submitting.
+# For Example:
+#     target_list=MyTarget:aggregate_service
+target_list=dev-oem-a:host
+
+
+
+# Target Criteria. 
+# Specify the targets that match a criteria rather than specifying
+# them one by one in a list.
+#
+# For example:
+#     target_criteria.target.target_name=<name_pattern>
+#     target_criteria.target.target_name=<name_pattern2>
+#     target_criteria.target.target_type=<target_type>
+#     target_criteria.property.<target_property_name>=<target_property_value>
+#     target_criteria.config.<target_config_name>=<target_config_value>
+#     target_criteria.NOT.<category>.<name>=<value>
+#         where <category> can be target, property or config
+#
+# The calculated target list will only contain targets of the same target type.
+
+
+# Target Type. 
+# The target type to use for this job.
+# When the target list contains targets of a different type than the default, 
+# or when it contains a group or other aggregate target, 
+# specify a target type to override the default target type of the job type.
+# Example 1: submit an OSCommand with database or listener targets.
+# Example 2: group A contains a host, listener, database and a rac database.
+# If the target type is host, only the host target is selected.
+# If the target type is oracle_database, both the database and the rac target
+# are selected because they are both databases.
+# If target type is not specified, the job type's default target type is used.
+# The default target type for OSCommand is host.
+targetType=host
+
+
+# Credential List. 
+# This is the list of credential usages declared by the job type. 
+#
+# Each entry takes the form: 
+#    cred.credusage_name.target_details=cred_type:cred_details
+#
+# The prefix "cred" is a keyword signifying that this line represents 
+# a credential entry.  The "credusage_name" would be substituted 
+# with the name of the credential usage declared in the job type.
+# This is followed by the target details, which take the following form:
+#    target_name:target_type
+#
+# If the same credential is applicable for all targets of a type for the 
+# "credusage_name" then "<all_targets>" must be used as the target name.
+#
+# The value for this credential usage entry is specified using the type of
+# the credential and its details.  The "cred_type" can take either
+# "SET" or "NAMED" as its value, depending on whether the credential is
+# a credential set or a named credential.
+# The "cred_details" can specify either the name of a credential set or 
+# the name of a named credential based on the "cred_type"
+#
+# A sample entry for a target target1:host for credential usage
+# defaultHostCred for a credential set could look like:
+#    cred.defaultHostCred.target1:host=SET:HostCredsNormal
+#
+# A sample entry for a target target1:host for credential usage
+# defaultHostCred for a named credential could look like:
+#    cred.defaultHostCred.target1:host=NAMED:MyNamedCredential
+#
+# A sample entry for a target target1:host for credential usage defaultHostCred
+# for a named credential shared by EM Admin "admin1" could look like:
+#    cred.defaultHostCred.target1:host=NAMED:admin1:MyNamedCredential
+#
+# A sample entry for a credential for all host targets could look like:
+#    cred.defaultHostCred.<all_targets>:host=NAMED:admin1:MyNamedCredential
+
+# Credential Usage: defaultHostCred
+# Description: 
+#cred.defaultHostCred.<target_name>:<target_type>=
+cred.defaultHostCred.dev-oem-a:host=NAMED:OEM_HOST_SSH
+
+# In a variable list, each member is specified in the following way: 
+#
+# Scalar variable: A variable whose value can be represented as a single string.
+#    variable.variable_name=variable_value
+# Here, "variable" is a keyword.  The "variable_name" is the name of the
+# variable whose value is being specified.
+# The "variable_value" is specified to the right of the equals sign.
+#
+# Vector variable: A variable whose value is represented as an array or list of string values.
+#    variable_list.variable_name=value1
+#    variable_list.variable_name=value2
+# The suffix "_list" after the key word "variable" signifies that the entry
+# is part of a list; subsequent entries will be appended to the list.
+#
+# Multi-line values: A variable can have its value formatted across multiple lines.
+# For example, a script can be provided using the following format:
+#    variable.variable_name=<<MULTILINE
+#    #!/bin/sh 
+#    /bin/echo hello $USER 
+#    exit 0; 
+#    MULTILINE
+# Here the word "MULTILINE" depicts the start boundary and the end boundary of the value.
+# The begin boundary of a multi-line value is identified using the pattern <<[Word in all capitals]
+# after an equals sign on the line where a variable value should be present.
+# The end boundary is identified using the same word in all capitals on a new line without 
+# leading or traling spaces.
+# In the above example, the value of the variable with name "variable_name" would become:
+# #!/bin/sh 
+# /bin/echo hello $USER 
+# exit 0; 
+# The word "MULTILINE" can be replaced with any word in all capitals.
+
+# Description: (Optional) Comma separated list of parameters to the command.
+# For example, if the command is "ls" the args might be "-l,file1,file2".
+# [Deprecated] Use no_shell_command instead.
+variable.args=
+
+# Description: (Optional) The command to run on the target (without a shell).
+# Useful when parsing the command line is not supported, 
+# especially when privilege delegation is enabled.
+# [Deprecated] Use no_shell_command instead.
+variable.command=
+
+# Description: (Optional) The complete command line, including parameters.
+# This text will appear as the command if this job is edited in the UI.
+# This command will be run in the default shell.
+variable.default_shell_command=
+
+# Description: (Optional) Command to run the script. For example: %perlbin%/perl
+# It is recommended to specify the full path of the interpreter.
+# If the interpreter is unspecified, the default shell of the platform is used.
+variable.interpreter=
+
+# Description: (Optional) OS Script to run on the target.
+variable.large_os_script=<<MULTILINE
+#!/bin/bash
+#
+#  This script is called by the OEM Job Scheduler to generate a daily report
+#  of RMAN Backups in this region (dev or prod).
+#  The output is written to the #delius-aws-oracle-backups Slack channel
+#
+#  Note that the RMAN Catalog database itself does not use a Catalog for backup
+#  for data for the local database backups are taken from V$RMAN views instead
+#
+#
+
+CATALOG=$(awk -F: '/RCVCAT/{print $1}' /etc/oratab)
+
+[[ -z $CATALOG ]] && echo "Catalog database not found" && exit 1
+
+export ORACLE_SID=$CATALOG
+export ORAENV_ASK=NO
+. oraenv
+
+MESSAGE=$(
+sqlplus -s / as sysdba<<EOSQL
+SET HEADING OFF
+SET FEEDBACK OFF
+SET DEFINE OFF
+ALTER SESSION SET CURRENT_SCHEMA=RCVCATOWNER;
+SET LINESIZE 32767
+SET LONG 2000000000
+SET LONGCHUNKSIZE 32767
+SET PAGES 0
+
+WITH local_db_backup
+AS (
+SELECT     DISTINCT d.name db_name,
+           o.incremental_level,
+           s.start_time,
+           s.end_time completion_time,
+           s.input_bytes original_input_bytes
+FROM       v\$database d
+CROSS JOIN v\$rman_status s
+INNER JOIN v\$backup_set o
+ON         o.start_time between s.start_time AND s.end_time
+AND        o.completion_time between s.start_time AND s.end_time
+AND        o.incremental_level IS NOT NULL
+WHERE      s.operation = 'BACKUP'
+AND        REGEXP_LIKE(s.status,'COMPLETED.*')
+AND        NOT REGEXP_LIKE(s.status,'.*ERROR.*')
+AND        s.object_type = 'DB INCR'
+AND        s.output_device_type = 'SBT_TAPE'
+ORDER BY   s.start_time desc
+),
+report_detail_local_db
+AS (
+SELECT * 
+FROM (
+SELECT   db_name,
+         incremental_level,
+         start_time,
+         completion_time,
+         original_input_bytes
+FROM     local_db_backup
+WHERE    incremental_level = 0
+ORDER BY completion_time DESC
+FETCH    FIRST ROW ONLY
+) UNION ALL (
+SELECT   db_name,
+         incremental_level,
+         start_time,
+         completion_time,
+         original_input_bytes
+FROM     local_db_backup
+WHERE    incremental_level = 1
+ORDER BY completion_time DESC
+FETCH    FIRST ROW ONLY
+)),
+report_detail_catalog
+AS
+(SELECT db_name,incremental_level,min(start_time) start_time,max(completion_time) completion_time,sum(original_input_bytes) original_input_bytes
+FROM
+    rc_backup_set_details
+WHERE
+    ( db_name,
+      incremental_level,
+      session_key ) IN (
+        SELECT DISTINCT
+            db_name,
+            incremental_level,
+            session_key
+        FROM
+            rc_backup_set_details
+        WHERE
+            ( db_name,
+              incremental_level,
+              completion_time ) IN (
+                SELECT
+                    db_name,
+                    incremental_level,
+                    MAX(completion_time)
+                FROM
+                    rc_backup_set_details
+                WHERE
+                    incremental_level IN (
+                        0,
+                        1
+                    )
+                GROUP BY
+                    db_name,
+                    incremental_level
+            )
+    )
+GROUP BY
+    db_name,
+    incremental_level
+ORDER BY
+    db_name,
+    incremental_level
+),
+report_summary
+AS
+(
+SELECT db_name,
+MAX(CASE WHEN incremental_level=0 THEN start_time ELSE NULL END) l0_start_time,
+MAX(CASE WHEN incremental_level=0 THEN completion_time ELSE NULL END) l0_completion_time,
+ROUND(SUM(CASE WHEN incremental_level=0 THEN original_input_bytes ELSE 0 END)/1024/1024/1024,0) l0_gb,
+MAX(CASE WHEN incremental_level=1 THEN start_time ELSE NULL END) l1_start_time,
+MAX(CASE WHEN incremental_level=1 THEN completion_time ELSE NULL END) l1_completion_time,
+ROUND(SUM(CASE WHEN incremental_level=1 THEN original_input_bytes ELSE 0 END)/1024/1024/1024,0) l1_gb
+FROM   (
+SELECT * FROM report_detail_catalog
+UNION ALL
+SELECT * FROM report_detail_local_db
+)
+GROUP BY db_name
+ORDER BY db_name
+),
+report_formatting
+AS
+(
+SELECT db_name,
+TRIM(LOWER(TO_CHAR(l0_completion_time,'DY'))) l0_day,
+CASE WHEN SYSDATE-l0_completion_time > 8 THEN 'red' ELSE 'blue' END l0_days_colour,
+CASE WHEN l0_completion_time > l0_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l0_date_format,
+TRIM(LOWER(TO_CHAR(l1_completion_time,'DY'))) l1_day,
+CASE WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 AND db_name != 'TRNDA' THEN 'red' 
+     WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 'red'
+     ELSE 'blue' END l1_days_colour,
+CASE WHEN l1_completion_time > l1_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l1_date_format
+FROM report_summary
+),
+report_presentation
+AS
+(
+SELECT JSON_OBJECT(KEY 'type' VALUE 'divider') s2,
+       JSON_OBJECT(KEY 'type' VALUE 'section',
+                   KEY 'fields' VALUE JSON_ARRAY(JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE 'level :zero: - *'||rs.db_name||'*'),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE ':clock1: '||RPAD(ROUND((l0_completion_time-l0_start_time)*60*24,0)||' minutes',16)||' :database: '||l0_gb||'Gb'),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE TO_CHAR(l0_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l0_completion_time,l0_date_format)),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE ':'||l0_day||': \`'||TRUNC(SYSDATE-l0_completion_time)||'\` '||REPLACE(LPAD(' ',TRUNC(SYSDATE-l0_completion_time)+1,'X'),'X',':large_'||l0_days_colour||'_square:')),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE 'level :one:'),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE ':clock1: '||RPAD(ROUND((l1_completion_time-l1_start_time)*60*24,0)||' minutes',16)),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE TO_CHAR(l1_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l1_completion_time,l1_date_format)),
+                                                 JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                             KEY 'text' VALUE ':'||l1_day||': \`'||TRUNC(SYSDATE-l1_completion_time)||'\` '||REPLACE(LPAD(' ',TRUNC(SYSDATE-l1_completion_time)+1,'X'),'X',':large_'||l1_days_colour||'_square:')))) s1
+FROM        report_summary rs
+LEFT JOIN   report_formatting  rc
+ON          rs.db_name = rc.db_name
+)
+SELECT JSON_ARRAYAGG(backup_report_data FORMAT JSON RETURNING CLOB)
+FROM
+(
+SELECT JSON_OBJECT(KEY 'type' VALUE 'section',
+                   KEY 'text' VALUE JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
+                                                KEY 'text' VALUE '*Backup Summary on '||to_char(SYSDATE,'DD Month YYYY')||'*' )) AS backup_report_data
+FROM dual
+UNION ALL
+SELECT backup_report_data
+FROM report_presentation
+UNPIVOT (backup_report_data FOR s IN (s1 AS 1,s2 AS 2))
+)
+;
+EOSQL
+)
+
+MESSAGE=$(echo "$MESSAGE" | sed 's/\\\\n/\\n/g')
+echo "$MESSAGE"
+
+SECRET_ARN="arn:aws:secretsmanager:eu-west-2:$(aws sts get-caller-identity | jq -r '.Account'):secret:/oracle/database/EMREP/shared-passwords"
+SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --query SecretString --output json)
+SLACK_TOKEN=$(echo ${SECRET_VALUE} | jq -r | jq -r 'to_entries[] | select(.key=="slack_token").value')
+
+curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="#delius-aws-oracle-backups" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
+MULTILINE
+
+
+# Description: (Optional) The complete command line, including parameters.
+# This text will appear as the command if this job is edited in the UI.
+# This command will be run without a shell.
+variable.no_shell_command=
+
+
+# Schedule.
+# Specify a schedule for the job. Detailed instructions as per below:
+#
+# Frequency: Specifies the frequency for repeated instances of this job.
+#    schedule.frequency=<frequency_type>
+# frequency_type could be one of the following:
+# (1) IMMEDIATE: Run the job immediately.  Other schedule fields are ignored.
+# (2) ONCE: Run the job once at a later time. Start time must be provided. 
+# (3) WEEKLY: Run the job weekly. 
+# (4) MONTHLY: Run the job monthly. 
+# (5) YEARLY: Run the job yearly. 
+# (6) REPEAT_BY_MINUTES: Repeat the job every <interval> minutes. 
+# (7) REPEAT_BY_HOURS: Repeat the job every <interval> hours. 
+# (8) REPEAT_BY_DAYS: Repeat the job every <interval> days. 
+# (9) REPEAT_BY_WEEKS: Repeat the job every <interval> weeks. 
+#
+# Interval: The interval of repetition; required for REPEAT_BY* frequencies.
+# The unit of interval depends on the repetition frequency.
+#    schedule.interval=<number>
+#
+# Start Time: Start time for the schedule.
+#    schedule.startTime=yyyy-MM-dd HH:mm:ss
+#
+# End Time: End time for the schedule.
+#    schedule.endTime=yyyy-MM-dd HH:mm:ss
+#
+# For specifying date and time, only the following formats are supported:
+# (1) yyyy-MM-dd HH:mm:ss 
+# (2) yyyy-MM-dd HH:mm 
+# (3) yyyy-MM-dd HH 
+# (4) yyyy-MM-dd 
+# (5) MM-dd-yyyy HH:mm:ss 
+# (6) MM-dd-yyyy HH:mm 
+# (7) MM-dd-yyyy HH 
+# (8) MM-dd-yyyy 
+# Where:
+# yyyy - Year in 4 digit notation, like 2012.
+# MM   - Month number. 01 for January to 12 for December.
+# dd   - Day of the month, like 01 for the first day of the month.
+# HH   - Hours of the day in 24 hour format. Value in between 00 to 23.
+# mm   - Minutes within an hour. Value in between 00 to 59.
+# ss   - Seconds within a minute. Value in between 00 to 59.
+# If start time is not specified, then the current time is used.
+#
+# Grace Period: Grace period in minutes for the schedule.
+#    schedule.gracePeriod=<number>
+#
+# Months : Months for repetition. January is denoted by 1 and December by 12
+#    schedule.months=1,2,3
+#
+# Days: Days of the week or month for repetition. 
+#    Sunday is denoted by 1 and Saturday by 7.
+#    The first day of the month is denoted by 1, the second by 2 and so on.
+#    The last day of the month can be denoted by -1.
+# For example:
+#    schedule.days=1,2,3
+#
+# Timezone: The timezone region string, for example: US/Pacific.
+#    schedule.timezone.region : timezone region
+# Note: Use Target/Local to have each target run in its own timezone.
+#
+# Following is a complete schedule section, remove #  and populate as needed:
+#
+# Sample: repeat a job execution every 10 minutes
+# schedule.frequency=REPEAT_BY_MINUTES
+# schedule.interval=10
+# schedule.startTime=2012-12-21 10:05
+# schedule.endTime=2014-12-21 09:05
+# schedule.gracePeriod=10
+# schedule.months=
+# schedule.days=
+# schedule.timezone.region=
+#
+# When no schedule section is provided, the IMMEDIATE schedule is used.
+# Attributes which are not required may be omitted.
+schedule.frequency=REPEAT_BY_DAYS
+schedule.interval=1
+schedule.startTime=2024-04-01 11:30
+schedule.endTime=
+schedule.months=
+schedule.days=
+schedule.timezone.region=Europe/London
+
+# Access Grants.
+# Specify access grants to other users or roles for the job.
+# Each user or role can be granted a different privilege.
+#
+# Allowed Values:
+#    VIEW_JOB, FULL_JOB
+#
+# For example,
+# This will allow Observer to view the job and Assistant to modify it:
+#    access.Observer=VIEW_JOB
+#    access.Assistant=FULL_JOB
+#
+
+# Description: (Optional) Access granted on this job to other users or roles
+# Allowed Values:  VIEW_JOB, FULL_JOB
+access=
+
+
+# Notify Rules.
+# Specify owner notification rules for the job.
+# 
+# There are two ways a user can get notified about job status changes:
+#     Event rules and owner notifications.
+# Notifications are generated in both cases.
+#
+# Event Rules are setup from the Enterprise Manager console.
+# Owner notifications are setup as part of the job notify rules.
+#
+# List the states for which the owner receives a notification.
+# Allowed Values:
+#    notification=SCHEDULED, RUNNING, ACTION_REQUIRED, SUSPENDED, SUCCEEDED, PROBLEMS
+# For example:
+#    notification=ACTION_REQUIRED, PROBLEMS
+#
+# List the severities for which the owner receives a notification.
+# Allowed Values:
+#    notification.severities=CRITICAL, INFORMATIONAL
+#
+# Notification option to match status and severity
+# Allowed Values:
+#    notification.match=BOTH or EITHER
+#
+# Only states listed will generate owner notifications.
+#
+# When no notification section is provided,
+# generic Event Rules may still generate notifications.
+
+# Description: (Optional) Notify the job owner when a selected state occurs
+# Allowed Values:  SCHEDULED, RUNNING, ACTION_REQUIRED, SUSPENDED, SUCCEEDED, PROBLEMS
+notification=
+
+
+# Specify job run time properties for this job. 
+# For example : 
+# To throttle (set a limit on) the number of concurrent executions of this job 
+# properties.max_concurrent_executions=5 
+# Note: this limit ensures a maximum concurrency, but does NOT imply a minimum. 
+# If the job system is busy or the limit is large, the actual number of running 
+# executions of this job may be less than the limit. 
+
+# Description: (Optional) The run time properties for the job
+properties=
+
