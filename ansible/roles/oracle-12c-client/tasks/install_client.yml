@@ -1,5 +1,5 @@
 ---
-- name: Create llg client response file
+- name: Create l2c client response file
   template:
     src: "{{ client_response_file }}.j2"
     dest: "{{ stage }}/{{ client_response_file }}"
@@ -15,23 +15,32 @@
     }
     main 2>&1 | logger -p local3.info -t ansible-yum-install
   loop:
-    - binutils-2.17.50.0.6
-    - compat-libstdc++-33-3.2.3
-    - elfutils-libelf-0.125
-    - elfutils-libelf-devel-0.125
-    - elfutils-libelf-devel-static-0.125
-    - gcc-4.1.2
-    - gcc-c++-4.1.2
-    - glibc-2.5-24
-    - glibc-common-2.5
-    - glibc-devel-2.5
-    - ksh-20060214
-    - libaio-0.3.106
-    - libaio-devel-0.3.106
-    - libgomp-4.1.2
-    - sysstat-7.0.2
-    - unixODBC-2.2.11
-    - unixODBC-devel-2.2.11
+    - bc
+    - binutils-2.20.51.0.2-5.36.el6
+    - compat-libcap1-1.10-1
+    - compat-libstdc++-33-3.2.3-69.el6
+    - e2fsprogs-1.41.12-14.el6
+    - e2fsprogs-libs-1.41.12-14.el6
+    - glibc-2.12-1.107.el6
+    - glibc-devel-2.12-1.107.el6
+    - ksh
+    - libaio-0.3.107-10.el6
+    - libaio-devel-0.3.107-10.el6
+    - libX11-1.5.0-4.el6
+    - libXau-1.0.6-4.el6
+    - libXi-1.6.1-3.el6
+    - libXtst-1.2.1-2.el6
+    - libgcc-4.4.7-3.el6
+    - libstdc++-4.4.7-3.el6
+    - libstdc++-devel-4.4.7-3.el6
+    - libxcb-1.8.1-1.el6
+    - libXrender
+    - libXrender-devel
+    - make-3.81-20.el6
+#     - net-tools-1.60-110.el6_2 (for Oracle RAC and Oracle Clusterware)
+#     - nfs-utils-1.2.3-36.el6 (for Oracle ACFS)
+    - smartmontools-5.43-1.el6
+    - sysstat-9.0.4-20.el6
 
 
 # - name: Install oracle prerequisite rpms
