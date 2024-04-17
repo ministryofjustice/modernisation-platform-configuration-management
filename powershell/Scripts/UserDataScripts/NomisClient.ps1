@@ -28,10 +28,10 @@ function Add-JavaDeployment {
   # Copy deployment config files
   $ErrorActionPreference = "Stop"
   $DeploymentFolder = "C:\Windows\Sun\Java\Deployment"
-  Write-Output "Downloading deployment config from $JAVA_S3_BUCKET to $DeploymentFolder"
+  Write-Output "Downloading Java deployment config from $JAVA_S3_BUCKET to $DeploymentFolder"
   New-Item -Path $DeploymentFolder -ItemType Directory -Force
   Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/deployment.config" -File "$DeploymentFolder\deployment.config"
-  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/deployment.Properties" -File "$DeploymentFolder\deployment.properties"
+  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/deployment.properties" -File "$DeploymentFolder\deployment.properties"
   Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/trusted.certs" -File "$DeploymentFolder\trusted.certs"
 }
 
@@ -52,6 +52,7 @@ function Add-EdgeConfig {
   $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
 
   # Turn off Edge first run experience
+  Write-Output "Updating Edge Config $RegPath"
   New-Item -Path $RegPath -Force
   New-ItemProperty -Path $RegPath -Name HideFirstRunExperience -Value 1 -PropertyType DWORD -Force
 
@@ -67,7 +68,7 @@ function Add-EdgeConfig {
 function Add-EdgeIECompatibility {
   $ErrorActionPreference = "Stop"
 
-  Write-Output "Retriving config from SSM $SSM_PARAM_NAME"
+  Write-Output "Add IE Compatibility: retriving config from SSM $SSM_PARAM_NAME"
   $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
   $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
   $IECompatSiteList = $SSMParam.ie_compatibility_mode_site_list
@@ -109,7 +110,7 @@ function Add-EdgeIECompatibility {
 
 function Add-EdgeTrustedSites {
   $ErrorActionPreference = "Stop"
-  Write-Output "Retriving config from SSM $SSM_PARAM_NAME"
+  Write-Output "Add Edge Trusted Sites: retriving config from SSM $SSM_PARAM_NAME"
   $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
   $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
   $Domains = $SSMParam.ie_trusted_domains
@@ -160,11 +161,12 @@ function Add-EdgeTrustedSites {
 
 function Add-SQLDeveloper {
   $ErrorActionPreference = "Stop"
+  Write-Output "Add SQL Developer"
   Set-Location -Path ([System.IO.Path]::GetTempPath())
   Read-S3Object -BucketName $SQLDEVELOPER_S3_BUCKET -Key "$SQLDEVELOPER_S3_FOLDER/sqldeveloper-22.2.1.234.1810-x64.zip" -File .\sqldeveloper-22.2.1.234.1810-x64.zip
 
   # Extract SQL Developer - there is no installer for this application
-  Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle"
+  Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force
 
   # Create a desktop shortcut
   $Shortcut = New-Object -ComObject WScript.Shell
@@ -175,13 +177,13 @@ function Add-SQLDeveloper {
 
 function Add-NomisShortcuts {
   $ErrorActionPreference = "Stop"
-  Write-Output "Retriving config from SSM $SSM_PARAM_NAME"
+  Write-Output "Add Nomis Shortcuts: retriving config from SSM $SSM_PARAM_NAME"
   $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
   $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
   $Shortcuts = $SSMParam.desktop_shortcuts
 
   for ($i = 0; $i -lt $Shortcuts.Length; $i++) {
-    #$Shortcut = $Shortcuts[$i].Split('|')
+    $Shortcut = $Shortcuts[$i].Split('|')
     $Name = $Shortcut[0]
     $Url = $Shortcut[1]
     $Shortcut = New-Object -ComObject WScript.Shell
@@ -196,6 +198,7 @@ function Add-NomisShortcuts {
 
 function Remove-StartMenuShutdownOption {
   $ErrorActionPreference = "Stop"
+  Write-Output "Remove StartMenu Shutdown Option"
   $RegistryStartMenuPath = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Start\"
   if (Test-Path -Path $RegistryStartMenuPath) {
     Write-Output "Hiding Restart and Shutdown from Start Menu"
