@@ -81,11 +81,11 @@
   ansible.builtin.shell: |
     set -eo pipefail
     main() {  
-      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }}
+      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -logLevel fine -responseFile {{ stage }}/{{ client_response_file }}
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle
-  async: 3000
+  async: 4800
   poll: 30
 
 - name: Run post install root script
