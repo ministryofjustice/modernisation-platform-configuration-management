@@ -6,13 +6,13 @@ $GlobalConfig = @{
     "SQLDeveloperS3Folder" = "hmpps/sqldeveloper"
     "CompatibilitySiteListPath" = "C:\\CompatibilitySiteList.xml"
   }
-  "development" = @{
+  "nomis-development" = @{
      "DnsSuffixSearchList" = @(
-       "nomis.hmpps-test.modernisation-platform.internal",
+       "nomis.hmpps-development.modernisation-platform.internal",
        "azure.noms.root"
      )
   }
-  "test" = @{
+  "nomis-test" = @{
      "DnsSuffixSearchList" = @(
        "nomis.hmpps-test.modernisation-platform.internal",
        "azure.noms.root"
@@ -44,13 +44,13 @@ $GlobalConfig = @{
       "T3 NOMIS" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
   }
-  "preproduction" = @{
+  "nomis-preproduction" = @{
      "DnsSuffixSearchList" = @(
        "nomis.hmpps-preproduction.modernisation-platform.internal",
        "azure.hmpp.root"
      )
   }
-  "production" = @{
+  "nomis-production" = @{
      "DnsSuffixSearchList" = @(
        "nomis.hmpps-production.modernisation-platform.internal",
        "azure.hmpp.root"
@@ -65,6 +65,9 @@ function Get-Config {
   $Tags = "$TagsRaw" | ConvertFrom-Json
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value  
  
+  if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
+    Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
+  }
   Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
 }
 
@@ -287,7 +290,7 @@ function Add-NomisShortcuts {
   $ErrorActionPreference = "Stop"
   Write-Output "Add Nomis Shortcuts"
 
-  for ($Shortcut in $Config.StartMenuUrls.GetEnumerator())
+  foreach ($Shortcut in $Config.StartMenuUrls.GetEnumerator()) {
     $Name = $Shortcut.Name
     $Url = $Shortcut.Value
     $Shortcut = New-Object -ComObject WScript.Shell
