@@ -45,6 +45,7 @@
 - import_tasks: configure_proxy.yml
   tags:
     - ec2provision
+    - nginx
   when: ndelius_proxy_pass is defined
 
 # run any handlers before progressing to next role
