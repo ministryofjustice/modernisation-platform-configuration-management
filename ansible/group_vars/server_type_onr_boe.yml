@@ -29,8 +29,8 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  - oracle-12c-client # TODO: trying this instead of oracle 11g client which isn't supported for Rhel 6
-  # - oracle-tns-entries # TODO: see comment above
+  - oracle-12c-client # use 12c client because the 11g client isn't technically supported by Rhel 6
+  # - oracle-tns-entries # TODO: not defined yet
   - onr-boe
   # - collectd TODO: comment these back in, not needed yet
   # - amazon-cloudwatch-agent
@@ -84,5 +84,4 @@ disks_mount:
 oracle_install_user: oracle
 oracle_install_group: oinstall
 oracle_home: /u01/app/oracle/product/12.2.0/client_1
-# oracle_home: /u01/app/oracle/product/12c
 oracle_inventory: /u01/app/oraInventory

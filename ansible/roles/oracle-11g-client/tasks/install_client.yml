@@ -33,16 +33,6 @@
     - unixODBC-2.2.11
     - unixODBC-devel-2.2.11
 
-
-# - name: Install oracle prerequisite rpms
-#   yum:
-#     name: "{{ item }}"
-#     state: latest
-#     disable_gpg_check: true
-#     update_cache: true
-#   loop:
-#     - "{{ stage }}/{{ oracle_prereq_rpm }}"
-
 - name: Unzip Oracle 11g Client software
   ansible.builtin.unarchive:
     src: "{{ stage }}/{{ client_software }}"
@@ -50,22 +40,6 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     remote_src: yes
-
-# - name: Unzip Oracle 19c psu patch software
-#   ansible.builtin.unarchive:
-#     src: "{{ stage }}/{{ oracle_release_update_zip }}"
-#     dest: "{{ stage }}"
-#     owner: "{{ oracle_install_user }}"
-#     group: "{{ oracle_install_group }}"
-#     remote_src: yes
-
-# - name: Unzip OPatch in Oracle Client home
-#   ansible.builtin.unarchive:
-#     src: "{{ stage }}/{{ opatch_zip }}"
-#     dest: "{{ oracle_home }}"
-#     owner: "{{ oracle_install_user }}"
-#     group: "{{ oracle_install_group }}"
-#     remote_src: yes
 
 # export CV_ASSUME_DISTID=EL6.10 FIXME: maybe required, maybe not
 - name: Install Oracle 11g client server
@@ -78,6 +52,7 @@
   become_user: oracle
   async: 1800
   poll: 30
+  ignore_errors: true # ignore errors as the installation may return SUCCESS_WITH_ERRORS which is not a failure but the installer return code is non-zero
 
 - name: Run post install root script
   ansible.builtin.shell: |

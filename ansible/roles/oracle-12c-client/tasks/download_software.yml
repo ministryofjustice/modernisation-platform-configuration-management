@@ -20,16 +20,6 @@
     - "{{ oracle_home }}"
     - "{{ oracle_inventory }}"
 
-# - name: Download oracle prerequisite rpms from S3 bucket
-#   amazon.aws.aws_s3:
-#     bucket: "{{ artefacts_s3_bucket_name }}"
-#     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
-#     dest: "{{ stage }}/{{ item }}"
-#     mode: get
-#     overwrite: latest
-#   loop:
-#     - "{{ oracle_prereq_rpm }}"
-
 - name: Download Oracle 12c client software from S3 bucket
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
@@ -39,5 +29,4 @@
     overwrite: latest
   loop:
     - "{{ client_software }}"
-    # - "{{ oracle_release_update_zip }}"
-    # - "{{ opatch_zip }}"
+
