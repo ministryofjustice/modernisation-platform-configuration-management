@@ -7,16 +7,29 @@ $GlobalConfig = @{
     "CompatibilitySiteListPath" = "C:\\CompatibilitySiteList.xml"
   }
   "nomis-development" = @{
-     "DnsSuffixSearchList" = @(
-       "nomis.hmpps-development.modernisation-platform.internal",
-       "azure.noms.root"
-     )
+    "DnsSuffixSearchList" = @(
+      "nomis.hmpps-development.modernisation-platform.internal",
+      "azure.noms.root"
+    )
+    "IECompatibilityModeSiteList" = @(
+      "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "IETrustedDomains" = @(
+      "*.nomis.service.justice.gov.uk"
+    )
+    "NomisShortcuts" = @{
+      "Prison-Nomis DEV" = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis QA11G" = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis QA11R" = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    }
   }
   "nomis-test" = @{
-     "DnsSuffixSearchList" = @(
-       "nomis.hmpps-test.modernisation-platform.internal",
-       "azure.noms.root"
-     )
+    "DnsSuffixSearchList" = @(
+      "nomis.hmpps-test.modernisation-platform.internal",
+      "azure.noms.root"
+    )
     "IECompatibilityModeSiteList" = @(
       "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -44,16 +57,44 @@ $GlobalConfig = @{
     }
   }
   "nomis-preproduction" = @{
-     "DnsSuffixSearchList" = @(
-       "nomis.hmpps-preproduction.modernisation-platform.internal",
-       "azure.hmpp.root"
-     )
+    "DnsSuffixSearchList" = @(
+      "nomis.hmpps-preproduction.modernisation-platform.internal",
+      "azure.hmpp.root"
+    )
+    "IECompatibilityModeSiteList" = @(
+      "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "IETrustedDomains" = @(
+      "*.nomis.service.justice.gov.uk"
+    )
+    "NomisShortcuts" = @{
+      "Prison-Nomis Preproduction" = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB preprod-nomis-web-a Nomis" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB preprod-nomis-web-b Nomis" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    }
   }
   "nomis-production" = @{
      "DnsSuffixSearchList" = @(
        "nomis.hmpps-production.modernisation-platform.internal",
        "azure.hmpp.root"
      )
+    "IECompatibilityModeSiteList" = @(
+      "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
+      "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "IETrustedDomains" = @(
+      "*.nomis.service.justice.gov.uk"
+    )
+    "NomisShortcuts" = @{
+      "Prison-Nomis" = "https://c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB prod-nomis-web-a Nomis" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB prod-nomis-web-b Nomis" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    }
   }
 }
 
