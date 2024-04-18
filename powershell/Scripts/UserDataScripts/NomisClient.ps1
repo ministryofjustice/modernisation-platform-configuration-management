@@ -18,30 +18,29 @@ $GlobalConfig = @{
        "azure.noms.root"
      )
     "IECompatibilityModeSiteList" = @(
+      "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "t1-cn.hmpp-azdt.justice.gov.uk:7777/forms/frmservlet?config=tag",
-      "t1-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
-      "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "t2-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
-      "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "t3-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
-      "t3-cn-ha.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
-      "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "IETrustedDomains" = @(
-      "*.nomis.hmpps-test.modernisation-platform.justice.gov.uk",
-      "*.nomis.service.justice.gov.uk",
-      "*.hmpp-azdt.justice.gov.uk"
+      "*.nomis.service.justice.gov.uk"
     )
-    "StartMenuUrls" = @{
-      "T1 NOMIS" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "T2 NOMIS" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "T3 NOMIS" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    "NomisShortcuts" = @{
+      "Prison-Nomis T1" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis T2" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis T3" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T1 LB t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T1 LB t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T2 LB t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T2 LB t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T3 LB t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Test Nomis T3 LB t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
   }
   "nomis-preproduction" = @{
@@ -69,6 +68,40 @@ function Get-Config {
     Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
   }
   Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
+}
+
+function Add-EC2InstanceToConfig {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $Ec2Raw = aws ec2 describe-instances --no-cli-pager --filters 'Name=instance-state-name,Values=running'
+  $Ec2Json = $Ec2Raw | ConvertFrom-Json
+
+  for ($i = 0; $i -lt $Ec2Json.Reservations.Length; $i++) {
+    for ($j = 0; $j -lt $Ec2Json.Reservations[$i].Instances.Length; $j++) {
+      $Instance = $Ec2Json.Reservations[$i].Instances[$j]
+      if ($Instance.Tags | Where-Object {$_.Key -eq "server-type"} | Where-Object {$_.Value -eq "nomis-web"}) {
+        $Name = ($Instance.Tags | Where-Object {$_.Key -eq "Name"})[0].Value
+        $Env = ($Instance.Tags | Where-Object {$_.Key -eq "nomis-environment"})[0].Value.ToUpper()
+        $IP = $Instance.PrivateIpAddress
+        $ID = $Instance.InstanceId
+
+        $Config.IETrustedDomains += $IP
+
+        $Key = "NodeManager " + $Env + " " + $Name + " " + $ID
+        $Url = $IP + ":7001/console"
+        $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
+        $Config.IECompatibilityModeSiteList += $Url
+
+        $Key = "Test Nomis " + $Env + " EC2 " + $Name + " " + $ID
+        $Url = $IP + ":7777/forms/frmservlet?config=tag"
+        $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
+        $Config.IECompatibilityModeSiteList += $Url
+      }
+    }
+  }
 }
 
 function Add-Java6 {
@@ -149,6 +182,7 @@ function Add-EdgeConfig {
   $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\PopupsAllowedForUrls"
   New-Item -Path $RegPath -Force
   New-ItemProperty -Path $RegPath -Name 1 -Value "[*.]justice.gov.uk" -PropertyType String -Force
+  New-ItemProperty -Path $RegPath -Name 1 -Value "10.*" -PropertyType String -Force
 }
 
 function Add-EdgeIECompatibility {
@@ -290,7 +324,7 @@ function Add-NomisShortcuts {
   $ErrorActionPreference = "Stop"
   Write-Output "Add Nomis Shortcuts"
 
-  foreach ($Shortcut in $Config.StartMenuUrls.GetEnumerator()) {
+  foreach ($Shortcut in $Config.NomisShortcuts.GetEnumerator()) {
     $Name = $Shortcut.Name
     $Url = $Shortcut.Value
     $Shortcut = New-Object -ComObject WScript.Shell
@@ -318,7 +352,9 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
+$ErrorActionPreference = "Stop"
 $Config = Get-Config
+Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
 Add-JavaDeployment $Config
 Remove-JavaUpdateCheck $Config
