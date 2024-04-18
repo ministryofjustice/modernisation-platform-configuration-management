@@ -1,0 +1,73 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+roles_list:
+  - users-and-groups
+  - sudoers
+  - get-ec2-facts
+  - set-ec2-hostname
+  - domain-search
+  - disable-ipv6
+  - disable-firewall
+  - time
+  - packages
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - ansible-script
+  - epel
+  - disks
+  - azcopy
+  - oracle-19c
+  - oracle-secure-backup
+  - oracle-db-backup
+  - oracle-db-housekeeping
+  # - collectd # don't need all the monitoring for testing
+  # - amazon-cloudwatch-agent
+  # - amazon-cloudwatch-agent-collectd
+  # - collectd-service-metrics
+  # - collectd-oracle-db-connected
+  # - collectd-textfile-monitoring
+
+packages_yum_install:
+  - zip-3.0-23.el8
+  - git
+  - tar
+
+# Storage: volumes, partitioning and mounting
+disks_partition:
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sdj
+    oracle_group: flash
+    oracle_label: FLASH01
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/19c/db_1
+grid_home: /u01/app/oracle/product/19c/gridhome_1
+
+# NOTE: copied from ansible/group_vars/server_type_ncr_db.yml
+
+# tns_entries:
