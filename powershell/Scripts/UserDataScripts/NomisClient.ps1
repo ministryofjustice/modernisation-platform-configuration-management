@@ -62,8 +62,8 @@ function Get-Config {
   $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
   $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
   $Tags = "$TagsRaw" | ConvertFrom-Json
-  $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value  
- 
+  $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
+
   if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
     Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
   }
@@ -94,11 +94,13 @@ function Add-EC2InstanceToConfig {
         $Url = $IP + ":7001/console"
         $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
         $Config.IECompatibilityModeSiteList += $Url
+        Write-Output "Adding $Key $Url to Nomis Shortcuts"
 
         $Key = "Test Nomis " + $Env + " EC2 " + $Name + " " + $ID
         $Url = $IP + ":7777/forms/frmservlet?config=tag"
         $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
         $Config.IECompatibilityModeSiteList += $Url
+        Write-Output "Adding $Key $Url to Nomis Shortcuts"
       }
     }
   }
@@ -110,22 +112,20 @@ function Add-Java6 {
     [hashtable]$Config
   )
 
-  # Download Java exe from S3 Bucket
   $ErrorActionPreference = "Stop"
-  $TempPath = [System.IO.Path]::GetTempPath()
-  Set-Location -Path $TempPath
-  Write-Output "Downloding JRE installer"
-  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/jre-6u33-windows-i586.exe") -File ".\jre-6u33-windows-i586.exe"
-  
-  # Install Java
-  Write-Output "Installing JRE, jre-install.log file in $TempPath"
-  Start-Process -Wait -Verbose -FilePath .\jre-6u33-windows-i586.exe -ArgumentList "/s", "/L .\jre-install.log"
 
-  # Set JAVA_HOME environment variable
-  [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files (x86)\Java\jre6", [System.EnvironmentVariableTarget]::Machine)
-
-  # Add Java to PATH environment variable
-  [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";%JAVA_HOME%\bin", [System.EnvironmentVariableTarget]::Machine)
+  if (Test-Path "C:\Program Files (x86)\Java\jre6)" {
+    Write-Output "JRE6 already installed"
+  } else {
+    $TempPath = [System.IO.Path]::GetTempPath()
+    Set-Location -Path $TempPath
+    Write-Output "Downloding JRE6 installer from S3 bucket"
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/jre-6u33-windows-i586.exe") -File ".\jre-6u33-windows-i586.exe" | Out-Null
+    Write-Output "Installing JRE6 jre-install.log file in $TempPath"
+    Start-Process -Wait -Verbose -FilePath .\jre-6u33-windows-i586.exe -ArgumentList "/s", "/L .\jre-install.log"
+    [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files (x86)\Java\jre6", [System.EnvironmentVariableTarget]::Machine) | Out-Null
+    [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";%JAVA_HOME%\bin", [System.EnvironmentVariableTarget]::Machine) | Out-Null
+  }
 }
 
 function Add-JavaDeployment {
@@ -137,11 +137,11 @@ function Add-JavaDeployment {
   # Copy deployment config files
   $ErrorActionPreference = "Stop"
   $DeploymentFolder = "C:\Windows\Sun\Java\Deployment"
-  Write-Output "Downloading Java deployment config to $DeploymentFolder"
-  New-Item -Path $DeploymentFolder -ItemType Directory -Force
-  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config"
-  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.properties") -File "$DeploymentFolder\deployment.properties"
-  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/trusted.certs") -File "$DeploymentFolder\trusted.certs"
+  Write-Output "Updating Java deployment config in $DeploymentFolder"
+  New-Item -Path $DeploymentFolder -ItemType Directory -Force | Out-Null
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config" | Out-Null
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.properties") -File "$DeploymentFolder\deployment.properties" | Out-Null
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/trusted.certs") -File "$DeploymentFolder\trusted.certs" | Out-Null
 }
 
 function Remove-JavaUpdateCheck {
@@ -152,6 +152,7 @@ function Remove-JavaUpdateCheck {
 
   # Prevent Java update check
   $ErrorActionPreference = "Stop"
+  Write-Output "Checking JavaUpdateCheck"
   $JavaPath = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run"
   $ValueName = "SunJavaUpdateSched"
   $Properties = Get-ItemProperty -Path $JavaPath
@@ -172,17 +173,17 @@ function Add-EdgeConfig {
 
   # Turn off Edge first run experience
   Write-Output "Updating Edge Config $RegPath"
-  New-Item -Path $RegPath -Force
-  New-ItemProperty -Path $RegPath -Name HideFirstRunExperience -Value 1 -PropertyType DWORD -Force
+  New-Item -Path $RegPath -Force | Out-Null
+  New-ItemProperty -Path $RegPath -Name HideFirstRunExperience -Value 1 -PropertyType DWORD -Force | Out-Null
 
   # Turn on Edge IE Mode using RegPath from previous step
-  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force
+  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force | Out-Null
 
   # Allow popups for .justice.gov.uk urls
   $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\PopupsAllowedForUrls"
-  New-Item -Path $RegPath -Force
-  New-ItemProperty -Path $RegPath -Name 1 -Value "[*.]justice.gov.uk" -PropertyType String -Force
-  New-ItemProperty -Path $RegPath -Name 1 -Value "10.*" -PropertyType String -Force
+  New-Item -Path $RegPath -Force | Out-Null
+  New-ItemProperty -Path $RegPath -Name 1 -Value "[*.]justice.gov.uk" -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path $RegPath -Name 1 -Value "10.*" -PropertyType String -Force | Out-Null
 }
 
 function Add-EdgeIECompatibility {
@@ -212,6 +213,7 @@ function Add-EdgeIECompatibility {
   $Root.AppendChild($CreatedByElement)
 
   foreach ($site in $Config.IECompatibilityModeSiteList) {
+    Write-Output "Adding $site"
     $SiteElement = $XmlDoc.CreateElement("site")
     $SiteElement.SetAttribute('url', $site)
     $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
@@ -258,8 +260,9 @@ function Add-EdgeTrustedSites {
     $Index = $i + 1
     $Value = $Domains[$i] -replace '^\*\.', ''
 
-    New-Item -Path "$RegistryPath\$Index" -Force
-    New-ItemProperty -Path "$RegistryPath\$Index" -Name "(Default)" -Value $Value -PropertyType String -Force
+    Write-Output "Adding $Value to IE Enhanced Security exclusion list"
+    New-Item -Path "$RegistryPath\$Index" -Force | Out-Null
+    New-ItemProperty -Path "$RegistryPath\$Index" -Name "(Default)" -Value $Value -PropertyType String -Force | Out-Null
   }
 
   # Add each domain to the trusted sites list
@@ -267,10 +270,10 @@ function Add-EdgeTrustedSites {
     "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains"
   )
 
-  foreach ($Path in $Paths){
+  foreach ($Path in $Paths) {
     $Domains | ForEach-Object {
-      New-Item -Path $Path\$_ -Force
-      New-ItemProperty -Path $Path\$_ -Name https -Value 2 -PropertyType DWORD -Force
+      New-Item -Path $Path\$_ -Force | Out-Null
+      New-ItemProperty -Path $Path\$_ -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
     }
   }
 
@@ -281,7 +284,7 @@ function Add-EdgeTrustedSites {
     New-Item -Path $RegPath -Force
   }
 
-  New-ItemProperty -Path $RegPath -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force
+  New-ItemProperty -Path $RegPath -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force | Out-Null
 }
 
 function Add-SQLDeveloper {
@@ -291,19 +294,23 @@ function Add-SQLDeveloper {
   )
 
   $ErrorActionPreference = "Stop"
-  Write-Output "Add SQL Developer"
-  Set-Location -Path ([System.IO.Path]::GetTempPath())
-  Read-S3Object -BucketName $Config.SQLDeveloperS3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip
+  if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") {
+    Write-Output "SQL Developer already installed"
+  } else {
+    Write-Output "Add SQL Developer"
+    Set-Location -Path ([System.IO.Path]::GetTempPath())
+    Read-S3Object -BucketName $Config.SQLDeveloperS3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip
 
-  # Extract SQL Developer - there is no installer for this application
-  Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force
+    # Extract SQL Developer - there is no installer for this application
+    Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force
 
-  # Create a desktop shortcut
-  $Shortcut = New-Object -ComObject WScript.Shell
-  $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
-  $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
-  $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
-  $ShortcutLink.Save()
+    # Create a desktop shortcut
+    $Shortcut = New-Object -ComObject WScript.Shell
+    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
+    $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
+    $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
+    $ShortcutLink.Save()
+  }
 }
 
 function Add-DnsSuffixSearchList {
@@ -312,7 +319,9 @@ function Add-DnsSuffixSearchList {
     [hashtable]$Config
   )
 
-  Set-DnsClientGlobalSetting -SuffixSearchList $Config.DnsSuffixSearchList
+  Write-Output "Setting DNS SuffixSearchList"
+  $Config.DnsSuffixSearchList
+  Set-DnsClientGlobalSetting -SuffixSearchList $Config.DnsSuffixSearchList | Out-Null
 }
 
 function Add-NomisShortcuts {
@@ -327,11 +336,11 @@ function Add-NomisShortcuts {
   foreach ($Shortcut in $Config.NomisShortcuts.GetEnumerator()) {
     $Name = $Shortcut.Name
     $Url = $Shortcut.Value
+    Write-Output "Add $Name $Url"
     $Shortcut = New-Object -ComObject WScript.Shell
     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\$Name.url"
     $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
     $SourceShortcut.TargetPath = $Url
-
     $SourceShortcut.Save()
   }
 }
