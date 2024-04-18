@@ -29,9 +29,8 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  # - oracle-19c-client # TODO: may need to create an 11.2.0 or 11c client role
-  # - oracle-tns-entries # TODO: see comment above
-  # - ncr-bip
+  - oracle-12c-client # use 12c client because the 11g client isn't technically supported by Rhel 6
+  # - oracle-tns-entries # TODO: not defined yet
   - onr-boe
   # - collectd TODO: comment these back in, not needed yet
   # - amazon-cloudwatch-agent
@@ -77,12 +76,12 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: ext4
-  # - ebs_device_name: /dev/sds
-  #   dir: swap
-  #   fstype: swap
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
 
 # oracle client
 oracle_install_user: oracle
 oracle_install_group: oinstall
-oracle_home: /u01/app/oracle/product/19c/client_1
+oracle_home: /u01/app/oracle/product/12.2.0/client_1
 oracle_inventory: /u01/app/oraInventory

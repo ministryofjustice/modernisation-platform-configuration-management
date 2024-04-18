@@ -1,0 +1,26 @@
+---
+# FIXME: this check doesn't actually work
+# - name: Check oracle 19c Client Software installed
+#   ansible.builtin.stat:
+#     path: "{{ oracle_home }}/bin/sqlplus"
+#   register: client_software_installed
+
+# - block:
+- import_tasks: download_software.yml
+  tags:
+    - ec2provision
+    - amibuild
+    - oracle_client_software_download
+
+- import_tasks: install_client.yml
+  tags:
+    - ec2provision
+    - amibuild
+    - oracle_client_install
+
+- import_tasks: cleanup.yml
+  tags:
+    - ec2provision
+    - oracle_client_cleanup
+# block
+# when: not client_software_installed.stat.exists

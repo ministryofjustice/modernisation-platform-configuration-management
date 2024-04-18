@@ -1,0 +1,64 @@
+---
+- name: Create llg client response file
+  template:
+    src: "{{ client_response_file }}.j2"
+    dest: "{{ stage }}/{{ client_response_file }}"
+    mode: u=rw,g=r,o=r
+    owner: oracle
+    group: oinstall
+
+- name: Install packages with yum command as those are not getting installed by ansible yum
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      yum -y install {{ item }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-yum-install
+  loop:
+    - binutils-2.17.50.0.6
+    - compat-libstdc++-33-3.2.3
+    - elfutils-libelf-0.125
+    - elfutils-libelf-devel-0.125
+    - elfutils-libelf-devel-static-0.125
+    - gcc-4.1.2
+    - gcc-c++-4.1.2
+    - glibc-2.5-24
+    - glibc-common-2.5
+    - glibc-devel-2.5
+    - ksh-20060214
+    - libaio-0.3.106
+    - libaio-devel-0.3.106
+    - libgomp-4.1.2
+    - sysstat-7.0.2
+    - unixODBC-2.2.11
+    - unixODBC-devel-2.2.11
+
+- name: Unzip Oracle 11g Client software
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ client_software }}"
+    dest: "{{ oracle_home }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    remote_src: yes
+
+# export CV_ASSUME_DISTID=EL6.10 FIXME: maybe required, maybe not
+- name: Install Oracle 11g client server
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {  
+      {{ oracle_home }}/client/runInstaller -silent -waitforcompletion -responseFile {{ stage }}/{{ client_response_file }}
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client
+  become_user: oracle
+  async: 1800
+  poll: 30
+  ignore_errors: true # ignore errors as the installation may return SUCCESS_WITH_ERRORS which is not a failure but the installer return code is non-zero
+
+- name: Run post install root script
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo {{ oracle_inventory }}/orainstRoot.sh
+      {{ oracle_inventory }}/orainstRoot.sh
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-client

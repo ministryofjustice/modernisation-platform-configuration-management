@@ -9,15 +9,15 @@
 #     - ec2provision
 #     - oracle_db_users
 
-# - name: Set selinux to permissive mode
-#   import_role:
-#     name: selinux-config
-#   vars:
-#     selinux_state: permissive
-#   tags:
-#     - amibuild
-#     - ec2provision
-#     - oracle_db_selinux_permissive
+- name: Set selinux to permissive mode
+  import_role:
+    name: selinux-config
+  vars:
+    selinux_state: permissive
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_selinux_permissive
 
 # - import_tasks: get-facts.yml
 #   tags:
@@ -26,25 +26,23 @@
 # - oracle_db_reconfigure_has
 # - oracle_db_restore_databases
 
-# - import_tasks: download-software.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#     # - oracle_db_get_base_software
-# # - import_tasks: install-base-software.yml
-# #   tags:
-# #     - amibuild
-# #     - ec2provision
-# #     - oracle_db_install_base_software
-
-# - import_tasks: extract-software.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#     # - oracle_db_extract_base_software
-
 - ansible.builtin.import_role:
     name: onr-get
   tags:
     - amibuild
     - ec2provision
+
+- ansible.builtin.import_role:
+    name: onr-get-more
+  tags:
+    - amibuild
+    - ec2provision
+
+- import_tasks: template-response.yml
+  tags:
+    - amibuild
+    - ec2provision
+# - import_tasks: install-boe.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
