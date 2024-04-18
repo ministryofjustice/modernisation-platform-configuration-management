@@ -1,0 +1,12 @@
+set head off echo off feedback off 
+spool /tmp/{{ SOURCE_DB }}_control.txt
+
+select handle from 
+(select a.db_key,c.name, a.handle, a.tag, a.media, a.completion_time
+from rcvcatowner.rc_backup_piece a , rcvcatowner.rc_backup_spfile b, rcvcatowner.rc_database c
+where a.db_key=b.db_key and b.db_key=c.db_key  and a.set_stamp=b.set_stamp and a.bs_key=b.bs_key
+and  c.name='{{ ORACLE_DB_REFRESH_DB_NAME }}' and media like 's3%' order by a.db_key, a.completion_time desc) 
+where rownum=1
+
+spool off 
+exit

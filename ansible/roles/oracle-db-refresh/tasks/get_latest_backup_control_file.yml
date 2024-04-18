@@ -6,8 +6,8 @@
 
 - name: Install SQL Script
   template:
-    src: get_latest_backup_control_file.sql.j2
-    dest: /tmp/get_latest_backup_control_file.sql
+    src: get_latest_backup_details.sql.j2
+    dest: /tmp/get_latest_backup_details.sql
 
 - name: Set ORACLE_HOME environment variable to grid_home
   set_fact:
@@ -19,7 +19,7 @@
     export ORAENV_ASK=NO
     export ORACLE_SID={{ rcvcat_db_name.rcvcat_db_name }}
     . /usr/local/bin/oraenv
-    {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
+    {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_details.sql
     "
     if [[ ! -s "/tmp/{{ SOURCE_DB }}_control.txt" ]]; then
       echo "Empty control file - {{ SOURCE_DB }} backup not found in {{ rcvcat_db_name.rcvcat_db_name }}"
@@ -39,4 +39,4 @@
     state: absent
   loop:
     - "/tmp/{{ SOURCE_DB }}_control.txt"
-    - "/tmp/get_latest_backup_control_file.sql"
+    - "/tmp/get_latest_backup_details.sql"
