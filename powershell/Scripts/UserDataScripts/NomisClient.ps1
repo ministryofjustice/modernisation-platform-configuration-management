@@ -1,17 +1,85 @@
-$JAVA_S3_BUCKET="mod-platform-image-artefact-bucket20230203091453221500000001"
-$JAVA_S3_FOLDER="hmpps/nomis/jumpserver-software"
-$SQLDEVELOPER_S3_BUCKET="mod-platform-image-artefact-bucket20230203091453221500000001"
-$SQLDEVELOPER_S3_FOLDER="hmpps/sqldeveloper"
-$SSM_PARAM_NAME = "/nomis-client/config"
-$COMPATIBILITY_SITE_LIST_PATH = "C:\\compatibility_site_list.xml"
+$GlobalConfig = @{
+  "all" = @{
+    "JavaS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
+    "JavaS3Folder" = "hmpps/nomis/jumpserver-software"
+    "SQLDeveloperS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
+    "SQLDeveloperS3Folder" = "hmpps/sqldeveloper"
+    "CompatibilitySiteListPath" = "C:\\CompatibilitySiteList.xml"
+  }
+  "development" = @{
+     "DnsSuffixSearchList" = @(
+       "nomis.hmpps-test.modernisation-platform.internal",
+       "azure.noms.root"
+     )
+  }
+  "test" = @{
+     "DnsSuffixSearchList" = @(
+       "nomis.hmpps-test.modernisation-platform.internal",
+       "azure.noms.root"
+     )
+    "IECompatibilityModeSiteList" = @(
+      "t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t1-cn.hmpp-azdt.justice.gov.uk:7777/forms/frmservlet?config=tag",
+      "t1-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t2-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "t3-cn.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
+      "t3-cn-ha.hmpp-azdt.justice.gov.uk/forms/frmservlet?config=tag",
+      "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "IETrustedDomains" = @(
+      "*.nomis.hmpps-test.modernisation-platform.justice.gov.uk",
+      "*.nomis.service.justice.gov.uk",
+      "*.hmpp-azdt.justice.gov.uk"
+    )
+    "StartMenuUrls" = @{
+      "T1 NOMIS" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "T2 NOMIS" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "T3 NOMIS" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    }
+  }
+  "preproduction" = @{
+     "DnsSuffixSearchList" = @(
+       "nomis.hmpps-preproduction.modernisation-platform.internal",
+       "azure.hmpp.root"
+     )
+  }
+  "production" = @{
+     "DnsSuffixSearchList" = @(
+       "nomis.hmpps-production.modernisation-platform.internal",
+       "azure.hmpp.root"
+     )
+  }
+}
+
+function Get-Config {
+  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+  $Tags = "$TagsRaw" | ConvertFrom-Json
+  $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value  
+ 
+  Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
+}
 
 function Add-Java6 {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   # Download Java exe from S3 Bucket
   $ErrorActionPreference = "Stop"
   $TempPath = [System.IO.Path]::GetTempPath()
   Set-Location -Path $TempPath
   Write-Output "Downloding JRE installer"
-  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/jre-6u33-windows-i586.exe" -File ".\jre-6u33-windows-i586.exe"
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/jre-6u33-windows-i586.exe") -File ".\jre-6u33-windows-i586.exe"
   
   # Install Java
   Write-Output "Installing JRE, jre-install.log file in $TempPath"
@@ -25,17 +93,27 @@ function Add-Java6 {
 }
 
 function Add-JavaDeployment {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   # Copy deployment config files
   $ErrorActionPreference = "Stop"
   $DeploymentFolder = "C:\Windows\Sun\Java\Deployment"
-  Write-Output "Downloading Java deployment config from $JAVA_S3_BUCKET to $DeploymentFolder"
+  Write-Output "Downloading Java deployment config to $DeploymentFolder"
   New-Item -Path $DeploymentFolder -ItemType Directory -Force
-  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/deployment.config" -File "$DeploymentFolder\deployment.config"
-  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/deployment.properties" -File "$DeploymentFolder\deployment.properties"
-  Read-S3Object -BucketName $JAVA_S3_BUCKET -Key "$JAVA_S3_FOLDER/trusted.certs" -File "$DeploymentFolder\trusted.certs"
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config"
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.properties") -File "$DeploymentFolder\deployment.properties"
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/trusted.certs") -File "$DeploymentFolder\trusted.certs"
 }
 
 function Remove-JavaUpdateCheck {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   # Prevent Java update check
   $ErrorActionPreference = "Stop"
   $JavaPath = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run"
@@ -48,6 +126,11 @@ function Remove-JavaUpdateCheck {
 }
 
 function Add-EdgeConfig {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   $ErrorActionPreference = "Stop"
   $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
 
@@ -66,12 +149,14 @@ function Add-EdgeConfig {
 }
 
 function Add-EdgeIECompatibility {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   $ErrorActionPreference = "Stop"
 
-  Write-Output "Add IE Compatibility: retriving config from SSM $SSM_PARAM_NAME"
-  $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
-  $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
-  $IECompatSiteList = $SSMParam.ie_compatibility_mode_site_list
+  Write-Output "Adding Edge IE Compatibility Mode"
 
   $XmlDoc = New-Object System.Xml.XmlDocument
   $Root = $XmlDoc.CreateElement("site-list")
@@ -89,7 +174,7 @@ function Add-EdgeIECompatibility {
   $CreatedByElement.AppendChild($DateCreatedElement)
   $Root.AppendChild($CreatedByElement)
 
-  foreach ($site in $IECompatSiteList) {
+  foreach ($site in $Config.IECompatibilityModeSiteList) {
     $SiteElement = $XmlDoc.CreateElement("site")
     $SiteElement.SetAttribute('url', $site)
     $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
@@ -102,18 +187,21 @@ function Add-EdgeIECompatibility {
     $Root.AppendChild($SiteElement)
   }
 
-  $XmlDoc.Save($COMPATIBILITY_SITE_LIST_PATH)
+  $XmlDoc.Save($Config.CompatibilitySiteListPath)
 
   # Add compatibility list to registry
-  New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name InternetExplorerIntegrationSiteList -Value $COMPATIBILITY_SITE_LIST_PATH -PropertyType String -Force
+  New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name InternetExplorerIntegrationSiteList -Value $Config.CompatibilitySiteListPath -PropertyType String -Force
 }
 
 function Add-EdgeTrustedSites {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   $ErrorActionPreference = "Stop"
-  Write-Output "Add Edge Trusted Sites: retriving config from SSM $SSM_PARAM_NAME"
-  $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
-  $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
-  $Domains = $SSMParam.ie_trusted_domains
+  Write-Output "Add Edge Trusted Sites"
+  $Domains = $Config.IETrustedDomains
 
   # The jumpserver is using IE Enhanced Security so each domain needs to be explicitly added to the following
   # - Registry to allow certain domains to Bypass Enhanced Security (see below)
@@ -160,35 +248,50 @@ function Add-EdgeTrustedSites {
 }
 
 function Add-SQLDeveloper {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   $ErrorActionPreference = "Stop"
   Write-Output "Add SQL Developer"
   Set-Location -Path ([System.IO.Path]::GetTempPath())
-  Read-S3Object -BucketName $SQLDEVELOPER_S3_BUCKET -Key "$SQLDEVELOPER_S3_FOLDER/sqldeveloper-22.2.1.234.1810-x64.zip" -File .\sqldeveloper-22.2.1.234.1810-x64.zip
+  Read-S3Object -BucketName $Config.SQLDeveloperS3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip
 
   # Extract SQL Developer - there is no installer for this application
   Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force
 
   # Create a desktop shortcut
   $Shortcut = New-Object -ComObject WScript.Shell
-  $ShortcutLink = $Shortcut.CreateShortcut("C:\Users\Public\Desktop\SQL Developer.lnk")
+  $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
+  $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
   $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
   $ShortcutLink.Save()
 }
 
-function Add-NomisShortcuts {
-  $ErrorActionPreference = "Stop"
-  Write-Output "Add Nomis Shortcuts: retriving config from SSM $SSM_PARAM_NAME"
-  $SSMParamRaw = aws ssm get-parameter --name $SSM_PARAM_NAME --with-decryption --query Parameter.Value --output text
-  $SSMParam = "$SSMParamRaw" | ConvertFrom-Json
-  $Shortcuts = $SSMParam.desktop_shortcuts
+function Add-DnsSuffixSearchList {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
 
-  for ($i = 0; $i -lt $Shortcuts.Length; $i++) {
-    $Shortcut = $Shortcuts[$i].Split('|')
-    $Name = $Shortcut[0]
-    $Url = $Shortcut[1]
+  Set-DnsClientGlobalSetting -SuffixSearchList $Config.DnsSuffixSearchList
+}
+
+function Add-NomisShortcuts {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Stop"
+  Write-Output "Add Nomis Shortcuts"
+
+  for ($Shortcut in $Config.StartMenuUrls.GetEnumerator())
+    $Name = $Shortcut.Name
+    $Url = $Shortcut.Value
     $Shortcut = New-Object -ComObject WScript.Shell
-    $Destination = $Shortcut.SpecialFolders.Item("AllUsersDesktop")
-    $SourcePath = Join-Path -Path $Destination -ChildPath "\\$Name.url"
+    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\$Name.url"
     $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
     $SourceShortcut.TargetPath = $Url
 
@@ -197,6 +300,11 @@ function Add-NomisShortcuts {
 }
 
 function Remove-StartMenuShutdownOption {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
   $ErrorActionPreference = "Stop"
   Write-Output "Remove StartMenu Shutdown Option"
   $RegistryStartMenuPath = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Start\"
@@ -207,12 +315,14 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
-Add-Java6
-Add-JavaDeployment
-Remove-JavaUpdateCheck
-Add-EdgeConfig
-Add-EdgeIECompatibility
-Add-EdgeTrustedSites
-Add-SQLDeveloper
-Add-NomisShortcuts
-Remove-StartMenuShutdownOption
+$Config = Get-Config
+Add-Java6 $Config
+Add-JavaDeployment $Config
+Remove-JavaUpdateCheck $Config
+Add-EdgeConfig $Config
+Add-EdgeIECompatibility $Config
+Add-EdgeTrustedSites $Config
+Add-SQLDeveloper $Config
+Add-DnsSuffixSearchList $Config
+Add-NomisShortcuts $Config
+Remove-StartMenuShutdownOption $Config
