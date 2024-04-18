@@ -35,12 +35,12 @@ $GlobalConfig = @{
       "Prison-Nomis T1" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis T2" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis T3" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T1 LB t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T1 LB t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T2 LB t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T2 LB t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T3 LB t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-      "Test Nomis T3 LB t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t1-nomis-web-a Nomis" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t1-nomis-web-b Nomis" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t2-nomis-web-a Nomis" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t2-nomis-web-b Nomis" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t3-nomis-web-a Nomis" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB t3-nomis-web-b Nomis" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
   }
   "nomis-preproduction" = @{
@@ -76,6 +76,7 @@ function Add-EC2InstanceToConfig {
     [hashtable]$Config
   )
 
+  Write-Output "Retrieving EC2 instances to add to config"
   $Ec2Raw = aws ec2 describe-instances --no-cli-pager --filters 'Name=instance-state-name,Values=running'
   $Ec2Json = $Ec2Raw | ConvertFrom-Json
 
@@ -90,17 +91,17 @@ function Add-EC2InstanceToConfig {
 
         $Config.IETrustedDomains += $IP
 
-        $Key = "NodeManager " + $Env + " " + $Name + " " + $ID
+        $Key = "EC2 " + $Name + " NodeManager " + $ID
         $Url = $IP + ":7001/console"
         $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
         $Config.IECompatibilityModeSiteList += $Url
-        Write-Output "Adding $Key $Url to Nomis Shortcuts"
+        Write-Output " - Adding $Key $Url to Nomis Shortcuts"
 
-        $Key = "Test Nomis " + $Env + " EC2 " + $Name + " " + $ID
+        $Key = "EC2 " + $Name + " Nomis " + $ID
         $Url = $IP + ":7777/forms/frmservlet?config=tag"
         $Config.NomisShortcuts.Add($Key, ("http://" + $Url))
         $Config.IECompatibilityModeSiteList += $Url
-        Write-Output "Adding $Key $Url to Nomis Shortcuts"
+        Write-Output " - Adding $Key $Url to Nomis Shortcuts"
       }
     }
   }
@@ -114,14 +115,15 @@ function Add-Java6 {
 
   $ErrorActionPreference = "Stop"
 
-  if (Test-Path "C:\Program Files (x86)\Java\jre6)" {
+  if (Test-Path "C:\Program Files (x86)\Java\jre6") {
     Write-Output "JRE6 already installed"
   } else {
     $TempPath = [System.IO.Path]::GetTempPath()
+    Write-Output "Installing JRE6"
     Set-Location -Path $TempPath
-    Write-Output "Downloding JRE6 installer from S3 bucket"
+    Write-Output " - Downloding installer from S3 bucket"
     Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/jre-6u33-windows-i586.exe") -File ".\jre-6u33-windows-i586.exe" | Out-Null
-    Write-Output "Installing JRE6 jre-install.log file in $TempPath"
+    Write-Output " - Installing JRE6 jre-install.log file in $TempPath"
     Start-Process -Wait -Verbose -FilePath .\jre-6u33-windows-i586.exe -ArgumentList "/s", "/L .\jre-install.log"
     [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files (x86)\Java\jre6", [System.EnvironmentVariableTarget]::Machine) | Out-Null
     [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";%JAVA_HOME%\bin", [System.EnvironmentVariableTarget]::Machine) | Out-Null
@@ -157,7 +159,7 @@ function Remove-JavaUpdateCheck {
   $ValueName = "SunJavaUpdateSched"
   $Properties = Get-ItemProperty -Path $JavaPath
   if ($Properties.PSObject.Properties.Name -contains $ValueName) {
-    Write-Output "Removing $JavaPath $ValueName"
+    Write-Output " - Removing $JavaPath $ValueName"
     Remove-ItemProperty -Path $JavaPath -Name $ValueName -Force
   }
 }
@@ -198,8 +200,8 @@ function Add-EdgeIECompatibility {
 
   $XmlDoc = New-Object System.Xml.XmlDocument
   $Root = $XmlDoc.CreateElement("site-list")
-  $Root.SetAttribute('version', 1)
-  $XmlDoc.AppendChild($Root)
+  $Root.SetAttribute('version', 1) | Out-Null
+  $XmlDoc.AppendChild($Root) | Out-Null
   $CreatedByElement = $XmlDoc.CreateElement("created-by")
   $ToolElement = $XmlDoc.CreateElement("tool")
   $VersionElement = $XmlDoc.CreateElement("version")
@@ -207,29 +209,29 @@ function Add-EdgeIECompatibility {
   $ToolElement.InnerText = "EMIESiteListManager"
   $VersionElement.InnerText = "10.0.0.0"
   $DateCreatedElement.InnerText = $(Get-Date -Format "MM/dd/yyyy hh:mm:ss")
-  $CreatedByElement.AppendChild($ToolElement)
-  $CreatedByElement.AppendChild($VersionElement)
-  $CreatedByElement.AppendChild($DateCreatedElement)
-  $Root.AppendChild($CreatedByElement)
+  $CreatedByElement.AppendChild($ToolElement) | Out-Null
+  $CreatedByElement.AppendChild($VersionElement) | Out-Null
+  $CreatedByElement.AppendChild($DateCreatedElement) | Out-Null
+  $Root.AppendChild($CreatedByElement) | Out-Null
 
   foreach ($site in $Config.IECompatibilityModeSiteList) {
-    Write-Output "Adding $site"
+    Write-Output " - Adding $site"
     $SiteElement = $XmlDoc.CreateElement("site")
-    $SiteElement.SetAttribute('url', $site)
+    $SiteElement.SetAttribute('url', $site) | Out-Null
     $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
     $OpenInElement = $XmlDoc.CreateElement("open-in")
     $OpenInElement.SetAttribute('allow-redirect', 'true')
     $CompatModeElement.InnerText = "Default"
     $OpenInElement.InnerText = "IE11"
-    $SiteElement.AppendChild($CompatModeElement)
-    $SiteElement.AppendChild($OpenInElement)
-    $Root.AppendChild($SiteElement)
+    $SiteElement.AppendChild($CompatModeElement) | Out-Null
+    $SiteElement.AppendChild($OpenInElement) | Out-Null
+    $Root.AppendChild($SiteElement) | Out-Null
   }
 
-  $XmlDoc.Save($Config.CompatibilitySiteListPath)
+  $XmlDoc.Save($Config.CompatibilitySiteListPath) | Out-Null
 
   # Add compatibility list to registry
-  New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name InternetExplorerIntegrationSiteList -Value $Config.CompatibilitySiteListPath -PropertyType String -Force
+  New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Name InternetExplorerIntegrationSiteList -Value $Config.CompatibilitySiteListPath -PropertyType String -Force | Out-Null
 }
 
 function Add-EdgeTrustedSites {
@@ -251,7 +253,7 @@ function Add-EdgeTrustedSites {
 
   # Ensure the registry path exists
   if (!(Test-Path $RegistryPath)) {
-    New-Item -Path $RegistryPath -Force
+    New-Item -Path $RegistryPath -Force | Out-Null
   }
 
   # Add each domain to the exclusion list for IE Enhanced Security
@@ -260,7 +262,7 @@ function Add-EdgeTrustedSites {
     $Index = $i + 1
     $Value = $Domains[$i] -replace '^\*\.', ''
 
-    Write-Output "Adding $Value to IE Enhanced Security exclusion list"
+    Write-Output " - Adding $Value to IE Enhanced Security exclusion list"
     New-Item -Path "$RegistryPath\$Index" -Force | Out-Null
     New-ItemProperty -Path "$RegistryPath\$Index" -Name "(Default)" -Value $Value -PropertyType String -Force | Out-Null
   }
@@ -281,7 +283,7 @@ function Add-EdgeTrustedSites {
   $RegPath = "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings"
 
   if (!(Test-Path $RegPath)) {
-    New-Item -Path $RegPath -Force
+    New-Item -Path $RegPath -Force | Out-Null
   }
 
   New-ItemProperty -Path $RegPath -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force | Out-Null
@@ -299,17 +301,18 @@ function Add-SQLDeveloper {
   } else {
     Write-Output "Add SQL Developer"
     Set-Location -Path ([System.IO.Path]::GetTempPath())
-    Read-S3Object -BucketName $Config.SQLDeveloperS3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip
+    Read-S3Object -BucketName $Config.SQLDeveloperS3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip | Out-Null
 
     # Extract SQL Developer - there is no installer for this application
-    Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force
+    Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force | Out-Null
 
     # Create a desktop shortcut
+    Write-Output " - Creating StartMenu Link"
     $Shortcut = New-Object -ComObject WScript.Shell
     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
     $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
     $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
-    $ShortcutLink.Save()
+    $ShortcutLink.Save() | Out-Null
   }
 }
 
@@ -332,11 +335,13 @@ function Add-NomisShortcuts {
 
   $ErrorActionPreference = "Stop"
   Write-Output "Add Nomis Shortcuts"
+  Write-Output " - Removing existing shortcuts"
+  Get-ChildItem "${SourcePath}/*Nomis*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
 
   foreach ($Shortcut in $Config.NomisShortcuts.GetEnumerator()) {
     $Name = $Shortcut.Name
     $Url = $Shortcut.Value
-    Write-Output "Add $Name $Url"
+    Write-Output " - Add $Name $Url"
     $Shortcut = New-Object -ComObject WScript.Shell
     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\$Name.url"
     $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
