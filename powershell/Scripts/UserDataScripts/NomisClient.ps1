@@ -185,6 +185,9 @@ function Add-JavaDeployment {
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config" | Out-Null
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.properties") -File "$DeploymentFolder\deployment.properties" | Out-Null
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/trusted.certs") -File "$DeploymentFolder\trusted.certs" | Out-Null
+
+  $DeploymentFolder = "C:\Program Files (x86)\Java\jre6\lib"
+  Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config" | Out-Null
 }
 
 function Remove-JavaUpdateCheck {
@@ -407,6 +410,26 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
+function Register-HMPPSUserDataScriptJob {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $Name = "HMPPSUserDataScript"
+  if (Get-ScheduledJob -Name $Name -ErrorAction SilentlyContinue) {
+    Unregister-ScheduledJob -Name $Name
+  }
+
+  $O = New-ScheduledJobOption -RequireNetwork -MultipleInstancePolicy IgnoreNew
+  $T = New-JobTrigger -Daily -At "16:30 PM"
+  Register-ScheduledJob -Name $Name -ScheduledJobOption $O -Trigger $T  -ScriptBlock {
+    $ErrorActionPreference = "Stop"
+    Set-Location -Path "C:\Program Files\HMPPS"
+    . ./Run-GitScript.ps1 "Invoke-UserDataScript.ps1" -GitBranch "main" | Out-File -FilePath "C:\Program Files\HMPPS\HMPPSUserDataScriptJob.log"
+  }
+}
+
 $ErrorActionPreference = "Stop"
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config
@@ -420,3 +443,4 @@ Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
+Register-HMPPSUserDataScriptJob $Config
