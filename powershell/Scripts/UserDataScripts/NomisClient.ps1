@@ -91,7 +91,7 @@ $GlobalConfig = @{
       "*.nomis.service.justice.gov.uk"
     )
     "NomisShortcuts" = @{
-      "Prison-Nomis" = "https://c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "LB prod-nomis-web-a Nomis" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "LB prod-nomis-web-b Nomis" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
