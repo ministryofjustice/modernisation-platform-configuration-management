@@ -53,11 +53,11 @@
   ansible.builtin.shell: |
     set -eo pipefail
     main() {  
-      {{ oracle_home }}/client/runInstaller -silent -debug -waitforcompletion -ignorePrereqFailure -logLevel fine -responseFile {{ stage }}/{{ client_response_file }}
+      {{ oracle_home }}/client/runInstaller -silent -waitforcompletion -ignoreSysPrereqs -responseFile {{ stage }}/{{ client_response_file }}
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle
-  async: 2400
+  async: 4800
   poll: 30
   ignore_errors: true # ignore errors as the installation may return SUCCESS_WITH_ERRORS which is not a failure but the installer return code is non-zero
 
