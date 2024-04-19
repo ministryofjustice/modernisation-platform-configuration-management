@@ -422,7 +422,7 @@ function Register-HMPPSUserDataScriptJob {
   }
 
   $O = New-ScheduledJobOption -RequireNetwork -MultipleInstancePolicy IgnoreNew
-  $T = New-JobTrigger -Daily -At "16:30 PM"
+  $T = New-JobTrigger -Daily -At "16:50 PM"
   Register-ScheduledJob -Name $Name -ScheduledJobOption $O -Trigger $T  -ScriptBlock {
     $ErrorActionPreference = "Stop"
     Set-Location -Path "C:\Program Files\HMPPS"
