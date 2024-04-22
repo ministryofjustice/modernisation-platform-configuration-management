@@ -5,7 +5,7 @@ sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
 sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
 sap_jvm_unpack_base_directory: /opt/sap/java
 
-onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
+onr_environment: "{{ ec2.tags['environment-name'] | regex_replace('^oasys-national-reporting-', '') }}"
 cms_name: "{{ ncr_environment }}-ncr-cms"
 
 s3:
