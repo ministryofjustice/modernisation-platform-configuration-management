@@ -8,7 +8,7 @@
   fail:
     msg: "SOURCE_DB is not defined"
   when: SOURCE_DB == ""
-  
+
 - name: Copy the latest backup control file handle details to the runner
   fetch:
     src: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ TARGET_DB }}_control.txt"
