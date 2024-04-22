@@ -29,7 +29,7 @@
 - name: Copy the latest backup control file handle detail to the runner
   fetch:
     src: "/tmp/{{ SOURCE_DB }}_control.txt"
-    dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ TARGET_DB }}_control.txt"
+    dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ SOURCE_DB }}_control.txt"
     flat: yes
     fail_on_missing: yes
 
