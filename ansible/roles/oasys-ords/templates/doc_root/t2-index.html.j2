@@ -107,13 +107,16 @@ jQuery.fn.pngFix = function(settings) {
 
 jQuery.fn.maintenanceMessage = function() {
   
-	// set message
-	var maintenanceMsg = $("#Comments").load("maintenance_message.html"); // this applies and sets the var
-	
-	// hide row if no message
-	if(!maintenanceMsg[0].innerText) {
-		$("#maintenanceMessage").hide();
-	}
+	jQuery.get('maintenance_message.html', function(message) {
+		console.log(message);
+		$('textarea[name="Comments"]').val(message)
+		
+		// hide row if no message
+		if(!message) {
+			$("#maintenanceMessageBox").hide();
+		}
+
+	}, 'text');
 
 	return jQuery;
 
@@ -182,9 +185,9 @@ $(document).ready(function(){
 					<img alt="OASys Icon" height="35" src="/i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
 					T2 OASys</a></td>
 					</tr>
-					<tr>
-					<td style="width: 10%"></td>
-					<td style="font-size: 12px"><textarea name="Comments" cols="100" rows="4" readonly="yes"></textarea></td>
+					<tr  id="maintenanceMessageBox">
+						<td style="width: 10%"></td>
+						<td style="font-size: 12px"><textarea name="Comments" cols="100" rows="4" readonly="yes"></textarea></td>
 					</tr>
 				</table>
 			</div>
