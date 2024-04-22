@@ -64,3 +64,10 @@
     - "tomcat.png"
     - "tomcat-power.gif"
     - "tomcat.svg"
+
+- name: update maintenance message
+  ansible.builtin.cron:
+    name: "maintenance_message"
+    minute: "*/10" # every 10 mins
+    user: root
+    job: "su oracle -c '{{ oasys_ords_get_maintenance_msg_command }} > {{ oasys_ords_maintenance_message_file }}"

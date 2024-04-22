@@ -105,6 +105,20 @@ jQuery.fn.pngFix = function(settings) {
 
 };
 
+jQuery.fn.maintenanceMessage = function() {
+  
+	// set message
+	var maintenanceMsg = $("#Comments").load("maintenance_message.html"); // this applies and sets the var
+	
+	// hide row if no message
+	if(!maintenanceMsg[0].innerText) {
+		$("#maintenanceMessage").hide();
+	}
+
+	return jQuery;
+
+};
+
 })(jQuery);
 
 

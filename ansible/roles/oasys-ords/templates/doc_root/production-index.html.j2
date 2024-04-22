@@ -105,6 +105,20 @@ jQuery.fn.pngFix = function(settings) {
 
 };
 
+jQuery.fn.maintenanceMessage = function() {
+  
+	// set message
+	var maintenanceMsg = $("#Comments").load("maintenance_message.html"); // this applies and sets the var
+	
+	// hide row if no message
+	if(!maintenanceMsg[0].innerText) {
+		$("#maintenanceMessage").hide();
+	}
+
+	return jQuery;
+
+};
+
 })(jQuery);
 
 
@@ -169,12 +183,9 @@ $(document).ready(function(){
 					</tr>
 
 
-					<tr>
+					<tr  id="maintenanceMessage">
 						<td style="width: 10%"></td>
-						<td style="font-size: 12px">
-<textarea name="Comments" cols="100" rows="4" readonly="yes">
-We are aware of an on-going issue with Prison events failing under some circumstances. This will affect the creation of new Offender Records and Basic Custody Screenings. Our technical support team are currently investigating, we apologies for the obvious inconvenience.
-</textarea>				</td>
+						<td style="font-size: 12px"><textarea name="Comments" cols="100" rows="4" readonly="yes"></textarea></td>
 					</tr>
 
 
