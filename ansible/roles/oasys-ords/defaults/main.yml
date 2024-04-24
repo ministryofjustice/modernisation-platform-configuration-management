@@ -33,6 +33,3 @@ secret_db_prefix: /oracle/database
 oasys_ords_maintenance_msg_secret: "/ec2/{{ ec2.tags.Name }}/maintenance_message"
 oasys_ords_get_maintenance_msg_command: "aws secretsmanager get-secret-value --secret-id {{ oasys_ords_maintenance_msg_secret }} --query SecretString --output text"
 oasys_ords_maintenance_message_file: "{{ oasys_ords_docroot_dir }}/maintenance_message.html"
-
-
-aws secretsmanager get-secret-value --secret-id /ec2/t2-oasys-web-b/maintenance_message --query SecretString --output text | jq .message | xargs
