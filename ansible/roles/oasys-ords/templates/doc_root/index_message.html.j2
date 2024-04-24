@@ -109,7 +109,7 @@ jQuery.fn.maintenanceMessage = function() {
   
 	jQuery.get('maintenance_message.html', function(message) {
 		var messageJs = JSON.parse(message)
-		var messageText = messageJs.message;
+		var messageText = messageJs.message.replace(/\\n/g, '\n');
 		var messageShow = messageJs.show;
 
 		$('textarea[name="Comments"]').val(messageText);
