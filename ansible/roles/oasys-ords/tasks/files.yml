@@ -40,7 +40,7 @@
 
 - name: Copy any additional docroot files
   ansible.builtin.template:
-    src: "doc_root/{{ item }}.j2"
+    src: "doc_root/{{ item }}"
     dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
