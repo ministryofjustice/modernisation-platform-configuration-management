@@ -11,6 +11,7 @@
     - ec2provision
     - ec2patch
     - users-and-groups-ssm-user
+  when: create_ssm_user | default(true)
 
 - import_tasks: add-regular.yml
   tags:
