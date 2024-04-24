@@ -33,5 +33,6 @@
     state: present
     user: ssm-user
     nopassword: yes
+    runas: ALL
     commands: ALL
   when: getent_passwd["ssm-user"] is not defined
