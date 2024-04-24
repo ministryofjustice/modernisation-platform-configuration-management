@@ -21,7 +21,7 @@
     opts: "{{ item.opts | default('defaults,nofail') }}"
     path: "{{ item.dir }}"
     src: "{{ item.src }}"
-    state: mounted
+    state: "{{ item.state | default('mounted') }}"
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
