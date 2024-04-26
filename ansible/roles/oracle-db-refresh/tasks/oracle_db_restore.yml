@@ -16,7 +16,6 @@
 
 - name: Run {{ TARGET_DB }} database refresh
   block:
-
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
