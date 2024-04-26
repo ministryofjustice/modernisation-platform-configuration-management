@@ -44,8 +44,8 @@ cd ${EMCLI_DIR}
 if [ `grep "^+ASM" /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
 then
         echo "emcli add target Grid Infrastructure home"
-        GRID_HOME_NAME=`grep grid  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
-        GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
+        GRID_HOME_NAME=`grep CRS=  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
+        GRID_HOME=`grep CRS= ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
         ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         echo "emcli add HAS target"
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};${TARGET_PROPERTIES}"
