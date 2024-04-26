@@ -9,65 +9,74 @@
     msg: "ALTERNATE_WEEK is not defined"
   when: ALTERNATE_WEEK == ""
 
-- name: Copy the latest backup control file handle details to the runner
-  ansible.builtin.fetch:
-    src: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ TARGET_DB }}_control.txt"
-    dest: "/tmp/{{ TARGET_DB }}_control.txt"
-    flat: yes
-    fail_on_missing: yes
+- name: Check if DBA requested to keep refresh on hold 
+  ansible.builtin.stat:
+    path: "{{refresh_script_dir }}/{{ TARGET_DB }}/onhold_refresh.txt"
+  register: refresh_onhold_check
 
-- name: Create Database Refresh script directory
-  ansible.builtin.file:
-    path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    state: directory
-    recurse: yes
+- name: Run {{ TARGET_DB }} database refresh 
+  block:
+    - name: Copy the latest backup control file handle details to the runner
+      ansible.builtin.fetch:
+        src: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ TARGET_DB }}_control.txt"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_control.txt"
+        flat: yes
+        fail_on_missing: yes
 
-- name: Copy Generic Database refresh script
-  ansible.builtin.template:
-    src: "db_refresh.sh.j2"
-    dest: "{{refresh_script_dir }}/db_refresh.sh"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    mode: "0700"
+    - name: Create Database Refresh script directory
+      ansible.builtin.file:
+        path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
 
-- name: Copy post refresh script for {{ TARGET_DB }}
-  ansible.builtin.template:
-    src: "{{ TARGET_DB }}_post_steps.sh.j2"
-    dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/post_steps.sh"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    mode: "0700"
+    - name: Copy Generic Database refresh script
+      ansible.builtin.template:
+        src: "db_refresh.sh.j2"
+        dest: "{{refresh_script_dir }}/db_refresh.sh"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
 
-- name: Copy PPOASYS system_parameter script
-  ansible.builtin.template:
-    src: "{{ TARGET_DB }}_Create_XDB_SYSTEM_PARAMETER.sql.j2"
-    dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/Create_XDB_SYSTEM_PARAMETER.sql"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    mode: "0700"
-  when: TARGET_DB == "PPOASYS"
+    - name: Copy post refresh script for {{ TARGET_DB }}
+      ansible.builtin.template:
+        src: "{{ TARGET_DB }}_post_steps.sh.j2"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/post_steps.sh"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
 
-- name: Start database refresh script
-  become_user: oracle
-  ansible.builtin.shell: |
-    main() {
-      echo {{ stage }}/{{ grid_install_script }}
-      {{refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }}
-    }
-    main 2>&1 | logger -p local3.info -t oracle-db-refresh
-  register: db_refresh_output
-  async: 3600
-  poll: 0
+    - name: Copy PPOASYS system_parameter script
+      ansible.builtin.template:
+        src: "{{ TARGET_DB }}_Create_XDB_SYSTEM_PARAMETER.sql.j2"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/Create_XDB_SYSTEM_PARAMETER.sql"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      when: TARGET_DB == "PPOASYS"
 
-- name: Wait for grid install to complete
-  ansible.builtin.async_status:
-    jid: "{{ db_refresh_output.ansible_job_id }}"
-  register: db_refresh_output_result
-  until: db_refresh_output.finished
-  delay: 60
-  retries: 60
-  vars:
-    ansible_remote_tmp: /tmp/.ansible
-    ansible_async_dir: /tmp/.ansible_async
+    - name: Start database refresh script
+      become_user: oracle
+      ansible.builtin.shell: |
+        main() {
+          echo {{ stage }}/{{ grid_install_script }}
+          {{refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }}
+        }
+        main 2>&1 | logger -p local3.info -t oracle-db-refresh
+      register: db_refresh_output
+      async: 3600
+      poll: 0
+
+    - name: Wait for grid install to complete
+      ansible.builtin.async_status:
+        jid: "{{ db_refresh_output.ansible_job_id }}"
+      register: db_refresh_output_result
+      until: db_refresh_output.finished
+      delay: 60
+      retries: 2000
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
+
+  when: not refresh_onhold_check.stat.exists
