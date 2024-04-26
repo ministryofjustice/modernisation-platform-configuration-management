@@ -1,0 +1,184 @@
+select SYSTEM_PARAMETER_CODE, SYSTEM_PARAMETER_VALUE
+from   eor.system_parameter_mv
+where  SYSTEM_PARAMETER_VALUE like '%10.40.40.70%';
+
+select SYSTEM_PARAMETER_CODE, SYSTEM_PARAMETER_VALUE
+from   eor.system_parameter_mv
+where  SYSTEM_PARAMETER_VALUE like '%pp-oasys-bip-a%';
+
+PROMPT
+PROMPT Make the change to the default from address
+PROMPT
+
+begin
+  begin
+    dbms_xdb.deleteresource('/public/OASYSR_system_parameters.xml');
+  exception
+  when others then null;
+  end;
+if dbms_xdb.createresource(
+'/public/OASYSR_system_parameters.xml',
+'<?xml version="1.0"?>
+<params xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>SEC_HTTPS_PORT</system_parameter_code>
+    <system_parameter_desc>SEC_HTTPS_PORT</system_parameter_desc>
+    <system_parameter_short_desc>SEC_HTTPS_PORT</system_parameter_short_desc>
+    <system_parameter_value>4443</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>OFFENDER_DETAIL_URL</system_parameter_code>
+    <system_parameter_desc>The URL to the NDH get offender detail web service.</system_parameter_desc>
+    <system_parameter_short_desc>The URL to the NDH get offender detail web service.</system_parameter_short_desc>
+    <system_parameter_value>http://xx.xx.xxx.xx:8555/Business/Processes/NDH_Web_Service/NDH_Web_Service_Details</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>ASSESSMENT_EXPORT_URL</system_parameter_code>
+    <system_parameter_desc>The URL to the NDH assessment export web service.</system_parameter_desc>
+    <system_parameter_short_desc>The URL to the NDH assessment export web service.</system_parameter_short_desc>
+    <system_parameter_value>http://xx.xx.xxx.xx:8555/Business/Processes/NDH_Web_Service/NDH_Web_Service_CMS_Update</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>RISK_UPDATE_URL</system_parameter_code>
+    <system_parameter_desc>The URL to the NDH risk update web service.</system_parameter_desc>
+    <system_parameter_short_desc>The URL to the NDH risk update web service.</system_parameter_short_desc>
+    <system_parameter_value>http://xx.xx.xxx.xx:8555/Business/Processes/NDH_Web_Service/NDH_Web_Service_Risk_Update</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>INITIAL_SEARCH_URL</system_parameter_code>
+    <system_parameter_desc>The URL to the NDH Initial search web service.</system_parameter_desc>
+    <system_parameter_short_desc>The URL to the NDH Initial search web service.</system_parameter_short_desc>
+    <system_parameter_value>http://xx.xx.xxx.xx:8555/Business/Processes/NDH_Web_Service/NDH_Web_Service_Search</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>BI_PUBLISHER_RO_USER</system_parameter_code>
+    <system_parameter_desc>BI Publisher READ ONLY user</system_parameter_desc>
+    <system_parameter_short_desc>BI Publisher READ ONLY user</system_parameter_short_desc>
+    <system_parameter_value>ws_user</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>BI_PUBLISHER_RO_PASS</system_parameter_code>
+    <system_parameter_desc>BI Publisher READ ONLY password</system_parameter_desc>
+    <system_parameter_short_desc>BI Publisher READ ONLY password</system_parameter_short_desc>
+    <system_parameter_value>Manager1</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>BI_PUBLISHER_URL</system_parameter_code>
+    <system_parameter_desc>BI Publisher URL</system_parameter_desc>
+    <system_parameter_short_desc>BI Publisher URL</system_parameter_short_desc>
+    <system_parameter_value>http://pp-oasys-bip-a:9704/xmlpserver/services/PublicReportService_v11</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>SDR_ABSOLUTE_PATH</system_parameter_code>
+    <system_parameter_desc>BI Publisher SDR report absolute path</system_parameter_desc>
+    <system_parameter_short_desc>BI Publisher SDR absolute path</system_parameter_short_desc>
+    <system_parameter_value>/OASYSR/SDR/SDR.xdo</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>FDR_ABSOLUTE_PATH</system_parameter_code>
+    <system_parameter_desc>BI Publisher FDR report absolute path</system_parameter_desc>
+    <system_parameter_short_desc>BI Publisher FDR absolute path</system_parameter_short_desc>
+    <system_parameter_value>/OASYSR/FDR/FDR.xdo</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>GET_LAST_CASE_URL</system_parameter_code>
+    <system_parameter_desc>The URL to the NDH get last case web service.</system_parameter_desc>
+    <system_parameter_short_desc>The URL to the NDH get last case web service.</system_parameter_short_desc>
+    <system_parameter_value>http://xx.xx.xxx.xx:8555/Business/Processes/NDH_Web_Service/NDH_Web_Service_Get_Last_Case</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>SYSTEM_MODE</system_parameter_code>
+    <system_parameter_desc>Identifies which mode the system is running in.</system_parameter_desc>
+    <system_parameter_short_desc>L - Live S - System Test I - SIT U - UAT P - Pilot N - NDH Link Test O - ODI Director Link Test D - Development A - Training T - Practice M - Migration</system_parameter_short_desc>
+    <system_parameter_value>L</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>SYSTEM_MODE_MESSAGE</system_parameter_code>
+    <system_parameter_desc>System message here</system_parameter_desc>
+    <system_parameter_short_desc>System Mode Message</system_parameter_short_desc>
+    <system_parameter_value>OASys is running in Live </system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>DEFAULT_MAIL_FROM</system_parameter_code>
+    <system_parameter_desc>Default email address from which emails are sent</system_parameter_desc>
+    <system_parameter_short_desc>Default email address from which emails are sent</system_parameter_short_desc>
+    <system_parameter_value>oasysr.noreply@hmps.gsi.gov.uk</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TEST_MAIL_DOMAIN</system_parameter_code>
+    <system_parameter_desc>Allowed pattern for email address checking in test environments</system_parameter_desc>
+    <system_parameter_short_desc>Allowed pattern for email address checking</system_parameter_short_desc>
+    <system_parameter_value>%@%.localdomain%</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>FGN_SAQ_PATH</system_parameter_code>
+    <system_parameter_desc>SAQ blank documents path</system_parameter_desc>
+    <system_parameter_short_desc>SAQ blank documents path</system_parameter_short_desc>
+    <system_parameter_value>/i/themes/moj_blue_theme/pdf/SAQ/</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>BLANK_ASS_PATH</system_parameter_code>
+    <system_parameter_desc>Blank assessments path</system_parameter_desc>
+    <system_parameter_short_desc>Blank assessments path</system_parameter_short_desc>
+    <system_parameter_value>/i/themes/moj_blue_theme/pdf/ASS/</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TRAINING_CLASSROOMS_IND</system_parameter_code>
+    <system_parameter_desc>Whether VPD turned on to implement Training Classrooms: Y = on</system_parameter_desc>
+    <system_parameter_short_desc>Training Classrooms Indicator</system_parameter_short_desc>
+    <system_parameter_value>N</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TRAINING_CMS_STUB_IND</system_parameter_code>
+    <system_parameter_desc>Whether CMS Stub is available in the system: Y = on</system_parameter_desc>
+    <system_parameter_short_desc>Training CMS Stub Indicator</system_parameter_short_desc>
+    <system_parameter_value>N</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TRAINING_QA_STUB_IND</system_parameter_code>
+    <system_parameter_desc>Whether the QA Stub is available in the system: Y = on</system_parameter_desc>
+    <system_parameter_short_desc>Training QA Stub Indicator</system_parameter_short_desc>
+    <system_parameter_value>N</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TRAINING_BASELINE_SCHEMA</system_parameter_code>
+    <system_parameter_desc>Name of schema holding the training baseline</system_parameter_desc>
+    <system_parameter_short_desc>Training Baseline Schema Name</system_parameter_short_desc>
+    <system_parameter_value>TRAINBASE</system_parameter_value>
+  </param>
+  <param xmlns="http://xmlns.oracle.com/xdb/XDBResource.xsd">
+    <system_parameter_code>TRAINING_MASTER_BASELINE_SCHEMA</system_parameter_code>
+    <system_parameter_desc>Name of schema holding the master training baseline</system_parameter_desc>
+    <system_parameter_short_desc>Training Baseline Master Schema Name</system_parameter_short_desc>
+    <system_parameter_value>TRAINBASE_MASTER</system_parameter_value>
+  </param>
+</params>
+'
+) then
+    null;
+end if;
+end;
+/
+
+Update system_parameter set system_parameter_value = 'https://pp.oasys.service.justice.gov.uk/eor/oasys/ass/asssumm' where system_parameter_code = 'ASSESSMENT_SUMMARY_URL';
+
+PROMPT
+PROMPT Refresh the materialized view
+PROMPT
+
+exec dbms_mview.refresh('SYSTEM_PARAMETER_MV');
+
+commit;
+
+PROMPT
+PROMPT Check the change has been made
+PROMPT
+
+select SYSTEM_PARAMETER_CODE, SYSTEM_PARAMETER_VALUE
+from   eor.system_parameter_mv
+where  SYSTEM_PARAMETER_VALUE like '%10.40.40.70%';
+
+select SYSTEM_PARAMETER_CODE, SYSTEM_PARAMETER_VALUE
+from   eor.system_parameter_mv
+where  SYSTEM_PARAMETER_VALUE like '%pp-oasys-bip-a%';
+
