@@ -9,12 +9,12 @@
     msg: "ALTERNATE_WEEK is not defined"
   when: ALTERNATE_WEEK == ""
 
-- name: Check if DBA requested to keep refresh on hold 
+- name: Check if DBA requested to keep refresh on hold
   ansible.builtin.stat:
     path: "{{refresh_script_dir }}/{{ TARGET_DB }}/onhold_refresh.txt"
   register: refresh_onhold_check
 
-- name: Run {{ TARGET_DB }} database refresh 
+- name: Run {{ TARGET_DB }} database refresh
   block:
     - name: Copy the latest backup control file handle details to the runner
       ansible.builtin.fetch:
