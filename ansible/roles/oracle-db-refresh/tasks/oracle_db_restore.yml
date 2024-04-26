@@ -62,7 +62,7 @@
     - name: Start database refresh script
       become_user: oracle
       ansible.builtin.shell: "nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &"
-      aync: 10
+      async: 10
       poll: 0
 
   when: not refresh_onhold_check.stat.exists
