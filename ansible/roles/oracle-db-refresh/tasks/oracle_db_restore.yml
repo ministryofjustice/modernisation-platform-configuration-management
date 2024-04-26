@@ -74,10 +74,7 @@
           nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
-      async: 10
+      async: 21600
       poll: 0
-      vars:
-        ansible_remote_tmp: /tmp/.ansible
-        ansible_async_dir: /tmp/.ansible_async
 
   when: not refresh_onhold_check.stat.exists
