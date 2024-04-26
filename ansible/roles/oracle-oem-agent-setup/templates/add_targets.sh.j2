@@ -61,7 +61,7 @@ if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
 then
         echo "emcli add target database homes"
         DB_INFO=$(grep db inventory.xml| grep -v REMOVED | awk -F\" '{ printf("%s:%s\n", $2,$4)}')
-        for i in in ${DB_INFO[@]}
+        for i in ${DB_INFO[@]}
         do
             DB_HOME_NAME=$(echo ${i} | awk -F: '{ print $1 }')
             DB_HOME=$(echo ${i} | awk -F: '{ print $2 }')
