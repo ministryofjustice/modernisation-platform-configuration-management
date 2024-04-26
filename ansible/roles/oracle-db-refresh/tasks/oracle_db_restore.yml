@@ -65,8 +65,19 @@
     #   async: 10
     #   poll: 0
 
-    - ansible.builtin.shell: "nohup /root/test.sh &"
+    - name: Start database refresh script
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main() {
+          nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK } &
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
       async: 10
       poll: 0
+      vars:
+        ansible_remote_tmp: /tmp/.ansible
+        ansible_async_dir: /tmp/.ansible_async
 
   when: not refresh_onhold_check.stat.exists
