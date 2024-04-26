@@ -61,7 +61,13 @@
 
     - name: Start database refresh script
       become_user: oracle
-      ansible.builtin.shell: {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} 
+      ansible.builtin.shell: |
+        set -eo pipefail
+        PATH=$PATH:/usr/local/bin
+        main () {
+          {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} 
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db        
       aync: 10
       poll: 0
 
