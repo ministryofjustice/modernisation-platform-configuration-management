@@ -59,9 +59,13 @@
         mode: "0700"
       when: TARGET_DB == "PPOASYS"
 
-    - name: Start database refresh script
-      become_user: oracle
-      ansible.builtin.shell: "nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &"
+    # - name: Start database refresh script
+    #   become_user: oracle
+    #   ansible.builtin.shell: "nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &"
+    #   async: 10
+    #   poll: 0
+
+    - ansible.builtin.shell: "nohup /root/test.sh &"
       async: 10
       poll: 0
 
