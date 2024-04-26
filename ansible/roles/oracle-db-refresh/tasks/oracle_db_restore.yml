@@ -71,7 +71,7 @@
         set -eo pipefail
         PATH=$PATH:/usr/local/bin
         main() {
-          nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK } &
+          nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-db
       async: 10
