@@ -62,23 +62,12 @@
       become_user: oracle
       ansible.builtin.shell: |
         main() {
-          {{refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }}
+          {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }}
         }
         main 2>&1 | logger -p local3.info -t oracle-db-refresh
       register: db_refresh_output
       async: 3600
-      poll: 0
-
-    - name: Wait for database refresh script to complete .
-      ansible.builtin.async_status:
-        jid: "{{ db_refresh_output.ansible_job_id }}"
-      register: db_refresh_output_result
-      until: db_refresh_output.finished
-      delay: 60
-      retries: 2000
-      vars:
-        ansible_remote_tmp: /tmp/.ansible
-        ansible_async_dir: /tmp/.ansible_async
+      poll: 180
 
     - name: Remove controlfile backup details from temp directory
       ansible.builtin.file:
