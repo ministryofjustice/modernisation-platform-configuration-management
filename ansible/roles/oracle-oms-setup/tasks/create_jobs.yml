@@ -1,0 +1,71 @@
+#
+#  We apply OEM job property files to create these jobs.
+#
+
+- name: Get Job Property Files
+  ansible.builtin.find:
+    paths: "{{ role_path }}/files/jobs/{{ application_name }}"
+    recurse: true
+    depth: 1
+    file_type: file
+  delegate_to: localhost
+  register: get_oem_job_property_files
+  loop: "{{ application_groups + ['common'] }}"
+  loop_control:
+    loop_var: application_name
+
+- debug:
+    var: get_oem_job_property_files
+
+- name: Populate List of Jobs
+  set_fact:
+    oem_job_property_files: "{{ get_oem_job_property_files.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
+
+- debug:
+    var: oem_job_property_files
+
+- block:
+    - name: Copy EMCLI Login Script
+      ansible.builtin.template:
+        src: emcli_login.sh.j2
+        dest: "{{ stage }}/emcli_login.sh"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+
+    - name: Copy OEM Job Property Files
+      ansible.builtin.copy:
+        src: "{{ oem_job }}"
+        dest: "{{ stage }}/{{ oem_job | basename }}"
+        mode: "0600"
+        owner: oracle
+        group: oinstall
+      loop: "{{ oem_job_property_files }}"
+      loop_control:
+        loop_var: oem_job
+
+    - name: Create Jobs from OEM Property Files
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        . {{ stage }}/emcli_login.sh
+        {{ emcli }} create_job -input_file=property_file:"{{ stage }}/{{ oem_job | basename }}"
+      register: create_jobs
+      loop: "{{ oem_job_property_files }}"
+      loop_control:
+        loop_var: oem_job
+      changed_when: create_jobs.stdout is search('.*Creation of job.*was successful.*')
+      failed_when:
+        - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
+        - not create_jobs.stderr is search('.*A job matching.*already exists.*')
+
+  always:
+    - name: Remove EMCLI Login Script
+      file:
+        path: "{{ stage }}/{{ file_name }}"
+        state: absent
+      loop:
+        - emcli_login.sh
+        - get_metric_extensions_versions.sql
+      loop_control:
+        loop_var: file_name
