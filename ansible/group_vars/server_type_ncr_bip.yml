@@ -27,15 +27,15 @@ server_type_roles_list:
   - amazon-ssm-agent
   - amazon-cli
   - ansible-script
-  # - epel
-  # - disks
-  # - oracle-19c-client
-  # - oracle-tns-entries
-  # - ncr-bip
-  # - collectd
-  # - amazon-cloudwatch-agent
-  # - amazon-cloudwatch-agent-collectd
-  # - collectd-service-metrics
+  - epel
+  - disks
+  - oracle-19c-client
+  - oracle-tns-entries
+  - ncr-bip
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -124,4 +124,33 @@ tns_entries:
       port: 1521
       host_list:
         - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: BIPAUD_TAF
+  pp:
+    - name: CNOM
+      port: 1521
+      host_list:
+        - ppnomis-a.preproduction.nomis.service.justice.gov.uk
+        - ppnomis-b.preproduction.nomis.service.justice.gov.uk
+      service_name: OR_TAF
+    - name: MIS
+      port: 1521
+      host_list:
+        - ppmis-a.preproduction.nomis.service.justice.gov.uk
+        - ppmis-b.preproduction.nomis.service.justice.gov.uk
+      service_name: MIS_TAF
+    - name: CNMAUD
+      port: 1521
+      host_list:
+        - ppmis-a.preproduction.nomis.service.justice.gov.uk
+        - ppmis-b.preproduction.nomis.service.justice.gov.uk
+      service_name: CNMAUD_TAF
+    - name: BIPSYS
+      port: 1521
+      host_list:
+        - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
+      service_name: BIPSYS_TAF
+    - name: BIPAUD
+      port: 1521
+      host_list:
+        - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
       service_name: BIPAUD_TAF

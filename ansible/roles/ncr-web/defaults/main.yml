@@ -1,5 +1,5 @@
 ---
-bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
+bip_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 sap_bi_platform_unpack_base_directory: /opt/sap/bip
 sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
 sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
@@ -9,8 +9,8 @@ ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 cms_name: "{{ ncr_environment }}-ncr-cms-1-a"
 
 s3:
-  bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
-  packages_prefix: BIP/
+  bip_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+  packages_prefix: hmpps/ncr-packages/
   files:
     sap_bi_platform:
       - BIPLATS4303P_300-70002683_P1.EXE
