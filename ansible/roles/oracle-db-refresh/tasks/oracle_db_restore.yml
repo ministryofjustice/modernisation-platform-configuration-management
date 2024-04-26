@@ -16,6 +16,16 @@
 
 - name: Run {{ TARGET_DB }} database refresh
   block:
+
+    - name: Create Database Refresh script directory
+      ansible.builtin.file:
+        path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+        state: directory
+        recurse: yes
+        
     - name: Copy the latest backup control file handle details to the runner
       ansible.builtin.copy:
         src: "/tmp/{{ TARGET_DB }}_control.txt"
@@ -24,14 +34,6 @@
         group: "{{ oracle_install_group }}"
         mode: "0700"
         remote_src: true
-
-    - name: Create Database Refresh script directory
-      ansible.builtin.file:
-        path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        state: directory
-        recurse: yes
 
     - name: Copy Generic Database refresh script
       ansible.builtin.template:
