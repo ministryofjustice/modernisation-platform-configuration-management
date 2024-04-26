@@ -17,12 +17,13 @@
 - name: Run {{ TARGET_DB }} database refresh
   block:
     - name: Copy the latest backup control file handle details to the runner
-      ansible.builtin.fetch:
-        src: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ TARGET_DB }}_control.txt"
+      ansible.builtin.copy:
+        src: "/tmp/{{ TARGET_DB }}_control.txt"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_control.txt"
-        flat: yes
-        fail_on_missing: yes
-
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+        
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
@@ -47,7 +48,7 @@
         group: "{{ oracle_install_group }}"
         mode: "0700"
 
-    - name: Copy PPOASYS system_parameter script
+    - name: Copy system_parameter script if target is PPOASYS
       ansible.builtin.template:
         src: "{{ TARGET_DB }}_Create_XDB_SYSTEM_PARAMETER.sql.j2"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/Create_XDB_SYSTEM_PARAMETER.sql"
@@ -68,7 +69,7 @@
       async: 3600
       poll: 0
 
-    - name: Wait for grid install to complete
+    - name: Wait for database refresh script to complete .
       ansible.builtin.async_status:
         jid: "{{ db_refresh_output.ansible_job_id }}"
       register: db_refresh_output_result
@@ -78,5 +79,10 @@
       vars:
         ansible_remote_tmp: /tmp/.ansible
         ansible_async_dir: /tmp/.ansible_async
+
+    - name: Remove controlfile backup details from temp directory 
+      ansible.builtin.file:
+        src: "/tmp/{{ TARGET_DB }}_control.txt"
+        state: absent
 
   when: not refresh_onhold_check.stat.exists
