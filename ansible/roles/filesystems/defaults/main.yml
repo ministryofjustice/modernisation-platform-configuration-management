@@ -32,7 +32,6 @@ filesystems_secretsmanager_passwords:
     secret: "{{ filesystems_domain.secret_name }}"
     users:
       - "{{ filesystems_mount_user | items2dict }}"
-
 # Define list of filesystems to mount using `filesystems_mount` list.
 # Example Multi-AZ EFS mount
 #filesystems_mount:
