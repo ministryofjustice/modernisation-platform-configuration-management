@@ -1,0 +1,32 @@
+---
+- name: Fail if filesystems_domain not defined
+  fail:
+    msg: "Please ensure filesystems_domain_name_fqdn is defined and contained within filesystems_domains dictionary"
+  when: filesystems_domains[filesystems_domain_name_fqdn] is not defined
+
+- name: Get secretsmanager passwords
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ filesystems_secretsmanager_passwords }}"
+
+- name: Set secretsmanager facts
+  set_fact:
+    mount_fs_username: "{{ filesystems_domain.mount_fs_username }}"
+    mount_fs_password: "{{ secretsmanager_passwords_dict['filesystems_shared_passwords'].passwords[filesystems_domain.mount_fs_username] }}"
+
+- name: Create creds directory
+  ansible.builtin.file:
+    path: "/root/.filesystems"
+    owner: root
+    group: root
+    state: directory
+    mode: "0700"
+
+- name: Create creds file
+  ansible.builtin.template:
+    src: domain.creds
+    dest: "/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds"
+    mode: "0600"
+    owner: root
+    group: root
