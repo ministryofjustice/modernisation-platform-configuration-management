@@ -16,6 +16,7 @@
 
 - name: Run {{ TARGET_DB }} database refresh
   block:
+
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
@@ -67,7 +68,7 @@
         }
         main 2>&1 | logger -p local3.info -t oracle-db-refresh
       register: db_refresh_output
-      async: 3600
+      async: 86400
       poll: 180
 
     - name: Remove controlfile backup details from temp directory
