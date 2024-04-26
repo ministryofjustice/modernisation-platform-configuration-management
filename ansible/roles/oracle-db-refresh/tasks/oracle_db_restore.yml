@@ -24,7 +24,7 @@
     state: directory
     recurse: yes
 
-- name: Copy Generic Database refresh script 
+- name: Copy Generic Database refresh script
   ansible.builtin.template:
     src: "db_refresh.sh.j2"
     dest: "{{refresh_script_dir }}/db_refresh.sh"
@@ -40,7 +40,7 @@
     group: "{{ oracle_install_group }}"
     mode: "0700"
 
-- name: Copy PPOASYS system_parameter script 
+- name: Copy PPOASYS system_parameter script
   ansible.builtin.template:
     src: "{{ TARGET_DB }}_Create_XDB_SYSTEM_PARAMETER.sql.j2"
     dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/Create_XDB_SYSTEM_PARAMETER.sql"
@@ -56,7 +56,7 @@
       echo {{ stage }}/{{ grid_install_script }}
       {{refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }}
     }
-    main 2>&1 | logger -p local3.info -t oracle-db-refresh 
+    main 2>&1 | logger -p local3.info -t oracle-db-refresh
   register: db_refresh_output
   async: 3600
   poll: 0
