@@ -23,6 +23,7 @@
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: "0700"
+        remote_src: true
 
     - name: Create Database Refresh script directory
       ansible.builtin.file:
