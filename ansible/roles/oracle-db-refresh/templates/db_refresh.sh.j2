@@ -208,7 +208,7 @@ done
 [ ${REFRESH_ALTERNATE_WEEK} -eq 9 ] && usage
 SCRIPT_DIR=$(dirname $0)
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
-AUTOBACKUP=$(grep -v '^$' /tmp/${TARGET_DB_SID}_control.txt| tr -d ' ')
+AUTOBACKUP=$(grep -v '^$' /tmp/${REFRESH_DB_SID}_control.txt| tr -d ' ')
 
 if [ $REFRESH_ALTERNATE_WEEK -eq 1 ]
 then
