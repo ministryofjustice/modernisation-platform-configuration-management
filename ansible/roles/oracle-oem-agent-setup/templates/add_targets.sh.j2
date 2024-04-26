@@ -44,8 +44,8 @@ cd ${EMCLI_DIR}
 if [ `grep "^+ASM" /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
 then
         echo "emcli add target Grid Infrastructure home"
-        GRID_HOME_NAME=`grep grid  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
-        GRID_HOME=`grep grid ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
+        GRID_HOME_NAME=`grep CRS=  ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
+        GRID_HOME=`grep CRS= ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
         ./emcli add_target -name="${GRID_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${GRID_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         echo "emcli add HAS target"
         ./emcli add_target -name="has_${HOST_FQDN_NAME}" -type="has" -host="${HOST_FQDN_NAME}" -properties="OracleHome:${GRID_HOME};${TARGET_PROPERTIES}"
@@ -57,12 +57,16 @@ then
         ./emcli add_target -name="LISTENER_${HOST_FQDN_NAME}" -type="oracle_listener" -host="${HOST_FQDN_NAME}" -properties="LsnrName:LISTENER;ListenerOraDir:${GRID_HOME}/network/admin;Port:1521;OracleHome:${GRID_HOME};Machine:${HOST_FQDN_NAME};${TARGET_PROPERTIES}"
 fi
 
-if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -eq 1 ]
+if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
 then
         echo "emcli add target database homes"
-        DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
-        DB_HOME=`grep ${i} ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
+        DB_INFO=$(grep db inventory.xml| grep -v REMOVED | awk -F\" '{ printf("%s:%s\n", $2,$4)}')
+        for i in ${DB_INFO[@]}
+        do
+            DB_HOME_NAME=$(echo ${i} | awk -F: '{ print $1 }')
+            DB_HOME=$(echo ${i} | awk -F: '{ print $2 }')
+            ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
+        done
 fi
 
 function is_lifecycle_upgrade()
@@ -137,13 +141,10 @@ fi
 
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
 then
-        echo "emcli add target database homes"
-        DB_HOME_NAME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $2 }'`
-        DB_HOME=`grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml | awk -F\" '{ print $4 }'`
-        ./emcli add_target -name="${DB_HOME_NAME}_${HOST_FQDN_NAME}" -type="oracle_home" -host="${HOST_FQDN_NAME}" -properties="HOME_TYPE:O;INSTALL_LOCATION:${DB_HOME};INVENTORY:${INVENTORY_LOC};${TARGET_PROPERTIES}"
         for i in `grep db  /etc/oratab| grep -v "^#" | awk -F: '{ print $1 }'`
         do
                 echo ${i}
+                DB_HOME=$(grep ${i} /etc/oratab | awk -F: '{ print $2 }')
                 DB_ROLE=$(srvctl config database -d ${i} | awk -F: '/Database role/{print $2}' | xargs)
                 if [[ "$DB_ROLE" == "PRIMARY" ]]; then
                   MONITORING_USER={{ db_monitoring_secret_primary_username }}
