@@ -12,7 +12,7 @@ usage () {
 	echo ""
   	echo "Usage:"
   	echo ""
-  	echo "  $THISSCRIPT -t <refresh database sid> -s <source database sid> -r <refresh alternate week flag>"
+  	echo "  $THISSCRIPT -t <refresh database sid> -r <refresh alternate week flag>"
   	exit 1
 }
 
@@ -193,14 +193,12 @@ restore_database () {
 
 REFRESH_DB_SID="UNSPECIFIED"
 REFRESH_ALTERNATE_WEEK=9
-SOURCE_DB_SID="UNSPECIFIED"
 SCRIPT_DIR="UNSPECIFIED"
 
-while getopts "t:s:r:" opt
+while getopts "t:r:" opt
 do
   case $opt in
     t) REFRESH_DB_SID=$OPTARG ;;
-    s) SOURCE_DB_SID=$OPTARG ;;
     r) REFRESH_ALTERNATE_WEEK=$OPTARG ;;
     *) usage ;;
   esac
@@ -208,10 +206,9 @@ done
 
 [ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
 [ ${REFRESH_ALTERNATE_WEEK} -eq 9 ] && usage
-[ "${SOURCE_DB_SID}" = "UNSPECIFIED" ]  && usage
 SCRIPT_DIR=$(dirname $0)
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
-AUTOBACKUP=$(grep -v '^$' /tmp/${SOURCE_DB_SID}_control.txt| tr -d ' ')
+AUTOBACKUP=$(grep -v '^$' /tmp/${TARGET_DB_SID}_control.txt| tr -d ' ')
 
 if [ $REFRESH_ALTERNATE_WEEK -eq 1 ]
 then
