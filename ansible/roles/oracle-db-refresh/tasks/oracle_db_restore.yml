@@ -16,7 +16,6 @@
 
 - name: Run {{ TARGET_DB }} database refresh
   block:
-
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
@@ -63,6 +62,5 @@
     - name: Start database refresh script
       become_user: oracle
       ansible.builtin.shell: nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &
-
 
   when: not refresh_onhold_check.stat.exists
