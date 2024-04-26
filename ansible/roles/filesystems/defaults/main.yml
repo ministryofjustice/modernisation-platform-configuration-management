@@ -1,6 +1,38 @@
 ---
 # Define list of filesystems to mount using `filesystems_mount` list.
+#filesystems_mount: examples below
 
+# Define filesystems_domain_name_fqdn in appropriate group_vars for windows file shares
+#filesystems_domain_name_fqdn: azure.noms.root
+
+# Where to find username/password secret for windows file shares
+filesystems_domains:
+  azure.noms.root:
+    secret_account_name: hmpps-domain-services-test
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.noms.root/shared-passwords"
+    mount_fs_username: svc_join_domain
+  azure.hmpp.root:
+    secret_account_name: hmpps-domain-services-production
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    mount_fs_username: svc_join_domain
+
+filesystems_domain: "{{ filesystems_domains[filesystems_domain_name_fqdn] }}"
+
+# filesystems_mount_user defined like this since a variable cannot be used as a dictionary key
+filesystems_mount_user:
+  - key: "{{ filesystems_domain.mount_fs_username }}"
+    value:
+
+filesystems_secretsmanager_passwords:
+  filesystems_shared_passwords:
+    account_name: "{{ filesystems_domain.secret_account_name }}"
+    assume_role_name: "{{ filesystems_domain.secret_role_name }}"
+    secret: "{{ filesystems_domain.secret_name }}"
+    users:
+      - "{{ filesystems_mount_user | items2dict }}"
+# Define list of filesystems to mount using `filesystems_mount` list.
 # Example Multi-AZ EFS mount
 #filesystems_mount:
 #  - dir: /test
@@ -14,3 +46,10 @@
 #    fstype: nfs
 #    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
 #    src: "eu-west-2a.fs-0a170471eea499c2c.efs.eu-west-2.amazonaws.com:/"
+
+# Example Single-AZ or Multi-AZ FSX WindowsFileSystem mount
+#filesystems_mount:
+#  - dir: /test2
+#    fstype: cifs
+#    opts: vers=3.1.1,rsize=130048,wsize=130048,cache=none,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
+#    src: //amznfsxgnktcz6b.azure.noms.root/share

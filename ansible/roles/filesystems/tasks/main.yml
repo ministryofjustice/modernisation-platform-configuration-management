@@ -1,7 +1,16 @@
 ---
+- import_tasks: domain-creds.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+    - filesystems_domain_creds
+  when: filesystems_domain_name_fqdn is defined
+
 - import_tasks: mount.yml
   tags:
     - amibuild
     - ec2provision
     - ec2patch
+    - filesystems_mount
   when: filesystems_mount is defined
