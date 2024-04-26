@@ -67,7 +67,7 @@
         main () {
           {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} 
         }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-db        
+        main 2>&1 | logger -p local3.info -t ansible-oracle-db
       aync: 10
       poll: 0
 
