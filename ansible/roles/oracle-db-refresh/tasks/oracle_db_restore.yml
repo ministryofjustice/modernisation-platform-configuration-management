@@ -16,7 +16,6 @@
 
 - name: Run {{ TARGET_DB }} database refresh
   block:
-
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
@@ -25,7 +24,7 @@
         mode: "0700"
         state: directory
         recurse: yes
-        
+
     - name: Copy the latest backup control file handle details to the runner
       ansible.builtin.copy:
         src: "/tmp/{{ TARGET_DB }}_control.txt"
