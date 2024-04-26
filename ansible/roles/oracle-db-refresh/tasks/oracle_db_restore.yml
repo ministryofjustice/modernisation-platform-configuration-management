@@ -23,7 +23,7 @@
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: "0700"
-        
+
     - name: Create Database Refresh script directory
       ansible.builtin.file:
         path: "{{ refresh_script_dir }}/{{ TARGET_DB }}"
@@ -80,7 +80,7 @@
         ansible_remote_tmp: /tmp/.ansible
         ansible_async_dir: /tmp/.ansible_async
 
-    - name: Remove controlfile backup details from temp directory 
+    - name: Remove controlfile backup details from temp directory
       ansible.builtin.file:
         src: "/tmp/{{ TARGET_DB }}_control.txt"
         state: absent
