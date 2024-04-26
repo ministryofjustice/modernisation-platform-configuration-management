@@ -108,7 +108,8 @@ generate_channel_commands () {
 restore_spfile () {
 	info "Creating pfile from production spfile backup "
 	set_ora_env $REFRESH_DB_SID
-	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}.ora > /dev/null 2>/dev/null
+	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}* > /dev/null 2>/dev/null
+	srvctl modify database -d ${REFRESH_DB_SID} -spfile $ORACLE_HOME/dbs/spfile${REFRESH_DB_SID}.ora
 	cat /dev/null > ${DB_SCRIPT_DIR}/restore_spfile.cmd
 	echo "startup nomount ;" > ${DB_SCRIPT_DIR}/restore_spfile.cmd
 	echo "run {" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
@@ -127,11 +128,11 @@ restore_spfile () {
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile.sql > /dev/null
 	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}.ora
 
-        PARAMETER_DELETE_LIST="all_roles __ dg_broker dg_config file_name_convert "
+    PARAMETER_DELETE_LIST="all_roles __ dg_broker dg_config file_name_convert "
 	for i in ${PARAMETER_DELETE_LIST}
-        do
-                sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-        done
+    do
+        sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+    done
 
 	PROD_DB_SID=$(grep db_uniq ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora | awk -F\' '{print $2 }')
 	echo $PROD_DB_SID
