@@ -157,7 +157,7 @@ delius_sns_config_update () {
 	info "Updating Delius sns_config table started"
 	cat /dev/null > ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
 	echo "spool ${DB_SCRIPT_DIR}/delius_sns_config_update.log" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
-	echo "update eor.sns_config set SNS_CLIENT_ID='$($(get_user_creds SNS_CLIENT_ID)',SNS_SECRET='$(get_user_creds SNS_SECRET)',SNS_TOPIC_ARN='$(get_user_creds SNS_TOPIC_ARN)',ALLOWED_HOST='${HOSTNAME}' where SNS_NAME='DELIUS_RSR';" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+	echo "update eor.sns_config set SNS_CLIENT_ID='$(get_user_creds SNS_CLIENT_ID)',SNS_SECRET='$(get_user_creds SNS_SECRET)',SNS_TOPIC_ARN='$(get_user_creds SNS_TOPIC_ARN)',ALLOWED_HOST='${HOSTNAME}' where SNS_NAME='DELIUS_RSR';" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
 	echo "commit;" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
 
