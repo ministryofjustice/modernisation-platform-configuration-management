@@ -63,35 +63,36 @@ create_pfile_restore_point () {
 }
 
 create_db_links () {
-        info "Create database links started"
-    	cat /dev/null > ${DB_SCRIPT_DIR}/create_db_links.sql
+    info "Create database links started"
+    cat /dev/null > ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "spool ${DB_SCRIPT_DIR}/create_db_links.log" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "grant create database link to mistrans ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "grant create database link to mistrans ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "create user  KQI03D_RO identified by $(get_user_creds KQI03D_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to kqi03d_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "create user CQE77R_RO identified by $(get_user_creds CQE77R_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to CQE77R_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "conn mistrans/$(get_user_creds mistrans)" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-    	echo "create database link mistran_link connect to mistrans identified by $(get_user_creds mistrans) using 'PPMISTN2';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "alter user dbsnmp identified by $(get_user_creds dbsnmp)  account unlock;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "grant create database link to mistrans ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "grant create database link to mistrans ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "create user  KQI03D_RO identified by $(get_user_creds KQI03D_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to kqi03d_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "create user CQE77R_RO identified by $(get_user_creds CQE77R_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to CQE77R_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "conn mistrans/$(get_user_creds mistrans)" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    echo "create database link mistran_link connect to mistrans identified by $(get_user_creds mistrans) using 'PPMISTN2';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_db_links.sql > /dev/null
-	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_db_links.log  | grep -v ORA- | wc -l ) -gt 0 ] && error "Post step create_db_links failed."
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_db_links.log | wc -l ) -gt 0 ] && error "Post step create_db_links failed."
 	info "Create database links completed."
 }
 
 restart_db () {
-        info "Restart Database started"
-        cat /dev/null > ${DB_SCRIPT_DIR}/restart_db.sql
-        echo "spool ${DB_SCRIPT_DIR}/restart_db.log" >> ${DB_SCRIPT_DIR}/restart_db.sql
-        echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/restart_db.sql
-        echo "exit" >> ${DB_SCRIPT_DIR}/restart_db.sql
+    info "Restart Database started"
+    cat /dev/null > ${DB_SCRIPT_DIR}/restart_db.sql
+    echo "spool ${DB_SCRIPT_DIR}/restart_db.log" >> ${DB_SCRIPT_DIR}/restart_db.sql
+    echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/restart_db.sql
+    echo "exit" >> ${DB_SCRIPT_DIR}/restart_db.sql
 
-        sqlplus -s "/as sysdba" @${DB_SCRIPT_DIR}/restart_db.sql > /dev/null
-        srvctl stop database -d ${ORACLE_SID} >> ${DB_SCRIPT_DIR}/restart_db.log
-        srvctl start database -d ${ORACLE_SID} >>  ${DB_SCRIPT_DIR}/restart_db.log
-        info "Restart database completed."
+    sqlplus -s "/as sysdba" @${DB_SCRIPT_DIR}/restart_db.sql > /dev/null
+    srvctl stop database -d ${ORACLE_SID} >> ${DB_SCRIPT_DIR}/restart_db.log
+    srvctl start database -d ${ORACLE_SID} >>  ${DB_SCRIPT_DIR}/restart_db.log
+    info "Restart database completed."
 }
 
 ####################

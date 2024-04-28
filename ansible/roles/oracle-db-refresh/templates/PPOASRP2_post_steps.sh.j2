@@ -63,12 +63,13 @@ create_pfile_restore_point () {
 }
 
 create_db_links () {
-        info "Create database links started"
-    	cat /dev/null > ${DB_SCRIPT_DIR}/create_db_links.sql
+    info "Create database links started"
+    cat /dev/null > ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "spool ${DB_SCRIPT_DIR}/create_db_links.log" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "alter user dbsnmp identified by $(get_user_creds dbsnmp)  account unlock;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "drop public database link eor_link;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "create public database link eor_link connect to eor identified by $(get_user_creds eor) using 'PPOASYS' ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-        #--JIRA 2885 - this script needs to be run straight after pre-prod has been refreshed from prod.
+    #--JIRA 2885 - this script needs to be run straight after pre-prod has been refreshed from prod.
 	#--This is because the refresh is using the back-up from prod which is taken early Sunday morning
 	#--but unfortunately when it takes the back-up, base views is still running on prod so
 	#--what gets put into pre-prod is a copy of oasysrep whilst base views is still running.
@@ -86,11 +87,11 @@ create_db_links () {
 	echo "create user CQE77R_RO identified by $(get_user_creds CQE77R_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to CQE77R_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "conn odeat/$(get_user_creds odeat)" >> ${DB_SCRIPT_DIR}/create_db_links.sql
-	echo "create database link oasrep_link connect to odeat identified by $(get_user_creds odeat)using 'PPOASREP';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "create database link oasrep_link connect to odeat identified by $(get_user_creds odeat) using 'PPOASREP';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/create_db_links.sql
 
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_db_links.sql > /dev/null
-	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_db_links.log  | grep -v ORA- | wc -l ) -gt 0 ] && error "Post step create_db_links failed."
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_db_links.log  | wc -l ) -gt 0 ] && error "Post step create_db_links failed."
 	info "Create database links completed."
 }
 
