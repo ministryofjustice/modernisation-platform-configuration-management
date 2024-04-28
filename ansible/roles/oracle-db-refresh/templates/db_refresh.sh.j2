@@ -139,7 +139,7 @@ restore_spfile () {
 	PARAMETER_CONVERT_LIST="${PROD_DB_SID}/${REFRESH_DB_SID} *./"
 	for i in ${PARAMETER_CONVERT_LIST}
 	do
-  		sed -i "s/${i}/g" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  		sed -i "s/${i}/gI" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	done
 }
 
