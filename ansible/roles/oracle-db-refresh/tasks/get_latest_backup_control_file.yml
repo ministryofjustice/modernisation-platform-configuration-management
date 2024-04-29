@@ -1,42 +1,42 @@
 ---
 - name: Check if SOURCE_DB is defined
-  fail:
+  ansible.builtin.fail:
     msg: "SOURCE_DB is not defined"
   when: SOURCE_DB == ""
 
 - name: Install SQL Script
-  template:
-    src: get_latest_backup_control_file.sql.j2
-    dest: /tmp/get_latest_backup_control_file.sql
+  ansible.builtin.template:
+    src: get_latest_backup_detail.sql.j2
+    dest: /tmp/get_latest_backup_detail.sql
 
 - name: Set ORACLE_HOME environment variable to grid_home
-  set_fact:
+  ansible.builtin.set_fact:
     ORACLE_HOME: "{{ grid_home }}"
 
 - name: Run SQL Script - Get Latest Backup Control File
-  shell: |
+  ansible.builtin.shell: |
     sudo su - oracle -c "
     export ORAENV_ASK=NO
     export ORACLE_SID={{ rcvcat_db_name.rcvcat_db_name }}
     . /usr/local/bin/oraenv
-    {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_control_file.sql
+    {{ ORACLE_HOME }}/bin/sqlplus -s / as sysdba @/tmp/get_latest_backup_detail.sql
     "
     if [[ ! -s "/tmp/{{ SOURCE_DB }}_control.txt" ]]; then
       echo "Empty control file - {{ SOURCE_DB }} backup not found in {{ rcvcat_db_name.rcvcat_db_name }}"
       exit 1
     fi
 
-- name: Copy the latest backup control file handle details to the runner
-  fetch:
+- name: Copy the latest backup control file handle detail to the runner
+  ansible.builtin.fetch:
     src: "/tmp/{{ SOURCE_DB }}_control.txt"
     dest: "{{ lookup('env','GITHUB_WORKSPACE') | default('/tmp', true) }}/{{ SOURCE_DB }}_control.txt"
     flat: yes
     fail_on_missing: yes
 
 - name: Remove the control file and SQL script
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: absent
   loop:
     - "/tmp/{{ SOURCE_DB }}_control.txt"
-    - "/tmp/get_latest_backup_control_file.sql"
+    - "/tmp/get_latest_backup_detail.sql"

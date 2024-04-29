@@ -1,0 +1,138 @@
+#!/bin/bash
+#set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+export STREAMS_SCRIPT_DIR=~/admin/streams_scripts
+
+usage () {
+  	echo ""
+  	echo "Usage:"
+  	echo ""
+  	echo "  $THISSCRIPT -t <refresh database sid> -e <script directory> "
+  	exit 1
+}
+
+set_ora_env () {
+  	export ORAENV_ASK=NO
+  	export ORACLE_SID=$1
+  	. oraenv > /dev/null
+  	export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+info () {
+  	T=$(date +"%D %T")
+  	echo "INFO : $THISSCRIPT : $T : $1"
+  	if [ "$DEBUG_MODE" = "Y" ]
+  	then
+    		read CONTINUE?"Press any key to continue "
+  	fi
+}
+
+warning () {
+  	T=$(date +"%D %T")
+  	echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  	T=$(date +"%D %T")
+  	echo "ERROR : $THISSCRIPT : $T : $1"
+  	exit $ERROR_STATUS
+}
+
+get_user_creds () {
+  	USER=$1
+  	aws secretsmanager get-secret-value --secret-id "/oracle/database/${REFRESH_DB_SID}/passwords" --query SecretString --output text | jq -r .${USER}
+}
+
+create_pfile_restore_point () {
+	info "Create spfile and Restore point started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora'" > ${ORACLE_HOME}/dbs/init${REFRESH_DB_SID}.ora
+	echo "spool ${DB_SCRIPT_DIR}/create_pfile_restore_point.log" >>  ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "startup mount"  >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create restore point after_refresh_pre_post_scripts guarantee flashback database;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "alter database open;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile_restore_point.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_pfile_restore_point.log | grep -v ORA-01507| wc -l) -gt 0 ] && error "Post step create_pfile_restore_point failed."
+	info "Create spfile and Restore point completed."
+}
+
+create_db_links () {
+    info "Create database links started"
+    cat /dev/null > ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "spool ${DB_SCRIPT_DIR}/create_db_links.log" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "alter user dbsnmp identified by $(get_user_creds dbsnmp)  account unlock;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "drop public database link eor_link;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "create public database link eor_link connect to eor identified by $(get_user_creds eor) using 'PPOASYS' ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+    #--JIRA 2885 - this script needs to be run straight after pre-prod has been refreshed from prod.
+	#--This is because the refresh is using the back-up from prod which is taken early Sunday morning
+	#--but unfortunately when it takes the back-up, base views is still running on prod so
+	#--what gets put into pre-prod is a copy of oasysrep whilst base views is still running.
+	#--When we look in oasysrep on pre-prod after the refresh from this back-up it appears that base views had hung at 02:57
+	#--on Sunday morning but all that has happened is we are seeing the values from prod which stop at 02:57 because
+	#--that is when the back-up on prod finished - it doesn't know about or wait until base views finishes
+	#--so clear up the mess with this script
+	echo "Update odeat.base_views_jobs set job_value=0;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "update odeat.onr_parameters set param_value=0 where param_name='BASE_VIEWS_JOB_STATUS';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "Update odeat.post_load_jobs set job_value=0;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "Commit;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "grant create database link to ODEAT;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "create user  kqi03d_RO identified by $(get_user_creds KQI03D_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to kqi03d_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "create user CQE77R_RO identified by $(get_user_creds CQE77R_RO) default tablespace users ;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "grant CONNECT,SELECT ANY DICTIONARY, SELECT ANY TABLE to CQE77R_RO;" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "conn odeat/$(get_user_creds odeat)" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "create database link oasrep_link connect to odeat identified by $(get_user_creds odeat) using 'PPOASRP2';" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_db_links.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_db_links.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_db_links.log | wc -l ) -gt 0 ] && error "Post step create_db_links failed."
+	info "Create database links completed."
+}
+
+restart_db () {
+        info "Restart Database started"
+        cat /dev/null > ${DB_SCRIPT_DIR}/restart_db.sql
+        echo "spool ${DB_SCRIPT_DIR}/restart_db.log" >> ${DB_SCRIPT_DIR}/restart_db.sql
+        echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/restart_db.sql
+        echo "exit" >> ${DB_SCRIPT_DIR}/restart_db.sql
+
+        sqlplus -s "/as sysdba" @${DB_SCRIPT_DIR}/restart_db.sql > /dev/null
+        srvctl stop database -d ${ORACLE_SID} >> ${DB_SCRIPT_DIR}/restart_db.log
+        srvctl start database -d ${ORACLE_SID} >>  ${DB_SCRIPT_DIR}/restart_db.log
+        info "Restart database completed."
+}
+
+####################
+# Main
+####################
+
+REFRESH_DB_SID="UNSPECIFIED"
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:e:" opt
+do
+  case $opt in
+    t) REFRESH_DB_SID=$OPTARG ;;
+    e) SCRIPT_DIR=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
+[ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
+
+DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
+HOSTNAME=$(hostname)
+
+set_ora_env  ${REFRESH_DB_SID}
+info "Starting post steps"
+
+create_pfile_restore_point
+create_db_links
+restart_db

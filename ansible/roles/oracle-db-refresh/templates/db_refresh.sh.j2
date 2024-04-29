@@ -1,0 +1,258 @@
+#!/bin/bash
+set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+export PATH=$PATH:/usr/local/bin
+export OEM_AGENT_HOME=/u01/app/oracle/product/oem-agent/agent_13.5.0.0.0
+export smtp="smtp://smtp.hmpps-domain.service.justice.gov.uk:25"
+export from="oracle@`hostname`.com"
+export EMAIL_RECIPIENT="dba_alerts_prod-aaaaa25gxv2vfzkv4f55ep2yee@moj.org.slack.com"
+
+usage () {
+	echo ""
+  	echo "Usage:"
+  	echo ""
+  	echo "  $THISSCRIPT -t <refresh database sid> -r <refresh alternate week flag>"
+  	exit 1
+}
+
+set_ora_env () {
+  	export ORAENV_ASK=NO
+  	export ORACLE_SID=$1
+  	. oraenv > /dev/null
+  	export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+info () {
+  	T=$(date +"%D %T")
+  	echo "INFO : $THISSCRIPT : $T : $1"
+  	if [ "$DEBUG_MODE" = "Y" ]
+  	then
+    		read CONTINUE?"Press any key to continue "
+  	fi
+}
+
+warning () {
+  	T=$(date +"%D %T")
+  	echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  	T=$(date +"%D %T")
+  	echo "ERROR : $THISSCRIPT : $T : $1"
+	echo "DB Refresh failed for ${REFRESH_DB_SID}" | mailx -s "Preprod ${REFRESH_DB_SID} ${1}" ${EMAIL_RECIPIENT}
+  	exit $ERROR_STATUS
+}
+
+create_blackout () {
+	info "Creating blackout"
+	$OEM_AGENT_HOME/bin/emctl start blackout refresh_${REFRESH_DB_SID} ${REFRESH_DB_SID}:oracle_database
+	$OEM_AGENT_HOME/bin/emctl status blackout
+}
+
+stop_blackout () {
+	info "Stopping blackout"
+	$OEM_AGENT_HOME/bin/emctl stop blackout refresh_${REFRESH_DB_SID}
+	$OEM_AGENT_HOME/bin/emctl status blackout
+}
+
+cleanup_archivelogs () {
+	info "Cleaning up Archives to avoid ORA-600"
+	set_ora_env $REFRESH_DB_SID
+	# This is added to resolve ORA-600 in flash area
+	echo "configure archivelog deletion policy to none ;" > ${DB_SCRIPT_DIR}/delete_arch.cmd
+	echo "delete noprompt archivelog all;" >> ${DB_SCRIPT_DIR}/delete_arch.cmd
+	echo "exit " >> ${DB_SCRIPT_DIR}/delete_arch.cmd
+	rman target / cmdfile=${DB_SCRIPT_DIR}/delete_arch.cmd log=${DB_SCRIPT_DIR}/delete_arch.log  > /dev/null
+}
+
+delete_db_files () {
+	set_ora_env $REFRESH_DB_SID
+	info "Deleting database files"
+	echo "set verify off trimspool on pages 5000 lines 400 feed off termout off head off trimout on" > ${DB_SCRIPT_DIR}/delete_db_files.sql
+	echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_streams_archivelogs.log" >>  ${DB_SCRIPT_DIR}/delete_db_files.sql
+	echo "select name from dba_registered_archived_log where first_time > sysdate-10;" >>  ${DB_SCRIPT_DIR}/delete_db_files.sql
+	echo "shutdown abort" >>  ${DB_SCRIPT_DIR}/delete_db_files.sql
+	echo "spool off"  >>  ${DB_SCRIPT_DIR}/delete_db_files.sql
+	echo "exit"  >>  ${DB_SCRIPT_DIR}/delete_db_files.sql
+	sqlplus -s  "/ as sysdba" @${DB_SCRIPT_DIR}/delete_db_files.sql
+	sleep 30
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_streams_archivelogs.txt | wc -l) -lt 1 ] && cat /dev/null > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_streams_archivelogs.txt
+
+	if [ $(ps -ef | grep pmon | grep ${REFRESH_DB_SID}| grep -v grep | wc -l) -gt 0 ]
+	then
+        	error "Database is running , exiting the program. "
+	else
+        	for ARCH in `cat ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_streams_archivelogs.txt`
+        	do
+                	asmcmd rm $ARCH >/dev/null
+        	done
+        	set_ora_env +ASM
+        	asmcmd rm -fr +DATA/$REFRESH_DB_SID/DATAFILE/ >/dev/null 2>/dev/null
+        	asmcmd rm -fr +DATA/$REFRESH_DB_SID/ >/dev/null
+        	asmcmd rm -fr +FLASH/$REFRESH_DB_SID/ >/dev/null
+	fi
+}
+
+generate_channel_commands () {
+	set_ora_env $REFRESH_DB_SID
+	TYPE="'SBT_TAPE' PARMS  'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws_prod.ora)';"
+	cat /dev/null > $DB_SCRIPT_DIR/allocate_channels
+	for (( i=1; i<=8; i++ ))
+	do
+    		echo -e "allocate channel ch${i} device type $TYPE" >> $DB_SCRIPT_DIR/allocate_channels
+	done
+	echo "allocate channel d1  device type disk;" >> $DB_SCRIPT_DIR/allocate_channels
+}
+
+restore_spfile () {
+	info "Creating pfile from production spfile backup "
+	set_ora_env $REFRESH_DB_SID
+	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}* > /dev/null 2>/dev/null
+	srvctl modify database -d ${REFRESH_DB_SID} -spfile $ORACLE_HOME/dbs/spfile${REFRESH_DB_SID}.ora
+	cat /dev/null > ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "startup nomount ;" > ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "run {" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	TYPE="'SBT_TAPE' PARMS  'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws_prod.ora)';"
+	echo "allocate channel ch1 device type $TYPE" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "restore spfile  from '${AUTOBACKUP}';" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "}" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+	echo "exit" >> ${DB_SCRIPT_DIR}/restore_spfile.cmd
+
+	rman target / cmdfile=${DB_SCRIPT_DIR}/restore_spfile.cmd log=${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_restore_prod_spfile.log  > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_restore_prod_spfile.log| grep -v ORA-01078| wc -l) -gt 0 ] && error "Restoring spfile failed"
+
+	echo "create pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora' from spfile;"> ${DB_SCRIPT_DIR}/create_pfile.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_pfile.sql
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile.sql > /dev/null
+	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}.ora
+
+    PARAMETER_DELETE_LIST="all_roles __ dg_broker dg_config file_name_convert "
+	for i in ${PARAMETER_DELETE_LIST}
+    do
+        sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+    done
+
+	PROD_DB_SID=$(grep db_uniq ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora | awk -F\' '{print $2 }')
+	echo $PROD_DB_SID
+	PARAMETER_CONVERT_LIST="${PROD_DB_SID}/${REFRESH_DB_SID} *./"
+	for i in ${PARAMETER_CONVERT_LIST}
+	do
+  		sed -i "s/${i}/gI" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+	done
+}
+
+restore_controlfile () {
+	info "Restoring preprod controlfile from production backup"
+	set_ora_env $REFRESH_DB_SID
+	mkdir -p /u01/app/oracle/admin/${REFRESH_DB_SID}/adump
+	echo "run {" > ${DB_SCRIPT_DIR}/restore_controlfile.cmd
+	echo "startup nomount pfile=${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora" >>${DB_SCRIPT_DIR}/restore_controlfile.cmd
+        TYPE="'SBT_TAPE' PARMS  'SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so, ENV=(OSB_WS_PFILE=${ORACLE_HOME}/dbs/osbws_prod.ora)';"
+        echo "allocate channel ch1 device type $TYPE" >> ${DB_SCRIPT_DIR}/restore_controlfile.cmd
+	echo "restore controlfile from '${AUTOBACKUP}';" >> ${DB_SCRIPT_DIR}/restore_controlfile.cmd
+	echo "}" >> ${DB_SCRIPT_DIR}/restore_controlfile.cmd
+	echo "exit" >> ${DB_SCRIPT_DIR}/restore_controlfile.cmd
+	rman target  / cmdfile=${DB_SCRIPT_DIR}/restore_controlfile.cmd log=${DB_SCRIPT_DIR}/restore_controlfile.log > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/restore_controlfile.log| wc -l) -gt 0 ] && error "Restore of controlfile failed"
+}
+
+identify_recovery_point () {
+	info "Setting DB for recovery and identifying recovery point"
+	echo "spool ${DB_SCRIPT_DIR}/identify_recovery_point.log" > ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "set echo off feedback off head off" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "alter database mount ; " >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "alter database flashback off;" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "alter database disable block change tracking;" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "alter database set standby database to maximize performance;" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "select max(sequence#)+1 || '-' from v\$archived_log where BACKUP_COUNT>0;" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/identify_recovery_point.sql
+	sqlplus -s "/as sysdba" @${DB_SCRIPT_DIR}/identify_recovery_point.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/identify_recovery_point.log | wc -l) -gt 0 ] && error "Identifying recovery Point script failed."
+}
+
+restore_database () {
+	info "Starting restore of database"
+	echo "run {"  > ${DB_SCRIPT_DIR}/restore_database.cmd
+	cat ${DB_SCRIPT_DIR}/allocate_channels >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "set until sequence " $(grep "-" ${DB_SCRIPT_DIR}/identify_recovery_point.log | grep -v ORA- | awk -F- '{ print $1 }') ";"  >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "restore database;" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "recover database;" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "alter database open resetlogs;" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "}" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "configure archivelog deletion policy to none ;" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	echo "exit" >> ${DB_SCRIPT_DIR}/restore_database.cmd
+	rman target / cmdfile=${DB_SCRIPT_DIR}/restore_database.cmd log=${DB_SCRIPT_DIR}/restore_database.log  > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/restore_database.log| wc -l) -gt 0 ] && error "DB Restore failed."
+}
+
+####################
+# Main
+####################
+
+REFRESH_DB_SID="UNSPECIFIED"
+REFRESH_ALTERNATE_WEEK=9
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:r:" opt
+do
+  case $opt in
+    t) REFRESH_DB_SID=$OPTARG ;;
+    r) REFRESH_ALTERNATE_WEEK=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
+[ ${REFRESH_ALTERNATE_WEEK} -eq 9 ] && usage
+SCRIPT_DIR=$(dirname $0)
+DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
+AUTOBACKUP=$(grep -v '^$' /tmp/${REFRESH_DB_SID}_control.txt| tr -d ' ')
+
+if [ $REFRESH_ALTERNATE_WEEK -eq 1 ]
+then
+        if [ -f ${DB_SCRIPT_DIR}/refresh.txt ]
+        then
+                rm ${DB_SCRIPT_DIR}/refresh.txt
+                error "No refresh this week. "
+                exit 0
+        else
+                touch ${DB_SCRIPT_DIR}/refresh.txt
+        fi
+fi
+info "Starting refresh."
+cd ${SCRIPT_DIR}
+
+# Create blackout
+create_blackout
+
+# Delete Archivelogs
+cleanup_archivelogs
+
+# Delete all database files from ASM
+delete_db_files
+
+# Generate channel commands
+generate_channel_commands
+
+# Restore spfile
+restore_spfile
+
+# Restore controlfile
+restore_controlfile
+
+#identify recovery until sequence
+identify_recovery_point
+
+#Recover database
+restore_database
+
+#Post steps execution
+${DB_SCRIPT_DIR}/post_steps.sh -t ${REFRESH_DB_SID} -e ${SCRIPT_DIR}
+[ $? -ne 0 ] && error "Refresh failed in post steps"
+
+#Stop blackout
+stop_blackout
+echo "${REFRESH_DB_SID} database Refresh completed successfully. " | mailx -s "Preprod ${REFRESH_DB_SID} database refresh completed successfully." ${EMAIL_RECIPIENT}

@@ -1,0 +1,454 @@
+#!/bin/bash
+#set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+
+usage () {
+  	echo ""
+  	echo "Usage:"
+  	echo ""
+  	echo "  $THISSCRIPT -t <refresh database sid> -e <script directory> "
+  	exit 1
+}
+
+set_ora_env () {
+  	export ORAENV_ASK=NO
+  	export ORACLE_SID=$1
+  	. oraenv > /dev/null
+  	export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+info () {
+  	T=$(date +"%D %T")
+  	echo "INFO : $THISSCRIPT : $T : $1"
+  	if [ "$DEBUG_MODE" = "Y" ]
+  	then
+    		read CONTINUE?"Press any key to continue "
+  	fi
+}
+
+warning () {
+  	T=$(date +"%D %T")
+  	echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  	T=$(date +"%D %T")
+  	echo "ERROR : $THISSCRIPT : $T : $1"
+  	exit $ERROR_STATUS
+}
+
+get_user_creds () {
+  	USER=$1
+  	aws secretsmanager get-secret-value --secret-id "/oracle/database/${REFRESH_DB_SID}/passwords" --query SecretString --output text | jq -r .${USER}
+}
+
+create_pfile_restore_point () {
+	info "Create spfile and Restore point started"
+	set_ora_env $REFRESH_DB_SID
+	cat /dev/null > ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora'" > ${ORACLE_HOME}/dbs/init${REFRESH_DB_SID}.ora
+	echo "spool ${DB_SCRIPT_DIR}/create_pfile_restore_point.log" >>  ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "startup mount"  >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create restore point after_refresh_pre_post_scripts guarantee flashback database;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "alter database open;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile_restore_point.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_pfile_restore_point.log | grep -v ORA-01507| wc -l) -gt 0 ] && error "Post step create_pfile_restore_point failed."
+	info "Create spfile and Restore point completed."
+}
+
+
+disable_jobs () {
+	info "Disable jobs in database started"
+	JOBS="EOR.DAILY_OASYSR_JOB_01 EOR.DAILY_OASYSR_JOB_02 EOR.DAILY_OASYSR_JOB_03 EOR.DAILY_OASYSR_JOB_04 EOR.DAILY_OASYSR_JOB_05 EOR.DAILY_OASYSR_JOB_06 EOR.DAILY_OASYSR_JOB_07 EOR.DAILY_OASYSR_JOB_08 EOR.DAILY_OASYSR_JOB_09 EOR.DAILY_OASYSR_JOB_10 EOR.DAILY_OASYSR_JOB_11 EOR.DAILY_OASYSR_JOB_12 EOR.DAILY_OASYSR_JOB_13 EOR.DAILY_OASYSR_JOB_14 EOR.DAILY_OASYSR_JOB_16 EOR.DAILY_OASYSR_JOB_17 DAILY_OASYSR_JOB_18"
+	cat /dev/null > ${DB_SCRIPT_DIR}/disable_jobs.sql
+	echo "spool ${DB_SCRIPT_DIR}/disable_jobs.log" >> ${DB_SCRIPT_DIR}/disable_jobs.sql
+	for i in ${JOBS}
+	do
+            echo "exec dbms_scheduler.stop_job(job_name=>'${i}',force=>TRUE);" >> ${DB_SCRIPT_DIR}/disable_jobs.sql
+            echo "exec dbms_scheduler.disable('${i}');" >>${DB_SCRIPT_DIR}/disable_jobs.sql
+	done
+	echo "exit" >> ${DB_SCRIPT_DIR}/disable_jobs.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/disable_jobs.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/disable_jobs.log | grep -v ORA-27366| grep -v ORA-06512| wc -l) -gt 0 ] && error "Post step disable_jobs failed"
+	info "Disable jobs in database completed."
+}
+
+create_acls () {
+	info "Create ACL's for BI publisher, SMTP and NDH started "
+	cat /dev/null > ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "spool ${DB_SCRIPT_DIR}/create_acls.log" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.DROP_ACL('bi_publisher_permissions.xml');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.CREATE_ACL('bi_publisher_permissions.xml', 'ACL for BI Publisher', 'EOR', TRUE, 'connect');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ASSIGN_ACL('bi_publisher_permissions.xml','pp-oasys-bip-a',9704,9704);" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ADD_PRIVILEGE('bi_publisher_permissions.xml', 'EOR', TRUE, 'connect');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ADD_PRIVILEGE('bi_publisher_permissions.xml', 'APEX_180200', TRUE, 'connect');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.DROP_ACL('email.xml');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.CREATE_ACL('email.xml','ACL for smtp server','APEX_180200',TRUE, 'connect');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ASSIGN_ACL('email.xml','xxxxx.g.hmps.noms.root');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.DROP_ACL('interfaces.xml');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.CREATE_ACL('interfaces.xml', 'ACL for interfaces', 'EOR', TRUE, 'connect');"  >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ASSIGN_ACL('interfaces.xml','xx.xx.xxx.xx');"   >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exec DBMS_NETWORK_ACL_ADMIN.ADD_PRIVILEGE('interfaces.xml', 'EOR', TRUE, 'connect');" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "commit;" >> ${DB_SCRIPT_DIR}/create_acls.sql
+	echo "exit ">> ${DB_SCRIPT_DIR}/create_acls.sql
+
+	sqlplus -s "/as sysdba " @${DB_SCRIPT_DIR}/create_acls.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_acls.log  |grep -v ORA-46114 | grep -v ORA-06512| wc -l) -gt 0 ] && error "Post steps create_acls failed"
+	info "Create ACL's for BI publisher, SMTP and NDH completed."
+}
+
+apex_preferences_update () {
+	info "Apex print server update started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "spool ${DB_SCRIPT_DIR}/apex_preferences_update.log" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "ALTER SESSION SET CURRENT_SCHEMA = APEX_180200;" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "APEX_180200.wwv_flow_platform.set_preference( p_preference_name => 'PRINT_BIB_LICENSED',p_preference_value => 'ADVANCED' );" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "APEX_180200.wwv_flow_platform.set_preference( p_preference_name => 'PRINT_SVR_PROTOCOL',p_preference_value => 'HTTP' );" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "APEX_180200.wwv_flow_platform.set_preference( p_preference_name => 'PRINT_SVR_HOST',p_preference_value => 'pp-oasys-bip-a');" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "APEX_180200.wwv_flow_platform.set_preference( p_preference_name => 'PRINT_SVR_PORT',p_preference_value => 9704);" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "APEX_180200.wwv_flow_platform.set_preference( p_preference_name => 'PRINT_SVR_SCRIPT',p_preference_value => '/xmlpserver/convert' );" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "END;">> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+  	echo "APEX_INSTANCE_ADMIN.SET_PARAMETER('SMTP_FROM','oasysr.noreply@hmps.gsi.gov.uk');">> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+  	echo "APEX_INSTANCE_ADMIN.SET_PARAMETER('SMTP_HOST_ADDRESS','xxx.xxx.xxx.xxx');" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+  	echo "APEX_INSTANCE_ADMIN.SET_PARAMETER('SMTP_HOST_PORT',25);" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "END;" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+   	echo "wwv_flow_api.set_security_group_id(p_security_group_id=>10);">> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+   	echo "wwv_flow_platform.set_preference(p_preference_name => 'DISABLE_WORKSPACE_LOGIN',p_preference_value => 'N' );" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "END;">> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/apex_preferences_update.sql
+
+	sqlplus -s "/as sysdba " @${DB_SCRIPT_DIR}/apex_preferences_update.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/apex_preferences_update.log  | wc -l) -gt 0 ] && error "Post steps apex_preferences_update failed"
+	info "Apex print server update completed."
+}
+
+system_parameters_update () {
+	info "system_parameter table update and application user password reset started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "spool ${DB_SCRIPT_DIR}/system_parameters_update.log"  >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "alter user EOR identified by ${EOR_PASSWORD};" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "alter user AWS identified by ${AWS_PASSWORD};" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "alter user apex_public_user identified by ${APEX_PUBLIC_USER_PASSWORD} account unlock;" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "alter user dbsnmp identified by ${DBSNMP_PASSWORD}  account unlock;" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "alter user APEX_180200 account unlock;" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "conn EOR/${EOR_PASSWORD}" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "@${DB_SCRIPT_DIR}/Create_XDB_SYSTEM_PARAMETER.sql" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/system_parameters_update.sql
+
+	sqlplus -s "/as sysdba " @${DB_SCRIPT_DIR}/system_parameters_update.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/system_parameters_update.log  | wc -l) -gt 0 ] && error "Post steps system_parameters_update failed"
+	info "system_parameter table update and application user password reset completed"
+}
+
+delius_sns_config_update () {
+	info "Updating Delius sns_config table started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+	echo "spool ${DB_SCRIPT_DIR}/delius_sns_config_update.log" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+	echo "update eor.sns_config set SNS_CLIENT_ID='$(get_user_creds SNS_CLIENT_ID)',SNS_SECRET='$(get_user_creds SNS_SECRET)',SNS_TOPIC_ARN='$(get_user_creds SNS_TOPIC_ARN)',ALLOWED_HOST='${HOSTNAME}' where SNS_NAME='DELIUS_RSR';" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+	echo "commit;" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/delius_sns_config_update.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/delius_sns_config_update.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/delius_sns_config_update.log  | wc -l) -gt 0 ] && error "Post steps delius_sns_config_update.log failed"
+	info "Updating Delius sns_config table completed."
+}
+
+ro_user_creation () {
+	info "Create read only users started"
+	RO_USERNAME="EQQ54Q_RO JMANSELL_RO KGAMBLE_RO CWALLACE_RO LCHRISTIE_RO PMINTZAS_RO JWATSON_RO CEMEAGI_RO PIVANOV_RO ASETCHI_RO JPRINOLD_RO OLEWIS_RO DNICHOLSON_RO LMAK_RO CBARNETT_RO GKELLY_RO PQL77O_RO SQA39D_RO XQB64Y_RO"
+	cat /dev/null > ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "spool ${DB_SCRIPT_DIR}/ro_user_creation.log" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "create or replace procedure eor_synonyms (user in varchar2) " >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "as"  >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "begin"  >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "for i in (select table_name from dba_tables where table_name not like '%==' and owner='EOR')" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "loop" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "       execute immediate 'CREATE SYNONYM '|| user ||'.'|| i.table_name ||' FOR EOR.'|| i.table_name;" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "end loop;" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "end;" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	for U in ${RO_USERNAME}
+	do
+		echo "create user ${U} identified by ${TEMPUSERPASSWORD}  default tablespace users temporary tablespace temp ;" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+		echo "grant connect, select any table, select any dictionary, create synonym  to ${U};" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+		echo "exec eor_synonyms('${U}');" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+	done
+	echo "exit" >> ${DB_SCRIPT_DIR}/ro_user_creation.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/ro_user_creation.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/ro_user_creation.log| grep -v ORA-01920| grep -v ORA-00955| grep -v ORA-06512 | wc -l) -gt 0 ] && error "Post steps ro_user_creation failed"
+	info "Create read only users completed."
+}
+
+apex_instance_admin_password_reset () {
+	info "Apex admin password reset started"
+	APEX_ADMIN_PASSWORD=$(get_user_creds APEX_ADMIN)
+	cat /dev/null > ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "spool ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.log" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "alter session set current_schema = APEX_180200;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "define USERNAME = \"'ADMIN'\"" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "col user_id       noprint new_value M_USER_ID" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "col email_address noprint new_value M_EMAIL_ADDRESS" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+        echo "set termout off">> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "select rtrim(min(user_id))       user_id,nvl (rtrim(min(email_address)),'ADMIN' ) email_address" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "from wwv_flow_fnd_user where security_group_id = 10 and user_name         = upper('ADMIN');" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "set termout on">> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "begin" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    if length('&M_USER_ID.') > 0 then" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "        sys.dbms_output.put_line('User ADMIN exists.');" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    else"  >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "        sys.dbms_output.put_line('User ADMIN does not yet exist and will be created.');" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+        echo "    end if;"  >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "end;"  >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "/"  >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "declare" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_user_id  constant number         := to_number( '&M_USER_ID.' );" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_username constant varchar2(4000) := upper( 'ADMIN' );" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_email    constant varchar2(4000) := NULL;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_password constant varchar2(4000) := '${APEX_ADMIN_PASSWORD}';" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_old_sgid constant number := wwv_flow_security.g_security_group_id;"  >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    c_old_user constant varchar2(255) := wwv_flow_security.g_user;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    procedure cleanup" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    is" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    begin" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "         wwv_flow_security.g_security_group_id := c_old_sgid;">>  ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "         wwv_flow_security.g_user              := c_old_user;" >>  ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    end cleanup;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "begin" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    wwv_flow_security.g_security_group_id := 10;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    wwv_flow_security.g_user              := c_username;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    wwv_flow_fnd_user_int.create_or_update_user(p_user_id=>c_user_id, p_username=>c_username, p_email=>c_email, p_password=>c_password );" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    commit;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    cleanup();" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "exception" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "    when others then" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "        cleanup();" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "        raise;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "end;" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.sql > /dev/null
+        [ $(grep ORA- ${DB_SCRIPT_DIR}/apex_instance_admin_password_reset.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps apex_instance_admin_password_reset failed"
+        info "Apex admin password reset completed."
+
+}
+
+data_retention_table_creation () {
+	info "Data retention table creation started."
+	AQK45W_RO_PASSWORD=$(get_user_creds AQK45W_RO)
+	cat /dev/null > ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "set serveroutput on" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "spool ${DB_SCRIPT_DIR}/data_retention_table_creation.log">> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "create table eor.Data_Retention (Data_Retention_PK    NUMBER," >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+        echo "Offender_PK NUMBER, OASys_Set_PK NUMBER,Date_Completed date, Ref_Ass_Version_Code VARCHAR2(100), Ref_Answer_Code VARCHAR2(100),Free_Format_Answer VARCHAR2(4000),"  >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "Ref_Question_Code VARCHAR2(100), Ref_Section_Code VARCHAR2(100),Retention_Notes VARCHAR2(1000));" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "CREATE SEQUENCE EOR.Data_Retention_SEQ  INCREMENT BY 1 START WITH 1 CACHE 200 ;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant select, insert, update, delete on eor.Data_Retention to AQK45W_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant select on EOR.Data_Retention_SEQ to AQK45W_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant select any table,select any dictionary to AQK45W_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "ALTER USER AQK45W_RO IDENTIFIED BY ${AQK45W_RO_PASSWORD};" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "-- Add resource to Howard and John (Gregory).  John exists on production so just add the privilege here">> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant resource to CQE77R_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant resource to AQK45W_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "-- Grant execute on elog_api and quota on users to  Howard (extended testing)" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "grant execute on eor.elog_api to AQK45W_RO;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "ALTER USER AQK45W_RO QUOTA UNLIMITED ON USERS;" >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+	echo "exit"  >> ${DB_SCRIPT_DIR}/data_retention_table_creation.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/data_retention_table_creation.sql  > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/data_retention_table_creation.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps data_retention_table_creation failed"
+	info "Data retention table creation completed."
+}
+
+apex_print_setup () {
+	info "Apex print service setup started."
+	cat /dev/null > ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "spool ${DB_SCRIPT_DIR}/apex_print_setup.log" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "ALTER SESSION SET CURRENT_SCHEMA = APEX_180200;" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "set serveroutput on size UNLIMITED feed on" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "DECLARE" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  l_val varchar2(4000);" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  dbms_output.put_line('Setting printer parameter to HTTP');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  apex_instance_admin.set_parameter('PRINT_SVR_PROTOCOL','http');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  l_val  := APEX_INSTANCE_ADMIN.GET_PARAMETER('PRINT_SVR_PROTOCOL');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  dbms_output.put_line('The printer is set to '||l_val);" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "   dbms_output.put_line('Setting printer host address for pre-prod');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  apex_instance_admin.set_parameter('PRINT_SVR_HOST','pp-oasys-bip-a');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  l_val  := APEX_INSTANCE_ADMIN.GET_PARAMETER('PRINT_SVR_HOST');" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "  dbms_output.put_line('The printer is set to '||l_val);" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "END;" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/apex_print_setup.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/apex_print_setup.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/apex_print_setup.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps apex_print_setup failed"
+	info "Apex print service setup completed."
+}
+
+apex_admin_login () {
+	info "Apex enable admin and workspace login started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "spool ${DB_SCRIPT_DIR}/apex_admin_login.log" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "ALTER SESSION SET CURRENT_SCHEMA = APEX_180200;">> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "set serveroutput on size UNLIMITED feed on" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "   wwv_flow_api.set_security_group_id(p_security_group_id=>10);" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "   wwv_flow_platform.set_preference(p_preference_name => 'DISABLE_ADMIN_LOGIN', p_preference_value => 'N' );" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+     	echo "   wwv_flow_platform.set_preference(p_preference_name => 'DISABLE_WORKSPACE_LOGIN', p_preference_value => 'N' );" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "END;" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "update APEX_180200.wwv_flows set webdb_logging = 'YES' where alias like 'EOR%';" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "commit;" >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+	echo "exit " >> ${DB_SCRIPT_DIR}/apex_admin_login.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/apex_admin_login.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/apex_admin_login.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps apex_admin_login failed"
+	info "Apex enable admin and workspace login completed."
+}
+
+switch_ords_roles () {
+	info "Switch ORDS Privileges to preprod client started "
+	cat /dev/null > ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "spool ${DB_SCRIPT_DIR}/switch_ords_roles.log" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "set feedback on " >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "set serveroutput on" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "-- switch ords privs for prepod should be run as RESTAPI user" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "-- MUST ONLY BE RUN ON ** PREPROD **" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "DECLARE">> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  this_server varchar2(30);" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "BEGIN" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  if user != 'RESTAPI' then" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "        raise_application_error (-20001, '* This script must be run as user RESTAPI');" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+  	echo "end if;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  select sys_context('USERENV','SERVER_HOST') into this_server from dual;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  if this_server != '${HOSTAME}' then" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "       raise_application_error (-20002, '* This script must only be run on the PREPROD database');" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  end if;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  OAUTH.grant_client_role(p_client_name => 'arn_preprod_client',p_role_name   => 'ARN_ROLE');" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  BEGIN" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "      OAUTH.revoke_client_role(p_client_name => 'arn_prod_client', p_role_name   => 'ARN_ROLE');" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  EXCEPTION" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "      when no_data_found then" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "      null;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  END;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  -- revoke role from simple arn client (shouldnt be granted, but to be safe)" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  -- separate block in case user has already been removed anyway" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  BEGIN" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "     OAUTH.revoke_client_role(p_client_name => 'arn_client', p_role_name   => 'ARN_ROLE');" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  EXCEPTION" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "     when no_data_found then" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "     null;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  END;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "  COMMIT;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "END;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "-- check roles" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "select client_name ||' '||  role_name from user_ords_client_roles;" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/switch_ords_roles.sql
+
+	sqlplus -s restapi/${RESTAPI_PASSWORD} @${DB_SCRIPT_DIR}/switch_ords_roles.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/switch_ords_roles.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps switch_ords_roles failed"
+	info "Switch ORDS Privileges to preprod client completed."
+}
+
+restart_db () {
+	info "Restart Database started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/restart_db.sql
+	echo "spool ${DB_SCRIPT_DIR}/restart_db.log" >> ${DB_SCRIPT_DIR}/restart_db.sql
+	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/restart_db.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/restart_db.sql
+
+	sqlplus -s "/as sysdba" @${DB_SCRIPT_DIR}/restart_db.sql > /dev/null
+	#srvctl stop database -d ${ORACLE_SID}
+	srvctl start database -d ${ORACLE_SID}
+	info "Restart database completed."
+}
+
+create_restore_point () {
+	info "Create restore point started "
+	cat /dev/null > ${DB_SCRIPT_DIR}/create_restore_point.sql
+	echo "spool ${DB_SCRIPT_DIR}/create_restore_point.log" >> ${DB_SCRIPT_DIR}/create_restore_point.sql
+	echo "alter database flashback on ;" >> ${DB_SCRIPT_DIR}/create_restore_point.sql
+	echo "create restore point after_refresh guarantee flashback database;" >> ${DB_SCRIPT_DIR}/create_restore_point.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_restore_point.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_restore_point.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_restore_point.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps create_restore_point failed."
+	info "Create restore point completed."
+}
+
+gather_database_stats () {
+	info "Starting gather stats as background job"
+	cat /dev/null > ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "set time on timing on" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "spool ${DB_SCRIPT_DIR}/gather_stats.log" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "alter session set nls_date_format='DD-MON-YYYY HH24:MI:SS';" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "EXECUTE dbms_stats.gather_dictionary_stats;" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "exec dbms_stats.gather_schema_stats(ownname=>'APEX_180200', estimate_percent=> dbms_stats.auto_sample_size, granularity=> 'AUTO', method_opt => 'FOR ALL COLUMNS SIZE AUTO', degree => dbms_stats.auto_degree, cascade => TRUE);" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "exec dbms_stats.gather_schema_stats(ownname=>'EOR', estimate_percent=> dbms_stats.auto_sample_size, granularity=> 'AUTO', method_opt => 'FOR ALL COLUMNS SIZE AUTO', degree => dbms_stats.auto_degree, cascade => TRUE);" >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	echo "exit"  >> ${DB_SCRIPT_DIR}/gather_database_stats.sql
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/gather_database_stats.sql  &
+	info "DB post setup commands completed."
+}
+
+####################
+# Main
+####################
+
+REFRESH_DB_SID="UNSPECIFIED"
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:e:" opt
+do
+  case $opt in
+    t) REFRESH_DB_SID=$OPTARG ;;
+    e) SCRIPT_DIR=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
+[ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
+
+DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
+EOR_PASSWORD=$(get_user_creds eor)
+AWS_PASSWORD=$(get_user_creds aws)
+DBSNMP_PASSWORD=$(get_user_creds dbsnmp)
+APEX_PUBLIC_USER_PASSWORD=$(get_user_creds apex_public_user)
+RESTAPI_PASSWORD=$(get_user_creds restapi)
+TEMPUSERPASSWORD=$(get_user_creds rousers)
+HOSTNAME=$(hostname)
+
+set_ora_env  ${REFRESH_DB_SID}
+info "Starting post steps"
+
+create_pfile_restore_point
+disable_jobs
+create_acls
+apex_preferences_update
+system_parameters_update
+delius_sns_config_update
+ro_user_creation
+apex_instance_admin_password_reset
+data_retention_table_creation
+apex_print_setup
+apex_admin_login
+switch_ords_roles
+restart_db
+create_restore_point
+gather_database_stats
