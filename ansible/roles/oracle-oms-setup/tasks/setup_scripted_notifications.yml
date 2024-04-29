@@ -5,7 +5,6 @@
   become: yes
   become_user: "{{ oracle_install_user }}"
   block:
-
     - name: Create Script Directory
       file:
         path: "{{ notification_script_directory }}"
