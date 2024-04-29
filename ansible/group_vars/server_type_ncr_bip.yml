@@ -32,6 +32,7 @@ server_type_roles_list:
   - oracle-19c-client
   - oracle-tns-entries
   - ncr-bip
+  - filesystems
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
@@ -94,6 +95,8 @@ oracle_install_user: oracle
 oracle_install_group: oinstall
 oracle_home: /u01/app/oracle/product/19c/client_1
 oracle_inventory: /u01/app/oraInventory
+
+filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 
 tns_entries:
   t1:
