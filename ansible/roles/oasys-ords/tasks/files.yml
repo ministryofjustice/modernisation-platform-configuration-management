@@ -40,7 +40,7 @@
 
 - name: Copy any additional docroot files
   ansible.builtin.template:
-    src: "doc_root/{{ item }}.j2"
+    src: "doc_root/{{ item }}"
     dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
@@ -58,9 +58,16 @@
     - "bg-middle.png"
     - "bg-nav.png"
     - "bg-upper.png"
-    - "favicon.ico"
+    # - "favicon.ico"
     - "tomcat.css"
     - "tomcat.gif"
     - "tomcat.png"
     - "tomcat-power.gif"
     - "tomcat.svg"
+
+- name: update maintenance message
+  ansible.builtin.cron:
+    name: "maintenance_message"
+    minute: "*/2" # every 10 mins
+    user: root
+    job: "su oracle -c '{{ oasys_ords_get_maintenance_msg_command }} > {{ oasys_ords_maintenance_message_file }}'"

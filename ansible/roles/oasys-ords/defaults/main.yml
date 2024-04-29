@@ -7,9 +7,10 @@ oasys_links_default_path: "/eor/f?p=100:101"
 oasys_index_page: "{{ ec2.tags['oasys-environment'] }}-index.html"
 oasys_ords_docroot_dir: "{{ oasys_ords_root_dir }}/webapps/ROOT"
 oasys_ords_extra_files:
-  - "redirect.html"
-  - "index_message.html"
-  - "index_no_message.html"
+  - "redirect.html.j2"
+  - "index_message.html.j2"
+  - "index_no_message.html.j2"
+  - "favicon.ico"
 oasys_ords_s3_bucket: "hmpps/oasys-ords"
 oasys_maintenance_msg: ""
 ords_db_port: 1521
@@ -28,3 +29,7 @@ ords_install_user: oracle
 ords_install_group: oinstall
 
 secret_db_prefix: /oracle/database
+
+oasys_ords_maintenance_msg_secret: "/ec2/{{ ec2.tags.Name }}/maintenance_message"
+oasys_ords_get_maintenance_msg_command: "aws secretsmanager get-secret-value --secret-id {{ oasys_ords_maintenance_msg_secret }} --query SecretString --output text"
+oasys_ords_maintenance_message_file: "{{ oasys_ords_docroot_dir }}/maintenance_message.html"

@@ -105,11 +105,40 @@ jQuery.fn.pngFix = function(settings) {
 
 };
 
+jQuery.fn.maintenanceMessage = function() {
+  
+	jQuery.get('maintenance_message.html', function(message) {
+		var messageJs = JSON.parse(message)
+		var messageText = messageJs.message.replace(/\\n/g, '\n');
+		var messageShow = messageJs.show;
+
+		$('textarea[name="Comments"]').val(messageText);
+		
+		// hide row if show is false
+		if (messageShow === true) {
+			$("#maintenanceMessageBox").show();
+		} else if (messageShow === false) {
+			$("#maintenanceMessageBox").hide();
+		} else if (messageShow.toLowerCase().replace(/\s/g,'') === "true") {
+			$("#maintenanceMessageBox").show();
+		} else if (messageShow.toLowerCase().replace(/\s/g,'') === "false") {
+			$("#maintenanceMessageBox").hide();
+		} else {
+			$("#maintenanceMessageBox").show();
+		}
+
+	}, 'text');
+
+	return jQuery;
+
+};
+
 })(jQuery);
 
 
 $(document).ready(function(){
  $(document).pngFix();
+ $(document).maintenanceMessage(); 
 });
 </script>
 <style type="text/css">
