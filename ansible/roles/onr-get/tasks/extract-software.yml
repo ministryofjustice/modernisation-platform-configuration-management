@@ -2,5 +2,5 @@
 - name: Unpack the BOE software
   ansible.builtin.unarchive:
     src: "{{ stage }}/{{ boe_software }}"
-    dest: "{{ app_dir }}"
+    dest: "{{ temp }}"
     remote_src: yes
