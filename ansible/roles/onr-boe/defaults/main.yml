@@ -3,6 +3,7 @@ artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500
 artefacts_s3_bucket_path: hmpps/onr
 artefact_dir: /u02
 app_dir: /u01/software/BOE_3_1_FP7_4_Linux
+onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
 
 boe_software: ENTERPRISE07P_4-10007478.TGZ
 boe_install_user: bobj
@@ -10,3 +11,9 @@ boe_install_group: binstall
 
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
+
+boe_secretsmanager_passwords:
+  boe:
+    secret: "/ec2/onr-boe/{{ onr_environment }}/passwords"
+    users:
+      - bobj: auto

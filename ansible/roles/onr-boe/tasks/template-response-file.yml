@@ -1,0 +1,14 @@
+---
+- name: template response ini file
+  ansible.builtin.template:
+    src: response.ini
+    dest: "{{ app_dir }}/response.ini"
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"
+    mode: "0755"
+
+- name: Ensure bobj license key is set in response file
+  ansible.builtin.lineinfile:
+    path: "{{ app_dir }}/response.ini"
+    regexp: "^BOBJELICENSEKEY="
+    line: "BOBJELICENSEKEY={{ bobje_license_key }}"
