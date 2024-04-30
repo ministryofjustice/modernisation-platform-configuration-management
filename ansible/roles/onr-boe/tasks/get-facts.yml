@@ -17,7 +17,7 @@
 
 - name: Check all SSM parameters and tags are set
   set_fact:
-    bip_all_variables_set: true
+    boe_all_variables_set: true
   when:
     - bobje_license_key|length > 0
     # - cms_cluster_key|length > 0
@@ -30,4 +30,4 @@
 - name: Fail if missing SSM parameters or tags
   fail:
     msg: Ensure all required SSM parameters and tags are set
-  when: not bip_all_variables_set|default(false)
+  when: not boe_all_variables_set|default(false)
