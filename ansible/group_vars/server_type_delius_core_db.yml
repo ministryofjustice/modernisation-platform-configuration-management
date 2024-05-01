@@ -57,7 +57,7 @@ disks_mount:
     dir: swap
     fstype: swap
 
-asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+asm_monitoring_secret_name: "{{ environment_name }}-oracle-db-dba-passwords"
 asm_monitoring_secret_username: "asmsnmp"
 asm_sys_secret_username: "sys"
 
