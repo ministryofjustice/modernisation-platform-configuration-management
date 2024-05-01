@@ -1,0 +1,114 @@
+---
+# From hmpps-env-configs/delius-mis-dev/ansible/all.yml
+region: eu-west-2
+project_name: delius
+environment_name: delius-mis-dev
+simple_environment_name: dev
+catalog: DEVRCVCAT
+data_classification: unclassified-data
+database_autotasks:
+  sql_tuning_advisor: disabled
+  auto_space_advisor: disabled
+autotask_windows:
+  weekday:
+    start_time: "06:20"
+    duration_mins: 30
+database_parameters:
+  db_recovery_file_dest_size: 450G
+  compatible: 19.14.0
+oracle_osbws_chunk_size: 104857600
+emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
+emcli: /u01/app/oracle/product/emcli/emcli
+# Buckets
+ansible_aws_ssm_bucket_name: delius-mis-dev-ssm-sessions20240501090823848800000001
+dependencies_bucket:
+  name: mod-platform-image-artefact-bucket20230203091453221500000001
+  arn: arn:aws:s3:::mod-platform-image-artefact-bucket20230203091453221500000001
+# Only used for dupicating databases from source during migration using the oracle-db-duplicate role
+# Eventually these will be removed once the RMAN catalog database has been migrated across
+catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=10.161.98.92)(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=DCAT_TAF)))"
+s3_source_bucket: "eu-west-2-dmd-mis-dev-oracledb-backups"
+high_availability_count:
+  mis: 0
+  misboe: 0
+  misdsd: 0
+# OEM server
+OMS_SERVER: dev-oem-a.hmpps-oem.hmpps-development.modernisation-platform.internal
+OEM_AGENT_VERSION: 13.5.0.0.0
+dns_search_domains:
+  - hmpps-oem.hmpps-development.modernisation-platform.internal
+dns_zone_internal: delius.hmpps-development.modernisation-platform.internal
+# Enable Oracle Native Network Encryption (ignored for TCPS connections)
+# Note that
+# (1) These parameters must be set in the database sqlnet.ora file, not the grid one
+# (2) Add time of writing there is an Oracle documentation bug - docs omit mandatory SQLNET prefix for IGNORE_ANO_ENCRYPTION_FOR_TCPS
+sqlnet_parameters:
+  database:
+    SQLNET.ENCRYPTION_SERVER: REQUIRED
+    SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
+    SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
+    SQLNET.IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
+# The oracle_ru_patch is the Oracle Release update to use for *initial build* only.
+# Subsequent patching will use the oracle_software variable defined for
+# the primary database.
+oracle_ru_patch: OCT2023
+
+# We increase the frequency of HAS Resource Status collection from default of once per 24
+# hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
+# shortly after the host is restarted each morning.
+#
+# clusterware_alerts.ocrErrStack has been changes so that it ignores CRS-10134.
+# This should not be reported. See:
+#    SR 3-35688785101 : CRS-10134: Unsupported configuration detected for real-time scheduling requirements.
+# It is expected that this will be fixed in the 19.23 RU.  Revise afterwards.
+all_oem_metrics:
+  oracle_database:
+    all:
+      schedule:
+        db_alertlog_coll_12:
+          collectionStatus: enabled
+      input_file: |
+        START_RECORD 1
+        metric , db_alert_log
+        column , genericErrStack
+        key_columns , ;
+        warning_threshold , " "
+        critical_threshold ,ORA-0*[0-9]{1,6}
+        END_RECORD 1
+      custom_properties:
+        alert_log_filter_expression: '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process J\d+.*ORA-1013$'
+  has:
+    all:
+      schedule:
+        resource_statusSiha:
+          collectionStatus: enabled
+          interval: "15 Minute"
+      input_file: |
+        START_RECORD 1
+        metric , resource_status
+        column , crs_event_composite_status
+        key_columns , resource_ora.diskmon.type_ora.diskmon;
+        warning_threshold , undefined
+        critical_threshold , undefined
+        END_RECORD 1
+        START_RECORD 2
+        metric , resource_status
+        column , crs_event_composite_status
+        key_columns , resource_ora.ons.type_ora.ons;
+        warning_threshold , undefined
+        critical_threshold , undefined
+        END_RECORD 2
+        START_RECORD 3
+        metric , resource_status
+        column , crs_event_composite_status
+        key_columns , ;
+        warning_threshold , COMPLETE_INTERMEDIATE|PARTIALLY_UNKNOWN|PARTIALLY_OFFLINE|PARTIALLY_INTERMEDIATE
+        critical_threshold , COMPLETE_UNKNOWN|COMPLETE_OFFLINE|ADD|DOWN
+        END_RECORD 3
+        START_RECORD 4
+        metric , clusterware_alerts
+        column , ocrErrStack
+        key_columns , ;
+        warning_threshold , CRS-(1021|1022)
+        critical_threshold , CRS-(1006|1009|1011|10131|10132|10133|10135|10136|10137|10138|10139|1015|1016|1017|1018|1019|1021)
+        END_RECORD 4

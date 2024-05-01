@@ -1,0 +1,67 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+ami_roles_list:
+  - users-and-groups # Add oracle user and associated groups
+  - sudoers
+  - get-ec2-facts # e.g. populate var ec2 metadata, instance and tag info fact called ec2
+  - set-ec2-hostname # for ec2provision and ec2patch only, sets hostname within OS, hostfile and ansible.builtin.hostname
+  - domain-search # for ec2provision and ec2patch only
+  - disable-ipv6 # disable ipv6 in sysctl
+  - disable-firewall
+  - packages # Perform any updates to existing if there are no new packages to install
+  # - amazon-ssm-agent # for ec2patch only (if version has changed)
+  - disks
+  - oracle-19c-delius
+  - oracle-db-bootstrap
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
+packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages | default([])) }}"
+
+# don't update ALL packages on build as we need
+packages_yum_update_on_build_exclude: ["oraclelinux-release*"]
+
+# Downloading Oracle packages
+s3_bucket: mod-platform-image-artefact-bucket20230203091453221500000001
+s3_bucket_object: hmpps/oracle-19c-software
+
+# Storage: volumes, partitioning and mounting
+disks_partition:
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sdf
+    oracle_group: flash
+    oracle_label: FLASH01
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+  - ebs_device_name: /dev/sdc
+    dir: /u02
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
+
+# asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+
+asm_monitoring_secret_name: "{{ environment_name }}-oracle-{{ ec2.tags['database'].split('_')|first }}-db-dba-passwords"
+asm_monitoring_secret_username: "asmsnmp"
+asm_sys_secret_username: "sys"
+
+# We use dbsnmp for monitoring primary databases and SYS for monitoring standby databases
+db_monitoring_secret_name: "{{ asm_monitoring_secret_name }}"
+db_monitoring_secret_primary_username: "dbsnmp"
+db_monitoring_secret_primary_role: "normal"
+db_monitoring_secret_standby_username: "sys"
+db_monitoring_secret_standby_role: "SYSDBA"
