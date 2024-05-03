@@ -22,10 +22,6 @@ ami_roles_list:
   - oracle-19c-delius
   - oracle-db-bootstrap
 
-# ansible_aws_ssm_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
-
-ansible_aws_ssm_bucket_name: ldap-dev-migration20240123173113114100000001
-
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"
 packages_yum_install: "{{ (ami_packages | default([])) + (server_type_packages | default([])) }}"
@@ -57,7 +53,9 @@ disks_mount:
     dir: swap
     fstype: swap
 
-asm_monitoring_secret_name: "{{ environment_name }}-oracle-db-dba-passwords"
+# asm_monitoring_secret_name: "{{ ec2.tags['environment-name'] }}-{{ ec2.tags['delius-environment'] }}-{{ ec2.tags['application'] }}-dba-passwords"
+
+asm_monitoring_secret_name: "{{ environment_name }}-oracle-{{ ec2.tags['database'].split('_')|first }}-db-dba-passwords"
 asm_monitoring_secret_username: "asmsnmp"
 asm_sys_secret_username: "sys"
 

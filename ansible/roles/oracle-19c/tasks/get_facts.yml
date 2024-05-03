@@ -1,19 +1,5 @@
 ---
-- name: Get secretsmanager passwords
-  when: not ec2.tags['delius-environment'] is defined
-  block:
-    - name: secretsmanager passwords
-      import_role:
-        name: secretsmanager-passwords
-      vars:
-        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
-
-    - name: secretsmanager passwords
-      set_fact:
-        asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSYS'] }}"
-        asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSNMP'] }}"
-
-- name: Get secretsmanager passwords (Delius)
+- name: Set Secrets (Delius)
   when: ec2.tags['delius-environment'] is defined
   block:
     - name: Setup Secrets Dictionary Variable (Delius)
@@ -26,13 +12,20 @@
       set_fact:
         db_secretsmanager_passwords: "{{ db_secretsmanager_passwords |  combine({ 'asm': { 'users': [{asm_monitoring_secret_username: 'auto'}] + [{asm_sys_secret_username: 'auto'}] }}, recursive=true) }}"
 
-    - name: secretsmanager passwords (Delius)
-      import_role:
-        name: secretsmanager-passwords
-      vars:
-        secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+- name: secretsmanager passwords
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
 
-    - name: Set Password Variables (Delius)
-      set_fact:
-        asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_sys_secret_username] }}"
-        asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_monitoring_secret_username] }}"
+- name: secretsmanager passwords
+  set_fact:
+    asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSYS'] }}"
+    asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSNMP'] }}"
+  when: not ec2.tags['delius-environment'] is defined
+
+- name: Set Password Variables (Delius)
+  set_fact:
+    asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_sys_secret_username] }}"
+    asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_monitoring_secret_username] }}"
+  when: ec2.tags['delius-environment'] is defined

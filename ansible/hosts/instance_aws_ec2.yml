@@ -12,7 +12,7 @@ hostnames:
 
 compose:
   ansible_host: instance_id
-  application: tags['application']
+  application: tags['application'] | replace("delius-mis","delius")
   aws_environment: tags['environment-name'].split('-')|last
   ec2_name: tags['Name']
 
