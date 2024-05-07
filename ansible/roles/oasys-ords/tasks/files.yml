@@ -40,12 +40,20 @@
 
 - name: Copy any additional docroot files
   ansible.builtin.template:
-    src: "doc_root/{{ item }}"
+    src: "doc_root/{{ item }}.j2"
     dest: "{{ oasys_ords_docroot_dir }}/{{ item }}"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: "0644"
   with_items: "{{ oasys_ords_extra_files }}"
+
+- name: Copy favicon
+  ansible.builtin.template:
+    src: "doc_root/favicon.ico"
+    dest: "{{ oasys_ords_docroot_dir }}/favicon.ico"
+    owner: "{{ ords_install_user }}"
+    group: "{{ ords_install_group }}"
+    mode: "0644"
 
 - name: Remove example docroot files
   ansible.builtin.file:
