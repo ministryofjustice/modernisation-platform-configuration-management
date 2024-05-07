@@ -20,12 +20,12 @@
 - name: Fail if missing parameters
   fail:
     msg: "Ensure {{ audit_db_sid }}  variable is defined in db_configs fact"
-  when: db_configs[audit_db_sid] is not defined 
+  when: db_configs[audit_db_sid] is not defined
 
 - name: Fail if missing parameters
   fail:
     msg: "Ensure {{ system_db_sid }}  variable is defined in db_configs fact"
-  when: db_configs[system_db_sid] is not defined 
+  when: db_configs[system_db_sid] is not defined
 
 - name: Check parameters
   set_fact:
