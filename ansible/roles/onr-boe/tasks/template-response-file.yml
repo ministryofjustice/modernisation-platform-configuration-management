@@ -1,6 +1,6 @@
 ---
-- name: template response ini file
-  ansible.builtin.template:
+- name: copy response ini file
+  ansible.builtin.copy:
     src: response.ini
     dest: "{{ app_dir }}/response.ini"
     owner: "{{ boe_install_user }}"
