@@ -49,6 +49,31 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PPRCVCAT
+  PPBISYS:
+    db_name: PPBISYS
+    db_unique_name: PPBISYS
+    instance_name: PPBISYS
+    host_name: pp-ncr-db-1-a
+    port: 1521
+    tns_name: PPBISYS
+    asm_disk_groups: DATA
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  PPBIAUD:
+    db_name: PPBIAUD
+    db_unique_name: PPBIAUD
+    instance_name: PPBIAUD
+    host_name: pp-ncr-db-1-a
+    port: 1521
+    tns_name: PPBIAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
+
+audit_db_sid: PPBIAUD
+system_db_sid: PPBISYS
+audit_service_name: BIAUD_TAF
+system_service_name: BISYS_TAF
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
