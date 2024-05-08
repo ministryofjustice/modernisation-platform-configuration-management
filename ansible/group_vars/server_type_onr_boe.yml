@@ -89,7 +89,8 @@ oracle_home: /u01/app/oracle/product/12.2.0/client_1
 oracle_inventory: /u01/app/oraInventory
 
 tns_entries:
-  t2:
+  test: # FIXME: this is PURELY to make the oracle-tns-entries role work. It needs to be changed to t2 when we have/are creating the correct instance entries in the oasys-national-reporting-test environment as t2-<instance_name>
+  # ansible_facts.server_name takes the value of the ec2 tag 'name' and then takes the front of the string to get ansible_facts.env_name to get 'test' as the value...
     - name: T2BOSYS
       port: 1521
       host_list:
