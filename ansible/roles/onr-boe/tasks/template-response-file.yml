@@ -1,6 +1,6 @@
 ---
 - name: copy response ini file
-  ansible.builtin.copy:
+  ansible.builtin.file:
     src: response.ini
     dest: "{{ app_dir }}/response.ini"
     owner: "{{ boe_install_user }}"
