@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$ALFRESCO_QUEUE_LAG" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$ALFRESCO_QUEUE_LAG" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$ALFRESCO_QUEUE_LAG">
+		<Condition COLUMN_NAME="QUEUE_LAG_MINS" CRITICAL="5" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The Alfresco Queue Lag is %value% minutes." CLEAR_MESSAGE="The Alfresco Queue Lag is %value% minutes."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
