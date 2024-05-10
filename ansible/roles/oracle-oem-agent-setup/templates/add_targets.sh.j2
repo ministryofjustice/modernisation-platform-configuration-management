@@ -13,16 +13,16 @@ APPLICATION="{{ ec2.tags['application'] }}"
 if [[ "${APPLICATION}" == "hmpps-oem" ]]; then
    HOST_FQDN_NAME=${HOSTNAME}
 fi
-if [[ "${APPLICATION}" == "delius" ]]; then
+if [[ "${APPLICATION}" == "delius" || "${APPLICATION}" == "delius-mis"  ]]; then
    LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
    # First character must be made uppercase
    LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
    # Oracle does not support a Preproduction status so use Staging instead
    [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
    if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
-      CONTACT="#${APPLICATION}-aws-oracle-prod-alerts"
+      CONTACT="#delius-aws-oracle-prod-alerts"
    else
-      CONTACT="#${APPLICATION}-aws-oracle-dev-alerts"
+      CONTACT="#delius-aws-oracle-dev-alerts"
    fi
 else 
    # Oracle does not support a Preproduction status so use Staging instead
