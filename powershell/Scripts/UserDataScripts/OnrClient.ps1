@@ -3,7 +3,7 @@
 $GlobalConfig = @{
     "all" = @{
          "BOEWindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
-         "BOEWindowsClientS3Folder" = "hmpp/onr"
+         "BOEWindowsClientS3Folder" = "hmpps/onr"
     }
     "oasys-national-reporting-test"  = @{}   
  }
