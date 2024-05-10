@@ -59,7 +59,7 @@
       loop_control:
         loop_var: oem_job
       vars:
-         property_file: "{{ stage }}/{{ oem_job | basename | regex_replace('(.*)\\.j2$','\\1.txt') }}"
+        property_file: "{{ stage }}/{{ oem_job | basename | regex_replace('(.*)\\.j2$','\\1.txt') }}"
       changed_when: create_jobs.stdout is search('.*Creation of job.*was successful.*')
       failed_when:
         - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
