@@ -4,7 +4,7 @@
 
 - name: Get Job Property Files
   ansible.builtin.find:
-    paths: "{{ role_path }}/files/jobs/{{ application_name }}"
+    paths: "{{ role_path }}/templates/jobs/{{ application_name }}"
     recurse: true
     depth: 1
     file_type: file
@@ -33,27 +33,33 @@
         owner: oracle
         group: oinstall
 
-    - name: Copy OEM Job Property Files
-      ansible.builtin.copy:
+    - name: Template OEM Job Property Files
+      ansible.builtin.template:
         src: "{{ oem_job }}"
-        dest: "{{ stage }}/{{ oem_job | basename }}"
+        dest: "{{ stage }}/{{ oem_job | basename | regex_replace('(.*)\\.j2$','\\1.txt')}}"
         mode: "0600"
         owner: oracle
         group: oinstall
       loop: "{{ oem_job_property_files }}"
       loop_control:
         loop_var: oem_job
+      vars:
+        oem_hostname: "{{ ansible_hostname }}"
+        job_name: "Backup Report for Delius"
+        reported_applications: "delius,hmpps-oem"
 
     - name: Create Jobs from OEM Property Files
       become_user: oracle
       ansible.builtin.shell: |
         echo "running emcli_login.sh"
         . {{ stage }}/emcli_login.sh
-        {{ emcli }} create_job -input_file=property_file:"{{ stage }}/{{ oem_job | basename }}"
+        {{ emcli }} create_job -input_file=property_file:"{{ property_file }}"
       register: create_jobs
       loop: "{{ oem_job_property_files }}"
       loop_control:
         loop_var: oem_job
+      vars:
+        property_file: "{{ stage }}/{{ oem_job | basename | regex_replace('(.*)\\.j2$','\\1.txt') }}"
       changed_when: create_jobs.stdout is search('.*Creation of job.*was successful.*')
       failed_when:
         - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
