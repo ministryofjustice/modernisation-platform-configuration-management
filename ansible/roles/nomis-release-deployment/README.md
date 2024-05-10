@@ -37,14 +37,26 @@ export limit_db=t1-nomis-db-1-a
 export limit_web=server_type_nomis_web_t1
 ```
 
-Or you can set indiviual instances if you prefer
+Or you can set individual instances if you prefer
 
 ```
 export limit_db=t1-nomis-db-1-a
 export limit_web=i-08ecc3e07d3783464,i-0fedd176694815eb2
 ```
 
-A. Start Outage and stop Web application
+A. Enable Maintenance Mode Message on Load Balancer
+
+First sanity check command
+```
+no_proxy="*" ansible -m shell -a "/home/oracle/admin/scripts/lb_maintenance_mode.sh check" $limit_web
+```
+
+And then run
+```
+no_proxy="*" ansible -m shell -a "/home/oracle/admin/scripts/lb_maintenance_mode.sh enable" $limit_web
+```
+
+B. Start Outage and stop Web application
 
 First sanity check ansible and server to run against
 
@@ -64,13 +76,13 @@ no_proxy="*" ansible -m shell -a "service weblogic-all stop" $limit_web
 no_proxy="*" ansible -m shell -a "service weblogic-node-manager start; service weblogic-server start" $limit_web
 ```
 
-B. Take database restore point
+C. Take database restore point
 
 ```
 no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=oracle-restore-point -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags create_restore_point
 ```
 
-C. Deploy releases on database server 
+D. Deploy releases on database server 
 
 The default is to apply all patches present on the S3 bucket that follow the `last_nomis_release` variable.
 
@@ -84,7 +96,7 @@ Alternatively, you can specify a list on the command line like this
 no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=nomis-release-deployment --tag ec2patch  -e '{"nomis_releases": ["DB_V11.2.1.1.220", "DB_V11.2.1.1.221"]}' -v
 ```
 
-D. Deploy releases on Web servers
+E. Deploy releases on Web servers
 
 The weblogic servers will use SQL to query which patches to install. Install like this:
 
@@ -92,7 +104,7 @@ The weblogic servers will use SQL to query which patches to install. Install lik
 no_proxy="*" ansible-playbook site.yml --limit $limit_web -e force_role=nomis-weblogic --tags ec2patch
 ```
 
-E. Start application on Web servers
+F. Start application on Web servers
 
 ```
 echo "Starting all weblogic services, this will take ages"
@@ -106,7 +118,7 @@ If there is issue, you can use repair to restart failed processes
 no_proxy="*" ansible -m shell -a "service weblogic-all repair" $limit_web
 ```
 
-F. Post shakedown end outage
+G. Post shakedown end outage
 
 ```
 no_proxy="*" ansible -m shell -a "service weblogic-healthcheck start" $limit_web
@@ -114,12 +126,22 @@ echo "Waiting 2 minutes for load balancer to detect healthy hosts..."
 sleep 120
 ```
 
-G. Start streams if previously stopped
+NOTE: connect to the Nomis jumpserver in AWS for convenient links to each
+individual web server and node manager.
+
+H. Start streams if previously stopped
 
 # Do this manually until `oracle-streams` role is created
 
-H. Post successful validation drop the restore point
+I. Post successful validation drop the restore point
 
 ```
 no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=oracle-restore-point -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags drop_restore_point
+```
+
+I. Start streams if previously stopped
+
+Re-enable load balancer
+```
+no_proxy="*" ansible -m shell -a "/home/oracle/admin/scripts/lb_maintenance_mode.sh disable" $limit_web
 ```
