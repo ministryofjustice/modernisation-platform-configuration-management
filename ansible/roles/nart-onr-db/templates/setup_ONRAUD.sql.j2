@@ -12,5 +12,7 @@ default tablespace ONR_AUDIT_DATA;
 profile NART;
 grant CONNECT, RESOURCE, CREATE SESSION, CREATE VIEW, UNLIMITED TABLESPACE to onr_audit_owner;
 
+alter user dbsnmp identified by "{{ onr_audit_dbsnmp_password }}" account unlock;
+
 spool off 
 exit
