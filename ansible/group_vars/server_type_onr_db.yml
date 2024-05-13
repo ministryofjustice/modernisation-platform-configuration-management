@@ -242,13 +242,40 @@ tns_entries:
         - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
       service_name: RCV_TAF
   t2:
-    - name: T2BOSYS
+    - name: T2ONRSYS
       port: 1521
       host_list:
         - t2-onr-db-a.oasys.hmpps-test.modernisation-platform.internal
-      service_name: T2BOSYS
-    - name: T2BOAUD
+      service_name: BOSYS_TAF
+    - name: T2ONRAUD
       port: 1521
       host_list:
         - t2-onr-db-a.oasys.hmpps-test.modernisation-platform.internal
-      service_name: T2BOAUD
+      service_name: BOAUD_TAF
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: TRCVCAT
+  T2BOSYS:
+    db_name: T2BOSYS
+    db_unique_name: T2BOSYS
+    instance_name: T2BOSYS
+    host_name: t2-onr-db-a
+    port: 1521
+    tns_name: T2BOSYS
+    asm_disk_groups: DATA, FLASH
+    service:
+      - { name: BOSYS_TAF, role: PRIMARY }
+  T2BOAUD:
+    db_name: T2BOAUD
+    db_unique_name: T2BOAUD
+    instance_name: T2BOAUD
+    host_name: t2-onr-db-a
+    port: 1521
+    tns_name: T2BOAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BOAUD_TAF, role: PRIMARY }
+
+audit_service_name: BOAUD_TAF
+system_service_name: BOSYS_TAF

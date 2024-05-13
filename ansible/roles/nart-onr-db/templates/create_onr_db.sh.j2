@@ -12,21 +12,20 @@ dbca -silent -createDatabase                                                 \
   -characterSet AL32UTF8                                                     \
   -sysPassword "{{ SYS_PASSWORD }}"                                          \
   -systemPassword "{{ SYSTEM_PASSWORD }}"                                    \
-  -createAsContainerDatabase false                                           \
   -databaseType MULTIPURPOSE                                                 \
   -totalMemory 2048                                                          \
   -storageType ASM                                                           \
-  -diskGroupName +DATA                                                       \
-  -recoveryAreaDestination +FLASH                                            \
+  -diskGroupName DATA                                                       \
+  -recoveryAreaDestination FLASH                                            \
   -redoLogFileSize 600                                                       \
   -emConfiguration NONE                                                      \
   -automaticMemoryManagement false                                           \
-  -sampleSchema FALSE                                                        \
-  -enableArchive TRUE                                                        \
-  -ignorePreReqs
+  -sampleSchema FALSE                                                        
+
+
+sqlplus  "/ as sysdba" @{{ stage }}/{{ SQL_FILE }}
 
 . oraenv <<< $ORACLE_SID
 srvctl add service -d $ORACLE_SID -s ${SERVICE_NAME}
 srvctl start service -d $ORACLE_SID -s ${SERVICE_NAME}
 
-sqlplus  "/ as sysdba" @{{ stage }}/setup_${ORACLE_SID}.sql 

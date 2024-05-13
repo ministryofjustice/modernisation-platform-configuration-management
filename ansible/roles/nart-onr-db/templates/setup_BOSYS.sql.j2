@@ -12,7 +12,11 @@ default tablespace ONR_DATA
 profile NART;
 grant CONNECT, RESOURCE, CREATE SESSION, CREATE VIEW, UNLIMITED TABLESPACE to ONR_SYSTEM_OWNER;
 
-alter user dbsnmp identified by "{{ onr_system_dbsnmp_password }}" account unlock;
+alter user dbsnmp identified by "{{ onr_sys_dbsnmp_password }}" account unlock;
+shutdown immediate
+startup mount
+alter database archivelog ;
+alter database open;
 
 spool off 
 exit

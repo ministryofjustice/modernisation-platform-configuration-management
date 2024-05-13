@@ -14,7 +14,7 @@
     onr_sys_sys_password: "{{ secretsmanager_passwords_dict['system'].passwords['sys'] }}"
     onr_sys_system_password: "{{ secretsmanager_passwords_dict['system'].passwords['system'] }}"
     onr_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['onr_system_owner'] }}"
-    onr_system_dbsnmp_password: "{{ secretsmanager_passwords_dict['system'].passwords['dbsnmp'] }}"
+    onr_sys_dbsnmp_password: "{{ secretsmanager_passwords_dict['system'].passwords['dbsnmp'] }}"
 
 - name: Fail if missing parameters
   fail:
@@ -33,11 +33,11 @@
     - onr_aud_sys_password| length > 0
     - onr_aud_system_password| length > 0
     - onr_audit_owner_password| length > 0
-    - onr_audit_dbsnmp_password| length > 0
+    - onr_aud_dbsnmp_password| length > 0
     - onr_sys_sys_password| length > 0
     - onr_sys_system_password| length > 0
     - onr_system_owner_password| length> 0
-    - onr_system_dbsnmp_password| length> 0
+    - onr_sys_dbsnmp_password| length> 0
 
 - name: Fail if missing parameters
   fail:

@@ -18,16 +18,16 @@
     - create_onr_db.sh
     - "{{ SQL_FILE }}"
 
-- name: Create {{ ORACLE_SID }} database
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    main() {
-      export PATH=/usr/local/bin:$PATH
-      echo "# create_onr_db.sh "
-      {{ stage }}/create_onr_db.sh 
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-db
-  async: 86400
-  poll: 60
-  when: not ansible_check_mode
+# - name: Create {{ ORACLE_SID }} database
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     main() {
+#       export PATH=/usr/local/bin:$PATH
+#       echo "# create_onr_db.sh "
+#       {{ stage }}/create_onr_db.sh 
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-oracle-db
+#   async: 86400
+#   poll: 60
+#   when: not ansible_check_mode

@@ -8,11 +8,15 @@ limit PASSWORD_REUSE_TIME unlimited
 PASSWORD_LIFE_TIME  unlimited;
 
 create user onr_audit_owner identified by "{{ onr_audit_owner_password }}"
-default tablespace ONR_AUDIT_DATA;
+default tablespace ONR_AUDIT_DATA
 profile NART;
 grant CONNECT, RESOURCE, CREATE SESSION, CREATE VIEW, UNLIMITED TABLESPACE to onr_audit_owner;
 
-alter user dbsnmp identified by "{{ onr_audit_dbsnmp_password }}" account unlock;
+alter user dbsnmp identified by "{{ onr_aud_dbsnmp_password }}" account unlock;
+shutdown immediate
+startup mount
+alter database archivelog ;
+alter database open;
 
 spool off 
 exit
