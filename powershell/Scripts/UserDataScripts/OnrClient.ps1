@@ -28,7 +28,7 @@ $GlobalConfig = @{
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") { # TODO: change this path
+   if (Test-Path "C:\Program Files\BOE\setup.exe") {
      Write-Output "BOE Windows Client already installed"
    } else {
      Write-Output "Add BOE Windows Client"
