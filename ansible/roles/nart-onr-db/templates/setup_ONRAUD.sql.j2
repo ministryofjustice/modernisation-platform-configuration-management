@@ -1,0 +1,16 @@
+set echo on 
+spool {{ stage }}/setup_ONRAUD.log 
+
+create tablespace ONR_AUDIT_DATA;
+
+create profile nart 
+limit PASSWORD_REUSE_TIME unlimited 
+PASSWORD_LIFE_TIME  unlimited;
+
+create user onr_audit_owner identified by "{{ onr_audit_owner_password }}"
+default tablespace ONR_AUDIT_DATA;
+profile NART;
+grant CONNECT, RESOURCE, CREATE SESSION, CREATE VIEW, UNLIMITED TABLESPACE to onr_audit_owner;
+
+spool off 
+exit

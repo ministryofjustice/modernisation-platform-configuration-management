@@ -1,0 +1,18 @@
+---
+stage: /u01/stage
+onr_db_secretsmanager_secrets:
+  audit:
+    secret: "/oracle/database/{{ audit_db_sid }}/passwords"
+    users:
+      - sys:
+      - system:
+      - dbsnmp:
+      - onr_audit_owner:
+
+  system:
+    secret: "/oracle/database/{{ system_db_sid }}/passwords"
+    users:
+      - sys:
+      - system:
+      - dbsnmp:
+      - onr_system_owner:

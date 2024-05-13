@@ -1,0 +1,32 @@
+#!/bin/bash
+export ORAENV_ASK=false
+export ORACLE_HOME=/u01/app/oracle/product/11.2.0.4/db_1
+export PATH=$ORACLE_HOME/bin:$PATH
+export ORACLE_SID="{{ ORACLE_SID }}"
+export SERVICE_NAME="{{ SERVICE_NAME }}"
+
+
+dbca -silent -createDatabase                                                 \
+  -templateName General_Purpose.dbc                                          \
+  -gdbname ${ORACLE_SID} -sid ${ORACLE_SID} -responseFile NO_VALUE           \
+  -characterSet AL32UTF8                                                     \
+  -sysPassword "{{ SYS_PASSWORD }}"                                          \
+  -systemPassword "{{ SYSTEM_PASSWORD }}"                                    \
+  -createAsContainerDatabase false                                           \
+  -databaseType MULTIPURPOSE                                                 \
+  -totalMemory 2048                                                          \
+  -storageType ASM                                                           \
+  -diskGroupName +DATA                                                       \
+  -recoveryAreaDestination +FLASH                                            \
+  -redoLogFileSize 600                                                       \
+  -emConfiguration NONE                                                      \
+  -automaticMemoryManagement false                                           \
+  -sampleSchema FALSE                                                        \
+  -enableArchive TRUE                                                        \
+  -ignorePreReqs
+
+. oraenv <<< $ORACLE_SID
+srvctl add service -d $ORACLE_SID -s ${SERVICE_NAME}
+srvctl start service -d $ORACLE_SID -s ${SERVICE_NAME}
+
+sqlplus  "/ as sysdba" @{{ stage }}/setup_${ORACLE_SID}.sql 

@@ -1,0 +1,16 @@
+set echo on 
+spool {{ stage }}/setup_onrsys.log 
+
+create tablespace ONR_DATA;
+
+create profile nart
+limit PASSWORD_REUSE_TIME unlimited
+PASSWORD_LIFE_TIME  unlimited;
+
+create user ONR_SYSTEM_OWNER  identified by "{{ onr_system_owner_password }}"
+default tablespace ONR_DATA 
+profile NART;
+grant CONNECT, RESOURCE, CREATE SESSION, CREATE VIEW, UNLIMITED TABLESPACE to ONR_SYSTEM_OWNER;
+
+spool off 
+exit

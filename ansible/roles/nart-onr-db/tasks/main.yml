@@ -1,0 +1,36 @@
+---
+- import_tasks: get-db-facts.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - always
+
+- import_tasks: create_database.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - onrsys_db_create
+  vars:
+    ORACLE_SID: "{{ system_db_sid }}"
+    SERVICE_NAME: "{{ system_service_name }}"
+    SYS_PASSWORD: "{{ onr_sys_sys_password }}"
+    SYSTEM_PASSWORD: "{{ onr_sys_system_password }}"
+    SQL_FILE: "setup_BISYS.sql"
+
+- import_tasks: create_database.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - onraud_db_create
+  vars:
+    ORACLE_SID: "{{ audit_db_sid }}"
+    SERVICE_NAME: "{{ audit_service_name }}"
+    SYS_PASSWORD: "{{ onr_aud_sys_password }}"
+    SYSTEM_PASSWORD: "{{ onr_aud_system_password }}"
+    SQL_FILE: "setup_BIAUD.sql"
+
+- import_tasks: cleanup.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - always
