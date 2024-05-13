@@ -47,6 +47,11 @@ $GlobalConfig = @{
      # $ShortcutLink.Save() | Out-Null
    }
  }
+
+ choco install powershell -y
+
+ # reboot when run from ssm doc
+ exit 3010
   
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
