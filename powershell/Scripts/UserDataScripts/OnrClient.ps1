@@ -28,16 +28,19 @@ $GlobalConfig = @{
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path "C:\Program Files\BOE\setup.exe") {
+   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe")) { # TODO: Change this path again
      Write-Output "BOE Windows Client already installed"
    } else {
      Write-Output "Add BOE Windows Client"
      Set-Location -Path ([System.IO.Path]::GetTempPath())
      Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/51048121.ZIP") -File .\51048121.ZIP -Verbose | Out-Null
  
-     # Extract SQL Developer - there is no installer for this application
-     Expand-Archive -Path .\51048121.ZIP -DestinationPath "C:\Program Files\BOE" -Force | Out-Null
- 
+     # Extract BOE Client Installer - there is no installer for this application
+     Expand-Archive -Path .\51048121.ZIP -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+
+     # Install BOE Client
+     Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+     
      # Create a desktop shortcut
      # Write-Output " - Creating StartMenu Link"
      # $Shortcut = New-Object -ComObject WScript.Shell
