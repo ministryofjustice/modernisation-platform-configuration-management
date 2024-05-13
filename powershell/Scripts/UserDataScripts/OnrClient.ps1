@@ -48,10 +48,12 @@ $GlobalConfig = @{
    }
  }
 
- choco install powershell -y
-
- # reboot when run from ssm doc
- exit 3010
+ # Install PowerShell 5.1 if running on PowerShell 4 or below
+ if ( $PSVersionTable.PSVersion.Major -le 4 ) {
+    choco install powershell -y
+    # reboot when run from ssm doc
+    exit 3010
+ }
   
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
