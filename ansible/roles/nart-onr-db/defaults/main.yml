@@ -1,0 +1,25 @@
+---
+system_db_sid_part: "BOSYS"
+audit_db_sid_part: "BOAUD"
+server_name: '{{ ec2.tags["server-name"] }}'
+env_name: "{{ server_name.split('-') | first | upper}}"
+system_db_sid: "{{ env_name }}{{ system_db_sid_part }}"
+audit_db_sid: "{{ env_name }}{{ audit_db_sid_part }}"
+stage: /u01/stage
+
+onr_db_secretsmanager_secrets:
+  audit:
+    secret: "/oracle/database/{{ audit_db_sid }}/passwords"
+    users:
+      - sys:
+      - system:
+      - dbsnmp:
+      - onr_audit_owner:
+
+  system:
+    secret: "/oracle/database/{{ system_db_sid }}/passwords"
+    users:
+      - sys:
+      - system:
+      - dbsnmp:
+      - onr_system_owner:

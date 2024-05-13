@@ -1,0 +1,45 @@
+---
+- name: Get secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ onr_db_secretsmanager_secrets }}"
+
+- name: Set secret facts
+  set_fact:
+    onr_aud_sys_password: "{{ secretsmanager_passwords_dict['audit'].passwords['sys'] }}"
+    onr_aud_system_password: "{{ secretsmanager_passwords_dict['audit'].passwords['system'] }}"
+    onr_audit_owner_password: "{{ secretsmanager_passwords_dict['audit'].passwords['onr_audit_owner'] }}"
+    onr_aud_dbsnmp_password: "{{ secretsmanager_passwords_dict['audit'].passwords['dbsnmp'] }}"
+    onr_sys_sys_password: "{{ secretsmanager_passwords_dict['system'].passwords['sys'] }}"
+    onr_sys_system_password: "{{ secretsmanager_passwords_dict['system'].passwords['system'] }}"
+    onr_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['onr_system_owner'] }}"
+    onr_sys_dbsnmp_password: "{{ secretsmanager_passwords_dict['system'].passwords['dbsnmp'] }}"
+
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ audit_db_sid }}  variable is defined in db_configs fact"
+  when: db_configs[audit_db_sid] is not defined
+
+- name: Fail if missing parameters
+  fail:
+    msg: "Ensure {{ system_db_sid }}  variable is defined in db_configs fact"
+  when: db_configs[system_db_sid] is not defined
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - onr_aud_sys_password| length > 0
+    - onr_aud_system_password| length > 0
+    - onr_audit_owner_password| length > 0
+    - onr_aud_dbsnmp_password| length > 0
+    - onr_sys_sys_password| length > 0
+    - onr_sys_system_password| length > 0
+    - onr_system_owner_password| length> 0
+    - onr_sys_dbsnmp_password| length> 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)

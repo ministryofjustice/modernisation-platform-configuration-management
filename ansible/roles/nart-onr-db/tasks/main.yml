@@ -1,0 +1,45 @@
+---
+- name: Debug audit db sid
+  debug:
+    var: audit_db_sid
+
+- name: Debug sys db sid
+  debug:
+    var: system_db_sid
+
+- import_tasks: get-db-facts.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - always
+
+- import_tasks: create_database.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - onrsys_db_create
+  vars:
+    ORACLE_SID: "{{ system_db_sid }}"
+    SERVICE_NAME: "{{ system_service_name }}"
+    SYS_PASSWORD: "{{ onr_sys_sys_password }}"
+    SYSTEM_PASSWORD: "{{ onr_sys_system_password }}"
+    DBSNMP_PASSWORD: "{{ onr_sys_dbsnmp_password }}"
+    SQL_FILE: "setup_BOSYS.sql"
+
+- import_tasks: create_database.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - onraud_db_create
+  vars:
+    ORACLE_SID: "{{ audit_db_sid }}"
+    SERVICE_NAME: "{{ audit_service_name }}"
+    SYS_PASSWORD: "{{ onr_aud_sys_password }}"
+    SYSTEM_PASSWORD: "{{ onr_aud_system_password }}"
+    DBSNMP_PASSWORD: "{{ onr_aud_dbsnmp_password }}"
+    SQL_FILE: "setup_BOAUD.sql"
+# - import_tasks: cleanup.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#     - always
