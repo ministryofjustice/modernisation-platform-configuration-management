@@ -28,7 +28,7 @@ $GlobalConfig = @{
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe")) { # TODO: Change this path again
+   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe")) {
      Write-Output "BOE Windows Client already installed"
    } else {
      Write-Output "Add BOE Windows Client"
