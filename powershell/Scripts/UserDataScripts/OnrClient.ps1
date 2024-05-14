@@ -38,16 +38,16 @@ $GlobalConfig = @{
      # Extract BOE Client Installer - there is no installer for this application
      Expand-Archive -Path .\51048121.ZIP -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
 
-     # Install BOE Client
+     # Install BOE Windows Client
      Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
      
-     # Create a desktop shortcut
-     # Write-Output " - Creating StartMenu Link"
-     # $Shortcut = New-Object -ComObject WScript.Shell
-     # $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
-     # $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
-     # $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
-     # $ShortcutLink.Save() | Out-Null
+     # Create a desktop shortcut for SAP BO Universe Designer
+     Write-Output " - Creating StartMenu Link"
+     $Shortcut = New-Object -ComObject WScript.Shell
+     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SAP Universe Designer.lnk"
+     $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
+     $ShortcutLink.TargetPath = "C:\Program Files (x86)\Business Objects\BusinessObjects Enterprise 12.0\win32_x86\designer.exe"
+     $ShortcutLink.Save() | Out-Null
    }
  }
 
@@ -57,6 +57,8 @@ $GlobalConfig = @{
     # reboot when run from ssm doc
     exit 3010
  }
+
+ choco install winscp.install -y
   
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
