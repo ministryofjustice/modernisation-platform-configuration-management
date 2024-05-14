@@ -41,13 +41,15 @@ $GlobalConfig = @{
      # Install BOE Windows Client
      Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
      
-     # Create a desktop shortcut for SAP BO Universe Designer
-     Write-Output " - Creating StartMenu Link"
-     $Shortcut = New-Object -ComObject WScript.Shell
-     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SAP Universe Designer.lnk"
-     $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
-     $ShortcutLink.TargetPath = "C:\Program Files (x86)\Business Objects\BusinessObjects Enterprise 12.0\win32_x86\designer.exe"
-     $ShortcutLink.Save() | Out-Null
+     # Create a desktop shortcut for BOE Client Tools
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $targetPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonStartMenu"), "Programs\BusinessObjects XI 3.1\BusinessObjects Enterprise Client Tools")
+    $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("Desktop"), "BOE Client Tools.lnk")
+    $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $targetPath
+    $shortcut.Save() | Out-Null
+    Write-Output "Shortcut created at $shortcutPath"
+
    }
  }
 
