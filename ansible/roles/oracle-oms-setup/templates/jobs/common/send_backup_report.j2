@@ -9,7 +9,7 @@
 # If a name is specified in both places, the command line name is used. 
 
 # Description: (Optional) The user specified name of the job
-name=Send Backup Report
+name={{ job_name }}
 
 
 # Job Type. 
@@ -79,7 +79,7 @@ kind=active
 # Fill in the target list before submitting.
 # For Example:
 #     target_list=MyTarget:aggregate_service
-target_list=dev-oem-a:host
+target_list={{ oem_hostname }}:host
 
 
 
@@ -154,7 +154,7 @@ targetType=host
 # Credential Usage: defaultHostCred
 # Description: 
 #cred.defaultHostCred.<target_name>:<target_type>=
-cred.defaultHostCred.dev-oem-a:host=NAMED:OEM_HOST_SSH
+cred.defaultHostCred.{{ oem_hostname }}:host=NAMED:OEM_HOST_SSH
 
 # In a variable list, each member is specified in the following way: 
 #
@@ -221,6 +221,47 @@ variable.large_os_script=<<MULTILINE
 #  for data for the local database backups are taken from V$RMAN views instead
 #
 #
+
+# Supply comma-separated list of applications for whose databases we are interested in reporting on
+# You can leave this unset if you want all databases, but notice that we have a hard-coded limit
+# of 45 application databases per report (due to Slack restrictions)
+APPLICATIONS=delius,hmpps-oem
+# Ensure the list is quoted
+APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g")
+
+echo "$APPLICATIONS"
+
+OMR=$(awk -F: '/EMREP/{print $1}' /etc/oratab)
+
+[[ -z $OMR ]] && echo "Oracle EM OMR database not found" && exit 1
+
+export ORACLE_SID=$OMR
+export ORAENV_ASK=NO
+. oraenv
+
+DATABASE_TARGETS=$(
+sqlplus -s / as sysdba<<EOSQL
+SET HEADING OFF
+SET FEEDBACK OFF
+SET DEFINE OFF
+SET LONG 4000
+SET LINES 4000
+SET PAGES 0
+
+SELECT
+    LISTAGG(target_name,',') WITHIN GROUP (ORDER BY target_name)
+FROM
+    sysman.mgmt\$target_properties
+WHERE
+        property_name = 'orcl_gtp_line_of_bus'
+    AND target_type = 'oracle_database'
+    AND property_value IN (${APPLICATIONS});
+EXIT
+EOSQL
+)
+
+DATABASE_LIST=$(echo "${DATABASE_TARGETS}" | sed "s/[^,]\+/'&'/g")
+[[ -z $DATABASE_TARGETS ]] && DATABASE_TARGETS="ALL_DATABASES"
 
 CATALOG=$(awk -F: '/RCVCAT/{print $1}' /etc/oratab)
 
@@ -315,6 +356,7 @@ WHERE
                         0,
                         1
                     )
+                AND (UPPER(db_name) IN (${DATABASE_LIST}) OR q'[${DATABASE_LIST}]' = 'ALL_DATABASES')
                 GROUP BY
                     db_name,
                     incremental_level
@@ -339,6 +381,7 @@ MAX(CASE WHEN incremental_level=1 THEN completion_time ELSE NULL END) l1_complet
 ROUND(SUM(CASE WHEN incremental_level=1 THEN original_input_bytes ELSE 0 END)/1024/1024/1024,0) l1_gb
 FROM   (
 SELECT * FROM report_detail_catalog
+WHERE rownum <= 45  -- Slack reporting limit
 UNION ALL
 SELECT * FROM report_detail_local_db
 )
