@@ -43,13 +43,13 @@
     PATH=$PATH:/usr/local/bin
     set -e
     account_id=$(aws sts get-caller-identity --query Account --output text)
-    {% if item.value.account_name is defined %}
+    {% if item.value.account_name is defined and item.value.account_name|length > 0 %}
     secret_account_id="{{ account_ids[item.value.account_name] }}"
     secret_arn="arn:aws:secretsmanager:eu-west-2:${secret_account_id}:secret:{{ item.value.secret }}"
     {% else %}
     secret_arn="{{ item.value.secret }}"
     {% endif %}
-    {% if item.value.assume_role_name is defined %}
+    {% if item.value.assume_role_name is defined and item.value.assume_role_name|length > 0 %}
     role_arn="arn:aws:iam::${account_id}:role/{{ item.value.assume_role_name }}"
     session="{{ item.key }}-ansible"
     creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
@@ -171,7 +171,7 @@
   ansible.builtin.shell: |
     PATH=$PATH:/usr/local/bin
     set -e
-    {% if item.value.config.account_name is defined %}
+    {% if item.value.config.account_name is defined and item.value.account_name|length > 0 %}
     account_id=$(aws sts get-caller-identity --query Account --output text)
     secret_account_id="{{ account_ids[item.value.config.account_name] }}"
     if [[ $account_id != $secret_account_id ]]; then
