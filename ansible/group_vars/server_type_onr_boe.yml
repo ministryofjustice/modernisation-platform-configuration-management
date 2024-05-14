@@ -30,7 +30,7 @@ server_type_roles_list:
   - epel
   - disks
   - oracle-12c-client # use 12c client because the 11g client isn't technically supported by Rhel 6
-  # - oracle-tns-entries # TODO: not defined yet
+  - oracle-tns-entries
   - onr-boe
   # - collectd TODO: comment these back in, not needed yet
   # - amazon-cloudwatch-agent
@@ -87,15 +87,16 @@ oracle_install_user: oracle
 oracle_install_group: oinstall
 oracle_home: /u01/app/oracle/product/12.2.0/client_1
 oracle_inventory: /u01/app/oraInventory
-# tns_entries:
-#   t2:
-#     - name: T2BOSYS
-#       port: 1521
-#       host_list:
-#         - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
-#       service_name: T2BOSYS
-#     - name: T2BOAUD
-#       port: 1521
-#       host_list:
-#         - t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
-#       service_name: T2BOAUD
+
+tns_entries:
+  t2:
+    - name: T2BOSYS
+      port: 1521
+      host_list:
+        - t2-onr-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: BOSYS_TAF
+    - name: T2BOAUD
+      port: 1521
+      host_list:
+        - t2-onr-db-a.oasys.hmpps-test.modernisation-platform.internal
+      service_name: BOAUD_TAF
