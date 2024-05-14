@@ -96,9 +96,9 @@
       tags: always
   tags: always
 
-- name: (main) Setup required database passwords in SSM parameter store
+- name: (main) Setup required database passwords in Secrets Manager
   include_tasks:
-    file: create-ssm-passwords.yml
+    file: create-secrets.yml
     apply:
       tags: always
   tags: always

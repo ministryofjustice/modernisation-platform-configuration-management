@@ -13,8 +13,8 @@
       set lines 30
       set echo on
       whenever sqlerror exit failure
-      ALTER USER sys IDENTIFIED BY "{{ oradb_sys_password }}";
-      ALTER USER asmsnmp IDENTIFIED BY "{{ oradb_asmsnmp_password }}";
+      ALTER USER sys IDENTIFIED BY "{{ sys_password }}";
+      ALTER USER asmsnmp IDENTIFIED BY "{{ asmsnmp_password }}";
       GRANT sysasm TO asmsnmp;
     EOF
   register: asmsnmp_modify
