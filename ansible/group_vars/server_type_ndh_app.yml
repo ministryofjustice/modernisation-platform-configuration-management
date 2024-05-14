@@ -8,13 +8,18 @@ server_type_roles_list:
   - ansible-script
   - epel
   - packages
+  - filesystems
   - ndh-app
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
+  - collectd-textfile-monitoring
 
 packages_yum_install:
   - jq
+
+filesystems_domain_name_fqdn: "{{ app_filesystems_domain_name_fqdn|default('') }}"
+filesystems_mount: "{{ app_filesystems_mount|default([]) }}"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"

@@ -1,4 +1,7 @@
 ---
+# Run collectd-textfile-monitoring to enable cloudwatch monitoring
+filesystems_metric_dir: /opt/textfile_monitoring/filesystems_check
+
 # Define list of filesystems to mount using `filesystems_mount` list.
 #filesystems_mount: examples below
 
@@ -16,7 +19,7 @@ filesystems_domains:
     secret_account_name: hmpps-domain-services-production
     secret_role_name: EC2HmppsDomainSecretsRole
     secret_name: "/microsoft/AD/azure.hmpp.root/shared-passwords"
-    mount_fs_username: svc_join_domain
+    mount_fs_username: svc_noms_ndh_pd
 
 filesystems_domain: "{{ filesystems_domains[filesystems_domain_name_fqdn] }}"
 
@@ -27,8 +30,8 @@ filesystems_mount_user:
 
 filesystems_secretsmanager_passwords:
   filesystems_shared_passwords:
-    account_name: "{{ filesystems_domain.secret_account_name }}"
-    assume_role_name: "{{ filesystems_domain.secret_role_name }}"
+    account_name: "{{ filesystems_domain.secret_account_name|default('') }}"
+    assume_role_name: "{{ filesystems_domain.secret_role_name|default('') }}"
     secret: "{{ filesystems_domain.secret_name }}"
     users:
       - "{{ filesystems_mount_user | items2dict }}"

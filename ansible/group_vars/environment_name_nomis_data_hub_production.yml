@@ -3,3 +3,18 @@ ansible_aws_ssm_bucket_name: s3-bucket20230313100641329200000002
 image_builder_s3_bucket_name: nomis-data-hub-software20230309164626754200000003
 dns_zone_internal: nomis-data-hub.hmpps-production.modernisation-platform.internal
 ndelius_proxy_pass: interface.probation.service.justice.gov.uk
+
+app_filesystems_domain_name_fqdn: azure.hmpp.root
+app_filesystems_mount:
+  - dir: /opt/data/interfaces/extract
+    uid: 10002
+    gid: 10002
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=10002,gid=10002,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
+    src: //PDPDW00057.azure.hmpp.root/NOMS_Extracts_PD$
+    metric_dimension: NOMS_Extracts_PD
+
+filesystems_domains:
+  azure.hmpp.root:
+    secret_name: /ndh/pd/shared
+    mount_fs_username: svc_noms_ndh_pd

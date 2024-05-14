@@ -11,6 +11,8 @@
   ansible.builtin.file:
     path: "{{ item.dir }}"
     state: "directory"
+    owner: "{{ item.uid }}"
+    group: "{{ item.gid }}"
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
@@ -22,6 +24,17 @@
     path: "{{ item.dir }}"
     src: "{{ item.src }}"
     state: "{{ item.state | default('mounted') }}"
+  loop_control:
+    label: "{{ item.dir }}"
+  loop: "{{ filesystems_mount }}"
+
+- name: Setup monitoring keepalive cron
+  ansible.builtin.cron:
+    name: "cleanup tmp for weblogic"
+    user: root
+    minute: "*/5"
+    job: "/usr/local/bin/filesystem_keepalive.sh '{{ item.src }}' '{{ item.metric_dimension }}' 2>&1 | logger -p local3.info -t filesystem_keepalive.sh"
+  when: item.metric_dimension is defined and item.metric_dimension|length > 0
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"

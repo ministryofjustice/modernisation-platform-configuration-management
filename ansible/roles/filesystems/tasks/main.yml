@@ -5,7 +5,15 @@
     - ec2provision
     - ec2patch
     - filesystems_domain_creds
-  when: filesystems_domain_name_fqdn is defined
+  when: filesystems_domain_name_fqdn is defined and filesystems_domain_name_fqdn|length > 0
+
+- import_tasks: monitoring.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+    - filesystems_monitoring
+  when: filesystems_mount is defined
 
 - import_tasks: mount.yml
   tags:

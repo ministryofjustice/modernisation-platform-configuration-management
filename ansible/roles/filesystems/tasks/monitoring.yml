@@ -1,0 +1,15 @@
+---
+- name: Create monitoring directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ filesystems_metric_dir }}"
+
+- name: Copy monitoring script to /usr/local/bin
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: "0755"
+  loop:
+    - filesystem_keepalive.sh
