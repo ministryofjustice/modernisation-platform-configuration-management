@@ -28,30 +28,37 @@ $GlobalConfig = @{
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") { # TODO: change this path
+   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe")) {
      Write-Output "BOE Windows Client already installed"
    } else {
      Write-Output "Add BOE Windows Client"
      Set-Location -Path ([System.IO.Path]::GetTempPath())
      Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/51048121.ZIP") -File .\51048121.ZIP -Verbose | Out-Null
  
-     # Extract SQL Developer - there is no installer for this application
-     Expand-Archive -Path .\51048121.ZIP -DestinationPath "C:\Program Files\BOE" -Force | Out-Null
- 
-     # Create a desktop shortcut
-     # Write-Output " - Creating StartMenu Link"
-     # $Shortcut = New-Object -ComObject WScript.Shell
-     # $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
-     # $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
-     # $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
-     # $ShortcutLink.Save() | Out-Null
+     # Extract BOE Client Installer - there is no installer for this application
+     Expand-Archive -Path .\51048121.ZIP -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+
+     # Install BOE Windows Client
+     Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+     
+     # Create a desktop shortcut for SAP BO Universe Designer
+     Write-Output " - Creating StartMenu Link"
+     $Shortcut = New-Object -ComObject WScript.Shell
+     $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SAP Universe Designer.lnk"
+     $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
+     $ShortcutLink.TargetPath = "C:\Program Files (x86)\Business Objects\BusinessObjects Enterprise 12.0\win32_x86\designer.exe"
+     $ShortcutLink.Save() | Out-Null
    }
  }
 
- choco install powershell -y
+ # Install PowerShell 5.1 if running on PowerShell 4 or below
+ if ( $PSVersionTable.PSVersion.Major -le 4 ) {
+    choco install powershell -y
+    # reboot when run from ssm doc
+    exit 3010
+ }
 
- # reboot when run from ssm doc
- exit 3010
+ choco install winscp.install -y
   
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
