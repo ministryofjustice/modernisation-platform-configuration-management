@@ -12,10 +12,6 @@ Role Variables
     - database_global_database_name # db name we are creating defaults to TEST
     - database_sid                  # sid of db defaults to TEST
     - database_type                 # whether it's a primary or standby, defaults to STANDALONE
-    - oradb_sys_password            # defaults to d3l1u5ag41n
-    - oradb_system_password         # defaults to d3l1u5ag41n
-    - oradb_dbsnmp_password         # defaults to d3l1u5ag41n
-    - oradb_asmsnmp_password        # defaults to d3l1u5ag41n
     - database_characterset         # defaults to AL32UTF8
     - asm_disks_quantity            # Number of EBS volumes attached for ASM Disks
 
