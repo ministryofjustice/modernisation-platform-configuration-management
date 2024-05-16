@@ -123,12 +123,12 @@ tns_entries:
       port: 1521
       host_list:
         - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
-      service_name: BIPSYS_TAF
+      service_name: BISYS_TAF
     - name: BIPAUD
       port: 1521
       host_list:
         - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
-      service_name: BIPAUD_TAF
+      service_name: BIAUD_TAF
   pp:
     - name: CNOM
       port: 1521
@@ -152,9 +152,38 @@ tns_entries:
       port: 1521
       host_list:
         - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
-      service_name: BIPSYS_TAF
+      service_name: BISYS_TAF
     - name: BIPAUD
       port: 1521
       host_list:
         - pp-ncr-db-1-a.nomis-combined-reporting.hmpps-preproduction.modernisation-platform.internal
-      service_name: BIPAUD_TAF
+      service_name: BIAUD_TAF
+  pd:
+    - name: CNOM
+      port: 1521
+      host_list:
+        - pdnomis-a.production.nomis.service.justice.gov.uk
+        - pdnomis-b.production.nomis.service.justice.gov.uk
+      service_name: OR_TAF
+    - name: MIS
+      port: 1521
+      host_list:
+        - pdmis-a.production.nomis.service.justice.gov.uk
+        - pdmis-b.production.nomis.service.justice.gov.uk
+      service_name: MIS_TAF
+    - name: CNMAUD
+      port: 1521
+      host_list:
+        - pdmis-a.production.nomis.service.justice.gov.uk
+        - pdmis-b.production.nomis.service.justice.gov.uk
+      service_name: CNMAUD_TAF
+    - name: BIPSYS
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+      service_name: BISYS_TAF
+    - name: BIPAUD
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+      service_name: BIAUD_TAF
