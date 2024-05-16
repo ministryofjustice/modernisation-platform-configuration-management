@@ -33,4 +33,4 @@ ndh_secretsmanager_passwords:
       - harkemsadmin_ssl_pass:
 
 offloc_archive_path: "/opt/tibco/cde/archive"
-offloc_bucket_name: { { lookup('amazon.aws.aws_ssm', "/offloc/offloc_bucket_name", region='eu-west-2') } }
+offloc_bucket_name: "{{ lookup('amazon.aws.aws_ssm', '/offloc/offloc_bucket_name', region='eu-west-2') }}"
