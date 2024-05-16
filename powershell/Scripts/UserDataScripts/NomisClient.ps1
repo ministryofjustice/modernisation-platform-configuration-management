@@ -397,11 +397,12 @@ function Add-LibreOffice {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
+  $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
   Write-Output "Install LibreOffice"
+  choco install -y kb2919442 # workaround libreoffice dependency error
+  choco install -y kb2919355
   choco install -y libreoffice-still
 }
-
 
 function Remove-StartMenuShutdownOption {
   [CmdletBinding()]
@@ -431,5 +432,5 @@ Add-EdgeTrustedSites $Config
 Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
-Add-LibreOffice $Config
 Remove-StartMenuShutdownOption $Config
+Add-LibreOffice $Config # takes forever to install so putting last
