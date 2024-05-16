@@ -391,6 +391,18 @@ function Add-NomisShortcuts {
   }
 }
 
+function Add-LibreOffice {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Stop"
+  Write-Output "Install LibreOffice"
+  choco install -y libreoffice-still
+}
+
+
 function Remove-StartMenuShutdownOption {
   [CmdletBinding()]
   param (
@@ -419,4 +431,5 @@ Add-EdgeTrustedSites $Config
 Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
+Add-LibreOffice $Config
 Remove-StartMenuShutdownOption $Config
