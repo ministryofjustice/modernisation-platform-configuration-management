@@ -397,10 +397,9 @@ function Add-LibreOffice {
     [hashtable]$Config
   )
 
-  # at time of testing, libreoffice-still install fails with dependency error, hence the kb installs
   $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
   Write-Output "Install LibreOffice"
-  choco install -y kb2919442
+  choco install -y kb2919442 # workaround libreoffice dependency error
   choco install -y kb2919355
   choco install -y libreoffice-still
 }
