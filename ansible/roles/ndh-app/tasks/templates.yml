@@ -7,14 +7,6 @@
     group: tibco
     mode: 0754
 
-- name: create scripts dir
-  file:
-    path: "/opt/tibco/scripts/"
-    state: directory
-    owner: tibco
-    group: tibco
-    mode: 0754
-
 - name: transfer scripts
   ansible.builtin.template:
     src: "opt/tibco/scripts/{{ item }}"
