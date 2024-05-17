@@ -7,6 +7,16 @@
     group: tibco
     mode: 0754
 
+- name: transfer scripts
+  ansible.builtin.template:
+    src: "opt/tibco/scripts/{{ item }}"
+    dest: "/opt/tibco/scripts/{{ item }}"
+    owner: tibco
+    group: tibco
+    mode: 0775
+  loop:
+    - "trigger_offloc_s3_upload.sh.j2"
+
 - name: transfer templates
   ansible.builtin.template:
     src: "opt/tibco/templates/{{ item }}"

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+ARCHIVE={{ offloc_archive_path }}
+
+if [ -x $ARCHIVE ]; then
+  cd $ARCHIVE || return
+  FILE=$(ls -At | head -n1)
+  if [ -n "${FILE}" ]; then
+    FILE_PATH=$(realpath "$FILE")
+  else
+    echo "No file found"
+    exit 1
+  fi
+fi
+
+if ! which aws; then
+  echo "AWS CLI not found"
+  exit 1
+else
+  AWS_CLI=$(which aws)
+fi
+
+echo "$FILE_PATH"
+
+
+if $AWS_CLI s3 cp "$FILE_PATH" s3://{{ offloc_bucket_name }}/; then
+  echo "Offloc transfer successful"
+else
+  echo "Offloc transfer failed"
+  exit 1
+fi
