@@ -9,16 +9,22 @@
 
 - name: Calculate list of groups
   ansible.builtin.set_fact:
-    system_groups_1: "{{ users_and_groups_system | map(attribute='group') }}"
-    system_groups_2: "{{ users_and_groups_system | selectattr('groups', 'defined') | map(attribute='groups') | flatten }}"
+    all_system_groups: >- # Jinja 2 multi-line string
+      {{ 
+        (
+          users_and_groups_system | map(attribute='group') | list
+        ) + (
+          users_and_groups_system | selectattr('groups', 'defined') | map(attribute='groups') | flatten | list
+        ) | unique 
+      }}
 
 - name: Add system groups
   ansible.builtin.group:
     name: "{{ item }}"
     state: present
     system: yes
-    gid: "{{ system_gids[item]|default(omit) }}"
-  loop: "{{ (system_groups_1 + system_groups_2) | unique }}"
+    gid: "{{ (users_and_groups_system | selectattr('group', 'equalto', item) | map(attribute='gid') | first | default(system_gids[item] | default(omit))) }}"
+  loop: "{{ all_system_groups }}"
 
 - name: Add system users
   ansible.builtin.user:
