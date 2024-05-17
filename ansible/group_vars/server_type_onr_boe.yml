@@ -4,7 +4,7 @@ ansible_python_interpreter: /usr/local/bin/python3.6
 # NOTE: test environment uses different values from production and preproduction, defaults are 502 and 501 for group dba and user oracle. For some reason 't2' uses 503 and 502.
 users_and_groups_system:
   - group: dba
-    gid: "{{ (ec2.tags['environment-name'] == 'oasys-national-reporting-test') | ternary('503', '502') }}" 
+    gid: "{{ (ec2.tags['environment-name'] == 'oasys-national-reporting-test') | ternary('503', '502') }}"
   - group: wheel
     gid: 10
   - group: oinstall
