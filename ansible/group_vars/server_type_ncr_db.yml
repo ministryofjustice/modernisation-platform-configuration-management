@@ -61,6 +61,14 @@ disks_mount:
     dir: swap
     fstype: swap
 
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: oracle-ohasd
+    shell_cmd: "systemctl is-active oracle-ohasd"
+
 # Oracle common variables
 oracle_install_user: oracle
 oracle_install_group: oinstall
