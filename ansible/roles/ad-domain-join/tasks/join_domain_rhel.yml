@@ -1,19 +1,4 @@
 ---
-- name: Configure sshd_config enable password authentication
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^PasswordAuthentication.*no"
-    line: "PasswordAuthentication=yes"
-  notify: Restart SSSD service
-
-- name: Configure sshd_config disable public key authentication
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "PubkeyAuthentication.*yes"
-    line: "PubkeyAuthentication=no"
-  notify: Restart SSSD service
-  when: sshd_disable_pubkey_authentication
-
 - name: Install pexpect for injecting secrets
   ansible.builtin.pip:
     name: pexpect

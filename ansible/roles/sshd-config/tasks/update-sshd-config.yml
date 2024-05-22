@@ -1,0 +1,11 @@
+---
+- name: Configure sshd_config disable public key authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regex: "^(#)?{{ item.key }}"
+    line: "{{ item.key }} {{ item.value }}"
+    state: present
+  notify: Restart SSHD service
+  loop_control:
+    label: "{{ item.key }}"
+  loop: "{{ sshd_config_settings[sshd_config_mode]|dict2items }}"

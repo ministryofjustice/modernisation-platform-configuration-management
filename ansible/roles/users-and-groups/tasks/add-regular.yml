@@ -90,6 +90,7 @@
     uid: "{{ item.uid|default(omit) }}"
     create_home: "{{ item.create_home }}"
     home: "{{ item.home }}"
+    password: "{{ item.password|default('*') }}"
     state: "{{ item.state }}"
     system: no
   loop_control:
