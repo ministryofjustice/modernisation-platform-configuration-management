@@ -18,9 +18,9 @@
 - import_tasks: get-facts.yml
   tags:
     - ec2provision
-# - oracle_db_get_facts
-# - oracle_db_reconfigure_has
-# - oracle_db_restore_databases
+    - oracle_db_get_facts
+    - oracle_db_reconfigure_has
+    - oracle_db_restore_databases
 
 - ansible.builtin.import_role:
     name: onr-get

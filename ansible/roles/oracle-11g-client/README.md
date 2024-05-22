@@ -1,6 +1,6 @@
 # Overview
 
-Use this role to install Oracle 11g client. Primarily for use/install on Rhel 6 or earlier ONLY!
+IMPORTANT: This role doesn't _fully_ work as there are some package dependencies that are currently missing. Use the oracle-12c-client role instead!
 
 # Pre-requisites
 
