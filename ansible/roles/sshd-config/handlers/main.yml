@@ -1,6 +1,7 @@
 ---
 - name: Restart SSHD service
-  service:
+  ansible.builtin.service:
     name: sshd
     state: restarted
     enabled: yes
+  ignore_errors: yes
