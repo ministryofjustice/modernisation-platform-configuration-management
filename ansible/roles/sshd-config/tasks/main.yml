@@ -1,0 +1,12 @@
+---
+- import_tasks: update-sshd-config.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+
+# Ensure handlers run before the next role
+- name: Flush handlers
+  meta: flush_handlers
+  tags:
+    - always
