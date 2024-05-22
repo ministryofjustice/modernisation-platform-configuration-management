@@ -30,6 +30,11 @@ ad_domains:
     domain_join_username: svc_join_domain
 ```
 
+# sshd-config
+
+Ensure `sshd-config` role is run with `sshd_config_mode: domain_joined` to enable
+relevant settings in sshd.
+
 # SSH with SSM
 
 You can use SSM to ssh to the server with your domain credentials.
