@@ -5,15 +5,24 @@
   vars:
     secretsmanager_passwords: "{{ boe_secretsmanager_passwords }}"
 
+# NOTE: see DSOS-2817 item to get databasepwd and databasepwd_audit from the oasys-test env, not locally
+# This requires allowing the instance to get passwords from a different environment so deferring this for now
+
 - name: Set secretsmanager password facts
   set_fact:
     bobje_license_key: "{{ secretsmanager_passwords_dict['boe'].passwords['bobje_license_key'] }}"
+    databasepwd: "{{ secretsmanager_passwords_dict['t2_oracle_sys'].passwords['onr_system_owner'] }}"
+    databasepwd_audit: "{{ secretsmanager_passwords_dict['t2_oracle_aud'].passwords['onr_audit_owner'] }}"
+    cmspassword: "{{ secretsmanager_passwords_dict['t2_oracle_sys'].passwords['cmspassword'] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
     boe_all_variables_set: true
   when:
     - bobje_license_key|length > 0
+    - databasepwd|length > 0
+    - databasepwd_audit|length > 0
+    - cmspassword|length > 0
 
 - name: Fail if missing SSM parameters or tags
   fail:

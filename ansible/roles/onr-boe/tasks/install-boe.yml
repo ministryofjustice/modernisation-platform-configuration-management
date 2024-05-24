@@ -1,17 +1,20 @@
 ---
-- name: Create BOE Disk mount point
+- name: create install target dir
   ansible.builtin.file:
-    path: /mnt/DATA_1
+    path: "/u01/app/bobj/boe"
     state: directory
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"
     mode: "0755"
+# IMPORTANT: The following task is commented out because it fails when run by Ansible for reasons unknown.
 
-- name: Mount DATA_1 volume
-  ansible.builtin.mount:
-    src: "{{ app_dir }}/DATA_1"
-    path: /mnt/DATA_1
-    fstype: none
-    opts: bind
-    state: mounted
-# TODO: interactive installer command /install.sh -InstallDir /u01/app/bobj/BOE31
+# - name: Run Silent Installation
+#   become_user: bobj
+#   ansible.builtin.shell: |
+#     . ~/.bash_profile
+#     {{ stage }}/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_response_file.ini
 
-# TODO: interactive installer command write response file /install.sh -r /u01/app/bobj/BOE31 -w /u01/app/bobj/BOE31/response.ini
+# - name: Run post install script command
+#   become_user: root
+#   ansible.builtin.shell: |
+#     ./u01/app/bobj/boe/bobje/init/setupinit.sh
