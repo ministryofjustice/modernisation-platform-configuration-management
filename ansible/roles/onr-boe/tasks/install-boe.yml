@@ -6,16 +6,15 @@
     owner: "{{ boe_install_user }}"
     group: "{{ boe_install_group }}"
     mode: "0755"
-
 # IMPORTANT: The following task is commented out because it fails when run by Ansible for reasons unknown.
 
 # - name: Run Silent Installation
 #   become_user: bobj
 #   ansible.builtin.shell: |
-#     . ~/.bash_profile 
+#     . ~/.bash_profile
 #     {{ stage }}/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_response_file.ini
 
 # - name: Run post install script command
 #   become_user: root
-#   ansible.builtin.shell: | 
+#   ansible.builtin.shell: |
 #     ./u01/app/bobj/boe/bobje/init/setupinit.sh
