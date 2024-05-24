@@ -1,17 +1,7 @@
 ---
-- name: Create BOE Disk mount point
-  ansible.builtin.file:
-    path: /mnt/DATA_1
-    state: directory
-    mode: "0755"
+- name: Run Silent Installation
+  become_user: bobj
+  ansible.builtin.shell: |
+    . ~/.bash_profile 
+    {{ stage }}/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_response_file.ini
 
-- name: Mount DATA_1 volume
-  ansible.builtin.mount:
-    src: "{{ app_dir }}/DATA_1"
-    path: /mnt/DATA_1
-    fstype: none
-    opts: bind
-    state: mounted
-# TODO: interactive installer command /install.sh -InstallDir /u01/app/bobj/BOE31
-
-# TODO: interactive installer command write response file /install.sh -r /u01/app/bobj/BOE31 -w /u01/app/bobj/BOE31/response.ini
