@@ -2,23 +2,23 @@
 ansible_python_interpreter: /usr/bin/python3.9
 
 # TODO: Users and Disks roles need checking versus what we're actually deploying
-# FIXME: ncr-tomcat role probably needs to be either made 'generic' or we need an onr-tomcat role
 
-# users_and_groups_system:
-#   - name: oracle
-#     group: oinstall
-#     groups:
-#       - dba
-#       - wheel
-#   - name: bobj
-#     group: binstall
-#     groups:
-#       - dba
-#       - sapsys
+# TODO: implement the same users/groups values as in onr-boe basically
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+  - name: bobj
+    group: binstall
+    groups:
+      - dba
+      - sapsys
 
 server_type_roles_list:
-  #  - sshd-config
-  #  - users-and-groups
+  - sshd-config
+  - users-and-groups
   - sudoers
   - get-ec2-facts
   - set-ec2-hostname
@@ -32,15 +32,17 @@ server_type_roles_list:
   - amazon-cli
   - ansible-script
   - epel
-  #  - disks
+  - disks
   - onr-web
-  - collectd
-  - amazon-cloudwatch-agent
-  - amazon-cloudwatch-agent-collectd
-  - collectd-service-metrics
+  # TODO: comment these back in later
+  # - collectd 
+  # - amazon-cloudwatch-agent
+  # - amazon-cloudwatch-agent-collectd
+  # - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
+# TODO: check these packages vs. the onr-boe package list
 packages_yum_install:
   - nano
   - vim
@@ -69,6 +71,7 @@ packages_yum_install:
   - libXau.x86_64
   - xz-libs.i686
 
+# TODO: check the disks vs. the onr-web defaults in the terraform
 disks_mount:
   - ebs_device_name: /dev/sdb
     dir: /u01

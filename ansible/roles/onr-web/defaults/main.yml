@@ -1,33 +1,23 @@
 ---
-bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
-sap_bi_platform_unpack_base_directory: /opt/sap/bip
-sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
-sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
-sap_jvm_unpack_base_directory: /opt/sap/java
+artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+artefacts_s3_bucket_path: hmpps/onr
+artefact_dir: /u02
+app_dir: /u01/software/BOE_3_1_FP7_4_Linux
+onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
 
-onr_environment: "{{ ec2.tags['environment-name'] | regex_replace('^oasys-national-reporting-', '') }}"
-cms_name: "{{ ncr_environment }}-ncr-cms"
+boe_install_user: bobj
+boe_install_group: binstall
 
-s3:
-  bip_bucket_name: nomis-combined-reporting-bip-packages20230612143115114600000001
-  packages_prefix: BIP/
-  files:
-    sap_bi_platform:
-      - BIPLATS4303P_300-70002683_P1.EXE
-      - BIPLATS4303P_300-70002683_P2.RAR
-    sap_jvm: SAPJVM8_94-80000202.SAR
-    sapcar: SAPCAR_1324-80000935.EXE
+stage: "{{ artefact_dir }}/stage"
+temp: "{{ artefact_dir }}/temp"
 
-ssm_parameters_prefix: "tomcat"
+# onr_environment: "{{ ec2.tags['environment-name'] | regex_replace('^oasys-national-reporting-', '') }}"
+# cms_name: "{{ ncr_environment }}-ncr-cms"
 
-tomcat_post_install_directories:
-  tomcat: /u01/app/bobj/BIP4/sap_bobj/tomcat
-  custom_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom
-  biprws_config: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom
-  webapps_root: /u01/app/bobj/BIP4/sap_bobj/enterprise_xi40/warfiles/webapps/ROOT
+# ssm_parameters_prefix: "tomcat"
 
-tomcat_admin_secretsmanager_passwords:
-  tomcat_admin:
-    secret: "/ec2/onr-web/{{ onr_environment }}/passwords"
-    users:
-      - tomcat_admin: auto
+# tomcat_admin_secretsmanager_passwords:
+#   tomcat_admin:
+#     secret: "/ec2/onr-web/{{ onr_environment }}/passwords"
+#     users:
+#       - tomcat_admin: auto
