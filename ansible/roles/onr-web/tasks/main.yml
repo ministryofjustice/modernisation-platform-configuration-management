@@ -5,11 +5,12 @@
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_tasks: install-packages.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+# NOTE: none of this seems to be needed - packages referenced here are not available in the yum repos
+# - import_tasks: install-packages.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#   when: ansible_distribution in ['RedHat']
 
 - import_tasks: check-groups.yml
   tags:
