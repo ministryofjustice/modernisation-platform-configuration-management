@@ -1,53 +1,38 @@
 ---
-- import_tasks: get_facts.yml
+- import_tasks: get-facts.yml
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_tasks: install_packages.yml
+# NOTE: none of this seems to be needed - packages referenced here are not available in the yum repos
+# - import_tasks: install-packages.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#   when: ansible_distribution in ['RedHat']
+
+- import_tasks: check-groups.yml
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-- import_tasks: add_groups.yml
+- import_role:
+    name: onr-get
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
+# - import_tasks: add_response_file.yml
+#   tags:
+#     - amibuild
+#     - ec2provision
+#   when: ansible_distribution in ['RedHat']
 
-- import_tasks: assign_permissions.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
-
-- import_tasks: retrieve_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
-
-- import_tasks: extract_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
-
-- import_tasks: add_response_file.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
 # - import_tasks: install_tomcat.yml
 #   tags:
 #     - amibuild
 #     - ec2provision
 #   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: post_installation_config.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']

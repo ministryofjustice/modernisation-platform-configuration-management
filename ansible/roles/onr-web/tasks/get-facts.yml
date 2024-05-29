@@ -1,0 +1,11 @@
+---
+- name: Get tomcat secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ tomcat_admin_secretsmanager_passwords }}"
+
+- name: Set password facts
+  set_fact:
+    cms_admin_password: "{{ secretsmanager_passwords_dict['tomcat_admin'].passwords['tomcat_admin'] }}"
+    # product_key: "{{ secretsmanager_passwords_dict['tomcat_admin'].passwords['product_key'] }}"
