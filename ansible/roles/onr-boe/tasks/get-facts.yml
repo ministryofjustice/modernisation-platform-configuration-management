@@ -11,9 +11,9 @@
 - name: Set secretsmanager password facts
   set_fact:
     bobje_license_key: "{{ secretsmanager_passwords_dict['boe'].passwords['bobje_license_key'] }}"
-    databasepwd: "{{ secretsmanager_passwords_dict['t2_oracle_sys'].passwords['onr_system_owner'] }}"
-    databasepwd_audit: "{{ secretsmanager_passwords_dict['t2_oracle_aud'].passwords['onr_audit_owner'] }}"
-    cmspassword: "{{ secretsmanager_passwords_dict['t2_oracle_sys'].passwords['cmspassword'] }}"
+    databasepwd: "{{ secretsmanager_passwords_dict[onr_environment + '_oracle_sys'].passwords['onr_system_owner'] }}"
+    databasepwd_audit: "{{ secretsmanager_passwords_dict[onr_environment + '_oracle_aud'].passwords['onr_audit_owner'] }}"
+    cmspassword: "{{ secretsmanager_passwords_dict[onr_environment + '_oracle_sys'].passwords['cmspassword'] }}"
 
 - name: Check all SSM parameters and tags are set
   set_fact:
