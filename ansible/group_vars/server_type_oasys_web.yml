@@ -57,4 +57,4 @@ collectd_monitored_services_servertype:
     shell_cmd: "service tomcat status"
   - metric_name: service_status_app
     metric_dimension: maintenance-msg
-    shell_cmd: "[ \"$( date -r /u01/app/apache/tomcat/latest/webapps/ROOT/maintenance_message.html '+%Y%m%d%H%M' )\" -gt \"$(date -d '1 hour ago' +'%Y%m%d%H%M')\" ]\"
+    shell_cmd: "[ $( date -r /u01/app/apache/tomcat/latest/webapps/ROOT/maintenance_message.html '+%Y%m%d%H%M' ) -gt $(date -d '1 hour ago' +'%Y%m%d%H%M') ]"
