@@ -5,11 +5,17 @@ permissions:
   contents: read
 
 on:
-    schedule:
-      - cron: '00 7 * * *'
-      - cron: '30 7 * * *'
-      - cron: '00 17 * * *'
-      - cron: '00 18 * * *'
+  schedule:
+    - cron: ${{ env.EC2_START_CRON }}
+    - cron: ${{ env.RDS_START_CRON }}
+    - cron: ${{ env.RDS_STOP_CRON }}
+    - cron: ${{ env.EC2_STOP_CRON }}
+
+env:
+  EC2_STOP_CRON:  '00 17 * * *'
+  EC2_START_CRON: '30 7 * * *'
+  RDS_STOP_CRON:  '00 18 * * *'
+  RDS_START_CRON: '00 7 * * *'
 
 
 jobs:
@@ -19,16 +25,11 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EC2_STOP_CRON:  '00 17 * * *'
-      EC2_START_CRON: '30 7 * * *'
-      RDS_STOP_CRON:  '00 18 * * *'
-      RDS_START_CRON: '00 7 * * *'
       EC2_TAG: 'application'
       EC2_TAG_VALUE: 'example'
       RDS_TAG: 'application'
       RDS_TAG_VALUE: 'example'
       AWS_REGION: 'eu-west-2'
-
 
     steps:
   
