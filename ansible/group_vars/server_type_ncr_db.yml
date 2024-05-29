@@ -111,3 +111,53 @@ tns_entries:
       host_list:
         - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
       service_name: RCV_TAF
+  ls:
+    - name: LSBIPSYS
+      port: 1521
+      host_list:
+        - ls-ncr-db-1-a
+      service_name: LSBIPSYS
+    - name: LSBIPAUD
+      port: 1521
+      host_list:
+        - ls-ncr-db-1-a
+      service_name: LSBIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a
+      service_name: RCV_TAF
+  pd:
+    - name: LISTENER_PDBIPSYS
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    - name: LISTENER_PDBIPAUD
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    - name: PDBIPSYS
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a
+      service_name: PDBIPSYS
+    - name: PDBIPAUD
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-a
+      service_name: PDBIPAUD
+    - name: DRBIPSYS
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-b
+      service_name: DRBIPSYS
+    - name: DRBIPAUD
+      port: 1521
+      host_list:
+        - pd-ncr-db-1-b
+      service_name: DRBIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - prod-oem-a
+      service_name: RCV_TAF
