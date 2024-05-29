@@ -5,9 +5,6 @@
   vars:
     secretsmanager_passwords: "{{ boe_secretsmanager_passwords }}"
 
-# NOTE: see DSOS-2817 item to get databasepwd and databasepwd_audit from the oasys-test env, not locally
-# This requires allowing the instance to get passwords from a different environment so deferring this for now
-
 - name: Set secretsmanager password facts
   set_fact:
     bobje_license_key: "{{ secretsmanager_passwords_dict['boe'].passwords['bobje_license_key'] }}"
