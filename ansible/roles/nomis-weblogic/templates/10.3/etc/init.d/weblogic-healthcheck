@@ -142,6 +142,9 @@ case "$1" in
   stop)
     stop
     ;;
+  pause)
+    stop
+    ;;
   restart)
     restart
     ;;
@@ -152,7 +155,7 @@ case "$1" in
     keepalive
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status|keepalive}"
+    echo "Usage: $0 {start|stop|pause|restart|status|keepalive}"
     exit 3
 esac
 
