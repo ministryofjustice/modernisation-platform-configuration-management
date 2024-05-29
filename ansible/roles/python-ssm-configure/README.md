@@ -1,0 +1,1 @@
+This role is to configure python to allow AWS Systems Manager to apply patches.

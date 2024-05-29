@@ -1,0 +1,13 @@
+- name: Create python directory
+  file:
+    path: "/etc/python/"
+    state: directory
+    mode: "0755"
+
+- name: Creating python tarfile config file
+  copy:
+    dest: "/etc/python/tarfile.cfg"
+    content: |
+      [tarfile]
+      PYTHON_TARFILE_EXTRACTION_FILTER=data
+    mode: "0644"
