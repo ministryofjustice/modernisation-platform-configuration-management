@@ -2,12 +2,18 @@
 ansible_python_interpreter: /usr/bin/python3.9
 
 users_and_groups_system:
-  - group: tomcat
-    gid: 91
+  - group: dba
+    gid: "{{ (ec2.tags['environment-name'] == 'oasys-national-reporting-test') | ternary('503', '502') }}"
   - name: tomcat
     group: tomcat
     uid: 91
-
+  - name: bobj
+    group: binstall
+    uid: 1201
+    groups:
+      - dba
+      - sapsys
+    
 server_type_roles_list:
   - sshd-config
   - users-and-groups

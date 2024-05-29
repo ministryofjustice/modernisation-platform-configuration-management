@@ -11,13 +11,12 @@ boe_install_group: binstall
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
 
-# onr_environment: "{{ ec2.tags['environment-name'] | regex_replace('^oasys-national-reporting-', '') }}"
+tomcat_admin_secretsmanager_passwords:
+  tomcat_admin:
+    secret: "/ec2/onr-web/{{ onr_environment }}/passwords"
+    users:
+      - tomcat_admin: auto
+
 # cms_name: "{{ ncr_environment }}-ncr-cms"
 
 # ssm_parameters_prefix: "tomcat"
-
-# tomcat_admin_secretsmanager_passwords:
-#   tomcat_admin:
-#     secret: "/ec2/onr-web/{{ onr_environment }}/passwords"
-#     users:
-#       - tomcat_admin: auto

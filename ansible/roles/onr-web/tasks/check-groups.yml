@@ -4,17 +4,12 @@
     name: binstall
     state: present
 
-- name: Ensure oinstall group exists
-  ansible.builtin.group:
-    name: oinstall
-    state: present
-
 - name: Ensure dba group exists
   ansible.builtin.group:
     name: dba
     state: present
 
-- name: Ensure sapsys group exists
+- name: Ensure tomcat group exists
   ansible.builtin.group:
-    name: sapsys
+    name: tomcat
     state: present

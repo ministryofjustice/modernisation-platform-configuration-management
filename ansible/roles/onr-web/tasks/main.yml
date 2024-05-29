@@ -1,39 +1,21 @@
 ---
-- import_tasks: get_facts.yml
+- import_tasks: get-facts.yml
   tags:
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: install_packages.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: install-packages.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
-# - import_tasks: add_groups.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
-
-# - import_tasks: assign_permissions.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
-
-# - import_tasks: retrieve_files.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
-
-# - import_tasks: extract_files.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: check-groups.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
 - import_role:
     name: onr-get
@@ -54,8 +36,3 @@
 #     - ec2provision
 #   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: post_installation_config.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
