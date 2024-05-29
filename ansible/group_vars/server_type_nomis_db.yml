@@ -18,6 +18,7 @@ server_type_roles_list:
   - collectd-connectivity-test
   - collectd-oracle-db-connected
   - collectd-textfile-monitoring
+  - oracle-tns-entries
   - nomis-misload
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
@@ -42,6 +43,98 @@ collectd_monitored_services_servertype:
     shell_cmd: "systemctl is-active oracleasm"
 
 tns_entries:
+  prod:
+    - name: PDCNOM
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDCNOM
+    - name: PDNDH
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDNDH
+    - name: PDTRDAT
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDTRDAT
+    - name: PDMIS
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+      service_name: PDMIS
+    - name: PDCNMAUD
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+      service_name: PDCNMAUD
+    - name: DRCNOM
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRCNOM
+    - name: DRNDH
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRNDH
+    - name: DRTRDAT
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRTRDAT
+    - name: DRMIS
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-b
+      service_name: PDMIS
+    - name: DRCNMAUD
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-b
+      service_name: DRCNMAUD
+    - name: cnomq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: NOMIS_TAF
+    - name: ndhq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: NDH_TAF
+    - name: trdatq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: TRDAT_TAF
+    - name: misq
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: MIS_TAF
+    - name: cnmaudq
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: CNMAUD_TAF
+    - name: CNMAUDP
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: CNMAUD_TAF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+      service_name: RCV_TAF
   preprod:
     - name: PPCNOM
       port: 1521
