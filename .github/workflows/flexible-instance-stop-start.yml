@@ -6,17 +6,10 @@ permissions:
 
 on:
   schedule:
-    - cron: ${{ env.EC2_START_CRON }}
-    - cron: ${{ env.RDS_START_CRON }}
-    - cron: ${{ env.RDS_STOP_CRON }}
-    - cron: ${{ env.EC2_STOP_CRON }}
-
-env:
-  EC2_STOP_CRON:  '00 17 * * *'
-  EC2_START_CRON: '30 7 * * *'
-  RDS_STOP_CRON:  '00 18 * * *'
-  RDS_START_CRON: '00 7 * * *'
-
+    - cron: '45 6 * * *' # RDS Start
+    - cron: '30 7 * * *' # ED2 Start
+    - cron: '25 17 * * *' # EC2 Stop
+    - cron: '25 18 * * *' # RDS Stop
 
 jobs:
 
@@ -49,25 +42,25 @@ jobs:
         role-to-assume: arn:aws:iam::${{ secrets.EXAMPLE_ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd
 
     - name: Stop EC2 instances with specific tags
-      if: ${{ github.event.schedule }} == $EC2_STOP_CRON
+      if: ${{ github.event.schedule }} == '25 17 * * *'
       run: |
        chmod +x scripts/flexistopstart.sh
        bash scripts/flexistopstart.sh 'stop_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
 
     - name: Start EC2 instances with specific tags
-      if: ${{ github.event.schedule }} == $EC2_START_CRON
+      if: ${{ github.event.schedule }} == '30 7 * * *'
       run: |
         chmod +x scripts/flexistopstart.sh
         bash scripts/flexistopstart.sh 'start_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
 
     - name: Stop RDS instances with specific tags
-      if: ${{ github.event.schedule }} == $RDS_STOP_CRON
+      if: ${{ github.event.schedule }} == '25 18 * * *'
       run: |
         chmod +x scripts/flexistopstart.sh
         bash scripts/flexistopstart.sh 'stop_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
 
     - name: Start RDS instances with specific tags
-      if: ${{ github.event.schedule }} == $RDS_START_CRON
+      if: ${{ github.event.schedule }} == '45 6 * * *'
       run: |
         chmod +x scripts/flexistopstart.sh
         bash scripts/flexistopstart.sh 'start_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
