@@ -1,0 +1,66 @@
+name: Flexible Shutdown & Startup of EC2 & RDS Instances
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    - cron: '45 6 * * *' # RDS Start
+    - cron: '25 7 * * *' # ED2 Start
+    - cron: '25 17 * * *' # EC2 Stop
+    - cron: '25 18 * * *' # RDS Stop
+
+jobs:
+
+  stop-start-instances:
+ 
+    runs-on: ubuntu-latest
+
+    env:
+      EC2_TAG: 'application'
+      EC2_TAG_VALUE: 'example'
+      RDS_TAG: 'application'
+      RDS_TAG_VALUE: 'example'
+      AWS_REGION: 'eu-west-2'
+
+    steps:
+  
+    - name: Checkout Repository
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      with:
+        sparse-checkout: |
+         scripts
+
+    - name: Configure AWS credentials
+      id: set-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        audience: sts.amazonaws.com
+        aws-region: eu-west-2
+        mask-aws-account-id: true
+        role-to-assume: arn:aws:iam::${{ secrets.EXAMPLE_ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd
+
+    - name: Stop EC2 instances with specific tags
+      if: ${{ github.event.schedule }} == '25 17 * * *'
+      run: |
+       chmod +x scripts/flexistopstart.sh
+       bash scripts/flexistopstart.sh 'stop_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+
+    - name: Start EC2 instances with specific tags
+      if: ${{ github.event.schedule }} == '25 7 * * *'
+      run: |
+        chmod +x scripts/flexistopstart.sh
+        bash scripts/flexistopstart.sh 'start_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+
+    - name: Stop RDS instances with specific tags
+      if: ${{ github.event.schedule }} == '25 18 * * *'
+      run: |
+        chmod +x scripts/flexistopstart.sh
+        bash scripts/flexistopstart.sh 'stop_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
+
+    - name: Start RDS instances with specific tags
+      if: ${{ github.event.schedule }} == '45 6 * * *'
+      run: |
+        chmod +x scripts/flexistopstart.sh
+        bash scripts/flexistopstart.sh 'start_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
