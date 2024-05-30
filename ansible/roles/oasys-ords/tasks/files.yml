@@ -76,6 +76,6 @@
 - name: update maintenance message
   ansible.builtin.cron:
     name: "maintenance_message"
-    minute: "*/2" # every 10 mins
+    minute: "*/10" # every 10 mins
     user: root
     job: "su oracle -c '{{ oasys_ords_get_maintenance_msg_command }} > {{ oasys_ords_maintenance_message_file }}'"
