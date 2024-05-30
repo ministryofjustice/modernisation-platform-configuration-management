@@ -134,7 +134,7 @@ get_unhealthy_services() {
       unhealthy+=(weblogic-server)
     fi
   fi
-  managed_services=$(find /etc/init.d/ -name 'WLS*' | cut -d/ -f4)
+  managed_services=$(find /etc/init.d/ -name 'WLS*' | grep -v 'WLS_TAGSAR' | cut -d/ -f4)
   for managed_service in $managed_services; do
     ok=1
     if ! /etc/init.d/"$managed_service" status | head -1 | grep OK > /dev/null; then

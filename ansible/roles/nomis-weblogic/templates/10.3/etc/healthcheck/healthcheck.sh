@@ -14,8 +14,17 @@ do
         then
             echo "${output}"
             /etc/init.d/weblogic-all status
-            echo "Removing keepalive"
-            rm -f /u01/tag/static/keepalive.htm
+            echo "Waiting 2 minutes before checking again"
+            sleep 120
+            output=$(/etc/init.d/weblogic-all healthcheck 2>&1)
+            status=$?
+            if [ $status -eq 1 ]
+            then
+                echo "${output}"
+                /etc/init.d/weblogic-all status
+                echo "Removing keepalive"
+                rm -f /u01/tag/static/keepalive.htm
+            fi
         fi
     else
         if [ ! -f "/u01/tag/static/keepalive.htm" ]

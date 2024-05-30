@@ -80,6 +80,30 @@ stop() {
   fi
 }
 
+# same as stop but keep the keepalive file
+pause() {
+  echo -n $"Stopping $prog: "
+  rm -f /var/lock/subsys/$prog
+  if ! PIDS=$(get_healthcheck_pid); then
+    echo -n "Already stopped"
+    echo_success
+    echo
+    return 0
+  fi
+  echo "init.d killing $prog $PIDS" | logger -p local3.info -t "$prog"
+  kill $PIDS
+  sleep 2
+  if ! get_healthcheck_pid > /dev/null; then
+    echo_success
+    echo
+    return 0
+  else
+    echo_failure
+    echo "init.d failed to kill $prog $PIDS" | logger -p local3.info -t "$prog"
+    return 1
+  fi
+}
+
 status() {
   echo -n $"Status of $prog: "
   if ! PIDS=$(get_healthcheck_pid); then
@@ -107,7 +131,7 @@ keepalive() {
 }
 
 restart() {
-  stop
+  pause
   start
 }
 
@@ -116,6 +140,9 @@ case "$1" in
     start
     ;;
   stop)
+    stop
+    ;;
+  pause)
     stop
     ;;
   restart)
@@ -128,7 +155,7 @@ case "$1" in
     keepalive
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status|keepalive}"
+    echo "Usage: $0 {start|stop|pause|restart|status|keepalive}"
     exit 3
 esac
 
