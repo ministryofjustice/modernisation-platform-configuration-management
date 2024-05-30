@@ -1,0 +1,209 @@
+#!/bin/bash
+#set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+export STREAMS_SCRIPT_DIR=~/admin/streams_scripts
+
+usage () {
+  	echo ""
+  	echo "Usage:"
+  	echo ""
+  	echo "  $THISSCRIPT -t <refresh database sid> -e <script directory> "
+  	exit 1
+}
+
+set_ora_env () {
+  	export ORAENV_ASK=NO
+  	export ORACLE_SID=$1
+  	. oraenv > /dev/null
+  	export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+info () {
+  	T=$(date +"%D %T")
+  	echo "INFO : $THISSCRIPT : $T : $1"
+  	if [ "$DEBUG_MODE" = "Y" ]
+  	then
+    		read CONTINUE?"Press any key to continue "
+  	fi
+}
+
+warning () {
+  	T=$(date +"%D %T")
+  	echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  	T=$(date +"%D %T")
+  	echo "ERROR : $THISSCRIPT : $T : $1"
+  	exit $ERROR_STATUS
+}
+
+get_user_creds () {
+  	USER=$1
+  	aws secretsmanager get-secret-value --secret-id "/oracle/database/${REFRESH_DB_SID}/passwords" --query SecretString --output text | jq -r .${USER}
+}
+
+create_pfile_restore_point () {
+	info "Create spfile and Restore point started"
+	cat /dev/null > ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora'" > ${ORACLE_HOME}/dbs/init${REFRESH_DB_SID}.ora
+	echo "spool ${DB_SCRIPT_DIR}/create_pfile_restore_point.log" >>  ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "startup mount"  >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "create restore point after_refresh_pre_post_scripts guarantee flashback database;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "alter database open;" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/create_pfile_restore_point.sql
+
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile_restore_point.sql > /dev/null
+	[ $(grep ORA- ${DB_SCRIPT_DIR}/create_pfile_restore_point.log | grep -v ORA-01507| wc -l) -gt 0 ] && error "Post step create_pfile_restore_point failed."
+	info "Create spfile and Restore point completed."
+}
+
+db_name_change () {
+set_ora_env $REFRESH_DB_SID
+sqlplus / as sysdba << EOF > ${DB_SCRIPT_DIR}/db_name_change.log
+shutdown immediate
+startup mount exclusive pfile='${PFILE_DIR}/init${REFRESH_DB_SID}.ora'
+exit
+EOF
+nid target=sys/$(get_user_creds sys) dbname=${REFRESH_DB_SID} logfile=${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nid_change.log
+if [ $? -ne 0 ]
+then
+        echo "DB Name change failed . "
+        exit 1
+fi
+sqlplus -s "/ as sysdba" << EOF >> ${DB_SCRIPT_DIR}/db_name_change.log
+startup mount  pfile='${PFILE_DIR}/init${REFRESH_DB_SID}_POSTNAMECHANGE.ora'
+alter database open resetlogs;
+create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${PFILE_DIR}/init${REFRESH_DB_SID}_POSTNAMECHANGE.ora';
+shutdown immediate
+startup nomount
+show parameter spfile
+alter database mount;
+alter database flashback on ;
+alter database enable block change tracking;
+alter database open;
+alter database force loggging;
+alter system set log_archive_dest_state_2=scope=both ;
+alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;
+shutdown immediate
+exit
+EOF
+srvctl start database -d $REFRESH_DB_SID
+}
+
+nart_report_change () {
+sqlplus -s / as sysdba << EOF > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log
+set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on
+alter table oms_owner.system_profiles modify profile_value varchar2(42) ;
+UPDATE oms_owner.system_profiles
+set profile_value='c.pp-nomis.az.justice.gov.uk'
+where profile_code in ('ORAWEB','ORAREP') ;
+update oms_owner.system_profiles
+set profile_value='rep_pppwl00001_home1'
+where profile_type='CLIENT'
+and profile_code='REPSERVER' ;
+UPDATE OMS_OWNER.SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_pp' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');
+UPDATE OMS_OWNER.SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_pp' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');
+BEGIN
+sys.dbms_scheduler.set_attribute( name => '"STRMADMIN"."END_OF_MIS_DAY"', attribute => 'job_action', value => 'declare
+   v_plsql varchar2(200);
+begin
+   strmadmin.add_mis_stop_point;
+   v_plsql := ''begin dbms_scheduler.run_job@MIS_STRM_LINK(''''MIS_BATCH_CONTROL'''',FALSE); end;'';
+   execute immediate v_plsql;
+   v_plsql := ''alter system archive log current'';
+   execute immediate v_plsql;
+end;');
+END;
+/
+commit;
+exit
+EOF
+[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
+}
+
+user_creation () {
+sqlplus -s "/ as sysdba" << EOF
+set verify off trimspool on pages 5000 lines 400 termout off head off trimout on
+spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log
+@${DB_SCRIPT_DIR}/user_creation.sql
+spool off
+exit
+EOF
+[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log | wc -l ` -gt 0 ] && error "Failed during user setup"
+}
+
+streams_setup () {
+STRMADMIN_PASSWORD=$(get_user_creds strmadmin)
+echo $STRMADMIN_PASSWORD
+sqlplus -s "/ as sysdba" << EOF > ${DB_SCRIPT_DIR}/streams_output.log
+set head off
+spool ${DB_SCRIPT_DIR}/streams_setup.log
+col name format a120
+set linesize 170
+alter system archive log current;
+alter system archive log current;
+alter system archive log current;
+select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;
+select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;
+@?/rdbms/admin/utlrp
+@?/rdbms/admin/utlrp
+@?/rdbms/admin/utlrp
+select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;
+alter system set log_archive_dest_state_4='ENABLE' scope=both;
+@${STREAMS_SCRIPT_DIR}/source_provisioning_db_link.sql
+conn strmadmin/${STRMADMIN_PASSWORD}
+set echo on
+drop database link mis_strm_link;
+@${STREAMS_SCRIPT_DIR}/source_mis_link
+@${STREAMS_SCRIPT_DIR}/source_dd_scn
+@${STREAMS_SCRIPT_DIR}/source_mis_stop_tab
+grant select on strmadmin.mis_stop_point to API_PROXY_USER;
+spool off
+exit
+EOF
+[ `grep ORA- ${DB_SCRIPT_DIR}/streams_setup.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
+}
+
+####################
+# Main
+####################
+
+REFRESH_DB_SID="UNSPECIFIED"
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:e:" opt
+do
+  case $opt in
+    t) REFRESH_DB_SID=$OPTARG ;;
+    e) SCRIPT_DIR=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
+[ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
+
+DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
+HOSTNAME=$(hostname)
+
+set_ora_env  ${REFRESH_DB_SID}
+info "Starting post steps"
+
+create_pfile_restore_point
+
+# NART reporting setup and misload
+nart_report_change
+
+# User creation
+user_creation
+
+# Database Name change
+db_name_change
+
+# Streams setup
+streams_setup
