@@ -10,7 +10,7 @@
     - /u01/software/weblogic
     - /u01/software/tmp
 
-- name: Create tmp directory java.io.tmpdir to avoid /tmp filling up with frmweb*.out large files 
+- name: Create tmp directory java.io.tmpdir to avoid /tmp filling up with frmweb*.out large files
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
