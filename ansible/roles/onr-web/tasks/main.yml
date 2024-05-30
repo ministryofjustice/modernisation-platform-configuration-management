@@ -1,4 +1,10 @@
 ---
+- import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_users
+
 - import_tasks: get-facts.yml
   tags:
     - amibuild
@@ -30,9 +36,9 @@
 #     - ec2provision
 #   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: install_tomcat.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: install_tomcat.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']
 
