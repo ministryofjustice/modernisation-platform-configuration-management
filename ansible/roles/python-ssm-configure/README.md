@@ -1,1 +1,1 @@
-This role is to configure python to allow AWS Systems Manager to apply patches.
+This role is to configure python to allow AWS Systems Manager to apply patches on RHEL 8 instances.
