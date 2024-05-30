@@ -76,7 +76,7 @@
 - name: create maintenance message file
   ansible.builtin.file:
     path: "{{ oasys_ords_maintenance_message_file }}"
-    state: ""touch"
+    state: "touch"
     owner: "{{ ords_install_user }}"
     group: "{{ ords_install_group }}"
     mode: "0644"
