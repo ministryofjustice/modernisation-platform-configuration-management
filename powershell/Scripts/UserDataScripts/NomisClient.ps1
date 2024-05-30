@@ -391,17 +391,15 @@ function Add-NomisShortcuts {
   }
 }
 
-function Add-LibreOffice {
+function Add-MicrosoftOffice {
   [CmdletBinding()]
   param (
     [hashtable]$Config
   )
 
   $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
-  Write-Output "Install LibreOffice"
-  choco install -y kb2919442 # workaround libreoffice dependency error
-  choco install -y kb2919355
-  choco install -y libreoffice-still
+  Write-Output "Install Microsoft Office"
+  choco install -y microsoft-office-deployment
 }
 
 function Remove-StartMenuShutdownOption {
@@ -433,4 +431,4 @@ Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
-Add-LibreOffice $Config # takes forever to install so putting last
+Add-MicrosoftOffice $Config # takes forever to install so putting last
