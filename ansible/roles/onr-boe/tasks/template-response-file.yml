@@ -23,7 +23,7 @@
   ansible.builtin.lineinfile:
     path: "{{ app_dir }}/{{ onr_environment }}_response_file.ini"
     regexp: "^LOCALNAMESERVER="
-    line: "LOCALNAMESERVER={{ ec2.tags['Name'] }}" # TODO: check whether or not {{ ansible_facts.hostname }} is better
+    line: "LOCALNAMESERVER={{ ec2.tags['Name'] }}"
 
 - name: Set database password value in response file
   ansible.builtin.lineinfile:
