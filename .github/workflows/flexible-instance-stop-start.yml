@@ -7,7 +7,7 @@ permissions:
 on:
   schedule:
     - cron: '45 6 * * *' # RDS Start
-    - cron: '25 7 * * *' # ED2 Start
+    - cron: '25 7 * * *' # EC2 Start
     - cron: '25 17 * * *' # EC2 Stop
     - cron: '25 18 * * *' # RDS Stop
 
@@ -41,26 +41,36 @@ jobs:
         mask-aws-account-id: true
         role-to-assume: arn:aws:iam::${{ secrets.EXAMPLE_ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd
 
-    - name: Stop EC2 instances with specific tags
-      if: ${{ github.event.schedule }} == '25 17 * * *'
+    - name: Start RDS instances with specific tags
+      if: github.event.schedule  == '45 6 * * *'
       run: |
-       chmod +x scripts/flexistopstart.sh
-       bash scripts/flexistopstart.sh 'stop_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+        echo $(date +%x_%r)
+        echo ${{ github.event.schedule }}
+        chmod +x scripts/flexistopstart.sh
+        bash scripts/flexistopstart.sh 'start_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
 
     - name: Start EC2 instances with specific tags
-      if: ${{ github.event.schedule }} == '25 7 * * *'
+      if: github.event.schedule  == '25 7 * * *'
       run: |
+        echo $(date +%x_%r)
+        echo ${{ github.event.schedule }}
         chmod +x scripts/flexistopstart.sh
         bash scripts/flexistopstart.sh 'start_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
 
-    - name: Stop RDS instances with specific tags
-      if: ${{ github.event.schedule }} == '25 18 * * *'
+    - name: Stop EC2 instances with specific tags
+      if: github.event.schedule  == '25 17 * * *'
       run: |
+        echo $(date +%x_%r)
+        echo ${{ github.event.schedule }}
+        chmod +x scripts/flexistopstart.sh
+        bash scripts/flexistopstart.sh 'stop_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+
+    - name: Stop RDS instances with specific tags
+      if: github.event.schedule == '25 18 * * *'
+      run: |
+        echo $(date +%x_%r)
+        echo ${{ github.event.schedule }}
         chmod +x scripts/flexistopstart.sh
         bash scripts/flexistopstart.sh 'stop_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
 
-    - name: Start RDS instances with specific tags
-      if: ${{ github.event.schedule }} == '45 6 * * *'
-      run: |
-        chmod +x scripts/flexistopstart.sh
-        bash scripts/flexistopstart.sh 'start_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
+
