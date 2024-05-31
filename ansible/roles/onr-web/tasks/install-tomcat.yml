@@ -28,11 +28,6 @@
 
 - name: Run setup
   block:
-    # - name: Copy setupinit file
-    #   ansible.builtin.template:
-    #     src: u01/app/tomcat/bobje/init/setupinit.sh
-    #     dest: /u01/app/tomcat/bobje/init/setupinit.sh
-
     - name: Execute setup script
       become: true
       ansible.builtin.shell: /u01/app/tomcat/bobje/init/setupinit.sh
