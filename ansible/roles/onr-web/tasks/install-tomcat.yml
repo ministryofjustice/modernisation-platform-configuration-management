@@ -18,7 +18,7 @@
       become_user: bobj
       ansible.builtin.shell: |
         . ~/.bash_profile 
-        /u02/temp/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_web_response.ini
+        /u02/temp/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_web_response.ini -i {{ tomcat_install_dir }}
   when: not tomcat_installed_check.stat.exists
 
 - name: Check if init has been run
