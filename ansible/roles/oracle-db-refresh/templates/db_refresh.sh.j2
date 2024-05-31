@@ -128,11 +128,11 @@ restore_spfile () {
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_pfile.sql > /dev/null
 	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}.ora
 
-    PARAMETER_DELETE_LIST="all_roles __ dg_broker dg_config file_name_convert "
+	PARAMETER_DELETE_LIST="all_roles __ dg_broker dg_config file_name_convert NOREGISTER valid_for fal_client fal_server"
 	for i in ${PARAMETER_DELETE_LIST}
-    do
-        sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-    done
+	do
+		sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+	done
 
 	PROD_DB_SID=$(grep db_uniq ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora | awk -F\' '{print $2 }')
 	echo $PROD_DB_SID
@@ -140,6 +140,12 @@ restore_spfile () {
 	for i in ${PARAMETER_CONVERT_LIST}
 	do
   		sed -i "s/${i}/gI" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+	done
+	REPLACE_PARAMETER=$(awk -F= '{print $1}' ${REFRESH_DB_SID}_updated_parameters.ora)
+	for i in ${REPLACE_PARAMETER}
+	do 
+		sed -i "/${i}/d" init${REFRESH_DB_SID}.ora
+		grep ${i} updated_parameters_LSCNOM.ora >> init${REFRESH_DB_SID}.ora
 	done
 }
 

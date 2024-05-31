@@ -59,11 +59,23 @@
         mode: "0700"
       when: TARGET_DB == "PPOASYS"
 
-    # - name: Start database refresh script
-    #   become_user: oracle
-    #   ansible.builtin.shell: "nohup {{ refresh_script_dir }}/db_refresh.sh -t {{ TARGET_DB }} -r {{ ALTERNATE_WEEK }} &"
-    #   async: 10
-    #   poll: 0
+    - name: Copy system_parameter script if target is PPOASYS
+      ansible.builtin.template:
+        src: "{{ TARGET_DB }}_CNOM_updated_parameters.ora.j2"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      when: TARGET_DB | search("CNOM")
+
+    - name: Copy system_parameter script if target is PPOASYS
+      ansible.builtin.template:
+        src: "{{ TARGET_DB }}_MIS_updated_parameters.ora.j2"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      when: TARGET_DB | search("MIS")
 
     - name: Start database refresh script
       become_user: oracle
