@@ -10,16 +10,6 @@
     - /u01/software/weblogic
     - /u01/software/tmp
 
-- name: Create tmp directory java.io.tmpdir to avoid /tmp filling up with frmweb*.out large files
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: "0755"
-  loop:
-    - "{{ FRM_JAVA_TMPDIR }}"
-
 - name: Check if weblogic server already installed
   ansible.builtin.stat:
     path: /u01/app/oracle/Middleware/wlserver_10.3
