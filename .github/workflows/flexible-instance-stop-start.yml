@@ -1,3 +1,18 @@
+
+# This workflow provides a straight forward example of how cron schedules can be used to orchestrate the shutdown and startup of ec2 and rds resources in a required sequence.
+
+# For each step of the job, an "if" test is applied to determine the specific cron schedule. This means that individual steps can be run at given times based on the condition being tested.
+
+# Tags are used to provide criteria as to which resources are in scope. This provides a high degree of flexbility. 
+
+# The workflow uses OIDC to connect to the Modernisation Platform member account. The account number is held as a github secret.
+
+# This is for the sake of brevity a separate shell scrpt is used for the AWS CLI commands and so avoids the workflow becoming cluttered.
+
+# Further information on the use of github cron schedules can be found here - https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule as well as the Modernisation Platform User Guide.
+
+# IMPORTANT - teams using this approach to stop & start instances should apply the required tag to those instances to exclude it from the Automatic Instance Scheduling Service - https://user-guide.modernisation-platform.service.justice.gov.uk/concepts/environments/instance-scheduling.html#instance-scheduling-automatically-stop-non-production-instances-overnight
+
 name: Flexible Shutdown & Startup of EC2 & RDS Instances
 
 permissions:
