@@ -59,23 +59,23 @@
         mode: "0700"
       when: TARGET_DB == "PPOASYS"
 
-    - name: Copy system_parameter script if target is PPOASYS
+    - name: Copy updated database parameetrs for NOMIS target database 
       ansible.builtin.template:
-        src: "{{ TARGET_DB }}_CNOM_updated_parameters.ora.j2"
+        src: "CNOM_updated_parameters.ora.j2"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: "0700"
-      when: TARGET_DB | search("CNOM")
+      when: TARGET_DB is search("CNOM")
 
-    - name: Copy system_parameter script if target is PPOASYS
+    - name: Copy updated database parameetrs for MIS target database 
       ansible.builtin.template:
-        src: "{{ TARGET_DB }}_MIS_updated_parameters.ora.j2"
+        src: "MIS_updated_parameters.ora.j2"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         mode: "0700"
-      when: TARGET_DB | search("MIS")
+      when: TARGET_DB is search("MIS")
 
     - name: Start database refresh script
       become_user: oracle

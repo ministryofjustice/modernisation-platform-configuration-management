@@ -141,12 +141,15 @@ restore_spfile () {
 	do
   		sed -i "s/${i}/gI" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	done
-	REPLACE_PARAMETER=$(awk -F= '{print $1}' ${REFRESH_DB_SID}_updated_parameters.ora)
-	for i in ${REPLACE_PARAMETER}
-	do 
-		sed -i "/${i}/d" init${REFRESH_DB_SID}.ora
-		grep ${i} updated_parameters_LSCNOM.ora >> init${REFRESH_DB_SID}.ora
-	done
+	if [ -f  ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_updated_parameters.ora ]
+	then 
+		REPLACE_PARAMETER=$(awk -F= '{print $1}' ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_updated_parameters.ora)
+		for i in ${REPLACE_PARAMETER}
+		do 
+			sed -i "/${i}/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+			grep ${i} ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_updated_parameters.ora >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+		done
+	fi
 }
 
 restore_controlfile () {
