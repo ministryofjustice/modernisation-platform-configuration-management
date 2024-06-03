@@ -116,6 +116,7 @@ streams_setup () {
     echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
     echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
     echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system set job_queue_processes=150 scope=both;"  >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
@@ -161,8 +162,6 @@ HOSTNAME=$(hostname)
 
 set_ora_env  ${REFRESH_DB_SID}
 info "Starting post steps"
-
-create_pfile_restore_point
 
 # NART reporting setup and misload
 nart_report_change

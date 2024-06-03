@@ -37,6 +37,8 @@ get_user_creds () {
 }
 
 db_name_change () {
+set_ora_env +ASM
+asmcmd mkdir +DATA/PPMIS/ARCHIVELOG
 set_ora_env $REFRESH_DB_SID
 echo "log_archive_config='dg_config=(PPCNOM,PPMIS)'" >> ${PFILE_DIR}/init${REFRESH_DB_SID}.ora
 echo "log_archive_dest_2='LOCATION=+DATA/PPMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${PFILE_DIR}/init${REFRESH_DB_SID}.ora

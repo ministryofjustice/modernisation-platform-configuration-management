@@ -37,11 +37,13 @@ get_user_creds () {
 }
 
 db_name_change () {
+set_ora_env +ASM
+asmcmd mkdir +DATA/LSMIS/ARCHIVELOG
 set_ora_env $REFRESH_DB_SID
-echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${PFILE_DIR}/init${REFRESH_DB_SID}.ora
-echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${PFILE_DIR}/init${REFRESH_DB_SID}.ora
+echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 sqlplus -s "/ as sysdba" << EOF >> ${DB_SCRIPT_DIR}/db_name_change.log
-create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${PFILE_DIR}/init${REFRESH_DB_SID}.ora';
+create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';
 shutdown immediate
 startup nomount
 show parameter spfile
@@ -156,7 +158,6 @@ done
 [ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
 
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
-PFILE_DIR=$DB_SCRIPT_DIR/pfile
 STREAMS_SCRIPT_DIR=/home/oracle/admin/mis_streams_scripts
 SOURCE_ORACLE_SID=PPCNOM
 
