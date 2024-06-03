@@ -419,6 +419,8 @@ function Remove-StartMenuShutdownOption {
 }
 
 
+$ErrorActionPreference = "Continue"
+
 Import-Module ModPlatformAD -Force
 
 $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $Config.DomainNameFQDN
