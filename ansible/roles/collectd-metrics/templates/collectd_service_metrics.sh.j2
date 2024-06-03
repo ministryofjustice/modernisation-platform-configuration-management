@@ -9,10 +9,10 @@ INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
 while sleep "$INTERVAL"; do
 {% for item in collectd_monitored_metrics_default %}
   val=({{ item.shell_cmd }}) 
-  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/exitcode-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/gauge-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
 {% endfor %}
 {% for item in collectd_monitored_services_additional %}
   val=({{ item.shell_cmd }}) 
-  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/exitcode-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
+  echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/gauge-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
 {% endfor %}
 done
