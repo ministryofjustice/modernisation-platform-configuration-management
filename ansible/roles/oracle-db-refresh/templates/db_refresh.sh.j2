@@ -109,7 +109,7 @@ generate_channel_commands () {
 restore_spfile () {
 	info "Creating pfile from production spfile backup "
 	set_ora_env $REFRESH_DB_SID
-	rm $ORACLE_HOME/dbs/*${REFRESH_DB_SID}* > /dev/null 2>/dev/null
+	rm $ORACLE_HOME/dbs/spfile${REFRESH_DB_SID}* $ORACLE_HOME/dbs/init${REFRESH_DB_SID}*  > /dev/null 2>/dev/null
 	srvctl modify database -d ${REFRESH_DB_SID} -spfile $ORACLE_HOME/dbs/spfile${REFRESH_DB_SID}.ora
 	cat /dev/null > ${DB_SCRIPT_DIR}/restore_spfile.cmd
 	echo "startup nomount ;" > ${DB_SCRIPT_DIR}/restore_spfile.cmd
