@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "Checking for dead frmweb processes"
 PIDS=$(ps -C frmweb -o %p, -o %u, -o %t, -o %c, -o %C | tr -d " " | egrep ",[0-9]+-[0-9]+:[0-9]+:[0-9]+," | cut -d, -f1 | sort -ug | tr [:space:] " " | sed "s/ $//")
 if [[ -n $PIDS ]]; then
   echo "Killing frmweb processes older than 24 hours: ${PIDS// /,}"
@@ -16,4 +15,11 @@ if [[ -n $PIDS ]]; then
     ps -q ${PIDS2// /,} ux
     kill -9 $PIDS2
   fi
+fi
+
+PIDS=$(/usr/sbin/lsof | grep deleted | grep frmweb | gawk '{print $2,$7}'  | sort -ug | grep -E "^[0-9]+ [0-9]{10}" | cut -d\  -f1 | tr [:space:] " " | sed "s/ $//")
+if [[ -n $PIDS ]]; then
+  echo "Killing frmweb processes with deleted lsof files bigger than 1GB: ${PIDS// /,}"
+  ps -q ${PIDS// /,} ux
+  kill -9 $PIDS
 fi

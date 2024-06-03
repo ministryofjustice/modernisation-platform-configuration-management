@@ -13,5 +13,5 @@
   ansible.builtin.cron:
     name: "cleanup tmp for weblogic"
     user: root
-    minute: "0"
+    minute: "*/5"
     job: "/home/oracle/admin/scripts/cleanup_frmweb.sh 2>&1 | logger -p local3.info -t nomis-weblogic-cleanup-frmweb"
