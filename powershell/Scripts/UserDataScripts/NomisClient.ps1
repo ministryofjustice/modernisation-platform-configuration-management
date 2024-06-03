@@ -419,6 +419,23 @@ function Remove-StartMenuShutdownOption {
 }
 
 $ErrorActionPreference = "Stop"
+
+Import-Module ModPlatformAD -Force
+
+$ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $Config.DomainNameFQDN
+Write-Output "Here"
+$ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+Exit 0
+
+$Renamed = Rename-ModPlatformADComputer -NewHostname "instanceId" -ModPlatformADCredential $ADCredential
+if ($Renamed) {
+  Write-Output "Renamed computer to ${Renamed}"
+  Exit 3010 # triggers reboot if running from SSM Doc
+}
+if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+  Exit 3010 # triggers reboot if running from SSM Doc
+}
+
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
