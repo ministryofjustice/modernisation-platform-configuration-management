@@ -58,5 +58,8 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_app
     metric_dimension: maintenance-msg
     shell_cmd: "[ $( date -r /u01/app/apache/tomcat/latest/webapps/ROOT/maintenance_message.html '+%Y%m%d%H%M' ) -gt $(date -d '1 hour ago' +'%Y%m%d%H%M') ]"
+  - metric_name: disk_used_percent
+    metric_dimension: inode_used_percent_max
+    shell_cmd: "df --output=ipcent | tail -n+2 | sed 's/%//' | sort -n | tail -n1 | xargs"
 
 collectd_script_user: oracle
