@@ -423,8 +423,6 @@ $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($ADConfig -ne $null) {
-  Write-Output "here"
-  Exit 0
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   $Renamed = Rename-ModPlatformADComputer -NewHostname "instanceId" -ModPlatformADCredential $ADCredential
   if ($Renamed) {
@@ -435,8 +433,6 @@ if ($ADConfig -ne $null) {
     Exit 3010 # triggers reboot if running from SSM Doc
   }
 }
-Write-Output "there"
-Exit 0
 
 $ErrorActionPreference = "Stop"
 $Config = Get-Config
