@@ -1,16 +1,16 @@
 ---
+- import_tasks: users.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_users
+
 - import_tasks: get-facts.yml
   tags:
     - amibuild
     - ec2provision
+    - oracle_db_get_facts
   when: ansible_distribution in ['RedHat']
-
-# NOTE: none of this seems to be needed - packages referenced here are not available in the yum repos
-# - import_tasks: install-packages.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
 
 - import_tasks: check-groups.yml
   tags:
@@ -24,15 +24,16 @@
     - amibuild
     - ec2provision
   when: ansible_distribution in ['RedHat']
-# - import_tasks: add_response_file.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
 
-# - import_tasks: install_tomcat.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
+- import_tasks: template-response-file.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_db_get_facts
+  when: ansible_distribution in ['RedHat']
 
+- import_tasks: install-tomcat.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: ansible_distribution in ['RedHat']

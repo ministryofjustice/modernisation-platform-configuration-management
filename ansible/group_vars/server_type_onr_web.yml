@@ -1,5 +1,6 @@
 ---
-ansible_python_interpreter: /usr/bin/python3.9
+# ansible_python_interpreter: /usr/bin/python3.9
+ansible_python_interpreter: /usr/local/bin/python3.6
 
 users_and_groups_system:
   - group: dba
@@ -46,7 +47,10 @@ packages_yum_install:
   - vim
   - make
   - libstdc++.i686
+  - compat-libstdc++-33.i686
   - libstdc++.x86_64
+  - libstdc++-devel.x86_64
+  - libstdc++-devel.i686
   - glibc.i686
   - glibc.x86_64
   - libX11.i686
@@ -57,6 +61,7 @@ packages_yum_install:
   - expat.x86_64
   - libgcc.i686
   - libgcc.x86_64
+  - libXext-devel.i686
   - libXcursor.i686
   - libXcursor.x86_64
   - libXrender.i686
@@ -69,11 +74,20 @@ packages_yum_install:
   - libXau.x86_64
   - xz-libs.i686
 
-# TODO: check the disks vs. the onr-web defaults in the terraform
+# Settings for Rhel 7.x
+# disks_mount:
+#   - ebs_device_name: /dev/sdb
+#     dir: /u01
+#     fstype: xfs
+#   - ebs_device_name: /dev/sdc
+#     dir: /u02
+#     fstype: xfs
+
+# Settings for Rhel 6.x
 disks_mount:
   - ebs_device_name: /dev/sdb
     dir: /u01
-    fstype: xfs
+    fstype: ext4
   - ebs_device_name: /dev/sdc
     dir: /u02
-    fstype: xfs
+    fstype: ext4
