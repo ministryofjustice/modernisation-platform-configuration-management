@@ -418,7 +418,6 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
-$ErrorActionPreference = "Stop"
 
 Import-Module ModPlatformAD -Force
 
@@ -436,6 +435,7 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
   Exit 3010 # triggers reboot if running from SSM Doc
 }
 
+$ErrorActionPreference = "Stop"
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
