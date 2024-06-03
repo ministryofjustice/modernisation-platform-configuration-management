@@ -7,7 +7,7 @@ function Rename-ModPlatformADComputer {
 .DESCRIPTION
     Rename host to the given newHostname unless it is equal to
       tag:Name      - rename to value of the Name tag
-      instanceId    - rename to the instance Id
+      instanceId    - rename to the instance Id. Doesn't work with netbios as length exceeds 15 chars.
       keep-existing - don't rename
     Outputs a string containing new hostname if rename succeeds, in which case reboot required
 

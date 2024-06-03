@@ -424,7 +424,7 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($ADConfig -ne $null) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
-  $Renamed = Rename-ModPlatformADComputer -NewHostname "instanceId" -ModPlatformADCredential $ADCredential
+  $Renamed = Rename-ModPlatformADComputer -NewHostname "tag:Name" -ModPlatformADCredential $ADCredential
   if ($Renamed) {
     Write-Output "Renamed computer to ${Renamed}"
     Exit 3010 # triggers reboot if running from SSM Doc
