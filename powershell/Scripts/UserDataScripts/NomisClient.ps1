@@ -418,24 +418,25 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
-
+# join domain if domain-name tag is set
 $ErrorActionPreference = "Continue"
-
 Import-Module ModPlatformAD -Force
-
-$ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $Config.DomainNameFQDN
-Write-Output "Here"
-$ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+$ADConfig = Get-ModPlatformADConfig
+if ($ADConfig -ne $null) {
+  Write-Output "here"
+  Exit 0
+  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+  $Renamed = Rename-ModPlatformADComputer -NewHostname "instanceId" -ModPlatformADCredential $ADCredential
+  if ($Renamed) {
+    Write-Output "Renamed computer to ${Renamed}"
+    Exit 3010 # triggers reboot if running from SSM Doc
+  }
+  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    Exit 3010 # triggers reboot if running from SSM Doc
+  }
+}
+Write-Output "there"
 Exit 0
-
-$Renamed = Rename-ModPlatformADComputer -NewHostname "instanceId" -ModPlatformADCredential $ADCredential
-if ($Renamed) {
-  Write-Output "Renamed computer to ${Renamed}"
-  Exit 3010 # triggers reboot if running from SSM Doc
-}
-if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-  Exit 3010 # triggers reboot if running from SSM Doc
-}
 
 $ErrorActionPreference = "Stop"
 $Config = Get-Config
