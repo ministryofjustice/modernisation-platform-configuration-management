@@ -418,6 +418,17 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
+# join domain if domain-name tag is set
+$ErrorActionPreference = "Continue"
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+if ($ADConfig -ne $null) {
+  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    Exit 3010 # triggers reboot if running from SSM Doc
+  }
+}
+
 $ErrorActionPreference = "Stop"
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config

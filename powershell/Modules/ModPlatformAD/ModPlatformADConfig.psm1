@@ -24,8 +24,6 @@ function Get-ModPlatformADConfig {
     [string]$DomainNameFQDN
   )
 
-  $ErrorActionPreference = "Stop"
-
   $ModPlatformADConfigsByDomainName = @{
     "azure.noms.root" = @{
       "AccountIdsSSMParameterName" = "account_ids"
