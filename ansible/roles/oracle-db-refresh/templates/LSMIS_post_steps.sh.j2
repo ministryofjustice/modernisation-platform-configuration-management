@@ -36,31 +36,35 @@ get_user_creds () {
   aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .${USER}
 }
 
-db_name_change () {
-set_ora_env +ASM
-asmcmd mkdir +DATA/LSMIS/ARCHIVELOG
-set_ora_env $REFRESH_DB_SID
-echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-sqlplus -s "/ as sysdba" << EOF >> ${DB_SCRIPT_DIR}/db_name_change.log
-create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';
-shutdown immediate
-startup nomount
-show parameter spfile
-alter database mount;
-alter database flashback on ;
-alter database enable block change tracking;
-alter database open;
-alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;
-shutdown immediate
-exit
-EOF
-srvctl start database -d $REFRESH_DB_SID
+db_setup () {
+  info "Starting db_setup"
+  set_ora_env +ASM
+  asmcmd mkdir +DATA/LSMIS/ARCHIVELOG
+  set_ora_env $REFRESH_DB_SID
+  echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "spool ${DB_SCRIPT_DIR}/db_setup.log" > ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "startup nomount" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "show parameter spfile" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database mount;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database flashback on ;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database enable block change tracking;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database open;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "exit" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/db_setup.sql
+	[ `grep ORA- ${DB_SCRIPT_DIR}/db_setup.log | wc -l ` -gt 0 ] && error "Failed during post db setup"
+	srvctl start database -d $REFRESH_DB_SID
+	info "Completed db setup"
 }
 
 nart_report_change () {
-set_ora_env $REFRESH_DB_SID
-sqlplus -s / as sysdba << EOF > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log
+	info "Starting nart_report_change"
+  set_ora_env $REFRESH_DB_SID
+  sqlplus -s / as sysdba << EOF > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log
 set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on
 UPDATE BODISTAGING.ETL_PARAM SET PARAM_VALUE = '\\preprodsapshares.file.core.windows.net\bipshare\event\Contingency_file.txt' WHERE PARAM_NAME = 'CONTINGENCY_FILENAME';
 commit;
@@ -170,7 +174,7 @@ nart_report_change
 user_creation
 
 # Database Name change
-db_name_change
+db_setup
 
 # Streams setup
 streams_setup

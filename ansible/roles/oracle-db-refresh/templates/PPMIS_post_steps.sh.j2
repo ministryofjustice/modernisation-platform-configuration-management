@@ -36,7 +36,7 @@ get_user_creds () {
   aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .${USER}
 }
 
-db_name_change () {
+db_setup () {
 set_ora_env +ASM
 asmcmd mkdir +DATA/PPMIS/ARCHIVELOG
 set_ora_env $REFRESH_DB_SID

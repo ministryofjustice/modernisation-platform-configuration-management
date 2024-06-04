@@ -45,6 +45,7 @@ get_user_creds () {
 }
 
 db_name_change () {
+	info "Starting db_name_change"
 	set_ora_env $REFRESH_DB_SID
 	echo "spool ${DB_SCRIPT_DIR}/db_name_change.log" > ${DB_SCRIPT_DIR}/db_name_change.sql
 	echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_name_change.sql
@@ -79,12 +80,14 @@ db_name_change () {
 	echo "alter database flashback on ;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "alter database enable block change tracking;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "alter database open;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
-	echo "alter database force logging;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "create restore point after_refresh_pre_post_scripts guarantee flashback database;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
+	echo "shutdown immediate" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/post_db_name_change.sql
-	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/post_db_name_change.log
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/post_db_name_change.sql
+	[ `grep ORA- ${DB_SCRIPT_DIR}/post_db_name_change.log | wc -l ` -gt 0 ] && error "Failed during post db name change"
 	srvctl start database -d $REFRESH_DB_SID
+	info "Completed db name change and post db seup"
 }
 
 nart_report_change () {
@@ -104,8 +107,17 @@ nart_report_change () {
 user_creation () {
 	info "Starting user_creation"
 	echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/user_creation.sql
-	echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
-	echo "@${DB_SCRIPT_DIR}/user_creation.sql"  >> ${DB_SCRIPT_DIR}/user_creation.sql
+        echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	echo "alter user api_proxy_user identified by $(get_user_creds api_proxy_user) ; "  >> ${DB_SCRIPT_DIR}/user_creation.sql
+	ADD_USERS=$(get_user_creds additional_users)
+	for i in ${ADD_USERS//,/ }
+	do
+		echo "create user ${i} identified by $(get_user_creds ${i}) default tablespace users temporary tablespace temp quota unlimited on users;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+		echo "alter USER ${i} grant connect through api_proxy_user;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	echo "grant connect, tag_ro, tag_user, create any table, create any index, insert any table, create any materialized view to ${ADD_USERS};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	additional_dba_users=$(get_user_creds additional_users_dba)
+	echo "grant dba to ${additional_dba_users};" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "spool off"  >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/user_creation.sql
@@ -113,25 +125,21 @@ user_creation () {
 }
 
 streams_setup () {
-	info "Starting streams_setup"
 	STRMADMIN_PASSWORD=$(get_user_creds strmadmin)
 	echo $STRMADMIN_PASSWORD
 	echo "spool ${DB_SCRIPT_DIR}/streams_setup.log" > ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "alter system set job_queue_processes=150 scope=both;"  >> ${DB_SCRIPT_DIR}/streams_setup.sql
-	echo "alter system set dg_broker_config_file1='+DATA/${REFRESH_DB_SID}/dr1${REFRESH_DB_SID}.dat' scope=both ;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-	echo "alter system set dg_broker_config_file2='+FLASH/${REFRESH_DB_SID}/dr2${REFRESH_DB_SID}.dat' scope=both ;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-	echo "alter system set dg_broker_start=true scope=both ;"  >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "@${STREAMS_SCRIPT_DIR}/source_provisioning_db_link.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "drop database link mis_strm_link;" >> ${DB_SCRIPT_DIR}/streams_setup.sql

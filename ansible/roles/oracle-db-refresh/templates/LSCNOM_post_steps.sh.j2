@@ -5,7 +5,7 @@ export THISSCRIPT=$(basename $0)
 export STREAMS_SCRIPT_DIR=~/admin/streams_scripts
 
 usage () {
-  	echo ""
+	echo ""
   	echo "Usage:"
   	echo ""
   	echo "  $THISSCRIPT -t <refresh database sid> -e <script directory> "
@@ -79,29 +79,39 @@ db_name_change () {
 	echo "alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "create restore point after_refresh_pre_post_scripts guarantee flashback database;" >>  ${DB_SCRIPT_DIR}/post_db_name_change.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/post_db_name_change.sql
-	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/post_db_name_change.log
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/post_db_name_change.sql
 	srvctl start database -d $REFRESH_DB_SID
+	info "Completed db name and post db setup."
 }
 
 nart_report_change () {
-    info "Starting nart_report_change"
-    echo "spool ${REFRESH_DB_SID}_nart_report_change.log" > ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "alter table oms_owner.system_profiles modify profile_value varchar2(42) ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "update oms_owner.system_profiles set profile_value='c-nomis.lsast.hmps.noms.root:7777' where profile_code in ('ORAWEB','ORAREP') ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "update oms_owner.system_profiles set profile_value='rep_psa20433_home1' where profile_type='CLIENT' and profile_code='REPSERVER' ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "UPDATE SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_ls' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    echo "exit" >> ${REFRESH_DB_SID}_nart_report_change.sql
-    sqlplus -s / as sysdba @${REFRESH_DB_SID}_nart_report_change.sql
-    [ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
-    info "Completed nart_report_change"
+	info "Starting nart_report_change"
+	echo "spool ${REFRESH_DB_SID}_nart_report_change.log" > ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "alter table oms_owner.system_profiles modify profile_value varchar2(42) ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "update oms_owner.system_profiles set profile_value='c-nomis.lsast.hmps.noms.root:7777' where profile_code in ('ORAWEB','ORAREP') ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "update oms_owner.system_profiles set profile_value='rep_psa20433_home1' where profile_type='CLIENT' and profile_code='REPSERVER' ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "UPDATE SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_ls' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	echo "exit" >> ${REFRESH_DB_SID}_nart_report_change.sql
+	sqlplus -s / as sysdba @${REFRESH_DB_SID}_nart_report_change.sql
+	[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
+	info "Completed nart_report_change"
 }
 
 user_creation () {
 	info "Starting user_creation"
 	echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/user_creation.sql
-	echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
-	echo "@${DB_SCRIPT_DIR}/user_creation.sql"  >> ${DB_SCRIPT_DIR}/user_creation.sql
+        echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	echo "alter user api_proxy_user identified by $(get_user_creds api_proxy_user) ; "  >> ${DB_SCRIPT_DIR}/user_creation.sql
+	ADD_USERS=$(get_user_creds additional_users)
+	for i in ${ADD_USERS//,/ }
+	do
+		echo "create user ${i} identified by $(get_user_creds ${i}) default tablespace users temporary tablespace temp quota unlimited on users;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+		echo "alter USER ${i} grant connect through api_proxy_user;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	echo "grant connect, tag_ro, tag_user, create any table, create any index, insert any table, create any materialized view to ${ADD_USERS};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	additional_dba_users=$(get_user_creds additional_users_dba)
+	echo "grant dba to ${additional_dba_users};" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "spool off"  >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/user_creation.sql
@@ -113,17 +123,17 @@ streams_setup () {
 	echo $STRMADMIN_PASSWORD
 	echo "spool ${DB_SCRIPT_DIR}/streams_setup.log" > ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "alter system set job_queue_processes=150 scope=both;"  >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-    echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+	echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "@${STREAMS_SCRIPT_DIR}/source_provisioning_db_link.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
 	echo "drop database link mis_strm_link;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
