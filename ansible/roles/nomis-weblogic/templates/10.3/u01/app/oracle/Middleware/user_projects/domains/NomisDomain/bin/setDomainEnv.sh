@@ -235,29 +235,29 @@ XMS_SUN_64BIT="256"
 export XMS_SUN_64BIT
 XMS_SUN_32BIT="256"
 export XMS_SUN_32BIT
-XMX_SUN_64BIT="512"
+XMX_SUN_64BIT="1536"
 export XMX_SUN_64BIT
-XMX_SUN_32BIT="512"
+XMX_SUN_32BIT="1536"
 export XMX_SUN_32BIT
 XMS_JROCKIT_64BIT="256"
 export XMS_JROCKIT_64BIT
 XMS_JROCKIT_32BIT="256"
 export XMS_JROCKIT_32BIT
-XMX_JROCKIT_64BIT="512"
+XMX_JROCKIT_64BIT="1536"
 export XMX_JROCKIT_64BIT
-XMX_JROCKIT_32BIT="512"
+XMX_JROCKIT_32BIT="1536"
 export XMX_JROCKIT_32BIT
 
 
 if [ "${JAVA_VENDOR}" = "Sun" ] ; then
-	WLS_MEM_ARGS_64BIT="-Xms256m -Xmx512m"
+	WLS_MEM_ARGS_64BIT="-Xms256m -Xmx1563m"
 	export WLS_MEM_ARGS_64BIT
-	WLS_MEM_ARGS_32BIT="-Xms256m -Xmx512m"
+	WLS_MEM_ARGS_32BIT="-Xms256m -Xmx1563m"
 	export WLS_MEM_ARGS_32BIT
 else
-	WLS_MEM_ARGS_64BIT="-Xms512m -Xmx512m"
+	WLS_MEM_ARGS_64BIT="-Xms512m -Xmx1536m"
 	export WLS_MEM_ARGS_64BIT
-	WLS_MEM_ARGS_32BIT="-Xms512m -Xmx512m"
+	WLS_MEM_ARGS_32BIT="-Xms512m -Xmx1536m"
 	export WLS_MEM_ARGS_32BIT
 fi
 
@@ -383,7 +383,7 @@ EXTRA_JAVA_PROPERTIES="-Dcommon.components.home=${COMMON_COMPONENTS_HOME} -Djrf.
 export EXTRA_JAVA_PROPERTIES
 
 if [ "${SERVER_NAME9}" = "WLS_REPOR" ] ; then
-	EXTRA_JAVA_PROPERTIES="-Xms256m -Xmx512m -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.ext.dirs=/u01/app/oracle/Middleware/forms_home/jdk/jre/lib/ext -Doracle.security.jps.config=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/jps-config.xml -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain -Doracle.instance=/u01/app/oracle/Middleware/forms_instance ${EXTRA_JAVA_PROPERTIES}"
+	EXTRA_JAVA_PROPERTIES="-Xms256m -Xmx1536m -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.ext.dirs=/u01/app/oracle/Middleware/forms_home/jdk/jre/lib/ext -Doracle.security.jps.config=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/jps-config.xml -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain -Doracle.instance=/u01/app/oracle/Middleware/forms_instance ${EXTRA_JAVA_PROPERTIES}"
 	export EXTRA_JAVA_PROPERTIES
 	LD_LIBRARY_PATH="/u01/app/oracle/Middleware/forms_home/lib${CLASSPATHSEP}${LD_LIBRARY_PATH}"
 	export LD_LIBRARY_PATH
@@ -394,13 +394,13 @@ if [ "${SERVER_NAME9}" = "WLS_REPOR" ] ; then
 fi
 
 if [ "${SERVER_NAME9}" = "WLS_FORMS" ] ; then
-	EXTRA_JAVA_PROPERTIES="-Xms256m -Xmx512m -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.ext.dirs=/u01/app/oracle/Middleware/forms_home/jdk/jre/lib/ext -Doracle.security.jps.config=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/jps-config.xml -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain -Doracle.instance=/u01/app/oracle/Middleware/forms_instance/ -Doracle.instance.name=forms_instance -Doracle.forms.weblogic=1 -Ddomain.name=NomisDomain ${EXTRA_JAVA_PROPERTIES}"
+	EXTRA_JAVA_PROPERTIES="-Xms256m -Xmx1536m -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.ext.dirs=/u01/app/oracle/Middleware/forms_home/jdk/jre/lib/ext -Doracle.security.jps.config=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain/config/fmwconfig/jps-config.xml -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain -Doracle.instance=/u01/app/oracle/Middleware/forms_instance/ -Doracle.instance.name=forms_instance -Doracle.forms.weblogic=1 -Ddomain.name=NomisDomain ${EXTRA_JAVA_PROPERTIES}"
 	export EXTRA_JAVA_PROPERTIES
 	LD_LIBRARY_PATH="/u01/app/oracle/Middleware/forms_home/lib${CLASSPATHSEP}${LD_LIBRARY_PATH}"
 	export LD_LIBRARY_PATH
 fi
 
-EXTRA_JAVA_PROPERTIES=" -Xms512m -Xmx1024m -XX:PermSize=256m -XX:MaxPermSize=512m -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain ${EXTRA_JAVA_PROPERTIES}"
+EXTRA_JAVA_PROPERTIES=" -Xms512m -Xmx15364m -XX:PermSize=256m -XX:MaxPermSize=512m -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain ${EXTRA_JAVA_PROPERTIES}"
 export EXTRA_JAVA_PROPERTIES
 
 JAVA_PROPERTIES="${JAVA_PROPERTIES} ${EXTRA_JAVA_PROPERTIES}"
