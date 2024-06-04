@@ -86,14 +86,15 @@ db_name_change () {
 
 nart_report_change () {
 	info "Starting nart_report_change"
-	echo "spool ${REFRESH_DB_SID}_nart_report_change.log" > ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "alter table oms_owner.system_profiles modify profile_value varchar2(42) ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "update oms_owner.system_profiles set profile_value='c-nomis.lsast.hmps.noms.root:7777' where profile_code in ('ORAWEB','ORAREP') ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "update oms_owner.system_profiles set profile_value='rep_psa20433_home1' where profile_type='CLIENT' and profile_code='REPSERVER' ;" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "UPDATE SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_ls' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	echo "exit" >> ${REFRESH_DB_SID}_nart_report_change.sql
-	sqlplus -s / as sysdba @${REFRESH_DB_SID}_nart_report_change.sql
+	echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log" > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on" >> ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "alter table oms_owner.system_profiles modify profile_value varchar2(42) ;" >> ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "update oms_owner.system_profiles set profile_value='c-nomis.lsast.hmps.noms.root:7777' where profile_code in ('ORAWEB','ORAREP') ;" >> ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "update oms_owner.system_profiles set profile_value='rep_psa20433_home1' where profile_type='CLIENT' and profile_code='REPSERVER' ;" >> ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "UPDATE SYSTEM_PROFILES SET PROFILE_VALUE = 'nomis_ls' WHERE PROFILE_CODE IN ('BO_MIS_CL','BO_OR_CL');" >> ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "spool off" >>  ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	echo "exit" >>  ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
+	sqlplus -s / as sysdba @${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.sql
 	[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
 	info "Completed nart_report_change"
 }
