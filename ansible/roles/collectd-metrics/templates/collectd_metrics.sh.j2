@@ -12,7 +12,7 @@ while sleep "$INTERVAL"; do
   echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/gauge-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
 {% endfor %}
 {% for item in collectd_monitored_metrics_additional %}
-  val=({{ item.shell_cmd }}) 
+  val=$({{ item.shell_cmd }}) 
   echo "PUTVAL $HOSTNAME/{{ item.metric_name }}/gauge-{{ item.metric_dimension }} interval=$INTERVAL N:$val"
 {% endfor %}
 done
