@@ -49,6 +49,10 @@ disks_mount:
     dir: /u02
     fstype: xfs
 
+tomcat_dir: /u01/app/apache/tomcat/latest
+tomcat_root_dir: "{{ tomcat_dir }}/webapps/ROOT"
+tomcat_logs_dir: "{{ tomcat_dir }}/logs"
+
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
     metric_dimension: chronyd
@@ -58,11 +62,20 @@ collectd_monitored_services_servertype:
     shell_cmd: "service tomcat status"
   - metric_name: service_status_app
     metric_dimension: maintenance-msg
-    shell_cmd: "[ $( date -r /u01/app/apache/tomcat/latest/webapps/ROOT/maintenance_message.html '+%Y%m%d%H%M' ) -gt $(date -d '1 hour ago' +'%Y%m%d%H%M') ]"
+    shell_cmd: "[ $( date -r {{ tomcat_root_dir }}/maintenance_message.html '+%Y%m%d%H%M' ) -gt $(date -d '1 hour ago' +'%Y%m%d%H%M') ]"
 
 collectd_monitored_metrics_additional:
   - metric_name: inode_used_percent
     metric_dimension: inode_used_percent_max
     shell_cmd: "df --output=ipcent | tail -n+2 | sed 's/%//' | sort -n | tail -n1 | xargs"
+  - metric_name: web_incoming
+    metric_dimension: 200_to_299
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^2.. | wc -l"
+  - metric_name: web_incoming
+    metric_dimension: 300_to_399
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^3.. | wc -l"
+  - metric_name: web_incoming
+    metric_dimension: 400_to_499
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^4.. | wc -l"
 
 collectd_script_user: oracle
