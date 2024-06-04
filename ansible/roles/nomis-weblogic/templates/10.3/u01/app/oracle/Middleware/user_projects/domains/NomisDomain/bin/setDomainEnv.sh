@@ -250,9 +250,9 @@ export XMX_JROCKIT_32BIT
 
 
 if [ "${JAVA_VENDOR}" = "Sun" ] ; then
-	WLS_MEM_ARGS_64BIT="-Xms256m -Xmx1563m"
+	WLS_MEM_ARGS_64BIT="-Xms256m -Xmx1536m"
 	export WLS_MEM_ARGS_64BIT
-	WLS_MEM_ARGS_32BIT="-Xms256m -Xmx1563m"
+	WLS_MEM_ARGS_32BIT="-Xms256m -Xmx1536m"
 	export WLS_MEM_ARGS_32BIT
 else
 	WLS_MEM_ARGS_64BIT="-Xms512m -Xmx1536m"
@@ -400,7 +400,7 @@ if [ "${SERVER_NAME9}" = "WLS_FORMS" ] ; then
 	export LD_LIBRARY_PATH
 fi
 
-EXTRA_JAVA_PROPERTIES=" -Xms512m -Xmx15364m -XX:PermSize=256m -XX:MaxPermSize=512m -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain ${EXTRA_JAVA_PROPERTIES}"
+EXTRA_JAVA_PROPERTIES=" -Xms512m -Xmx1536m -XX:PermSize=256m -XX:MaxPermSize=512m -Doracle.home=/u01/app/oracle/Middleware/forms_home -Ddomain.home=/u01/app/oracle/Middleware/user_projects/domains/NomisDomain ${EXTRA_JAVA_PROPERTIES}"
 export EXTRA_JAVA_PROPERTIES
 
 JAVA_PROPERTIES="${JAVA_PROPERTIES} ${EXTRA_JAVA_PROPERTIES}"
