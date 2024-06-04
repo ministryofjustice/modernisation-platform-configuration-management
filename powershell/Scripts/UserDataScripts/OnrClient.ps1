@@ -44,7 +44,7 @@ $GlobalConfig = @{
      # Create a desktop shortcut for BOE Client Tools
     $WScriptShell = New-Object -ComObject WScript.Shell
     $targetPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonStartMenu"), "Programs\BusinessObjects XI 3.1\BusinessObjects Enterprise Client Tools")
-    $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("Desktop"), "BOE Client Tools.lnk")
+    $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "BOE Client Tools.lnk")
     $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $targetPath
     $shortcut.Save() | Out-Null
