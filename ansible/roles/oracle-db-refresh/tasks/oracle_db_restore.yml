@@ -59,7 +59,7 @@
         mode: "0700"
       when: TARGET_DB == "PPOASYS"
 
-    - name: Copy updated database parameetrs for NOMIS target database 
+    - name: Copy updated database parameetrs for NOMIS target database
       ansible.builtin.template:
         src: "CNOM_updated_parameters.ora.j2"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
@@ -68,7 +68,7 @@
         mode: "0700"
       when: TARGET_DB is search("CNOM")
 
-    - name: Copy updated database parameetrs for MIS target database 
+    - name: Copy updated database parameetrs for MIS target database
       ansible.builtin.template:
         src: "MIS_updated_parameters.ora.j2"
         dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/{{ TARGET_DB }}_updated_parameters.ora"
