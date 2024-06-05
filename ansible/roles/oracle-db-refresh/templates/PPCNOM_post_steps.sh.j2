@@ -108,17 +108,34 @@ nart_report_change () {
 user_creation () {
 	info "Starting user_creation"
 	echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/user_creation.sql
-        echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
-	echo "alter user api_proxy_user identified by $(get_user_creds api_proxy_user) ; "  >> ${DB_SCRIPT_DIR}/user_creation.sql
-	ADD_USERS=$(get_user_creds additional_users)
+    echo "spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	USER_PASSWORD_RESET=$(get_user_creds user_password_reset)
+	for i in ${USER_PASSWORD_RESET//,/ }
+	do
+		echo "alter USER ${i} identified by $(get_user_creds ${i});" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	USER_IWP_GRANT=$(get_user_creds user_iwp_grant)
+	for i in ${USER_PASSWORD_RESET//,/ }
+	do
+		echo "grant all on iwp_docs_seq to ${i};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	ADD_USERS=$(get_user_creds additional_rw_users)
 	for i in ${ADD_USERS//,/ }
 	do
 		echo "create user ${i} identified by $(get_user_creds ${i}) default tablespace users temporary tablespace temp quota unlimited on users;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+		echo "grant connect, tag_user, tag_ro to  ${i};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	ADD_USERS=$(get_user_creds additional_ro_users)
+	for i in ${ADD_USERS//,/ }
+	do
+		echo "create user ${i} identified by $(get_user_creds ${i}) default tablespace users temporary tablespace temp;" >> ${DB_SCRIPT_DIR}/user_creation.sql
+		echo "grant connect, ANALYTIC_READ_ONLY_ROLE, tag_ro to  ${i};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+	done
+	USER_API_CONNECT=$(get_user_creds user_api_connect)
+	for i in ${USER_API_CONNECT//,/ }
+	do
 		echo "alter USER ${i} grant connect through api_proxy_user;" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	done
-	echo "grant connect, tag_ro, tag_user, create any table, create any index, insert any table, create any materialized view to ${ADD_USERS};" >> ${DB_SCRIPT_DIR}/user_creation.sql
-	additional_dba_users=$(get_user_creds additional_users_dba)
-	echo "grant dba to ${additional_dba_users};" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "spool off"  >> ${DB_SCRIPT_DIR}/user_creation.sql
 	echo "exit" >> ${DB_SCRIPT_DIR}/user_creation.sql
 	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/user_creation.sql
