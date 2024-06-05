@@ -4,4 +4,13 @@
     src: "{{ stage }}/{{ boe_software }}"
     dest: "{{ temp }}"
     remote_src: yes
-# - name: Unpack the BOE patch - not yet implemented/required
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"
+
+- name: Unpack the BOE patch
+  ansible.builtin.unarchive:
+    src: "{{ stage }}/{{ boe_patch }}"
+    dest: "{{ patch }}"
+    remote_src: yes
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"

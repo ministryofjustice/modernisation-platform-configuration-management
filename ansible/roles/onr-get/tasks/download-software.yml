@@ -7,7 +7,8 @@
     state: directory
     recurse: yes
   loop:
-    - "{{ temp }}"
+    - "{{ temp }}" # FOR BOE INSTALLER
+    - "{{ patch }}" # FOR BOE PATCH
     - "{{ stage }}"
     - "{{ app_dir }}"
   tags:

@@ -3,3 +3,9 @@
 #   ansible.builtin.stat:
 #     path: "{{ stage }}/{{ boe_patch }}"
 #   register: patch_file
+
+- name: Install BOE Patch silently
+  become_user: bobj
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    {{ patch }}/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_patch_response_file.ini
