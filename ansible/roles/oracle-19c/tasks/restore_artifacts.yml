@@ -1,0 +1,20 @@
+---
+- name : restore artefacts
+  tasks:
+    - name: List all objects in the bucket
+      command: >
+        aws s3api list-objects --bucket mod-platform-image-artefact-bucket20230203091453221500000001	 --query 'Contents[].{Key: Key}' --output json
+      register: result
+      changed_when: False
+
+    - name: Set objects fact
+      set_fact:
+        objects: "{{ (result.stdout | from_json) }}"
+
+    - name: Restore objects with Glacier storage class
+      command: >
+        aws s3api restore-object --bucket mod-platform-image-artefact-bucket20230203091453221500000001	 --key {{ item.Key }} --restore-request 'Days=1,GlacierJobParameters={Tier=Expedited}'
+      when: "'GLACIER' in (lookup('pipe', 'aws s3api head-object --bucket ' + bucket_name + ' --key ' + item.Key + ' | jq -r .StorageClass'))"
+      loop: "{{ objects }}"
+      loop_control:
+        label: "{{ item.Key }}"
