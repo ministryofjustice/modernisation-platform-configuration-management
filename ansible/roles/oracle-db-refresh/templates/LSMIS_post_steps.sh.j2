@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 export ERROR_STATUS=9
 export THISSCRIPT=$(basename $0)
 export STREAMS_SCRIPT_DIR=~/admin/streams_scripts
@@ -19,6 +18,15 @@ set_ora_env () {
   export NLS_DATE_FORMAT=YYMMDDHH24MISS
 }
 
+info () {
+  	T=$(date +"%D %T")
+  	echo "INFO : $THISSCRIPT : $T : $1"
+  	if [ "$DEBUG_MODE" = "Y" ]
+  	then
+    		read CONTINUE?"Press any key to continue "
+  	fi
+}
+
 warning () {
   T=$(date +"%D %T")
   echo "WARNING : $THISSCRIPT : $T : $1"
@@ -36,102 +44,118 @@ get_user_creds () {
   aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .${USER}
 }
 
-db_name_change () {
-set_ora_env $REFRESH_DB_SID
-sqlplus -s "/ as sysdba" << EOF >> ${DB_SCRIPT_DIR}/db_name_change.log
-create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${PFILE_DIR}/init${REFRESH_DB_SID}.ora';
-shutdown immediate
-startup nomount
-show parameter spfile
-alter database mount;
-alter database flashback on ;
-alter database enable block change tracking;
-alter database open;
-alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;
-shutdown immediate
-exit
-EOF
-srvctl start database -d $REFRESH_DB_SID
-}
-
 nart_report_change () {
-set_ora_env $REFRESH_DB_SID
-sqlplus -s / as sysdba << EOF > ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log
-set verify off trimspool on pages 5000 lines 400 echo off termout off head off trimout on
-UPDATE BODISTAGING.ETL_PARAM SET PARAM_VALUE = '\\preprodsapshares.file.core.windows.net\bipshare\event\Contingency_file.txt' WHERE PARAM_NAME = 'CONTINGENCY_FILENAME';
-commit;
-exit
-EOF
-[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
+  info "Starting nart_report_change"
+  echo "set echo off feedback off head off termout off" > ${DB_SCRIPT_DIR}/nart_report_change.sql
+  echo "spool ${DB_SCRIPT_DIR}/nart_report_change.log" >> ${DB_SCRIPT_DIR}/nart_report_change.sql
+  echo "UPDATE BODISTAGING.ETL_PARAM SET PARAM_VALUE = '\\\lsastsapshares.file.core.windows.net\bipshare\event\Contingency_file.txt' WHERE PARAM_NAME = 'CONTINGENCY_FILENAME';" >> ${DB_SCRIPT_DIR}/nart_report_change.sql
+  echo "commit;" >> ${DB_SCRIPT_DIR}/nart_report_change.sql
+  echo "spool off" >> ${DB_SCRIPT_DIR}/nart_report_change.sql
+  echo "exit" >> ${DB_SCRIPT_DIR}/nart_report_change.sql
+  sqlplus -s / as sysdba @${DB_SCRIPT_DIR}/nart_report_change.sql
+  [ `grep ORA- ${DB_SCRIPT_DIR}/nart_report_change.log | wc -l ` -gt 0 ] && error "Failed during NART report setup"
+  info "Completed nart_report_change"
 }
 
 user_creation () {
-set_ora_env $REFRESH_DB_SID
-sqlplus -s "/ as sysdba" << EOF
-set verify off trimspool on pages 5000 lines 400 termout off head off trimout on
-spool ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log
-@${DB_SCRIPT_DIR}/user_creation.sql
-spool off
-exit
-EOF
-[ `grep ORA- ${DB_SCRIPT_DIR}/${REFRESH_DB_SID}_user_creation.log | wc -l ` -gt 0 ] && error "Failed during user setup"
+  info "Starting user_creation"
+  echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/user_creation.sql
+  echo "spool ${DB_SCRIPT_DIR}/user_creation.log" >> ${DB_SCRIPT_DIR}/user_creation.sql
+  ADD_USERS=$(get_user_creds additional_dba_users)
+  for i in ${ADD_USERS//,/ }
+  do
+    echo "grant dba to ${i};" >> ${DB_SCRIPT_DIR}/user_creation.sql
+  done
+  echo "spool off"  >> ${DB_SCRIPT_DIR}/user_creation.sql
+  echo "exit" >> ${DB_SCRIPT_DIR}/user_creation.sql
+  sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/user_creation.sql
+  [ `grep ORA- ${DB_SCRIPT_DIR}/user_creation.log | wc -l ` -gt 0 ] && error "Failed during user setup"
+  info "Completed user_creation"
+}
+
+db_setup () {
+  info "Starting db_setup"
+  set_ora_env +ASM
+  asmcmd mkdir +DATA/LSMIS/ARCHIVELOG
+  set_ora_env $REFRESH_DB_SID
+  echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "spool ${DB_SCRIPT_DIR}/db_setup.log" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora'" > $ORACLE_HOME/dbs/init${REFRESH_DB_SID}.ora
+  echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "startup nomount" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "show parameter spfile" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database mount;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database flashback on ;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database enable block change tracking;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter database open;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "exit" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/db_setup.sql
+  [ `grep ORA- ${DB_SCRIPT_DIR}/db_setup.log | wc -l ` -gt 0 ] && error "Failed during post db setup"
+  srvctl start database -d $REFRESH_DB_SID
+  info "Completed db setup"
 }
 
 streams_setup () {
-STRMADMIN_PASSWORD=$(get_user_creds strmadmin)
-BODISTAGING_PASSWORD=$(get_user_creds bodistaging)
-sqlplus -s "/ as sysdba" << EOF > ${DB_SCRIPT_DIR}/streams_output.log
-set head off
-col name format a120
-set linesize 170
-alter system archive log current;
-alter system archive log current;
-alter system archive log current;
-select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;
-select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;
-@?/rdbms/admin/utlrp
-@?/rdbms/admin/utlrp
-@?/rdbms/admin/utlrp
-select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;
-set echo on
-conn strmadmin/${STRMADMIN_PASSWORD}
-show user
-drop database link cnomp;
-@${STREAMS_SCRIPT_DIR}/mis_stop_capture
-@${STREAMS_SCRIPT_DIR}/mis_stop_apply
-@${STREAMS_SCRIPT_DIR}/MIS_STRM_CLEARUP_v1.0e.6.sql
-whenever sqlerror exit
-@${STREAMS_SCRIPT_DIR}/mis_db_link
-conn bodistaging/${BODISTAGING_PASSWORD}
-show user
-@${STREAMS_SCRIPT_DIR}/update_mis
-conn strmadmin/${STRMADMIN_PASSWORD}
-@${STREAMS_SCRIPT_DIR}/MIS_STRM_PKG_v1.0e.59.sql
-@${STREAMS_SCRIPT_DIR}/MIS_STRM_PBODY_v1.0e.59.sql
-grant execute on MIS_STRM_PKG1 to bodistaging;
-grant create sequence to bodistaging;
-conn bodistaging/${BODISTAGING_PASSWORD}
-show user
-@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM0_v1.0e.9.sql
-@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM1_v1.0e.7.sql
-@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM2_v1.0e.34.sql
-conn strmadmin/${STRMADMIN_PASSWORD}
-show user
-set head off feedback off
-spool ${STREAMS_SCRIPT_DIR}/san_define_variable.sql
-select 'DEFINE FIRST_SCN = '|| FIRST_CHANGE# from v\$archived_log@${SOURCE_ORACLE_SID}  where COMPLETION_TIME> sysdate-4/24 and DICTIONARY_BEGIN='YES';
-spool off
-@${STREAMS_SCRIPT_DIR}/san_define_variable.sql
-@${STREAMS_SCRIPT_DIR}/san_MIS_STRM_SETUP_v1.0e.18.sql
-select * from dba_registered_archived_log;
-@${STREAMS_SCRIPT_DIR}/mis_start_capture
-@${STREAMS_SCRIPT_DIR}/mis_start_apply
-@${STREAMS_SCRIPT_DIR}/mis_batch_roll_job
-@${STREAMS_SCRIPT_DIR}/mis_batch_control_job
-@${STREAMS_SCRIPT_DIR}/mis_log_purge_job
-exit
-EOF
-[ `grep ORA- ${DB_SCRIPT_DIR}/streams_output.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
+  info "Starting streams_setup"
+  STRMADMIN_PASSWORD=$(get_user_creds strmadmin)
+  BODISTAGING_PASSWORD=$(get_user_creds bodistaging)
+  echo "set head off linesize 170"> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool ${DB_SCRIPT_DIR}/streams_setup.log" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "col name format a120" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@?/rdbms/admin/utlrp" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "select owner, object_type, count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "set echo on" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "show user" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "drop database link cnomp;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_stop_capture" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_stop_apply" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_STRM_CLEARUP_v1.0e.6.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "whenever sqlerror exit" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_db_link" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "conn bodistaging/${BODISTAGING_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/update_mis" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_STRM_PKG_v1.0e.59.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_STRM_PBODY_v1.0e.59.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "grant execute on MIS_STRM_PKG1 to bodistaging;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "grant create sequence to bodistaging;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "conn bodistaging/${BODISTAGING_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "show user" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM0_v1.0e.9.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM1_v1.0e.7.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/MIS_DB2_STRM2_v1.0e.34.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "show user" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "set head off feedback off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool ${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "select 'DEFINE FIRST_SCN = '|| FIRST_CHANGE# from v\$archived_log@${SOURCE_ORACLE_SID}  where COMPLETION_TIME> sysdate-4/24 and DICTIONARY_BEGIN='YES';" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/san_MIS_STRM_SETUP_v1.0e.18.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "select * from dba_registered_archived_log;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_start_capture" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_start_apply" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_batch_roll_job" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_batch_control_job" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "@${STREAMS_SCRIPT_DIR}/mis_log_purge_job" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "exit">> ${DB_SCRIPT_DIR}/streams_setup.sql
+  sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/streams_setup.sql
+  [ `grep ORA- ${DB_SCRIPT_DIR}/streams_setup.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
 }
 
 ####################
@@ -154,9 +178,8 @@ done
 [ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
 
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
-PFILE_DIR=$DB_SCRIPT_DIR/pfile
 STREAMS_SCRIPT_DIR=/home/oracle/admin/mis_streams_scripts
-SOURCE_ORACLE_SID=PPCNOM
+SOURCE_ORACLE_SID=LSCNOM
 
 echo "Starting post steps"
 set_ora_env ${REFRESH_DB_SID}
@@ -167,7 +190,7 @@ nart_report_change
 user_creation
 
 # Database Name change
-db_name_change
+db_setup
 
 # Streams setup
 streams_setup
