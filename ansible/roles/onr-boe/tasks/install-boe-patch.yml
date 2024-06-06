@@ -1,11 +1,12 @@
 ---
-# - name: Check that the patch file is available TODO: fix this
-#   ansible.builtin.stat:
-#     path: "{{ stage }}/{{ boe_patch }}"
-#   register: patch_file
+- name: Check that the patch file is available
+  ansible.builtin.stat:
+    path: "{{ patch }}/install.sh"
+  register: patch_file
 
 - name: Install BOE Patch silently
   become_user: bobj
   ansible.builtin.shell: |
     . ~/.bash_profile
-    {{ patch }}/DISK_1/install.sh -r {{ app_dir }}/{{ onr_environment }}_patch_response_file.ini
+    {{ patch }}/install.sh {{ boe_install_dir }} READRESPONSEPATH={{ app_dir }}/{{ onr_environment }}_patch_response_file.ini
+  when: patch_file.stat.exists
