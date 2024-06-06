@@ -62,7 +62,10 @@ $GlobalConfig = @{
       "azure.hmpp.root"
     )
     "IECompatibilityModeSiteList" = @(
+      "c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
@@ -70,7 +73,10 @@ $GlobalConfig = @{
       "*.nomis.service.justice.gov.uk"
     )
     "NomisShortcuts" = @{
-      "Prison-Nomis Preproduction" = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis Lsast"           = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis Preproduction"   = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB lsast-nomis-web-a Nomis"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "LB lsast-nomis-web-b Nomis"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "LB preprod-nomis-web-a Nomis" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "LB preprod-nomis-web-b Nomis" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
