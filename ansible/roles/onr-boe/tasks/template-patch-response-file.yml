@@ -1,0 +1,20 @@
+---
+- name: copy response ini file
+  ansible.builtin.copy:
+    src: "{{ onr_environment }}_patch_response_file.ini"
+    dest: "{{ app_dir }}/{{ onr_environment }}_patch_response_file.ini"
+    owner: "{{ boe_install_user }}"
+    group: "{{ boe_install_group }}"
+    mode: "0755"
+
+- name: Set cms name server value in response file
+  ansible.builtin.lineinfile:
+    path: "{{ app_dir }}/{{ onr_environment }}_patch_response_file.ini"
+    regexp: "^CMSNAMESERVER="
+    line: "CMSNAMESERVER={{ ec2.tags['Name'] }}" # TODO: check whether or not {{ ansible_facts.hostname }} is better
+
+- name: Set cms password value in response file
+  ansible.builtin.lineinfile:
+    path: "{{ app_dir }}/{{ onr_environment }}_patch_response_file.ini"
+    regexp: "^CMSPASSWORD="
+    line: "CMSPASSWORD={{ cmspassword }}"

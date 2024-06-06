@@ -38,6 +38,18 @@
     - amibuild
     - ec2provision
 
+# IMPORTANT: backing up BOE config before patching
+- import_tasks: backup-boconfig.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - backup_boconfig
+
+- import_tasks: template-patch-response-file.yml
+  tags:
+    - amibuild
+    - ec2provision
+
 - import_tasks: install-boe-patch.yml
   tags:
     - amibuild
