@@ -1,0 +1,274 @@
+---
+server_type_roles_list:
+  - get-ec2-facts
+  - set-ec2-hostname
+  - domain-search
+  - ansible-script
+  - epel
+  - oracle-19c
+  - oracle-secure-backup
+  - oracle-db-backup
+  - oracle-db-housekeeping
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
+  - collectd-connectivity-test
+  - collectd-oracle-db-connected
+  - collectd-textfile-monitoring
+  - oracle-tns-entries
+  - nomis-misload
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+packages_yum_install:
+  - zip-3.0-23.el8
+  - git
+  - tar
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/19c/db_1
+grid_home: /u01/app/oracle/product/19c/gridhome_1
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: oracle-ohasd
+    shell_cmd: "systemctl is-active oracle-ohasd"
+  - metric_name: service_status_app
+    metric_dimension: oracleasm
+    shell_cmd: "systemctl is-active oracleasm"
+
+tns_entries:
+  prod:
+    - name: PDCNOM
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDCNOM
+    - name: PDNDH
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDNDH
+    - name: PDTRDAT
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+      service_name: PDTRDAT
+    - name: PDMIS
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+      service_name: PDMIS
+    - name: PDCNMAUD
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+      service_name: PDCNMAUD
+    - name: DRCNOM
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRCNOM
+    - name: DRNDH
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRNDH
+    - name: DRTRDAT
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-b
+      service_name: DRTRDAT
+    - name: DRMIS
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-b
+      service_name: PDMIS
+    - name: DRCNMAUD
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-b
+      service_name: DRCNMAUD
+    - name: cnomq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: NOMIS_TAF
+    - name: ndhq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: NDH_TAF
+    - name: trdatq
+      port: 1521
+      host_list:
+        - prod-nomis-db-1-a
+        - prod-nomis-db-1-b
+      service_name: TRDAT_TAF
+    - name: misq
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: MIS_TAF
+    - name: cnmaudq
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: CNMAUD_TAF
+    - name: CNMAUDP
+      port: 1521
+      host_list:
+        - prod-nomis-db-2-a
+        - prod-nomis-db-2-b
+      service_name: CNMAUD_TAF
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
+      service_name: RCV_TAF
+  preprod:
+    - name: PPCNOM
+      port: 1521
+      host_list:
+        - preprod-nomis-db-1-a
+      service_name: PPCNOM
+    - name: PPNDH
+      port: 1521
+      host_list:
+        - preprod-nomis-db-1-a
+      service_name: PPNDH
+    - name: PPTRDAT
+      port: 1521
+      host_list:
+        - preprod-nomis-db-1-a
+      service_name: PPTRDAT
+    - name: PPMIS
+      port: 1521
+      host_list:
+        - preprod-nomis-db-2-a
+      service_name: PPMIS
+    - name: misq
+      port: 1521
+      host_list:
+        - preprod-nomis-db-2-a
+      service_name: PPMIS
+    - name: PPCNMAUD
+      port: 1521
+      host_list:
+        - preprod-nomis-db-2-a
+      service_name: PPCNMAUD
+    - name: PPCNOMHA
+      port: 1521
+      host_list:
+        - preprod-nomis-db-1-b
+      service_name: PPCNOMHA
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a
+      service_name: rcv_taf
+    - name: AZURE_RCVCATP
+      port: 1521
+      host_list:
+        - 10.40.0.136
+      service_name: RCVCATP
+  t1:
+    - name: T1CNOM
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1CNOM
+    - name: T1NDH
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1NDH
+    - name: T1TRDAT
+      port: 1521
+      host_list:
+        - t1nomis-a.test.nomis.service.justice.gov.uk
+        - t1nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T1TRDAT
+    - name: T1MIS
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1MIS
+    - name: misq
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1MIS
+    - name: T1CNMAUD
+      port: 1521
+      host_list:
+        - t1mis-a.test.nomis.service.justice.gov.uk
+        - t1mis-b.test.nomis.service.justice.gov.uk
+      service_name: T1CNMAUD
+    - name: T1BIPSYS
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPSYS
+    - name: T1BIPAUD
+      port: 1521
+      host_list:
+        - t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+      service_name: T1BIPAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCV_TAF
+  t2:
+    - name: T2CNOM
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2CNOM
+    - name: T2NDH
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2NDH
+    - name: T2TRDAT
+      port: 1521
+      host_list:
+        - t2nomis-a.test.nomis.service.justice.gov.uk
+        - t2nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T2TRDAT
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCV_TAF
+  t3:
+    - name: T3CNOM
+      port: 1521
+      host_list:
+        - t3nomis-a.test.nomis.service.justice.gov.uk
+        - t3nomis-b.test.nomis.service.justice.gov.uk
+      service_name: T3CNOM
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
+      service_name: RCV_TAF
