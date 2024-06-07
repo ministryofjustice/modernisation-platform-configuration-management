@@ -1,0 +1,46 @@
+---
+server_type_roles_list:
+  - get-ec2-facts
+  - set-ec2-hostname
+  - domain-search
+  - ansible-script
+  - epel
+  - oracle-19c
+  - oracle-secure-backup
+  - oracle-db-backup
+  - oracle-db-housekeeping
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
+  - collectd-connectivity-test
+  - collectd-oracle-db-connected
+  - collectd-textfile-monitoring
+  # - oracle-tns-entries
+  # - nomis-misload
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+packages_yum_install:
+  - zip-3.0-23.el8
+  - git
+  - tar
+
+# Oracle common variables
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+database_home: /u01/app/oracle/product/19c/db_1
+grid_home: /u01/app/oracle/product/19c/gridhome_1
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: oracle-ohasd
+    shell_cmd: "systemctl is-active oracle-ohasd"
+  - metric_name: service_status_app
+    metric_dimension: oracleasm
+    shell_cmd: "systemctl is-active oracleasm"
