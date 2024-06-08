@@ -42,12 +42,15 @@ server_type_roles_list:
   - oracle-12c-client # use 12c client because the 11g client isn't technically supported by Rhel 6
   - oracle-tns-entries
   - onr-boe
+  - filesystems
   # - collectd TODO: comment these back in, not needed yet
   # - amazon-cloudwatch-agent
   # - amazon-cloudwatch-agent-collectd
   # - collectd-service-metrics TODO: not defined yet
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+filesystems_mount: "{{ boe_filesystems_mount|default([]) }}"
 
 packages_yum_install:
   - nano
