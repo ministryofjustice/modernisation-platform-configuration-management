@@ -5,7 +5,22 @@ $GlobalConfig = @{
          "BOEWindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
          "BOEWindowsClientS3Folder" = "hmpps/onr"
     }
-    "oasys-national-reporting-test"  = @{}   
+    "oasys-national-reporting-test"  = @{
+      "OnrShortcuts" = @{
+        "Onr CmcApp" = "https://t2-onr-web-1-a.oasys-national-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk:7777/CmcApp"
+
+      }
+    }
+    "oasys-national-reporting-preproduction" = @{
+      "OnrShortcuts" = @{
+
+      }
+    }
+    "oasys-national-reporting-production" = @{
+      "OnrShortcuts" = @{
+
+      }
+    }   
  }
   
  function Get-Config {
@@ -53,6 +68,29 @@ $GlobalConfig = @{
    }
  }
 
+ function Add-Shortcuts {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Stop"
+  Write-Output "Add Shortcuts"
+  Write-Output " - Removing existing shortcuts"
+  Get-ChildItem "${SourcePath}/*Onr*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
+
+  foreach ($Shortcut in $Config.OnrShortcuts.GetEnumerator()) {
+    $Name = $Shortcut.Name
+    $Url = $Shortcut.Value
+    Write-Output " - Add $Name $Url"
+    $Shortcut = New-Object -ComObject WScript.Shell
+    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\$Name.url"
+    $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
+    $SourceShortcut.TargetPath = $Url
+    $SourceShortcut.Save()
+  }
+}
+
  # Install PowerShell 5.1 if running on PowerShell 4 or below
  if ( $PSVersionTable.PSVersion.Major -le 4 ) {
     choco install powershell -y
@@ -65,3 +103,4 @@ $GlobalConfig = @{
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
  Add-BOEWindowsClient $Config
+ # Add-Shortcuts $Config TODO: test this live on the machine
