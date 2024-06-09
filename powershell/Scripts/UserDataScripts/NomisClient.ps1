@@ -132,7 +132,6 @@ function Add-EC2InstanceToConfig {
       $Instance = $Ec2Json.Reservations[$i].Instances[$j]
       if ($Instance.Tags | Where-Object {$_.Key -eq "server-type"} | Where-Object {$_.Value -eq "nomis-web"}) {
         $Name = ($Instance.Tags | Where-Object {$_.Key -eq "Name"})[0].Value
-        $Env = ($Instance.Tags | Where-Object {$_.Key -eq "nomis-environment"})[0].Value.ToUpper()
         $IP = $Instance.PrivateIpAddress
         $ID = $Instance.InstanceId
 
@@ -428,7 +427,7 @@ function Remove-StartMenuShutdownOption {
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
-if ($ADConfig -ne $null) {
+if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
     Exit 3010 # triggers reboot if running from SSM Doc
