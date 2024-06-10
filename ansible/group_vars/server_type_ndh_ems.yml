@@ -8,13 +8,42 @@ server_type_roles_list:
   - ansible-script
   - epel
   - packages
+  - sshd-config
+  - users-and-groups
+  - sudoers
   - ndh-ems
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
 
+users_and_groups_regular:
+  - group: studio-webops
+  - group: csr-application-support
+
 packages_yum_install:
   - jq
+
+collectd_monitored_services_servertype_ndh_ems:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: hawkagent
+    shell_cmd: "pgrep hawkagent"
+  - metric_name: service_status_app
+    metric_dimension: tibhawkhma
+    shell_cmd: "pgrep tibhawkhma"
+  - metric_name: service_status_app
+    metric_dimension: rvd
+    shell_cmd: "pgrep rvd"
+  - metric_name: service_status_app
+    metric_dimension: tibemsd64
+    shell_cmd: "pgrep tibemsd64"
+  - metric_name: service_status_app
+    metric_dimension: wrap
+    shell_cmd: "pgrep wrap"
+
+collectd_monitored_services_servertype: "{{ collectd_monitored_services_environment_ndh_ems|default(collectd_monitored_services_servertype_ndh_ems) }}"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
