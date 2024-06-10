@@ -8,6 +8,9 @@ server_type_roles_list:
   - ansible-script
   - epel
   - packages
+  - sshd-config
+  - users-and-groups
+  - sudoers
   - filesystems
   - ndh-app
   - collectd
@@ -16,10 +19,42 @@ server_type_roles_list:
   - collectd-service-metrics
   - collectd-textfile-monitoring
 
+users_and_groups_regular:
+  - group: studio-webops
+  - group: csr-application-support
+
 packages_yum_install:
   - jq
 
 filesystems_domain_name_fqdn: "{{ app_filesystems_domain_name_fqdn|default('') }}"
 filesystems_mount: "{{ app_filesystems_mount|default([]) }}"
+
+collectd_monitored_services_servertype_ndh_app:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_os
+    metric_dimension: nginx
+    shell_cmd: "systemctl is-active nginx"
+  - metric_name: service_status_app
+    metric_dimension: hawkagent
+    shell_cmd: "pgrep hawkagent"
+  - metric_name: service_status_app
+    metric_dimension: tibcoadmin
+    shell_cmd: "pgrep tibcoadmin"
+  - metric_name: service_status_app
+    metric_dimension: tibhawkevent
+    shell_cmd: "pgrep tibhawkevent"
+  - metric_name: service_status_app
+    metric_dimension: tibhawkhma
+    shell_cmd: "pgrep tibhawkhma"
+  - metric_name: service_status_app
+    metric_dimension: rvd
+    shell_cmd: "pgrep rvd"
+  - metric_name: service_status_app
+    metric_dimension: bwengine
+    shell_cmd: "pgrep bwengine"
+
+collectd_monitored_services_servertype: "{{ collectd_monitored_services_environment_ndh_app|default(collectd_monitored_services_servertype_ndh_app) }}"
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
