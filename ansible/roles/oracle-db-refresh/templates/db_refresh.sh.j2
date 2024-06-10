@@ -225,7 +225,7 @@ then
         if [ -f ${DB_SCRIPT_DIR}/refresh.txt ]
         then
                 rm ${DB_SCRIPT_DIR}/refresh.txt
-                error "No refresh this week. "
+                info "No refresh this week. "
                 exit 0
         else
                 touch ${DB_SCRIPT_DIR}/refresh.txt
