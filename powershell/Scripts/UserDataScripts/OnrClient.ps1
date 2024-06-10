@@ -84,7 +84,7 @@ $GlobalConfig = @{
     $Url = $Shortcut.Value
     Write-Output " - Add $Name $Url"
     $Shortcut = New-Object -ComObject WScript.Shell
-    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\$Name.url"
+    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonDesktopDirectory")) -ChildPath "\\$Name.url"
     $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
     $SourceShortcut.TargetPath = $Url
     $SourceShortcut.Save()
@@ -103,4 +103,4 @@ $GlobalConfig = @{
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
  Add-BOEWindowsClient $Config
- # Add-Shortcuts $Config TODO: test this live on the machine
+ Add-Shortcuts $Config
