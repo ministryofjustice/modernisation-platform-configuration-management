@@ -1,5 +1,3 @@
-# $path = [Environment]::GetFolderPath("MyDocuments")
-# "Hello World" | Out-File -FilePath "$path\file.txt"
 $GlobalConfig = @{
     "all" = @{
          "BOEWindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
