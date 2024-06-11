@@ -2,10 +2,11 @@ $GlobalConfig = @{
     "all" = @{
          "BOEWindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
          "BOEWindowsClientS3Folder" = "hmpps/onr"
+         "BOEWindowsClientS3File" = "51048121.ZIP"
     }
     "oasys-national-reporting-test"  = @{
       "OnrShortcuts" = @{
-        "Onr CmcApp" = "https://t2-onr-web-1-a.oasys-national-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk:7777/CmcApp"
+        "Onr CmcApp" = "http://t2-onr-web-1-a.oasys-national-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk:7777/CmcApp"
 
       }
     }
@@ -46,10 +47,10 @@ $GlobalConfig = @{
    } else {
      Write-Output "Add BOE Windows Client"
      Set-Location -Path ([System.IO.Path]::GetTempPath())
-     Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/51048121.ZIP") -File .\51048121.ZIP -Verbose | Out-Null
+     Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
  
      # Extract BOE Client Installer - there is no installer for this application
-     Expand-Archive -Path .\51048121.ZIP -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+     Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
 
      # Install BOE Windows Client
      Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
