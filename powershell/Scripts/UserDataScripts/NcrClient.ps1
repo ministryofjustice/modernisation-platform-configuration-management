@@ -1,0 +1,108 @@
+$GlobalConfig = @{
+    "all" = @{
+         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
+         "WindowsClientS3Folder" = "hmpps/ncr-packages"
+         "WindowsClientS3File" = "WINDOWS.X64_19300_client.zip"
+         "IPSS3File" = "IPS.ZIP"
+         "DataServicesS3File" = "DATASERVICES.ZIP"
+    }
+    "nomis-combined-reporting-test"  = @{
+      "NcrShortcuts" = @{
+      }
+    }
+    "nomis-combined-reporting-preproduction" = @{
+      "NcrShortcuts" = @{
+      }
+    }
+    "nomis-combined-reporting-production" = @{
+      "NcrShortcuts" = @{
+      }
+    }   
+ }
+  
+ function Get-Config {
+   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+   $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+   $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+   $Tags = "$TagsRaw" | ConvertFrom-Json
+   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
+ 
+   if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
+     Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
+   }
+   Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
+ }
+ 
+ # TODO: need to install these as well, just getting the files for now
+ function Get-Software {
+    [CmdletBinding()]
+    param (
+      [hashtable]$Config
+    )
+    Set-Location -Path ([System.IO.Path]::GetTempPath())
+    # Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
+    Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.IPSS3File) -File (".\" + $Config.IPSS3File) -Verbose | Out-Null
+    Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.DataServicesS3File) -File (".\" + $Config.DataServicesS3File) -Verbose | Out-Null
+ }
+
+ function Add-WindowsClient {
+   [CmdletBinding()]
+   param (
+     [hashtable]$Config
+   )
+ 
+   $ErrorActionPreference = "Stop"
+   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe")) {
+     Write-Output "Windows Client already installed"
+   } else {
+     Write-Output "Add Windows Client"
+     Set-Location -Path ([System.IO.Path]::GetTempPath())
+     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
+ 
+     # Extract Client Installer - there is no installer for this application
+     Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\Client") -Force | Out-Null
+
+     # Install Windows Client
+    #  Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+     
+     # TODO: change the shortcut path and remove reference to BOE
+     # Create a desktop shortcut for Client Tools
+    # $WScriptShell = New-Object -ComObject WScript.Shell
+    # $targetPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonStartMenu"), "Programs\BusinessObjects XI 3.1\BusinessObjects Enterprise Client Tools")
+    # $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "BOE Client Tools.lnk")
+    # $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+    # $shortcut.TargetPath = $targetPath
+    # $shortcut.Save() | Out-Null
+    # Write-Output "Shortcut created at $shortcutPath"
+
+   }
+ }
+
+ function Add-Shortcuts {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Stop"
+  Write-Output "Add Shortcuts"
+  Write-Output " - Removing existing shortcuts"
+  Get-ChildItem "${SourcePath}/*Ncr*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
+
+  foreach ($Shortcut in $Config.NcrShortcuts.GetEnumerator()) {
+    $Name = $Shortcut.Name
+    $Url = $Shortcut.Value
+    Write-Output " - Add $Name $Url"
+    $Shortcut = New-Object -ComObject WScript.Shell
+    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonDesktopDirectory")) -ChildPath "\\$Name.url"
+    $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
+    $SourceShortcut.TargetPath = $Url
+    $SourceShortcut.Save()
+  }
+}
+  
+ $ErrorActionPreference = "Stop"
+ $Config = Get-Config
+ Add-WindowsClient $Config
+ Get-Software $Config
+ # Add-Shortcuts $Config
