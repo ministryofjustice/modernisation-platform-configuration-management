@@ -2,21 +2,25 @@ $GlobalConfig = @{
     "all" = @{
          "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
          "WindowsClientS3Folder" = "hmpps/ncr-packages"
-         "WindowsClientS3File" = "WINDOWS.X64_19300_client.zip"
+         "WindowsClientS3File" = "WINDOWS.X64_193000_client.zip"
          "IPSS3File" = "IPS.ZIP"
          "DataServicesS3File" = "DATASERVICES.ZIP"
     }
+    "nomis-combined-reporting-development" = @{
+        "NcrShortcuts" = @{
+        }
+    }
     "nomis-combined-reporting-test"  = @{
-      "NcrShortcuts" = @{
-      }
+        "NcrShortcuts" = @{
+        }
     }
     "nomis-combined-reporting-preproduction" = @{
-      "NcrShortcuts" = @{
-      }
+        "NcrShortcuts" = @{
+        }
     }
     "nomis-combined-reporting-production" = @{
-      "NcrShortcuts" = @{
-      }
+        "NcrShortcuts" = @{
+        }
     }   
  }
   
@@ -59,8 +63,10 @@ $GlobalConfig = @{
      Set-Location -Path ([System.IO.Path]::GetTempPath())
      Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
  
+
+     # FIXME: Expand-Archive path is too long for Windows, use C:\Windows\Temp possible? or just C:\Temp even
      # Extract Client Installer - there is no installer for this application
-     Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\Client") -Force | Out-Null
+     # Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\Client") -Force | Out-Null
 
      # Install Windows Client
     #  Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
