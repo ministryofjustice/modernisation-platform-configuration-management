@@ -47,10 +47,10 @@ $GlobalConfig = @{
    } else {
      Write-Output "Add BOE Windows Client"
      Set-Location -Path ([System.IO.Path]::GetTempPath())
-     Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File .\$Config.BOEWindowsClientS3File -Verbose | Out-Null
+     Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
  
      # Extract BOE Client Installer - there is no installer for this application
-     Expand-Archive -Path .\$Config.BOEWindowsClientS3File -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+     Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
 
      # Install BOE Windows Client
      Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
