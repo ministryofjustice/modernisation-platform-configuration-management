@@ -41,6 +41,7 @@ roles_list:
   - collectd-connectivity-test
   - collectd-oracle-db-connected
   - collectd-textfile-monitoring
+  - collectd-metrics
 
 packages_yum_install:
   - zip
@@ -99,6 +100,11 @@ collectd_monitored_services_servertype:
   # - metric_name: service_status_app
   #   metric_dimension: oracle-ohasd
   #   shell_cmd: "systemctl is-active oracle-ohasd"
+
+collectd_monitored_metrics_additional:
+  - metric_name: inode_used_percent
+    metric_dimension: inode_used_percent_max
+    shell_cmd: "df --output=ipcent | tail -n+2 | sed 's/%//' | sort -n | tail -n1 | xargs"
 
 patch_vars_filename: oasys-patches-20211019.yml
 
