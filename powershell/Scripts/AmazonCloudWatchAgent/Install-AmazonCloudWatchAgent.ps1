@@ -21,6 +21,7 @@ param (
   [bool]$UpdateAgent = $true
 )
 
+Write-Output "HERE"
 $CloudWatchCtlPath="C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1"
 $ExistingConfigPath="C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\file_default.json"
 $CloudWatchInstallUrl="https://amazoncloudwatch-agent.s3.amazonaws.com/windows/amd64/latest/amazon-cloudwatch-agent.msi"
