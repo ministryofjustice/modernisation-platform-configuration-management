@@ -19,7 +19,7 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .EXAMPLE
-    Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN": "azure.noms.root"}
+    Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN" = "azure.noms.root"}
 #>
 
 param (
@@ -50,12 +50,12 @@ if (-not (Test-Path -Path $GitRepo)) {
   Set-Location -Path $GitRepo
 } else {
   Set-Location -Path $GitRepo
-  git checkout main
-  git pull
+  git checkout -f main
+  git pull -f
 }
 if ($GitBranch -ne "main") {
-  git checkout "${GitBranch}"
-  git pull
+  git checkout -f "${GitBranch}"
+  git pull -f
 }
 $ModulePath = Join-Path (Join-Path $GitCloneDir $GitRepo) (Join-Path "powershell" "Modules")
 if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
