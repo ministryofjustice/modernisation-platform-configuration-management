@@ -2,7 +2,8 @@
 # Don't set set -u as ansible activate script fails with it on RHEL6
 set -eo pipefail
 
-branch="main"
+branch="${branch:-main}"
+ansible_dir="${ansible_dir:-/root/ansible}"
 ansible_repo="modernisation-platform-configuration-management"
 ansible_repo_basedir="ansible"
 
@@ -12,6 +13,7 @@ run_ansible() {
   echo "ansible_repo:         ${ansible_repo}"
   echo "ansible_repo_basedir: ${ansible_repo_basedir}"
   echo "ansible_args:         $@"
+  echo "ansible_dir:          $ansible_dir"
   echo "branch:               $branch"
 
   if [[ -z ${ansible_repo} ]]; then
@@ -41,7 +43,6 @@ run_ansible() {
   unset IFS
 
   # clone ansible roles and playbook
-  ansible_dir=/root/ansible
   cd $ansible_dir
   if [[ ! -d $ansible_dir/${ansible_repo} ]]; then
     echo "# Cloning ${ansible_repo} into $ansible_dir using branch=$branch"
