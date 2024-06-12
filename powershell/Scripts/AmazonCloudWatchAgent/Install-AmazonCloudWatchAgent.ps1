@@ -21,7 +21,6 @@ param (
   [bool]$UpdateAgent = $true
 )
 
-Write-Output "HERE"
 $CloudWatchCtlPath="C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1"
 $ExistingConfigPath="C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\file_default.json"
 $CloudWatchInstallUrl="https://amazoncloudwatch-agent.s3.amazonaws.com/windows/amd64/latest/amazon-cloudwatch-agent.msi"
@@ -33,11 +32,11 @@ if (!(Test-Path $NewConfigPath)) {
 }
 
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
-$CloudWatchInstallEtag=(Invoke-WebRequest $CloudWatchInstallUrl -Method Head).Headers.ETag
+$CloudWatchInstallEtag=(Invoke-WebRequest $CloudWatchInstallUrl -Method Head -UseBasicParsing).Headers.ETag
 if (!(Test-Path $CloudWatchCtlPath)) {
   Write-Output "Installing AmazonCloudWatchAgent"
   $LocalMsiPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
-  Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath
+  Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
   msiexec /i $LocalMsiPath /quiet
   Remove-Item $LocalMsiPath
   $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
@@ -49,7 +48,7 @@ if (!(Test-Path $CloudWatchCtlPath)) {
   if ($CloudWatchInstallLastEtag -ne $CloudWatchInstallEtag) {
     Write-Output "Upgrading AmazonCloudWatchAgent"
     $LocalMsiPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
-    Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath
+    Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
     Stop-Service AmazonCloudWatchAgent
     msiexec /i $LocalMsiPath /quiet
     Remove-Item $LocalMsiPath
