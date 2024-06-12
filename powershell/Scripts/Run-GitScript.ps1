@@ -44,18 +44,16 @@ if (-not $GitCloneDir) {
 
 $env:GIT_REDIRECT_STDERR="2>&1"
 Set-Location -Path $GitCloneDir
-if (-not (Test-Path -Path $GitRepo)) {
-  Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
-  git clone -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
-  Set-Location -Path $GitRepo
-} else {
-  Set-Location -Path $GitRepo
-  git checkout -f main
-  git pull -f
+
+if (Test-Path -Path $GitRepo) {
+   Write-Output "Removing existing git clone directory"
+   cmd /c "rd $GitRepo /s /q"
 }
+Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
+git clone -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
+Set-Location -Path $GitRepo
 if ($GitBranch -ne "main") {
-  git checkout -f "${GitBranch}"
-  git pull -f
+  git checkout "${GitBranch}"
 }
 $ModulePath = Join-Path (Join-Path $GitCloneDir $GitRepo) (Join-Path "powershell" "Modules")
 if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
