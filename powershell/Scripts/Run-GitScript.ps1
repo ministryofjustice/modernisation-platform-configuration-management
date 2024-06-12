@@ -68,9 +68,9 @@ if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
 if ($Script) {
   $RelativeScriptDir = Split-Path -Parent $Script
   $ScriptFilename = Split-Path -Leaf $Script
-  Set-Location -Path "powershell/Scripts/$RelativeScriptDir"
+  Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
   . ./$ScriptFilename @ScriptArgs
   Exit $LASTEXITCODE
 } else {
-  Set-Location -Path powershell/Scripts
+  Set-Location -Path (Join-Path "powershell" "Scripts")
 }
