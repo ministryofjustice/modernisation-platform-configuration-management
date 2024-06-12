@@ -159,8 +159,6 @@ function Add-Java6 {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
-
   if (Test-Path "C:\Program Files (x86)\Java\jre6") {
     Write-Output "JRE6 already installed"
   } else {
@@ -183,7 +181,6 @@ function Add-JavaDeployment {
   )
 
   # Copy deployment config files
-  $ErrorActionPreference = "Stop"
   $DeploymentFolder = "C:\Windows\Sun\Java\Deployment"
   Write-Output "Updating Java deployment config in $DeploymentFolder"
   New-Item -Path $DeploymentFolder -ItemType Directory -Force | Out-Null
@@ -199,14 +196,16 @@ function Remove-JavaUpdateCheck {
   )
 
   # Prevent Java update check
-  $ErrorActionPreference = "Stop"
+  $ErrorActionPreference = "Continue" # continue if JavaPath not found
   Write-Output "Checking JavaUpdateCheck"
   $JavaPath = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run"
   $ValueName = "SunJavaUpdateSched"
   $Properties = Get-ItemProperty -Path $JavaPath
-  if ($Properties.PSObject.Properties.Name -contains $ValueName) {
-    Write-Output " - Removing $JavaPath $ValueName"
-    Remove-ItemProperty -Path $JavaPath -Name $ValueName -Force
+  if ($Properties) {
+    if ($Properties.PSObject.Properties.Name -contains $ValueName) {
+      Write-Output " - Removing $JavaPath $ValueName"
+      Remove-ItemProperty -Path $JavaPath -Name $ValueName -Force
+    }
   }
 }
 
@@ -216,7 +215,6 @@ function Add-EdgeConfig {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
   $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
 
   # Turn off Edge first run experience
@@ -239,8 +237,6 @@ function Add-EdgeIECompatibility {
   param (
     [hashtable]$Config
   )
-
-  $ErrorActionPreference = "Stop"
 
   Write-Output "Adding Edge IE Compatibility Mode"
 
@@ -286,7 +282,6 @@ function Add-EdgeTrustedSites {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
   Write-Output "Add Edge Trusted Sites"
   $Domains = $Config.IETrustedDomains
 
@@ -341,7 +336,6 @@ function Add-SQLDeveloper {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
   if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") {
     Write-Output "SQL Developer already installed"
   } else {
@@ -379,7 +373,6 @@ function Add-NomisShortcuts {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
   Write-Output "Add Nomis Shortcuts"
   Write-Output " - Removing existing shortcuts"
   Get-ChildItem "${SourcePath}/*Nomis*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
@@ -413,7 +406,6 @@ function Remove-StartMenuShutdownOption {
     [hashtable]$Config
   )
 
-  $ErrorActionPreference = "Stop"
   Write-Output "Remove StartMenu Shutdown Option"
   $RegistryStartMenuPath = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Start\"
   if (Test-Path -Path $RegistryStartMenuPath) {
