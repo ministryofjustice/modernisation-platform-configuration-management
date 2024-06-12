@@ -42,6 +42,10 @@ if (-not $GitCloneDir) {
   $GitCloneDir = [System.IO.Path]::GetTempPath()
 }
 
+if (-not (Test-Path -Path $GitCloneDir)) {
+  New-Item -ItemType "directory" -Path $GitCloneDir
+}
+
 $env:GIT_REDIRECT_STDERR="2>&1"
 Set-Location -Path $GitCloneDir
 if (-not (Test-Path -Path $GitRepo)) {
