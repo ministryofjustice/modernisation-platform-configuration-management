@@ -375,6 +375,7 @@ function Add-NomisShortcuts {
 
   Write-Output "Add Nomis Shortcuts"
   Write-Output " - Removing existing shortcuts"
+  $SourcePath = [environment]::GetFolderPath("CommonStartMenu")
   Get-ChildItem "${SourcePath}/*Nomis*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
 
   foreach ($Shortcut in $Config.NomisShortcuts.GetEnumerator()) {
