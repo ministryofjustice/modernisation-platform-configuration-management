@@ -448,3 +448,4 @@ Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
 Add-MicrosoftOffice $Config # takes forever to install so putting last
+. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
