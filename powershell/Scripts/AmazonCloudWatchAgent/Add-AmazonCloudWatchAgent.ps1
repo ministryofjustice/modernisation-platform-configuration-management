@@ -1,18 +1,15 @@
 <#
 .SYNOPSIS
-    Install and configure AmazonCloudWatchAgent
+    Install, optionally upgrade, and configure AmazonCloudWatchAgent
 
 .DESCRIPTION
-    By default the script derives the hostname from the Name tag. Or specify NewHostname parameter.
-    By default derives the AD configuration from EC2 tags (environment-name or domain-name), or specify DomainNameFQDN parameter.
-    EC2 requires permissions to get tags and the aws cli.
-    Exits with 3010 if reboot required and script requires re-running. For use in SSM docs
+    Install latest version of AmazonCloudWatchAgent and configure with the supplied config.
 
 .PARAMETER ConfigFilename
-    Override default config to use from  ../../Configs/AmazonCloudWatchAgent 
+    The config filename to use from  ../../Configs/AmazonCloudWatchAgent, by default default.json
 
 .PARAMETER UpdateAgent
-    Update the agent if it is already installed
+    Update the agent if set to $true and there has been an update
 
 .EXAMPLE
     Add-AmazonCloudWatchAgent
@@ -21,33 +18,60 @@
 [CmdletBinding()]
 param (
   [string]$ConfigFilename = "default.json",
-  [string]$UpdateAgent = $false,
+  [bool]$UpdateAgent = $true
 )
 
 $CloudWatchCtlPath="C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1"
+$ExistingConfigPath="C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\file_default.json"
 $CloudWatchInstallUrl="https://amazoncloudwatch-agent.s3.amazonaws.com/windows/amd64/latest/amazon-cloudwatch-agent.msi"
-$ConfigPath=Join-Path -Path ../../Configs/AmazonCloudWatchAgentConfig -ChildPath $ConfigFilename
+$NewConfigPath=Join-Path -Path "../../Configs/AmazonCloudWatchAgent" -ChildPath $ConfigFilename
+$CloudWatchInstallEtagPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi.etag.json"
 
-if (!Test-Path $ConfigPath)) {
-  Write-Error "AmazonCloudWatchAgent not found $ConfigPath"
+if (!(Test-Path $NewConfigPath)) {
+  Write-Error "AmazonCloudWatchAgent config not found $NewConfigPath"
 }
 
+# Avoid re-downloading the install file each time script is run. Record ETag of the file.
+$CloudWatchInstallEtag=(Invoke-WebRequest $CloudWatchInstallUrl -Method Head).Headers.ETag
 if (!(Test-Path $CloudWatchCtlPath)) {
   Write-Output "Installing AmazonCloudWatchAgent"
   $LocalMsiPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
   Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath
   msiexec /i $LocalMsiPath /quiet
   Remove-Item $LocalMsiPath
-} elif ($UpdateAgent) {
-  Write-Output "Upgrading AmazonCloudWatchAgent"
-  $LocalMsiPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
-  Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath
-  msiexec /i $LocalMsiPath /quiet
-  Remove-Item $LocalMsiPath
+  $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
+} elseif ($UpdateAgent) {
+  $CloudWatchInstallLastEtag="NONE"
+  if (Test-Path $CloudWatchInstallEtagPath) {
+    $CloudWatchInstallLastEtag=Get-Content -Path $CloudWatchInstallEtagPath
+  }
+  if ($CloudWatchInstallLastEtag -ne $CloudWatchInstallEtag) {
+    Write-Output "Upgrading AmazonCloudWatchAgent"
+    $LocalMsiPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
+    Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath
+    Stop-Service AmazonCloudWatchAgent
+    msiexec /i $LocalMsiPath /quiet
+    Remove-Item $LocalMsiPath
+    $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
+  }
 }
 
-#Write-Output "Configuring AmazonCloudWatchAgent"
-#$ApplyConfig=. $CloudWatchCtlPath -m ec2 -c file:../../Configs/AmazonCloudWatchAgentConfig.json -s
-#$StatusRaw=. $CloudwatchCtlPath -m ec2 -a status
-#$Status="$StatusRaw" | ConvertFrom-Json
-#Write-Output "Status $Status"
+# Check if cloudwatch already configured. Only update if there's been a change.
+if (Test-Path $ExistingConfigPath) {
+  if ((Get-FileHash $NewConfigPath).Hash -ne ((Get-FileHash $ExistingConfigPath).Hash)) {
+    Write-Output "Updating AmazonCloudWatchAgent Config"
+    . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+  } else {
+    $StatusRaw=. $CloudwatchCtlPath -m ec2 -a status
+    $Status="$StatusRaw" | ConvertFrom-Json
+    if ($Status.status -ne "running") {
+      Write-Output "Starting AmazonCloudWatchAgent"
+      . $CloudwatchCtlPath -m ec2 -a start
+    } else {
+      Write-Output "AmazonCloudWatchAgent already running and configured"
+    }
+  }
+} else {
+  Write-Output "Configuring AmazonCloudWatchAgent"
+  . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+}
