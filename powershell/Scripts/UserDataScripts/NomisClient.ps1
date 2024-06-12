@@ -428,6 +428,7 @@ if ($null -ne $ADConfig) {
 }
 
 $ErrorActionPreference = "Stop"
+$ScriptDir = Get-Location
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
@@ -441,4 +442,5 @@ Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
 Add-MicrosoftOffice $Config # takes forever to install so putting last
+Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1

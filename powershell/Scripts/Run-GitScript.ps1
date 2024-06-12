@@ -64,7 +64,9 @@ if ($Script) {
   $ScriptFilename = Split-Path -Leaf $Script
   Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
   . ./$ScriptFilename @ScriptArgs
-  Exit $LASTEXITCODE
+  $ScriptExitCode = $LASTEXITCODE
+  Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
+  Exit $ScriptExitCode
 } else {
   Set-Location -Path (Join-Path "powershell" "Scripts")
 }
