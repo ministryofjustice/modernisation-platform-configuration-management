@@ -100,7 +100,7 @@ collectd_monitored_services_servertype:
     metric_dimension: chronyd
     shell_cmd: "service chronyd status"
 
-collect_monitored_metrics_additional:
+collectd_monitored_metrics_additional:
   - metric_name: web_incoming
     metric_dimension: 200_to_299
     shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^2.. | wc -l"
