@@ -15,6 +15,10 @@ users_and_groups_system:
       - dba
       - sapsys
 
+tomcat_dir: /u01/app/tomcat/bobje/tomcat7
+tomcat_root_dir: "{{ tomcat_dir }}/webapps/ROOT"
+tomcat_logs_dir: "{{ tomcat_dir }}/logs"
+
 server_type_roles_list:
   - sshd-config
   - users-and-groups
@@ -33,15 +37,14 @@ server_type_roles_list:
   - epel
   - disks
   - onr-web
-  # TODO: comment these back in later
-  # - collectd
-  # - amazon-cloudwatch-agent
-  # - amazon-cloudwatch-agent-collectd
-  # - collectd-service-metrics
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-metrics
+  - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
-# TODO: check these packages vs. the onr-boe package list
 packages_yum_install:
   - nano
   - vim
@@ -91,3 +94,19 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: ext4
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "service chronyd status"
+
+collect_monitored_metrics_additional:
+  - metric_name: web_incoming
+    metric_dimension: 200_to_299
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^2.. | wc -l"
+  - metric_name: web_incoming
+    metric_dimension: 300_to_399
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^3.. | wc -l"
+  - metric_name: web_incoming
+    metric_dimension: 400_to_499
+    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^4.. | wc -l"

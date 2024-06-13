@@ -43,10 +43,10 @@ server_type_roles_list:
   - oracle-tns-entries
   - onr-boe
   - filesystems
-  # - collectd TODO: comment these back in, not needed yet
-  # - amazon-cloudwatch-agent
-  # - amazon-cloudwatch-agent-collectd
-  # - collectd-service-metrics TODO: not defined yet
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -113,3 +113,8 @@ tns_entries:
       host_list:
         - t2-onr-db-a.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk
       service_name: BOAUD_TAF
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "service chronyd status"
