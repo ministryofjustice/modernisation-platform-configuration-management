@@ -2,6 +2,7 @@
 server_type_roles_list:
   - autoscale-group-hooks
   - get-ec2-facts
+  - ssh-host-keys
   - users-and-groups
   - sudoers
   - disable-firewall
@@ -26,7 +27,7 @@ server_type_roles_list:
 disks_mount:
   - ebs_device_name: /dev/sdb
     dir: /u01
-    fstype: ext4
+    fstype: xfs
 
 users_and_groups_system:
   - name: oracle
