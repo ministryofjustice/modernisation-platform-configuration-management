@@ -110,3 +110,5 @@ collectd_monitored_metrics_additional:
   - metric_name: web_incoming
     metric_dimension: 400_to_499
     shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^4.. | wc -l"
+
+collectd_script_user: bobj
