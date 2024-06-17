@@ -24,6 +24,7 @@ $GlobalConfig = @{
     }   
  }
 $WorkingDirectory = "C:\Temp"
+New-Item -ItemType Directory -Path $WorkingDirectory -Force
   
  function Get-Config {
    $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
@@ -44,7 +45,6 @@ $WorkingDirectory = "C:\Temp"
     param (
       [hashtable]$Config
     )
-    New-Item -ItemType Directory -Path $WorkingDirectory -Force
     Set-Location -Path $WorkingDirectory
     # Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.IPSS3File) -File (".\" + $Config.IPSS3File) -Verbose | Out-Null
