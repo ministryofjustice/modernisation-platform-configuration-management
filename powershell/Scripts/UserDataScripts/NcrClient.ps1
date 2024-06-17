@@ -114,3 +114,6 @@ $GlobalConfig = @{
  Add-WindowsClient $Config
  Get-Software $Config
  # Add-Shortcuts $Config
+ 
+ # clean up temporary working directory
+ Remove-Item -Path $WorkingDirectory -Recurse -Force
