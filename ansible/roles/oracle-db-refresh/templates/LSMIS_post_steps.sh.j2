@@ -144,6 +144,8 @@ streams_setup () {
   echo "spool ${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "select 'DEFINE FIRST_SCN = '|| FIRST_CHANGE# from v\$archived_log@${SOURCE_ORACLE_SID}  where COMPLETION_TIME> sysdate-4/24 and DICTIONARY_BEGIN='YES';" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "spool off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "set head on feedback on" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool ${DB_SCRIPT_DIR}/streams_setup.log append" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_MIS_STRM_SETUP_v1.0e.18.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "select * from dba_registered_archived_log;" >> ${DB_SCRIPT_DIR}/streams_setup.sql

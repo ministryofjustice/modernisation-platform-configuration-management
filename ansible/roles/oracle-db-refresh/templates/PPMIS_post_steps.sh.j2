@@ -76,10 +76,10 @@ user_creation () {
 db_setup () {
   info "Starting db_setup"
   set_ora_env +ASM
-  asmcmd mkdir +DATA/LSMIS/ARCHIVELOG
+  asmcmd mkdir +DATA/PPMIS/ARCHIVELOG
   set_ora_env $REFRESH_DB_SID
-  echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-  echo "log_archive_dest_2='LOCATION=+DATA/LSMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "log_archive_config='dg_config=(PPCNOM,PPMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "log_archive_dest_2='LOCATION=+DATA/PPMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
   echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/db_setup.sql
   echo "spool ${DB_SCRIPT_DIR}/db_setup.log" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/db_setup.sql
@@ -144,6 +144,7 @@ streams_setup () {
   echo "spool ${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "select 'DEFINE FIRST_SCN = '|| FIRST_CHANGE# from v\$archived_log@${SOURCE_ORACLE_SID}  where COMPLETION_TIME> sysdate-4/24 and DICTIONARY_BEGIN='YES';" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "spool off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
+  echo "spool ${DB_SCRIPT_DIR}/streams_setup.log append" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_MIS_STRM_SETUP_v1.0e.18.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "select * from dba_registered_archived_log;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
@@ -179,7 +180,7 @@ done
 
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
 STREAMS_SCRIPT_DIR=/home/oracle/admin/mis_streams_scripts
-SOURCE_ORACLE_SID=LSCNOM
+SOURCE_ORACLE_SID=PPCNOM
 
 echo "Starting post steps"
 set_ora_env ${REFRESH_DB_SID}
