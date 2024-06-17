@@ -1,0 +1,222 @@
+#!/bin/bash
+#set -x
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+export PATH=/usr/local/bin:$PATH
+
+usage () {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "  $THISSCRIPT -t <refresh database sid> -s <source database sid> -r <alternate week> "
+  exit 1
+}
+
+set_ora_env () {
+  export ORAENV_ASK=NO
+  export ORACLE_SID=$1
+  . oraenv
+  export NLS_DATE_FORMAT=YYMMDDHH24MISS
+}
+
+warning () {
+  T=$(date +"%D %T")
+  echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=$(date +"%D %T")
+  echo "ERROR : $THISSCRIPT : $T : $1"
+  exit $ERROR_STATUS
+}
+
+create_blackout () {
+/u01/app/oracle/product/oem_agent/agent_inst_13c/bin/emctl start blackout refresh_${HA_DB_SID} ${HA_DB_SID}:oracle_database
+/u01/app/oracle/product/oem_agent/agent_inst_13c/bin/emctl status blackout
+}
+
+stop_blackout () {
+/u01/app/oracle/product/oem_agent/agent_inst_13c/bin/emctl stop blackout refresh_${HA_DB_SID}
+/u01/app/oracle/product/oem_agent/agent_inst_13c/bin/emctl status blackout
+}
+
+get_user_creds () {
+  USER=$1
+  secret_arn="/oracle/database/${HA_DB_SID}/passwords"
+  aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text | jq -r .${USER}
+}
+
+delete_os_files () {
+set_ora_env ${HA_DB_SID}
+echo "Delete OS files"
+srvctl stop database -d ${HA_DB_SID}
+if [ -f  /u01/app/oracle/admin/${HA_DB_SID}/adump ]
+then
+      mkdir -p /u01/app/oracle/admin/${HA_DB_SID}/adump
+else
+      rm -fr /u01/app/oracle/admin/${HA_DB_SID}/adump
+      mkdir /u01/app/oracle/admin/${HA_DB_SID}/adump
+fi
+rm -fr /u01/app/oracle/diag/rdbms/${HA_DB_SID}
+rm $ORACLE_HOME/dbs/spfile${HA_DB_SID}.ora
+}
+
+delete_db_files () {
+set_ora_env +ASM
+echo "Deleting database files"
+srvctl stop database -d ${HA_DB_SID}
+
+if [ `ps -ef | grep pmon | grep ${HA_DB_SID}| grep -v grep | wc -l` -gt 0 ]
+then
+        echo "Database is running , exiting the program. "
+        exit 1
+else
+        asmcmd lsdg
+        asmcmd rm -fr +DATA/$HA_DB_SID/DATAFILE/
+        asmcmd rm -fr +DATA/$HA_DB_SID/
+        asmcmd rm -fr +FLASH/$HA_DB_SID/
+        asmcmd lsdg
+fi
+}
+
+ha_database_creation () {
+echo "Creating HA database"
+set_ora_env $HA_DB_SID
+echo "db_unique_name=${HA_DB_SID}
+db_name=${SOURCE_DB_SID}
+audit_file_dest=/u01/app/oracle/admin/${HA_DB_SID}/adump" > $ORACLE_HOME/dbs/init${HA_DB_SID}PRE.ora
+sqlplus -s / as sysdba << EOF
+startup nomount pfile='${ORACLE_HOME}/dbs/init${HA_DB_SID}PRE.ora'
+exit
+EOF
+
+echo "Start RMAN HA creation"
+echo "run
+{
+allocate channel ch1 device type disk;
+allocate channel ch2 device type disk;
+allocate channel ch3 device type disk;
+allocate channel ch4 device type disk;
+allocate auxiliary channel drch1 type disk;
+allocate auxiliary channel drch2 type disk;
+allocate auxiliary channel drch3 type disk;
+allocate auxiliary channel drch4 type disk;
+duplicate target database for standby from active database
+spfile
+  parameter_value_convert '${SOURCE_DB_SID}','${HA_DB_SID}'
+  set audit_file_dest='/u01/app/oracle/admin/${HA_DB_SID}/adump'
+  set db_unique_name='${HA_DB_SID}'
+  set fal_client='${HA_DB_SID}'
+  set fal_server='${SOURCE_DB_SID}'
+  set standby_file_management='AUTO'
+  set control_files='+DATA/${HA_DB_SID}/controlfile/control01.ctl','+DATA/${HA_DB_SID}/controlfile/control02.ctl'
+  set log_archive_config='dg_config=(${SOURCE_DB_SID},${HA_DB_SID})'
+  set log_archive_dest_1='location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=${HA_DB_SID}'
+  set log_archive_dest_2='service=${SOURCE_DB_SID} ASYNC valid_for=(ONLINE_LOGFILE,PRIMARY_ROLE) db_unique_name=${SOURCE_DB_SID}'
+nofilenamecheck;
+}
+exit" > ${DB_SCRIPT_DIR}/${HA_DB_SID}_HA_copy.cmd
+rman target sys/${SYS_PASSWORD}@${SOURCE_DB_SID} auxiliary sys/${SYS_PASSWORD}@${HA_DB_SID} cmdfile=${DB_SCRIPT_DIR}/${HA_DB_SID}_HA_copy.cmd log=${DB_SCRIPT_DIR}/${HA_DB_SID}_HA_copy.log
+
+if [ $? -ne 0 ]
+then
+        error "Creation of HA failed. "
+fi
+}
+
+start_ha_recovery () {
+sqlplus -s / as sysdba << EOF > ${DB_SCRIPT_DIR}/start_recovery.log
+alter database flashback on;
+alter database recover managed standby database using current logfile disconnect from session;
+alter system set dg_broker_start=true scope=both ;
+exit
+EOF
+#[ `grep ORA- ${DB_SCRIPT_DIR}/start_recovery.log` -gt 0 ] && error "Failed during HA recovery"
+}
+
+dg_setup () {
+set_ora_env $HA_DB_SID
+sqlplus  sys/${SYS_PASSWORD}@${SOURCE_DB_SID} as sysdba << EOF
+alter system set log_archive_dest_state_2=enable scope=both;
+alter system set dg_broker_start=true scope=both ;
+exit
+EOF
+
+dgmgrl << EOF  > ${DB_SCRIPT_DIR}/dbmgrl_output.log
+connect sys/${SYS_PASSWORD}@${SOURCE_DB_SID}
+create configuration preprod_dg_${SOURCE_DB_SID} as primary database is ${SOURCE_DB_SID} connect identifier is ${SOURCE_DB_SID};
+add database ${HA_DB_SID} as connect identifier is ${HA_DB_SID} maintained as physical;
+enable configuration;
+exit
+EOF
+
+srvctl stop database -d  ${HA_DB_SID}
+srvctl start database -d  ${HA_DB_SID}
+srvctl stop service -d ${HA_DB_SID} -s OR_TAF
+srvctl start service -d ${HA_DB_SID} -s OR_TAF
+srvctl stop service -d ${HA_DB_SID} -s nomis_apiro_taf
+srvctl start service -d ${HA_DB_SID} -s nomis_apiro_taf
+
+}
+
+
+####################
+# Main
+####################
+
+HA_DB_SID="UNSPECIFIED"
+SOURCE_DB_SID="UNSPECIFIED"
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:s:r:" opt
+do
+  case $opt in
+    t) HA_DB_SID=$OPTARG ;;
+    s) SOURCE_DB_SID=$OPTARG ;;
+    r) REFRESH_ALTERNATE_WEEK=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${HA_DB_SID}" = "UNSPECIFIED" ] && usage
+[ "${SOURCE_DB_SID}" = "UNSPECIFIED" ]  && usage
+[ "${REFRESH_ALTERNATE_WEEK}" = "UNSPECIFIED" ] && usage
+SCRIPT_DIR=$(dirname $0)
+DB_SCRIPT_DIR=$SCRIPT_DIR/$HA_DB_SID
+PFILE_DIR=$DB_SCRIPT_DIR/pfile
+
+if [ $REFRESH_ALTERNATE_WEEK -eq 1 ]
+then
+        if [ -f ${DB_SCRIPT_DIR}/refresh.txt ]
+        then
+                rm ${DB_SCRIPT_DIR}/refresh.txt
+                error "No refresh this week. "
+                exit 0
+        else
+                touch ${DB_SCRIPT_DIR}/refresh.txt
+        fi
+fi
+echo "Starting refresh."
+SYS_PASSWORD=$(get_user_creds sys)
+cd ${SCRIPT_DIR}
+pwd
+# Create blackout
+create_blackout
+
+# Delete OS level files
+delete_os_files
+
+# Delete all database files from ASM
+delete_db_files
+
+# Copy HA database
+ha_database_creation
+
+# Start recovery on HA database
+start_ha_recovery
+
+# Setup dataguard
+dg_setup
+
+#Stop blackout
+stop_blackout
