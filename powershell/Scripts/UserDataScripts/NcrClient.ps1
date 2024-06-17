@@ -58,11 +58,11 @@ $WorkingDirectory = "C:\Temp"
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe")) {
+   if (Test-Path ($WorkingDirectory + "\Client\setup.exe")) {
      Write-Output "Windows Client already installed"
    } else {
      Write-Output "Add Windows Client"
-     Set-Location -Path ([System.IO.Path]::GetTempPath())
+     Set-Location -Path $WorkingDirectory
      Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
  
 
