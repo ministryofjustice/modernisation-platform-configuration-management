@@ -44,7 +44,7 @@ $GlobalConfig = @{
       [hashtable]$Config
     )
     $WorkingDirectory = "C:\Temp"
-    New-Item -ItemType Directory -Path $WorkingDirectory
+    New-Item -ItemType Directory -Path $WorkingDirectory -Force
     Set-Location -Path $WorkingDirectory
     # Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.IPSS3File) -File (".\" + $Config.IPSS3File) -Verbose | Out-Null
