@@ -2,9 +2,9 @@ $GlobalConfig = @{
     "all" = @{
          "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
          "WindowsClientS3Folder" = "hmpps/ncr-packages"
-         "WindowsClientS3File" = "WINDOWS.X64_193000_client.zip"
-         "IPSS3File" = "IPS.ZIP"
-         "DataServicesS3File" = "DATASERVICES.ZIP"
+         "WindowsClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
+         "IPSS3File" = "IPS.ZIP" # IPS SW, install 2nd
+         "DataServicesS3File" = "DATASERVICES.ZIP" # BODS SW, install 3rd
     }
     "nomis-combined-reporting-development" = @{
         "NcrShortcuts" = @{
