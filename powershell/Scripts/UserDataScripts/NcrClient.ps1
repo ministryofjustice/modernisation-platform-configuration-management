@@ -23,6 +23,8 @@ $GlobalConfig = @{
         }
     }   
  }
+$WorkingDirectory = "C:\Temp"
+New-Item -ItemType Directory -Path $WorkingDirectory -Force
   
  function Get-Config {
    $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
@@ -43,7 +45,7 @@ $GlobalConfig = @{
     param (
       [hashtable]$Config
     )
-    Set-Location -Path ([System.IO.Path]::GetTempPath())
+    Set-Location -Path $WorkingDirectory
     # Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.IPSS3File) -File (".\" + $Config.IPSS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.DataServicesS3File) -File (".\" + $Config.DataServicesS3File) -Verbose | Out-Null
@@ -56,20 +58,23 @@ $GlobalConfig = @{
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe")) {
+   # TODO the following may need a better path to test for installation
+   # the current path may be good enough though,
+   # as it's what's provided in the response file for installation
+   if (Test-Path "C:\Program Files (x86)\Business Objects\") {
      Write-Output "Windows Client already installed"
    } else {
      Write-Output "Add Windows Client"
-     Set-Location -Path ([System.IO.Path]::GetTempPath())
+     Set-Location -Path $WorkingDirectory
      Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
  
 
      # FIXME: Expand-Archive path is too long for Windows, use C:\Windows\Temp possible? or just C:\Temp even
      # Extract Client Installer - there is no installer for this application
-     # Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\Client") -Force | Out-Null
+     # Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  ($WorkingDirectory + "\Client") -Force | Out-Null
 
      # Install Windows Client
-    #  Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\Client\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+    #  Start-Process -FilePath ($WorkingDirectory + "\Client\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
      
      # TODO: change the shortcut path and remove reference to BOE
      # Create a desktop shortcut for Client Tools
@@ -112,3 +117,6 @@ $GlobalConfig = @{
  Add-WindowsClient $Config
  Get-Software $Config
  # Add-Shortcuts $Config
+ 
+ # clean up temporary working directory
+ Remove-Item -Path $WorkingDirectory -Recurse -Force
