@@ -58,7 +58,10 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
    )
  
    $ErrorActionPreference = "Stop"
-   if (Test-Path ($WorkingDirectory + "\Client\setup.exe")) {
+   # TODO the following may need a better path to test for installation
+   # the current path may be good enough though,
+   # as it's what's provided in the response file for installation
+   if (Test-Path "C:\Program Files (x86)\Business Objects\") {
      Write-Output "Windows Client already installed"
    } else {
      Write-Output "Add Windows Client"
