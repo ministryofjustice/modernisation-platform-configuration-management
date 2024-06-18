@@ -71,7 +71,7 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 
      # FIXME: Expand-Archive path is too long for Windows, use C:\Windows\Temp possible? or just C:\Temp even
      # Extract Client Installer - there is no installer for this application
-     # Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  ($WorkingDirectory + "\client") -force | out-null
+     # Expand-Archive -Path (".\" + $Config.WindowsClientS3File) -DestinationPath  ($WorkingDirectory + "\Client") -Force | Out-Null
 
      # Install Windows Client
     #  Start-Process -FilePath ($WorkingDirectory + "\Client\setup.exe") -ArgumentList "-r", "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
