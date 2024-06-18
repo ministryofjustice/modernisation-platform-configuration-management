@@ -30,3 +30,19 @@ db_configs:
     db_name: qa11g
   qa11r:
     db_name: qa11r
+# rman details
+rman_backup_script: rman_backup.sh
+recovery_catalog: 0
+rman_backup_cron:
+  backup_level_0:
+    - name: rman_backup_weekly
+      weekday: "1"
+      minute: "30"
+      hour: "08"
+      # job: command generated in rman-backup-setup
+  backup_level_1:
+    - name: rman_backup_daily
+      weekday: "2-6"
+      minute: "30"
+      hour: "08"
+      # job: command generated in rman-backup-setup
