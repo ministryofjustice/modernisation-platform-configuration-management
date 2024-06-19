@@ -5,6 +5,7 @@ $GlobalConfig = @{
          "WindowsClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
          "IPSS3File" = "IPS.ZIP" # IPS SW, install 2nd
          "DataServicesS3File" = "DATASERVICES.ZIP" # BODS SW, install 3rd
+         "BIPWindowsClientFile" = "BIPLATCLIENT4304P_500-70005711.EXE"
     }
     "nomis-combined-reporting-development" = @{
         "NcrShortcuts" = @{
@@ -49,6 +50,7 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
     # Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.WindowsClientS3File) -File (".\" + $Config.WindowsClientS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.IPSS3File) -File (".\" + $Config.IPSS3File) -Verbose | Out-Null
     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.DataServicesS3File) -File (".\" + $Config.DataServicesS3File) -Verbose | Out-Null
+    Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BIPWindowsClientFile) -File (".\" + $Config.BIPWindowsClientFile) -Verbose | Out-Null
  }
 
  function Add-WindowsClient {
@@ -119,4 +121,4 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
  # Add-Shortcuts $Config
  
  # clean up temporary working directory
- Remove-Item -Path $WorkingDirectory -Recurse -Force
+ # Remove-Item -Path $WorkingDirectory -Recurse -Force
