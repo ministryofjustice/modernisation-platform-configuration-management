@@ -16,6 +16,14 @@ Specifically required:
 
 Basically ensure other roles have already run for server_type_onr_boe
 
+# Deploying multiple BOE instances
+
+The main thing to change for pre-prod and production environments is the tag `oasys-national-reporting-environments` which is set in the terraform that defines an EC2 instance. This translates into ansible as the `onr_environment` variable so for pre-prod we'd need pp-1, pp-2 for BOE instances and for production we'd need pp-1, pp-2.
+
+These should obviously be equivalent to the instance names i.e. pp-onr-boe-1-a and pp-onr-boe-2-b. Then in onr-boe/files we'd need configs for each of these instances like `pp_1_response_file.ini` and `pp_2_response_file.ini`. 
+
+What we _might_ find is that it's actually possible to have the same file for both instances and just change how the values are set in the file, depending on exactly what needs changing but this is something to be tested.
+
 # Example
 
 ```
