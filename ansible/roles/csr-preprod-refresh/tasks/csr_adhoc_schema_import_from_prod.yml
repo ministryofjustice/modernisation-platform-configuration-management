@@ -19,18 +19,18 @@
   loop:
     - "{{ adhoc_import_refresh_script }}"
 
-- name: Start preprod import
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    PATH=$PATH:/usr/local/bin
-    main() {
-      nohup {{ scripts_dir }}/{{ adhoc_import_refresh_script }} -i {{ preprod_db_sid }} -s {{ remap_schemas }} -d {{ db_directory }} -t {{ EXPDP_TAG }} &
-    }
-    main 2>&1 | logger -p local3.info -t ansible-oracle-db
-  register: prod_import_output
-  async: 43200
-  poll: 0
+# - name: Start preprod import
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     PATH=$PATH:/usr/local/bin
+#     main() {
+#       nohup {{ scripts_dir }}/{{ adhoc_import_refresh_script }} -i {{ preprod_db_sid }} -s {{ remap_schemas }} -d {{ db_directory }} -t {{ EXPDP_TAG }} &
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-oracle-db
+#   register: prod_import_output
+#   async: 43200
+#   poll: 0
 #   vars:
 #     ansible_remote_tmp: /tmp/.ansible
 #     ansible_async_dir: /tmp/.ansible_async
