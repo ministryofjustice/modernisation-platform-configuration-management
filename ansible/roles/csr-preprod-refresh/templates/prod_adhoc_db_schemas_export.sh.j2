@@ -10,7 +10,9 @@ export SCHEMAS=$2
 export DIRNAME=$3
 export TAG=$4
 export ORAENV_ASK=NO
-. oraenv
+export EMAIL_RECIPIENT="dba_alerts_prod-aaaaa25gxv2vfzkv4f55ep2yee@moj.org.slack.com"
+
+. /usr/local/bin/oraenv
 echo $ORACLE_SID $ORACLE_HOME
 CNT=`sqlplus -s " / as sysdba" << EOF
 set feedback off heading off echo off verify off

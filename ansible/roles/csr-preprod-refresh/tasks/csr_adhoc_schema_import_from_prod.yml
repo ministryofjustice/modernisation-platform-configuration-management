@@ -7,14 +7,26 @@
     state: directory
     recurse: yes
   loop:
-    - /tmp/preprod
-    # - /home/oracle/admin/scripts
-# - name: copy scripts
-#   ansible.builtin.template:
-#     src: "{{ item }}.j2"
-#     dest: "/home/oracle/admin/scripts/{{ item }}"
-#     owner: oracle
-#     group: oinstall
-#     mode: "0700"
-#   loop:
-#     - "prod_adhoc_db_schemas_export.sh"
+    - "{{ scripts_dir }}"
+
+- name: copy scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ scripts_dir }}/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ adhoc_import_refresh_script }}"
+
+# - name: Start preprod import 
+#   become_user: oracle
+#   ansible.builtin.shell: |
+#     set -eo pipefail
+#     PATH=$PATH:/usr/local/bin
+#     main() {
+#       nohup {{ scripts_dir }}/{{ adhoc_import_refresh_script }} -i {{ prod_db_sid }} -s {{ remap_schemas }} -d {{ db_directory }} -t {{ EXPDP_TAG }} &
+#     }
+#     main 2>&1 | logger -p local3.info -t ansible-oracle-db
+#   async: 43200
+#   poll: 0

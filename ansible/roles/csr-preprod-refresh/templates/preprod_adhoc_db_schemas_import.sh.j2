@@ -56,7 +56,7 @@ error () {
 set_ora_env () {
   export ORAENV_ASK=NO
   export ORACLE_SID=$1
-  . oraenv
+  . /usr/local/bin/oraenv
   unset SQLPATH
   unset TWO_TASK
   unset LD_LIBRARY_PATH

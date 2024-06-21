@@ -1,6 +1,11 @@
 ---
 s3_bucket: s3-bucket20230609110811735400000001/CSR_DB_REFRESH
-environment: "{{ ec2.tags['is-production'] }}"
-server-type: "{{ ec2.tags['server-type'] }}"
-refresh_script: "csr_weekly_training_schema_refresh.sh"
-adhoc_refresh_script: "preprod_adhoc_db_schemas_import.sh"
+weekly_refresh_script: "csr_weekly_training_schema_refresh.sh"
+adhoc_export_refresh_script: "prod_adhoc_db_schemas_export.sh"
+adhoc_import_refresh_script: "preprod_adhoc_db_schemas_import.sh"
+adhoc_schemas: "HMPS_CUSTOM,IWFM_REGION1,IWFM_REGION2,IWFM_REGION3,IWFM_REGION4,IWFM_REGION5,IWFM_REGION6"
+remap_schemas: "HMPS_CUSTOM:CUSTOM_MO,IWFM_REGION1,IWFM_REGION2,IWFM_REGION3,IWFM_REGION4,IWFM_REGION5,IWFM_REGION6"
+db_directory: "PERF_DUMP_DIR"
+scripts_dir: "/home/oracle/admin/scripts"
+prod_db_sid: "PIWFM"
+preprod_db_sid: "PPIWFM"
