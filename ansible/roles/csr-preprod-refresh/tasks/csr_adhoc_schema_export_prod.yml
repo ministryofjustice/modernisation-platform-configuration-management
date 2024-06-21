@@ -18,7 +18,7 @@
     mode: "0700"
   loop:
     - "{{ adhoc_export_refresh_script }}"
-
+    
 - name: Start production export
   become_user: oracle
   ansible.builtin.shell: |
@@ -35,13 +35,13 @@
     ansible_remote_tmp: /tmp/.ansible
     ansible_async_dir: /tmp/.ansible_async
 
-- name: Wait for prod export to complete
+- name: Wait for prod export to complete 
   ansible.builtin.async_status:
     jid: "{{ prod_export_output.ansible_job_id }}"
   register: prod_export_output_result
   until: prod_export_output_result.finished
   delay: 60
-  retries: 60
+  retries: 3000
   vars:
     ansible_remote_tmp: /tmp/.ansible
     ansible_async_dir: /tmp/.ansible_async
