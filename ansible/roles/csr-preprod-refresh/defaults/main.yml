@@ -1,4 +1,6 @@
 ---
 s3_bucket: s3-bucket20230609110811735400000001/CSR_DB_REFRESH
+environment: "{{ ec2.tags['is-production'] }}"
+server-type: "{{ ec2.tags['server-type'] }}"
 refresh_script: "csr_weekly_training_schema_refresh.sh"
 adhoc_refresh_script: "preprod_adhoc_db_schemas_import.sh"

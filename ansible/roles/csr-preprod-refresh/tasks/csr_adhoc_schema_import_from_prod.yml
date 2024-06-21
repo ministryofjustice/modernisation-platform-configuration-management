@@ -1,0 +1,21 @@
+---
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - /tmp/preprod
+    # - /home/oracle/admin/scripts
+
+# - name: copy scripts
+#   ansible.builtin.template:
+#     src: "{{ item }}.j2"
+#     dest: "/home/oracle/admin/scripts/{{ item }}"
+#     owner: oracle
+#     group: oinstall
+#     mode: "0700"
+#   loop:
+#     - "prod_adhoc_db_schemas_export.sh"
