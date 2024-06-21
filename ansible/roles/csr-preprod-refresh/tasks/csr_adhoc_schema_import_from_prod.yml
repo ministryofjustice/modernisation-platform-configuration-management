@@ -18,7 +18,7 @@
     mode: "0700"
   loop:
     - "{{ adhoc_import_refresh_script }}"
-    
+
 - name: Start preprod import
   become_user: oracle
   ansible.builtin.shell: |
@@ -35,7 +35,7 @@
 #     ansible_remote_tmp: /tmp/.ansible
 #     ansible_async_dir: /tmp/.ansible_async
 
-# - name: Wait for prod import to complete 
+# - name: Wait for prod import to complete
 #   ansible.builtin.async_status:
 #     jid: "{{ prod_import_output.ansible_job_id }}"
 #   register: prod_import_output_result
