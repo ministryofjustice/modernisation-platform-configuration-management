@@ -25,7 +25,7 @@ $GlobalConfig = @{
     "nomis-combined-reporting-production"    = @{
         "NcrShortcuts" = @{
         }
-    }   
+    }
 }
 $ConfigurationManagementRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management"
 $ErrorActionPreference = "Stop"
@@ -47,7 +47,7 @@ function Get-Config {
         --filters "Name=resource-id,Values=$InstanceId"
     $Tags = "$TagsRaw" | ConvertFrom-Json
     $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
- 
+
     if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
         Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
     }
@@ -79,7 +79,7 @@ function Extract-Installer {
 
 $Config = Get-Config
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
- 
+
 # TODO: need to install these as well, just getting the files for now
 Set-Location -Path $WorkingDirectory
 Download-Installer -Key $Config.WindowsClientS3File -Destination $Config.WindowsClientS3File
