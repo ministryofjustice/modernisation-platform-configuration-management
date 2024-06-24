@@ -1,15 +1,17 @@
 #!/bin/bash
-THISSCRIPT=$(basename $0)
-SCRIPT_DIR=$(dirname $0)
-SUFFIX=$(date '+%d-%m-%y-%H%M%S')
-LOGFILE=${SCRIPT_DIR}/../logs/auto_refresh_schemas_${SUFFIX}.log
-SUCCESS_STATUS=0
-WARNING_STATUS=1
-ERROR_STATUS=9
-V_SESSION=v\$session
-cd $SCRIPT_DIR
+export THISSCRIPT=$(basename $0)
+export SCRIPT_DIR=$(dirname $0)
+export SUCCESS_STATUS=0
+export WARNING_STATUS=1
+export ERROR_STATUS=9
+export V_SESSION=v\$session
 export PATH=${PATH}:/usr/local/bin
-. ~/.bash_profile 
+export OEM_AGENT_HOME=/u01/app/oracle/product/oem-agent/agent_13.5.0.0.0
+export smtp="smtp://smtp.hmpps-domain.service.justice.gov.uk:25"
+export from="oracle@`hostname`.com"
+export EMAIL_RECIPIENT="dba_alerts_prod-aaaaa25gxv2vfzkv4f55ep2yee@moj.org.slack.com"
+cd $SCRIPT_DIR
+. ~/.bash_profile
 
 usage () {
   echo ""
@@ -24,7 +26,6 @@ usage () {
   echo "  Datapump directory name = Directory name in database"
   echo "  tag     = tag used for database schema export."
   echo "  eg. $THISSCRIPT -i PPIWFM -s HMPS_CUSTOM:CUSTOM_MO,IWFM_REGION1 -d DATA_PUMP_DIR -t TAG"
-
   exit $ERROR_STATUS
 }
 
@@ -45,7 +46,20 @@ warning () {
 error () {
   T=$(date +"%D %T")
   echo "ERROR : $THISSCRIPT : $T : $1"
+  echo "DB Refresh failed for ${REFRESH_DB_SID}" | mailx -s "Preprod ${REFRESH_DB_SID} ${1}" ${EMAIL_RECIPIENT}
   exit $ERROR_STATUS
+}
+
+create_blackout () {
+	info "Creating blackout"
+	$OEM_AGENT_HOME/bin/emctl start blackout refresh_${REFRESH_DB_SID} ${REFRESH_DB_SID}:oracle_database
+	$OEM_AGENT_HOME/bin/emctl status blackout
+}
+
+stop_blackout () {
+	info "Stopping blackout"
+	$OEM_AGENT_HOME/bin/emctl stop blackout refresh_${REFRESH_DB_SID}
+	$OEM_AGENT_HOME/bin/emctl status blackout
 }
 
 set_ora_env () {
@@ -60,32 +74,25 @@ set_ora_env () {
 
 validate_datapump_directory () {
   info "Validate datapump directory $DPDIR"
-  if [ -z $DPDIR ]
-  then
-    error "No datapump directory specified"
-  else
-    X=`sqlplus -s "/ as sysdba" <<EOF
-      set feedback off heading off echo off verify off
-      select 'DPPATH='||directory_path
-      from dba_directories
-      where directory_name = upper('$DPDIR');
-      exit
-  EOF`
-    eval $X
-    [ -z ${DPPATH} ] && error "No directory for ${DPDIR}, investigate"
-    [ ! -d $DPPATH ] && error "$DPDIR not a directory, investigate" || info "$DPDIR ($DPPATH) correct"
-  fi
+  echo "set feedback off heading off echo off verify off" > $SCRIPT_DIR/validate_datapump_directory.sql
+  echo "spool $SCRIPT_DIR/validate_datapump_directory.log" >> $SCRIPT_DIR/validate_datapump_directory.sql
+  echo "select 'cnt='||count(1) from dba_directories where directory_name=upper('${DPDIR}');" >> $SCRIPT_DIR/validate_datapump_directory.sql
+  echo "select 'DPPATH='||directory_path from dba_directories where directory_name=upper('${DPDIR}');" >> $SCRIPT_DIR/validate_datapump_directory.sql
+  echo "exit" >> $SCRIPT_DIR/validate_datapump_directory.sql
+  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/validate_datapump_directory.sql > /dev/null
+  [ $(grep "cnt=1" ${SCRIPT_DIR}/validate_datapump_directory.log | wc -l) == 0 ] && error "No directory for ${DPDIR}, investigate" || info "Database directory exists."
 }
+
 validate_schema () {
   USERNAME=$1
-  info "validating schema ${USERNAME}" 
-  echo "set feedback off heading off verify off echo off" > $SCRIPT_DIR/validate_schema.sql 
+  info "validating schema ${USERNAME}"
+  echo "set feedback off heading off verify off echo off" > $SCRIPT_DIR/validate_schema.sql
   echo "spool ${SCRIPT_DIR}/validate_user.log" >> $SCRIPT_DIR/validate_schema.sql
-  echo "select 'cnt='||count(1) from dba_users where username = upper('${USERNAME}');" >> $SCRIPT_DIR/validate_schema.sql 
+  echo "select 'cnt='||count(1) from dba_users where username = upper('${USERNAME}');" >> $SCRIPT_DIR/validate_schema.sql
   echo "spool off" >> $SCRIPT_DIR/validate_schema.sql
   echo "exit" >> $SCRIPT_DIR/validate_schema.sql
-  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/validate_schema.sql > /dev/null 
-  [ $(grep "cnt=1" ${SCRIPT_DIR}/validate_user.log | wc -l) ] && error "Schema ${USERNAME} does not exist in ${ORACLE_SID}" || info "Schema ${USERNAME} exists"
+  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/validate_schema.sql > /dev/null
+  [ $(grep "cnt=1" ${SCRIPT_DIR}/validate_user.log | wc -l) == 0 ] && error "Schema ${USERNAME} does not exist in ${ORACLE_SID}" || info "Schema ${USERNAME} exists"
 }
 
 prepare_db_for_import () {
@@ -101,8 +108,8 @@ prepare_db_for_import () {
   echo "shutdown immediate" >> $SCRIPT_DIR/prepare_db_for_import.sql
   echo "startup restrict;" >> $SCRIPT_DIR/prepare_db_for_import.sql
   echo "exit" >> $SCRIPT_DIR/prepare_db_for_import.sql
-  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/prepare_db_for_import.sql > /dev/null 
-  [ $(grep ORA- ${SCRIPT_DIR}/prepare_db_for_import.log| wc -l) > 0 ] && error "Prepapring db before import failed."
+  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/prepare_db_for_import.sql > /dev/null
+  [ $(grep ORA- ${SCRIPT_DIR}/prepare_db_for_import.log| wc -l) -gt 0 ] && error "Preparing db before import failed."
   info "Prepare database for import completed."
 }
 
@@ -119,7 +126,7 @@ post_db_import () {
   echo "@?/rdbms/admin/utlrp" >> $SCRIPT_DIR/post_db_import.sql
   echo "select owner, object_type , count(1) from dba_objects where status='INVALID' group by owner, object_type;" >> $SCRIPT_DIR/post_db_import.sql
   echo "exit" >> $SCRIPT_DIR/post_db_import.sql
-  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/post_db_import.sql > /dev/null 
+  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/post_db_import.sql > /dev/null
   [ $(grep ORA- ${SCRIPT_DIR}/post_db_import.log| wc -l) -gt 0 ] && error "Post db import failed."
   info "Post database import steps completed."
 }
@@ -141,41 +148,69 @@ recreate_schema () {
   echo "begin" >> $SCRIPT_DIR/schema_recreation.sql
   echo "for r1 in c1" >> $SCRIPT_DIR/schema_recreation.sql
   echo "loop" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "v_sql_stmt:='drop user ${USERNAME} cascade;';" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "v_sql_stmt:='drop user ${USERNAME} cascade';" >> $SCRIPT_DIR/schema_recreation.sql
   echo "dbms_output.put_line(v_sql_stmt);" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "execute immediate v_sql_stmt;" >> $SCRIPT_DIR/schema_recreation.sql
   echo "SELECT LISTAGG(letter, NULL) WITHIN GROUP (ORDER BY DBMS_RANDOM.VALUE) INTO   password" >> $SCRIPT_DIR/schema_recreation.sql
   echo "FROM   (" >> $SCRIPT_DIR/schema_recreation.sql
   echo "SELECT SUBSTR(digits,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(digits) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 3" >> $SCRIPT_DIR/schema_recreation.sql
   echo "UNION ALL SELECT SUBSTR(lower,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(lower) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 3" >> $SCRIPT_DIR/schema_recreation.sql
   echo "UNION ALL SELECT SUBSTR(upper,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(upper) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 3" >> $SCRIPT_DIR/schema_recreation.sql
   echo "UNION ALL SELECT SUBSTR(special,FLOOR(DBMS_RANDOM.VALUE(1, LENGTH(special) + 1)),1) letter  FROM   DUAL CONNECT BY LEVEL <= 2);" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "v_sql_stmt:='create user ${USERNAME} profile '||r1.profile||' identified by P'|| password || ' default tablespace '||r1.default_tablespace||" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "' temporary tablespace '||r1.temporary_tablespace||' quota unlimited on '||r1.default_tablespace||';';">> $SCRIPT_DIR/schema_recreation.sql
+  echo "v_sql_stmt:='create user ${USERNAME} profile ' ||r1.profile|| ' identified by P'|| password || ' default tablespace ' ||r1.default_tablespace|| " >> $SCRIPT_DIR/schema_recreation.sql
+  echo "' temporary tablespace ' ||r1.temporary_tablespace|| ' quota unlimited on '||r1.default_tablespace;">> $SCRIPT_DIR/schema_recreation.sql
   echo "dbms_output.put_line(v_sql_stmt);" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "v_sql_stmt:='grant create procedure,create sequence,create session,create table,create trigger,create type,create view,connect,unlimited tablespace to ${USERNAME};';" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "execute immediate v_sql_stmt;" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "v_sql_stmt:='grant create procedure,create sequence,create session,create table,create trigger,create type,create view,connect,unlimited tablespace to ${USERNAME}';" >> $SCRIPT_DIR/schema_recreation.sql
   echo "dbms_output.put_line(v_sql_stmt);" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "v_sql_stmt:='ALTER USER ${USERNAME} DEFAULT ROLE ALL;'" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "execute immediate v_sql_stmt;" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "v_sql_stmt:='ALTER USER ${USERNAME} DEFAULT ROLE ALL';" >> $SCRIPT_DIR/schema_recreation.sql
   echo "dbms_output.put_line(v_sql_stmt);" >> $SCRIPT_DIR/schema_recreation.sql
+  echo "execute immediate v_sql_stmt;" >> $SCRIPT_DIR/schema_recreation.sql
   echo "end loop;" >> $SCRIPT_DIR/schema_recreation.sql
   echo "end;" >> $SCRIPT_DIR/schema_recreation.sql
   echo "/" >> $SCRIPT_DIR/schema_recreation.sql
-  echo "exit" 
-  echo "spool off" >> >> $SCRIPT_DIR/schema_recreation.sql
+  echo "exit"
+  echo "spool off" >> $SCRIPT_DIR/schema_recreation.sql
   echo "exit" >> $SCRIPT_DIR/schema_recreation.sql
-  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/schema_recreation.sql > /dev/null 
-  [ $(grep ORA- ${SCRIPT_DIR}/schema_recreation.log) -gt 0 ] && error "PL/SQL error to drop/create user ${USERNAME}" || info "${USERNAME} dropped and created"
+  sqlplus -s "/ as sysdba" @$SCRIPT_DIR/schema_recreation.sql > /dev/null
+  [ $(grep ORA- ${SCRIPT_DIR}/schema_recreation.log| wc -l) -gt 0 ] && error "PL/SQL error to drop/create user ${USERNAME}" || info "${USERNAME} dropped and created"
+}
+
+import_schemas () {
+  for i in $(echo $SCHEMAS | sed "s/,/ /g")
+  do
+    if [ `echo $i | grep ":"| wc -l ` -eq 0 ]
+    then
+      recreate_schema ${i}
+      aws s3 cp s3://prodpreprod-corporate-staff-rostering20240621144741377900000001/${i}_${TAG}.dmp ${DP_DIRECTORY_PATH}
+      impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${i}_${TAG}.dmp logfile=${i}_${TAG}_import.log
+      change_password ${i}
+    elif [ `echo $i | grep -o ":"| wc -l ` -eq 1 ]
+    then
+      SNAME=`echo $i | grep ":"| awk -F':' '{ print $1}'`
+      TNAME=`echo $i | grep ":"| awk -F':' '{ print $2}'`
+      recreate_schema ${TNAME}
+      aws s3 cp s3://prodpreprod-corporate-staff-rostering20240621144741377900000001/${SNAME}_${TAG}.dmp ${DP_DIRECTORY_PATH}
+      impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${SNAME}_${TAG}.dmp logfile=${SNAME}_${TAG}_import.log remap_schema=${i}
+      change_password ${TNAME}
+    else
+      echo "Remap schemas specified incorrectly for $i"
+    fi
+    rm ${DP_DIRECTORY_PATH}/${SNAME}_${TAG}.dmp
+    [ $(egrep -v "ORA-39082|ORA-31684" ${DP_DIRECTORY_PATH}/${SNAME}_${TAG}_import.log | wc -l) -gt 0 ] && echo "CSR preprod schema ${i} Refresh failed... job will continue with next schema" | mailx -s "CSR preprod schema ${i} Refresh failed... job will continue with next schema" ${EMAIL_RECIPIENT}
+  done
 }
 
 change_password () {
   USERNAME=$1
   PASSWORD=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .${USERNAME})
-  echo "set feedback off heading off verify off echo off" > ${SCRIPT_DIR}/password_change.sql 
+  echo "set feedback off heading off verify off echo off" > ${SCRIPT_DIR}/password_change.sql
   echo "spool ${SCRIPT_DIR}/password_change.log" >> ${SCRIPT_DIR}/password_change.sql
-  echo "alter user ${SCHEMA} identified by ${PASSWORD};" >> ${SCRIPT_DIR}/password_change.sql
-  echo "exit" >> ${SCRIPT_DIR}password_change.sql
-  sqlplus -s "/ as sysdba" @${SCRIPT_DIR}/password_change.sql
-  [ $(grep ORA- ${SCRIPT_DIR}/schema_recreation.log) -gt 0 ] && error "${USERNAME} password reset failed." || info "${USERNAME} password reset successful."
-  info "End"
+  echo "alter user ${USERNAME} identified by ${PASSWORD};" >> ${SCRIPT_DIR}/password_change.sql
+  echo "exit" >> ${SCRIPT_DIR}/password_change.sql
+  sqlplus -s "/ as sysdba" @${SCRIPT_DIR}/password_change.sql > /dev/null
+  [ $(grep ORA- ${SCRIPT_DIR}/schema_recreation.log| wc -l) -gt 0 ] && error "${USERNAME} password reset failed." || info "${USERNAME} password reset successful."
 }
 
 # Main Routine
@@ -184,11 +219,12 @@ change_password () {
 info "Validating OS user"
 [ $(id | cut -d\( -f2 | cut -d\) -f1) != "oracle" ] && error "Must be oracle to run this script"
 info "User ok"
-REFRESH_DB_SID="UNSPECIFIED"
-REFRESH_ALTERNATE_WEEK=9
-SCRIPT_DIR="UNSPECIFIED"
+ORACLE_SID="UNSPECIFIED"
+DPDIR="UNSPECIFIED"
+SCHEMAS="UNSPECIFIED"
+TAG="UNSPECIFIED"
 
-while getopts "i:d:f:s:t:" opt
+while getopts "i:d:s:t:" opt
 do
   case $opt in
     i) ORACLE_SID=$OPTARG ;;
@@ -203,32 +239,24 @@ done
 [ "${SCHEMAS}" = "UNSPECIFIED" ] && usage
 [ "${TAG}" = "UNSPECIFIED" ] && usage
 
-info "Start - check ${LOGFILE} for progress"
-exec 1>${LOGFILE} 2>&1
-
-info "Database sid = $SID"
-info "Datapump directory = $DPDIR"
-info "Schemas = $SCHEMAS"
+info "Database sid = ${ORACLE_SID}"
+info "Datapump directory = ${DPDIR}"
+info "Schemas = ${SCHEMAS}"
 info "Tag = $TAG"
 
-# ------------------------------------------------------------------------------
-# Validate DB SID and set environment 
-# ------------------------------------------------------------------------------
 info "Validating target database"
-[ -z "$SID" -o "$SID" = "UNSPECIFIED" ] && usage
-grep ^${SID}: /etc/oratab >/dev/null 2>&1
-[ $? -ne 0 ] && error "Database $SID does not exist on this machine"
+grep ^${ORACLE_SID}: /etc/oratab >/dev/null 2>&1
+[ $? -ne 0 ] && error "Database $ORACLE_SID does not exist on this machine"
 info "Target database ok"
-info "Set environment for $SID"
-set_ora_env $SID
-
-# ------------------------------------------------------------------------------
-# Validate the datapump directory
-# ------------------------------------------------------------------------------
-info "Source the Oracle environment for $ORACLE_SID"
+info "Set environment for $ORACLE_SID"
 set_ora_env $ORACLE_SID
-validate_datapump_directory
 
+# Validate database dump directory exists. 
+validate_datapump_directory
+DP_DIRECTORY_PATH=$(grep "DPPATH="  ${SCRIPT_DIR}/validate_datapump_directory.log| awk -F= '{ print $2}')
+[ -d ${DP_DIRECTORY_PATH} ] && error "Datapump Directory does not exists on server" 
+
+# Validate schemas exist in database before starting import 
 info "Validate schemas $SCHEMAS"
 if [ -z $SCHEMAS ]
 then
@@ -248,24 +276,18 @@ else
     fi
   done
 fi
-# prepare_db_for_import
-# for i in $(echo $SCHEMAS | sed "s/,/ /g")
-# do
-#   aws s3 cp s3://{{ s3_bucket }}/${i}_${TAG}.dmp ${DIRPATH}
-#   if [ `echo $i | grep ":"| wc -l ` -eq 0 ]
-#   then
-#     recreate_schema ${i}
-#     impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${i}_${TAG}.dmp logfile=${i}_${TAG}_import.log
-#     change_password ${i}
-#   elif [ `echo $i | grep -o ":"| wc -l ` -eq 1 ]
-#   then
-#     SNAME=`echo $i | grep ":"| awk -F':' '{ print $1}'`
-#     TNAME=`echo $i | grep ":"| awk -F':' '{ print $2}'`
-#     recreate_schema ${TNAME}
-#     impdp userid="'/as sysdba'" directory=${DPDIR} dumpfile=${SNAME}_${TAG}.dmp logfile=${SNAME}_${TAG}_import.log remap_schema=${i}
-#     change_password ${TNAME}
-#   else
-#     echo "Remap schemas specified incorrectly for $i"
-#   fi
-# done
-# post_db_import 
+
+# Start blackout
+create_blackout
+
+# Before import convert database in noarchivelog mode
+prepare_db_for_import
+
+# Drop schemas and import dumpfiles
+import_schemas
+
+# Post db import put the database back in archivelog mode
+post_db_import
+
+# Stop blackout
+stop_blackout 
