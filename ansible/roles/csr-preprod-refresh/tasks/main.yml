@@ -2,8 +2,15 @@
 - import_tasks: csr-training-refresh.yml
   tags:
     - ec2provision
+    - csr-training-refresh-job-setup
+    - never
 
-- import_tasks: csr-adhoc-schema-refresh-from-prod.yml
+- import_tasks: csr_adhoc_schema_export_prod.yml
   tags:
-    - production_script_copy
+    - csr_adhoc_schema_export_prod
+    - never
+
+- import_tasks: csr_adhoc_schema_import_from_prod.yml
+  tags:
+    - csr_adhoc_schema_import_from_prod
     - never

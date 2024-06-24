@@ -1,0 +1,47 @@
+---
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ scripts_dir }}"
+
+- name: copy scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ scripts_dir }}/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ adhoc_import_refresh_script }}"
+
+- name: Start preprod import
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      nohup {{ scripts_dir }}/{{ adhoc_import_refresh_script }} -i {{ preprod_db_sid }} -s {{ remap_schemas }} -d {{ db_directory }} -t {{ EXPDP_TAG }} &
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  register: prod_import_output
+  async: 43200
+  poll: 0
+#   vars:
+#     ansible_remote_tmp: /tmp/.ansible
+#     ansible_async_dir: /tmp/.ansible_async
+
+# - name: Wait for prod import to complete
+#   ansible.builtin.async_status:
+#     jid: "{{ prod_import_output.ansible_job_id }}"
+#   register: prod_import_output_result
+#   until: prod_import_output_result.finished
+#   delay: 60
+#   retries: 3000
+#   vars:
+#     ansible_remote_tmp: /tmp/.ansible
+#     ansible_async_dir: /tmp/.ansible_async

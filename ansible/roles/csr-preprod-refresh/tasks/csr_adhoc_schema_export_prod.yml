@@ -1,0 +1,47 @@
+---
+- name: create script directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    state: directory
+    recurse: yes
+  loop:
+    - "{{ scripts_dir }}"
+
+- name: copy scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ scripts_dir }}/{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  loop:
+    - "{{ adhoc_export_refresh_script }}"
+
+- name: Start production export
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    PATH=$PATH:/usr/local/bin
+    main() {
+      nohup {{ scripts_dir }}/{{ adhoc_export_refresh_script }} {{ prod_db_sid }} {{ adhoc_schemas }} {{ db_directory }} {{ EXPDP_TAG }} &
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  register: prod_export_output
+  async: 43200
+  poll: 0
+#   vars:
+#     ansible_remote_tmp: /tmp/.ansible
+#     ansible_async_dir: /tmp/.ansible_async
+
+# - name: Wait for prod export to complete
+#   ansible.builtin.async_status:
+#     jid: "{{ prod_export_output.ansible_job_id }}"
+#   register: prod_export_output_result
+#   until: prod_export_output_result.finished
+#   delay: 60
+#   retries: 3000
+#   vars:
+#     ansible_remote_tmp: /tmp/.ansible
+#     ansible_async_dir: /tmp/.ansible_async
