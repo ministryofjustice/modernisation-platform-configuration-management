@@ -87,7 +87,7 @@ validate_schema () {
   USERNAME=$1
   info "validating schema ${USERNAME}"
   echo "set feedback off heading off verify off echo off" > $SCRIPT_DIR/validate_schema.sql
-  echo "spool ${SCRIPT_DIR}/validate_user.log" >> $SCRIPT_DIR/validate_schema.sql
+  echo "spool ${SCRIPT_DIR}/validate_user.log append" >> $SCRIPT_DIR/validate_schema.sql
   echo "select 'cnt='||count(1) from dba_users where username = upper('${USERNAME}');" >> $SCRIPT_DIR/validate_schema.sql
   echo "spool off" >> $SCRIPT_DIR/validate_schema.sql
   echo "exit" >> $SCRIPT_DIR/validate_schema.sql
@@ -134,7 +134,7 @@ post_db_import () {
 recreate_schema () {
   USERNAME=$1
   info "Recreating schema ${USERNAME}"
-  echo "spool ${SCRIPT_DIR}/schema_recreation.log" > $SCRIPT_DIR/schema_recreation.sql
+  echo "spool ${SCRIPT_DIR}/schema_recreation.log append" > $SCRIPT_DIR/schema_recreation.sql
   echo "set feedback off serveroutput on size 100000" >> $SCRIPT_DIR/schema_recreation.sql
   echo "define SCHEMA=${USERNAME}" >> $SCRIPT_DIR/schema_recreation.sql
   echo "declare" >> $SCRIPT_DIR/schema_recreation.sql
@@ -206,7 +206,7 @@ change_password () {
   USERNAME=$1
   PASSWORD=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .${USERNAME})
   echo "set feedback off heading off verify off echo off" > ${SCRIPT_DIR}/password_change.sql
-  echo "spool ${SCRIPT_DIR}/password_change.log" >> ${SCRIPT_DIR}/password_change.sql
+  echo "spool ${SCRIPT_DIR}/password_change.log append" >> ${SCRIPT_DIR}/password_change.sql
   echo "alter user ${USERNAME} identified by ${PASSWORD};" >> ${SCRIPT_DIR}/password_change.sql
   echo "exit" >> ${SCRIPT_DIR}/password_change.sql
   sqlplus -s "/ as sysdba" @${SCRIPT_DIR}/password_change.sql > /dev/null
@@ -250,6 +250,9 @@ grep ^${ORACLE_SID}: /etc/oratab >/dev/null 2>&1
 info "Target database ok"
 info "Set environment for $ORACLE_SID"
 set_ora_env $ORACLE_SID
+cat /dev/null > ${SCRIPT_DIR}/validate_user.log 
+cat /dev/null > ${SCRIPT_DIR}/password_change.log 
+cat /dev/null > ${SCRIPT_DIR}/schema_recreation.log
 
 # Validate database dump directory exists. 
 validate_datapump_directory
