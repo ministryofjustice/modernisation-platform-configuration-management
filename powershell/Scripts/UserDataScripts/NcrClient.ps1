@@ -54,7 +54,7 @@ function Get-Config {
     Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
 }
 
-function Download-Installer {
+function Get-Installer {
     param (
         $Key
         $Destination
@@ -66,7 +66,7 @@ function Download-Installer {
         -Verbose
 }
 
-function Extract-Installer {
+function Expand-Installer {
     param (
         $File
         $Destination
@@ -82,15 +82,15 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 
 # TODO: need to install these as well, just getting the files for now
 Set-Location -Path $WorkingDirectory
-Download-Installer -Key $Config.WindowsClientS3File -Destination $Config.WindowsClientS3File
-Download-Installer -Key $Config.IPSS3File -Destination $Config.IPSS3File
-Download-Installer -Key $Config.DataServicesS3File -Destination $Config.DataServicesS3File
-Download-Installer -Key $Config.BIPWindowsClientFile -Destination $Config.BIPWindowsClientFile
+Get-Installer -Key $Config.WindowsClientS3File -Destination $Config.WindowsClientS3File
+Get-Installer -Key $Config.IPSS3File -Destination $Config.IPSS3File
+Get-Installer -Key $Config.DataServicesS3File -Destination $Config.DataServicesS3File
+Get-Installer -Key $Config.BIPWindowsClientFile -Destination $Config.BIPWindowsClientFile
 
-Extract-Installer -File $Config.WindowsClientS3File -Destination "\Client"
-Extract-Installer -File $Config.IPSS3File -Destination "\IPS"
-Extract-Installer -File $Config.DataServicesS3File -Destination "\DataServices"
-Extract-Installer -File $Config.BIPWindowsClientFile -Destination "\BIP"
+Expand-Installer -File $Config.WindowsClientS3File -Destination "\Client"
+Expand-Installer -File $Config.IPSS3File -Destination "\IPS"
+Expand-Installer -File $Config.DataServicesS3File -Destination "\DataServices"
+Expand-Installer -File $Config.BIPWindowsClientFile -Destination "\BIP"
 
   
 # {{{ install Oracle
