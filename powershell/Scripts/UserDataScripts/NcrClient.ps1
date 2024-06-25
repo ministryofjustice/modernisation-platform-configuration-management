@@ -90,7 +90,6 @@ Get-Installer -Key $Config.BIPWindowsClientFile -Destination $Config.BIPWindowsC
 Expand-Installer -File $Config.WindowsClientS3File -Destination "\Client"
 Expand-Installer -File $Config.IPSS3File -Destination "\IPS"
 Expand-Installer -File $Config.DataServicesS3File -Destination "\DataServices"
-Expand-Installer -File $Config.BIPWindowsClientFile -Destination "\BIP"
 
   
 # {{{ install Oracle
