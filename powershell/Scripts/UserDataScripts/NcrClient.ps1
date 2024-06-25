@@ -53,7 +53,7 @@ function Get-Config {
 
 function Get-Installer {
     param (
-        $Key
+        $Key,
         $Destination
     )
     Read-S3Object `
@@ -65,7 +65,7 @@ function Get-Installer {
 
 function Expand-Installer {
     param (
-        $File
+        $File,
         $Destination
     )
     Expand-Archive `
