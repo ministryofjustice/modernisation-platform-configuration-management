@@ -59,7 +59,7 @@ function Get-Installer {
     Read-S3Object `
         -BucketName $Config.WindowsClientS3Bucket `
         -Key ($Config.WindowsClientS3Folder + "/" + $Key) `
-        -File (".\" + $Destination) `
+        -File $Destination `
         -Verbose
 }
 
@@ -70,7 +70,7 @@ function Expand-Installer {
     )
     Add-Type -Assembly "System.IO.Compression.Filesystem"
     [System.IO.Compression.ZipFile]::ExtractToDirectory(
-        ".\" + $File,
+        $File,
         $Destination
     )
 }
@@ -81,14 +81,14 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 
 # TODO: need to install these as well, just getting the files for now
 Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.WindowsClientS3File -Destination $Config.WindowsClientS3File
-Get-Installer -Key $Config.IPSS3File -Destination $Config.IPSS3File
-Get-Installer -Key $Config.DataServicesS3File -Destination $Config.DataServicesS3File
-Get-Installer -Key $Config.BIPWindowsClientFile -Destination $Config.BIPWindowsClientFile
+Get-Installer -Key $Config.WindowsClientS3File -Destination (".\" + $Config.WindowsClientS3File)
+Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
+Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
+Get-Installer -Key $Config.BIPWindowsClientFile -Destination (".\" + $Config.BIPWindowsClientFile)
 
-Expand-Installer -File $Config.WindowsClientS3File -Destination "\Client"
-Expand-Installer -File $Config.IPSS3File -Destination "\IPS"
-Expand-Installer -File $Config.DataServicesS3File -Destination "\DataServices"
+Expand-Installer -File ( ".\" + $Config.WindowsClientS3File) -Destination ".\Client"
+Expand-Installer -File ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
+Expand-Installer -File ( ".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
 
 # {{{ install Oracle
 Set-Location -Path $WorkingDirectory/Client
