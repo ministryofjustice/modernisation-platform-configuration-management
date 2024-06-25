@@ -73,8 +73,8 @@ function Expand-Installer {
     )
     Add-Type -Assembly "System.IO.Compression.Filesystem"
     [System.IO.Compression.ZipFile]::ExtractToDirectory(
-        $File,
-        $Destination
+        ($File | Resolve-Path),
+        ($Destination | Resolve-Path)
     )
 }
 # }}}
