@@ -5,7 +5,7 @@ $GlobalConfig = @{
          "WindowsClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
          "IPSS3File" = "IPS.ZIP" # IPS SW, install 2nd
          "DataServicesS3File" = "DATASERVICES.ZIP" # BODS SW, install 3rd
-         "BIPWindowsClientFile" = "BIPLATCLIENT4304P_500-70005711.EXE"
+         "BIPWindowsClientFile" = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
     }
     "nomis-combined-reporting-development" = @{
         "NcrShortcuts" = @{
