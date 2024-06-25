@@ -83,7 +83,6 @@ function Expand-Installer {
 $Config = Get-Config
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 
-# TODO: need to install these as well, just getting the files for now
 Set-Location -Path $WorkingDirectory
 Get-Installer -Key $Config.WindowsClientS3File -Destination (".\" + $Config.WindowsClientS3File)
 Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
