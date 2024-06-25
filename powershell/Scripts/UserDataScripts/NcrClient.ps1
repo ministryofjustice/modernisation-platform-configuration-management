@@ -96,7 +96,7 @@ Expand-Installer -File ( ".\" + $Config.DataServicesS3File) -Destination ".\Data
 
   
 # {{{ install Oracle
-Set-Location -Path $WorkingDirectory/Client
+Set-Location -Path $WorkingDirectory/Client/client
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
 # FIXME file name needs fixing
 setup.exe -silent -noconfig -nowait -responseFile ($ConfigurationManagementRepo + "\powershell\Configs\NCROracle19Response.rsp")
