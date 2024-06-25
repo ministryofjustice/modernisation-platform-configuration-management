@@ -71,9 +71,11 @@ function Expand-Installer {
         $File,
         $Destination
     )
-    Expand-Archive `
-        -Path (".\" + $File) `
-        -DestinationPath ($WorkingDirectory + $Destination)
+    Add-Type -Assembly "System.IO.Compression.Filesystem"
+    [System.IO.Compression.ZipFile]::ExtractToDirectory(
+        ".\" + $File,
+        $Destination
+    )
 }
 # }}}
 
