@@ -46,10 +46,14 @@ oracle_software:
 database_parameters:
   processes: 1500
   control_file_record_keep_time: 31
+# OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
+# Prevent changing these to unrepresentative statistics.
 database_locked_statistics:
   - schema_name: DELIUS_APP_SCHEMA
     table_names:
       - DOC_MIGRATION_QUEUE_TAB: ALL
+      - OFFENDER_DELTA: ALL
+      - DOMAIN_EVENT: ALL
 fsfo_mode: disabled
 required_patches:
   p36252161:
