@@ -1,0 +1,54 @@
+#!/bin/bash
+export THISSCRIPT=$(basename $0)
+export PATH=/usr/local/bin:$PATH
+export SCRIPT_DIR=/home/oracle/admin/rman_scripts
+
+info () {
+  T=$(date +"%D %T")
+  echo "INFO : $THISSCRIPT : $T : $1"
+  if [ "$DEBUG_MODE" = "Y" ]
+  then
+    read CONTINUE?"Press any key to continue "
+  fi
+}
+
+warning () {
+  T=$(date +"%D %T")
+  echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=$(date +"%D %T")
+  echo "ERROR : $THISSCRIPT : $T : $1"
+  exit $ERROR_STATUS
+}
+
+set_ora_env () {
+  export ORAENV_ASK=NO
+  export ORACLE_SID=$1
+  . oraenv
+  unset SQLPATH
+  unset TWO_TASK
+  unset LD_LIBRARY_PATH
+  export NLS_DATE_FORMAT=YYMMDDHH24MI
+}
+
+rman_delete_archivelog () {
+    set_ora_env ${1}
+    info "Deleting archivelogs on  ${ORACLE_SID}"
+    echo "delete archivelog until time 'sysdate-3';" > ${SCRIPT_DIR}/rman_delete_archivelogs.cmd
+    echo "exit" >> ${SCRIPT_DIR}/rman_delete_archivelogs.cmd
+    rman target / cmdfile=${SCRIPT_DIR}/rman_delete_archivelogs.cmd log=${SCRIPT_DIR}/logs/archivelog_deletion_${TARGET_DB}.log
+}
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+
+for TARGET_DB in $(cat /etc/db_backup_exclude_sids | tr "|" "\n")
+do
+    if [ $(grep ${TARGET_DB} /etc/oratab | wc -l) -eq 1 ]
+    then
+        rman_delete_archivelog ${TARGET_DB}
+    fi
+done

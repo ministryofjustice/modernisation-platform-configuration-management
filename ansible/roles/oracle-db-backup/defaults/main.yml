@@ -1,6 +1,7 @@
 ---
 # scheduled backups go directly to S3
 rman_backup_script: "rman_backup.sh" # override this as necessary in group_vars
+arch_cleanup_script: "db_archivelog_cleanup.sh"
 rman_backup_cron:
   backup_level_0: []
   backup_level_1: []

@@ -12,6 +12,7 @@
 - name: Generate backup command parameters for scheduler
   ansible.builtin.set_fact:
     backup_command: "/home/oracle/admin/rman_scripts/{{ rman_backup_script }} -t HOT -f S3 {{ catalog_parameter }} -i "
+    arch_deletion_command: "/home/oracle/admin/rman_scripts/{{ arch_cleanup_script }}"
 
 - name: create script directory
   ansible.builtin.file:
@@ -35,15 +36,6 @@
   loop:
     - "{{ rman_backup_script }}"
 
-- name: copy exclude script
-  ansible.builtin.template:
-    src: "db_backup_exclude_sids.j2"
-    dest: "/etc/db_backup_exclude_sids"
-    owner: oracle
-    group: oinstall
-    mode: "0600"
-  when: exclude_db_backup is defined
-
 - name: setup rman database backup level 0
   ansible.builtin.cron:
     name: "{{ item.name }}"
@@ -63,3 +55,32 @@
     user: root
     job: "su oracle -c '{{ backup_command }} 1' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_1 | list }}"
+
+- name: Setup archivelog deletion for databases which are excluded from backup
+  block:
+    - name: copy exclude script
+      ansible.builtin.template:
+        src: "db_backup_exclude_sids.j2"
+        dest: "/etc/db_backup_exclude_sids"
+        owner: oracle
+        group: oinstall
+        mode: "0600"
+
+    - name: copy exclude script
+      ansible.builtin.template:
+        src: "{{ arch_cleanup_script }}.j2"
+        dest: "{{ arch_deletion_command }}"
+        owner: oracle
+        group: oinstall
+        mode: "0700"
+
+    - name: setup rman archivelog deletion for refresh db's
+      ansible.builtin.cron:
+        name: "db_archivelog_deletion"
+        weekday: "*"
+        minute: "30"
+        hour: "4"
+        user: root
+        job: "su oracle -c '{{ arch_deletion_command }}' 2>&1 | logger -p local3.info -t db_archivelog_deletion"
+
+  when: exclude_db_backup is defined
