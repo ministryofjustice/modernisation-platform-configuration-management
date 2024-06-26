@@ -59,7 +59,7 @@ db_name_change () {
 	fi
 	sed -i "/db_name/d" ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	echo "log_archive_config='dg_config=(LSCNOM,LSMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-	echo "log_archive_dest_2='SERVICE=LSMIS ARCH OPTIONAL NOREGISTER REOPEN=60 DB_UNIQUE_NAME=LSMIS'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+	echo "log_archive_dest_2='SERVICE=LSMIS ARCH OPTIONAL NOREGISTER REOPEN=60 DB_UNIQUE_NAME=LSMIS VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	echo "log_archive_dest_state_2=enable"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	echo "db_name=${REFRESH_DB_SID}" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
 	echo "spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora'" > $ORACLE_HOME/dbs/init${REFRESH_DB_SID}.ora

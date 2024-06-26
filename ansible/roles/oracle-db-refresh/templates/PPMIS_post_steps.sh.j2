@@ -79,7 +79,7 @@ db_setup () {
   asmcmd mkdir +DATA/PPMIS/ARCHIVELOG
   set_ora_env $REFRESH_DB_SID
   echo "log_archive_config='dg_config=(PPCNOM,PPMIS)'" >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
-  echo "log_archive_dest_2='LOCATION=+DATA/PPMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILES,ALL_ROLES)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
+  echo "log_archive_dest_2='LOCATION=+DATA/PPMIS/ARCHIVELOG VALID_FOR=(STANDBY_LOGFILE,PRIMARY_ROLE)'"  >> ${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora
   echo "set verify off trimspool on pages 5000 lines 400 termout off head off trimout on" > ${DB_SCRIPT_DIR}/db_setup.sql
   echo "spool ${DB_SCRIPT_DIR}/db_setup.log" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "create spfile='+DATA/${REFRESH_DB_SID}/spfile${REFRESH_DB_SID}.ora' from pfile='${DB_SCRIPT_DIR}/init${REFRESH_DB_SID}.ora';" >> ${DB_SCRIPT_DIR}/db_setup.sql
