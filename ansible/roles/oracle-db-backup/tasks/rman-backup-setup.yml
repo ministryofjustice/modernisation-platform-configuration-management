@@ -56,7 +56,7 @@
     job: "su oracle -c '{{ backup_command }} 1' 2>&1 | logger -p local3.info -t rman-backup"
   loop: "{{ rman_backup_cron.backup_level_1 | list }}"
 
-- name: Setup archivelog deletion for databases which are excluded from backup 
+- name: Setup archivelog deletion for databases which are excluded from backup
   block:
     - name: copy exclude script
       ansible.builtin.template:
