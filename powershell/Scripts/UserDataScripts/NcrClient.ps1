@@ -77,6 +77,7 @@ function Expand-Installer {
 }
 # }}}
 
+# {{{ prepare assets
 $Config = Get-Config
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 
@@ -89,6 +90,7 @@ Get-Installer -Key $Config.BIPWindowsClientFile -Destination (".\" + $Config.BIP
 Expand-Installer -File ( ".\" + $Config.WindowsClientS3File) -Destination ".\Client"
 Expand-Installer -File ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 Expand-Installer -File ( ".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
+# }}}
 
 # {{{ install Oracle
 Set-Location -Path $WorkingDirectory/Client/client
