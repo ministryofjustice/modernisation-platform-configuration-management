@@ -13,25 +13,25 @@ GPOs:
     value: 1
   - name: AllowRemoteDesktopConnections
     comment: Allow users to connect remotely by using Remote Desktop Services
-    key: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server
+    key: HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server
     valuename: AllowRemoteRPC
     type: DWORD
     value: 1
   - name: RestrictRemoteDesktopSessions
     comment: Restrict users to a single Remote Desktop Services
-    key: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server
+    key: HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
     valuename: fSingleSessionPerUser
     type: DWORD
     value: 1
-  # - name: PreventLocalAdminCustomization
-  # comment: Do not allow local administrators to customize permissions
-  # key: HKLM\Software\Policies\Microsoft\Windows NT\Terminal Services <-- This key does not exist
-  # valuename: fDisableAdmin or possible DisableAdmin ???
-  # type: DWORD
-  # value: 1
+  - name: PreventLocalAdminCustomization
+    comment: Do not allow local administrators to customize permissions
+    key: HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
+    valuename: fWritableTSCCPermTab
+    type: DWORD
+    value: 0 # Enabled
   - name: RequireNetworkLevelAuthentication
     comment: 
-    key: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa
-    valuename: forceguest
+    key: HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
+    valuename: UserAuthentication
     type: DWORD
     value: 1
