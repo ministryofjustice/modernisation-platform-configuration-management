@@ -7,7 +7,7 @@ dns_search_domains:
   - hmpps-oem.hmpps-preproduction.modernisation-platform.internal
   - nomis-data-hub.hmpps-preproduction.modernisation-platform.internal
   - azure.hmpp.root
-PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
+PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.246
 
 # OEM server
 OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
@@ -18,14 +18,6 @@ nomis_configs:
     url: c-lsast.preproduction.nomis.service.justice.gov.uk
   preprod:
     url: c.preproduction.nomis.service.justice.gov.uk
-
-db_configs:
-  PPCNOM:
-    db_name: PPCNOM
-  LSCNOM:
-    db_name: LSCNOM
-  RCVCAT:
-    rcvcat_db_name: PPRCVCAT
 
 osbws_additional_configs:
   - name: osbws_prod
@@ -60,3 +52,78 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+db_configs:
+  PPCNOM:
+    db_name: PPCNOM
+    db_unique_name: PPCNOM
+    instance_name: PPCNOM
+    host_name: preprod-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PPCNOM
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  PPNDH:
+    db_name: PPNDH
+    db_unique_name: PPNDH
+    instance_name: PPNDH
+    host_name: preprod-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PPNDH
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  PPTRDAT:
+    db_name: PPTRDAT
+    db_unique_name: PPTRDAT
+    instance_name: PPTRDAT
+    host_name: preprod-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PPTRDAT
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
+  PPMIS:
+    db_name: PPMIS
+    db_unique_name: PPMIS
+    instance_name: PPMIS
+    host_name: preprod-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PPMIS
+    service:
+      - { name: MIS_TAF, role: PRIMARY }
+  PPCNMAUD:
+    db_name: PPCNMAUD
+    db_unique_name: PPCNMAUD
+    instance_name: PPCNMAUD
+    host_name: preprod-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PPCNMAUD
+    service:
+      - { name: CNMAUD_TAF, role: PRIMARY }
+  LSCNOM:
+    db_name: LSCNOM
+    db_unique_name: LSCNOM
+    instance_name: LSCNOM
+    host_name: lsast-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: LSCNOM
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  LSMIS:
+    db_name: MISP
+    db_unique_name: LSMIS
+    instance_name: LSMIS
+    host_name: lsast-nomis-db-1-a.preproduction.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: LSMIS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: MIS_TAF, role: PRIMARY }
+  RCVCAT:
+    rcvcat_db_name: PPRCVCAT
