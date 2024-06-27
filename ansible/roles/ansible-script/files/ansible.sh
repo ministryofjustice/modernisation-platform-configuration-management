@@ -144,7 +144,7 @@ run_ansible() {
   # run ansible (comma after localhost deliberate)
   cd $ansible_dir/${ansible_repo}/${ansible_repo_basedir}
   echo "# Execute ansible $@ $ansible_group_vars ..."
-  ansible-playbook $@ $ansible_group_vars \
+  ansible-playbook "$@" $ansible_group_vars \
    --connection=local \
    --inventory localhost, \
    --extra-vars "ansible_python_interpreter=$python" \
@@ -155,4 +155,4 @@ run_ansible() {
   deactivate
 }
 
-run_ansible $@
+run_ansible "$@"
