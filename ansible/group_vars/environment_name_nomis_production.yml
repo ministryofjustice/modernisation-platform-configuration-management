@@ -7,9 +7,6 @@ dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - nomis-data-hub.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
-SYSCON_DB_RELEASE: "DB_V11.2.1.1.246"
-FORMS_SOURCES_TGZ: "/u01/tag/FormsSources/2024-04-13.tgz"
-FORMS_SOURCES_TGZ_RELEASE: "DB_V11.2.1.1.246"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -45,7 +42,7 @@ db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
   PDCNOM:
-    db_name: CNOMP
+    db_name: PDCNOM
     db_unique_name: PDCNOM
     instance_name: PDCNOM
     host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
