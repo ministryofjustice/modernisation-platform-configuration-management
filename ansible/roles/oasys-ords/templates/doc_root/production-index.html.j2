@@ -21,7 +21,7 @@
 function popUp(URL) {
 day = new Date();
 id = day.getTime();
-eval("page" + id + " = window.open(URL, '_blank', 'toolbar=0,scrollbars=1,location=0,statusbar=1,menubar=0,resizable=1,width=1024,height=768');");
+eval("page" + id + " = window.open(URL, '" + id + "', 'toolbar=0,scrollbars=1,location=0,statusbar=1,menubar=0,resizable=1,width=1024,height=768');");
 }
 // End -->
 
@@ -106,26 +106,26 @@ jQuery.fn.pngFix = function(settings) {
 };
 
 jQuery.fn.maintenanceMessage = function() {
-  
-	jQuery.get('maintenance_message.html', function(message) {
-		var messageJs = JSON.parse(message)
-		var messageText = messageJs.message.replace(/\\n/g, '\n');
-		var messageShow = messageJs.show;
 
-		$('textarea[name="Comments"]').val(messageText);
-		
-		// hide row if show is false
-		if (messageShow === true) {
-			$("#maintenanceMessageBox").show();
-		} else if (messageShow === false) {
-			$("#maintenanceMessageBox").hide();
-		} else if (messageShow.toLowerCase().replace(/\s/g,'') === "true") {
-			$("#maintenanceMessageBox").show();
-		} else if (messageShow.toLowerCase().replace(/\s/g,'') === "false") {
-			$("#maintenanceMessageBox").hide();
-		} else {
-			$("#maintenanceMessageBox").show();
-		}
+  jQuery.get('maintenance_message.html', function(message) {
+      var messageJs = JSON.parse(message)
+      var messageText = messageJs.message.replace(/\\n/g, '\n');
+      var messageShow = messageJs.show;
+
+      $('textarea[name="Comments"]').val(messageText);
+
+      // hide row if show is false
+      if (messageShow === true) {
+          $("#maintenanceMessageBox").show();
+      } else if (messageShow === false) {
+          $("#maintenanceMessageBox").hide();
+      } else if (messageShow.toLowerCase().replace(/\s/g,'') === "true") {
+          $("#maintenanceMessageBox").show();
+      } else if (messageShow.toLowerCase().replace(/\s/g,'') === "false") {
+          $("#maintenanceMessageBox").hide();
+      } else {
+          $("#maintenanceMessageBox").show();
+      }
 
 	}, 'text');
 
@@ -137,8 +137,8 @@ jQuery.fn.maintenanceMessage = function() {
 
 
 $(document).ready(function(){
- $(document).pngFix();
- $(document).maintenanceMessage(); 
+  $(document).pngFix();
+  $(document).maintenanceMessage();
 });
 </script>
 <style type="text/css">
@@ -188,7 +188,6 @@ $(document).ready(function(){
 						<td>&nbsp;</td>
 						<td style="text-align: left">&nbsp;</td>
 					</tr>
-
 					<tr>
 						<td style="width: 10%"></td>
 						<td>
@@ -196,14 +195,10 @@ $(document).ready(function(){
 						<img alt="OASys Icon" height="35" src="i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
 						OASys</a></td>
 					</tr>
-
-
 					<tr  id="maintenanceMessageBox">
 						<td style="width: 10%"></td>
 						<td style="font-size: 12px"><textarea name="Comments" cols="100" rows="4" readonly="yes"></textarea></td>
 					</tr>
-
-
 					<tr>
 						<td>&nbsp;</td>
 						<td style="text-align: left">&nbsp;</td>
@@ -211,7 +206,6 @@ $(document).ready(function(){
 					<tr>
 						<td style="width: 10%"></td>
 						<td>
-
 					</tr>
 					<tr>
 						<td style="width: 10%"></td>
@@ -220,8 +214,6 @@ $(document).ready(function(){
 						<img alt="OASys Icon" height="35" src="i/oasys_icon_small.png" style="vertical-align: middle; margin-right: 15px;" />
 						Practice</a></td>
 					</tr>
-
-
 					<tr>
 						<td>&nbsp;</td>
 						<td style="text-align: left">&nbsp;</td>
