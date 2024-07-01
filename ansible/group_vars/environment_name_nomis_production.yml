@@ -7,7 +7,6 @@ dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - nomis-data-hub.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
-PROD_SYSCON_WEB_RELEASE: DB_V11.2.1.1.219
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -42,70 +41,84 @@ nomis_configs:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
-
-  TRDATP:
-    db_name: TRDATP
-    db_unique_name: TRDATP
-    instance_name: TRDATP
-    host_name: pdpdl00037.azure.hmpp.root
+  PDCNOM:
+    db_name: PDCNOM
+    db_unique_name: PDCNOM
+    instance_name: PDCNOM
+    host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: TRDATP
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    tns_name: PDCNOM
     service:
-      - { name: TRDAT_TAF, role: PRIMARY }
-
-  NDHP:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
+  PDNDH:
     db_name: NDHP
-    db_unique_name: NDHP
-    instance_name: NDHP
-    host_name: pdpdl00037.azure.hmpp.root
+    db_unique_name: PDNDH
+    instance_name: PDNDH
+    host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: NDHP
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    tns_name: PDNDH
     service:
       - { name: NDH_TAF, role: PRIMARY }
-
-  DRTRDAT:
+  PDTRDAT:
     db_name: TRDATP
-    db_unique_name: DRTRDAT
-    instance_name: DRTRDAT
-    host_name: prod-nomis-db-1-b
+    db_unique_name: PDTRDAT
+    instance_name: PDTRDAT
+    host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: DRTRDAT
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    tns_name: PDTRDAT
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
-
-  DRNDH:
-    db_name: NDHP
-    db_unique_name: DRNDH
-    instance_name: DRNDH
-    host_name: prod-nomis-db-1-b
+  PDMIS:
+    db_name: MISP
+    db_unique_name: PDMIS
+    instance_name: PDMIS
+    host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: DRNDH
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
+    tns_name: PDMIS
     service:
-      - { name: NDH_TAF, role: PRIMARY }
-
+      - { name: MIS_TAF, role: PRIMARY }
+  PDCNMAUD:
+    db_name: CNOMAUDP
+    db_unique_name: PDCNMAUD
+    instance_name: PDCNMAUD
+    host_name: prod-nomis-db-1-a.production.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: PDCNMAUD
+    service:
+      - { name: CNMAUD_TAF, role: PRIMARY }
   DRCNOM:
     db_name: CNOMP
     db_unique_name: DRCNOM
     instance_name: DRCNOM
-    host_name: prod-nomis-db-1-b
+    host_name: prod-nomis-db-1-b.production.nomis.service.justice.gov.uk
     port: 1521
     tns_name: DRCNOM
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: NOMIS_TAF, role: PRIMARY }
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO_TAF, role: PHYSICAL_STANDBY }
       - { name: OR_TAF, role: PHYSICAL_STANDBY }
-
+  DRNDH:
+    db_name: NDHP
+    db_unique_name: DRNDH
+    instance_name: DRNDH
+    host_name: prod-nomis-db-1-b.production.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: DRNDH
+    service:
+      - { name: NDH_TAF, role: PRIMARY }
+  DRTRDAT:
+    db_name: TRDATP
+    db_unique_name: DRTRDAT
+    instance_name: DRTRDAT
+    host_name: prod-nomis-db-1-b.production.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: DRTRDAT
+    service:
+      - { name: TRDAT_TAF, role: PRIMARY }
   DRMIS:
     db_name: MISP
     db_unique_name: DRMIS
@@ -113,40 +126,8 @@ db_configs:
     host_name: prod-nomis-db-2-b
     port: 1521
     tns_name: DRMIS
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
     service:
       - { name: MIS_TAF, role: PRIMARY }
-
-  MISP:
-    db_name: MISP
-    db_unique_name: MISP
-    instance_name: MISP
-    host_name: pdpdl00036.azure.hmpp.root
-    port: 1521
-    tns_name: MISP
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
-    service:
-      - { name: MIS_TAF, role: PRIMARY }
-
-  PCNOM:
-    db_name: PCNOM
-
-  CNOMP:
-    db_name: CNOMP
-    db_unique_name: CNOMP
-    instance_name: CNOMP
-    host_name: pdpdl00035.azure.hmpp.root
-    port: 1521
-    tns_name: CNOMP
-    asm_disk_groups: DATA,FLASH
-    s3_bucket: s3-bucket20220427111226925000000002
-    service:
-      - { name: NOMIS_TAF, role: PRIMARY }
-      - { name: OLDNOMIS_TAF, role: PRIMARY }
-      - { name: NOMIS_APIRO_TAF, role: PHYSICAL_STANDBY }
-      - { name: OR_TAF, role: PHYSICAL_STANDBY }
 
 # Oracle database housekeeping
 audit_housekeeping_period: 60
