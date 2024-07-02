@@ -1,0 +1,21 @@
+---
+database_global_database: PREBOE
+database_taf_service: PREBOE_TAF
+database_primary_unique: PREBOE
+database_primary_sid: PREBOE
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  pga_aggregate_target: 1500M
+  pga_aggregate_limit: 3G
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+database_autotasks:
+  statistics_advisor: disabled
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+rman_level_0_backup_duration_target: "06:00"
+fsfo_mode: disabled

@@ -1,0 +1,27 @@
+---
+database_global_database: STGMIS
+database_taf_service: STGMIS_TAF
+database_primary_unique: STGMIS
+database_primary_sid: STGMIS
+rman_level_0_backup_duration_target: "19:00"
+rman_uncompressed_backup: Y
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+database_parameters:
+  sga_max_size: 60G
+  sga_target: 60G
+  pga_aggregate_target: 12G
+  pga_aggregate_limit: 24G
+  db_cache_size: 48G
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+oracle_software:
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"

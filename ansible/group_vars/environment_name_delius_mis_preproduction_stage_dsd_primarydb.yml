@@ -1,0 +1,40 @@
+---
+database_global_database: STGDSD
+database_taf_service: STGDSD_TAF
+database_primary_unique: STGDSD
+database_primary_sid: STGDSD
+database_parameters:
+  sga_max_size: 5G
+  sga_target: 5G
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+oracle_osbws_chunk_size: 52428800
+sqlnet_parameters:
+  grid:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+  database:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+listener_parameters:
+  grid:
+    INBOUND_CONNECT_TIMEOUT_LISTENER: 300
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+oracle_software:
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+required_patches:
+  p35012866:
+    patch_files:
+      - target_version: "19.18"
+        filename: p35012866_1918000DBRU_Linux-x86-64.zip
+    description: "BUG_33527739_APPLY.SQL GOT ORA-13516: AWR OPERATION FAILED: CATPROC NOT VALID"
+    grid_patch: false
+    database_patch: true
+    datapatch_required: true
+db_backup_s3_bucket_name: "{{ environment_name }}-oracle-dsd-db-backups"

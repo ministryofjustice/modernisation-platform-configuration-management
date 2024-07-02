@@ -1,0 +1,27 @@
+---
+database_global_database: PREDSD
+database_taf_service: PREDSD_TAF
+database_primary_unique: PREDSD
+database_primary_sid: PREDSD
+oracle_osbws_chunk_size: 52428800
+database_parameters:
+  sga_max_size: 5G
+  sga_target: 5G
+  db_recovery_file_dest_size: 150G
+  compatible: 19.14.0
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+sqlnet_parameters:
+  grid:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+  database:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+listener_parameters:
+  grid:
+    INBOUND_CONNECT_TIMEOUT_LISTENER: 300
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+fsfo_mode: disabled

@@ -1,0 +1,34 @@
+---
+database_global_database: STGBOE
+database_taf_service: STGBOE_TAF
+database_primary_unique: STGBOE
+database_primary_sid: STGBOE
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  pga_aggregate_target: 1500M
+  pga_aggregate_limit: 3G
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+database_autotasks:
+  statistics_advisor: disabled
+required_patches:
+  p26749785:
+    patch_files:
+      - target_version: "19.22"
+        filename: p26749785_1922000DBRU_Generic.zip
+    description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
+    grid_patch: false
+    database_patch: true
+    datapatch_required: true
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+oracle_software:
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
