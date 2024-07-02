@@ -1,0 +1,95 @@
+---
+--- # delius_primarydb.yml
+
+database_global_database: PRENDA
+database_taf_service: PRENDA_TAF
+database_primary_unique: PRENDA
+database_primary_sid: PRENDA
+database_parameters:
+  control_management_pack_access: DIAGNOSTIC+TUNING
+  adg_account_info_tracking: LOCAL
+  sga_max_size: 50G
+  sga_target: 50G
+  pga_aggregate_limit: 40G
+  compatible: 19.14.0
+rman_level_0_backup_duration_target: "21:00"
+rman_uncompressed_backup: Y
+rman_retention_policy: RECOVERY WINDOW OF 41 DAYS
+cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo/shared_files/National/cfo"
+delius_users:
+  amarke_ro:
+  jstanley_ro:
+  mwillis_ro:
+  pphillips_ro:
+  smitchell_ro:
+  nhodgkinson_ro:
+  asottana_ro:
+  asetchi_ro:
+  bfortescue_ro:
+  cbarnett_ro:
+  cemeagi_ro:
+  dnicholson_ro:
+  dfuller_ro:
+  jbrowning_ro:
+  jwatson_ro:
+  jdilks_ro:
+  kgray_ro:
+  ldelaney_ro:
+  phoward_ro:
+  pivanov_ro:
+  pmintzas_ro:
+  acraik_ro:
+  imak_ro:
+  jpyke_ro:
+  mhalma_ro:
+  mryall_ro:
+  nhodgkinson_rw:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+  abritton_ro:
+  smcallister_ro:
+  swatson_ro:
+  smauthoor_sro:
+  mheywardchaplin_ro:
+  acody_sro:
+  arichardson_ro:
+  bbuchan_ro:
+    ash_report: true
+  ataboudi_ro:
+    ash_report: true
+  worr_sro:
+  mberridge_ro:
+  jmacbeth_ro:
+  jdundon_ro:
+  yfedkiv_dba:
+  mthapa_ro:
+  maspin_ro:
+  mlaskowski_ro:
+  pmiller_ro:
+  pwilson_ro:
+  rmccormack_ro:
+  svalmonte_ro:
+  dbridgwood_sro:
+  wwang_ro:
+  achimber_ro:
+  pmcphee_ro:
+oracle_software:
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+fsfo_mode: disabled
+# OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
+# Prevent changing these to unrepresentative statistics.
+database_locked_statistics:
+  - schema_name: DELIUS_APP_SCHEMA
+    table_names:
+      - DOC_MIGRATION_QUEUE_TAB: ALL
+      - OFFENDER_DELTA: ALL
+      - DOMAIN_EVENT: ALL
+awr_retention_days: 40
+audited_interaction_client: true
