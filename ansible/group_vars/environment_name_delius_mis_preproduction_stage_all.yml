@@ -1,8 +1,8 @@
 ---
 region: eu-west-2
 project_name: delius
-environment_name: delius-mis-preprod
-simple_environment_name: preprod
+environment_name: delius-mis-stage
+simple_environment_name: stage
 catalog: PPRCVCAT
 data_classification: unclassified-data
 emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
@@ -14,11 +14,11 @@ dependencies_bucket:
 # Only used for dupicating databases from source during migration using the oracle-db-duplicate role
 # Eventually these will be removed once the RMAN catalog database has been migrated across
 catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=10.160.98.88)(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=PCAT_TAF)))"
-s3_source_bucket: "eu-west-2-del-pre-prod-oracledb-backups"
+s3_source_bucket: "eu-west-2-del-stage-oracledb-backups"
 high_availability_count:
-  mis: 1
-  misboe: 1
-  misdsd: 1
+  mis: 0
+  misboe: 0
+  misdsd: 0
 # OEM server
 OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0
@@ -39,8 +39,8 @@ sqlnet_parameters:
 # The oracle_ru_patch is the Oracle Release update to use for *initial build* only.
 # Subsequent patching will use the oracle_software variable defined for
 # the primary database.
-oracle_ru_patch: OCT2023
 
+oracle_ru_patch: OCT2023
 # We increase the frequency of HAS Resource Status collection from default of once per 24
 # hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
 # shortly after the host is restarted each morning.
