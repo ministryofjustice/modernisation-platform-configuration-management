@@ -1,0 +1,23 @@
+---
+database_global_database: PREMIS
+database_taf_service: PREMIS_TAF
+database_primary_unique: PREMIS
+database_primary_sid: PREMIS
+database_parameters:
+  control_management_pack_access: DIAGNOSTIC
+  sga_max_size: 175G
+  sga_target: 175G
+  pga_aggregate_target: 35G
+  pga_aggregate_limit: 70G
+  compatible: 19.14.0
+rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+rman_level_0_backup_duration_target: "15:00"
+rman_uncompressed_backup: Y
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+  dreid_dba:
+  sgandalwar_dba:
+  kmoss_dba:
+fsfo_mode: disabled
+awr_retention_days: 40

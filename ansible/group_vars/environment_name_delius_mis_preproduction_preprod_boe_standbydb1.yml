@@ -1,0 +1,17 @@
+---
+database_standby_unique: PREBOES1
+database_standby_sid: PREBOES1
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  pga_aggregate_target: 1500M
+  pga_aggregate_limit: 3G
+required_patches:
+  p26749785:
+    patch_files:
+        - target_version: "19.22"
+          filename: p26749785_1922000DBRU_Generic.zip
+    description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
+    grid_patch: false
+    database_patch: true
+    datapatch_required: true
