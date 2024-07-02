@@ -41,20 +41,20 @@ delius_users:
   rmccormack_ro:
   svalmonte_ro:
 oracle_software:
-      version: '19.22'
-      combo_patch: p36031453_190000_Linux-x86-64.zip
-      opatch:
-          version: 12.2.0.1.41
-          filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+  version: "19.22"
+  combo_patch: p36031453_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.41
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
 database_locked_statistics:
-   - schema_name: DELIUS_APP_SCHEMA
-     table_names:
+  - schema_name: DELIUS_APP_SCHEMA
+    table_names:
       - DOC_MIGRATION_QUEUE_TAB: ALL
       - OFFENDER_DELTA: ALL
       - DOMAIN_EVENT: ALL
 database_parameters:
-   db_recovery_file_dest_size: 900G
-   compatible: 19.14.0
+  db_recovery_file_dest_size: 900G
+  compatible: 19.14.0
 audited_interaction_client: true
