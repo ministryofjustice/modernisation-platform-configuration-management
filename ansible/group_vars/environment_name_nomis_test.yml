@@ -46,8 +46,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1CNOM
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
     service:
       - { name: OR_TAF, role: PRIMARY }
       - { name: NOMIS_TAF, role: PRIMARY }
@@ -60,8 +58,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1NDH
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
     service:
       - { name: NDH_TAF, role: PRIMARY }
   T1TRDAT:
@@ -71,8 +67,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1TRDAT
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
   T1ORSYS:
@@ -82,8 +76,6 @@ db_configs:
     host_name: t1-nomis-db-1-a.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
     port: 1521
     tns_name: T1ORSYS
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
     service:
       - { name: ORSYS_TAF, role: PRIMARY }
   T1MIS:
@@ -93,8 +85,6 @@ db_configs:
     host_name: t1-nomis-db-2-a.test.nomis.service.justice.gov.uk
     port: 1521
     tns_name: T1MIS
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
     service:
       - { name: MIS_TAF, role: PRIMARY }
   T1CNMAUD:
@@ -104,8 +94,6 @@ db_configs:
     host_name: t1-nomis-db-2-a.test.nomis.service.justice.gov.uk
     port: 1521
     tns_name: T1CNMAUD
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
     service:
       - { name: CNMAUD_TAF, role: PRIMARY }
   T2CNOM:
@@ -115,8 +103,6 @@ db_configs:
     host_name: t2-nomis-db-1-a
     port: 1521
     tns_name: T2CNOM
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA,FLASH
     service:
       - { name: OR_TAF, role: PRIMARY }
       - { name: NOMIS_TAF, role: PRIMARY }
@@ -129,8 +115,6 @@ db_configs:
     host_name: t2-nomis-db-1-a
     port: 1521
     tns_name: T2NDH
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
     service:
       - { name: NDH_TAF, role: PRIMARY }
   T2TRDAT:
@@ -140,86 +124,22 @@ db_configs:
     host_name: t2-nomis-db-1-a
     port: 1521
     tns_name: T2TRDAT
-    s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-    asm_disk_groups: DATA
     service:
       - { name: TRDAT_TAF, role: PRIMARY }
   T3CNOM:
     db_name: T3CNOM
+    db_unique_name: T3CNOM
+    instance_name: T3CNOM
+    host_name: t3-nomis-db-1
+    port: 1521
+    tns_name: T3CNOM
+    service:
+      - { name: OR_TAF, role: PRIMARY }
+      - { name: NOMIS_TAF, role: PRIMARY }
+      - { name: OLDNOMIS_TAF, role: PRIMARY }
+      - { name: NOMIS_APIRO, role: PRIMARY }
   RCVCAT:
     rcvcat_db_name: TRCVCAT
-  # T2CNOMS1:
-  #   db_name: T2CNOM
-  #   db_unique_name: T2CNOMS1
-  #   instance_name: T2CNOMS1
-  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T2CNOMS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA,FLASH
-  #   service:
-  #     - { name: OR_TAF, role: PRIMARY }
-  #     - { name: NOMIS_TAF, role: PRIMARY }
-  #     - { name: OLDNOMIS_TAF, role: PRIMARY }
-  #     - { name: NOMIS_APIRO, role: PRIMARY }
-  # T2NDHS1:
-  #   db_name: T2NDH
-  #   db_unique_name: T2NDHS1
-  #   instance_name: T2NDHS1
-  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T2NDHS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA
-  #   service:
-  #     - { name: NDH_TAF, role: PRIMARY }
-  # T1TRDS1:
-  #   db_name: T1TRDAT
-  #   db_unique_name: T1TRDS1
-  #   instance_name: T1TRDS1
-  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T1TRDS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA
-  #   service:
-  #     - { name: TRDAT_TAF, role: PRIMARY }
-  # T2TRDS1:
-  #   db_name: T2TRDAT
-  #   db_unique_name: T2TRDS1
-  #   instance_name: T2TRDS1
-  #   host_name: t2-nomis-db-1-b.test.nomis.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T2TRDS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA
-  #   service:
-  #     - { name: TRDAT_TAF, role: PRIMARY }
-  # T1NDHS1:
-  #   db_name: T1NDH
-  #   db_unique_name: T1NDHS1
-  #   instance_name: T1NDHS1
-  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T1NDHS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA
-  #   service:
-  #     - { name: NDH_TAF, role: PRIMARY }
-  # T1CNOMS1:
-  #   db_name: CNOMT1
-  #   db_unique_name: T1CNOMS1
-  #   instance_name: T1CNOMS1
-  #   host_name: t1-nomis-db-1-b.nomis.hmpps-test.modernisation-platform.service.justice.gov.uk
-  #   port: 1521
-  #   tns_name: T1CNOMS1
-  #   s3_bucket: nomis-db-backup-bucket20220131102905687200000001
-  #   asm_disk_groups: DATA,FLASH
-  #   service:
-  #     - { name: OR_TAF, role: PRIMARY }
-  #     - { name: NOMIS_TAF, role: PRIMARY }
-  #     - { name: OLDNOMIS_TAF, role: PRIMARY }
-  #     - { name: NOMIS_APIRO, role: PRIMARY }
 
 # Oracle database housekeeping
 audit_housekeeping_period: 30
