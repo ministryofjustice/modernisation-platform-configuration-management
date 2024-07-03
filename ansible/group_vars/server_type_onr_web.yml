@@ -99,6 +99,9 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_os
     metric_dimension: chronyd
     shell_cmd: "service chronyd status"
+  - metric_name: service_status_app
+    metric_dimension: tomcat
+    shell_cmd: "pgrep -f tomcat"
 
 collectd_monitored_metrics_additional:
   - metric_name: web_incoming
