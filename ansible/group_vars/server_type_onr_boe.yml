@@ -118,3 +118,6 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_os
     metric_dimension: chronyd
     shell_cmd: "service chronyd status"
+  - metric_name: service_status_app
+    metric_dimension: cmsdatabase
+    shell_cmd: "pgrep boe_cmsd"
