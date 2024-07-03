@@ -6,6 +6,9 @@ $GlobalConfig = @{
          "IPSS3File" = "IPS.ZIP" # IPS SW, install 2nd
          "DataServicesS3File" = "DATASERVICES.ZIP" # BODS SW, install 3rd
          "BIPWindowsClientFile" = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
+         "RegistryPath" = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
+         "LegalNoticeCaption" = "IMPORTANT"
+         "LegalNoticeText" = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
     }
     "nomis-combined-reporting-development" = @{
         "NcrShortcuts" = @{
@@ -113,9 +116,36 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
     $SourceShortcut.Save()
   }
 }
+
+# Apply to all environments that aren't on the domain
+function Add-LoginText {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Stop"
+  Write-Output "Add Legal Notice"
+  
+  if (-NOT (Test-Path $Config.RegistryPath)) {
+    Write-Output " - Registry path does not exist, creating"
+    New-Item -Path $Config.RegistryPath -Force | Out-Null
+  }
+
+  $RegistryPath = $Config.RegistryPath
+  $LegalNoticeCaption = $Config.LegalNoticeCaption
+  $LegalNoticeText = $Config.LegalNoticeText
+
+  Write-Output " - Set Legal Notice Caption"
+  New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
+
+  Write-Output " - Set Legal Notice Text"
+  New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
+}
   
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
+ Add-LoginText $Config
  Add-WindowsClient $Config
  Get-Software $Config
  # Add-Shortcuts $Config
