@@ -29,10 +29,27 @@ Choose which version of python and ansible-core to use. The below
 example uses python3.9 and ansible-core 2.12 as this is compatible with some
 older OS.
 
+This can be problematic. If you run into issues:
+- uninstall all existing python3.9 / ansible installations via brew. `brew list` and `brew uninstall ansible` for example
+- check no other installation of python3.9 `which python3.9`. If there is delete it.
+- install python via brew `brew install python@3.9`
+- check `which python3.9` matches the recent installation
+- ensure certs are up to date `brew reinstall ca-certificates`
+- list all pip packages `python3.9 -m pip list`
+- uninstall any existing ansible installs `python3.9 -m pip uninstall ansible`
+- install ansible `python3.9 -m pip install ansible-core==2.12`
+- install ansible requirements as per step 4 below
+
 1. Optionally install a specific python versoin
 
 ```
 brew install python@3.9
+```
+
+Ensure CA certs are up-to-date
+
+```
+brew install ca-certificates
 ```
 
 2. Install ansible using pip
@@ -81,6 +98,12 @@ Open a new terminal window and re-check Step 2.
 python3.9 -m pip install -r requirements.txt
 ansible-galaxy role install -r requirements.yml
 ansible-galaxy collection install -r requirements.yml
+```
+
+If this `ansible-galaxy collection install -r requirements.yml` fails, try:
+
+```
+ansible-galaxy collection install -r requirements.rhel6.yml
 ```
 
 Check boto and botocore installed:
