@@ -1,0 +1,99 @@
+#!/usr/bin/env {{ ansible_python_interpreter|default('python3') }}
+
+""" Copy file via winrm, adapted from https://github.com/diyan/pywinrm/issues/18 """
+import argparse
+import hashlib
+import base64
+import json
+import os
+import pathlib
+import winrm
+
+def check_file_exists(s, destination):
+    """Check if remote file exists via WinRM"""
+    ps_check_file_exists = 'Get-ChildItem -Path "{}"'
+    result = s.run_ps(ps_check_file_exists.format(destination))
+    return result.status_code == 0
+
+def delete_existing_file(s, destination):
+    """Delete remote file via WinRM"""
+    ps_delete_existing_file = 'Remove-Item -Path "{}" -Force'
+    result = s.run_ps(ps_delete_existing_file.format(destination))
+    return result.status_code == 0
+
+def get_sourcefile_hash(source):
+    """Get local file hash (sha256)"""
+    file_data = pathlib.Path(source).read_bytes()
+    return hashlib.sha256(file_data).hexdigest().lower()
+
+def get_destinationfile_hash(s, destination):
+    """Get remove file hash (sha256) via WinRM"""
+    ps_get_destinationfile_hash = 'Get-FileHash {} -Algorithm SHA256 | ConvertTo-Json'
+    result = s.run_ps(ps_get_destinationfile_hash.format(destination))
+    if result.status_code:
+        raise RuntimeError(f'Remote hash calculation failed: {destination}')
+    data = json.loads(result.std_out)
+    return data.get('Hash').lower()
+
+def send_file_over_winrm(s, source, destination):
+    """Send file to remote location in base64 encoded chunks via WinRM."""
+    chunk_size = 2048
+    write_chunk = "[Byte[]]$to_write = [System.Convert]::FromBase64String('{}')\n$to_write | Add-Content -Encoding Byte {}"
+
+    with open(source, 'rb') as fh:
+        while chunk := fh.read(chunk_size):
+            encoded = base64.standard_b64encode(chunk).decode()
+            command = write_chunk.format(encoded, destination)
+            result = s.run_ps(command)
+            if result.status_code:
+                break
+
+    if 'Completed' not in result.std_err.decode():
+        raise RuntimeError(f'File send failed: {source}')
+
+def main():
+    """Parse arguments, open winrm session and Send file to remote location in base64 encoded chunks"""
+    parser = argparse.ArgumentParser(
+        description='copy a file to target machine using WinRM')
+    parser.add_argument('--username', help='username', default='{{ winrm_domain.winrm_username }}')
+    parser.add_argument('--host', help='target machine', required=True)
+    parser.add_argument('--protocol', help='http or https', default='http')
+    parser.add_argument('--sourcefile', help='path to file on local server', required=True)
+    parser.add_argument('--destinationfile', help='path to file on remote server', required=True)
+    parser.add_argument('--transport', help='transport, e.g. ntlm', default='ntlm')
+    parser.add_argument('--force', help='overwrite if file already exists', action='store_true')
+
+    args = parser.parse_args()
+
+    source_hash = get_sourcefile_hash(args.sourcefile)
+
+    password = os.environ.get('WINRM_PASSWORD')
+    if not password:
+        raise RuntimeError('Please set password in WINRM_PASSWORD environment variable, e.g. export WINRM_PASSWORD=$(winrm_get_creds.sh)')
+    port = 5986 if args.protocol == 'https' else 5985
+    url = f'{args.protocol}://{args.host}:{port}'
+    s = winrm.Session(url, auth=(args.username, password), transport=args.transport)
+
+    if check_file_exists(s, args.destinationfile):
+        remote_hash = get_destinationfile_hash(s, args.destinationfile)
+        if source_hash == remote_hash:
+            print("File already copied")
+        elif args.force:
+            if not delete_existing_file(s, args.destinationfile):
+                raise RuntimeError('failed to delete existing file')
+            send_file_over_winrm(s, args.sourcefile, args.destinationfile)
+            remote_hash = get_destinationfile_hash(s, args.destinationfile)
+            if source_hash != remote_hash:
+                raise RuntimeError(f'Error copying file, Hash mismatch source={source_hash} remote={remote_hash}')
+            print(f'File copied hash={remote_hash}')
+        else:
+            raise RuntimeError('destination file already exists on host with different hash, use --force to overwrite')
+    else:
+        send_file_over_winrm(s, args.sourcefile, args.destinationfile)
+        remote_hash = get_destinationfile_hash(s, args.destinationfile)
+        if source_hash != remote_hash:
+            raise RuntimeError(f'Error copying file, Hash mismatch source={source_hash} remote={remote_hash}')
+        print(f'File copied hash={remote_hash}')
+
+if __name__ == '__main__':
+    main()
