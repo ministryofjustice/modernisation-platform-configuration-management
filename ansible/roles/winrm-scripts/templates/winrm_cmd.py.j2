@@ -42,7 +42,7 @@ example (2): winrm_cmd.ph --host PDPMW0P1UQL0001.azure.hmpp.root --ps 'Get-Child
 
     if len(r.std_out):
         print(r.std_out.decode("utf-8"))
-    if len(r.std_err):
+    if len(r.std_err) and r.status_code != 0:
         print(r.std_err.decode("utf-8"), file=sys.stderr)
     sys.exit(r.status_code)
 

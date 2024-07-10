@@ -7,6 +7,7 @@ import base64
 import json
 import os
 import pathlib
+import time
 import winrm
 
 def check_file_exists(s, destination):
@@ -38,18 +39,29 @@ def get_destinationfile_hash(s, destination):
 def send_file_over_winrm(s, source, destination):
     """Send file to remote location in base64 encoded chunks via WinRM."""
     chunk_size = 2048
+    total_size = os.path.getsize(source)
+    read_size  = 0
+    progress_time = 0
     write_chunk = "[Byte[]]$to_write = [System.Convert]::FromBase64String('{}')\n$to_write | Add-Content -Encoding Byte {}"
 
     with open(source, 'rb') as fh:
         while chunk := fh.read(chunk_size):
+            if progress_time == 0 or time.monotonic()-progress_time >= 10.0:
+                print(f"Sent {read_size}/{total_size} {100.0*read_size/total_size:.1f}%")
+                progress_time = time.monotonic()
             encoded = base64.standard_b64encode(chunk).decode()
             command = write_chunk.format(encoded, destination)
             result = s.run_ps(command)
             if result.status_code:
                 break
+            read_size = read_size + chunk_size
 
     if 'Completed' not in result.std_err.decode():
-        raise RuntimeError(f'File send failed: {source}')
+        print(f"Sent {read_size}/{total_size} {100.0*read_size/total_size:.1f}%")
+        print(result.std_err.decode("utf-8"), file=sys.stderr)
+        raise RuntimeError(f'File send failed: {destination}')
+    print(f"Sent {total_size}/{total_size} 100.0%")
+
 
 def main():
     """Parse arguments, open winrm session and Send file to remote location in base64 encoded chunks"""
@@ -61,6 +73,7 @@ def main():
     parser.add_argument('--sourcefile', help='path to file on local server', required=True)
     parser.add_argument('--destinationfile', help='path to file on remote server', required=True)
     parser.add_argument('--transport', help='transport, e.g. ntlm', default='ntlm')
+    parser.add_argument('--dryrun', help='test as much as possible without actually copying the file', action='store_true')
     parser.add_argument('--force', help='overwrite if file already exists', action='store_true')
 
     args = parser.parse_args()
@@ -79,21 +92,28 @@ def main():
         if source_hash == remote_hash:
             print("File already copied")
         elif args.force:
-            if not delete_existing_file(s, args.destinationfile):
-                raise RuntimeError('failed to delete existing file')
+            if args.dryrun:
+                print(f'DRYRUN: delete existing remote file hash={remote_hash}')
+                print(f'dryrun: copy local file hash={source_hash}')
+            else:
+                if not delete_existing_file(s, args.destinationfile):
+                    raise RuntimeError('failed to delete existing file')
+                send_file_over_winrm(s, args.sourcefile, args.destinationfile)
+                remote_hash = get_destinationfile_hash(s, args.destinationfile)
+                if source_hash != remote_hash:
+                    raise RuntimeError(f'Error copying file, Hash mismatch source={source_hash} remote={remote_hash}')
+                print(f'File copied hash={remote_hash}')
+        else:
+            raise RuntimeError('destination file already exists on host with different hash, use --force to overwrite')
+    else:
+        if args.dryrun:
+            print(f'dryrun: copy local file hash={source_hash}')
+        else:
             send_file_over_winrm(s, args.sourcefile, args.destinationfile)
             remote_hash = get_destinationfile_hash(s, args.destinationfile)
             if source_hash != remote_hash:
                 raise RuntimeError(f'Error copying file, Hash mismatch source={source_hash} remote={remote_hash}')
             print(f'File copied hash={remote_hash}')
-        else:
-            raise RuntimeError('destination file already exists on host with different hash, use --force to overwrite')
-    else:
-        send_file_over_winrm(s, args.sourcefile, args.destinationfile)
-        remote_hash = get_destinationfile_hash(s, args.destinationfile)
-        if source_hash != remote_hash:
-            raise RuntimeError(f'Error copying file, Hash mismatch source={source_hash} remote={remote_hash}')
-        print(f'File copied hash={remote_hash}')
 
 if __name__ == '__main__':
     main()
