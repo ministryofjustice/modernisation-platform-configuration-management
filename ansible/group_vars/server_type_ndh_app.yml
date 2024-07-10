@@ -13,6 +13,9 @@ server_type_roles_list:
   - sudoers
   - filesystems
   - ndh-app
+  - azure-cli
+  - winrm-scripts
+  - ndh-cdecopy
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
@@ -25,6 +28,8 @@ users_and_groups_regular:
 
 packages_yum_install:
   - jq
+  - zip
+  - git
 
 filesystems_domain_name_fqdn: "{{ app_filesystems_domain_name_fqdn|default('') }}"
 filesystems_mount: "{{ app_filesystems_mount|default([]) }}"
