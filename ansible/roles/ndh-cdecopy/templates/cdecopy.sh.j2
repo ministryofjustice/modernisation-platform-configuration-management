@@ -293,7 +293,7 @@ main() {
       esac
   done
  
-  if ((AZURE+MERCURY+PINS+S3 == 0)); then
+  if ((OPTIND == 1)); then
     usage >&2
     return 2
   fi
