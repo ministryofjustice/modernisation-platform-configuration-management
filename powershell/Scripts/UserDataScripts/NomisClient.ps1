@@ -427,15 +427,15 @@ function Get-Tags {
 function Get-PowerShellCommandFromTag {
   [CmdletBinding()]
   param (
-    [String]$command
+    [String]$Command
   ) 
 
-  foreach ($tag in Get-Tags) {
-    if ($tag.key -eq $command) {
-      foreach ($args in $tag.Value) {
-          $commandString = $command + " " + $args
-          Write-Host "Running command: $commandString"
-          Invoke-Expression $commandString
+  foreach ($Tag in Get-Tags) {
+    if ($Tag.key -eq $Command) {
+      foreach ($Arg in $Tag.Value) {
+          $CommandString = $Command + " " + $Arg
+          Write-Host "Running command: $CommandString"
+          Invoke-Expression $CommandString
       }
     }
   }
