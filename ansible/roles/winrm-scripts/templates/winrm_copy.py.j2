@@ -42,13 +42,15 @@ def send_file_over_winrm(s, source, destination):
     total_size = os.path.getsize(source)
     read_size  = 0
     progress_time = 0
+    interval = 10.0
     write_chunk = "[Byte[]]$to_write = [System.Convert]::FromBase64String('{}')\n$to_write | Add-Content -Encoding Byte {}"
 
     with open(source, 'rb') as fh:
         while chunk := fh.read(chunk_size):
-            if progress_time == 0 or time.monotonic()-progress_time >= 10.0:
+            if progress_time == 0 or time.monotonic()-progress_time >= interval:
                 print(f'{destination}: Sent {read_size}/{total_size} {100.0*read_size/total_size:.1f}%')
                 progress_time = time.monotonic()
+                interval = 60.0
             encoded = base64.standard_b64encode(chunk).decode()
             command = write_chunk.format(encoded, destination)
             result = s.run_ps(command)

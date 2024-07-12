@@ -366,7 +366,7 @@ main() {
       esac
   done
 
-  if ((AZURE+MERCURY+PINS+S3 == 0)); then
+  if ((OPTIND == 1)); then
     usage >&2
     return 2
   fi
@@ -379,8 +379,10 @@ main() {
     return 2
   fi
 
-  (run)
-  exitcode=$?
+  exitcode=0
+  if ((AZURE+MERCURY+PINS+S3 > 0)); then
+    (run) || exitcode=$?
+  fi
   if [[ -d /opt/textfile_monitoring ]]; then
     debug "/opt/textfile_monitoring/cdecopy.prom: cdecopy_status $exitcode"
     if ((DRYRUN == 0)); then
