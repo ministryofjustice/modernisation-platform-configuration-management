@@ -2,8 +2,8 @@
 # Specific Delius Database configuration overrides
 # (to match legacy configuration of directory paths)
 oracle_home: "{{ app_dir }}/oracle/product"
-database_home: "{{ oracle_home }}/19.0.0/db"
-grid_home: "{{ grid_base }}/product/19.0.0/grid"
+database_home: "{{ oracle_home }}/{{ oracle_version }}/db"
+grid_home: "{{ grid_base }}/product/{{ oracle_version }}/grid"
 
 oracle_externaljob_rdbms_path: "{{ database_home }}/rdbms/admin"
 oracle_externaljob_file: externaljob.ora
