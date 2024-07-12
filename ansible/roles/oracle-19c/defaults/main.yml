@@ -74,6 +74,15 @@ oracle_patch_details:
     psu_patch: p35742441_190000_Linux-x86-64.zip
     patch_string: "19.21.0.0.231017"
 
+  JAN2024:
+    opatch_version: 12.2.0.1.41
+    oracle_combo_patch: 36031453
+    oracle_release_update: 35940989
+    oracle_ojvm_patch: 35926646
+    psu_patch: p36031453_190000_Linux-x86-64.zip
+    patch_string: "19.22.0.0.240116"
+
 oracle_ru_patch: OCT2023 # override this in group_vars when rolling out a new patch
 oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
 opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"
+oracle_version: "{{ oracle_patch.patch_string.split('.')[:3] | join('.') }}"
