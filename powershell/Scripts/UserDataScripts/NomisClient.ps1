@@ -435,7 +435,8 @@ function Get-PowerShellCommandFromTag {
   foreach ($Tag in Get-Tags) {
     if ($Tag.key -eq $Command) {
       $matchFound = $true
-      foreach ($Arg in $Tag.Value) {
+      $argList = $Tag.Value.Split(':')
+      foreach ($Arg in $argList) {
           $CommandString = $Command + " " + $Arg
           Write-Host "Running command: $CommandString"
           Invoke-Expression $CommandString
