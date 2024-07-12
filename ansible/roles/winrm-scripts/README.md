@@ -5,6 +5,9 @@ server, or for executing a remote command or script.
 
 Credentials are assumed to be stored in SecretsManager.
 
+Note winrm_copy is very slow, you may want to split the file
+and run concurrently, see nde-cdecopy for example.
+
 Example usage
 
 ```
