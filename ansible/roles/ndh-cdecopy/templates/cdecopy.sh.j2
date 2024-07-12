@@ -59,7 +59,7 @@ get_cde_filename() {
 }
 
 clean_local_tmpfiles() {
-  files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +2 || true)
+  files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +1 || true)
   if [[ -n $files ]]; then
     debug "local: deleting temporary files" $files
     if ((DRYRUN == 0)); then
@@ -69,8 +69,8 @@ clean_local_tmpfiles() {
 }
 
 create_local_tmpfiles() {
-  local zip_path
   local i
+  local part
 
   if [[ ! -d $LOCAL_TEMP_DIR ]]; then
     debug "local: creating $LOCAL_TEMP_DIR"
@@ -85,7 +85,7 @@ create_local_tmpfiles() {
       cp "$1" "$LOCAL_TEMP_DIR/$1"
     fi
   fi
-  cd $LOCAL_TEMP_DIR
+  cd "$LOCAL_TEMP_DIR"
 
 
   if [[ ! -e $1.zip || $1 -nt $1.zip ]]; then
@@ -96,19 +96,19 @@ create_local_tmpfiles() {
     fi
   fi
 
-  for ((i=0; i<$WINRM_COPY_PARTS; i++)); do
+  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
     part="$1.$(printf %02d $i)"
     if [[ ! -e $part || $1 -nt $part ]]; then
       debug "local: creating $WINRM_COPY_PARTS parts for winrm"
       if ((DRYRUN == 0)); then
-        split -d -n $WINRM_COPY_PARTS $1 $1.
+        split -d -n $WINRM_COPY_PARTS "$1" "$1."
       fi
       break
     fi
   done
 
   # create parts
-  for ((i=0; i<$WINRM_COPY_PARTS; i++)); do
+  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
     part="$1.$(printf %02d $i)"
     if [[ ! -e $part.zip || $part -nt $part.zip ]]; then
       debug "local: creating $part.zip"
@@ -196,22 +196,22 @@ $ostream.close()
 
   debug "$NONCORE_HOSTNAME: checking $2 exists"
   winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $2" > /dev/null
-  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d [[:space:]] || true)
-  source_hash=$(sha256sum $1  | cut -f1 -d\  | tr -d [[:space:]])
-  if [[ $source_hash == $destination_hash ]];then
+  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" || true)
+  source_hash=$(sha256sum "$1"  | cut -f1 -d\  | tr -d "[:space:]")
+  if [[ "$source_hash" == "$destination_hash" ]];then
     debug "$NONCORE_HOSTNAME: $1 already copied"
     return 0
   fi
 
   if ((DRYRUN == 0)); then
-    for ((i=0; i<$WINRM_COPY_PARTS; i++)); do
+    for ((i=0; i<WINRM_COPY_PARTS; i++)); do
       part="$1.$(printf "%02d" $i).zip"
       debug "$NONCORE_HOSTNAME: copying $LOCAL_TEMP_DIR/$part to $2\\$part"
       winrm_copy.py --host "$NONCORE_HOSTNAME" --sourcefile "$LOCAL_TEMP_DIR/$part" --destinationfile "$2\\$part" --force &
     done
     wait
 
-    for ((i=0; i<$WINRM_COPY_PARTS; i++)); do
+    for ((i=0; i<WINRM_COPY_PARTS; i++)); do
       debug "$NONCORE_HOSTNAME: extract $2\\$1.zip"
       part="$1.$(printf "%02d" $i).zip"
       winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Expand-Archive -Path $2\\$part -DestinationPath $2"
@@ -219,8 +219,8 @@ $ostream.close()
 
     debug "$NONCORE_HOSTNAME: join parts"
     winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "$join_parts_ps"
-    destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d [[:space:]])
-    if [[ $source_hash != $destination_hash ]];then
+    destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]")
+    if [[ "$source_hash" != "$destination_hash" ]];then
       debug "$NONCORE_HOSTNAME: $1 destination_hash mismatch $source_hash != $destination_hash"
       return 01
     fi
@@ -237,7 +237,7 @@ clean_cdezip_on_noncore() {
   fi
 }
 
-extract_cdezip_on_noncore() {
+copy_cde_on_noncore() {
   local json
   local exitcode
   local files
@@ -251,9 +251,9 @@ extract_cdezip_on_noncore() {
       winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $3 -File | Remove-Item"
     fi
   fi
-  debug "$NONCORE_HOSTNAME: extracting $2\\$1.zip to $3"
+  debug "$NONCORE_HOSTNAME: copying $2\\$1 to $3"
   if ((DRYRUN == 0)); then
-    winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Expand-Archive -Path $2\\$1.zip -DestinationPath $3"
+    winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Copy-Item $2\\$1 -Destination $3"
   fi
 }
 
@@ -305,12 +305,12 @@ run() {
     password=$(winrm_get_creds.sh)
     export WINRM_PASSWORD="$password"
     upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
-    #if (( PINS == 1 )); then
-    #  extract_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR"
-    #fi
-    #if (( MERCURY == 1 )); then
-    #  extract_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR"
-    #fi
+    if (( PINS == 1 )); then
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR"
+    fi
+    if (( MERCURY == 1 )); then
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR"
+    fi
     clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
   fi
   if (( S3 == 1 )); then
