@@ -416,6 +416,31 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
+function Get-Tags {
+  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+  $Tags = $TagsRaw | ConvertFrom-Json
+  $Tags.Tags
+}
+
+function Get-PowerShellCommandFromTag {
+  [CmdletBinding()]
+  param (
+    [String]$command
+  ) 
+
+  foreach ($tag in Get-Tags) {
+    if ($tag.key -eq $command) {
+      foreach ($args in $tag.Value) {
+          $commandString = $command + " " + $args
+          Write-Host "Running command: $commandString"
+          Invoke-Expression $commandString
+      }
+    }
+  }
+}
+
 # join domain if domain-name tag is set
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
@@ -441,6 +466,7 @@ Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
-Add-MicrosoftOffice $Config # takes forever to install so putting last
+Get-PowerShellCommandFromTag -Command Install-WindowsFeature 
+# Add-MicrosoftOffice $Config # takes forever to install so putting last # TODO: comment back in
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
