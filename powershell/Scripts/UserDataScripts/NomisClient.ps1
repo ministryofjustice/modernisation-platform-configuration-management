@@ -428,16 +428,23 @@ function Get-PowerShellCommandFromTag {
   [CmdletBinding()]
   param (
     [String]$Command
-  ) 
+  )
+
+  $matchFound = $false
 
   foreach ($Tag in Get-Tags) {
     if ($Tag.key -eq $Command) {
+      $matchFound = $true
       foreach ($Arg in $Tag.Value) {
           $CommandString = $Command + " " + $Arg
           Write-Host "Running command: $CommandString"
           Invoke-Expression $CommandString
       }
     }
+  }
+
+  if (-not $matchFound) {
+    Write-Host "No matching instance tags exist locally for $Command"
   }
 }
 
