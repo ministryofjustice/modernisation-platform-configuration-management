@@ -1,0 +1,7 @@
+---
+- import_tasks: add-winrm-scripts.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+  when: winrm_domain_name_fqdn is defined

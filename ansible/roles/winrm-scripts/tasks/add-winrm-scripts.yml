@@ -1,0 +1,19 @@
+---
+- name: Install pip modules
+  ansible.builtin.pip:
+    executable: "{{ ansible_python_interpreter|default('python3')|regex_replace('python', 'pip') }}"
+    name:
+      - pywinrm
+    extra_args: "{{ pip_extra_args }}"
+  vars:
+    pip_extra_args: "{% if '3.6' in ansible_python_interpreter %}-c ~/.ansible-configuration-management-constraints.rhel6.txt{% endif %}"
+
+- name: Copy winrm scripts
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: "0755"
+  loop:
+    - winrm_cmd.py
+    - winrm_copy.py
+    - winrm_get_creds.sh

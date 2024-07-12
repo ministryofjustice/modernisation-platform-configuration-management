@@ -1,0 +1,61 @@
+#!/bin/bash
+WINRM_USERNAME="{{ winrm_domain.winrm_username }}"
+WINRM_PASSWORD_SECRETSMANAGER_ROLE_NAME="{{ winrm_domain.secret_role_name }}"
+WINRM_PASSWORD_SECRETSMANAGER_ACCOUNT_ID="{{ account_ids[winrm_domain.secret_account_name] }}"
+WINRM_PASSWORD_SECRETSMANAGER_SECRET_NAME="{{ winrm_domain.secret_name }}"
+PATH="$PATH:/usr/local/bin"
+
+set -eo pipefail
+
+debug() {
+  echo "$@" >&2
+}
+
+error() {
+  echo "$@" >&2
+}
+
+get_winrm_password() {
+  local account_id
+  local password
+  local role_arn
+  local secret_arn
+  local secret_value
+  local secret_error
+  local session
+
+  set -eo pipefail
+  account_id=$(aws sts get-caller-identity --query Account --output text)
+
+  if [[ -n $WINRM_PASSWORD_SECRETSMANAGER_ROLE_NAME ]]; then
+    secret_arn="arn:aws:secretsmanager:eu-west-2:${WINRM_PASSWORD_SECRETSMANAGER_ACCOUNT_ID}:secret:${WINRM_PASSWORD_SECRETSMANAGER_SECRET_NAME}"
+    role_arn="arn:aws:iam::${account_id}:role/${WINRM_PASSWORD_SECRETSMANAGER_ROLE_NAME}"
+    session="${HOSTNAME}-winrm"
+    creds=$(aws sts assume-role --role-arn "${role_arn}" --role-session-name "${session}" --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
+    export AWS_ACCESS_KEY_ID=$(echo "${creds}" | tail -1 | cut -f1)
+    export AWS_SECRET_ACCESS_KEY=$(echo "${creds}" | tail -1 | cut -f2)
+    export AWS_SESSION_TOKEN=$(echo "${creds}" | tail -1 | cut -f3)
+  else
+    secret_arn="${WINRM_PASSWORD_SECRETSMANAGER_SECRET_NAME}"
+  fi
+  secret_value=$(aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text 2>/dev/null || true)
+
+  if [[ -z $secret_value ]]; then
+    secret_error=$(aws secretsmanager get-secret-value --secret-id "${secret_arn}" --query SecretString --output text 2>&1 || true)
+    if [[ $secret_error == *AWSCURRENT* ]]; then
+      error "cdecopy: cannot retrieve azure/hmpp domain credentials, secret not set"
+    else
+      error "cdecopy: cannot retrieve azure/hmpp domain credentials, $secret_error"
+    fi
+    return 1
+  else
+    password=$(jq -r .$WINRM_USERNAME <<<"$secret_value")
+    if [[ -z $password ]]; then
+      error "cdecopy: missing azure/hmpp domain credentials for $WINRM_USERNAME"
+      return 1
+    fi
+    echo "$password"
+  fi
+}
+
+get_winrm_password

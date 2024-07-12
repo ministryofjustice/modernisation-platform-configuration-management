@@ -1,0 +1,395 @@
+#!/bin/bash
+AZURE_STORAGE_ACCOUNT_NAME='{{ ndh_cdecopy_azure_storage_account_name }}'
+AZURE_STORAGE_CONTAINER_NAME='{{ ndh_cdecopy_azure_storage_container_name }}'
+AZURE_SAS_TOKEN_SSM_PARAMETER='/azure/sas_token'
+S3_BUCKET_NAME='{{ ndh_cdecopy_s3_bucket_name }}'
+NONCORE_HOSTNAME='{{ ndh_cdecopy_noncore_hostname }}'
+NONCORE_TEMP_DIR='{{ ndh_cdecopy_noncore_temp_dir }}'
+MERCURY_UPLOAD_DIR='{{ ndh_cdecopy_mercury_upload_dir }}'
+PINS_UPLOAD_DIR='{{ ndh_cdecopy_pins_upload_dir }}'
+LOCAL_CDE_DIR='{{ ndh_cdecopy_source_dir }}'
+LOCAL_TEMP_DIR='{{ ndh_cdecopy_temp_dir }}'
+WINRM_COPY_PARTS=10
+DRYRUN=0
+AZURE=0
+MERCURY=0
+PINS=0
+S3=0
+PATH="$PATH:/usr/local/bin"
+
+debug() {
+  if (( DRYRUN == 0 )); then
+    echo "$@" >&2
+  else
+    echo "DRYRUN: $*" >&2
+  fi
+}
+
+error() {
+  echo "$@" >&2
+}
+
+usage() {
+  echo "Usage $0: [<opts>]
+
+Where <opts>:
+  -a                     Upload to azure
+  -d                     Dryrun, i.e. get SAS but don't update SSM parameter
+  -p                     Upload to pins
+  -m                     Upload to mercury
+  -s                     Upload to AWS S3
+
+ExitCode:
+  1 = error
+  2 = ndh file not complete
+"
+}
+
+get_cde_filename() {
+  filename=$(ls -1t *.dat | head -1)
+  if [[ -z $filename ]]; then
+    error "local: no file found in $LOCAL_CDE_DIR"
+    return 1
+  fi
+  if lsof "$filename" >/dev/null; then
+    error "local: CDE file $filename not complete"
+    return 2
+  fi
+  echo "$filename"
+}
+
+clean_local_tmpfiles() {
+  files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +1 || true)
+  if [[ -n $files ]]; then
+    debug "local: deleting temporary files" $files
+    if ((DRYRUN == 0)); then
+      rm -f "$files"
+    fi
+  fi
+}
+
+create_local_tmpfiles() {
+  local i
+  local part
+
+  if [[ ! -d $LOCAL_TEMP_DIR ]]; then
+    debug "local: creating $LOCAL_TEMP_DIR"
+    if ((DRYRUN == 0)); then
+      mkdir -p "$LOCAL_TEMP_DIR"
+    fi
+  fi
+
+  if [[ ! -e $LOCAL_TEMP_DIR/$1 || $1 -nt $LOCAL_TEMP_DIR/$1 ]]; then
+    debug "local: creating $LOCAL_TEMP_DIR/$1"
+    if ((DRYRUN == 0)); then
+      cp "$1" "$LOCAL_TEMP_DIR/$1"
+    fi
+  fi
+  cd "$LOCAL_TEMP_DIR"
+
+
+  if [[ ! -e $1.zip || $1 -nt $1.zip ]]; then
+    debug "local: creating $1.zip"
+    if ((DRYRUN == 0)); then
+      rm -f "$1.zip"
+      zip "$1.zip" "$1"
+    fi
+  fi
+
+  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
+    part="$1.$(printf %02d $i)"
+    if [[ ! -e $part || $1 -nt $part ]]; then
+      debug "local: creating $WINRM_COPY_PARTS parts for winrm"
+      if ((DRYRUN == 0)); then
+        split -d -n $WINRM_COPY_PARTS "$1" "$1."
+      fi
+      break
+    fi
+  done
+
+  # create parts
+  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
+    part="$1.$(printf %02d $i)"
+    if [[ ! -e $part.zip || $part -nt $part.zip ]]; then
+      debug "local: creating $part.zip"
+      if ((DRYRUN == 0)); then
+        rm -f "$part.zip"
+        zip "$part.zip" "$part"
+      fi
+    fi
+  done
+}
+
+get_cde_zip_filename() {
+  cde_date=$(echo "$1" | sed 's/^C_NOMIS_OFFENDER_\([0-9]*\)_[0-9]*.dat$/\1/')
+  if [[ -z $cde_date || $cde_date == "$1" ]]; then
+    error "local: could not extract date from $1"
+    return 1
+  fi
+  if [[ "$(uname)" == "Darwin" ]]; then
+    date "-jv+1d" "-f%d%m%Y" "$cde_date" "+%Y%m%d"
+  else
+    date -d "${cde_date:4:4}-${cde_date:2:2}-${cde_date:0:2} + 1day" +"%Y%m%d"
+  fi
+}
+
+upload_cde_to_blob() {
+  local cde_zip_filename
+  local exitcode
+  local sas_token
+
+  debug "local: calculating CDE zip filename from $1"
+  if ! cde_zip_filename=$(get_cde_zip_filename "$1"); then
+    exit 1
+  fi
+
+  debug "$AZURE_STORAGE_ACCOUNT_NAME: retrieving SAS token from SSM parameter $AZURE_SAS_TOKEN_SSM_PARAMETER"
+  if ! sas_token=$(aws ssm get-parameter --name "$AZURE_SAS_TOKEN_SSM_PARAMETER" --with-decryption --query Parameter.Value --output text); then
+    exit 1
+  fi
+
+  debug "$AZURE_STORAGE_ACCOUNT_NAME: checking access to Azure storage blob $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
+  exitcode=0
+  az storage container show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --name "$AZURE_STORAGE_CONTAINER_NAME" --sas-token "$sas_token" > /dev/null
+  az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" >/dev/null || exitcode=$?
+  if ((exitcode == 0)); then
+    debug "$AZURE_STORAGE_ACCOUNT_NAME: zip file $cde_zip_filename.zip already uploaded to blob, nothing to do"
+    return 0
+  elif ((exitcode != 3)); then
+    error "$AZURE_STORAGE_ACCOUNT_NAME: error retrieving blob information for $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
+    az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token"
+    return $exitcode
+  fi
+
+  debug "$AZURE_STORAGE_ACCOUNT_NAME: uploading zip file $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename to blob"
+  exitcode=0
+  debug "az storage blob upload --account-name '$AZURE_STORAGE_ACCOUNT_NAME' --container-name '$AZURE_STORAGE_CONTAINER_NAME' --name '$cde_zip_filename.zip' --sas-token '$sas_token' --file '$LOCAL_TEMP_DIR/$1.zip' --content-type application/octet-stream"
+  if ((DRYRUN == 0)); then
+    az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" --file "$LOCAL_TEMP_DIR/$1.zip" --content-type application/octet-stream || exitcode=$?
+  fi
+
+  if ((exitcode != 0)); then
+    error "$AZURE_STORAGE_ACCOUNT_NAME: error uploading $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename to blob"
+    exit 1
+  fi
+}
+
+upload_cdezip_to_noncore() {
+  local destination_hash
+  local join_parts_ps
+  local part
+  local source_hash
+
+  join_parts_ps='$outFile = "'"$2\\$1"'"
+$inFilePrefix = "'$2\\$1.'"
+$ostream = [System.Io.File]::OpenWrite($outFile)
+for ($i=0; $i -lt '$WINRM_COPY_PARTS'; $i++) {
+  $chunkString = "{0:D2}" -f $i
+  $infileName = "$infilePrefix$chunkString"
+  $bytes = [System.IO.File]::ReadAllBytes($infileName)
+  $ostream.Write($bytes, 0, $bytes.Count)
+  $bytes = $bytes.Count
+  Write-Output "${outFile}: Added $bytes B from ${infileName}"
+}
+$ostream.close()
+'
+
+  debug "$NONCORE_HOSTNAME: checking $2 exists"
+  winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $2" > /dev/null
+  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" || true)
+  source_hash=$(sha256sum "$1"  | cut -f1 -d\  | tr -d "[:space:]")
+  if [[ "$source_hash" == "$destination_hash" ]];then
+    debug "$NONCORE_HOSTNAME: $1 already copied"
+    return 0
+  fi
+
+  if ((DRYRUN == 0)); then
+    for ((i=0; i<WINRM_COPY_PARTS; i++)); do
+      part="$1.$(printf "%02d" $i).zip"
+      debug "$NONCORE_HOSTNAME: copying $LOCAL_TEMP_DIR/$part to $2\\$part"
+      winrm_copy.py --host "$NONCORE_HOSTNAME" --sourcefile "$LOCAL_TEMP_DIR/$part" --destinationfile "$2\\$part" --force &
+    done
+    wait
+
+    for ((i=0; i<WINRM_COPY_PARTS; i++)); do
+      debug "$NONCORE_HOSTNAME: extract $2\\$1.zip"
+      part="$1.$(printf "%02d" $i).zip"
+      winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Expand-Archive -Path $2\\$part -DestinationPath $2"
+    done
+
+    debug "$NONCORE_HOSTNAME: join parts"
+    winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "$join_parts_ps"
+    destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]")
+    if [[ "$source_hash" != "$destination_hash" ]];then
+      debug "$NONCORE_HOSTNAME: $1 destination_hash mismatch $source_hash != $destination_hash"
+      return 01
+    fi
+  else
+    debug "$NONCORE_HOSTNAME: copying $LOCAL_TEMP_DIR/$1.zip to $2\\$1.zip"
+    winrm_copy.py --dryrun --host "$NONCORE_HOSTNAME" --sourcefile "$LOCAL_TEMP_DIR/$1.zip" --destinationfile "$2\\$1.zip --force"
+  fi
+}
+
+clean_cdezip_on_noncore() {
+  debug "$NONCORE_HOSTNAME: deleting old zips $2"
+  if ((DRYRUN == 0)); then
+    winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $2 -File | Where CreationTime -lt (Get-Date).AddDays(-1) | Remove-Item -Force" > /dev/null
+  fi
+}
+
+copy_cde_on_noncore() {
+  local json
+  local exitcode
+  local files
+
+  exitcode=0
+  json=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $3 -File | ConvertTo-Json") || exitcode=$?
+  if [[ $exitcode == 0 ]]; then
+    files=$(jq -r .Name <<< "$json")
+    if ((DRYRUN == 0)); then
+      debug "$NONCORE_HOSTNAME: deleting existing files in $3: $files"
+      winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $3 -File | Remove-Item"
+    fi
+  fi
+  debug "$NONCORE_HOSTNAME: copying $2\\$1 to $3"
+  if ((DRYRUN == 0)); then
+    winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Copy-Item $2\\$1 -Destination $3"
+  fi
+}
+
+upload_cde_to_aws() {
+  local json
+
+  debug "$S3_BUCKET_NAME: checking if $1 already uploaded"
+  json=$(aws s3api get-object-attributes --bucket "$S3_BUCKET_NAME" --key "$1" --object-attributes "StorageClass" "ETag" "ObjectSize") || true
+  if [[ -n $json ]]; then
+    remote_size=$(jq -r .ObjectSize <<< "$json")
+    local_size=$(stat --printf="%s" "$LOCAL_CDE_DIR/$1")
+    if [[ "$local_size" == "$remote_size" ]]; then
+      debug "$S3_BUCKET_NAME: $1 already uploaded $remote_size B"
+      return 0
+    fi
+  fi
+  debug "$S3_BUCKET_NAME: uploading $1"
+  if ((DRYRUN == 0)); then
+    aws s3api put-object --bucket "$S3_BUCKET_NAME" --key "$1" --body "$LOCAL_CDE_DIR/$1"
+  fi
+}
+
+run() {
+  local cde_filename
+  local exitcode
+
+  set -eo pipefail
+  debug "local: checking aws and azure cli present"
+  which aws >/dev/null
+  which az >/dev/null
+  which zip >/dev/null
+
+  debug "local: finding most recent CDE in $LOCAL_CDE_DIR"
+  exitcode=0
+  cd "$LOCAL_CDE_DIR"
+  cde_filename=$(get_cde_filename) || exitcode=$?
+  if ((exitcode != 0)); then
+    exit "$exitcode"
+  fi
+  debug "local: latest CDE file is $cde_filename"
+
+  clean_local_tmpfiles
+  create_local_tmpfiles "$cde_filename"
+
+  if (( AZURE == 1 )); then
+    upload_cde_to_blob "$cde_filename"
+  fi
+  if (( PINS+MERCURY != 0 )); then
+    password=$(winrm_get_creds.sh)
+    export WINRM_PASSWORD="$password"
+    upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
+    if (( PINS == 1 )); then
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR"
+    fi
+    if (( MERCURY == 1 )); then
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR"
+    fi
+    clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
+  fi
+  if (( S3 == 1 )); then
+    upload_cde_to_aws "$cde_filename"
+  fi
+}
+
+main() {
+  local exitcode
+
+  while getopts "admps" opt; do
+      case $opt in
+          a)
+              if [[ -z $AZURE_STORAGE_ACCOUNT_NAME ]]; then
+                debug "skipping azure as AZURE_STORAGE_ACCOUNT_NAME not set"
+              else
+                AZURE=1
+              fi
+              ;;
+          d)
+              DRYRUN=1
+              ;;
+          m)
+              if [[ -z $NONCORE_HOSTNAME ]]; then
+                debug "skipping mercury as NONCORE_HOSTNAME not set"
+              else
+                MERCURY=1
+              fi
+              ;;
+          p)
+              if [[ -z $NONCORE_HOSTNAME ]]; then
+                debug "skipping pins as NONCORE_HOSTNAME not set"
+              else
+                PINS=1
+              fi
+              ;;
+          s)
+              if [[ -z $S3_BUCKET_NAME ]]; then
+                debug "skipping s3 as S3_BUCKET_NAME not set"
+              else
+                S3=1
+              fi
+              ;;
+          :)
+              echo "Error: option ${OPTARG} requires an argument"
+              ;;
+          ?)
+              echo "Invalid option: ${OPTARG}" >&2
+              echo >&2
+              usage >&2
+              exit 1
+              ;;
+      esac
+  done
+
+  if ((OPTIND == 1)); then
+    usage >&2
+    return 2
+  fi
+
+  shift $((OPTIND-1))
+
+  if [[ -n $1 ]]; then
+    echo "Unexpected argument: $1 $2" >&2
+    usage >&2
+    return 2
+  fi
+
+  exitcode=0
+  if ((AZURE+MERCURY+PINS+S3 > 0)); then
+    (run) || exitcode=$?
+  fi
+  if [[ -d /opt/textfile_monitoring ]]; then
+    debug "/opt/textfile_monitoring/cdecopy.prom: cdecopy_status $exitcode"
+    if ((DRYRUN == 0)); then
+      echo "cdecopy_status $exitcode"  > /opt/textfile_monitoring/cdecopy.prom
+    fi
+  fi
+  exit $exitcode
+}
+
+main "$@"

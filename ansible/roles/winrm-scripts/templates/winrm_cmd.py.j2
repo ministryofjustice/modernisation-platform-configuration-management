@@ -1,0 +1,58 @@
+#!/usr/bin/env {{ ansible_python_interpreter|default('python3') }}
+
+""" Run a command or powershell script on remote host via winrm """
+import argparse
+import os
+import sys
+import winrm
+
+
+def main():
+    """Parse arguments, open winrm session and Send file to remote location in base64 encoded chunks"""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        description='run a command or powershell script on remote host',
+        epilog="""
+example (1): winrm_cmd.py --host PDPMW0P1UQL0001.azure.hmpp.root ipconfig '/all'
+example (2): winrm_cmd.ph --host PDPMW0P1UQL0001.azure.hmpp.root --ps 'Get-ChildItem –Path C:\ | ConvertTo-Json'
+"""
+    )
+    parser.add_argument('--username', help='username',
+                        default='{{ winrm_domain.winrm_username }}')
+    parser.add_argument('--host', help='target machine', required=True)
+    parser.add_argument('--protocol', help='http or https', default='http')
+    parser.add_argument(
+        '--ps', help='run powershell rather than shell', action='store_true')
+    parser.add_argument(
+        '--transport', help='transport, e.g. ntlm', default='ntlm')
+    parser.add_argument('script', nargs=1, help='script to run')
+    parser.add_argument('args', nargs='*', help='arguments to the script')
+
+    args = parser.parse_args()
+
+    password = os.environ.get('WINRM_PASSWORD')
+    if not password:
+        raise RuntimeError(
+            'Please set password in WINRM_PASSWORD environment variable, e.g. export WINRM_PASSWORD=$(winrm_get_creds.sh)')
+    port = 5986 if args.protocol == 'https' else 5985
+    url = f'{args.protocol}://{args.host}:{port}'
+    s = winrm.Session(url, auth=(args.username, password),
+                      transport=args.transport)
+
+    if args.ps:
+        if len(args.args):
+            raise RuntimeError(
+                'Script arguments not supported with powershell mode')
+        r = s.run_ps(args.script[0])
+    else:
+        r = s.run_cmd(args.script[0], args.args)
+
+    if len(r.std_out):
+        print(r.std_out.decode("utf-8"))
+    if len(r.std_err) and r.status_code != 0:
+        print(r.std_err.decode("utf-8"), file=sys.stderr)
+    sys.exit(r.status_code)
+
+
+if __name__ == '__main__':
+    main()

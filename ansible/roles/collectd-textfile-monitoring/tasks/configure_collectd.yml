@@ -1,4 +1,14 @@
 ---
+- name: create monitoring directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    state: directory
+    recurse: yes
+  loop:
+    - /opt/textfile_monitoring
+
 - name: copy collectd config
   ansible.builtin.template:
     src: "{{ collectd_script_name }}.conf.j2"

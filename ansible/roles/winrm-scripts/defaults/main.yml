@@ -1,0 +1,16 @@
+---
+# define winrm_domain_name_fqdn in appropriate group_vars to enable role
+#winrm_domain_name_fqdn: azure.noms.root
+winrm_domain: "{{ winrm_domains[winrm_domain_name_fqdn] }}"
+
+winrm_domains:
+  azure.noms.root:
+    secret_account_name: hmpps-domain-services-test
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.noms.root/shared-passwords"
+    winrm_username: dsojenkins
+  azure.hmpp.root:
+    secret_account_name: hmpps-domain-services-production
+    secret_role_name: EC2HmppsDomainSecretsRole
+    secret_name: "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    winrm_username: dsojenkins
