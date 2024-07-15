@@ -2,7 +2,7 @@ $GlobalConfig = @{
   "all" = @{
     "SQLDeveloperS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "SQLDeveloperS3Folder" = "hmpps/sqldeveloper"
-    "apps = @(
+    "apps" = @(
       "firefox",
       "libreoffice-still",
       "notepadplusplus.install",
