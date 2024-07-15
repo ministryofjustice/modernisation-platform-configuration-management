@@ -3,14 +3,14 @@ $GlobalConfig = @{
     "SQLDeveloperS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "SQLDeveloperS3Folder" = "hmpps/sqldeveloper"
     "apps = @(
-      "firefox"
-      "libreoffice-still"
-      "notepadplusplus.install"
-      "putty.install"
-      "winscp.install"
-      "postman"
-      "vcredist140" # dependency for wireshark
-      "wireshark"
+      "firefox",
+      "libreoffice-still",
+      "notepadplusplus.install",
+      "putty.install",
+      "winscp.install",
+      "postman",
+      "vcredist140", # dependency for wireshark
+      "wireshark",
       "jre8"
     )
   }
