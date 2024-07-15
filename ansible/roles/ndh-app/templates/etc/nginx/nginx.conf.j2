@@ -35,11 +35,13 @@ http {
         proxy_send_timeout 120s;
         proxy_connect_timeout 120s;
         server_name {{ ndh_proxy_host }};
+{% if ndelius_proxy_pass is defined %}
         location / {
                 proxy_set_header Host $host;
                 proxy_redirect https://{{ ndh_proxy_host }}:443/ https://{{ ndh_proxy_host }}/;
                 proxy_pass https://{{ ndelius_proxy_pass }}/;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
+{% endif %}
     }
 }

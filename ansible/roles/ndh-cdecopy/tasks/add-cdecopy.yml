@@ -8,6 +8,27 @@
   vars:
     pip_extra_args: "{% if '3.6' in ansible_python_interpreter %}-c ~/.ansible-configuration-management-constraints.rhel6.txt{% endif %}"
 
+- name: Add CDE temporary directory
+  ansible.builtin.file:
+    owner: tibco
+    group: tibco
+    path: "{{ ndh_cdecopy_temp_dir }}"
+    state: directory
+
+- name: Add monitoring directory
+  ansible.builtin.file:
+    path: /opt/textfile_monitoring/
+    state: directory
+
+- name: Add monitoring file
+  copy:
+    content: ""
+    dest: /opt/textfile_monitoring/cdecopy.prom
+    force: false
+    group: tibco
+    owner: tibco
+    mode: 0644
+
 - name: Copy cdecopy script
   ansible.builtin.template:
     src: "{{ item }}.j2"
@@ -22,5 +43,5 @@
     minute: "{{ item.minute }}"
     hour: "{{ item.hour }}"
     user: root
-    job: "/usr/local/bin/cdecopy.sh -apms 2>&1 | logger -p local3.info -t cdecopy.sh"
+    job: "su tibco -c '/usr/local/bin/cdecopy.sh -apms' 2>&1 | logger -p local3.info -t cdecopy.sh"
   loop: "{{ ndh_cdecopy_cron }}"
