@@ -416,6 +416,15 @@ function Remove-StartMenuShutdownOption {
   }
 }
 
+<#
+.DESCRIPTION
+  Retrieves the tags from the instance and returns them as a hashtable.
+.EXAMPLE
+  Get-Tags returns the tags $hash.Keys and $hash.Values so you can iterate over them.
+  foreach ($tag in Get-Tags) {
+    Write-Output "Key: $($tag.Key) Value: $($tag.Value)"
+  }
+#>
 function Get-Tags {
   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
   $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
@@ -424,6 +433,17 @@ function Get-Tags {
   $Tags.Tags
 }
 
+<#
+.DESCRIPTION
+  Retrieves the value of a tag from the instance and runs the command with the arguments specified in the tag value.
+.EXAMPLE
+  Get-PowerShellCommandFromTag -Command Install-WindowsFeature
+.NOTES
+  Terraform tags need to look something like this:
+  "Install-WindowsFeature" = "RDS-RD-Server:RDS-WEB-Access"
+  This will run the command Install-WindowsFeature RDS-RD-Server and Install-WindowsFeature RDS-WEB-Access
+  The tag value cannot contain spaces or commas as these will fail terraform tag schema checks.
+#>
 function Get-PowerShellCommandFromTag {
   [CmdletBinding()]
   param (
@@ -475,6 +495,6 @@ Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
 Get-PowerShellCommandFromTag -Command Install-WindowsFeature 
-# Add-MicrosoftOffice $Config # takes forever to install so putting last # TODO: comment back in
+Add-MicrosoftOffice $Config
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
