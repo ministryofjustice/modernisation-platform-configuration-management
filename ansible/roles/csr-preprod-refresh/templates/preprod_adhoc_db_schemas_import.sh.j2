@@ -9,7 +9,6 @@ export PATH=${PATH}:/usr/local/bin
 export OEM_AGENT_HOME=/u01/app/oracle/product/oem-agent/agent_13.5.0.0.0
 export smtp="smtp://smtp.hmpps-domain.service.justice.gov.uk:25"
 export from="oracle@`hostname`.com"
-export EMAIL_RECIPIENT="dba_alerts_prod-aaaaa25gxv2vfzkv4f55ep2yee@moj.org.slack.com"
 cd $SCRIPT_DIR
 . ~/.bash_profile
 
@@ -223,7 +222,7 @@ ORACLE_SID="UNSPECIFIED"
 DPDIR="UNSPECIFIED"
 SCHEMAS="UNSPECIFIED"
 TAG="UNSPECIFIED"
-
+EMAIL_RECIPIENT=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .dba_alerts_email)
 while getopts "i:d:s:t:" opt
 do
   case $opt in
