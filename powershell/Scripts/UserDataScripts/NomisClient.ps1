@@ -420,12 +420,12 @@ function Remove-StartMenuShutdownOption {
 .DESCRIPTION
   Retrieves the tags from the instance and returns them as a hashtable.
 .EXAMPLE
-  Get-Tags returns the tags $hash.Keys and $hash.Values so you can iterate over them.
+  Get-InstanceTags returns the tags $hash.Keys and $hash.Values so you can iterate over them.
   foreach ($tag in Get-Tags) {
     Write-Output "Key: $($tag.Key) Value: $($tag.Value)"
   }
 #>
-function Get-Tags {
+function Get-InstanceTags {
   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
   $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
   $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
@@ -452,7 +452,7 @@ function Get-PowerShellCommandFromTag {
 
   $matchFound = $false
 
-  foreach ($Tag in Get-Tags) {
+  foreach ($Tag in Get-InstanceTags) {
     if ($Tag.key -eq $Command) {
       $matchFound = $true
       $argList = $Tag.Value.Split(':')
