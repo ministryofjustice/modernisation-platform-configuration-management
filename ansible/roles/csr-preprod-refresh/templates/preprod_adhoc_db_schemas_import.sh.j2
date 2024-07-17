@@ -222,7 +222,6 @@ ORACLE_SID="UNSPECIFIED"
 DPDIR="UNSPECIFIED"
 SCHEMAS="UNSPECIFIED"
 TAG="UNSPECIFIED"
-EMAIL_RECIPIENT=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .dba_alerts_email)
 while getopts "i:d:s:t:" opt
 do
   case $opt in
@@ -243,6 +242,7 @@ info "Datapump directory = ${DPDIR}"
 info "Schemas = ${SCHEMAS}"
 info "Tag = $TAG"
 
+EMAIL_RECIPIENT=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r .dba_alerts_email)
 info "Validating target database"
 grep ^${ORACLE_SID}: /etc/oratab >/dev/null 2>&1
 [ $? -ne 0 ] && error "Database $ORACLE_SID does not exist on this machine"
