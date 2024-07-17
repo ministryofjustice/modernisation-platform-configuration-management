@@ -48,3 +48,28 @@ housekeeping_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
+  PDBISYS:
+    db_name: PDBISYS
+    db_unique_name: PDBISYS
+    instance_name: PDBISYS
+    host_name: pd-ncr-db-1-a
+    port: 1521
+    tns_name: PDBISYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  PDBIAUD:
+    db_name: PDBIAUD
+    db_unique_name: PDBIAUD
+    instance_name: PDBIAUD
+    host_name: pd-ncr-db-1-a
+    port: 1521
+    tns_name: PDBIAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
+
+audit_db_sid: PPBIAUD
+system_db_sid: PPBISYS
+audit_service_name: BIAUD_TAF
+system_service_name: BISYS_TAF
