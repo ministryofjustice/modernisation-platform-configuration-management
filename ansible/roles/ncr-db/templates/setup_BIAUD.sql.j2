@@ -17,5 +17,7 @@ default tablespace MISAUD_TS
 profile NART;
 grant CONNECT, CREATE JOB, CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, UNLIMITED TABLESPACE to BODS_IPS_AUDIT_OWNER;
 
+alter user dbsnmp identified by "{{ bip_aud_dbsnmp_password }}" account unlock;
+
 spool off 
 exit

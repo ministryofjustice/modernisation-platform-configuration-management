@@ -11,11 +11,13 @@
     bip_aud_system_password: "{{ secretsmanager_passwords_dict['audit'].passwords['system'] }}"
     bip_audit_owner_password: "{{ secretsmanager_passwords_dict['audit'].passwords['bip_audit_owner'] }}"
     bods_ips_audit_password: "{{ secretsmanager_passwords_dict['audit'].passwords['bods_ips_audit_owner'] }}"
+    bip_aud_dbsnmp_password: "{{ secretsmanager_passwords_dict['audit'].passwords['dbsnmp'] }}"
     bip_sys_sys_password: "{{ secretsmanager_passwords_dict['system'].passwords['sys'] }}"
     bip_sys_system_password: "{{ secretsmanager_passwords_dict['system'].passwords['system'] }}"
     bip_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bip_system_owner'] }}"
     bods_ips_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bods_ips_system_owner'] }}"
     bods_repo_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bods_repo_owner'] }}"
+    bip_sys_dbsnmp_password: "{{ secretsmanager_passwords_dict['system'].passwords['dbsnmp'] }}"
 
 - name: Fail if missing parameters
   fail:
@@ -35,11 +37,13 @@
     - bip_aud_system_password| length > 0
     - bip_audit_owner_password| length > 0
     - bods_ips_audit_password| length > 0
+    - bip_aud_dbsnmp_password| length > 0
     - bip_sys_sys_password| length > 0
     - bip_sys_system_password| length > 0
     - bip_system_owner_password| length> 0
     - bods_ips_system_owner_password| length> 0
     - bods_repo_owner_password| length>0
+    - bip_sys_dbsnmp_password| length>0
 
 - name: Fail if missing parameters
   fail:
