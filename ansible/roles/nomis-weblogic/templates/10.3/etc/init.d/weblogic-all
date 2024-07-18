@@ -189,6 +189,14 @@ case "$1" in
   start)
     start
     repair
+    unhealthy_services=$(get_unhealthy_services)
+    if [[ -n $unhealthy_services ]]; then
+      status
+      echo "Re-starting all services in attempt to fix $unhealthy_services"
+      stop
+      start
+      repair
+    fi
     ;;
   start_sequential)
     start_sequential
