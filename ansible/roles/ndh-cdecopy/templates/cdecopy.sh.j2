@@ -59,11 +59,11 @@ get_cde_filename() {
 }
 
 clean_local_tmpfiles() {
-  files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +1 || true)
+  files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +1 -type f || true)
   if [[ -n $files ]]; then
     debug "local: deleting temporary files" $files
     if ((DRYRUN == 0)); then
-      rm -f "$files"
+      rm -f $files
     fi
   fi
 }
@@ -151,14 +151,14 @@ upload_cde_to_blob() {
   debug "$AZURE_STORAGE_ACCOUNT_NAME: checking access to Azure storage blob $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
   exitcode=0
   az storage container show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --name "$AZURE_STORAGE_CONTAINER_NAME" --sas-token "$sas_token" > /dev/null
-  az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" >/dev/null || exitcode=$?
+  az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" >/dev/null 2>&1 || exitcode=$?
   if ((exitcode == 0)); then
     debug "$AZURE_STORAGE_ACCOUNT_NAME: zip file $cde_zip_filename.zip already uploaded to blob, nothing to do"
     return 0
   elif ((exitcode != 3)); then
     error "$AZURE_STORAGE_ACCOUNT_NAME: error retrieving blob information for $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
     az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token"
-    return $exitcode
+    exit $exitcode
   fi
 
   debug "$AZURE_STORAGE_ACCOUNT_NAME: uploading zip file $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename to blob"
@@ -196,7 +196,7 @@ $ostream.close()
 
   debug "$NONCORE_HOSTNAME: checking $2 exists"
   winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $2" > /dev/null
-  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" || true)
+  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" 2>/dev/null || true)
   source_hash=$(sha256sum "$1"  | cut -f1 -d\  | tr -d "[:space:]")
   if [[ "$source_hash" == "$destination_hash" ]];then
     debug "$NONCORE_HOSTNAME: $1 already copied"
@@ -214,15 +214,15 @@ $ostream.close()
     for ((i=0; i<WINRM_COPY_PARTS; i++)); do
       debug "$NONCORE_HOSTNAME: extract $2\\$1.zip"
       part="$1.$(printf "%02d" $i).zip"
-      winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Expand-Archive -Path $2\\$part -DestinationPath $2"
+      winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Expand-Archive -Path $2\\$part -DestinationPath $2 -Force"
     done
 
     debug "$NONCORE_HOSTNAME: join parts"
     winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "$join_parts_ps"
     destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]")
-    if [[ "$source_hash" != "$destination_hash" ]];then
-      debug "$NONCORE_HOSTNAME: $1 destination_hash mismatch $source_hash != $destination_hash"
-      return 01
+    if [[ "$source_hash" != "$destination_hash" ]]; then
+      error "$NONCORE_HOSTNAME: $1 destination_hash mismatch $source_hash != $destination_hash"
+      exit 1
     fi
   else
     debug "$NONCORE_HOSTNAME: copying $LOCAL_TEMP_DIR/$1.zip to $2\\$1.zip"
@@ -238,9 +238,23 @@ clean_cdezip_on_noncore() {
 }
 
 copy_cde_on_noncore() {
-  local json
+  local destination_hash
   local exitcode
   local files
+  local json
+  local source_hash
+
+  debug "$NONCORE_HOSTNAME: checking $1 in $2 and $3"
+  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $3\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" 2>/dev/null || true)
+  source_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" || true)
+  if [[ -z $source_hash ]]; then
+      error "$NONCORE_HOSTNAME: could not retrieve source_hash for $2\\$1"
+      exit 1
+  fi
+  if [[ "$destination_hash" == "$source_hash" ]]; then
+      debug "$NONCORE_HOSTNAME: file already copied from $2\\$1 to $3"
+      return 0
+  fi
 
   exitcode=0
   json=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $3 -File | ConvertTo-Json") || exitcode=$?
@@ -261,7 +275,7 @@ upload_cde_to_aws() {
   local json
 
   debug "$S3_BUCKET_NAME: checking if $1 already uploaded"
-  json=$(aws s3api get-object-attributes --bucket "$S3_BUCKET_NAME" --key "$1" --object-attributes "StorageClass" "ETag" "ObjectSize") || true
+  json=$(aws s3api get-object-attributes --bucket "$S3_BUCKET_NAME" --key "$1" --object-attributes "StorageClass" "ETag" "ObjectSize" 2>/dev/null) || true
   if [[ -n $json ]]; then
     remote_size=$(jq -r .ObjectSize <<< "$json")
     local_size=$(stat --printf="%s" "$LOCAL_CDE_DIR/$1")
@@ -295,11 +309,14 @@ run() {
   fi
   debug "local: latest CDE file is $cde_filename"
 
-  clean_local_tmpfiles
+  clean_local_tmpfiles "$cde_filename"
   create_local_tmpfiles "$cde_filename"
 
   if (( AZURE == 1 )); then
     upload_cde_to_blob "$cde_filename"
+  fi
+  if (( S3 == 1 )); then
+    upload_cde_to_aws "$cde_filename"
   fi
   if (( PINS+MERCURY != 0 )); then
     password=$(winrm_get_creds.sh)
@@ -312,9 +329,6 @@ run() {
       copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR"
     fi
     clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
-  fi
-  if (( S3 == 1 )); then
-    upload_cde_to_aws "$cde_filename"
   fi
 }
 
@@ -368,7 +382,7 @@ main() {
 
   if ((OPTIND == 1)); then
     usage >&2
-    return 2
+    exit 2
   fi
 
   shift $((OPTIND-1))
@@ -376,7 +390,7 @@ main() {
   if [[ -n $1 ]]; then
     echo "Unexpected argument: $1 $2" >&2
     usage >&2
-    return 2
+    exit 2
   fi
 
   exitcode=0
