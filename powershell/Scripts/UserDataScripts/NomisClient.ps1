@@ -477,7 +477,10 @@ if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
     Exit 3010 # triggers reboot if running from SSM Doc
-  }
+  } 
+} else {
+  Write-Output "No domain-name tag found so apply Local Group Policy"
+  . .\LocalGroupPolicy.ps1
 }
 
 $ErrorActionPreference = "Stop"
