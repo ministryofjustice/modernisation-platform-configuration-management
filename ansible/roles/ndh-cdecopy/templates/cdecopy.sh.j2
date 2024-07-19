@@ -6,7 +6,9 @@ S3_BUCKET_NAME='{{ ndh_cdecopy_s3_bucket_name }}'
 NONCORE_HOSTNAME='{{ ndh_cdecopy_noncore_hostname }}'
 NONCORE_TEMP_DIR='{{ ndh_cdecopy_noncore_temp_dir }}'
 MERCURY_UPLOAD_DIR='{{ ndh_cdecopy_mercury_upload_dir }}'
+MERCURY_UPLOADED_DIR='{{ ndh_cdecopy_mercury_uploaded_dir }}'
 PINS_UPLOAD_DIR='{{ ndh_cdecopy_pins_upload_dir }}'
+PINS_UPLOADED_DIR='{{ ndh_cdecopy_pins_uploaded_dir }}'
 LOCAL_CDE_DIR='{{ ndh_cdecopy_source_dir }}'
 LOCAL_TEMP_DIR='{{ ndh_cdecopy_temp_dir }}'
 WINRM_COPY_PARTS=10
@@ -59,9 +61,13 @@ get_cde_filename() {
 }
 
 clean_local_tmpfiles() {
+  local files
+  local num_files
+
   files=$(find "$LOCAL_TEMP_DIR" -name '*' -mtime +1 -type f || true)
   if [[ -n $files ]]; then
-    debug "local: deleting temporary files" $files
+    num_files=$(echo "$files" | wc -l)
+    debug "local: deleting $num_files temporary file(s)"
     if ((DRYRUN == 0)); then
       rm -f $files
     fi
@@ -196,7 +202,7 @@ $ostream.close()
 
   debug "$NONCORE_HOSTNAME: checking $2 exists"
   winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "Get-ChildItem –Path $2" > /dev/null
-  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" 2>/dev/null || true)
+  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" 2>/dev/null | tr -d "[:space:]" || true)
   source_hash=$(sha256sum "$1"  | cut -f1 -d\  | tr -d "[:space:]")
   if [[ "$source_hash" == "$destination_hash" ]];then
     debug "$NONCORE_HOSTNAME: $1 already copied"
@@ -238,21 +244,29 @@ clean_cdezip_on_noncore() {
 }
 
 copy_cde_on_noncore() {
-  local destination_hash
+  local destination1_hash
+  local destination2_hash
   local exitcode
   local files
   local json
   local source_hash
 
-  debug "$NONCORE_HOSTNAME: checking $1 in $2 and $3"
-  destination_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $3\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" 2>/dev/null || true)
-  source_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" | tr -d "[:space:]" || true)
+  debug "$NONCORE_HOSTNAME: getting $3\\$1 hash"
+  destination1_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $3\\$1 -Algorithm SHA256).Hash.ToLower()" 2>/dev/null | tr -d "[:space:]" || true)
+  debug "$NONCORE_HOSTNAME: getting $4\\$1 hash"
+  destination2_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $4\\$1 -Algorithm SHA256).Hash.ToLower()" 2>/dev/null | tr -d "[:space:]" || true)
+  debug "$NONCORE_HOSTNAME: getting $2\\$1 hash"
+  source_hash=$(winrm_cmd.py --host "$NONCORE_HOSTNAME" --ps "(Get-FileHash $2\\$1 -Algorithm SHA256).Hash.ToLower()" 2>/dev/null | tr -d "[:space:]" || true)
   if [[ -z $source_hash ]]; then
       error "$NONCORE_HOSTNAME: could not retrieve source_hash for $2\\$1"
       exit 1
   fi
-  if [[ "$destination_hash" == "$source_hash" ]]; then
-      debug "$NONCORE_HOSTNAME: file already copied from $2\\$1 to $3"
+  if [[ "$destination1_hash" == "$source_hash" ]]; then
+      debug "$NONCORE_HOSTNAME: file already copied to $3\\$1"
+      return 0
+  fi
+  if [[ "$destination2_hash" == "$source_hash" ]]; then
+      debug "$NONCORE_HOSTNAME: file already processed $4\\$1"
       return 0
   fi
 
@@ -323,10 +337,10 @@ run() {
     export WINRM_PASSWORD="$password"
     upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
     if (( PINS == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR"
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR" "$PINS_UPLOADED_DIR"
     fi
     if (( MERCURY == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR"
+      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR" "$MERCURY_UPLOADED_DIR"
     fi
     clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
   fi
