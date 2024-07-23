@@ -18,6 +18,14 @@
     enabled: yes
     state: stopped
 
+- name: Get the IP address of the local resolver
+  ansible.builtin.command: grep '^nameserver' /etc/resolv.conf | awk '{print $2}'
+  register: local_resolver
+
+- name: Set a fact to contain the IP address of the local resolver
+  ansible.builtin.set_fact:
+    ndh_dns_resolver: "{{ local_resolver.stdout }}"
+
 - name: Add nginx proxy config
   ansible.builtin.template:
     src: etc/nginx/nginx.conf.j2
