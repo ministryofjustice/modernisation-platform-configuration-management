@@ -43,5 +43,5 @@
     minute: "{{ item.minute }}"
     hour: "{{ item.hour }}"
     user: root
-    job: "su tibco -c '/usr/local/bin/cdecopy.sh -apms' 2>&1 | logger -p local3.info -t cdecopy.sh"
+    job: "su tibco -c '/usr/local/bin/cdecopy.sh -ams' 2>&1 | logger -p local3.info -t cdecopy.sh"
   loop: "{{ ndh_cdecopy_cron }}"
