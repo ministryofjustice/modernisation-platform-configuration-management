@@ -48,3 +48,12 @@ housekeeping_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
+
+bip_filesystems_mount:
+  - dir: /opt/data/BusinessObjects
+    fstype: nfs
+    uid: bobj
+    gid: binstall
+    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+    src: "eu-west-2a.fs-0d63407f8c0ced4b8.efs.eu-west-2.amazonaws.com:/"
+    metric_dimension: pd_ncr_sap_share
