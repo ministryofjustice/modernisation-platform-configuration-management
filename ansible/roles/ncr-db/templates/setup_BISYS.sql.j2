@@ -23,5 +23,7 @@ default tablespace BODIREP_TS
 profile NART;
 grant CONNECT, CREATE SEQUENCE, CREATE TABLE, CREATE VIEW, UNLIMITED TABLESPACE to BODS_REPO_OWNER;
 
+alter user dbsnmp identified by "{{ bip_sys_dbsnmp_password }}" account unlock;
+
 spool off 
 exit
