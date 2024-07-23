@@ -5,8 +5,6 @@ AZURE_SAS_TOKEN_SSM_PARAMETER='/azure/sas_token'
 S3_BUCKET_NAME='{{ ndh_cdecopy_s3_bucket_name }}'
 NONCORE_HOSTNAME='{{ ndh_cdecopy_noncore_hostname }}'
 NONCORE_TEMP_DIR='{{ ndh_cdecopy_noncore_temp_dir }}'
-MERCURY_UPLOAD_DIR='{{ ndh_cdecopy_mercury_upload_dir }}'
-MERCURY_UPLOADED_DIR='{{ ndh_cdecopy_mercury_uploaded_dir }}'
 PINS_UPLOAD_DIR='{{ ndh_cdecopy_pins_upload_dir }}'
 PINS_UPLOADED_DIR='{{ ndh_cdecopy_pins_uploaded_dir }}'
 LOCAL_CDE_DIR='{{ ndh_cdecopy_source_dir }}'
@@ -14,7 +12,6 @@ LOCAL_TEMP_DIR='{{ ndh_cdecopy_temp_dir }}'
 WINRM_COPY_PARTS=10
 DRYRUN=0
 AZURE=0
-MERCURY=0
 PINS=0
 S3=0
 PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin"
@@ -38,7 +35,6 @@ Where <opts>:
   -a                     Upload to azure
   -d                     Dryrun, i.e. get SAS but don't update SSM parameter
   -p                     Upload to pins
-  -m                     Upload to mercury
   -s                     Upload to AWS S3
 
 ExitCode:
@@ -332,16 +328,11 @@ run() {
   if (( S3 == 1 )); then
     upload_cde_to_aws "$cde_filename"
   fi
-  if (( PINS+MERCURY != 0 )); then
+  if (( PINS == 1 )); then
     password=$(winrm_get_creds.sh)
     export WINRM_PASSWORD="$password"
     upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
-    if (( PINS == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR" "$PINS_UPLOADED_DIR"
-    fi
-    if (( MERCURY == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR" "$MERCURY_UPLOADED_DIR"
-    fi
+    copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR" "$PINS_UPLOADED_DIR"
     clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
   fi
 }
@@ -349,7 +340,7 @@ run() {
 main() {
   local exitcode
 
-  while getopts "admps" opt; do
+  while getopts "adps" opt; do
       case $opt in
           a)
               if [[ -z $AZURE_STORAGE_ACCOUNT_NAME ]]; then
@@ -360,13 +351,6 @@ main() {
               ;;
           d)
               DRYRUN=1
-              ;;
-          m)
-              if [[ -z $NONCORE_HOSTNAME ]]; then
-                debug "skipping mercury as NONCORE_HOSTNAME not set"
-              else
-                MERCURY=1
-              fi
               ;;
           p)
               if [[ -z $NONCORE_HOSTNAME ]]; then
@@ -408,7 +392,7 @@ main() {
   fi
 
   exitcode=0
-  if ((AZURE+MERCURY+PINS+S3 > 0)); then
+  if ((AZURE+PINS+S3 > 0)); then
     (run) || exitcode=$?
   fi
   if [[ -d /opt/textfile_monitoring ]]; then
