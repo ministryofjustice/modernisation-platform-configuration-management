@@ -20,7 +20,7 @@
 - name: Copy BIP database creation scripts
   template:
     src: "{{ item }}.j2"
-    dest: "{{ stage }}/setup_{{ORACLE_SID}}.sql"
+    dest: "{{ stage }}/setup_{{ ORACLE_SID }}.sql"
     owner: oracle
     group: oinstall
     mode: "0700"
