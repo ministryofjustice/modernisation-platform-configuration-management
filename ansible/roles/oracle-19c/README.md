@@ -54,3 +54,6 @@ disks_partition:
 
 ### Issues
 With el8 currently we have issue with Oracle 19c Grid ASM disks discovery with ORCL , its working with only /dev/oracleasm/disks. With ORCL it results in ORA-7445 [kgfkWaitIO] , raised SR with oracle to get fix for this issue.
+
+### Oracle 19c RU upgrade patch post go live 
+no_proxy="*" ansible-playbook site.yml -e force_role=oracle-19c --limit pd-ncr-db-2-c --tags oracle_19c_RU_upgrade
