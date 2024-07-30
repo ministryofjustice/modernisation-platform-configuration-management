@@ -43,9 +43,9 @@
         - "{{ grid_home }}"
 
   #block
-  when: grid_required_version_check == "0"
-  become: true
-  become_user: "{{ oracle_install_user }}"
+  when: grid_required_version_check.stdout == "0"
+  #  become: true
+  #  become_user: "{{ oracle_install_user }}"
   environment:
     ORACLE_HOME: "{{ grid_home }}"
     PATH: "{{ grid_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
