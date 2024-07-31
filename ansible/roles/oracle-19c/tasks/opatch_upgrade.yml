@@ -32,7 +32,8 @@
 
     - name: Unarchive Opatch
       ansible.builtin.unarchive:
-        src: "{{ stage }}/{{ opatch_zip }}"
+        #src: "{{ stage }}/{{ opatch_zip }}"
+        src: "{{ stage }}/{{ opatch }}"
         dest: "{{ item }}"
         owner: oracle
         group: oinstall
