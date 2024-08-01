@@ -30,15 +30,16 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  - oracle-19c-client
-  - oracle-tns-entries
-  - ncr-bip
-  - filesystems
-  - collectd
-  - amazon-cloudwatch-agent
-  - amazon-cloudwatch-agent-collectd
-  - collectd-service-metrics
-  - collectd-textfile-monitoring
+  # NOTE: disable these temporarily and to run oracle-19c-client role manually first
+  # - oracle-19c-client
+  # - oracle-tns-entries
+  # - ncr-bip
+  # - filesystems
+  # - collectd
+  # - amazon-cloudwatch-agent
+  # - amazon-cloudwatch-agent-collectd
+  # - collectd-service-metrics
+  # - collectd-textfile-monitoring
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
