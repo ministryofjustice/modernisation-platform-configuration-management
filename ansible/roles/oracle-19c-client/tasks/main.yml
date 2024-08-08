@@ -3,6 +3,9 @@
   ansible.builtin.stat:
     path: "{{ oracle_home }}/bin/sqlplus"
   register: client_software_installed
+  tags:
+    - always
+    - ec2provision
 
 - block:
     - import_tasks: download_software.yml
