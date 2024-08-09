@@ -1,0 +1,10 @@
+<TargetCollectionExt EXT_NAME="ME$ALFRESCO_MESSAGE_DELAY" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$ALFRESCO_MESSAGE_DELAY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$ALFRESCO_MESSAGE_DELAY">
+		<Condition COLUMN_NAME="MAX_MINS_OVERDUE_WAITING" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="An SPG_NOTIFICATION message has been waiting for processing for over 60 minutes." CLEAR_MESSAGE="No SPG_NOTIFICATION message is waiting for processing for over 60 minutes."/>
+		<Condition COLUMN_NAME="MAX_MINS_OVERDUE_PICKED" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="An SPG_NOTIFICATION message has been picked for processing but not updated for over 5 minutes." CLEAR_MESSAGE="No SPG_NOTIFICATION message has been picked and waiting for processing for over 5 minutes."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
