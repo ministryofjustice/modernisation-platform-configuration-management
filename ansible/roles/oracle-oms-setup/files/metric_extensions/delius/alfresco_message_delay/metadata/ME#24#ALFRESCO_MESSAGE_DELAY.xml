@@ -1,0 +1,49 @@
+<TargetMetadataExt EXT_NAME="ME$ALFRESCO_MESSAGE_DELAY" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$ALFRESCO_MESSAGE_DELAY" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$ALFRESCO_MESSAGE_DELAY">Alfresco Message Delay</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$ALFRESCO_MESSAGE_DELAY">Alert on Messages waiting for too long in the Alfresco Message Queue</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="PROCESSED_FLAG" TYPE="NUMBER" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYPROCESSED_FLAG">Processed Flag</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="MAX_AGE_OF_MESSAGE" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYMAX_AGE_OF_MESSAGE">Maximum Age of Message in this State</Label>
+<Unit NLSID="EM_SYS_STANDARD_RATE_MINUTE">MINUTE</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="MAX_MINS_OVERDUE_WAITING" TYPE="NUMBER" COMPUTE_EXPR="(PROCESSED_FLAG == 0) ? (MAX_AGE_OF_MESSAGE - 60) : 0">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYMAX_MINS_OVERDUE_WAITING">Maximum Delay in Waiting Messages</Label>
+<Unit NLSID="mext_unit_nlsid_MINUTE">MINUTE</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="MAX_MINS_OVERDUE_PICKED" TYPE="NUMBER" COMPUTE_EXPR="(PROCESSED_FLAG == 4) ? (MAX_AGE_OF_MESSAGE - 5) : 0">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYMAX_MINS_OVERDUE_PICKED">Maximum Delay in Picked Messages</Label>
+<Unit NLSID="EM_SYS_STANDARD_RATE_MINUTE">MINUTE</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/alfresco_message_delay.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
