@@ -85,6 +85,14 @@ adrci exec="set homepath $file_line;purge -age $CDUMP_RET -type CDUMP"
 echo "INFO: purging HM older than 30 days"
 adrci exec="set homepath $file_line;purge -age $HM_RET -type HM"
 done
+
+echo "INFO: Listener alert and trace file cleanup"
+adrci exec="set base /u01/app/grid; show homes"|grep -v : | while read file_line
+do 
+echo "INFO: adrci purge listener alert files destination "  $file_line
+echo "INFO: purging Listener ALERT and Trace files older than 30 days"
+adrci exec="set base /u01/app/grid; set homepath $file_line; purge -age $INCIDENT_RET -type alert;  purge -age $INCIDENT_RET -type trace"
+done 
 echo "INFO: adrci purge finished at `date`"
 }
 
