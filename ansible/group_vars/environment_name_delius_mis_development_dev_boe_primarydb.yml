@@ -4,12 +4,27 @@ database_global_database: DMDBOE
 database_taf_service: DMDBOE_TAF
 database_primary_unique: DMDBOE
 database_primary_sid: DMDBOE
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  db_recovery_file_dest_size: 90G
 delius_users:
   bbuchan_dba:
   rsingh_dba:
   dreid_dba:
   sgandalwar_dba:
   kmoss_dba:
+required_patches:
+  p26749785:
+    patch_files:
+      - target_version: "19.22"
+        filename: p26749785_1922000DBRU_Generic.zip
+      - target_version: "19.24"
+        filename: p26749785_1924000DBRU_Generic.zip
+    description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
+    grid_patch: false
+    database_patch: true
+    datapatch_required: true
 oracle_software:
   version: "19.24"
   combo_patch: p36522439_190000_Linux-x86-64.zip
