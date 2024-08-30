@@ -48,7 +48,7 @@ check_endpoint() {
 }
 
 # List of endpoints to check
-check_endpoint "https://google.com" 200 # for testing
+check_endpoint "https://google.com" 301 # for testing - this works
 check_endpoint "http://r1.csr.service.justice.gov.uk:7770/isps/index.html?2057" 200
 check_endpoint "https://onr.oasys.az.justice.gov.uk/InfoViewApp" 302
 
