@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Add /usr/local/bin to PATH
+export PATH=/usr/local/bin:$PATH
+
+
 # Set AWS region
 AWS_REGION="eu-west-2"
 
