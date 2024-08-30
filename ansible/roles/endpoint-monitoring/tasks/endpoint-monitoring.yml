@@ -1,0 +1,40 @@
+---
+- name: Ensure monitoring directory exists
+  file:
+    path: "/opt/monitoring"
+    state: directory
+    mode: '0755'
+
+- name: Copy endpoint monitoring script
+  copy:
+    content: "{{ lookup('file', 'check_endpoints.sh') }}"
+    dest: "{{ script_path }}"
+    mode: '0755'
+
+- name: Install required packages
+  package:
+    name:
+      - curl
+      - awscli
+    state: present
+
+- name: Set up cron job for endpoint monitoring
+  cron:
+    name: "Check endpoints and send metrics to CloudWatch"
+    minute: "*/5"
+    job: "{{ script_path }} >> {{ log_path }} 2>&1"
+
+- name: Ensure log file exists with correct permissions
+  file:
+    path: "{{ log_path }}"
+    state: touch
+    mode: '0644'
+    owner: root
+    group: root
+
+# - name: Configure AWS CLI
+#   command: aws configure set region {{ aws_region }}
+#   environment:
+#     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+#     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+#   no_log: true
