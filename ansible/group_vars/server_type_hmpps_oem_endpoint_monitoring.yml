@@ -1,0 +1,11 @@
+---
+ansible_python_interpreter: python3.9
+
+server_type_roles_list:
+  - message-of-the-day
+  - get-ec2-facts
+  - ansible-script
+  - endpoint-monitoring
+
+# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
