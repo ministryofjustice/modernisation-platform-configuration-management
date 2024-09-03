@@ -44,11 +44,31 @@ db_configs:
   EMREP:
     emrepo_db_name: EMREP
     parameters:
-      - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
-      - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
+      - {
+          name: "_allow_insert_with_update_check",
+          value: TRUE,
+          db_restart_required: 0,
+          scope: both,
+        }
+      - {
+          name: session_cached_cursors,
+          value: 300,
+          db_restart_required: 0,
+          scope: spfile,
+        }
       - { name: processes, value: 1000, db_restart_required: 1, scope: spfile }
-      - { name: pga_aggregate_target, value: 800M, db_restart_required: 0, scope: both }
-      - { name: db_recovery_file_dest_size, value: 40G, db_restart_required: 0, scope: both }
+      - {
+          name: pga_aggregate_target,
+          value: 800M,
+          db_restart_required: 0,
+          scope: both,
+        }
+      - {
+          name: db_recovery_file_dest_size,
+          value: 40G,
+          db_restart_required: 0,
+          scope: both,
+        }
       - {
           name: log_archive_dest_1,
           value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=emrep''"',
@@ -68,3 +88,23 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+# Replaces Grafana/Prometheus black-box exporter monitoring
+endpoint_monitoring_targets:
+  - target: https://google.com
+    expected_response_code: 200 # Example target
+    check_domain_ssl_expiry: true
+  - target: https://oasys.az.justice.gov.uk
+    expected_response_code: 200
+    check_domain_ssl_expiry: true
+  - target: https://oasys.az.justice.gov.uk/eor/f?p=100
+    expected_response_code: 200
+    check_domain_ssl_expiry: false # don't re-check this as it's just a duplicate of above
+  - target: https://bridge-oasys.az.justice.gov.uk
+    expected_response_code: 200
+    check_domain_ssl_expiry: true
+  - target: https://bridge-oasys.az.justice.gov.uk/eor/f?p=100,
+    expected_response_code: 200
+    check_domain_ssl_expiry: false
+# TODO: adjust the endpoint monitoring script to get the cert expiry days as well
+# TODO: check the expected return codes

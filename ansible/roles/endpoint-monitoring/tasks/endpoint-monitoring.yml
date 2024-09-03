@@ -3,13 +3,13 @@
   file:
     path: "/opt/monitoring"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
-- name: Copy endpoint monitoring script
-  copy:
-    content: "{{ lookup('file', 'check_endpoints.sh') }}"
+- name: Template endpoint monitoring script
+  template:
+    src: "check_endpoints.sh.j2"
     dest: "{{ script_path }}"
-    mode: '0755'
+    mode: "0755"
 
 - name: Install required packages
   package:
@@ -27,10 +27,9 @@
   file:
     path: "{{ log_path }}"
     state: touch
-    mode: '0644'
+    mode: "0644"
     owner: root
     group: root
-
 # - name: Configure AWS CLI
 #   command: aws configure set region {{ aws_region }}
 #   environment:
