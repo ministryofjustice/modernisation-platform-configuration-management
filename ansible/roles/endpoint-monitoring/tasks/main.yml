@@ -1,0 +1,6 @@
+---
+- import_tasks: endpoint-monitoring.yml
+  tags:
+    - amibuild
+    - ec2provision
+  when: endpoint_monitoring_targets is defined
