@@ -44,37 +44,12 @@ db_configs:
   EMREP:
     emrepo_db_name: EMREP
     parameters:
-      - {
-          name: "_allow_insert_with_update_check",
-          value: TRUE,
-          db_restart_required: 0,
-          scope: both,
-        }
-      - {
-          name: session_cached_cursors,
-          value: 300,
-          db_restart_required: 0,
-          scope: spfile,
-        }
+      - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
+      - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
       - { name: processes, value: 1000, db_restart_required: 1, scope: spfile }
-      - {
-          name: pga_aggregate_target,
-          value: 800M,
-          db_restart_required: 0,
-          scope: both,
-        }
-      - {
-          name: db_recovery_file_dest_size,
-          value: 40G,
-          db_restart_required: 0,
-          scope: both,
-        }
-      - {
-          name: log_archive_dest_1,
-          value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=emrep''"',
-          db_restart_required: 0,
-          scope: both,
-        }
+      - { name: pga_aggregate_target, value: 800M, db_restart_required: 0, scope: both }
+      - { name: db_recovery_file_dest_size, value: 40G, db_restart_required: 0, scope: both }
+      - { name: log_archive_dest_1, value: '"''location=use_db_recovery_file_dest valid_for=(all_logfiles,all_roles) db_unique_name=emrep''"', db_restart_required: 0, scope: both }
     service:
       - { name: EMREP_TAF, role: PRIMARY }
 
