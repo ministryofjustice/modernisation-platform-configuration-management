@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-. ../ModPlatformAD/Join-ModPlatformAD.ps1
+. ../ModPlatformAD/Join-ModPlatformAD.ps1 -NewHostname "keep-existing"
 
 if ($LASTEXITCODE -ne 0) {
    Exit $LASTEXITCODE
@@ -24,7 +24,11 @@ $RAP = @{
 }
 
 Import-Module ModPlatformRemoteDesktop -Force
- 
+
 Add-ModPlatformRDGateway
 Set-ModPlatformRDGatewayCAP @CAP
 Set-ModPlatformRDGatewayRAP @RAP
+
+. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+
+Exit $LASTEXITCODE
