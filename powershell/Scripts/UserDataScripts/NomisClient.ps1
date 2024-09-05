@@ -8,6 +8,9 @@ $GlobalConfig = @{
   }
   "nomis-development" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis.hmpps-development.modernisation-platform.internal",
       "azure.noms.root"
     )
@@ -27,6 +30,9 @@ $GlobalConfig = @{
   }
   "nomis-test" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis.hmpps-test.modernisation-platform.internal",
       "azure.noms.root"
     )
@@ -58,6 +64,9 @@ $GlobalConfig = @{
   }
   "nomis-preproduction" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis.hmpps-preproduction.modernisation-platform.internal",
       "azure.hmpp.root"
     )
@@ -82,10 +91,13 @@ $GlobalConfig = @{
     }
   }
   "nomis-production" = @{
-     "DnsSuffixSearchList" = @(
-       "nomis.hmpps-production.modernisation-platform.internal",
-       "azure.hmpp.root"
-     )
+    "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
+      "nomis.hmpps-production.modernisation-platform.internal",
+      "azure.hmpp.root"
+    )
     "IECompatibilityModeSiteList" = @(
       "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
