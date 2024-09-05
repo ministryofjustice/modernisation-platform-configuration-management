@@ -36,7 +36,7 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
   Exit 3010 # triggers reboot if running from SSM Doc
 }
 $DnsSettings = Get-DnsClientGlobalSetting
-if (-not ($DnsSettings.SuffixSearchList -contains $DomainNameFQDN)) {
-  Write-Output "Adding ${DomainNameFQDN} to DNS Suffix Search List"
-  Set-DnsClientGlobalSetting -SuffixSearchList ($DnsSettings.SuffixSearchList + $DomainNameFQDN)
+if (-not ($DnsSettings.SuffixSearchList -contains $ADConfig.DomainNameFQDN)) {
+  Write-Output ("Adding " + $ADConfig.DomainNameFQDN + " to DNS Suffix Search List")
+  Set-DnsClientGlobalSetting -SuffixSearchList ($DnsSettings.SuffixSearchList + $ADConfig.DomainNameFQDN)
 }
