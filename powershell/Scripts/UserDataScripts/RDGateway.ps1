@@ -26,7 +26,6 @@ $RAP = @{
 Import-Module ModPlatformRemoteDesktop -Force
 
 $Feature = Get-WindowsFeature -Name RDS-Gateway
-$ADConfig.DomainNameFQDN
 Add-ModPlatformRDGateway
 Set-ModPlatformRDGatewayCAP @CAP
 Set-ModPlatformRDGatewayRAP @RAP
