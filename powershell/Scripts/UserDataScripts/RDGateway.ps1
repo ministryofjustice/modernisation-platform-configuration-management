@@ -25,10 +25,16 @@ $RAP = @{
 
 Import-Module ModPlatformRemoteDesktop -Force
 
+$Feature = Get-WindowsFeature -Name RDS-Gateway
+$ADConfig.DomainNameFQDN
 Add-ModPlatformRDGateway
 Set-ModPlatformRDGatewayCAP @CAP
 Set-ModPlatformRDGatewayRAP @RAP
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+
+if (-not $Feature.Installed) {
+  Exit 3010 # triggers reboot on first install otherwise doesn't work
+}
 
 Exit $LASTEXITCODE
