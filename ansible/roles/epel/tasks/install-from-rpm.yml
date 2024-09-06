@@ -37,7 +37,7 @@
     - name: Copy from S3
       amazon.aws.aws_s3:
         bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        object: "{{ artefacts_s3_epel_bucket_path }}/{{ item }}"
         dest: "/root/epel/{{ item }}"
         mode: get
         overwrite: latest
