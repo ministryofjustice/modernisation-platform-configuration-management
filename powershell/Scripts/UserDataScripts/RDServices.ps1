@@ -1,6 +1,6 @@
-# EC2AMAZ-6A9OQDH
-# EC2AMAZ-9T2GN5H
-# EC2AMAZ-KEMMLB6
+# EC2AMAZ-IMEOI6S
+# EC2AMAZ-M5FEA4N
+# EC2AMAZ-C0OVV54
 
 $GlobalConfig = @{
   "test-win-2022" = @{
@@ -8,7 +8,7 @@ $GlobalConfig = @{
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.$env:userdnsdomain"
     "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHosts" = @("EC2AMAZ-9T2GN5H.AZURE.NOMS.ROOT")
+    "SessionHosts" = @("EC2AMAZ-M5FEA4N.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.$env:userdnsdomain"
   }
   "pp-rds" = @{
