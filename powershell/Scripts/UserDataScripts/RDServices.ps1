@@ -98,7 +98,7 @@ function Remove-RDLicensingServer {
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-Licensing | Where-Object -Property Server -NE $LicensingServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-Licensing Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Licensing
+    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Licensing -Force
   }
 }
 
@@ -127,7 +127,7 @@ function Remove-RDGatewayServer {
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-Gateway | Where-Object -Property Server -NE $GatewayServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-Gateway Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Gateway
+    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Gateway -Force
   }
 }
 
@@ -140,7 +140,7 @@ function Add-RDWebAccessServer {
 
   if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-Web-Access | Where-Object -Property Server -EQ $WebAccessServer)) {
     Write-Output "${WebAccessServer}: Adding RDS-Web-Access Server"
-    Add-RDServer -ConnectionBroker $ConnectionBroker -Server $Server -Role RDS-Web-Access
+    Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-Web-Access
   }
 }
 
@@ -153,7 +153,7 @@ function Remove-RDWebAccessServer {
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-Web-Access | Where-Object -Property Server -NE $WebAccessServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-Web-Access Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Web-Access
+    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-Web-Access -Force
   }
 }
 
@@ -164,3 +164,7 @@ Install-RDSWindowsFeatures
 Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.RDSessionHosts -WebAccessServer $Config.WebAccessServer
 Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
 Add-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServer $Config.GatewayServer -GatewayExternalFqdn $Config.GatewayExternalFqdn
+
+Remove-RDWebAccessServer -ConnectionBroker $Config.ConnectionBroker -WebAccessServerToKeep $WebAccessServer
+Remove-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServerToKeep $Config.GatewayServer
+Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
