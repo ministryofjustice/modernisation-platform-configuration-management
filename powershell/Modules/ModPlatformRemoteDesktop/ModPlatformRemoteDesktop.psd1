@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '1.0.0.3'
+ModuleVersion = '1.0.0.4'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -76,10 +76,13 @@ FunctionsToExport = 'Add-ModPlatformRDGateway', 'Set-ModPlatformRDGatewayCAP',
                'Get-ModPlatformRDLicensingCompanyInformation',
                'Add-ModPlatformRDLicensingActivation',
                'Remove-ModPlatformRDLicensingActivation',
-               'Add-RDSessionDeployment', 'Remove-RDGatewayServer',
-               'Remove-RDWebAccessServer', 'Add-SessionHostServer', 'Add-Collection',
-               'Add-Collections', 'Remove-Collections', 'Add-RemoteApps',
-               'Remove-RemoteApps'
+               'Install-RDSWindowsFeatures', 'Add-RDSessionDeployment',
+               'Add-RDLicensingServer', 'Remove-RDLicensingServer',
+               'Add-RDGatewayServer', 'Remove-RDGatewayServer',
+               'Add-RDWebAccessServer', 'Remove-RDWebAccessServer',
+               'Add-SessionHostServer', 'Remove-SessionHostServer', 'Add-Collection',
+               'Add-Collections', 'Remove-Collections', 'Add-RemoteApp',
+               'Add-RemoteApps', 'Remove-RemoteApps'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
