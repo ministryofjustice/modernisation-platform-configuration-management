@@ -23,6 +23,30 @@ $GlobalConfig = @{
       }
     }
   }
+  "test-rds-2-b" = @{
+    "ConnectionBroker" = "$env:computername.$env:userdnsdomain"
+    "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
+    "GatewayServer" = "$env:computername.$env:userdnsdomain"
+    "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
+    "SessionHostServers" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
+    "WebAccessServer" = "$env:computername.$env:userdnsdomain"
+    "Collections" = @{
+      "CAFM-RDP" = @{
+        "SessionHosts" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
+          "UserGroup" = @("azure\drobinson")
+        }
+      }
+    }
+    "RemoteApps" = @{
+      "Calc" = @{
+        "CollectionName" = "CAFM-RDP"
+        "DisplayName" = "Calc2022"
+        "FilePath" = 'C:\Windows\System32\win32calc.exe'
+      }
+    }
+  }
   "pp-rds" = @{
     "ConnectionBroker" = "$env:computername.$env:userdnsdomain"
     "LicensingServer" = "AD-HMPP-RDLIC.AZURE.NOMS.ROOT"
