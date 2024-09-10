@@ -1,11 +1,11 @@
 $GlobalConfig = @{
   "test-rds-2-a" = @{
-    "ConnectionBroker" = "$env:computername.$env:userdnsdomain"
+    "ConnectionBroker" = "$env:computername.AZURE.NOMS.ROOT"
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
-    "GatewayServer" = "$env:computername.$env:userdnsdomain"
+    "GatewayServer" = "$env:computername.AZURE.NOMS.ROOT"
     "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
-    "WebAccessServer" = "$env:computername.$env:userdnsdomain"
+    "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "Collections" = @{
       "CAFM-RDP" = @{
         "SessionHosts" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
@@ -24,12 +24,12 @@ $GlobalConfig = @{
     }
   }
   "test-rds-2-b" = @{
-    "ConnectionBroker" = "$env:computername.$env:userdnsdomain"
+    "ConnectionBroker" = "$env:computername.AZURE.NOMS.ROOT"
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
-    "GatewayServer" = "$env:computername.$env:userdnsdomain"
+    "GatewayServer" = "$env:computername.AZURE.NOMS.ROOT"
     "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
-    "WebAccessServer" = "$env:computername.$env:userdnsdomain"
+    "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "Collections" = @{
       "CAFM-RDP" = @{
         "SessionHosts" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
