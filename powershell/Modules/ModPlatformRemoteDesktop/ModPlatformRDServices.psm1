@@ -235,7 +235,7 @@ function Add-Collections {
 function Remove-Collections {
 <#
 .SYNOPSIS
-    Remove any unused collections from the deployment 
+    Remove any unused collections from the deployment
 #>
   [CmdletBinding()]
   param (
@@ -315,19 +315,19 @@ function Remove-RemoteApps {
   }
 }
 
-Export-ModuleMember -Function Install-RDSWindowsFeatures 
+Export-ModuleMember -Function Install-RDSWindowsFeatures
 Export-ModuleMember -Function Add-RDSessionDeployment
-Export-ModuleMember -Function Add-RDLicensingServer 
-Export-ModuleMember -Function Remove-RDLicensingServer 
-Export-ModuleMember -Function Add-RDGatewayServer 
+Export-ModuleMember -Function Add-RDLicensingServer
+Export-ModuleMember -Function Remove-RDLicensingServer
+Export-ModuleMember -Function Add-RDGatewayServer
 Export-ModuleMember -Function Remove-RDGatewayServer
-Export-ModuleMember -Function Add-RDWebAccessServer 
+Export-ModuleMember -Function Add-RDWebAccessServer
 Export-ModuleMember -Function Remove-RDWebAccessServer
 Export-ModuleMember -Function Add-SessionHostServer
-Export-ModuleMember -Function Remove-SessionHostServer 
+Export-ModuleMember -Function Remove-SessionHostServer
 Export-ModuleMember -Function Add-Collection
 Export-ModuleMember -Function Add-Collections
 Export-ModuleMember -Function Remove-Collections
-Export-ModuleMember -Function Add-RemoteApp 
+Export-ModuleMember -Function Add-RemoteApp
 Export-ModuleMember -Function Add-RemoteApps
 Export-ModuleMember -Function Remove-RemoteApps
