@@ -55,10 +55,16 @@ function Get-Config {
 }
 
 $ErrorActionPreference = "Stop"
-$Config = Get-Config
+
+. ../ModPlatformAD/Join-ModPlatformAD.ps1 -NewHostname "keep-existing"
+
+if ($LASTEXITCODE -ne 0) {
+   Exit $LASTEXITCODE
+}
 
 Import-Module ModPlatformRemoteDesktop -Force
 
+$Config = Get-Config
 Install-RDSWindowsFeatures
 Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
 Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
