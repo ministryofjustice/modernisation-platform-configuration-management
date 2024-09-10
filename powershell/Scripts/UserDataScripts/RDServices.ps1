@@ -1,5 +1,5 @@
 $GlobalConfig = @{
-  "test-win-2022" = @{
+  "test-rds-2-a" = @{
     "ConnectionBroker" = "$env:computername.$env:userdnsdomain"
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.$env:userdnsdomain"
