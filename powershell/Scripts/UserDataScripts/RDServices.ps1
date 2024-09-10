@@ -1,6 +1,5 @@
-# EC2AMAZ-IMEOI6S
-# EC2AMAZ-M5FEA4N
-# EC2AMAZ-C0OVV54
+# EC2AMAZ-5MM4HLA
+# EC2AMAZ-F67RQTG
 
 $GlobalConfig = @{
   "test-win-2022" = @{
@@ -8,11 +7,11 @@ $GlobalConfig = @{
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.$env:userdnsdomain"
     "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers" = @("EC2AMAZ-M5FEA4N.AZURE.NOMS.ROOT")
+    "SessionHostServers" = @("EC2AMAZ-5MM4HLA.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.$env:userdnsdomain"
     "Collections" = @{
       "CAFM-RDP" = @{
-        "SessionHosts" = @("EC2AMAZ-M5FEA4N.AZURE.NOMS.ROOT")
+        "SessionHosts" = @("EC2AMAZ-5MM4HLA.AZURE.NOMS.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 2"
           "UserGroup" = @("azure\drobinson")
@@ -131,7 +130,11 @@ function Add-RDGatewayServer {
     Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn
   }
 
-  # TODO use Set-RDDeploymentGatewayConfiguration to update GatewayFQDN
+  $GatewayConfig = Get-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker
+  if ($GatewayConfig.GatewayExternalFQDN -ne $GatewayExternalFqdn) {
+    Write-Output "${GatewayServer}: Updating FQDN: ${GatewayExternalFqdn}"
+    Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode $GatewayConfig.GatewayMode -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod $GatewayConfig.LogonMethod -UseCachedCredentials $GatewayConfig.UseCachedCredentials -BypassLocal $GatewayConfig.BypassLocal -Force
+  }
 }
 
 function Remove-RDGatewayServer {
@@ -255,7 +258,7 @@ function Remove-Collections {
 
   foreach ($CollectionName in $CollectionsToKeep.Keys) {
     $Collection = $CollectionsToKeep[$CollectionName]
-    Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
+    Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -ErrorAction SilentlyContinue | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
       Write-Output ("${ConnectionBroker}: ${CollectionName}: " + $_.SessionHost + ": Removing RDSessionHost from RDSessionCollection")
       Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost $_.SessionHost -Force
     }
