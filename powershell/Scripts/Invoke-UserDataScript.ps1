@@ -9,7 +9,6 @@ $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-to
 $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
 $Tags = "$TagsRaw" | ConvertFrom-Json
 $ServerTypeTag = ($Tags.Tags | Where-Object  {$_.Key -eq "server-type"}).Value
-$ServerTypeTag = "RDGateway"
 $UserDataScript = "${ServerTypeTag}.ps1"
 
 Set-Location -Path "UserDataScripts"
