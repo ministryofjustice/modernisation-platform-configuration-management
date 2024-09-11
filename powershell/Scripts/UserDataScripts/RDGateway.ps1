@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-. ../ModPlatformAD/Join-ModPlatformAD.ps1
+. ../ModPlatformAD/Join-ModPlatformAD.ps1 -NewHostname "keep-existing"
 
 if ($LASTEXITCODE -ne 0) {
    Exit $LASTEXITCODE
@@ -24,7 +24,16 @@ $RAP = @{
 }
 
 Import-Module ModPlatformRemoteDesktop -Force
- 
+
+$Feature = Get-WindowsFeature -Name RDS-Gateway
 Add-ModPlatformRDGateway
 Set-ModPlatformRDGatewayCAP @CAP
 Set-ModPlatformRDGatewayRAP @RAP
+
+. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+
+if (-not $Feature.Installed) {
+  Exit 3010 # triggers reboot on first install otherwise doesn't work
+}
+
+Exit $LASTEXITCODE
