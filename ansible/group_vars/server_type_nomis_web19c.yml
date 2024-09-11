@@ -19,6 +19,7 @@ server_type_roles_list:
   - ansible-script
   - epel
   - sshd-config
+  - nomis-weblogic-19c
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
@@ -43,6 +44,17 @@ packages_yum_install:
   - zip-3.0-23.el8
   - git
   - tar
+  - binutils
+  - xorg-x11-utils
+  - libXt-devel
+  - xorg-x11-utils
+  - make-4.2.1-9.el8
+  - glibc
+  - glibc-devel
+  - libcurl
+  - ksh
+  - xorg-x11-xauth
+  - xterm
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
