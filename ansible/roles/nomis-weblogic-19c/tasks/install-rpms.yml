@@ -1,0 +1,35 @@
+---
+- name: Check installed packages
+  ansible.builtin.package_facts:
+
+- block:
+    - name: Create rpms directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/software/jdk
+
+    - name: Get rpms from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "{{ item }}"
+        dest: "/u01/software/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - jdk/jdk-8u411-linux-x64.rpm
+      when: image_builder_s3_bucket_name is defined
+
+    - name: Install rpms
+      ansible.builtin.yum:
+        name: "/u01/software/{{ item }}"
+        state: present
+      loop:
+        - jdk/jdk-8u411-linux-x64.rpm
+
+  # block
+  when: ansible_facts.packages['jdk'] is not defined
