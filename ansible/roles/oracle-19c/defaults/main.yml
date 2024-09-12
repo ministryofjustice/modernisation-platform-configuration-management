@@ -94,7 +94,7 @@ oracle_patch_details:
 
 oracle_ru_patch: JUL2024 # override this in group_vars when rolling out a new patch
 oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
-opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"
+opatch: "p6880880_190000_Linux-x86-64.{{ oracle_patch.opatch_version }}.zip"
 #opatch: "p6880880_190000_Linux-x86-64.zip"
 opatch_zip: "p6880880_190000_Linux-x86-64.zip"
 oracle_version: "{{ oracle_patch.patch_string.split('.')[:3] | join('.') }}"
