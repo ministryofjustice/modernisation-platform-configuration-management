@@ -113,3 +113,22 @@ all_oem_metrics:
         warning_threshold , CRS-(1021|1022)
         critical_threshold , CRS-(1006|1009|1011|10131|10132|10133|10135|10136|10137|10138|10139|1015|1016|1017|1018|1019|1021)
         END_RECORD 4
+disks_partition:
+  - ebs_device_name: /dev/sdd
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdi
+    oracle_group: flash
+    oracle_label: FLASH01
