@@ -105,10 +105,10 @@ Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
 
 # {{{ install Oracle
-Set-Location -Path $AppDirectory/Client/client
+# Set-Location -Path $AppDirectory/Client/client
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
 # FIXME file name needs fixing
-.\setup.exe -silent -noconfig -nowait -responseFile ($ConfigurationManagementRepo + "\powershell\Configs\ONROracle19cResponse.rsp")
+# .\setup.exe -silent -noconfig -nowait -responseFile ($ConfigurationManagementRepo + "\powershell\Configs\ONROracle19cResponse.rsp")
 # }}}
 
 # {{{ login text
