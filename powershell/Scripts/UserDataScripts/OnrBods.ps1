@@ -3,10 +3,11 @@ $GlobalConfig = @{
         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder" = "hmpps/onr"
         "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
-        "ORACLE_HOME"           = "E:\app\client\oracle\product\19.0.0\client_1"
-        "ORACLE_BASE"           = "E:\app\client\oracle"
+        "ORACLE_HOME"           = "E:\app\oracle\product\19.0.0\client_1"
+        "ORACLE_BASE"           = "E:\app\oracle"
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
         "DataServicesS3File"    = "DS4214P_11-20011165.exe" # Data Services 4.2 SP14 Patch 11
+        "LINK_DIR"              = "E:\SAP BusinessObjects\Data Services"
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -121,6 +122,14 @@ $ResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
 Set-Location -Path $WorkingDirectory\OracleClient\client
 .\setup.exe -silent -noconfig -nowait -responseFile client_install.rsp
+# }}}
+
+# {{{ install IPS
+#
+# }}}
+
+# {{{ install Data Services
+#
 # }}}
 
 # {{{ login text
