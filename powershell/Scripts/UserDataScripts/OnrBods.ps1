@@ -2,7 +2,9 @@ $GlobalConfig = @{
     "all"                                    = @{
         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder" = "hmpps/onr"
-        "OracleClientS3File"   = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
+        "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
+        "ORACLE_HOME"           = "E:\app\client\oracle\product\19.0.0\client_1"
+        "ORACLE_BASE"           = "E:\app\client\oracle"
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
         "DataServicesS3File"    = "DS4214P_11-20011165.exe" # Data Services 4.2 SP14 Patch 11
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
@@ -105,10 +107,20 @@ Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
 
 # {{{ install Oracle
-# Set-Location -Path $AppDirectory/Client/client
+# Create response file for silent install
+$ResponseFileContent = @"
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+ORACLE_HOME=$Config.ORACLE_HOME
+ORACLE_BASE=$Config.ORACLE_BASE
+oracle.install.IsBuiltInAccount=true
+oracle.install.client.installType=Administrator
+"@
+
+$ResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-# FIXME file name needs fixing
-# .\setup.exe -silent -noconfig -nowait -responseFile ($ConfigurationManagementRepo + "\powershell\Configs\ONROracle19cResponse.rsp")
+Set-Location -Path $WorkingDirectory\OracleClient\client
+.\setup.exe -silent -noconfig -nowait -responseFile client_install.rsp
 # }}}
 
 # {{{ login text
