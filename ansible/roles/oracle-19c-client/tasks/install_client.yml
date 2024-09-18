@@ -4,8 +4,8 @@
     src: "{{ client_response_file }}.j2"
     dest: "{{ stage }}/{{ client_response_file }}"
     mode: u=rw,g=r,o=r
-    owner: oracle
-    group: oinstall
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
 
 - name: Install packages with yum command as those are not getting installed by ansible yum
   ansible.builtin.shell: |
@@ -58,7 +58,11 @@
     set -eo pipefail
     main() {
       export CV_ASSUME_DISTID=EL7.6
-      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }} -applyRU {{ stage }}/{{ oracle_release_update }}
+      {{ oracle_home }}/runInstaller -silent -waitforcompletion -ignorePrereqFailure -responseFile {{ stage }}/{{ client_response_file }} -applyRU {{ stage }}/{{ oracle_release_update }} || exitcode=$?
+      if (( exitcode != 0 && exitcode != 6)); then
+        echo "Install failed with exitcode $exitcode"
+        exit $exitcode
+      fi
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-client
   become_user: oracle

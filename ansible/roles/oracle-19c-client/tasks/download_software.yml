@@ -4,8 +4,8 @@
     src: "home/oracle/.bash_profile"
     dest: "/home/oracle/.bash_profile"
     mode: 0600
-    owner: oracle
-    group: oinstall
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
 
 - name: Create directories
   ansible.builtin.file:

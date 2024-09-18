@@ -19,19 +19,19 @@ oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response
 #-------------------------------------------------------------------------------
 # Unix group to be set for the inventory directory.
 #-------------------------------------------------------------------------------
-UNIX_GROUP_NAME=oinstall
+UNIX_GROUP_NAME={{ oracle_install_group }}
 #-------------------------------------------------------------------------------
 # Inventory location.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/u01/app/oraInventory
+INVENTORY_LOCATION={{ oracle_inventory }}
 #-------------------------------------------------------------------------------
 # Complete path of the Oracle Home
 #-------------------------------------------------------------------------------
-ORACLE_HOME=/u01/app/oracle/product/19c/client_1
+ORACLE_HOME={{ oracle_home }}
 #-------------------------------------------------------------------------------
 # Complete path of the Oracle Base.
 #-------------------------------------------------------------------------------
-ORACLE_BASE=/u01/app/oracle
+ORACLE_BASE={{ oracle_base }}
 #------------------------------------------------------------------------------
 #Name       : INSTALL_TYPE
 #Datatype   : String
