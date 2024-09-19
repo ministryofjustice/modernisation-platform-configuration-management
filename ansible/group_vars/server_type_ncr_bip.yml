@@ -92,3 +92,22 @@ disks_mount:
     fstype: swap
 
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
+
+ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
+
+oracle_client_confs:
+  pp:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pp
+
+sap_bip_confs:
+  pp:
+    auditing_db_server: BIAUDPP
+    auditing_db_user: BIP_AUDIT_OWNER
+    cms_db_server: BISYSPP
+    cms_db_user: BIP_SYSTEM_OWNER
+    cms_db_reset: 0
+    sia_name: "PPNOMIS1"
+
+oracle_client_conf: "{{ oracle_client_confs[ncr_environment] }}"
+sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"

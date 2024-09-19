@@ -1,20 +1,20 @@
 # Managed by ansible modernisation-platform-configuration-management repo, oracle-19c-client role
 
-BIPAUDPP =
+BIAUDPP =
   (DESCRIPTION =
     (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
-      (SERVICE_NAME = BIPAUD_TAF)
+      (SERVICE_NAME = BIAUD_TAF)
     )
   )
 
-BIPSYSPP =
+BISYSPP =
   (DESCRIPTION =
     (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
-      (SERVICE_NAME = BIPSYS_TAF)
+      (SERVICE_NAME = BISYS_TAF)
     )
   )
 

@@ -15,6 +15,7 @@ oracle_inventory: /u01/app/oraInventory
 oracle_home: /u01/app/oracle/product/19c/client_1
 oracle_base: /u01/app/oracle
 
-# Set below if you want to update tnsnames from file rather than using oracle-tns-entries role
-#oracle_client_tnsnames_ora_source_filename: tnsnames.ora.default
-#oracle_client_sqlnet_ora_source_filename: sqlnet.ora
+# Set oracle_client_conf in environment specific group vars if you
+# want to update tnsnames from file instead of oracle-tns-entries
+oracle_client_tnsnames_ora_source_filename: "{{ oracle_client_conf.tnsnames_ora_source_filename|default(None) }}"
+oracle_client_sqlnet_ora_source_filename: "{{ oracle_client_conf.sqlnet_ora_source_filename|default(None) }}"
