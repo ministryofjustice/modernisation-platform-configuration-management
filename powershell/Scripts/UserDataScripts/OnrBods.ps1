@@ -16,13 +16,6 @@ $GlobalConfig = @{
         "sysDbName" = "T2BOSYS"
         "audDbName" = "T2BOAUD"
         "tnsorafile" = "tnsnames_T2_BODS.ora"
-        # "Secrets" = @{
-        #     "/ec2/onr-bods/t2/password" = @(
-        #         "bods_admin_password", "bods_cluster_key"
-        #     )
-        #     "/oracle/database/T2BOSYS/passwords" = @("onr_system_owner")
-        #     "/oracle/database/T2BOAUD/passwords" = @("onr_audit_owner")
-        # },
         "OnrShortcuts" = @{
         }
     }
@@ -149,14 +142,24 @@ oracle.install.client.installType=Administrator
 $ResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-Set-Location -Path $WorkingDirectory\OracleClient\client
-.\setup.exe -silent -noconfig -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp
+# Set-Location -Path $WorkingDirectory\OracleClient\client
+# .\setup.exe -silent -noconfig -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp
 # TODO: Need to understand what this is
 # As install user, execute the following command to complete the configuration.
 # D:\Software\OracleClient\client\setup.exe -executeConfigTools -responseFile D:\Software\OracleClient\client\client_install.rsp [-silent]
-Do {
-    Start-Sleep -Seconds 30
-} Until (Test-Path "$($Config.ORACLE_HOME)\network\admin")
+$OracleClientInstallParams = @{
+    FilePath         = "setup.exe"
+    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+    ArgumentList     = "-silent -noconfig -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+    Wait             = $true
+    NoNewWindow      = $true
+}
+
+Start-Process @OracleClientInstallParams
+
+#Do {
+#    Start-Sleep -Seconds 30
+#} Until (Test-Path "$($Config.ORACLE_HOME)\network\admin")
 # This is a very janky way to wait until the oracle installer is complete, then move to the next step
 # Needs fixing using Start-Process for the install above
 Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
