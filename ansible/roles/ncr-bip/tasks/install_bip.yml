@@ -38,7 +38,7 @@
         set -eo pipefail
         . ~/.bash_profile
         outfile="{{ sap_bip_responsefiles_directory }}/bipInstall.$(date -Is).log"
-        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/bip_response.ini" "$outfile" | logger -p local3.info -t ansible-ncr-bip
+        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}" "$outfile" | logger -p local3.info -t ansible-ncr-bip
       args:
         chdir: "{{ sap_bip_extraction_directory }}"
       async: 7200
