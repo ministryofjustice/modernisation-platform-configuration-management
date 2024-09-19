@@ -35,10 +35,12 @@
     - name: Run Silent Installation
       become_user: bobj
       ansible.builtin.shell: |
-        set -eo pipefail
+        set -o pipefail
         . ~/.bash_profile
-        outfile="{{ sap_bip_responsefiles_directory }}/bipInstall.$(date -Is).log"
-        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}" "$outfile" | logger -p local3.info -t ansible-ncr-bip
+        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}" | logger -p local3.info -t ansible-ncr-bip
+        exitcode=$?
+        cat {{ sap_bip_installation_directory }}/InstallData/logs/*/ErrorsAndWarnings.log | logger -p local3.info -t ansible-ncr-bip
+        exit $exitcode
       args:
         chdir: "{{ sap_bip_extraction_directory }}"
       async: 7200
