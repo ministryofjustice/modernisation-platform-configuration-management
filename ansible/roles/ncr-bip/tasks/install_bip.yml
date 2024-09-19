@@ -21,7 +21,7 @@
         set -o pipefail
         . ~/.bash_profile
         main() {
-          outfile="{{ sap_bip_responsefiles_directory }}/failedPrereqs.$(date -Is)"
+          outfile="{{ sap_bip_responsefiles_directory }}/failedPrereqs.$(date -Is).log"
           ./setup.sh -InstallDir {{ sap_bip_installation_directory }} -pre_requisite_check {{ sap_bip_responsefiles_directory }}/prereq_checks.ini "$outfile" 
           if ! grep "All product pre-reqs have passed" "$outfile" > /dev/null; then
             cat $outfile
@@ -37,7 +37,8 @@
       ansible.builtin.shell: |
         set -eo pipefail
         . ~/.bash_profile
-        ./setup.sh -InstallDir {{ sap_bip_installation_directory }} -r {{ sap_bip_responsefiles_directory }}/bip_response.ini | logger -p local3.info -t ansible-ncr-bip
+        outfile="{{ sap_bip_responsefiles_directory }}/bipInstall.$(date -Is).log"
+        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}/" -r "{{ sap_bip_responsefiles_directory }}/bip_response.ini" "$outfile" | logger -p local3.info -t ansible-ncr-bip
       args:
         chdir: "{{ sap_bip_extraction_directory }}"
       async: 7200
