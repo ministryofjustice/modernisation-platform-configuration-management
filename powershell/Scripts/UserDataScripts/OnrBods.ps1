@@ -154,6 +154,11 @@ Set-Location -Path $WorkingDirectory\OracleClient\client
 # TODO: Need to understand what this is
 # As install user, execute the following command to complete the configuration.
 # D:\Software\OracleClient\client\setup.exe -executeConfigTools -responseFile D:\Software\OracleClient\client\client_install.rsp [-silent]
+Do {
+    Start-Sleep -Seconds 30
+} Until (Test-Path "$($Config.ORACLE_HOME)\network\admin")
+# This is a very janky way to wait until the oracle installer is complete, then move to the next step
+# Needs fixing using Start-Process for the install above
 Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
 # # }}}
 
@@ -163,8 +168,8 @@ $Tags = Get-InstanceTags
 # set Secret Names based on environment
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
-$sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords)"
-$audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords)"
+$sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
+$audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
 $onr_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "onr_system_owner"
 $onr_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "onr_audit_owner"
