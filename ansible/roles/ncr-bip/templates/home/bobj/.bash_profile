@@ -1,19 +1,31 @@
+# .bash_profile managed by modernisation-platform-configuration-management/ansible/roles/ncr-bip
+
 # Get the aliases and functions
 if [ -f ~/.bashrc ]; then
-        . ~/.bashrc
+	. ~/.bashrc
 fi
 
 # User specific environment and startup programs
 
-PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export EDITOR=vi
 
-export PATH
-umask 022
-ORACLE_BASE=/u01/app/oracle
-ORACLE_HOME=/u01/app/oracle/product/19c/client_1
-TNS_ADMIN=/u01/app/oracle/product/19c/client_1/network/admin
-LD_LIBRARY_PATH=/u01/app/oracle/product/19c/client_1/lib
+# Oracle setup
+export ORACLE_HOME={{ oracle_home }}
+export PATH=$PATH:$ORACLE_HOME/bin:/usr/bin
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+export NLS_LANG='ENGLISH_UNITED KINGDOM.UTF8'
 
-PATH=${ORACLE_HOME}:${ORACLE_BASE}:${TNS_ADMIN}:${LD_LIBRARY_PATH}:$PATH
+# Set locale
+export LANG=en_GB.utf8
+export LC_ALL=en_GB.utf8
+export TZ=Europe/London
 
-export ORACLE_BASE ORACLE_HOME TNS_ADMIN LD_LIBRARY_PATH PATH
+export BOE={{ sap_bip_installation_directory }}/sap_bobj
+export JAVA_HOME=$BOE/enterprise_xi40/linux_x64/sapjvm
+export PATH=$PATH:$JAVA_HOME/bin
+export FRS=/opt/data/BusinessObjects/BIP4/FRSDATA
+
+#limits are set by ansible in /etc/security/limits.conf
+
+#TMC Following added as per SAP Note 3257944
+#SESSION_LOGGING=1

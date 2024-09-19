@@ -1,17 +1,25 @@
 ---
+- name: Check if unrar installed
+  ansible.builtin.stat:
+    path: "/usr/local/bin/unrar"
+  register: unrar
+
 - name: Get unrar installer
   ansible.builtin.get_url:
     url: "https://www.rarlab.com/rar/rarlinux-x64-621.tar.gz"
     dest: "/tmp/rarlinux-x64-621.tar.gz"
+  when: not unrar.stat.exists
 
 - name: Extract unrar
   ansible.builtin.unarchive:
     src: "/tmp/rarlinux-x64-621.tar.gz"
     dest: "/tmp/"
     remote_src: yes
+  when: not unrar.stat.exists and not ansible_check_mode
 
-- name: Install unrar
+- name: Make unrar
   ansible.builtin.shell:
     cmd: "make"
     chdir: "/tmp/rar/"
     creates: "/usr/local/bin/unrar"
+  when: not unrar.stat.exists

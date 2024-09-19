@@ -1,30 +1,40 @@
 ---
-bip_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
-sap_bi_platform_unpack_base_directory: /opt/sap/bip
-sap_bi_platform_extraction_directory: /u02/software/BIP_4_3_SP1
-sap_bi_platform_installation_directory: /u01/app/bobj/BIP4
-sap_jvm_unpack_base_directory: /opt/sap/java
-sap_host_agent_base_directory: /opt/sap/hostagent
-
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
-node: "{{ ec2.tags['node'] }}"
-application_type: "{{ ec2.tags['type'] }}"
+sap_packages_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+sap_packages_prefix: hmpps/ncr-packages/
+sap_host_agent_base_directory: "/u02/software/{{ sap_host_agent_sar_base }}"
+sap_bip_unpack_base_directory: "/u02/software/{{ sap_bip_rar_base }}"
+sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
+sap_bip_responsefiles_directory: "/u02/software/ResponseFiles"
+sap_bip_installation_directory: /u01/app/bobj/BIP4
 
-s3:
-  bip_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
-  packages_prefix: hmpps/ncr-packages/
-  files:
-    sap_bi_platform:
-      - BIPLATS4303P_300-70002683_P1.EXE
-      - BIPLATS4303P_300-70002683_P2.RAR
-    sap_host_agent: SAPHOSTAGENT60_60-80004822.SAR
-    sap_jvm: SAPJVM8_94-80000202.SAR
-    sapcar: SAPCAR_1324-80000935.EXE
+sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension
+sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
+sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
-ssm_parameters_prefix: "bip"
+# Newer versions are available but we are aligning with Azure
+#sap_bip_rar_base: BIPLATS4303P_300-70002683
+#sap_host_agent_sar_base: SAPHOSTAGENT60_60-80004822
+#sap_host_agent_exe: SAPCAR_1324-80000935.EXE
 
-bip_secretsmanager_passwords:
+# set following in appropriate environment specific group vars
+#sap_bip_auditing_db_server: BIAUDPP
+#sap_bip_auditing_db_user: BIP_AUDIT_OWNER
+#sap_bip_cms_db_server: BISYSPP
+#sap_bip_cms_db_user: BIP_SYSTEM_OWNER
+#sap_bip_cms_db_reset: 0
+#sap_bip_sia_name: "PPNOMIS1"
+
+oracle_home: /u01/app/oracle/product/19c/client_1
+
+sap_bip_secretsmanager_passwords:
   bip:
     secret: "/ec2/ncr-bip/{{ ncr_environment }}/passwords"
+    # ensure secret is json and contains values for below fields
     users:
-      - bip: auto
+      - cms_cluster_key:
+      - cms_admin_password:
+      - cms_db_password:
+      - lcm_password:
+      - product_key:
+      - auditing_db_password:

@@ -1,57 +1,20 @@
-- name: Copy pre requesites file
-  ansible.builtin.template:
-    src: u02/software/BIP_4_3_SP1/prereq_checks.ini
-    dest: "{{ sap_bi_platform_extraction_directory }}/prereq_checks.ini"
+- name: Create ResponseFiles directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
     owner: bobj
     group: binstall
-    mode: "0755"
+    mode: 0775
+  with_items: 
+    - "{{ sap_bip_responsefiles_directory }}"
 
-- name: Copy response file
+- name: Copy ResponseFiles
   ansible.builtin.template:
-    src: u02/software/BIP_4_3_SP1/bip_response.ini
-    dest: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
+    src: "ResponseFiles/{{ item }}"
+    dest: "{{ sap_bip_responsefiles_directory }}/{{ item }}"
     owner: bobj
     group: binstall
-    mode: "0755"
-
-- name: Ensure cms cluster key is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^clusterkey="
-    line: "clusterkey={{ cms_cluster_key }}"
-
-- name: Ensure cms admin password is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^cmspassword="
-    line: "cmspassword={{ cms_admin_password }}"
-
-- name: Ensure lcm password is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^lcmpassword="
-    line: "lcmpassword={{ lcm_password }}"
-
-- name: Ensure cms db password is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^existingcmsdbpassword="
-    line: "existingcmsdbpassword={{ cms_db_password }}"
-
-- name: Ensure auditing db password is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^existingauditingdbpassword="
-    line: "existingauditingdbpassword={{ auditing_db_password }}"
-
-- name: Ensure product key is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^productkey="
-    line: "productkey={{ product_key }}"
-
-- name: Ensure node name is set in response file
-  ansible.builtin.lineinfile:
-    path: "{{ sap_bi_platform_extraction_directory }}/bip_response.ini"
-    regexp: "^sianame="
-    line: "sianame={{ ncr_environment }}ncr{{ node }}"
+    mode: "0640"
+  with_items:
+    - prereq_checks.ini
+    - bip_response.ini

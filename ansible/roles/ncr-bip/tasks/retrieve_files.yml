@@ -1,41 +1,71 @@
 ---
-- name: Create directory to unpack BIP files
-  file:
-    path: "{{ sap_bi_platform_unpack_base_directory }}"
+- name: Check if bip already downloaded
+  ansible.builtin.stat:
+    path: "{{ sap_bip_extraction_directory }}/ProductId.txt"
+  register: bip_download_check
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
     state: directory
     mode: 0755
+    owner: bobj
+    group: binstall
+  with_items: 
+    - "{{ sap_bip_unpack_base_directory }}"
+    - "{{ sap_bip_extraction_directory }}"
+  when: not bip_download_check.stat.exists
 
-- name: Create directory to unpack JVM
-  file:
-    path: "{{ sap_jvm_unpack_base_directory }}"
-    state: directory
-    mode: 0755
+- name: Download BI files from S3
+  become_user: bobj
+  amazon.aws.aws_s3:
+    mode: get
+    bucket: "{{ sap_packages_s3_bucket_name }}"
+    object: "{{ sap_packages_prefix }}{{ item|upper }}"
+    dest: "{{ sap_bip_unpack_base_directory }}/{{ item }}"
+    overwrite: latest
+  with_items:
+    - "{{ sap_bip_rar_base }}_P1.exe"
+    - "{{ sap_bip_rar_base }}_P2.rar"
+  when: not bip_download_check.stat.exists
 
-- name: Check if the BIPLATS4303P_300-70002683_P1.exe exists
-  stat:
-    path: "{{ sap_bi_platform_unpack_base_directory }}/BIPLATS4303P_300-70002683_P1.exe"
-  register: s3_result
+ 
+ 
+- name: Unpack the rar file
+  become_user: bobj
+  ansible.builtin.shell: "/usr/local/bin/unrar x -y {{ sap_bip_rar_base }}_P1.exe"
+  args:
+    chdir: "{{ sap_bip_unpack_base_directory }}"
+  when: not bip_download_check.stat.exists and not ansible_check_mode
 
-- name: Download BI Platform from S3
-  block:
-    - name: Download BI files from S3
-      aws_s3:
-        mode: get
-        bucket: "{{ s3.bip_bucket_name }}"
-        object: "{{ s3.packages_prefix }}{{ item }}"
-        dest: "{{ sap_bi_platform_unpack_base_directory }}/{{ item|basename }}"
-        overwrite: never
-      with_items: "{{ s3.files.sap_bi_platform }}"
+- name: Check for BISERVONE.tgz
+  ansible.builtin.stat:
+    path: "{{ sap_bip_unpack_base_directory }}/BISERVONE.tgz"
+  register: biservone
+  when: not bip_download_check.stat.exists and not ansible_check_mode
 
-    - name: Hacky rename
-      shell: |
-        for f in *;
-          do
-            e="${f##*.}";
-            b="${f%.*}";
-            mv -n "$f" "${b}.${e,,}";
-          done
-      args:
-        chdir: "{{ sap_bi_platform_unpack_base_directory }}"
-        executable: /bin/bash
-  when: not s3_result.stat.exists
+- name: Untar BISERVONE.tgz if present
+  ansible.builtin.unarchive:
+    src: "{{ sap_bip_unpack_base_directory }}/BISERVONE.tgz"
+    dest: "{{ sap_bip_extraction_directory }}"
+    remote_src: yes
+    owner: bobj
+    group: binstall
+  when: not bip_download_check.stat.exists and biservone.stat.exists
+
+- name: Cleanup rar archives
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items: 
+    - "{{ sap_bip_rar_base }}_P1.exe"
+    - "{{ sap_bip_rar_base }}_P2.rar"
+  when: not bip_download_check.stat.exists
+
+- name: Cleanup BISERVONE.tgz if present
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items: 
+    - "{{ sap_bip_unpack_base_directory }}/BISERVONE.tgz"
+  when: not bip_download_check.stat.exists and biservone.stat.exists

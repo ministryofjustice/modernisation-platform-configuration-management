@@ -1,59 +1,50 @@
 ---
-- import_tasks: get_facts.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+- block:
+  - import_tasks: install_rar.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - bip_ncr_install_rar
 
-- import_tasks: install_packages.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: check_prereqs.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - bip_ncr_check_prereqs 
 
-- import_tasks: add_groups.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: setup_bobj.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - ec2patch
+      - bip_ncr_setup_bobj
 
-- import_tasks: assign_permissions.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: retrieve_files.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - bip_ncr_retrieve_files
+  
+  - import_tasks: install_host_agent.yml
+    tags:
+      - ec2provision
+      - bip_ncr_install_host_agent
 
-- import_tasks: users.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: get_secrets.yml
+    tags:
+      - ec2provision
+      - bip_ncr_get_secrets
+      - bip_ncr_add_response_file
 
-- import_tasks: retrieve_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: add_response_file.yml
+    tags:
+      - ec2provision
+      - bip_ncr_add_response_file
 
-- import_tasks: extract_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+  - import_tasks: install_bip.yml
+    tags:
+      - ec2provision
+      - bip_ncr_install_bip
 
-- import_tasks: add_response_file.yml
-  tags:
-    - amibuild
-    - ec2provision
+  # block
   when: ansible_distribution in ['RedHat']
-
-- import_tasks: install_host_agent.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
-# - import_tasks: install_bip.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']

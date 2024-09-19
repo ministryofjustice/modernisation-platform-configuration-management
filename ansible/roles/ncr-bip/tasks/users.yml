@@ -1,9 +1,0 @@
----
-- name: Copy bobj bash profile
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "/{{ item }}"
-    owner: bobj
-    group: binstall
-  loop:
-    - home/bobj/.bash_profile

@@ -1,0 +1,23 @@
+---
+- name: Copy bobj bash profile
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: bobj
+    group: binstall
+  loop:
+    - home/bobj/.bash_profile
+
+- name: Add bobj user limits
+  community.general.pam_limits:
+    domain: binstall
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  loop:
+    - { limit_type: "hard", limit_item: "nofile", value: 65536 }
+    - { limit_type: "soft", limit_item: "nofile", value: 65536 }
+    - { limit_type: "hard", limit_item: "nproc", value: unlimited }
+    - { limit_type: "soft", limit_item: "nproc", value: unlimited }
+    - { limit_type: "hard", limit_item: "stack", value: 32768 }
+    - { limit_type: "soft", limit_item: "stack", value: 10240 }
