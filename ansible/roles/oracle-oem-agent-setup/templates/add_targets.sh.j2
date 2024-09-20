@@ -18,7 +18,7 @@ if [[ "${APPLICATION}" == "delius" || "${APPLICATION}" == "delius-mis"  ]]; then
    # First character must be made uppercase
    LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
    # Oracle does not support a Preproduction status so use Staging instead
-   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
+   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Stage"
    if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
       CONTACT="#delius-aws-oracle-prod-alerts"
    else
@@ -26,7 +26,7 @@ if [[ "${APPLICATION}" == "delius" || "${APPLICATION}" == "delius-mis"  ]]; then
    fi
 else 
    # Oracle does not support a Preproduction status so use Staging instead
-   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Staging"
+   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Stage"
    if [[ "${LIFECYCLE_STATUS}" == "Production" || "${LIFECYCLE_STATUS}" == "MissionCritical" ]]; then
       CONTACT="#dba_alerts_prod"
    else
@@ -60,7 +60,7 @@ fi
 if [ `grep "db"  /etc/oratab | awk -F: '{ print $2 }'| wc -l` -gt 0 ]
 then
         echo "emcli add target database homes"
-        DB_INFO=$(grep db inventory.xml| grep -v REMOVED | awk -F\" '{ printf("%s:%s\n", $2,$4)}')
+        DB_INFO=$(grep db ${INVENTORY_LOC}/ContentsXML/inventory.xml| grep -v REMOVED | awk -F\" '{ printf("%s:%s\n", $2,$4)}')
         for i in ${DB_INFO[@]}
         do
             DB_HOME_NAME=$(echo ${i} | awk -F: '{ print $1 }')
