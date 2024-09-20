@@ -161,7 +161,7 @@ Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsor
 $oracleConfigToolsParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
     WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-executeConfigTools -silent -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+    ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
 }
