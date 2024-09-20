@@ -13,13 +13,13 @@ $GlobalConfig = @{
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
     }
     "oasys-national-reporting-development"   = @{
-        "sysDbName" = "T2BOSYS"
-        "audDbName" = "T2BOAUD"
-        "tnsorafile" = "tnsnames_T2_BODS.ora"
         "OnrShortcuts" = @{
         }
     }
     "oasys-national-reporting-test"          = @{
+        "sysDbName" = "T2BOSYS"
+        "audDbName" = "T2BOAUD"
+        "tnsorafile" = "tnsnames_T2_BODS.ora"
         "OnrShortcuts" = @{
         }
     }
