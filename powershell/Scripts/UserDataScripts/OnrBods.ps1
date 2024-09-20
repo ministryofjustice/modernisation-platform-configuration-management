@@ -129,7 +129,9 @@ Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient
 Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 # }}}
 
-# {{{ install Oracle
+# {{{ Install Oracle Client
+# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
+
 # Create response file for silent install
 $ResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
@@ -141,29 +143,31 @@ oracle.install.client.installType=Administrator
 
 $ResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
-# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-# Set-Location -Path $WorkingDirectory\OracleClient\client
-# .\setup.exe -silent -noconfig -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp
-# TODO: Need to understand what this is
-# As install user, execute the following command to complete the configuration.
-# D:\Software\OracleClient\client\setup.exe -executeConfigTools -responseFile D:\Software\OracleClient\client\client_install.rsp [-silent]
+# Install Oracle Client silent install
 $OracleClientInstallParams = @{
-    FilePath         = "setup.exe"
+    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
     WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-silent -noconfig -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+    ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
 }
 
 Start-Process @OracleClientInstallParams
 
-#Do {
-#    Start-Sleep -Seconds 30
-#} Until (Test-Path "$($Config.ORACLE_HOME)\network\admin")
-# This is a very janky way to wait until the oracle installer is complete, then move to the next step
-# Needs fixing using Start-Process for the install above
+# Copy tnsnames.ora file to correct location
 Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-# # }}}
+
+# Install Oracle configuration tools
+$oracleConfigToolsParams = @{
+    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+    ArgumentList     = "-executeConfigTools -silent -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+    Wait             = $true
+    NoNewWindow      = $true
+}
+
+Start-Process @oracleConfigToolsParams
+# }}}
 
 # {{{ install IPS
 $Tags = Get-InstanceTags
