@@ -133,7 +133,7 @@ Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 # documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
 
 # Create response file for silent install
-$ResponseFileContent = @"
+$oracleClientResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
 ORACLE_HOME=$($Config.ORACLE_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
@@ -141,7 +141,7 @@ oracle.install.IsBuiltInAccount=true
 oracle.install.client.installType=Administrator
 "@
 
-$ResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+$oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
 # Install Oracle Client silent install
 $OracleClientInstallParams = @{
@@ -167,6 +167,9 @@ $oracleConfigToolsParams = @{
 }
 
 Start-Process @oracleConfigToolsParams
+
+[Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
+
 # }}}
 
 # {{{ install IPS
@@ -182,10 +185,96 @@ $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 $onr_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "onr_system_owner" -ErrorAction SilentlyContinue
 $onr_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "onr_audit_owner" -ErrorAction SilentlyContinue
 $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
-#
-# }}}
+$bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+$bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
+$product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "product_key" -ErrorAction SilentlyContinue
+
+# TODO: Follow https://me.sap.com/notes/1544104/E
+# Reboot required otherwise the IPS install will hang. There is no flag to ignore this check.
+# Delete contents of \HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\
+# PendingFileRenameOperations
+
+# Create response file for IPS silent install
+$ipsResponseFileContentCommon = @"
+### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
+chooseintroscopeintegration=nointegrate
+### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
+choosesmdintegration=nointegrate
+### CMS cluster key
+clusterkey=$bods_cluster_key
+### CMS administrator password
+cmspassword=$bods_admin_password
+### CMS connection port
+cmsport=6400
+### Existing auditing DB password
+existingauditingdbpassword=$onr_audit_owner
+### Existing auditing DB server
+existingauditingdbserver=$($Config.audDbName)
+### Existing auditing DB user name
+existingauditingdbuser=onr_audit_owner
+### Existing CMS DB password
+existingcmsdbpassword=$bods_admin_password
+### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
+existingcmsdbreset=1
+### Existing CMS DB server
+existingcmsdbserver=$($Config.sysDbName)
+### Existing CMS DB user name
+existingcmsdbuser=onr_system_owner
+### Installation Directory
+installdir=E:\SAP BusinessObjects\
+### Choose install type: default, custom, webtier
+installtype=custom
+### LCM server name
+lcmname=LCM_repository
+### LCM password
+lcmpassword=$bods_subversion_password
+### LCM port
+lcmport=3690
+### LCM user name
+lcmusername=LCM
+### Choose install mode: new, expand where new == first instance of the installation
+neworexpandinstall=new
+### Product Keycode
+productkey=$product_key
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+### SIA node name <<<<<<<<- TODO: check the naming conventions of this
+sianame=T2AWSIPS1
+### SIA connector port
+siaport=6410
+### Tomcat connection port
+tomcatconnectionport=28080
+### Tomcat redirect port
+tomcatredirectport=8443
+### Tomcat shutdown port
+tomcatshutdownport=8005
+### Auditing Database Type
+usingauditdbtype=oracle
+### CMS Database Type
+usingcmsdbtype=oracle
+### Features to install
+features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools 
+"@
+
+$ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+
+# TODO: supply password values to argument list OR remove the reponse file after it's been used
+
+#$ipsInstallParams = @{
+#   FilePath     = "$WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\setup.exe"
+#   ArgumentList = "-r $WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+#   Wait         = $true
+#   NoNewWindow  = $true
+#}
+
+# Start-Process @ipsInstallParams
+
+#}}} end install IPS
 
 # {{{ install Data Services
+# TODO: Add LINK_DIR to system environment variables
 #
 # }}}
 
