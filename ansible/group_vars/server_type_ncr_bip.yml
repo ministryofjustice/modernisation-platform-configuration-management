@@ -107,12 +107,13 @@ sap_bip_confs:
     auditing_db_user: BIP_AUDIT_OWNER
     cms_db_server: BISYSPP
     cms_db_user: BIP_SYSTEM_OWNER
-    cms_db_reset: 0
-    #responsefile: response.cms_a.ini
-    responsefile: response.cms_b.ini
-    remote_cms_name: "ip-10-27-0-73"
-    sia_name_cms_a: "PPNOMIS1"
-    sia_name_cms_b: "PPNOMIS2"
+    cms_db_reset: 0 # cms only
+    #responsefile: response.cms.ini
+    #responsefile: response.app.ini
+    responsefile: response.web.ini
+    remote_cms_name: "ip-10-27-0-73" # non-cms
+    sia_name_cms: "PPNOMIS1"
+    sia_name_app: "PPNOMIS2"
 
 oracle_client_conf: "{{ oracle_client_confs[ncr_environment] }}"
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
