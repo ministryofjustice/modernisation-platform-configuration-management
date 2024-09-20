@@ -178,9 +178,10 @@ $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
-$onr_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "onr_system_owner"
-$onr_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "onr_audit_owner"
-$bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key"
+# Get secret values, silently continue if they don't exist
+$onr_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "onr_system_owner" -ErrorAction SilentlyContinue
+$onr_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "onr_audit_owner" -ErrorAction SilentlyContinue
+$bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
 #
 # }}}
 
