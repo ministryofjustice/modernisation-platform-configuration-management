@@ -68,3 +68,21 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+# Replaces Grafana/Prometheus black-box exporter monitoring
+endpoint_monitoring_targets:
+  # - target: https://google.com # Example target
+  #   expected_response_code: 301
+  #   check_domain_ssl_expiry: true
+  - target: https://oasys.az.justice.gov.uk
+    expected_response_code: 302
+    check_domain_ssl_expiry: "true"
+  - target: https://oasys.az.justice.gov.uk/eor/f?p=100
+    expected_response_code: 302
+    check_domain_ssl_expiry: "false" # don't re-check this as it's just a duplicate of above
+  - target: https://bridge-oasys.az.justice.gov.uk
+    expected_response_code: 200
+    check_domain_ssl_expiry: "true"
+  - target: https://bridge-oasys.az.justice.gov.uk/eor/f?p=100,
+    expected_response_code: 200
+    check_domain_ssl_expiry: "false"

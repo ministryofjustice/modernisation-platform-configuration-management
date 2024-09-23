@@ -1,0 +1,9 @@
+---
+- name: Rhel8
+  block:
+    - import_tasks: install-rpms.yml
+      tags:
+        - amibuild
+        - weblogic_install_jdk
+
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

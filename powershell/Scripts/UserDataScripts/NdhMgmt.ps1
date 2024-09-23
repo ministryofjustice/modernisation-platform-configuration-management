@@ -16,27 +16,39 @@ $GlobalConfig = @{
   }
   "nomis-data-hub-development" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis-data-hub.hmpps-development.modernisation-platform.internal",
       "azure.noms.root"
     )
   }
   "nomis-data-hub-test" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis-data-hub.hmpps-test.modernisation-platform.internal",
       "azure.noms.root"
     )
   }
   "nomis-data-hub-preproduction" = @{
     "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
       "nomis-data-hub.hmpps-preproduction.modernisation-platform.internal",
       "azure.hmpp.root"
     )
   }
   "nomis-data-hub-production" = @{
-     "DnsSuffixSearchList" = @(
-       "nomis-data-hub.hmpps-production.modernisation-platform.internal",
-       "azure.hmpp.root"
-     )
+    "DnsSuffixSearchList" = @(
+      "us-east-1.ec2-utilities.amazonaws.com",
+      "eu-west-2.compute.internal",
+      "eu-west-2.ec2-utilities.amazonaws.com",
+      "nomis-data-hub.hmpps-production.modernisation-platform.internal",
+      "azure.hmpp.root"
+    )
   }
 }
 

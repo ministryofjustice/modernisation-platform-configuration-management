@@ -9,3 +9,11 @@ database_parameters:
 data_guard_parameters:
   ApplyLagThreshold: 1000
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
+required_patches:
+  p34755459:
+    patch_files:
+      - target_version: "19.24"
+        filename: p34755459_1924000DBRU_Linux-x86-64.zip
+    description: "ORA-00600 [QERIXGETKEY OPTDESC] WITH FUNCTION BASED INDEX ON SUBSTR"
+    grid_patch: false
+    database_patch: true

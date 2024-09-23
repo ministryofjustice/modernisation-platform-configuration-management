@@ -37,7 +37,7 @@ OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.i
 OEM_AGENT_VERSION: 13.5.0.0.0
 dns_search_domains:
   - hmpps-oem.hmpps-preproduction.modernisation-platform.internal
-dns_zone_internal: hmpps-preprod.modernisation-platform.internal
+dns_zone_internal: hmpps-preproduction.modernisation-platform.internal
 oem_secret_role: EC2OracleEnterpriseManagementSecretsRole
 # Enable Oracle Native Network Encryption (ignored for TCPS connections)
 # Note that
@@ -52,7 +52,7 @@ sqlnet_parameters:
 # The oracle_ru_patch is the Oracle Release update to use for *initial build* only.
 # Subsequent patching will use the oracle_software variable defined for
 # the primary database.
-oracle_ru_patch: JAN2024
+oracle_ru_patch: JUL2024
 
 # We increase the frequency of HAS Resource Status collection from default of once per 24
 # hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
@@ -113,3 +113,22 @@ all_oem_metrics:
         warning_threshold , CRS-(1021|1022)
         critical_threshold , CRS-(1006|1009|1011|10131|10132|10133|10135|10136|10137|10138|10139|1015|1016|1017|1018|1019|1021)
         END_RECORD 4
+disks_partition:
+  - ebs_device_name: /dev/sdd
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdi
+    oracle_group: flash
+    oracle_label: FLASH01

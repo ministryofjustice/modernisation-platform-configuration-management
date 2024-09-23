@@ -18,10 +18,12 @@ delius_users:
   dreid_dba:
   sgandalwar_dba:
   kmoss_dba:
-oracle_software:
-  version: "19.22"
-  combo_patch: p36031453_190000_Linux-x86-64.zip
-  opatch:
-    version: 12.2.0.1.41
-    filename: p6880880_190000_Linux-x86-64.12.2.0.1.41.zip
+required_patches:
+  p34755459:
+    patch_files:
+      - target_version: "19.24"
+        filename: p34755459_1924000DBRU_Linux-x86-64.zip
+    description: "ORA-00600 [QERIXGETKEY OPTDESC] WITH FUNCTION BASED INDEX ON SUBSTR"
+    grid_patch: false
+    database_patch: true
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
