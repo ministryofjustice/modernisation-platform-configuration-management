@@ -262,7 +262,7 @@ usingcmsdbtype=oracle
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
-$ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+$ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
 
 # TODO: supply password values to argument list OR remove the reponse file after it's been used
 
