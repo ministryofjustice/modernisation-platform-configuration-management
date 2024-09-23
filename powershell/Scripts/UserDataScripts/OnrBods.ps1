@@ -32,7 +32,10 @@ $GlobalConfig = @{
         }
     }
 }
-$ConfigurationManagementRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management"
+
+$tempPath = ([System.IO.Path]::GetTempPath())
+
+$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
 $ErrorActionPreference = "Stop"
 $WorkingDirectory = "D:\Software"
 $AppDirectory = "E:\App"
