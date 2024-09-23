@@ -177,6 +177,7 @@ $Tags = Get-InstanceTags
 
 # set Secret Names based on environment
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+$siaNodeName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
@@ -240,8 +241,8 @@ productkey=$product_key
 selectedlanguagepacks=en
 ### Setup UI Language
 setupuilanguage=en
-### SIA node name <<<<<<<<- TODO: check the naming conventions of this
-sianame=T2AWSIPS1
+### SIA node name
+sianame=$siaNodeName
 ### SIA connector port
 siaport=6410
 ### Tomcat connection port
@@ -274,7 +275,7 @@ $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\Software\I
 #}}} end install IPS
 
 # {{{ install Data Services
-# TODO: Add LINK_DIR to system environment variables
+[Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
 #
 # }}}
 
