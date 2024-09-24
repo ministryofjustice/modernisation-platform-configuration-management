@@ -44,19 +44,6 @@ packages_yum_install:
   - zip-3.0-23.el8
   - git
   - tar
-<<<<<<< HEAD
-  - binutils
-  - xorg-x11-utils
-  - libXt-devel
-  - xorg-x11-utils
-  - make-4.2.1-9.el8
-  - glibc
-  - glibc-devel
-  - libcurl
-  - ksh
-  - xorg-x11-xauth
-  - xterm
-=======
   - xorg-x11-utils-7.5-28.el8.x86_64
   - xorg-x11-utils-7.5-28.el8.x86_64
   - binutils-2.30-123.0.2.el8.x86_64
@@ -86,7 +73,7 @@ packages_yum_install:
   - openssl-1.1.1-8.0.1.el8
   - make-4.2.1-9.el8
   - libXtst-devel-1.2.3-7.el8.x86_64
->>>>>>> 0a6f1308 (Added RPMs for Nomis Web 19c)
+
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
