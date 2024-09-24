@@ -17,9 +17,11 @@ $GlobalConfig = @{
         }
     }
     "oasys-national-reporting-test"          = @{
-        "sysDbName" = "T2BOSYS"
-        "audDbName" = "T2BOAUD"
+        "sysDbName" = "BOSYS_TAF" #T2BOSYS
+        "audDbName" = "BOAUD_TAF" #T2BOAUD
         "tnsorafile" = "tnsnames_T2_BODS.ora"
+        "cmsMainNode" = "t2-onr-bods-1-b"
+        "cmsExtendedNode" = "t2-onr-bods-2-a"
         "OnrShortcuts" = @{
         }
     }
@@ -116,6 +118,25 @@ function Get-InstanceTags {
   $Tags.Tags
 }
 
+function Clear-PendingFileRenameOperations {
+    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+    $regKey = "PendingFileRenameOperations"
+
+    if (Get-ItemProperty -Path $regPath -Name $regKey -ErrorAction SilentlyContinue) {
+        try {
+            Remove-ItemProperty -Path $regPath -Name $regKey -Force -ErrorAction Stop
+            Write-Host "Successfully removed $regKey from the registry."
+        }
+        catch {
+            Write-Warning "Failed to remove $regKey. Error: $_"
+        }
+    }
+    else {
+        Write-Host "$regKey does not exist in the registry. No action needed."
+    }
+}
+
+
 # }}}
 
 # {{{ prepare assets
@@ -180,7 +201,7 @@ $Tags = Get-InstanceTags
 
 # set Secret Names based on environment
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$siaNodeName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+$siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "_").ToUpper() # cannot contain hyphens
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
@@ -192,11 +213,6 @@ $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_c
 $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
 $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
 $product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "product_key" -ErrorAction SilentlyContinue
-
-# TODO: Follow https://me.sap.com/notes/1544104/E
-# Reboot required otherwise the IPS install will hang. There is no flag to ignore this check.
-# Delete contents of \HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\
-# PendingFileRenameOperations
 
 # Create response file for IPS silent install
 $ipsResponseFileContentCommon = @"
@@ -262,16 +278,67 @@ usingcmsdbtype=oracle
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
-$ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+# Create response file for IPS expanded install
+$ipsResponseFileContentExtendedNode = @"
+### Choose install mode: new, expand where new == first instance of the installation
+neworexpandinstall=expand
+### Install a new LCM or use an existing LCM
+neworexistinglcm=expand
+### CMS cluster key
+clusterkey=$bods_cluster_key
+### CMS administrator password
+cmspassword=$bods_admin_password
+### CMS connection port
+cmsport=6400
+### Existing main cms node name
+cmsname=$($Config.cmsMainNode)
+### Product Keycode
+productkey=$product_key
+### SIA node name
+sianame=$siaNodeName
+### SIA connector port
+siaport=6410
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+### Installation Directory
+installdir=E:\SAP BusinessObjects\
+### Choose install type: default, custom, webtier
+installtype=custom
+### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
+chooseintroscopeintegration=nointegrate
+### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
+choosesmdintegration=nointegrate
+### Features to install
+features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
+"@
+
+# $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
 
 # TODO: supply password values to argument list OR remove the reponse file after it's been used
 
-#$ipsInstallParams = @{
-#   FilePath     = "$WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\setup.exe"
-#   ArgumentList = "-r $WorkingDirectory\Software\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
-#   Wait         = $true
-#   NoNewWindow  = $true
-#}
+if ($Tags.Name -eq $Config.cmsMainNode) {
+    $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+} else if ($Tags.Name -eq $Config.cmsExtendedNode) {
+    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+} else {
+    Write-Output "Unknown node type, cannot create response file"
+    exit 1
+}
+
+$ipsInstallParams = @{
+    FilePath = "$WorkingDirectory\IPS\DATA_UNITS\\IPS_win\setup.exe"
+    WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
+    ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+    Wait = $true
+    NoNewWindow = $true
+}
+
+# debugging
+$ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
+
+Clear-PendingFileRenameOperations
 
 # Start-Process @ipsInstallParams
 
@@ -280,6 +347,7 @@ $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_U
 # {{{ install Data Services
 [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
 #
+# TODO: requires a service user for some reason. Not sure why, what's the AWS equivalent?
 # }}}
 
 # {{{ login text
