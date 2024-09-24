@@ -11,7 +11,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
-oracle_ru_patch: OCT2023
+oracle_ru_patch: JUL2024
 
 OMS_SERVER: prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0
@@ -46,8 +46,62 @@ housekeeping_cron:
       # job: command generated in
 
 db_configs:
-  RCVCAT:
-    rcvcat_db_name: PRCVCAT
+  PDBIPSYS:
+    db_name: BIPSYSP
+    db_unique_name: PDBIPSYS
+    instance_name: PDBIPSYS
+    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBIPSYS
+    service:
+      - { name: BIPSYSP_CFG, role: PRIMARY }
+      - { name: BIPSYS_TAF, role: PRIMARY }
+  PDBIPAUD:
+    db_name: BIPAUDP
+    db_unique_name: PDBIPAUD
+    instance_name: PDBIPAUD
+    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBIPAUD
+    service:
+      - { name: BIPAUDP_CFG, role: PRIMARY }
+      - { name: BIPAUD_TAF, role: PRIMARY }
+  PDBISYS:
+    db_name: BISYS
+    db_unique_name: PDBISYS
+    instance_name: PDBISYS
+    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBISYS
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  PDBIAUD:
+    db_name: BIAUD
+    db_unique_name: PDBIAUD
+    instance_name: PDBIAUD
+    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBIAUD
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
+  DRBIPAUD:
+    db_name: BIPAUDP
+    db_unique_name: DRBIPAUD
+    instance_name: DRBIPAUD
+    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBIPAUD
+    service:
+      - { name: DRBIPAUD, role: PHYSICAL_STANDBY }
+  DRBIPSYS:
+    db_name: BIPSYSP
+    db_unique_name: DRBIPSYS
+    instance_name: DRBIPSYS
+    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBIPSYS
+    service:
+      - { name: DRBIPSYS, role: PHYSICAL_STANDBY }
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
