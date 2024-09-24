@@ -320,7 +320,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 
 if ($Tags.Name -eq $Config.cmsMainNode) {
     $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
-} else if ($Tags.Name -eq $Config.cmsExtendedNode) {
+} elseif ($Tags.Name -eq $Config.cmsExtendedNode) {
     $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
