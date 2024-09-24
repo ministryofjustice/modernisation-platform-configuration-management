@@ -8,7 +8,7 @@
   ansible.builtin.shell: |
     set -eo pipefail
     main() {
-      echo "# creating swapfile"
+      echo "# creating swapfile for 19c Web"
       fallocate -l 1G /swapfile
       dd if=/dev/zero of=/swapfile bs=1024 count=1048576
       chmod 600 /swapfile
