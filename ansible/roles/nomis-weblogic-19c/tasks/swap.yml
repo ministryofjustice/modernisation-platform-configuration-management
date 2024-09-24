@@ -1,0 +1,26 @@
+---
+- name: Check swapfile
+  ansible.builtin.stat:
+    path: /swapfile
+  register: swapfile
+
+- name: Create swapfile
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo "# creating swapfile"
+      fallocate -l 1G /swapfile
+      dd if=/dev/zero of=/swapfile bs=1024 count=1048576
+      chmod 600 /swapfile
+      mkswap /swapfile
+      swapon /swapfile
+    }
+    main 2>&1 | logger -p local3.info -t ansible-weblogic
+  when: not swapfile.stat.exists
+
+- name: Mount swapfile
+  ansible.posix.mount:
+    src: /swapfile
+    path: swap
+    fstype: swap
+    state: present
