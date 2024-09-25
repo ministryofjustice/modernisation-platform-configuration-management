@@ -29,3 +29,6 @@ export FRS=/opt/data/BusinessObjects/BIP4/FRSDATA
 
 #TMC Following added as per SAP Note 3257944
 #SESSION_LOGGING=1
+
+# See KB1968075 https://me.sap.com/notes/0001968075
+export MALLOC_ARENA_MAX=1

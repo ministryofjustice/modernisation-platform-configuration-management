@@ -28,8 +28,6 @@
     - "{{ sap_bip_rar_base }}_P1.exe"
     - "{{ sap_bip_rar_base }}_P2.rar"
   when: not bip_download_check.stat.exists
-
- 
  
 - name: Unpack the rar file
   become_user: bobj

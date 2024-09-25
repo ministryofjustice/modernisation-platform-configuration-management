@@ -12,6 +12,13 @@
       - ec2provision
       - bip_ncr_check_prereqs 
 
+  - import_tasks: setup_host.yml
+    tags:
+      - amibuild
+      - ec2provision
+      - ec2patch
+      - bip_ncr_setup_host
+
   - import_tasks: setup_bobj.yml
     tags:
       - amibuild
@@ -45,6 +52,11 @@
     tags:
       - ec2provision
       - bip_ncr_install_bip
+
+  - import_tasks: check_network_config.yml
+    tags:
+      - ec2provision
+      - bip_ncr_check_network_config
 
   # block
   when: ansible_distribution in ['RedHat']
