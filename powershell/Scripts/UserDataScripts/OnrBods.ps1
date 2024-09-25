@@ -155,8 +155,22 @@ function Clear-PendingFileRenameOperations {
         Write-Host "$regKey does not exist in the registry. No action needed."
     }
 }
+# }}}
 
-
+# {{{ join domain if domain-name tag is set
+# Needs to occur FIRST before all other operations
+$ErrorActionPreference = "Continue"
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+if ($null -ne $ADConfig) {
+  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    Exit 3010 # triggers reboot if running from SSM Doc
+  } 
+} else {
+  Write-Output "No domain-name tag found so apply Local Group Policy"
+  . .\LocalGroupPolicy.ps1
+}
 # }}}
 
 # {{{ prepare assets
@@ -221,7 +235,7 @@ $Tags = Get-InstanceTags
 
 # set Secret Names based on environment
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "_").ToUpper() # cannot contain hyphens
+$siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
@@ -334,13 +348,13 @@ choosesmdintegration=nointegrate
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
-# $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
-
 # TODO: supply password values to argument list OR remove the reponse file after it's been used
 
-if ($Tags.Name -eq $Config.cmsMainNode) {
+$instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+
+if ($instanceName -eq $($Config.cmsMainNode)) {
     $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
-} elseif ($Tags.Name -eq $Config.cmsExtendedNode) {
+} elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
     $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
@@ -360,15 +374,83 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
+# Disable for now during testing
 # Start-Process @ipsInstallParams
 
-#}}} end install IPS
+# }}} end install IPS
 
 # {{{ install Data Services
 [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
+New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
+[Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
-# TODO: requires a service user for some reason. Not sure why, what's the AWS equivalent?
-# }}}
+$data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+
+$dataServicesResponsePrimary = @"
+### #property.CMSAUTHENTICATION.description#
+cmsauthentication=secEnterprise
+### CMS administrator password
+cmspassword=$bods_admin_password
+### #property.CMSUSERNAME.description#
+cmsusername=Administrator
+### #property.CMSAuthMode.description#
+dscmsauth=secEnterprise
+### #property.CMSEnabledSSL.description#
+dscmsenablessl=0
+### CMS administrator password
+dscmspassword=$bods_admin_password
+### #property.CMSServerPort.description#
+dscmsport=6400
+### #property.CMSServerName.description#
+dscmssystem=TODO: Change this to Hostname Of Master CMSinstance
+### #property.CMSUser.description#
+dscmsuser=Administrator
+### #property.DSCommonDir.description#
+dscommondir=F:\BODS_COMMON_DIR\
+### #property.DSConfigCMSSelection.description#
+dsconfigcmsselection=install
+### #property.DSConfigMergeSelection.description#
+dsconfigmergeselection=skip
+### #property.DSExistingDSConfigFile.description#
+dsexistingdsconfigfile=
+### #property.DSInstallTypeSelection.description#
+dsinstalltypeselection=Custom
+### #property.DSLocalCMS.description#
+dslocalcms=true
+### #property.DSLoginInfoAccountSelection.description#
+dslogininfoaccountselection=system
+### #property.DSLoginInfoThisUser.description#
+dslogininfothisuser=TODO: Need to change this for service user
+### Installation folder for SAP products
+installdir=E:\SAP BusinessObjects\
+### #property.IsCommonDirChanged.description#
+iscommondirchanged=1
+### #property.MasterCmsName.description#
+mastercmsname=TODO: Change this to the Hostname of the Master CMSinstance
+### #property.MasterCmsPort.description#
+mastercmsport=6400
+### Keycode for the product.
+productkey=$data_services_product_key
+### *** property.SelectedLanguagePacks.description ***
+selectedlanguagepacks=en
+### Available features
+features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
+"@
+
+$dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.rsp" -Force -Encoding ascii
+
+$dataServicesInstallParams = @{
+    FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    WorkingDirectory = $WorkingDirectory
+    ArgumentList = "-r $WorkingDirectory\ds_install.rsp"
+    Wait = $true
+    NoNewWindow = $true
+}
+
+# Disable for now during testing
+# Start-Process @dataServicesInstallParams
+
+# }}} End install Data Services
 
 # {{{ login text
 # Apply to all environments that aren't on the domain
