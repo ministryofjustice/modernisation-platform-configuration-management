@@ -17,8 +17,8 @@ $GlobalConfig = @{
         }
     }
     "oasys-national-reporting-test"          = @{
-        "sysDbName" = "BOSYS_TAF" #T2BOSYS
-        "audDbName" = "BOAUD_TAF" #T2BOAUD
+        "sysDbName" = "T2BOSYS"
+        "audDbName" = "T2BOAUD"
         "tnsorafile" = "tnsnames_T2_BODS.ora"
         "cmsMainNode" = "t2-onr-bods-1-b"
         "cmsExtendedNode" = "t2-onr-bods-2-a"
@@ -105,10 +105,30 @@ function Get-SecretValue {
         [Parameter(Mandatory)]
         [string]$SecretKey
     )
-    $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
-    $secretObject = $secretJson | ConvertFrom-Json
-    return $secretObject.$SecretKey
+
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        $secretObject = $secretJson | ConvertFrom-Json
+
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
+
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
 }
+
 
 function Get-InstanceTags {
   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
