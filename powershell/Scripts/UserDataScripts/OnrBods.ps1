@@ -17,19 +17,23 @@ $GlobalConfig = @{
         }
     }
     "oasys-national-reporting-test"          = @{
-        "sysDbName" = "T2BOSYS"
-        "audDbName" = "T2BOAUD"
-        "tnsorafile" = "tnsnames_T2_BODS.ora"
-        "cmsMainNode" = "t2-onr-bods-1-b"
+        "sysDbName"       = "T2BOSYS"
+        "audDbName"       = "T2BOAUD"
+        "tnsorafile"      = "tnsnames_T2_BODS.ora"
+        "cmsMainNode"     = "t2-onr-bods-1-b"
         "cmsExtendedNode" = "t2-onr-bods-2-a"
+        "serviceUser"     = "svc_t2_oasys_bods" # possibly svc_t1_nomis_bods
+        "domain"          = "AZURE"
         "OnrShortcuts" = @{
         }
     }
     "oasys-national-reporting-preproduction" = @{
+        "domain" = "HMPPS"
         "OnrShortcuts" = @{
         }
     }
     "oasys-national-reporting-production"    = @{
+        "domain" = "HMPPS"
         "OnrShortcuts" = @{
         }
     }
@@ -385,6 +389,7 @@ New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+$data_services_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_user_password" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -402,7 +407,7 @@ dscmspassword=$bods_admin_password
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=TODO: Change this to Hostname Of Master CMSinstance
+dscmssystem=$($Config.cmsMainNode)
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -418,15 +423,17 @@ dsinstalltypeselection=Custom
 ### #property.DSLocalCMS.description#
 dslocalcms=true
 ### #property.DSLoginInfoAccountSelection.description#
-dslogininfoaccountselection=system
+dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
-dslogininfothisuser=TODO: Need to change this for service user
+dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
+### #property.DSLoginInfoThisPassword.description#
+dslogininfothispassword=$data_services_user_password
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=TODO: Change this to the Hostname of the Master CMSinstance
+mastercmsname=$($Config.cmsMainNode)
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
