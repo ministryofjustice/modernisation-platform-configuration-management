@@ -69,6 +69,5 @@ packages_yum_install:
   - openssl-1.1.1-8.0.1.el8
   - make-4.2.1-9.el8
 
-
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
