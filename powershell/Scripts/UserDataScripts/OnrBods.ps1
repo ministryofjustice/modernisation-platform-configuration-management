@@ -22,7 +22,7 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
         "cmsMainNode"     = "t2-onr-bods-1-b"
         "cmsExtendedNode" = "t2-onr-bods-2-a"
-        "serviceUser"     = "svc_t2_oasys_bods" # possibly svc_t1_nomis_bods
+        "serviceUser"     = "svc_aws_t2_oasys_bods"
         "domain"          = "AZURE"
         "OnrShortcuts" = @{
         }
@@ -161,8 +161,41 @@ function Clear-PendingFileRenameOperations {
 }
 # }}}
 
+# {{{ Prep the server for installation
+# Set the registry key to prefer IPv4 over IPv6
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
+
+# Output a message to confirm the change
+Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
+
+# Turn off the firewall as this will possibly interfere with Sia Node creation
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+
+# Disable antivirus and other security during installation 
+# Disable real-time monitoring
+Set-MpPreference -DisableRealtimeMonitoring $true
+
+# Disable intrusion prevention system
+Set-MpPreference -DisableIntrusionPreventionSystem $true
+
+# Disable script scanning
+Set-MpPreference -DisableScriptScanning $true
+
+# Disable behavior monitoring
+Set-MpPreference -DisableBehaviorMonitoring $true
+
+# Disable antivirus protection
+Set-MpPreference -DisableAntiVirus $true
+
+# Disable antispyware protection
+Set-MpPreference -DisableAntiSpyware $true
+
+Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
+
+# }}} complete - prep the server for installation
+
 # {{{ join domain if domain-name tag is set
-# Needs to occur FIRST before all other operations
+# Join domain and reboot is needed before installers run
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
@@ -389,7 +422,7 @@ New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-$data_services_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_user_password" -ErrorAction SilentlyContinue
+$data_services_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
