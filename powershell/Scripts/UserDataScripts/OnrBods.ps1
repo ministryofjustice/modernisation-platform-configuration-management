@@ -184,12 +184,6 @@ Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 # Disable behavior monitoring
 # Set-MpPreference -DisableBehaviorMonitoring $true
 
-# Disable antivirus protection
-# Set-MpPreference -DisableAntiVirus $true
-
-# Disable antispyware protection
-# Set-MpPreference -DisableAntiSpyware $true
-
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # }}} complete - prep the server for installation
