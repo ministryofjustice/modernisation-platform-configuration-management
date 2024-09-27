@@ -172,17 +172,18 @@ Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is requi
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Disable antivirus and other security during installation 
+
 # Disable real-time monitoring
-# Set-MpPreference -DisableRealtimeMonitoring $true
+Set-MpPreference -DisableRealtimeMonitoring $true
 
 # Disable intrusion prevention system
-# Set-MpPreference -DisableIntrusionPreventionSystem $true
+Set-MpPreference -DisableIntrusionPreventionSystem $true
 
 # Disable script scanning
-# Set-MpPreference -DisableScriptScanning $true
+Set-MpPreference -DisableScriptScanning $true
 
 # Disable behavior monitoring
-# Set-MpPreference -DisableBehaviorMonitoring $true
+Set-MpPreference -DisableBehaviorMonitoring $true
 
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
@@ -195,6 +196,11 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+  $Renamed = Rename-ModPlatformADComputer -NewHostname $NewHostname -ModPlatformADCredential $ADCredential
+  if ($Renamed) {
+  Write-Output "Renamed computer to ${Renamed}"
+  Exit 3010 # triggers reboot if running from SSM Doc
+    }
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
     Exit 3010 # triggers reboot if running from SSM Doc
   } 
