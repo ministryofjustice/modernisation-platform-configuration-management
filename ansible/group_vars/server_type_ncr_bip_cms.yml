@@ -43,6 +43,7 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
+  - bind-utils
   - nano
   - vim
   - make
@@ -108,8 +109,8 @@ sap_bip_confs:
     cms_db_server: BISYSPP
     cms_db_user: BIP_SYSTEM_OWNER
     cms_db_reset: 1 # cms only
-    responsefile: response.cms.ini
-    #responsefile: response.app.ini
+    #responsefile: response.cms.ini
+    responsefile: response.app.ini
     remote_cms_name: "ip-10-27-0-164" # non-cms
     sia_name_cms: "PPNOMIS1"
     sia_name_app: "PPNOMIS2"
