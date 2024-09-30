@@ -159,6 +159,29 @@ function Clear-PendingFileRenameOperations {
         Write-Host "$regKey does not exist in the registry. No action needed."
     }
 }
+
+# Function to change drive label
+function Set-DriveLabel {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$DriveLetter,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$NewLabel
+    )
+
+    # Remove colon from drive letter if present
+    $DriveLetter = $DriveLetter.TrimEnd(':')
+
+    try {
+        # Change the drive label
+        Set-Volume -DriveLetter $DriveLetter -NewFileSystemLabel $NewLabel
+        Write-Host "Drive $DriveLetter label changed to '$NewLabel' successfully."
+    }
+    catch {
+        Write-Error "Failed to change drive label: $_"
+    }
+}
 # }}}
 
 # {{{ Prep the server for installation
@@ -187,7 +210,17 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
+# Label the drives just to add some convienience
+Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
+Set-DriveLabel -DriveLetter "E" -NewLabel "App"
+Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
+
+# Set local time zone to UK
+Set-TimeZone -Name "GMT Standard Time"
+
 # }}} complete - prep the server for installation
+
+
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
@@ -413,7 +446,11 @@ Clear-PendingFileRenameOperations
 
 # {{{ install Data Services
 [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
-New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
+
+if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
+    Write-Output "Creating F:\BODS_COMMON_DIR"
+    New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
+}
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
