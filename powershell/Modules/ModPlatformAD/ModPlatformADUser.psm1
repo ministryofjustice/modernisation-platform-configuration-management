@@ -18,7 +18,7 @@ function Get-ModPlatformADUser {
         [Parameter(Mandatory=$true)]
         [string]$Name,
         [Parameter(Mandatory=$true)]
-        [System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [System.Management.Automation.PSCredential]$ModPlatformADCredential
     )
     Get-ADUser -Filter "Name -eq $Name" -Credential $ADCredential
 }
