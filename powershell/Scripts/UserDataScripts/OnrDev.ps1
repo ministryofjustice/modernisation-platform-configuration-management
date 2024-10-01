@@ -154,14 +154,14 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 
-# New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
-# Add-ModPlatformGroupMember -Group $($Config.group) -Member $env:COMPUTERNAME -ModPlatformADCredential $ADCredential
+New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
+Add-ModPlatformGroupMember -Computer $env:COMPUTERNAME -Group $($Config.group) -ModPlatformADCredential $ADCredential
 
-# $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-# $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
+$dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+$bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 
-# $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
-# $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
+$serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
+$serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
 
-# New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
-# Add-ModPlatformGroupMember -Group $($Config.group) -Member $($Config.serviceUser) -ModPlatformADCredential $ADCredential
+New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
+Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential

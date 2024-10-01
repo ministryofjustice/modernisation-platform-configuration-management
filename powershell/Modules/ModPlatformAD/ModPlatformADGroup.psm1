@@ -31,8 +31,16 @@ function New-ModPlatformADGroup {
     Write-Debug "Creating Group: $Group"
     Write-Debug "Creating Path: $Path"
 
+    $groupExists = Get-ADGroup -Filter "Name -eq '$Group'" -Credential $ModPlatformADCredential -ErrorAction SilentlyContinue
     # Create the Group in AD
-    New-ADGroup -Name $Group -Path $Path -Description $Description -Credential $ModPlatformADCredential
+    if (-NOT($groupExists)) {
+        New-ADGroup -Name $Group -Path $Path -Description $Description -Credential $ModPlatformADCredential -GroupScope "Global" -GroupCategory "Security"
+    } else {
+        Write-Host "Group: $Group already exists"
+    }
+    # NOTE:
+    # GroupScope is set to Global, restricts the group to the current domain
+    # GroupCategory is set to Security, related to access control and group policies in Active Directory
 }
 
 function Add-ModPlatformGroupMember {
@@ -57,15 +65,35 @@ function Add-ModPlatformGroupMember {
         [Parameter(Mandatory=$true)]
         [psobject]$Group,
         [Parameter(Mandatory=$true)]
-        [psobject]$Member,
+        [psobject]$Computer,
         [Parameter(Mandatory=$true)]
         [System.Management.Automation.PSCredential]$ModPlatformADCredential
     )
     Write-Debug "Adding Member: $Member to Group: $Group"
 
+    # Get the distinguishedName of the Computer
+    $distingishedName = (Get-ADComputer -Filter "Name -eq '$Computer'" -Credential $ModPlatformCredential -Properties DistinguishedName).DistinguishedName
+
     # Add the member to the Group in AD
-    Add-ADGroupMember -Identity $Group -Members $Member -Credential $ModPlatformADCredential
+    Add-ADGroupMember -Identity $Group -Members $distinguishedName -Credential $ModPlatformADCredential
+}
+
+function Add-ModPlatformGroupUser {
+        [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [psobject]$Group,
+        [Parameter(Mandatory=$true)]
+        [psobject]$User,
+        [Parameter(Mandatory=$true)]
+        [System.Management.Automation.PSCredential]$ModPlatformADCredential
+    )
+    Write-Debug "adding $User to $Group"
+    $distinguishedName = (Get-ADUser -Filter "Name -eq '$User'" -Credential $ModPlatformADCredential -Properties DistinguishedName).DistinguishedName
+
+    Add-ADGroupMember -Identity $Group -Members $distinguishedName -Credential $ModPlatformADCredential
 }
 
 Export-ModuleMember -Function New-ModPlatformADGroup
-Export-ModuleMember -Function Add-ModPlatformGroupMember
+Export-ModuleMember -Function Add-ModPlatformGroupComputer
+Export-ModuleMember -Function Add-ModPlatformGroupUser

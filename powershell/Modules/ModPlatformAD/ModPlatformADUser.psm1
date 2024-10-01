@@ -38,7 +38,7 @@ function New-ModPlatformADUser {
     .PARAMETER ModPlatformADCredential
         The AD credential as returned from Get-ModPlatformADJoinCredential function
     .PARAMETER accountPassword
-        Must be a SecureString, pull the value from AWS Secrets Manager and use (ConvertTo-SecureString $SecretValue -AsPlainText -Force ) to convert it
+        Must be a SecureString, pull the value from AWS Secrets Manager and use (ConvertTo-SecureString $SecretValue -AsPlainText -Force) to convert it
     .OUTPUTS
         User is created
     .EXAMPLE
@@ -69,12 +69,12 @@ function New-ModPlatformADUser {
         Type = "User"
         Credential = $ModPlatformADCredential
         CannotChangePassword = $true
-        PasswordsNeverExpires = $true
+        PasswordNeverExpires = $true
         Enabled = $true
         ChangePasswordAtLogon = $false
     }
 
-    if (Get-ModPlatformADUser -Name $Name -Credential $ModPlatformADCredential) {
+    if (Get-ModPlatformADUser -Filter "Name -eq '$Name'" -Credential $ModPlatformADCredential) {
         Write-Warning "User $Name already exists"
         return
     } else {
