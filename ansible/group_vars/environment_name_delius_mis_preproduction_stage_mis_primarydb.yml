@@ -27,3 +27,31 @@ required_patches:
     grid_patch: false
     database_patch: true
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
+disks_partition:
+  - ebs_device_name: /dev/sdd
+    oracle_group: data
+    oracle_label: DATA01
+  - ebs_device_name: /dev/sde
+    oracle_group: data
+    oracle_label: DATA02
+  - ebs_device_name: /dev/sdf
+    oracle_group: data
+    oracle_label: DATA03
+  - ebs_device_name: /dev/sdg
+    oracle_group: data
+    oracle_label: DATA04
+  - ebs_device_name: /dev/sdh
+    oracle_group: data
+    oracle_label: DATA05
+  - ebs_device_name: /dev/sdi
+    oracle_group: flash
+    oracle_label: FLASH01
+  - ebs_device_name: /dev/sdj
+    oracle_group: flash
+    oracle_label: FLASH02
+  - ebs_device_name: /dev/sdk
+    oracle_group: flash
+    oracle_label: FLASH03
+  - ebs_device_name: /dev/sdl
+    oracle_group: flash
+    oracle_label: FLASH04
