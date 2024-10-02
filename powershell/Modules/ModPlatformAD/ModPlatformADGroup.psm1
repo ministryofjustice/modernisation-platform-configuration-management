@@ -95,5 +95,5 @@ function Add-ModPlatformGroupUser {
 }
 
 Export-ModuleMember -Function New-ModPlatformADGroup
-Export-ModuleMember -Function Add-ModPlatformGroupComputer
+Export-ModuleMember -Function Add-ModPlatformGroupMember
 Export-ModuleMember -Function Add-ModPlatformGroupUser

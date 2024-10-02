@@ -74,7 +74,7 @@ function New-ModPlatformADUser {
         ChangePasswordAtLogon = $false
     }
 
-    if (Get-ModPlatformADUser -Filter "Name -eq '$Name'" -Credential $ModPlatformADCredential) {
+    if (Get-ModPlatformADUser -Name $Name -Credential $ModPlatformADCredential) {
         Write-Warning "User $Name already exists"
         return
     } else {

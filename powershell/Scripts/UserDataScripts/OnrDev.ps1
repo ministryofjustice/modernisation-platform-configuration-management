@@ -165,3 +165,10 @@ $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassw
 
 New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
 Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
+
+# Set the service user Remote Desktop Access permissions on the instance
+Invoke-Command -ComputerName $env:COMPUTERNAME -Credential $ADCredential -ScriptBlock {
+  param($serviceUser)
+  #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
+  Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
+} -ArgumentList $Config.serviceUser
