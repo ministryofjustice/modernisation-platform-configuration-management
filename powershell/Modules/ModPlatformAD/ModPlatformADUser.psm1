@@ -20,7 +20,7 @@ function Get-ModPlatformADUser {
         [Parameter(Mandatory=$true)]
         [System.Management.Automation.PSCredential]$ModPlatformADCredential
     )
-    Get-ADUser -Filter "Name -eq $Name" -Credential $ADCredential
+    Get-ADUser -Filter 'Name -eq $Name' -Credential $ModPlatformADCredential
 }
 
 function New-ModPlatformADUser {
@@ -74,7 +74,7 @@ function New-ModPlatformADUser {
         ChangePasswordAtLogon = $false
     }
 
-    if (Get-ModPlatformADUser -Name $Name -Credential $ModPlatformADCredential) {
+    if (Get-ModPlatformADUser -Name $Name -ModPlatformADCredential $ModPlatformADCredential) {
         Write-Warning "User $Name already exists"
         return
     } else {

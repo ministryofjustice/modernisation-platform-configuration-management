@@ -153,9 +153,10 @@ if ($null -ne $ADConfig) {
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+$ComputerName = $env:COMPUTERNAME
 
 New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
-Add-ModPlatformGroupMember -Computer $env:COMPUTERNAME -Group $($Config.group) -ModPlatformADCredential $ADCredential
+Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
 
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
@@ -167,8 +168,8 @@ New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPa
 Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
 
 # Set the service user Remote Desktop Access permissions on the instance
-Invoke-Command -ComputerName $env:COMPUTERNAME -Credential $ADCredential -ScriptBlock {
-  param($serviceUser)
-  #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
-  Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
-} -ArgumentList $Config.serviceUser
+# Invoke-Command -ComputerName $ComputerName -Credential $ADCredential -ScriptBlock {
+#   param($serviceUser)
+#   #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
+#   Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
+# } -ArgumentList $($Config.serviceUser)
