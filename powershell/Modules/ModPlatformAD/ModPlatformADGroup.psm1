@@ -72,10 +72,10 @@ function Add-ModPlatformGroupMember {
     Write-Debug "Adding Member: $Member to Group: $Group"
 
     # Get the distinguishedName of the Computer
-    $distingishedName = (Get-ADComputer -Filter 'Name -eq $Computer' -Credential $ModPlatformADCredential -Properties *).DistinguishedName
+    $distinguishedName = (Get-ADComputer -Filter 'Name -eq $Computer' -Credential $ModPlatformADCredential -Properties *).DistinguishedName
 
     # Add the member to the Group in AD
-    Add-ADGroupMember -Identity $Group -Members $distinguishedName -Credential $ModPlatformADCredential
+    Add-ADGroupMember -Identity $Group -Members "$distinguishedName" -Credential $ModPlatformADCredential
 }
 
 function Add-ModPlatformGroupUser {
