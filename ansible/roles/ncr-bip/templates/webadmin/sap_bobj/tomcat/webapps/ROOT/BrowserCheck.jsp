@@ -5,8 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,requiresActiveX=true" charset="UTF-8" />
 	<title>Prison-NOMIS Reporting</title>
 	<link rel="shortcut icon" type="image/x-icon" href="InfoView.ico" />
-    <link rel="stylesheet" href="browsercheck.css?v=3">
-    <script type="text/javascript" src="browsercheck.js?v=3"></script>
+    <link rel="stylesheet" href="browsercheck.css">
+    <script type="text/javascript" src="browsercheck.js?v=2"></script>
     <script type="text/javascript">
         window.onload = init;
     </script>
