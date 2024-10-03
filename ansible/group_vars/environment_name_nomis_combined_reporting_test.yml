@@ -81,9 +81,6 @@ sap_bip_oracle_client_confs:
     tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.t1
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
 
-sap_web_java_mem: "4096"
-sap_webadmin_java_mem: "4096"
-
 sap_bip_db_confs:
   t1:
     auditing_db_server: T1BIAUD
@@ -91,3 +88,10 @@ sap_bip_db_confs:
     cms_db_server: T1BISYS
     cms_db_user: bip_system_owner  # lowercase to match secret name
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
+
+sap_bip_confs:
+  t1:
+    sap_web_java_mem: "4096"
+    sap_webadmin_java_mem: "4096"
+    sap_bip_sso_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
+sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"

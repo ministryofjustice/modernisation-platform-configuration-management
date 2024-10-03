@@ -96,4 +96,5 @@ sap_web_template_subdirectory: web
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "true"
 sap_web_server_7777_maxthreads: 1000
-sap_web_java_opts: "-Xms{{ sap_web_java_mem }}m -Xmx{{ sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
+sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
+sap_bip_sso_url: "{{ sap_bip_conf.sap_bip_sso_url }}"

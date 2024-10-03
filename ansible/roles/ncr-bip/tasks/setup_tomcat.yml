@@ -6,6 +6,43 @@
 
 - block:
 
+    - name: Create web only directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: bobj
+        group: binstall
+        state: directory
+      loop:
+        - "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css"
+        - "/home/bobj/bipssorws_config"
+      when: sap_web_template_subdirectory == "web"
+
+    - name: Download bipssorws war
+      become_user: bobj
+      amazon.aws.aws_s3:
+        mode: get
+        bucket: "{{ sap_packages_s3_bucket_name }}"
+        object: "{{ sap_packages_prefix }}bipsso/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/{{ item }}"
+        overwrite: latest
+      with_items:
+        - bipssorws.war
+      notify:
+        - Restart Web
+      when: sap_bip_sso_url is defined
+
+    - name: Copy bipsso files
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - home/bobj/bipssorws_config/config.properties
+      notify:
+        - Restart Web
+      when: sap_bip_sso_url is defined
+
     - name: Set disable_InfoView in wdeploy.conf
       become_user: bobj
       ansible.builtin.lineinfile:
@@ -93,6 +130,24 @@
         - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
         - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
         - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
+
+    - name: Copy tomcat root files
+      ansible.builtin.template:
+        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Company_logo.png
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Theme.css
+      when: sap_web_template_subdirectory == "web"
+
+    - name: Recursively unused files and dirs
+      ansible.builtin.file:
+        path: "{{ sap_bip_installation_directory }}/{{ item }}"
+        state: absent
+      loop:
+        - sap_bobj/tomcat/webapps/docs
 
   #  block
   when: tomcat_check.stat.exists

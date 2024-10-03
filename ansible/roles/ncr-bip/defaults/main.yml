@@ -52,6 +52,8 @@ sap_bip_secretsmanager_passwords:
       - cms_cluster_key: auto
       - cms_primary_hostname:  # set to newinstall prior to first CMS build
       - product_key:
+      - sso_shared_secret:
+      - sso_nomis_key:
   sysdb:
     secret: "/oracle/database/{{ sap_bip_cms_db_server }}/passwords"
     users:
@@ -73,3 +75,4 @@ sap_web_context_cachemaxsize: 500000
 sap_web_server_7777_minsparethreads: 500
 # sap_web_server_7777_maxthreads: 1000
 sap_web_java_opts: "-Dbobje.disable_audit_ip_lookup"
+# sap_bip_sso_url:  # set in group vars, e.g. https://reporting.nomis.az.justice.gov.uk/BrowserCheck.jsp?t= to enable BIPSSO setup

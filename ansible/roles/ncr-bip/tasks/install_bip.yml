@@ -51,14 +51,20 @@
 
 - name: Check if init has been run
   ansible.builtin.stat:
-    path: "{{ sap_bip_installation_directory }}/sap_bobj/.ansible_setupinit_ran"
+    path: "/etc/init.d/SAPBOBJEnterpriseXI40"
   register: setupinit_folder_check
 
 - name: Execute setup script
   ansible.builtin.shell: |
     set -o pipefail
-    touch ./sap_bobj/.ansible_setupinit_ran
     ./sap_bobj/init/setupinit.sh | logger -p local3.info -t ansible-ncr-bip
   args:
     chdir: "{{ sap_bip_installation_directory }}"
   when: not setupinit_folder_check.stat.exists
+
+- name: Fix init.d script
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+  loop:
+    - etc/init.d/SAPBOBJEnterpriseXI40
