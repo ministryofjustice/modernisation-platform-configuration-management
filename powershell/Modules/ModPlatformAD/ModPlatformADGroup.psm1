@@ -15,7 +15,7 @@ function New-ModPlatformADGroup {
     .OUTPUTS
         Group is created
     .EXAMPLE
-
+        New-ModPlatformGroup -Group "Oasys-ONR" -Path "OU=Groups,DC=example,DC=com" -Description "Shared groups for service user"
     #>
     [CmdletBinding()]
     param (
@@ -58,7 +58,7 @@ function Add-ModPlatformGroupMember {
     .OUTPUTS
         Member is added to the Group
     .EXAMPLE
-
+        Add-ModPlatformGroupMember -Group "MyGroup" -Member "MyUser" -ModPlatformADCredential $ModPlatformADCredential
     #>
     [CmdletBinding()]
     param (

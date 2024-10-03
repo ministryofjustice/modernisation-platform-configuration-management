@@ -42,7 +42,7 @@ function New-ModPlatformADUser {
     .OUTPUTS
         User is created
     .EXAMPLE
-
+        New-ModPlatformADUser -Name "svc-MyService" -Path "OU=ServiceAccounts,DC=example,DC=com" -Description "Service account for MyService" -ModPlatformADCredential $ModPlatformADCredential -accountPassword $accountPassword
     #>
     [CmdletBinding()]
     param (
