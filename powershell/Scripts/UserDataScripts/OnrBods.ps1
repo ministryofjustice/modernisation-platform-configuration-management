@@ -22,8 +22,13 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
         "cmsMainNode"     = "t2-onr-bods-1-b"
         "cmsExtendedNode" = "t2-onr-bods-2-a"
-        "serviceUser"     = "svc_aws_t2_oasys_bods"
-        "domain"          = "AZURE"
+        "serviceUser"     = "svc_t2_onr_bods"
+        "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
+        "serviceUserDescription" = "Onr BODS T2 service user for AWS"
+        "domain"    = "AZURE"
+        "group"     = "onr-t2-rdp"
+        "groupPath" = "OU=Groups,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
+        "groupDescription" = "Onr BODS T2 RDP allow group"
         "OnrShortcuts" = @{
         }
     }
@@ -165,7 +170,7 @@ function Set-DriveLabel {
     param (
         [Parameter(Mandatory=$true)]
         [string]$DriveLetter,
-        
+
         [Parameter(Mandatory=$true)]
         [string]$NewLabel
     )
@@ -194,7 +199,7 @@ Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is requi
 # Turn off the firewall as this will possibly interfere with Sia Node creation
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
-# Disable antivirus and other security during installation 
+# Disable antivirus and other security during installation
 
 # Disable real-time monitoring
 Set-MpPreference -DisableRealtimeMonitoring $true
@@ -218,9 +223,7 @@ Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
 # Set local time zone to UK
 Set-TimeZone -Name "GMT Standard Time"
 
-# }}} complete - prep the server for installation
-
-
+# }}} complete - add prerequisites to server
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
@@ -231,15 +234,55 @@ if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
     Exit 3010 # triggers reboot if running from SSM Doc
-  } 
+  }
 } else {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
 # }}}
 
-# {{{ prepare assets
+# {{{ Get the config and tags for the instance
 $Config = Get-Config
+$Tags = Get-InstanceTags
+# }}}
+
+# {{{ Add service user, create group, add user and instance to group, allow user to RDP into machine
+# re-importing this if the machine has been rebooted, probably not needed
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+$ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+$ComputerName = $env:COMPUTERNAME
+
+New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
+Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
+
+$dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+$bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
+
+$serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
+$serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
+
+New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
+Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
+
+
+# Set the service user Remote Desktop Access permissions on the instance
+Enable-PSRemoting -Force
+
+# Use admin credentials to add the service user to the Remote Desktop Users group
+$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
+
+$serviceUser = "$($Config.domain)\$($Config.serviceUser)"
+Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
+
+Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
+   param($serviceUser)
+   #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
+   Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
+} -ArgumentList $serviceUser
+# }}}
+
+# {{{ prepare assets
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
@@ -440,7 +483,7 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 Clear-PendingFileRenameOperations
 
 # Disable for now during testing
-# Start-Process @ipsInstallParams
+Start-Process @ipsInstallParams
 
 # }}} end install IPS
 
@@ -519,9 +562,8 @@ $dataServicesInstallParams = @{
     NoNewWindow = $true
 }
 
-# Disable for now during testing
-# Start-Process @dataServicesInstallParams
-
+# Disable this for testing
+Start-Process @dataServicesInstallParams
 # }}} End install Data Services
 
 # {{{ login text
