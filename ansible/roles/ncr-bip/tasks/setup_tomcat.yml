@@ -57,7 +57,7 @@
 
     - name: Copy webapp configuration files
       ansible.builtin.template:
-        src: "{{ item }}"
+        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -72,7 +72,7 @@
 
     - name: Copy tomcat root files
       ansible.builtin.template:
-        src: "{{ item }}"
+        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
