@@ -14,6 +14,7 @@ users_and_groups_system:
       - sapsys
 
 server_type_roles_list:
+  - ansible-requirements
   - sshd-config
   - users-and-groups
   - sudoers
@@ -94,9 +95,4 @@ disks_mount:
     fstype: swap
 
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
-
-oracle_client_confs:
-  pp:
-    sqlnet_ora_source_filename: sqlnet.ora
-    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pp
-oracle_client_conf: "{{ oracle_client_confs[ncr_environment] }}"
+oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"

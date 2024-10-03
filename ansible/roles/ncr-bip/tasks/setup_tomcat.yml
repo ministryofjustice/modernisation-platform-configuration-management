@@ -1,0 +1,98 @@
+---
+- name: Check if tomcat present
+  ansible.builtin.stat:
+    path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat"
+  register: tomcat_check
+
+- block:
+
+    - name: Set disable_InfoView in wdeploy.conf
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy/conf/wdeploy.conf"
+        regexp: "^disable_InfoView="
+        line: "disable_InfoView={{ sap_web_disable_infoview }}"
+      notify:
+        - Redeploy Web
+
+    - name: Set disable_CmcApp in wdeploy.conf
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy/conf/wdeploy.conf"
+        regexp: "^disable_CmcApp="
+        line: "disable_CmcApp={{ sap_web_disable_cmcapp }}"
+      notify:
+        - Redeploy Web
+
+    - name: Update cacheMaxSize in context.xml
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/context.xml"
+        regexp: "cacheMaxSize="
+        line: "        <Resources cachingAllowed=\"true\" cacheMaxSize=\"{{ sap_web_context_cachemaxsize }}\" />"
+      notify:
+        - Restart Web
+      when: sap_web_context_cachemaxsize is defined
+
+    - name: Update connector port 7777 in server.xml
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/server.xml"
+        regexp: "Connector port=\"7777\""
+        line: "<Connector port=\"7777\" protocol=\"HTTP/1.1\" connectionTimeout=\"20000\" relaxedQueryChars=\"[,]\" redirectPort=\"8443\" compression=\"on\" URIEncoding=\"UTF-8\" compressionMinSize=\"2048\" noCompressionUserAgents=\"gozilla, traviata\" compressibleMimeType=\"application/vnd.sap.cvom+vbo,text/html,text/xml,text/plain,text/css,text/javascript,text/json,application/javascript,application/json\" minSpareThreads=\"{{ sap_web_server_7777_minsparethreads }}\" maxThreads=\"{{ sap_web_server_7777_maxthreads }}\" maxHttpHeaderSize=\"65536\" />"
+      notify:
+        - Restart Web
+      when: sap_web_server_7777_maxthreads is defined
+
+    - name: Update JAVA_OPTS in setenv.sh
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/bin/setenv.sh"
+        insertafter: "# START USERCONFIG - Enter your user config settings to be retained here"
+        regexp: "^JAVA_OPTS="
+        line: "JAVA_OPTS=\"$JAVA_OPTS {{ sap_web_java_opts }}\""
+      notify:
+        - Restart Web
+      when: sap_web_java_opts is defined
+
+    - name: Copy webapp configuration files
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/BILogon.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/CmcApp.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/FioriBI.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/OpenDocument.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/PlatformServices.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/global.properties
+        - sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom/biprws.properties
+
+    - name: Copy tomcat root files
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_icon.png
+        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_menu_70pct.png
+        - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BIlogoff_pattern.gif
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_LIVE.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
+        - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
+        - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
+        - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
+        - sap_bobj/tomcat/webapps/ROOT/browsercheck.css
+        - sap_bobj/tomcat/webapps/ROOT/browsercheck.js
+        - sap_bobj/tomcat/webapps/ROOT/index.jsp
+        - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
+        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
+        - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
+
+  #  block
+  when: tomcat_check.stat.exists

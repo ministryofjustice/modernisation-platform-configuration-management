@@ -66,6 +66,9 @@ sap_bip_db_confs:
     cms_db_user: bip_system_owner  # lowercase to match secret name
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
+sap_web_java_mem: "22528"
+sap_webadmin_java_mem: "8192"
+
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs

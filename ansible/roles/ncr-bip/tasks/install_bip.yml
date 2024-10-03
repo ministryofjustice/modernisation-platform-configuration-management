@@ -12,7 +12,7 @@
         mode: 0775
         owner: bobj
         group: binstall
-      with_items: 
+      with_items:
         - "{{ sap_bip_installation_directory }}"
 
     - name: Perform pre-requesite checks
@@ -22,7 +22,7 @@
         . ~/.bash_profile
         main() {
           outfile="{{ sap_bip_responsefiles_directory }}/failedPrereqs.$(date -Is).log"
-          ./setup.sh -InstallDir {{ sap_bip_installation_directory }} -pre_requisite_check {{ sap_bip_responsefiles_directory }}/prereq_checks.ini "$outfile" 
+          ./setup.sh -InstallDir {{ sap_bip_installation_directory }} -pre_requisite_check {{ sap_bip_responsefiles_directory }}/prereq_checks.ini "$outfile"
           if ! grep "All product pre-reqs have passed" "$outfile" > /dev/null; then
             cat $outfile
             exit 1
@@ -48,14 +48,14 @@
 
   # block
   when: not bip_installed_check.stat.exists
-  
+
 - name: Check if init has been run
   ansible.builtin.stat:
     path: "{{ sap_bip_installation_directory }}/sap_bobj/.ansible_setupinit_ran"
   register: setupinit_folder_check
 
 - name: Execute setup script
-  ansible.builtin.shell: | 
+  ansible.builtin.shell: |
     set -o pipefail
     touch ./sap_bobj/.ansible_setupinit_ran
     ./sap_bobj/init/setupinit.sh | logger -p local3.info -t ansible-ncr-bip

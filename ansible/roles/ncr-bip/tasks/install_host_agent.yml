@@ -11,7 +11,7 @@
     mode: 0775
     owner: bobj
     group: binstall
-  with_items: 
+  with_items:
     - "{{ sap_host_agent_base_directory }}"
   when: not hostagent_download_check.stat.exists
 
@@ -52,4 +52,4 @@
   ansible.builtin.service:
     name: saphostagent
     state: started
-    enabled: yes
+    enabled: true

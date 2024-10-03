@@ -30,7 +30,7 @@
   ansible.builtin.unarchive:
     src: "{{ sap_other_software_directory }}/{{ item }}"
     dest: "{{ sap_other_software_directory }}"
-    remote_src: yes
+    remote_src: true
   with_items:
     - SBOPCheckNetworkConfig-2.1.zip
   when: not check_network_download_check.stat.exists and not ansible_check_mode

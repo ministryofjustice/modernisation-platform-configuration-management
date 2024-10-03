@@ -14,7 +14,7 @@
   ansible.builtin.unarchive:
     src: "/tmp/rarlinux-x64-621.tar.gz"
     dest: "/tmp/"
-    remote_src: yes
+    remote_src: true
   when: not unrar.stat.exists and not ansible_check_mode
 
 - name: Make unrar

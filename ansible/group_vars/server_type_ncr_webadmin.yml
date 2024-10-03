@@ -14,6 +14,7 @@ users_and_groups_system:
       - sapsys
 
 server_type_roles_list:
+  - ansible-requirements
   - sshd-config
   - users-and-groups
   - sudoers
@@ -91,12 +92,6 @@ disks_mount:
     dir: swap
     fstype: swap
 
-ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
-
-sap_bip_confs:
-  pp:
-    responsefile: response.webadmin.ini
-    remote_cms_name: "ip-10-27-0-164" # non-cms
-
-oracle_client_conf: "{{ oracle_client_confs[ncr_environment] }}"
-sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
+sap_web_disable_infoview: "true"
+sap_web_disable_cmcapp: "false"
+sap_web_java_opts: "-Xms{{ sap_webadmin_java_mem }}m -Xmx{{ sap_webadmin_java_mem }}m -Dbobje.disable_audit_ip_lookup"

@@ -11,7 +11,7 @@
     mode: 0755
     owner: bobj
     group: binstall
-  with_items: 
+  with_items:
     - "{{ sap_bip_unpack_base_directory }}"
     - "{{ sap_bip_extraction_directory }}"
   when: not bip_download_check.stat.exists
@@ -28,7 +28,7 @@
     - "{{ sap_bip_rar_base }}_P1.exe"
     - "{{ sap_bip_rar_base }}_P2.rar"
   when: not bip_download_check.stat.exists
- 
+
 - name: Unpack the rar file
   become_user: bobj
   ansible.builtin.shell: "/usr/local/bin/unrar x -y {{ sap_bip_rar_base }}_P1.exe"
@@ -46,7 +46,7 @@
   ansible.builtin.unarchive:
     src: "{{ sap_bip_unpack_base_directory }}/BISERVONE.tgz"
     dest: "{{ sap_bip_extraction_directory }}"
-    remote_src: yes
+    remote_src: true
     owner: bobj
     group: binstall
   when: not bip_download_check.stat.exists and biservone.stat.exists
@@ -55,7 +55,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
-  with_items: 
+  with_items:
     - "{{ sap_bip_rar_base }}_P1.exe"
     - "{{ sap_bip_rar_base }}_P2.rar"
   when: not bip_download_check.stat.exists
@@ -64,6 +64,6 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
-  with_items: 
+  with_items:
     - "{{ sap_bip_unpack_base_directory }}/BISERVONE.tgz"
   when: not bip_download_check.stat.exists and biservone.stat.exists
