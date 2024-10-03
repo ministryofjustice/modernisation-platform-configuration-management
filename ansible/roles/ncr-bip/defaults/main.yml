@@ -1,5 +1,7 @@
 ---
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
+sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
+
 sap_packages_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 sap_packages_prefix: hmpps/ncr-packages/
 sap_host_agent_base_directory: "/u02/software/{{ sap_host_agent_sar_base }}"
@@ -19,26 +21,45 @@ sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 #sap_host_agent_exe: SAPCAR_1324-80000935.EXE
 
 # define environment specific settings in group_vars
-sap_bip_auditing_db_server: "{{ sap_bip_conf.auditing_db_server }}"
-sap_bip_auditing_db_user: "{{ sap_bip_conf.auditing_db_user }}"
-sap_bip_cms_db_server: "{{ sap_bip_conf.cms_db_server }}"
-sap_bip_cms_db_user: "{{ sap_bip_conf.cms_db_user }}"
-sap_bip_cms_db_reset: "{{ sap_bip_conf.cms_db_reset }}"
-sap_bip_responsefile: "{{ sap_bip_conf.responsefile }}"
-sap_bip_remote_cms_name: "{{ sap_bip_conf.remote_cms_name }}"
-sap_bip_sia_name_cms: "{{ sap_bip_conf.sia_name_cms }}"
-sap_bip_sia_name_app: "{{ sap_bip_conf.sia_name_app }}"
+sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
+sap_bip_cms_db_reset: 1
+sap_bip_sia_name_cms: "{{ ansible_ec2_hostname.split('.')[0] | replace('-','')  }}"
+sap_bip_sia_name_app: "{{ ansible_ec2_hostname.split('.')[0] | replace('-','')  }}"
+
+# set in group vars, otherwise response.cms.ini or response.app.ini is used depending on whether first install
+# sap_bip_responsefile:
 
 oracle_home: /u01/app/oracle/product/19c/client_1
 
+sap_bip_sysdb_secrets:
+  - key: "{{ sap_bip_cms_db_user }}"
+    value:
+
+sap_bip_auditdb_secrets:
+  - key: "{{ sap_bip_auditing_db_user }}"
+    value:
+
 sap_bip_secretsmanager_passwords:
-  bip:
+  config:
+    secret: "/ec2/ncr-bip/{{ ncr_environment }}/config"
+    users:
+      - cms_cluster_name:
+      - cms_cluster_key: auto
+      - cms_primary_hostname:  # set to newinstall prior to first CMS build
+      - product_key:
+  sysdb:
+    secret: "/oracle/database/{{ sap_bip_cms_db_server }}/passwords"
+    users:
+      - "{{ sap_bip_sysdb_secrets | items2dict }}"
+  auditdb:
+    secret: "/oracle/database/{{ sap_bip_auditing_db_server }}/passwords"
+    users:
+      - "{{ sap_bip_auditdb_secrets | items2dict }}"
+  passwords:
     secret: "/ec2/ncr-bip/{{ ncr_environment }}/passwords"
     # ensure secret is json and contains values for below fields
     users:
-      - cms_cluster_key:
-      - cms_admin_password:
-      - cms_db_password:
-      - lcm_password:
-      - product_key:
-      - auditing_db_password:
+      - cms_admin_password: auto

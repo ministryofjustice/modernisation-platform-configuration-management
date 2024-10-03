@@ -42,6 +42,7 @@
       - ec2provision
       - bip_ncr_get_secrets
       - bip_ncr_add_response_file
+      - bip_ncr_update_secrets
 
   - import_tasks: add_response_file.yml
     tags:
@@ -53,10 +54,20 @@
       - ec2provision
       - bip_ncr_install_bip
 
+  - import_tasks: update_secrets.yml
+    tags:
+      - ec2provision
+      - bip_ncr_update_secrets
+
   - import_tasks: check_network_config.yml
     tags:
       - ec2provision
       - bip_ncr_check_network_config
+
+  - import_tasks: update_ccm_config.yml
+    tags:
+      - ec2provision
+      - bip_ncr_update_ccm_config
 
   # block
   when: ansible_distribution in ['RedHat']

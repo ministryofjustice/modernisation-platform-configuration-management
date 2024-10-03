@@ -8,6 +8,7 @@ dns_search_domains:
   - azure.hmpp.root
   - reporting.nomis.service.justice.gov.uk
 timezone: "Europe/London"
+ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -50,6 +51,20 @@ housekeeping_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
+
+sap_bip_oracle_client_confs:
+  pd:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pd
+sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
+
+sap_bip_db_confs:
+  pd:
+    auditing_db_server: PDBIAUD
+    auditing_db_user: bip_audit_owner  # lowercase to match secret name
+    cms_db_server: PDBISYS
+    cms_db_user: bip_system_owner  # lowercase to match secret name
+sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects

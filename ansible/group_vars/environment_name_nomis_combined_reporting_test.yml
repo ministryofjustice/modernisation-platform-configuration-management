@@ -8,6 +8,7 @@ dns_search_domains:
   - azure.noms.root
   - test.reporting.nomis.service.justice.gov.uk
 timezone: "Europe/London"
+ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -73,3 +74,17 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+sap_bip_oracle_client_confs:
+  t1:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.t1
+sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
+
+sap_bip_db_confs:
+  t1:
+    auditing_db_server: T1BIAUD
+    auditing_db_user: bip_audit_owner  # lowercase to match secret name
+    cms_db_server: T1BISYS
+    cms_db_user: bip_system_owner  # lowercase to match secret name
+sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"

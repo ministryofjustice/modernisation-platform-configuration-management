@@ -9,6 +9,7 @@ dns_search_domains:
   - lsast.reporting.nomis.service.justice.gov.uk
   - preproduction.reporting.nomis.service.justice.gov.uk
 timezone: "Europe/London"
+ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -77,6 +78,20 @@ audit_db_sid: PPBIAUD
 system_db_sid: PPBISYS
 audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
+
+sap_bip_oracle_client_confs:
+  pp:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pp
+sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
+
+sap_bip_db_confs:
+  pp:
+    auditing_db_server: PPBIAUD
+    auditing_db_user: bip_audit_owner  # lowercase to match secret name
+    cms_db_server: PPBISYS
+    cms_db_user: bip_system_owner  # lowercase to match secret name
+sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
