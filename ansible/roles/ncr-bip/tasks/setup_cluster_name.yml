@@ -12,17 +12,23 @@
         responses:
           "Specify the name of the node.":
             - "{{ sap_bip_sia_name_cms }}"
+          "The node will be stopped. Do you want to continue":
+            - "no"
           "Current cluster key":
-            - "0"
+            - "quit"
           "Are you sure you want to quit":
-            - "1"
+            - "yes"
       changed_when: false
       check_mode: false
       failed_when: false
       register: get_cmsdbsetup_output
 
     - name: Extract cluster name from cmsdbsetup.sh output part 1
-      set_fact:
+      ansible.builtin.debug:
+        var: get_cmsdbsetup_output
+
+    - name: Extract cluster name from cmsdbsetup.sh output part 1
+      ansible.builtin.set_fact:
         sap_bip_current_cms_cluster_name_regex: "{{ get_cmsdbsetup_output.stdout | regex_search('Current cluster name: (\\S+)','\\1') }}"
 
     - name: Fail if no cluster name found
@@ -44,8 +50,10 @@
         responses:
           "Specify the name of the node.":
             - "{{ sap_bip_sia_name_cms }}"
+          "The node will be stopped. Do you want to continue":
+            - "yes"
           "Current cluster key":
-            - "3"
+            - "change cluster"
           "Specify the new cluster name.":
             - "{{ sap_bip_cms_cluster_name }}"
       when: sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
