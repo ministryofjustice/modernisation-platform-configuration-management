@@ -23,9 +23,10 @@
       failed_when: false
       register: get_cmsdbsetup_output
 
-    - name: Extract cluster name from cmsdbsetup.sh output part 1
+    - name: Debug cmsdbsetup.sh output
       ansible.builtin.debug:
         var: get_cmsdbsetup_output
+      when: not 'Current cluster name' in get_cmsdbsetup_output.stdout
 
     - name: Extract cluster name from cmsdbsetup.sh output part 1
       ansible.builtin.set_fact:
