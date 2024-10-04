@@ -49,13 +49,19 @@
   # block
   when: not bip_installed_check.stat.exists
 
-# use systemd instead of calling ./sap_bobj/init/setupinit.sh
-- name: Copy systemd scripts
+- name: Copy SAPBOBJEnterpriseXI40 script
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    mode: 0775
+  loop:
+    - usr/local/bin/SAPBOBJEnterpriseXI40
+
+- name: Copy systemd scripts instead of calling setupinit.sh
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "/{{ item }}"
   loop:
-    - usr/local/bin/SAPBOBJEnterpriseXI40
     - etc/systemd/system/sapbobj.service
 
 - name: Enable SAP BOBJ services

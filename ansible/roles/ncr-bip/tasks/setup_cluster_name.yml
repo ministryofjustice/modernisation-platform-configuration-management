@@ -81,4 +81,6 @@
       when: sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
 
   #  block
-  when: cluster_name_ccm_config_check.stat.exists
+  when:
+    - cluster_name_ccm_config_check.stat.exists
+    - sap_bip_is_primary_cms
