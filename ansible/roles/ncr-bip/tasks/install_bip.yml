@@ -56,9 +56,9 @@
     dest: "/{{ item }}"
   loop:
     - usr/local/bin/SAPBOBJEnterpriseXI40
-    - etc/systemd/system/SAPBOBJEnterpriseXI40.service
+    - etc/systemd/system/sapbobj.service
 
-- name: Start SAPBOBJEnterpriseXI40
+- name: Enable SAP BOBJ services
   ansible.builtin.service:
-    name: SAPBOBJEnterpriseXI40
+    name: sapbobj
     enabled: true
