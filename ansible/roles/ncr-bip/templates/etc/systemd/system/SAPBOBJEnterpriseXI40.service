@@ -1,0 +1,15 @@
+[Unit]
+Description=SAP BOBJ EnterpriseXI40e
+Requires=local-fs.target
+Requires=network.target
+
+[Service]
+Type=forking
+TimeoutSec=0
+RemainAfterExit=yes
+ExecStart=/etc/init.d/SAPBOBJEnterpriseXI40 start
+ExecStop=/etc/init.d/SAPBOBJEnterpriseXI40 stop
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target

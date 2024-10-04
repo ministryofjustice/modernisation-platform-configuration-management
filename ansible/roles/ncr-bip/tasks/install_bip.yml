@@ -49,22 +49,16 @@
   # block
   when: not bip_installed_check.stat.exists
 
-- name: Check if init has been run
-  ansible.builtin.stat:
-    path: "/etc/init.d/SAPBOBJEnterpriseXI40"
-  register: setupinit_folder_check
-
-- name: Execute setup script
-  ansible.builtin.shell: |
-    set -o pipefail
-    ./sap_bobj/init/setupinit.sh | logger -p local3.info -t ansible-ncr-bip
-  args:
-    chdir: "{{ sap_bip_installation_directory }}"
-  when: not setupinit_folder_check.stat.exists
-
-- name: Fix init.d script
+# use systemd instead of calling ./sap_bobj/init/setupinit.sh
+- name: Copy systemd scripts
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "/{{ item }}"
   loop:
-    - etc/init.d/SAPBOBJEnterpriseXI40
+    - usr/local/bin/SAPBOBJEnterpriseXI40
+    - systemd/system/SAPBOBJEnterpriseXI40.service
+
+- name: Start SAPBOBJEnterpriseXI40
+  ansible.builtin.service:
+    name: SAPBOBJEnterpriseXI40
+    enabled: true

@@ -76,10 +76,20 @@
         - ec2provision
         - ncr_bip_setup_cluster_name
 
+    - import_tasks: undeploy_tomcat.yml
+      tags:
+        - ec2provision
+        - ncr_bip_undeploy_tomcat
+
     - import_tasks: setup_tomcat.yml
       tags:
         - ec2provision
         - ncr_bip_setup_tomcat
+
+    - import_tasks: deploy_tomcat.yml
+      tags:
+        - ec2provision
+        - ncr_bip_deploy_tomcat
 
   # block
   when: ansible_distribution in ['RedHat']

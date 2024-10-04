@@ -38,6 +38,7 @@
 - name: Run network check
   become_user: bobj
   changed_when: false
+  check_mode: false
   args:
     chdir: "{{ sap_other_software_directory }}"
   ansible.builtin.shell: |
