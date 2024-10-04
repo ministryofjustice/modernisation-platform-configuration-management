@@ -1,0 +1,22 @@
+---
+- name: Check if response file exists
+  ansible.builtin.stat:
+    path: "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}"
+  register: bip_responsefile_check
+  when:
+    - sap_bip_responsefile is defined
+
+- name: Redact passwords in response file
+  become_user: bobj
+  ansible.builtin.lineinfile:
+    path: "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}"
+    regexp: "^{{ item }}="
+    line: "{{ item }}=******"
+  loop:
+    - cmspassword
+    - remotecmsadminpassword
+    - existingauditingdbpassword
+    - existingcmsdbpassword
+  when:
+    - sap_bip_responsefile is defined
+    - bip_responsefile_check.stat.exists

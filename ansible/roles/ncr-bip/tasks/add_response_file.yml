@@ -1,18 +1,4 @@
 ---
-- name: Set response file for primary CMS
-  set_fact:
-    sap_bip_responsefile: response.cms.ini
-  when:
-    - not sap_bip_responsefile is defined
-    - sap_bip_is_primary_cms
-
-- name: Set response file for non-primary CMS/App
-  set_fact:
-    sap_bip_responsefile: response.app.ini
-  when:
-    - not sap_bip_responsefile is defined
-    - not sap_bip_is_primary_cms
-
 - name: Create directories
   ansible.builtin.file:
     path: "{{ item }}"

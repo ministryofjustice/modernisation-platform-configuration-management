@@ -1,7 +1,0 @@
----
-
-    - name: Check deployed apps
-      become_user: bobj
-      args:
-        chdir: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
-      ansible.builtin.shell: ./wdeploy.sh tomcat9 listdeployedapps | grep 'Available applications : ' | cut -d: -f2 | cut -c 2-
