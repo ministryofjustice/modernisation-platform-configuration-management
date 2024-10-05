@@ -84,19 +84,19 @@
 
     - import_tasks: undeploy_tomcat.yml
       tags:
-        - ec2provision
+        # - ec2provision
         - ncr_bip_undeploy_tomcat
         - ncr_bip_redeploy_tomcat
 
     - import_tasks: setup_tomcat.yml
       tags:
-        - ec2provision
+        # - ec2provision
         - ncr_bip_setup_tomcat
         - ncr_bip_redeploy_tomcat
 
     - import_tasks: deploy_tomcat.yml
       tags:
-        - ec2provision
+        # - ec2provision
         - ncr_bip_deploy_tomcat
         - ncr_bip_redeploy_tomcat
 
