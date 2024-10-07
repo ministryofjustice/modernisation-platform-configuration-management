@@ -46,7 +46,7 @@ sap_bip_auditdb_secrets:
 
 sap_bip_secretsmanager_passwords:
   config:
-    secret: "/ec2/ncr-bip/{{ ncr_environment }}/config"
+    secret: "/sap/bip/{{ ncr_environment }}/config"
     users:
       - cms_cluster_name:
       - cms_cluster_key: auto
@@ -63,7 +63,7 @@ sap_bip_secretsmanager_passwords:
     users:
       - "{{ sap_bip_auditdb_secrets | items2dict }}"
   passwords:
-    secret: "/ec2/ncr-bip/{{ ncr_environment }}/passwords"
+    secret: "/sap/bip/{{ ncr_environment }}/passwords"
     # ensure secret is json and contains values for below fields
     users:
       - cms_admin_password: auto
