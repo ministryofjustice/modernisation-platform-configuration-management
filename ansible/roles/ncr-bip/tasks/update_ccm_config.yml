@@ -8,7 +8,7 @@
     - name: Set FIPSModeValue true in ccm.config
       ansible.builtin.replace:
         path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
-        regexp: '^FIPSModeValue=.*'
+        regexp: "^FIPSModeValue=.*"
         replace: 'FIPSModeValue="true"'
 
   # block

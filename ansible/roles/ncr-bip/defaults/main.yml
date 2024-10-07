@@ -11,8 +11,8 @@ sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_responsefiles_directory: "/u02/software/ResponseFiles"
 sap_bip_installation_directory: /u01/app/bobj/BIP4
 
-sap_bip_rar_base: BIPLATS4301P_1200-70002683  # without _P1.EXE and _P2.RAR extension
-sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822  # without .SAR extension
+sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension
+sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
 sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
 # Newer versions are available but we are aligning with Azure
@@ -22,7 +22,7 @@ sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
 # define environment specific settings in group_vars
 sap_bip_is_cms: false
-sap_bip_is_primary_cms: false  # gets set to true if secret set to 'newinstall'
+sap_bip_is_primary_cms: false # gets set to true if secret set to 'newinstall'
 sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
@@ -50,7 +50,7 @@ sap_bip_secretsmanager_passwords:
     users:
       - cms_cluster_name:
       - cms_cluster_key: auto
-      - cms_primary_hostname:  # set to newinstall prior to first CMS build
+      - cms_primary_hostname: # set to newinstall prior to first CMS build
       - product_key:
       - sso_shared_secret:
       - sso_nomis_key:

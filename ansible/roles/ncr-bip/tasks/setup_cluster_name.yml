@@ -5,10 +5,9 @@
   register: cluster_name_ccm_config_check
 
 - block:
-
     - name: Check cluster name
       ansible.builtin.expect:
-        command: "su - bobj -c \". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh\""
+        command: 'su - bobj -c ". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh"'
         responses:
           "Specify the name of the node.":
             - "{{ sap_bip_sia_name_cms }}"
@@ -53,7 +52,7 @@
 
     - name: Update cluster name
       ansible.builtin.expect:
-        command: "su - bobj -c \". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh\""
+        command: 'su - bobj -c ". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh"'
         responses:
           "Specify the name of the node.":
             - "{{ sap_bip_sia_name_cms }}"

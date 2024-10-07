@@ -30,7 +30,7 @@
 - name: Update file permissions
   ansible.builtin.file:
     path: "{{ sap_host_agent_base_directory }}/{{ item }}"
-    mode: '0755'
+    mode: "0755"
   with_items:
     - "{{ sap_host_agent_sar_base }}.SAR"
     - "{{ sap_host_agent_exe }}"
