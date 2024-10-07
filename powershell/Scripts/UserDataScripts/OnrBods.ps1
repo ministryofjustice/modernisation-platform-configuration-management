@@ -26,22 +26,24 @@ $GlobalConfig = @{
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
-        "group"     = "onr-t2-rdp"
-        "groupPath" = "OU=Groups,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        "groupDescription" = "Onr BODS T2 RDP allow group"
-        "OnrShortcuts" = @{
-        }
+        # "group"     = "onr-t2-rdp"
+        # "groupPath" = "OU=Groups,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
+        # "groupDescription" = "Onr BODS T2 RDP allow group"
     }
     "oasys-national-reporting-preproduction" = @{
-        "domain" = "HMPPS"
-        "OnrShortcuts" = @{
-        }
+        "sysDbName"       = "PPBOSYS" # NEEDS VALIDATION
+        "audDbName"       = "PPBOAUD" # NEEDS VALIDATION
+        "tnsorafile"      = "tnsnames_PP_BODS.ora" # needs creating
+        "cmsMainNode"     = "pp-onr-bods-1" # correct
+        "cmsExtendedNode" = "pp-onr-bods-2" # correct
+        "serviceUser"     = "svc_pp_onr_bods" # correct - password needs creating
+        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root" # correct
+        "serviceUserDescription" = "Onr BODS preprod service user for AWS"
+        "domain" = "HMPP" # correct
     }
     "oasys-national-reporting-production"    = @{
         "domain" = "HMPPS"
-        "OnrShortcuts" = @{
-        }
-    }
+     }
 }
 
 $tempPath = ([System.IO.Path]::GetTempPath())
@@ -246,15 +248,16 @@ $Config = Get-Config
 $Tags = Get-InstanceTags
 # }}}
 
-# {{{ Add service user, create group, add user and instance to group, allow user to RDP into machine
+# {{{ Add service user to domain, allow service user to RDP into machine
 # re-importing this if the machine has been rebooted, probably not needed
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $ComputerName = $env:COMPUTERNAME
 
-New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
-Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
+# Removed because Groups aren't used in hmpp domain
+# New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
+# Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
 
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
@@ -263,8 +266,9 @@ $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -Secre
 $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
 
 New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
-Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
 
+# Removed because Groups aren't used in hmpp domain
+# Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
 
 # Set the service user Remote Desktop Access permissions on the instance
 Enable-PSRemoting -Force
