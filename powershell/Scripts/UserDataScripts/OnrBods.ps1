@@ -487,7 +487,7 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 Clear-PendingFileRenameOperations
 
 # Disable for now during testing
-Start-Process @ipsInstallParams
+# Start-Process @ipsInstallParams
 
 # }}} end install IPS
 
@@ -567,7 +567,7 @@ $dataServicesInstallParams = @{
 }
 
 # Disable this for testing
-Start-Process @dataServicesInstallParams
+# Start-Process @dataServicesInstallParams
 # }}} End install Data Services
 
 # {{{ login text
