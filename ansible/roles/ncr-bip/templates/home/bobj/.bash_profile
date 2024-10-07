@@ -8,7 +8,7 @@ fi
 # User specific environment and startup programs
 
 export EDITOR=vi
-export PS1="[\u@\h {{ ec2.tags['Name'] }} \W]\$"
+export PS1="[\u@\h {{ ec2.tags['Name'] }} \W]\$ "
 
 # Oracle setup
 export ORACLE_HOME={{ oracle_home }}
