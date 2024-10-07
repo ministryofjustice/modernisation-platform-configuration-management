@@ -9,3 +9,13 @@ client_response_file: client_install.rsp
 client_software: LINUX.X64_193000_client_home.zip
 stage: /u01/stage
 temp: /u01/temp
+oracle_install_user: oracle
+oracle_install_group: oinstall
+oracle_inventory: /u01/app/oraInventory
+oracle_home: /u01/app/oracle/product/19c/client_1
+oracle_base: /u01/app/oracle
+
+# Set oracle_client_conf in environment specific group vars if you
+# want to update tnsnames from file instead of oracle-tns-entries
+oracle_client_tnsnames_ora_source_filename: "{{ oracle_client_conf.tnsnames_ora_source_filename|default(None) }}"
+oracle_client_sqlnet_ora_source_filename: "{{ oracle_client_conf.sqlnet_ora_source_filename|default(None) }}"

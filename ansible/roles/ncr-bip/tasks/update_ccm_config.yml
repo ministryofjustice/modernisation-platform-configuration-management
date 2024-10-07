@@ -1,0 +1,15 @@
+---
+- name: Check if ccm.config present
+  ansible.builtin.stat:
+    path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
+  register: ccm_config_check
+
+- block:
+    - name: Set FIPSModeValue true in ccm.config
+      ansible.builtin.replace:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
+        regexp: "^FIPSModeValue=.*"
+        replace: 'FIPSModeValue="true"'
+
+  # block
+  when: ccm_config_check.stat.exists

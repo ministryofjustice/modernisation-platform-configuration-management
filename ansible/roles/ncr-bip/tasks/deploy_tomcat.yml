@@ -1,0 +1,38 @@
+---
+- block:
+    - name: Get deployed apps
+      become_user: bobj
+      args:
+        chdir: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        ./wdeploy.sh tomcat9 listdeployedapps | grep "Available applications :" | cut -d: -f2 | cut -c2-
+      changed_when: false
+      check_mode: false
+      register: deployed_apps_cli
+
+    - name: Set deployed apps fact
+      ansible.builtin.set_fact:
+        deployed_apps: "{{ deployed_apps_cli.stdout | replace('\n', '') | split(' ') }}"
+
+    - name: Deploy tomcat applications
+      become_user: bobj
+      args:
+        chdir: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
+      ansible.builtin.shell: |
+        main() {
+          . ~/.bash_profile
+          echo ./wdeploy.sh tomcat9 -DAPP={{ item }} deploy
+          ./wdeploy.sh tomcat9 -DAPP={{ item }} deploy
+         }
+         main | logger -p local3.info -t ansible-ncr-bip
+      when: not item in deployed_apps
+      loop: "{{ sap_web_apps }}"
+
+    - name: Start tomcat
+      ansible.builtin.service:
+        name: sapbobj
+        state: started
+
+  #  block
+  when: sap_web_apps is defined

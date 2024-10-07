@@ -5,23 +5,39 @@
   register: client_software_installed
   tags:
     - always
+
+- import_tasks: check_users.yml
+  tags:
+    - amibuild
     - ec2provision
+    - ec2patch
+    - oracle_client_check_users
 
 - block:
     - import_tasks: download_software.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_client_software_download
 
     - import_tasks: install_client.yml
       tags:
         - amibuild
+        - ec2provision
         - oracle_client_install
 
     - import_tasks: cleanup.yml
       tags:
+        - amibuild
         - ec2provision
         - oracle_client_cleanup
 
   # block
   when: not client_software_installed.stat.exists
+
+- import_tasks: client_config.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+    - oracle_client_config

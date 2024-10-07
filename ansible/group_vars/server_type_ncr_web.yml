@@ -14,6 +14,7 @@ users_and_groups_system:
       - sapsys
 
 server_type_roles_list:
+  - ansible-requirements
   - sshd-config
   - users-and-groups
   - sudoers
@@ -30,7 +31,8 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  - ncr-web
+  - selinux-config
+  - ncr-bip
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
@@ -39,25 +41,28 @@ server_type_roles_list:
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
+  - bind-utils
   - nano
   - vim
   - make
-  - bind-utils
+  - gdb
+  - libnsl
+  - libnsl.i686
+  - libnsl2
+  - libnsl2.i686
   - libstdc++.i686
   - libstdc++.x86_64
-  - gdb
   - glibc.i686
   - glibc.x86_64
   - libX11.i686
   - libX11.x86_64
   - libXext.i686
   - libXext.x86_64
-  #- expat.i686
+  # - expat.i686
   - expat.x86_64
   - libxcrypt.i686
   - libgcc.i686
   - libgcc.x86_64
-  - libnsl.i686
   - libXcursor.i686
   - libXcursor.x86_64
   - libXrender.i686
@@ -85,3 +90,20 @@ disks_mount:
   - ebs_device_name: /dev/sds
     dir: swap
     fstype: swap
+
+sap_bip_responsefile: response.web.ini
+sap_web_template_subdirectory: web
+sap_web_disable_infoview: "false"
+sap_web_disable_cmcapp: "true"
+sap_web_server_7777_maxthreads: 1000
+sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
+sap_web_apps:
+  - BOE
+  - BusinessProcessBI
+  - bipodata
+  - biprws
+  - clientapi
+  - dswsbobje
+  - webi-websetup
+
+sap_bip_sso_url: "{{ sap_bip_conf.sap_bip_sso_url }}"

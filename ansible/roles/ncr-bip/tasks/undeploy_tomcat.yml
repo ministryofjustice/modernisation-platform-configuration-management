@@ -1,0 +1,28 @@
+---
+- block:
+    - name: Stop tomcat
+      ansible.builtin.service:
+        name: sapbobj
+        state: stopped
+
+    - name: Undeploy all tomcat applications
+      become_user: bobj
+      args:
+        chdir: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
+      ansible.builtin.shell: |
+        main() {
+          . ~/.bash_profile
+          echo "wdeploy.sh tomcat9 undeployall"
+          ./wdeploy.sh tomcat9 undeployall
+         }
+         main | logger -p local3.info -t ansible-ncr-bip
+
+    - name: Cleanup folders
+      ansible.builtin.file:
+        path: "{{ sap_bip_installation_directory }}/{{ item }}"
+        state: absent
+      loop:
+        - sap_bobj/tomcat/work/Catalina
+
+  #  block
+  when: sap_web_apps is defined

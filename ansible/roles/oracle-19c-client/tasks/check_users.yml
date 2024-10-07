@@ -1,0 +1,11 @@
+---
+# use users-and-groups role to create to ensure consistent uids
+- name: Check oracle user already exists
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ oracle_install_user }}"
+
+- name: Check oracle install group already exists
+  ansible.builtin.getent:
+    database: group
+    key: "{{ oracle_install_group }}"

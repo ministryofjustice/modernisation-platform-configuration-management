@@ -1,0 +1,85 @@
+---
+- name: Check if ccm.config present
+  ansible.builtin.stat:
+    path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
+  register: cluster_name_ccm_config_check
+
+- block:
+    - name: Check cluster name
+      ansible.builtin.expect:
+        command: 'su - bobj -c ". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh"'
+        responses:
+          "Specify the name of the node.":
+            - "{{ sap_bip_sia_name_cms }}"
+          "The node will be stopped. Do you want to continue":
+            - "no"
+          "Current cluster key":
+            - "quit"
+          "Are you sure you want to quit":
+            - "yes"
+      changed_when: false
+      check_mode: false
+      failed_when: false
+      register: get_cmsdbsetup_output
+
+    - name: Debug cmsdbsetup.sh output
+      ansible.builtin.debug:
+        var: get_cmsdbsetup_output
+      when: not 'Current cluster name' in get_cmsdbsetup_output.stdout
+
+    - name: Extract cluster name from cmsdbsetup.sh output part 1
+      ansible.builtin.set_fact:
+        sap_bip_current_cms_cluster_name_regex: "{{ get_cmsdbsetup_output.stdout | regex_search('Current cluster name: (\\S+)','\\1') }}"
+
+    - name: Fail if no cluster name found
+      ansible.builtin.fail:
+        msg: "Could not extract cluster name from {{ get_cmsdbsetup_output.stdout }}"
+      when: sap_bip_current_cms_cluster_name_regex|length != 1
+
+    - name: Extract cluster name from cmsdbsetup.sh output part 2
+      set_fact:
+        sap_bip_current_cms_cluster_name: "{{ sap_bip_current_cms_cluster_name_regex[0] }}"
+
+    - name: Debug cluster name
+      ansible.builtin.debug:
+        msg: "Current cluster name [{{ sap_bip_current_cms_cluster_name }}]; Desired cluster name [{{ sap_bip_cms_cluster_name }}]"
+
+    - name: Stop sapbobj services
+      ansible.builtin.service:
+        name: sapbobj
+        state: stopped
+      when: sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
+
+    - name: Update cluster name
+      ansible.builtin.expect:
+        command: 'su - bobj -c ". /home/bobj/.bash_profile && {{ sap_bip_installation_directory }}/sap_bobj/cmsdbsetup.sh"'
+        responses:
+          "Specify the name of the node.":
+            - "{{ sap_bip_sia_name_cms }}"
+          "The node will be stopped. Do you want to continue":
+            - "yes"
+          "Current cluster key":
+            - "change cluster"
+          "Specify the new cluster name.":
+            - "{{ sap_bip_cms_cluster_name }}"
+      when: sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
+      failed_when: false
+      register: set_cmsdbsetup_output
+
+    - name: Fail if cluster name change failed
+      ansible.builtin.fail:
+        msg: "Could not set cluster name {{ set_cmsdbsetup_output.stdout }}"
+      when:
+        - sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
+        - not "Cluster name change was successful." in set_cmsdbsetup_output.stdout
+
+    - name: Start sapbobj services
+      ansible.builtin.service:
+        name: sapbobj
+        state: started
+      when: sap_bip_current_cms_cluster_name != sap_bip_cms_cluster_name
+
+  #  block
+  when:
+    - cluster_name_ccm_config_check.stat.exists
+    - sap_bip_is_primary_cms

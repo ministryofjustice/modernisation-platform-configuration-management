@@ -1,0 +1,122 @@
+#!/bin/sh
+#
+# Copyright (c) 2000-2010 by SAP Business Objects
+# All rights reserved.
+#
+#ident  "@(#)Business Objects 14.0 init script"
+#
+# Init information for "insserv" on SUSE:
+### BEGIN INIT INFO
+# Provides:          BusinessObjects140
+# Required-Start:    $syslog $network
+# Should-Start:      ypbind
+# Required-Stop:     $syslog $network
+# Should-Stop: $time ypbind
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: Start servers for BusinessObjects Enterprise
+### END INIT INFO
+#
+
+[ ! -d /usr/bin ] && exit
+
+# On RedHat AS 3 and above, use runuser rather than su
+SU="su"
+if [ -f "/etc/redhat-release" -a -x "/sbin/runuser" ]; then
+    SU="runuser"
+fi
+
+if [ -f "/etc/redhat-release" ]; then
+        Lockfile=/var/lock/subsys/SAPBOBJEnterpriseXI40
+fi
+#
+# Start/stop processes required for BusinessObjects Enterprise 14.0
+#
+
+
+PATH="$PATH:/bin:/usr/bin"
+export PATH
+
+# setup the bobje dir
+BOBJEDIR="{{ sap_bip_installation_directory }}/sap_bobj"
+
+case "$1" in
+'start')
+
+        # Source the env.sh file
+        # $SU - "$BOBJEUSERNAME" ". $BOBJEDIR/setup/env.sh"
+
+        if [ -f "$BOBJEDIR"/ccm.config ]; then
+                # Source the ccm.config file
+                . "$BOBJEDIR"/ccm.config
+                $SU - "$BOBJEUSERNAME" -c ". $BOBJEDIR/setup/env.sh"
+        elif [ -f "$BOBJEDIR"/boeinstallusername.info ]; then
+                . "$BOBJEDIR"/boeinstallusername.info
+                $SU - "$BOBJEUSERNAME" -c ". $BOBJEDIR/setup/env.sh"
+        else
+                . "$BOBJEDIR"/setup/env.sh
+        fi
+
+        if [ -d "$BOBJEDIR"/tomcat ]; then
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/tomcatstartup.sh
+            logger -p daemon.info -t bobj "Started Tomcat"
+        fi
+
+    if [ -f "$BOBJEDIR"/sqlanywhere_startup.sh ]; then
+        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_startup.sh
+        logger -p daemon.info -t bobj "Started SQL Anywhere"
+    fi
+
+        if [ -f "$BOBJEDIR"/ccm.config ]; then
+        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -start all"
+
+        logger -p daemon.info -t bobj "Started servers"
+        fi
+
+        if [ -f "/etc/redhat-release" ]; then
+                touch $Lockfile
+        fi
+        ;;
+
+'stop')
+
+        # Source the env.sh file
+        # $SU - "$BOBJEUSERNAME" ". $BOBJEDIR/setup/env.sh"
+
+        if [ -f "$BOBJEDIR"/ccm.config ]; then
+                # Source the ccm.config file
+                . "$BOBJEDIR"/ccm.config
+                $SU - "$BOBJEUSERNAME" -c ". $BOBJEDIR/setup/env.sh"
+        elif [ -f "$BOBJEDIR"/boeinstallusername.info ]; then
+                . "$BOBJEDIR"/boeinstallusername.info
+                $SU - "$BOBJEUSERNAME" -c ". $BOBJEDIR/setup/env.sh"
+        else
+                . "$BOBJEDIR"/setup/env.sh
+        fi
+
+        if [ -f "$BOBJEDIR"/ccm.config ]; then
+        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -stop all"
+        logger -p daemon.info -t bobj "Stopped servers"
+        fi
+
+        if [ -d "$BOBJEDIR"/tomcat ]; then
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/tomcatshutdown.sh
+            logger -p daemon.info -t bobj "Stopped Tomcat"
+        fi
+
+        if [ -f "$BOBJEDIR"/sqlanywhere_shutdown.sh ]; then
+        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_shutdown.sh
+        logger -p daemon.info -t bobj "Stopped SQL Anywhere"
+    fi
+
+        if [ -f "/etc/redhat-release" ]; then
+                rm -f $Lockfile
+        fi
+        ;;
+
+*)
+        echo "Usage: $0 { start | stop }"
+        exit 1
+        ;;
+esac
+exit 0

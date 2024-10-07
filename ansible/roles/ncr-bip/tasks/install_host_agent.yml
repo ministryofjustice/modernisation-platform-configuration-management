@@ -1,34 +1,55 @@
 ---
-- name: Create temporary directory for SAP host agent
-  file:
-    path: "{{ sap_host_agent_base_directory }}"
+- name: Check if SAP host agent already installed
+  ansible.builtin.stat:
+    path: "{{ sap_host_agent_base_directory }}/saphostexec"
+  register: hostagent_download_check
+
+- name: Create SAP host agent directory
+  ansible.builtin.file:
+    path: "{{ item }}"
     state: directory
     mode: 0775
+    owner: bobj
+    group: binstall
+  with_items:
+    - "{{ sap_host_agent_base_directory }}"
+  when: not hostagent_download_check.stat.exists
 
 - name: Download Host Agent from S3
-  aws_s3:
+  amazon.aws.aws_s3:
     mode: get
-    bucket: "{{ s3.bip_bucket_name }}"
-    object: "{{ s3.packages_prefix }}{{ item }}"
-    dest: "{{ sap_host_agent_base_directory }}/{{ item|basename }}"
-    overwrite: true
+    bucket: "{{ sap_packages_s3_bucket_name }}"
+    object: "{{ sap_packages_prefix }}{{ item }}"
+    dest: "{{ sap_host_agent_base_directory }}/{{ item }}"
+    overwrite: latest
   with_items:
-    - "{{ s3.files.sap_host_agent }}"
-    - "{{ s3.files.sapcar }}"
+    - "{{ sap_host_agent_sar_base }}.SAR"
+    - "{{ sap_host_agent_exe }}"
+  when: not hostagent_download_check.stat.exists
 
-- name: Grant file execute permissions
-  shell: "chmod +x {{ sap_host_agent_base_directory }}/SAPCAR*"
+- name: Update file permissions
+  ansible.builtin.file:
+    path: "{{ sap_host_agent_base_directory }}/{{ item }}"
+    mode: "0755"
+  with_items:
+    - "{{ sap_host_agent_sar_base }}.SAR"
+    - "{{ sap_host_agent_exe }}"
+  when: not hostagent_download_check.stat.exists and not ansible_check_mode
 
 - name: Extract the software
-  shell: "{{ sap_host_agent_base_directory }}/SAPCAR* -xvf {{ sap_host_agent_base_directory }}/SAPHOST*.SAR"
+  ansible.builtin.shell: "./{{ sap_host_agent_exe }} -xvf ./{{ sap_host_agent_sar_base }}.SAR"
   args:
     chdir: "{{ sap_host_agent_base_directory }}"
-  when: sap_host_agent_base_directory is defined
+  when: not hostagent_download_check.stat.exists
 
 - name: Install the SAP Host Agent
-  shell: "sudo ./saphostexec -install"
+  ansible.builtin.shell: "./saphostexec -install"
   args:
     chdir: "{{ sap_host_agent_base_directory }}"
+  when: not hostagent_download_check.stat.exists
 
-- name: Add the bobj account to the sapsys group
-  shell: gpasswd -a bobj sapsys
+- name: Ensure SAP Host Agent service running
+  ansible.builtin.service:
+    name: saphostagent
+    state: started
+    enabled: true

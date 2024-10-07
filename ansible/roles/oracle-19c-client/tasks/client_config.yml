@@ -1,0 +1,16 @@
+---
+- name: Copy sqlnet.ora
+  ansible.builtin.template:
+    src: "network/admin/{{ oracle_client_sqlnet_ora_source_filename }}"
+    dest: "{{ oracle_home }}/network/admin/sqlnet.ora"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+  when: oracle_client_tnsnames_ora_source_filename
+
+- name: Copy tnsnames.ora config
+  ansible.builtin.template:
+    src: "network/admin/{{ oracle_client_tnsnames_ora_source_filename }}"
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+  when: oracle_client_sqlnet_ora_source_filename

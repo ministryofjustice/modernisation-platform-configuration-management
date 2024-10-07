@@ -1,59 +1,104 @@
 ---
-- import_tasks: get_facts.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+- block:
+    - import_tasks: install_rar.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ncr_bip_install_rar
 
-- import_tasks: install_packages.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: check_prereqs.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ncr_bip_check_prereqs
 
-- import_tasks: add_groups.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: setup_host.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - ncr_bip_setup_host
 
-- import_tasks: assign_permissions.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: setup_bobj.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - ncr_bip_setup_bobj
 
-- import_tasks: users.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: retrieve_files.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ncr_bip_retrieve_files
 
-- import_tasks: retrieve_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: install_host_agent.yml
+      tags:
+        - ec2provision
+        - ncr_bip_install_host_agent
 
-- import_tasks: extract_files.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: get_secrets.yml
+      tags:
+        - ec2provision
+        - ncr_bip_get_secrets
+        - ncr_bip_add_response_file
+        - ncr_bip_redact_response_file
+        - ncr_bip_update_secrets
+        - ncr_bip_setup_cluster_name
+        - ncr_bip_setup_tomcat
 
-- import_tasks: add_response_file.yml
-  tags:
-    - amibuild
-    - ec2provision
-  when: ansible_distribution in ['RedHat']
+    - import_tasks: add_response_file.yml
+      tags:
+        - ec2provision
+        - ncr_bip_add_response_file
 
-- import_tasks: install_host_agent.yml
-  tags:
-    - amibuild
-    - ec2provision
+    - import_tasks: install_bip.yml
+      tags:
+        - ec2provision
+        - ncr_bip_install_bip
+
+    - import_tasks: redact_response_file.yml
+      tags:
+        - ec2provision
+        - ncr_bip_redact_response_file
+
+    - import_tasks: update_secrets.yml
+      tags:
+        - ec2provision
+        - ncr_bip_update_secrets
+
+    - import_tasks: check_network_config.yml
+      tags:
+        - ec2provision
+        - ncr_bip_check_network_config
+
+    - import_tasks: update_ccm_config.yml
+      tags:
+        - ec2provision
+        - ncr_bip_update_ccm_config
+
+    - import_tasks: setup_cluster_name.yml
+      tags:
+        - ec2provision
+        - ncr_bip_setup_cluster_name
+
+    - import_tasks: undeploy_tomcat.yml
+      tags:
+        - ec2provision
+        - ncr_bip_undeploy_tomcat
+        - ncr_bip_redeploy_tomcat
+
+    - import_tasks: setup_tomcat.yml
+      tags:
+        - ec2provision
+        - ncr_bip_setup_tomcat
+        - ncr_bip_redeploy_tomcat
+
+    - import_tasks: deploy_tomcat.yml
+      tags:
+        - ec2provision
+        - ncr_bip_deploy_tomcat
+        - ncr_bip_redeploy_tomcat
+
+  # block
   when: ansible_distribution in ['RedHat']
-# - import_tasks: install_bip.yml
-#   tags:
-#     - amibuild
-#     - ec2provision
-#   when: ansible_distribution in ['RedHat']
