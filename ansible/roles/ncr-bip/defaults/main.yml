@@ -28,8 +28,8 @@ sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 sap_bip_cms_db_reset: 1
-sap_bip_sia_name_cms: "{{ ansible_ec2_hostname.split('.')[0] | replace('-','') }}"
-sap_bip_sia_name_app: "{{ ansible_ec2_hostname.split('.')[0] | replace('-','') }}"
+sap_bip_sia_name_cms: "{{ ec2.tags.Name | replace('-','') }}"
+sap_bip_sia_name_app: "{{ ec2.tags.Name | replace('-','') }}"
 
 # set in group vars, otherwise response.cms.ini or response.app.ini is used depending on whether first install
 # sap_bip_responsefile:
