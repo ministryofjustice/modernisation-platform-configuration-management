@@ -4,6 +4,7 @@ ansible_python_interpreter: python3.9
 server_type_roles_list:
   - autoscale-group-hooks
   - get-ec2-facts
+  - packages
   - sshd-config
   - users-and-groups
   - set-ec2-hostname
@@ -12,6 +13,8 @@ server_type_roles_list:
   - time
   - python-ssm-configure
   - autoscale-group-hooks-state
+
+packages_yum_update: []
 
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
