@@ -26,9 +26,6 @@ $GlobalConfig = @{
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
-        # "group"     = "onr-t2-rdp"
-        # "groupPath" = "OU=Groups,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        # "groupDescription" = "Onr BODS T2 RDP allow group"
     }
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"       = "PPBOSYS" # NEEDS VALIDATION
@@ -42,7 +39,7 @@ $GlobalConfig = @{
         "domain" = "HMPP" # correct
     }
     "oasys-national-reporting-production"    = @{
-        "domain" = "HMPPS"
+        "domain" = "HMPP"
      }
 }
 
@@ -255,10 +252,6 @@ $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $ComputerName = $env:COMPUTERNAME
 
-# Removed because Groups aren't used in hmpp domain
-# New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
-# Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
-
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
 
@@ -267,10 +260,6 @@ $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassw
 
 New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
 
-# Removed because Groups aren't used in hmpp domain
-# Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
-
-# Set the service user Remote Desktop Access permissions on the instance
 Enable-PSRemoting -Force
 
 # Use admin credentials to add the service user to the Remote Desktop Users group
