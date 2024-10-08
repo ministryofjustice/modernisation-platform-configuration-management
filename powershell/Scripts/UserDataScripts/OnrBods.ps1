@@ -8,6 +8,7 @@ $GlobalConfig = @{
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
         "DataServicesS3File"    = "DS4214P_11-20011165.exe" # Data Services 4.2 SP14 Patch 11
         "LINK_DIR"              = "E:\SAP BusinessObjects\Data Services"
+        "BIP_INSTALL_DIR"       = "E:\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -20,28 +21,27 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-onr-bods-1-b"
-        "cmsExtendedNode" = "t2-onr-bods-2-a"
+        "cmsMainNode"     = "t2-onr-bods-1"
+        "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_t2_onr_bods"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
-        "group"     = "onr-t2-rdp"
-        "groupPath" = "OU=Groups,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        "groupDescription" = "Onr BODS T2 RDP allow group"
-        "OnrShortcuts" = @{
-        }
     }
     "oasys-national-reporting-preproduction" = @{
-        "domain" = "HMPPS"
-        "OnrShortcuts" = @{
-        }
+        "sysDbName"       = "PPBOSYS" # NEEDS VALIDATION
+        "audDbName"       = "PPBOAUD" # NEEDS VALIDATION
+        "tnsorafile"      = "tnsnames_PP_BODS.ora" # NEEDS CREATING
+        "cmsMainNode"     = "pp-onr-bods-1"
+        "cmsExtendedNode" = "pp-onr-bods-2"
+        "serviceUser"     = "svc_pp_onr_bods" # NEEDS CREATING
+        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
+        "serviceUserDescription" = "Onr BODS preprod service user for AWS"
+        "domain" = "HMPP"
     }
     "oasys-national-reporting-production"    = @{
-        "domain" = "HMPPS"
-        "OnrShortcuts" = @{
-        }
-    }
+        "domain" = "HMPP"
+     }
 }
 
 $tempPath = ([System.IO.Path]::GetTempPath())
@@ -246,15 +246,12 @@ $Config = Get-Config
 $Tags = Get-InstanceTags
 # }}}
 
-# {{{ Add service user, create group, add user and instance to group, allow user to RDP into machine
+# {{{ Add service user to domain, allow service user to RDP into machine
 # re-importing this if the machine has been rebooted, probably not needed
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $ComputerName = $env:COMPUTERNAME
-
-New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Description $($Config.groupDescription) -ModPlatformADCredential $ADCredential
-Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
 
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
@@ -263,10 +260,7 @@ $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -Secre
 $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
 
 New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
-Add-ModPlatformGroupUser -Group $($Config.group) -User $($Config.serviceUser) -ModPlatformADCredential $ADCredential
 
-
-# Set the service user Remote Desktop Access permissions on the instance
 Enable-PSRemoting -Force
 
 # Use admin credentials to add the service user to the Remote Desktop Users group
@@ -482,8 +476,8 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
-# Disable for now during testing
-Start-Process @ipsInstallParams
+# DISABLED FOR TESTING
+# Start-Process @ipsInstallParams
 
 # }}} end install IPS
 
@@ -562,9 +556,34 @@ $dataServicesInstallParams = @{
     NoNewWindow = $true
 }
 
-# Disable this for testing
-Start-Process @dataServicesInstallParams
+# DISABLED FOR TESTING
+# Start-Process @dataServicesInstallParams
 # }}} End install Data Services
+
+# {{{ Post install steps for Data Services, configure JDBC driver
+$jdbcDriverPath = "$($Config.ORACLE_HOME)\jdbc\lib\ojdbc8.jar"
+$destinations = @(
+    "$($Config.LINK_DIR)\ext\lib",
+    "$($Config.BIP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
+    # "$($Config.BIP_INSTALL_DIR)\warfiles\webapps\DataServices\WEB-INF\lib" # Only needed if using Data Quality reports
+)
+
+if (Test-Path $jdbcDriverPath) {
+    foreach ($destination in $destinations) {
+        if (Test-Path $destination) {
+            Write-Output "Copying JDBC driver to $destination"
+            Copy-Item -Path $jdbcDriverPath -Destination $destination -NoClobber
+        } else {
+            Write-Output "Destination $destination does not exist, skipping"
+        }
+    }
+} else {
+    Write-Output "JDBC driver not found at $jdbcDriverPath"
+    exit 1
+}
+# Install notes: If using Data Quality reports: Use WDeploy to re-deploy BODS web apps.
+#                If not, Restart EIM Adaptive Processing Server via CMC.
+# }}}
 
 # {{{ login text
 # Apply to all environments that aren't on the domain
