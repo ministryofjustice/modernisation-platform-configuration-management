@@ -8,6 +8,7 @@ $GlobalConfig = @{
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
         "DataServicesS3File"    = "DS4214P_11-20011165.exe" # Data Services 4.2 SP14 Patch 11
         "LINK_DIR"              = "E:\SAP BusinessObjects\Data Services"
+        "BIP_INSTALL_DIR"       = "E:\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -30,13 +31,13 @@ $GlobalConfig = @{
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"       = "PPBOSYS" # NEEDS VALIDATION
         "audDbName"       = "PPBOAUD" # NEEDS VALIDATION
-        "tnsorafile"      = "tnsnames_PP_BODS.ora" # needs creating
-        "cmsMainNode"     = "pp-onr-bods-1" # correct
-        "cmsExtendedNode" = "pp-onr-bods-2" # correct
-        "serviceUser"     = "svc_pp_onr_bods" # correct - password needs creating
-        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root" # correct
+        "tnsorafile"      = "tnsnames_PP_BODS.ora" # NEEDS CREATING
+        "cmsMainNode"     = "pp-onr-bods-1"
+        "cmsExtendedNode" = "pp-onr-bods-2"
+        "serviceUser"     = "svc_pp_onr_bods" # NEEDS CREATING
+        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
         "serviceUserDescription" = "Onr BODS preprod service user for AWS"
-        "domain" = "HMPP" # correct
+        "domain" = "HMPP"
     }
     "oasys-national-reporting-production"    = @{
         "domain" = "HMPP"
@@ -475,7 +476,7 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
-# Disable for now during testing
+# DISABLED FOR TESTING
 # Start-Process @ipsInstallParams
 
 # }}} end install IPS
@@ -555,9 +556,34 @@ $dataServicesInstallParams = @{
     NoNewWindow = $true
 }
 
-# Disable this for testing
+# DISABLED FOR TESTING
 # Start-Process @dataServicesInstallParams
 # }}} End install Data Services
+
+# {{{ Post install steps for Data Services, configure JDBC driver
+$jdbcDriverPath = "$($Config.ORACLE_HOME)\jdbc\lib\ojdbc8.jar"
+$destinations = @(
+    "$($Config.LINK_DIR)\ext\lib",
+    "$($Config.B IP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
+    # "$($Config.BIP_INSTALL_DIR)\warfiles\webapps\DataServices\WEB-INF\lib" # Only needed if using Data Quality reports
+)
+
+if (Test-Path $jdbcDriverPath) {
+    foreach ($destination in $destinations) {
+        if (Test-Path $destination) {
+            Write-Output "Copying JDBC driver to $destination"
+            Copy-Item -Path $jdbcDriverPath -Destination $destination -NoClobber
+        } else {
+            Write-Output "Destination $destination does not exist, skipping"
+        }
+    }
+} else {
+    Write-Output "JDBC driver not found at $jdbcDriverPath"
+    exit 1
+}
+# Install notes: If using Data Quality reports: Use WDeploy to re-deploy BODS web apps.
+#                If not, Restart EIM Adaptive Processing Server via CMC.
+# }}}
 
 # {{{ login text
 # Apply to all environments that aren't on the domain
