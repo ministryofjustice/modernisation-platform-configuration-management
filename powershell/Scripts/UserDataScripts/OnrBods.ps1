@@ -564,7 +564,7 @@ $dataServicesInstallParams = @{
 $jdbcDriverPath = "$($Config.ORACLE_HOME)\jdbc\lib\ojdbc8.jar"
 $destinations = @(
     "$($Config.LINK_DIR)\ext\lib",
-    "$($Config.B IP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
+    "$($Config.BIP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
     # "$($Config.BIP_INSTALL_DIR)\warfiles\webapps\DataServices\WEB-INF\lib" # Only needed if using Data Quality reports
 )
 
