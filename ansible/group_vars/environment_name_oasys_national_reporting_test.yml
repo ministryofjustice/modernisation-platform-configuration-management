@@ -10,3 +10,32 @@ boe_filesystems_mount:
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "eu-west-2a.fs-0089d47e90f353ea0.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: t2_onr_sap_share
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: T2RCVCAT
+  T2BOSYS:
+    db_name: T2BOSYS
+    db_unique_name: T2BOSYS
+    instance_name: T2BOSYS
+    host_name: t2-oasys-db-a
+    port: 1521
+    tns_name: T2BOSYS
+    asm_disk_groups: DATA
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  T2BOAUD:
+    db_name: T2BOAUD
+    db_unique_name: T2BOAUD
+    instance_name: T2BOAUD
+    host_name: t2-oasys-db-a
+    port: 1521
+    tns_name: T2BOAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
+
+audit_db_sid: T2BOAUD
+system_db_sid: T2BOSYS
+audit_service_name: BIAUD_TAF
+system_service_name: BISYS_TAF

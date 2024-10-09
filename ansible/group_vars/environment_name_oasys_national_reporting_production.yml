@@ -1,3 +1,32 @@
 ---
 ansible_aws_ssm_bucket_name: s3-bucket20240321144737986100000001
 dns_zone_internal: oasys-national-reporting.hmpps-production.modernisation-platform.internal
+
+db_configs:
+  RCVCAT:
+    rcvcat_db_name: PDRCVCAT
+  PDBOSYS:
+    db_name: PDBOSYS
+    db_unique_name: PDBOSYS
+    instance_name: PDBOSYS
+    host_name: pd-oasys-db-1-a
+    port: 1521
+    tns_name: PDBOSYS
+    asm_disk_groups: DATA
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  PDBOAUD:
+    db_name: PDBOAUD
+    db_unique_name: PDBOAUD
+    instance_name: PDBOAUD
+    host_name: pd-oasys-db-1-a
+    port: 1521
+    tns_name: PDBOAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
+
+audit_db_sid: PDBOAUD
+system_db_sid: PDBOSYS
+audit_service_name: BIAUD_TAF
+system_service_name: BISYS_TAF

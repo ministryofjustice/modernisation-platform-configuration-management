@@ -202,6 +202,22 @@ tns_entries:
         - test-oem-a.hmpps-oem.hmpps-test.modernisation-platform.internal
       service_name: RCV_TAF
   pp:
+    - name: PPBOSYS
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBOSYS
+    - name: PPBOAUD
+      port: 1521
+      host_list:
+        - pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+      service_name: PPBOAUD
+    - name: RCVCAT
+      port: 1521
+      host_list:
+        - preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
+      service_name: RCV_TAF
+
     - name: LISTENER_PPBIPINF
       port: 1521
       host_list: pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
