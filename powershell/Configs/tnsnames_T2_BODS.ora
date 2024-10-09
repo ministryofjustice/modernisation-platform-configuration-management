@@ -4,6 +4,7 @@ T2BOSYS =
       (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
     )
     (CONNECT_DATA =
+      (SERVER = DEDICATED)
       (SERVICE_NAME = BOSYS_TAF)
     )
   )
@@ -14,6 +15,34 @@ T2BOAUD =
       (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
     )
     (CONNECT_DATA =
+      (SERVER = DEDICATED)
       (SERVICE_NAME = BOAUD_TAF)
+    )
+  )
+
+OASPROD =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = oasys_taf)
+    )
+  )
+
+MISTRANS =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = mistrans_taf)
+    )
+  )
+
+OASYSREP =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = t2oasrep)
     )
   )
