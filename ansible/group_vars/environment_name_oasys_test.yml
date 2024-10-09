@@ -41,6 +41,26 @@ rman_backup_cron:
       # job: command generated in rman-backup-setup
 
 db_configs:
+  T2BOSYS:
+    db_name: T2BOSYS
+    db_unique_name: T2BOSYS
+    instance_name: T2BOSYS
+    host_name: t2-oasys-db-a
+    port: 1521
+    tns_name: T2BOSYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+  T2BOAUD:
+    db_name: T2BOAUD
+    db_unique_name: T2BOAUD
+    instance_name: T2BOAUD
+    host_name: t2-oasys-db-a
+    port: 1521
+    tns_name: T2BOAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
   T1OASYS:
     db_name: OASPROD
     db_unique_name: T1OASYS
@@ -239,6 +259,11 @@ db_configs:
       - { name: BIPINF_TAF, role: PRIMARY }
 
 # Oracle database housekeeping
+audit_db_sid: T2BOAUD
+system_db_sid: T2BOSYS
+audit_service_name: BIAUD_TAF
+system_service_name: BISYS_TAF
+
 audit_housekeeping_period: 30
 db_housekeeping_script: db_server_housekeeping.sh
 housekeeping_cron:

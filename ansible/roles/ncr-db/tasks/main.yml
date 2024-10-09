@@ -15,7 +15,7 @@
     SERVICE_NAME: "{{ system_service_name }}"
     SYS_PASSWORD: "{{ bip_sys_sys_password }}"
     SYSTEM_PASSWORD: "{{ bip_sys_system_password }}"
-    SQL_FILE: "setup_BISYS.sql"
+    SQL_FILE: "setup_{{ system_db_sid }}.sql"
 
 - import_tasks: create_database.yml
   tags:
@@ -27,7 +27,7 @@
     SERVICE_NAME: "{{ audit_service_name }}"
     SYS_PASSWORD: "{{ bip_aud_sys_password }}"
     SYSTEM_PASSWORD: "{{ bip_aud_system_password }}"
-    SQL_FILE: "setup_BIAUD.sql"
+    SQL_FILE: "setup_{{ audit_db_sid }}.sql"
 
 - import_tasks: cleanup.yml
   tags:
