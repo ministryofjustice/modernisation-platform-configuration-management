@@ -29,12 +29,12 @@ $GlobalConfig = @{
         "domain"    = "AZURE"
     }
     "oasys-national-reporting-preproduction" = @{
-        "sysDbName"       = "PPBOSYS" # NEEDS VALIDATION
-        "audDbName"       = "PPBOAUD" # NEEDS VALIDATION
-        "tnsorafile"      = "tnsnames_PP_BODS.ora" # NEEDS CREATING
+        "sysDbName"       = "PPBOSYS"
+        "audDbName"       = "PPBOAUD"
+        "tnsorafile"      = "tnsnames_PP_BODS.ora"
         "cmsMainNode"     = "pp-onr-bods-1"
         "cmsExtendedNode" = "pp-onr-bods-2"
-        "serviceUser"     = "svc_pp_onr_bods" # NEEDS CREATING
+        "serviceUser"     = "svc_pp_onr_bods"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
         "serviceUserDescription" = "Onr BODS preprod service user for AWS"
         "domain" = "HMPP"
@@ -187,6 +187,35 @@ function Set-DriveLabel {
         Write-Error "Failed to change drive label: $_"
     }
 }
+
+function Test-DatabaseConnection {
+    param (
+        [Parameter(Mandatory=$true)]
+        [String]$typePath,
+        [Parameter(Mandatory=$true)]
+        [String]$tnsName,
+        [Parameter(Mandatory=$true)]
+        [String]$username,
+        [Parameter(Mandatory=$true)]
+        [String]$password
+    )
+
+    Add-Type -Path $typePath
+
+    $connectionString = "User Id=$username;Password=$password;Data Source=$tnsName"
+    $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
+
+    try {
+        $connection.Open()
+        Write-Host "Connection successful!"
+        $connection.Close()
+        return 0
+    } catch {
+        Write-Host "Connection failed: $($_.Exception.Message)"
+        return 1
+    }
+}
+
 # }}}
 
 # {{{ Prep the server for installation
@@ -216,9 +245,9 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # Label the drives just to add some convienience
-Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
+Set-DriveLabel -DriveLetter "D" -NewLabel "Storage"
 Set-DriveLabel -DriveLetter "E" -NewLabel "App"
-Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
+Set-DriveLabel -DriveLetter "F" -NewLabel "Temp"
 
 # Set local time zone to UK
 Set-TimeZone -Name "GMT Standard Time"
@@ -254,7 +283,7 @@ $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $ComputerName = $env:COMPUTERNAME
 
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
+$bodsSecretName  = "/sap/bods/$dbenv/passwords"
 
 $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
 $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
@@ -338,17 +367,46 @@ $Tags = Get-InstanceTags
 # set Secret Names based on environment
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
-$bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
+$bodsSecretName  = "/sap/bods/$dbenv/passwords"
 $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
 # Get secret values, silently continue if they don't exist
-$onr_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "onr_system_owner" -ErrorAction SilentlyContinue
-$onr_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "onr_audit_owner" -ErrorAction SilentlyContinue
+$bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
+$bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
 $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
 $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
 $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
-$product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "product_key" -ErrorAction SilentlyContinue
+$ips_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+
+# Check database credentials BEFORE installer runs
+$typePath = "E:\app\oracle\product\19.0.0\client_1\ODP.NET\bin\4\Oracle.DataAccess.dll"
+
+# Define an array of database configurations
+$dbConfigs = @(
+    @{
+        Name = "$($Config.sysDbName)"
+        Username = "bods_ips_system_owner"
+        Password = $bobs_ips_system_owner
+    },
+    @{
+        Name = "$($Config.audDbName)"
+        Username = "bods_ips_audit_owner"
+        Password = $bods_ips_audit_owner
+    }
+)
+
+# Loop through each database configuration
+foreach ($db in $dbConfigs) {
+    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $db.Password
+    if ($return -ne 0) {
+        Write-Host "Connection to $($db.Name) failed. Exiting."
+        exit 1
+    }
+    Write-Host "Connection to $($db.Name) successful."
+}
+
+Write-Host "All database connections successful."
 
 # Create response file for IPS silent install
 $ipsResponseFileContentCommon = @"
@@ -363,13 +421,13 @@ cmspassword=$bods_admin_password
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-existingauditingdbpassword=$onr_audit_owner
+existingauditingdbpassword=$bods_ips_audit_owner
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=onr_audit_owner
 ### Existing CMS DB password
-existingcmsdbpassword=$onr_system_owner
+existingcmsdbpassword=$bods_ips_system_owner
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -391,7 +449,7 @@ lcmusername=LCM
 ### Choose install mode: new, expand where new == first instance of the installation
 neworexpandinstall=new
 ### Product Keycode
-productkey=$product_key
+productkey=$ips_product_key
 ### Language Packs Selected to Install
 selectedlanguagepacks=en
 ### Setup UI Language
@@ -429,7 +487,7 @@ cmsport=6400
 ### Existing main cms node name
 cmsname=$($Config.cmsMainNode)
 ### Product Keycode
-productkey=$product_key
+productkey=$ips_product_key
 ### SIA node name
 sianame=$siaNodeName
 ### SIA connector port
@@ -491,7 +549,7 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-$data_services_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
+$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -529,7 +587,7 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-dslogininfothispassword=$data_services_user_password
+dslogininfothispassword=$service_user_password
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#

@@ -159,7 +159,7 @@ New-ModPlatformADGroup -Group $($Config.group) -Path $($Config.groupPath) -Descr
 Add-ModPlatformGroupMember -Computer $ComputerName -Group $($Config.group) -ModPlatformADCredential $ADCredential
 
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$bodsSecretName  = "/ec2/onr-bods/$dbenv/passwords"
+$bodsSecretName  = "/sap/bods/$dbenv/passwords"
 
 $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
 $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
