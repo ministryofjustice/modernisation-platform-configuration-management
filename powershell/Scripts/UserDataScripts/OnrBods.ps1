@@ -187,6 +187,35 @@ function Set-DriveLabel {
         Write-Error "Failed to change drive label: $_"
     }
 }
+
+function Test-DatabaseConnection {
+    param (
+        [Parameter(Mandatory=$true)]
+        [String]$typePath,
+        [Parameter(Mandatory=$true)]
+        [String]$tnsName,
+        [Parameter(Mandatory=$true)]
+        [String]$username,
+        [Parameter(Mandatory=$true)]
+        [String]$password
+    )
+
+    Add-Type -Path $typePath
+
+    $connectionString = "User Id=$username;Password=$password;Data Source=$tnsName"
+    $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
+
+    try {
+        $connection.Open()
+        Write-Host "Connection successful!"
+        $connection.Close()
+        return 0
+    } catch {
+        Write-Host "Connection failed: $($_.Exception.Message)"
+        return 1
+    }
+}
+
 # }}}
 
 # {{{ Prep the server for installation
@@ -343,12 +372,41 @@ $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
 $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
 # Get secret values, silently continue if they don't exist
-$bip_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bip_ips_system_owner" -ErrorAction SilentlyContinue
-$bip_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bip_ips_audit_owner" -ErrorAction SilentlyContinue
+$bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
+$bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
 $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
 $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
 $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
 $ips_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+
+# Check database credentials BEFORE installer runs
+$typePath = "E:\app\oracle\product\19.0.0\client_1\ODP.NET\bin\4\Oracle.DataAccess.dll"
+
+# Define an array of database configurations
+$dbConfigs = @(
+    @{
+        Name = "$($Config.sysDbName)"
+        Username = "bods_ips_system_owner"
+        Password = $bobs_ips_system_owner
+    },
+    @{
+        Name = "$($Config.audDbName)"
+        Username = "bods_ips_audit_owner"
+        Password = $bods_ips_audit_owner
+    }
+)
+
+# Loop through each database configuration
+foreach ($db in $dbConfigs) {
+    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $db.Password
+    if ($return -ne 0) {
+        Write-Host "Connection to $($db.Name) failed. Exiting."
+        exit 1
+    }
+    Write-Host "Connection to $($db.Name) successful."
+}
+
+Write-Host "All database connections successful."
 
 # Create response file for IPS silent install
 $ipsResponseFileContentCommon = @"
@@ -363,13 +421,13 @@ cmspassword=$bods_admin_password
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-existingauditingdbpassword=$bip_ips_audit_owner
+existingauditingdbpassword=$bods_ips_audit_owner
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=onr_audit_owner
 ### Existing CMS DB password
-existingcmsdbpassword=$bip_ips_system_owner
+existingcmsdbpassword=$bods_ips_system_owner
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
