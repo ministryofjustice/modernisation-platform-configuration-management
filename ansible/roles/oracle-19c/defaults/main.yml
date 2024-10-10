@@ -1,6 +1,8 @@
 ---
-artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
-artefacts_s3_bucket_path: hmpps/oracle-19c-software
+#artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+#artefacts_s3_bucket_path: hmpps/oracle-19c-software
+artefacts_s3_bucket_name: s3-bucket20230609110809465800000001
+artefacts_s3_bucket_path: 19c-patches
 artefact_dir: /u02
 app_dir: /u01/app
 oracle_install_user: oracle
@@ -94,7 +96,7 @@ oracle_patch_details:
 
 oracle_ru_patch: JUL2024 # override this in group_vars when rolling out a new patch
 oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
-opatch: "p6880880_190000_Linux-x86-64.{{ oracle_patch.opatch_version }}.zip"
+opatch: "p6880880_190000_Linux-x86-64-{{ oracle_patch.opatch_version }}.zip"
 #opatch: "p6880880_190000_Linux-x86-64.zip"
 opatch_zip: "p6880880_190000_Linux-x86-64.zip"
 oracle_version: "{{ oracle_patch.patch_string.split('.')[:3] | join('.') }}"
