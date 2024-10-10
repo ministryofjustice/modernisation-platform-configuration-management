@@ -534,8 +534,12 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
-# DISABLE FOR TESTING
-Start-Process @ipsInstallParams
+if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
+    Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
+    exit 1
+}
+
+Start-Process @ipsInstallParams -ErrorAction Stop
 
 # }}} end install IPS
 
@@ -611,7 +615,8 @@ $dataServicesInstallParams = @{
     WorkingDirectory = $WorkingDirectory
     ArgumentList = '-q -r D:\Software\ds_install.ini'
     Wait = $true
-    NoNewWindow = $true
+    # NoNewWindow = $true
+    Verb = "Open"
 }
 
 # DISABLE FOR TESTING
