@@ -534,8 +534,8 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
-# DISABLED FOR TESTING
-# Start-Process @ipsInstallParams
+# DISABLE FOR TESTING
+Start-Process @ipsInstallParams
 
 # }}} end install IPS
 
@@ -614,8 +614,8 @@ $dataServicesInstallParams = @{
     NoNewWindow = $true
 }
 
-# DISABLED FOR TESTING
-# Start-Process @dataServicesInstallParams
+# DISABLE FOR TESTING
+Start-Process @dataServicesInstallParams
 # }}} End install Data Services
 
 # {{{ Post install steps for Data Services, configure JDBC driver
