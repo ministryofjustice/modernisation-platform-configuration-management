@@ -523,10 +523,9 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
 
 $ipsInstallParams = @{
     FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
     ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
     Wait = $true
-    NoNewWindow = $true
+    Verb = "Open"
 }
 
 # debugging
@@ -534,8 +533,12 @@ $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win
 
 Clear-PendingFileRenameOperations
 
-# DISABLE FOR TESTING
-Start-Process @ipsInstallParams
+if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
+    Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
+    exit 1
+}
+
+Start-Process @ipsInstallParams -ErrorAction Stop
 
 # }}} end install IPS
 
@@ -608,10 +611,11 @@ $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.
 
 $dataServicesInstallParams = @{
     FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
-    WorkingDirectory = $WorkingDirectory
+    # WorkingDirectory = $WorkingDirectory
     ArgumentList = "-r $WorkingDirectory\ds_install.rsp"
     Wait = $true
-    NoNewWindow = $true
+    # NoNewWindow = $true
+    Verb = "Open"
 }
 
 # DISABLE FOR TESTING
