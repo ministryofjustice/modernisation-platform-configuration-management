@@ -387,7 +387,7 @@ $dbConfigs = @(
     @{
         Name = "$($Config.sysDbName)"
         Username = "bods_ips_system_owner"
-        Password = $bobs_ips_system_owner
+        Password = $bods_ips_system_owner
     },
     @{
         Name = "$($Config.audDbName)"
