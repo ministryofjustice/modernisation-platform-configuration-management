@@ -425,7 +425,7 @@ existingauditingdbpassword=$bods_ips_audit_owner
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
-existingauditingdbuser=onr_audit_owner
+existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
 existingcmsdbpassword=$bods_ips_system_owner
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
@@ -433,7 +433,7 @@ existingcmsdbreset=1
 ### Existing CMS DB server
 existingcmsdbserver=$($Config.sysDbName)
 ### Existing CMS DB user name
-existingcmsdbuser=onr_system_owner
+existingcmsdbuser=bods_ips_system_owner
 ### Installation Directory
 installdir=E:\SAP BusinessObjects\
 ### Choose install type: default, custom, webtier
