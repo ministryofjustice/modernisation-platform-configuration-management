@@ -522,7 +522,7 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
 }
 
 $ipsInstallParams = @{
-    FilePath = "$WorkingDirectory\IPS\DATA_UNITS\\IPS_win\setup.exe"
+    FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
     WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
     ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
     Wait = $true
