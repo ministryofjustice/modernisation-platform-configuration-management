@@ -11,6 +11,9 @@ dns_search_domains:
 timezone: "Europe/London"
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 
+users_and_groups_regular:
+  - group: studio-webops
+
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
   ORACLE_HOME: "{{ database_home }}"
