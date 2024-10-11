@@ -21,7 +21,7 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-onr-bods-1"
+        "cmsMainNode"     = "t2-tst-bods-asg" #TODO: change this BACK
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_t2_onr_bods"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
