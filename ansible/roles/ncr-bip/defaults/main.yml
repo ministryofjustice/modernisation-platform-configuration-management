@@ -10,6 +10,7 @@ sap_bip_unpack_base_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_responsefiles_directory: "/u02/software/ResponseFiles"
 sap_bip_installation_directory: /u01/app/bobj/BIP4
+sap_web_archived_logs_directory: /u02/Archived_Logs
 
 sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension
 sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
@@ -46,6 +47,7 @@ sap_bip_auditdb_secrets:
 
 sap_bip_secretsmanager_passwords:
   config:
+    # prereq: ensure json secret is created with values for below fields
     secret: "/sap/bip/{{ ncr_environment }}/config"
     users:
       - cms_cluster_name:
@@ -64,9 +66,8 @@ sap_bip_secretsmanager_passwords:
       - "{{ sap_bip_auditdb_secrets | items2dict }}"
   passwords:
     secret: "/sap/bip/{{ ncr_environment }}/passwords"
-    # ensure secret is json and contains values for below fields
     users:
-      - cms_admin_password: auto
+      - Administrator: auto
 
 sap_web_template_subdirectory: web
 sap_web_disable_infoview: "false"
