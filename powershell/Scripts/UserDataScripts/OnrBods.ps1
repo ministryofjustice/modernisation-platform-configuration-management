@@ -526,8 +526,8 @@ $ipsInstallParams = @{
     ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
     Wait = $true
     Verb = "RunAs"
-    RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_out_install.log"
-    RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_err_install.log"
+    # RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_out_install.log"
+    # RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_err_install.log"
     WindowStyle = "Hidden"
 }
 
@@ -618,8 +618,8 @@ $dataServicesInstallParams = @{
     Wait = $true
     Verb = "RunAs"
     WindowStyle = "Hidden"
-    RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
-    RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
+    # RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
+    # RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
 }
 
 # DISABLE FOR TESTING
