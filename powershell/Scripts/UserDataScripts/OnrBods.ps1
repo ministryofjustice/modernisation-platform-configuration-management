@@ -525,7 +525,10 @@ $ipsInstallParams = @{
     FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
     ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
     Wait = $true
-    Verb = "Open"
+    Verb = "RunAs"
+    RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_out_install.log"
+    RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_err_install.log"
+    WindowStyle = "Hidden"
 }
 
 # debugging
@@ -611,11 +614,12 @@ $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.
 
 $dataServicesInstallParams = @{
     FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
-    # WorkingDirectory = $WorkingDirectory
     ArgumentList = "-r $WorkingDirectory\ds_install.rsp"
     Wait = $true
-    # NoNewWindow = $true
-    Verb = "Open"
+    Verb = "RunAs"
+    WindowStyle = "Hidden"
+    RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
+    RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
 }
 
 # DISABLE FOR TESTING
