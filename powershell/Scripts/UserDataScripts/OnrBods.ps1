@@ -615,8 +615,10 @@ $dataServicesInstallParams = @{
     WorkingDirectory = $WorkingDirectory
     ArgumentList = '-q -r D:\Software\ds_install.ini'
     Wait = $true
-    # NoNewWindow = $true
-    Verb = "Open"
+    Verb = "RunAs"
+    WindowStyle = "Hidden"
+    RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
+    RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
 }
 
 # DISABLE FOR TESTING
