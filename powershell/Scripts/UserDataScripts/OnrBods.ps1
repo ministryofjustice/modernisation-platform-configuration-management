@@ -527,6 +527,7 @@ $ipsInstallParams = @{
     ArgumentList = '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
     Verb = 'RunAs'
     Wait = $true
+    Verb = "RunAs"
 }
 
 # debugging
@@ -544,7 +545,14 @@ if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) 
     exit 1
 }
 
-Start-Process @ipsInstallParams
+try {
+    Write-Host "IPS install started"
+    Start-Process @ipsInstallParams -ErrorAction Stop -ErrorVariable StartProcessError
+} catch {
+    Write-Error "Failed to start process: $StartProcessError"
+    Write-Host  "Failed to start process: $StartProcessError"
+    exit 1
+}
 # & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
 # }}} end install IPS
 
