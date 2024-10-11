@@ -521,27 +521,24 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
     exit 1
 }
 
-# $ipsInstallParams = @{
-#     FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
-#     ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
-#     Wait = $true
-#     Verb = "RunAs"
-#     # RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_out_install.log"
-#     # RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\std_err_install.log"
-#     WindowStyle = "Hidden"
-# }
+$ipsInstallParams = @{
+    FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
+    ArgumentList = "-r `"$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp`""
+    Wait = $true
+}
 
 # debugging
-# $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
+$ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
 
 Clear-PendingFileRenameOperations
 
-# if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
-#     Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
-#     exit 1
-# }
+if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
+    Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
+    exit 1
+}
 
-& "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
+Start-Process @ipsInstallParams
+# & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -611,19 +608,15 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 
 $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.rsp" -Force -Encoding ascii
 
-# $dataServicesInstallParams = @{
-#     FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
-#     ArgumentList = "-r $WorkingDirectory\ds_install.rsp"
-#     Wait = $true
-#     Verb = "RunAs"
-#     WindowStyle = "Hidden"
-#     # RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
-#     # RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
-# }
+$dataServicesInstallParams = @{
+    FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    ArgumentList = "-r `"$WorkingDirectory\ds_install.rsp`""
+    Wait = $true
+}
 
 # DISABLE FOR TESTING
-# Start-Process @dataServicesInstallParams
-& "$WorkingDirectory\$($Config.DataServicesS3File)" -r "$WorkingDirectory\ds_install.rsp" | Out-Null
+Start-Process @dataServicesInstallParams
+# & "$WorkingDirectory\$($Config.DataServicesS3File)" -r "$WorkingDirectory\ds_install.rsp" | Out-Null
 
 # }}} End install Data Services
 
