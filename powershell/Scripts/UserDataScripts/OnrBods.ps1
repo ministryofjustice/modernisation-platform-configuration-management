@@ -530,17 +530,16 @@ $ipsInstallParams = @{
 }
 
 # debugging
-$ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
+# $ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
 
 Clear-PendingFileRenameOperations
 
-if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
-    Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
-    exit 1
-}
+# if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
+#     Write-Output "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
+#     exit 1
+# }
 
-Start-Process @ipsInstallParams -ErrorAction Stop
-
+& "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -622,7 +621,9 @@ $dataServicesInstallParams = @{
 }
 
 # DISABLE FOR TESTING
-Start-Process @dataServicesInstallParams
+# Start-Process @dataServicesInstallParams
+& "$WorkingDirectory\$($Config.DataServicesS3File)" -r "$WorkingDirectory\ds_install.rsp" | Out-Null
+
 # }}} End install Data Services
 
 # {{{ Post install steps for Data Services, configure JDBC driver
