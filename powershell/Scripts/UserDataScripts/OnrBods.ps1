@@ -617,8 +617,8 @@ $dataServicesInstallParams = @{
     Wait = $true
     Verb = "RunAs"
     WindowStyle = "Hidden"
-    RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
-    RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
+    # RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
+    # RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
 }
 
 # DISABLE FOR TESTING
