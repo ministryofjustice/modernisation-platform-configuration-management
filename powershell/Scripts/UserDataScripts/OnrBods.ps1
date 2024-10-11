@@ -539,7 +539,7 @@ if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
     exit 1
 }
 
-if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp") {
+if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) {
     Write-Host "IPS response file not found at $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
     exit 1
 }
