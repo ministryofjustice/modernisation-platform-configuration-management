@@ -1,3 +1,4 @@
+---
 # define all non-system groups in use in hmpps accounts here
 
 # define gid if you want consistency across servers
@@ -6,6 +7,7 @@ regular_gids:
   studio-webops: 2001
   syscon-nomis: 2051
   csr-application-support: 2081
+  national-applications-reporting-team: 2101
 
 # define any additional groups that team members should be added to
 regular_groups_additional_groups:
@@ -17,6 +19,9 @@ regular_groups_additional_groups:
     - wheel
   csr-application-support:
     - tibco
+  national-applications-reporting-team:
+    - national-applications-reporting-team
+    - wheel
 
 # define members of each group
 regular_groups_members:
@@ -38,3 +43,5 @@ regular_groups_members:
     - rs87099
   csr-application-support:
     - GlennB
+  national-applications-reporting-team:
+    - vamshivandanapu
