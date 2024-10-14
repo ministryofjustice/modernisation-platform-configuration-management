@@ -1,0 +1,41 @@
+---
+- block:
+    - name: Create web only directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: bobj
+        group: binstall
+        state: directory
+      loop:
+        - "{{ sap_web_archived_logs_directory }}"
+
+    - name: Copy tomcat restart script
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: 0755
+      loop:
+        - home/bobj/tomcat_restart.sh
+
+    - name: Setup tomcat restart cron
+      ansible.builtin.cron:
+        name: "tomcat_restart"
+        minute: "{{ 60 | random(seed=inventory_hostname) }}"
+        hour: "2"
+        weekday: "MON,WED,FRI"
+        job: "/home/bobj/tomcat_restart.sh"
+        user: bobj
+
+    - name: Setup log cleanup cron
+      ansible.builtin.cron:
+        name: "log_cleanup"
+        minute: "{{ 60 | random(seed=inventory_hostname) }}"
+        hour: "3"
+        weekday: "MON,WED,FRI"
+        job: "find {{ sap_web_archived_logs_directory }} -mtime +365 -prune -exec rm -rf {} \\;"
+        user: bobj
+
+  #  block
+  when: sap_web_apps is defined

@@ -46,6 +46,7 @@
         - ncr_bip_update_secrets
         - ncr_bip_setup_cluster_name
         - ncr_bip_setup_tomcat
+        - ncr_bip_setup_provisioning
 
     - import_tasks: add_response_file.yml
       tags:
@@ -82,6 +83,16 @@
         - ec2provision
         - ncr_bip_setup_cluster_name
 
+    - import_tasks: update_images.yml
+      tags:
+        - ec2provision
+        - ncr_bip_update_images
+
+    - import_tasks: update_jdbc.yml
+      tags:
+        - ec2provision
+        - ncr_bip_update_jdbc
+
     - import_tasks: undeploy_tomcat.yml
       tags:
         - ec2provision
@@ -99,6 +110,16 @@
         - ec2provision
         - ncr_bip_deploy_tomcat
         - ncr_bip_redeploy_tomcat
+
+    - import_tasks: setup_tomcat_restart.yml
+      tags:
+        - ec2provision
+        - ncr_bip_setup_tomcat_restart
+
+    - import_tasks: setup_provisioning.yml
+      tags:
+        - ec2provision
+        - ncr_bip_setup_provisioning
 
   # block
   when: ansible_distribution in ['RedHat']

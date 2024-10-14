@@ -10,10 +10,20 @@ sap_bip_unpack_base_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_responsefiles_directory: "/u02/software/ResponseFiles"
 sap_bip_installation_directory: /u01/app/bobj/BIP4
+sap_web_archived_logs_directory: /u02/Archived_Logs
 
 sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension
 sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
 sap_host_agent_exe: SAPCAR_1115-70006178.EXE
+
+# Java code for automatically provisioning users and passwords
+sap_provisioning_directory: /u01/app/bobj/java/provisioning_5
+sap_provisioning_archive: provisioning_5.tar
+# sap_provisioning_database_hostname:  # set in appropriate group vars
+sap_provisioning_database_sid: NOMIS_TAF
+sap_provisioning_database_user: bobj_sec_select
+sap_provisioning_log_debug: "false"
+sap_provisioning_log_level: "info"  # or debug
 
 # Newer versions are available but we are aligning with Azure
 # sap_bip_rar_base: BIPLATS4303P_300-70002683
@@ -44,8 +54,13 @@ sap_bip_auditdb_secrets:
   - key: "{{ sap_bip_auditing_db_user }}"
     value:
 
+sap_bip_provisioning_secrets:
+  - key: "{{ sap_provisioning_database_user }}"
+    value:
+
 sap_bip_secretsmanager_passwords:
   config:
+    # prereq: ensure json secret is created with values for below fields
     secret: "/sap/bip/{{ ncr_environment }}/config"
     users:
       - cms_cluster_name:
@@ -64,9 +79,9 @@ sap_bip_secretsmanager_passwords:
       - "{{ sap_bip_auditdb_secrets | items2dict }}"
   passwords:
     secret: "/sap/bip/{{ ncr_environment }}/passwords"
-    # ensure secret is json and contains values for below fields
     users:
-      - cms_admin_password: auto
+      - Administrator: auto
+      - "{{ sap_bip_provisioning_secrets | items2dict }}"
 
 sap_web_template_subdirectory: web
 sap_web_disable_infoview: "false"
