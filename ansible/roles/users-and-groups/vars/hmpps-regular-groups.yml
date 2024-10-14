@@ -1,11 +1,14 @@
+---
 # define all non-system groups in use in hmpps accounts here
 
 # define gid if you want consistency across servers
 # NOTE: ssm-user can be created by SSM Agent or this role. Avoid gid 1001
+# NOTE: 31 chars max length
 regular_gids:
   studio-webops: 2001
   syscon-nomis: 2051
   csr-application-support: 2081
+  nart: 2101  # national-applications-reporting-team
 
 # define any additional groups that team members should be added to
 regular_groups_additional_groups:
@@ -17,6 +20,9 @@ regular_groups_additional_groups:
     - wheel
   csr-application-support:
     - tibco
+  nart:
+    - nart
+    - wheel
 
 # define members of each group
 regular_groups_members:
@@ -38,3 +44,5 @@ regular_groups_members:
     - rs87099
   csr-application-support:
     - GlennB
+  nart:
+    - vamshivandanapu
