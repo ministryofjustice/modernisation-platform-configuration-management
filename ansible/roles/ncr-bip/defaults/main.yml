@@ -16,6 +16,15 @@ sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR exten
 sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
 sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
+# Java code for automatically provisioning users and passwords
+sap_provisioning_directory: /u01/app/bobj/java/provisioning_5
+sap_provisioning_archive: provisioning_5.tar
+# sap_provisioning_database_hostname:  # set in appropriate group vars
+sap_provisioning_database_sid: NOMIS_TAF
+sap_provisioning_database_user: bobj_sec_select
+sap_provisioning_log_debug: "false"
+sap_provisioning_log_level: "info"  # or debug
+
 # Newer versions are available but we are aligning with Azure
 # sap_bip_rar_base: BIPLATS4303P_300-70002683
 # sap_host_agent_sar_base: SAPHOSTAGENT60_60-80004822
@@ -45,6 +54,10 @@ sap_bip_auditdb_secrets:
   - key: "{{ sap_bip_auditing_db_user }}"
     value:
 
+sap_bip_provisioning_secrets:
+  - key: "{{ sap_provisioning_database_user }}"
+    value:
+
 sap_bip_secretsmanager_passwords:
   config:
     # prereq: ensure json secret is created with values for below fields
@@ -68,6 +81,7 @@ sap_bip_secretsmanager_passwords:
     secret: "/sap/bip/{{ ncr_environment }}/passwords"
     users:
       - Administrator: auto
+      - "{{ sap_bip_provisioning_secrets | items2dict }}"
 
 sap_web_template_subdirectory: web
 sap_web_disable_infoview: "false"

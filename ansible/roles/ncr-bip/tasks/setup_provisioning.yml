@@ -1,0 +1,66 @@
+---
+- block:
+    - name: Create provisioning directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: bobj
+        group: binstall
+        state: directory
+      loop:
+        - "{{ sap_provisioning_directory }}"
+        - "{{ sap_provisioning_directory }}/conf"
+        - "{{ sap_provisioning_directory }}/scripts"
+        - "{{ sap_provisioning_directory }}/logs"
+
+    - name: Copy provisioning conf
+      ansible.builtin.template:
+        src: "provisioning/{{ item }}"
+        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: 0600
+      loop:
+        - conf/dbconnection.properties
+        - conf/defaultSys.properties
+        - conf/log4j.provisioning.properties
+        - conf/provisioning.properties
+        - conf/queries.xml
+        - conf/userpassword.properties
+
+    - name: Copy provisioning scripts
+      ansible.builtin.template:
+        src: "provisioning/{{ item }}"
+        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: 0755
+      loop:
+        - scripts/DisplayProvisioningVersion.sh
+        - scripts/TestLogonClass.sh
+        - scripts/TestPopulateBOEGroupsTable.sh
+        - scripts/provisioning_env.sh
+
+    - name: Download provisioning code
+      become_user: bobj
+      amazon.aws.aws_s3:
+        mode: get
+        bucket: "{{ sap_packages_s3_bucket_name }}"
+        object: "{{ sap_packages_prefix }}provisioning/{{ item }}"
+        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        overwrite: latest
+      loop:
+        - "{{ sap_provisioning_archive }}"
+
+    - name: Extract provisioning code
+      ansible.builtin.unarchive:
+        src: "{{ sap_provisioning_directory }}/{{ item }}"
+        dest: "{{ sap_provisioning_directory }}"
+        owner: bobj
+        group: binstall
+        remote_src: true
+      loop:
+        - "{{ sap_provisioning_archive }}"
+      when: not ansible_check_mode
+
+  # block
+  when: sap_provisioning_database_hostname is defined

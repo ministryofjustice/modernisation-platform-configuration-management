@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<dbqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="queries.xsd">
+	<query id="ALL_STAFF">
+		<select>
+                 WITH BOE AS (
+  SELECT * FROM bobj_sec_select.Provisioning_BOE_Groups boe
+  WHERE boe.environment = ? 
+)
+SELECT
+  sua.username user_id, sm.last_name || ',' || sm.first_name name, sm.suspended_flag,
+  userroles.role_id, userroles.role_code, userroles.role_name,
+  ROW_NUMBER() OVER (PARTITION BY sua.username ORDER BY userroles.role_id DESC) user_seq
+FROM staff_user_accounts sua
+INNER JOIN staff_members sm
+  ON sua.staff_id = sm.staff_id
+LEFT OUTER JOIN (
+  SELECT DISTINCT
+    ucr.username, ucr.Role_id, r.Role_Code, r.Role_name,
+    MAX(COALESCE(ucr.modify_datetime, ucr.create_datetime)) OVER (PARTITION BY ucr.username) modify_date
+  FROM user_caseload_roles ucr
+  INNER JOIN oms_roles r
+    ON ucr.role_id = r.role_id
+  INNER JOIN BOE
+    ON r.role_code = BOE.role_code  
+) userroles
+  ON sua.username = userroles.username
+CROSS JOIN (
+  SELECT trunc(sysdate) - ? dt FROM DUAL
+) dt
+WHERE ((sua.create_datetime >= (dt.dt) AND userroles.role_id IS NOT NULL)
+   OR (COALESCE(sm.modify_datetime, sm.create_datetime) >= (dt.dt) AND userroles.role_id IS NOT NULL)
+   OR userroles.modify_date >= (dt.dt)
+   OR EXISTS (
+     SELECT 1
+     FROM bobj_sec_select.vw_user_caseload_roles_dels sucr
+     INNER JOIN oms_roles 
+       ON sucr.role_id = oms_roles.role_id
+     INNER JOIN BOE
+       ON oms_roles.role_code = BOE.role_code
+     WHERE sucr.username = sua.username
+     AND sucr.mis_source_time >= dt.dt
+     AND NOT EXISTS (
+        SELECT 1
+        FROM user_caseload_roles ucr1
+        WHERE ucr1.username = sucr.username
+        AND ucr1.role_id = sucr.role_id
+        )
+     ))
+ORDER BY sua.username, userroles.role_id
+        </select>
+	</query>
+    <query id="DELETE_PROV_BOE_TABLE">
+        <select>DELETE </select>
+        <from>FROM bobj_sec_select.Provisioning_BOE_Groups </from>
+        <where>WHERE ENVIRONMENT = ? </where>
+    </query>
+    <query id="INSERT_PROV_BOE_TABLE">
+        <select>INSERT </select>
+        <from>INTO bobj_sec_select.Provisioning_BOE_Groups </from>
+        <values>VALUES(?,?,?) </values>
+    </query>
+</dbqueries>
