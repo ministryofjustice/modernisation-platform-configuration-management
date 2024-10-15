@@ -527,7 +527,9 @@ $ipsInstallParams = @{
     ArgumentList = '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
     Verb = 'RunAs'
     Wait = $true
-    Verb = "RunAs"
+    RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_out_install.log"
+    RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_err_install.log"
+    NoNewWindow = $true
 }
 
 # debugging
@@ -547,10 +549,11 @@ if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) 
 
 try {
     Write-Host "IPS install started"
-    Start-Process @ipsInstallParams -ErrorAction Stop -ErrorVariable StartProcessError
+    Start-Process @ipsInstallParams -ErrorAction Stop
 } catch {
-    Write-Error "Failed to start process: $StartProcessError"
-    Write-Host  "Failed to start process: $StartProcessError"
+    Write-Output "Output, Failed to start process $_"
+    Write-Error "Error, Failed to start process: $_"
+    Write-Host  "Host, Failed to start process: $_"
     exit 1
 }
 # & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
