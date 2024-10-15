@@ -555,7 +555,7 @@ try {
     }
 }
 
-start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
+# start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
 # TODO: supply password values to argument list OR remove the reponse file after it's been used
 # }}} end install IPS
