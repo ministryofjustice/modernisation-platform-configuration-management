@@ -547,15 +547,18 @@ if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) 
     exit 1
 }
 
-try {
-    Write-Host "IPS install started"
-    Start-Process @ipsInstallParams -ErrorAction Stop
-} catch {
-    Write-Output "Output, Failed to start process $_"
-    Write-Error "Error, Failed to start process: $_"
-    Write-Host  "Host, Failed to start process: $_"
-    exit 1
-}
+# try {
+#     Write-Host "IPS install started"
+#     Start-Process @ipsInstallParams -ErrorAction Stop
+# } catch {
+#     Write-Output "Output, Failed to start process $_"
+#     Write-Error "Error, Failed to start process: $_"
+#     Write-Host  "Host, Failed to start process: $_"
+#     exit 1
+# }
+
+start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+
 # & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
 # }}} end install IPS
 
