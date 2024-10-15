@@ -545,7 +545,6 @@ if (-NOT(Test-Path $ipsInstallIni)) {
 # IMPORTANT: because the installer only has access to /wait via cmd.exe we can't use Start-Process to run the installer directly via PowerShell
 try {
     & cmd.exe /c $command
-    # Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -Wait -ErrorAction Stop
 } catch {
     $exception = $_.Exception
     Write-Error "Failed to start installer:"
