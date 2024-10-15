@@ -508,58 +508,49 @@ choosesmdintegration=nointegrate
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
-# TODO: supply password values to argument list OR remove the reponse file after it's been used
-
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+$ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
 if ($instanceName -eq $($Config.cmsMainNode)) {
-    $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
+    $ipsResponseFileContentCommon | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
-    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
+    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
     exit 1
 }
 
-$ipsInstallParams = @{
-    FilePath = "setup.exe"
-    WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
-    ArgumentList = '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
-    Verb = 'RunAs'
-    Wait = $true
-    RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_out_install.log"
-    RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_err_install.log"
-    NoNewWindow = $true
-}
-
-# debugging
-$ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
-
 Clear-PendingFileRenameOperations
 
-if (-NOT(Test-Path $ipsInstallParams.FilePath)) {
-    Write-Host "IPS setup.exe not found at $($ipsInstallParams.FilePath)"
+$setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
+$installArgs = '-r "' + $ipsInstallIni + '"'
+$cmdArgs = '/c start "" /wait "' + $setupExe + '" ' + $installArgs
+
+if (-NOT(Test-Path $setupExe)) {
+    Write-Host "IPS setup.exe not found at $($setupExe)"
     exit 1
 }
 
-if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) {
-    Write-Host "IPS response file not found at $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+if (-NOT(Test-Path $ipsInstallIni)) {
+    Write-Host "IPS response file not found at $ipsInstallIni"
     exit 1
 }
 
-# try {
-#     Write-Host "IPS install started"
-#     Start-Process @ipsInstallParams -ErrorAction Stop
-# } catch {
-#     Write-Output "Output, Failed to start process $_"
-#     Write-Error "Error, Failed to start process: $_"
-#     Write-Host  "Host, Failed to start process: $_"
-#     exit 1
-# }
+# IMPORTANT: because the installer only has access to /wait via cmd.exe we can't use Start-Process to run the installer directly via PowerShell
+try {
+    Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -Wait -ErrorAction Stop
+} catch {
+    $exception = $_.Exception
+    Write-Error "Failed to start installer:"
+    Write-Error "Exception Message: $($exception.Message)"
+    if ($exception.InnerException) {
+        Write-Error "Inner Exception Message: $($exception.InnerException.Message)"
+    }
+}
 
-start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
-# & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
+# TODO: supply password values to argument list OR remove the reponse file after it's been used
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -630,19 +621,14 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
 
 $dataServicesInstallParams = @{
-    FilePath = "$($Config.DataServicesS3File)"
-    WorkingDirectory = $WorkingDirectory
-    ArgumentList = '-q -r D:\Software\ds_install.ini'
+    FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini"
     Wait = $true
-    Verb = "RunAs"
-    WindowStyle = "Hidden"
-    # RedirectStandardOutput = "$WorkingDirectory\std_out_ds_install.log"
-    # RedirectStandardError = "$WorkingDirectory\std_err_ds_install.log"
+    NoNewWindow = $true
 }
 
-# DISABLE FOR TESTING
+# Install Data Services
 Start-Process @dataServicesInstallParams
-# & "$WorkingDirectory\$($Config.DataServicesS3File)" -r "$WorkingDirectory\ds_install.rsp" | Out-Null
 
 # }}} End install Data Services
 
