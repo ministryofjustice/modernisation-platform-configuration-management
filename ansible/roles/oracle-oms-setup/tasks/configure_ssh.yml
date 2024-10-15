@@ -43,8 +43,11 @@
     comment: For use by OEM Central Agent for local authentication
     size: 4096
     type: rsa
+    private_key_format: pkcs8
+    backend: cryptography
   become: true
   become_user: oracle
+
 
 - name: Read Public key
   slurp:
