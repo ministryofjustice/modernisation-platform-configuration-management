@@ -523,9 +523,12 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
 
 $ipsInstallParams = @{
     FilePath = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
-    ArgumentList = "-r `"$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp`""
+    ArgumentList = "-r","$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+    WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
     Wait = $true
-    Verb = "RunAs"
+    RedirectStandardOutput = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_out_install.log"
+    RedirectStandardError = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_err_install.log"
+    NoNewWindow = $true
 }
 
 # debugging
@@ -545,10 +548,11 @@ if (-NOT(Test-Path "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp")) 
 
 try {
     Write-Host "IPS install started"
-    Start-Process @ipsInstallParams -ErrorAction Stop -ErrorVariable StartProcessError
+    Start-Process @ipsInstallParams -ErrorAction Stop
 } catch {
-    Write-Error "Failed to start process: $StartProcessError"
-    Write-Host  "Failed to start process: $StartProcessError"
+    Write-Output "Output, Failed to start process $_"
+    Write-Error "Error, Failed to start process: $_"
+    Write-Host  "Host, Failed to start process: $_"
     exit 1
 }
 # & "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" | Out-Null
@@ -625,6 +629,9 @@ $dataServicesInstallParams = @{
     FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
     ArgumentList = "-r `"$WorkingDirectory\ds_install.rsp`""
     Wait = $true
+    RedirectStandardOutput = "$WorkingDirectory\ds_out_install.log"
+    RedirectStandardError = "$WorkingDirectory\ds_err_install.log"
+    NoNewWindow = $true
 }
 
 # DISABLE FOR TESTING
