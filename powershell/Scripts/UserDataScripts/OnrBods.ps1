@@ -607,9 +607,9 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.rsp" -Force -Encoding ascii
 
 $dataServicesInstallParams = @{
-    FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    FilePath = "$($Config.DataServicesS3File)"
     WorkingDirectory = $WorkingDirectory
-    ArgumentList = '-r D:\Software\ds_install.rsp'
+    ArgumentList = '-q -r D:\Software\ds_install.rsp'
     Wait = $true
     NoNewWindow = $true
 }
