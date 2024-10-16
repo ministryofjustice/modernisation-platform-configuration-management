@@ -216,6 +216,16 @@ function Test-DatabaseConnection {
     }
 }
 
+function Get-ChildProcessIds {
+    param ($ParentId)
+    $childProcesses = Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentId"
+    foreach ($child in $childProcesses) {
+        $child.ProcessId
+        Get-ChildProcessIds -ParentId $child.ProcessId
+    }
+}
+
+
 # }}}
 
 # {{{ Prep the server for installation
@@ -553,7 +563,17 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
     $installProcess = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Credential $serviceUserPSCredential -Verbose -PassThru
-    "Process is $installProcess at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    $installProcessId = $installProcess.Id
+    "Process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    # get all process IDs to monitor
+    $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
+    do {
+        Start-Sleep -Seconds 30
+        $runningProcesses = Get-Process -Id $allProcessIds -ErrorAction SilentlyContinue
+        "Processes $runningProcesses are running" | Out-File -FilePath $logFile -Append
+    } while ($runningProcesses)
+    $exitcode = $installProcess.ExitCode
+    "IPS install has exited with code $exitcode" | Out-File -FilePath $logFile -Append
     "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
 } catch {
     $exception = $_.Exception
