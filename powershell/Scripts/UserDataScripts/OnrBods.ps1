@@ -524,8 +524,8 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
 $ipsInstallParams = @{
     FilePath = "setup.exe"
     WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
-    ArgumentList = '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
-    Verb = 'runas'
+    ArgumentList = '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
+    Verb = 'RunAs'
     Wait = $true
 }
 
