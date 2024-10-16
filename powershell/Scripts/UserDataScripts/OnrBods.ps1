@@ -568,7 +568,7 @@ try {
     # get all process IDs to monitor
     $allProcessIds = @($installProcessId)
     do {
-        Start-Sleep -Seconds 5
+
         # Refresh the list of child process IDs
         $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
 
@@ -581,6 +581,8 @@ try {
 
         # Check if the parent process is still running
         $parentStillRunning = Get-Process -Id $installProcessId -ErrorAction SilentlyContinue
+
+        Start-Sleep -Seconds 1
 
     } while ($runningProcesses -and $parentStillRunning)
     "All monitored processes have completed at $(Get-Date)" | Out-File -FilePath $logFile -Append
