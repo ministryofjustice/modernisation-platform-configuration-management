@@ -255,9 +255,9 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # Label the drives just to add some convienience
-Set-DriveLabel -DriveLetter "D" -NewLabel "Storage"
+Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
 Set-DriveLabel -DriveLetter "E" -NewLabel "App"
-Set-DriveLabel -DriveLetter "F" -NewLabel "Temp"
+Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
 
 # Set local time zone to UK
 Set-TimeZone -Name "GMT Standard Time"
