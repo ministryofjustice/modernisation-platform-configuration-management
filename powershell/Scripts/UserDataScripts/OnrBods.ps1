@@ -604,12 +604,12 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-$dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.rsp" -Force -Encoding ascii
+$dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
 
 $dataServicesInstallParams = @{
     FilePath = "$($Config.DataServicesS3File)"
     WorkingDirectory = $WorkingDirectory
-    ArgumentList = '-q -r D:\Software\ds_install.rsp'
+    ArgumentList = '-q -r D:\Software\ds_install.ini'
     Wait = $true
     NoNewWindow = $true
 }
