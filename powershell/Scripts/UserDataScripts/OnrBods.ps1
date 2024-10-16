@@ -302,6 +302,7 @@ Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -Scrip
    param($serviceUser)
    #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
    Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
+   Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
 } -ArgumentList $serviceUser
 # }}}
 
@@ -520,6 +521,10 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
     exit 1
 }
 
+$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
+# create PSCredential object for service user
+$serviceUserPSCredential = New-Object System.Management.Automation.PSCredential ($serviceUser, (ConvertTo-SecureString -AsPlainText $service_user_password -Force))
+
 Clear-PendingFileRenameOperations
 
 $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
@@ -547,7 +552,9 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow
+    $installProcess = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Credential $serviceUserPSCredential -Verbose -PassThru
+    "Process is $installProcess at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
 } catch {
     $exception = $_.Exception
     "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
@@ -572,7 +579,7 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
+
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
