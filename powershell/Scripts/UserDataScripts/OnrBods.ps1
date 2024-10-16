@@ -562,7 +562,7 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $installProcess = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Credential $serviceUserPSCredential -Verbose -PassThru
+    $installProcess = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verb runas -Verbose -PassThru
     $installProcessId = $installProcess.Id
     "Process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
