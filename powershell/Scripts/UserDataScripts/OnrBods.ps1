@@ -525,12 +525,12 @@ Clear-PendingFileRenameOperations
 $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
 
 # Build the command to pass to cmd.exe
-$command = 'start "" /wait "' + $setupExe + '" -r "' + $ipsInstallIni + '"'
+# $command = 'start "" /wait "' + $setupExe + '" -r "' + $ipsInstallIni + '"'
 
 # Build the ArgumentList as an array of strings
-$cmdArgs = @('/c', $command)
+# $cmdArgs = @('/c', $command)
 
-$command | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\command.txt" -Force
+# $command | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\command.txt" -Force
 
 if (-NOT(Test-Path $setupExe)) {
     Write-Host "IPS setup.exe not found at $($setupExe)"
@@ -542,16 +542,18 @@ if (-NOT(Test-Path $ipsInstallIni)) {
     exit 1
 }
 
-# IMPORTANT: because the installer only has access to /wait via cmd.exe we can't use Start-Process to run the installer directly via PowerShell
+$logFile = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\install_ips_sp.log"
+New-Item -Type File -Path $logFile -Force | Out-Null
+
 try {
-    # & cmd.exe /c $command
-    Start-Process -FilePath cmd.exe -ArgumentList $cmdArgs -Wait -NoNewWindow
+    "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow
 } catch {
     $exception = $_.Exception
-    Write-Error "Failed to start installer:"
-    Write-Error "Exception Message: $($exception.Message)"
+    "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    "Exception Message: $($exception.Message)" | OUt-File -FilePath $logFile -Append
     if ($exception.InnerException) {
-        Write-Error "Inner Exception Message: $($exception.InnerException.Message)"
+        "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
     }
 }
 
