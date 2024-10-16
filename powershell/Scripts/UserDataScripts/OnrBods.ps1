@@ -51,6 +51,110 @@ $ErrorActionPreference = "Stop"
 $WorkingDirectory = "D:\Software"
 $AppDirectory = "E:\App"
 
+# Path to ebsnvme-id.exe
+$ebsNvmeIdPath = "C:\ProgramData\Amazon\Tools\ebsnvme-id.exe"
+
+# Get the mapping of Disk Numbers to Device Names
+$diskMappings = @{}
+
+# Run ebsnvme-id.exe and parse the output
+$ebsOutput = & $ebsNvmeIdPath | Out-String
+
+# Process the output
+$entries = $ebsOutput -split "(?m)^\s*$" | Where-Object { $_ -match "Disk Number" }
+
+foreach ($entry in $entries) {
+    $lines = $entry -split "`n"
+    $diskNumber = $null
+    $volumeId = $null
+    $deviceName = $null
+
+    foreach ($line in $lines) {
+        if ($line -match "^Disk Number:\s+(\d+)") {
+            $diskNumber = [int]$Matches[1]
+        } elseif ($line -match "^Volume ID:\s+(\S+)") {
+            $volumeId = $Matches[1]
+        } elseif ($line -match "^Device Name:\s+(\S+)") {
+            $deviceName = $Matches[1]
+        }
+    }
+
+    if ($deviceName) {
+        $diskMappings[$deviceName] = @{
+            DiskNumber = $diskNumber
+            VolumeId = $volumeId
+        }
+    }
+}
+
+# Define the desired mappings
+$desiredMappings = @{
+    "/dev/xvdk" = @{
+        DriveLetter = 'D'
+        Label = 'Temp'
+    }
+    "/dev/xvdl" = @{
+        DriveLetter = 'E'
+        Label = 'App'
+    }
+    "/dev/xvdm" = @{
+        DriveLetter = 'F'
+        Label = 'Storage'
+    }
+}
+
+foreach ($deviceName in $diskMappings.Keys) {
+    if ($desiredMappings.ContainsKey($deviceName)) {
+        $diskInfo = $diskMappings[$deviceName]
+        $diskNumber = $diskInfo.DiskNumber
+        $driveLetter = $desiredMappings[$deviceName].DriveLetter
+        $label = $desiredMappings[$deviceName].Label
+
+        Write-Host "Processing Disk Number: $diskNumber (Device Name: $deviceName), assigning $driveLetter`: labeled '$label'"
+
+        # Initialize the disk if it's not initialized
+        $disk = Get-Disk -Number $diskNumber -ErrorAction Stop
+        if ($disk.PartitionStyle -eq 'RAW') {
+            # Initialize the disk with GPT partition style
+            Initialize-Disk -Number $diskNumber -PartitionStyle GPT -Confirm:$false
+            Start-Sleep -Seconds 2
+        }
+
+        # Create a new partition if no partitions exist
+        $partitions = Get-Partition -DiskNumber $diskNumber
+        if ($partitions.Count -eq 0) {
+            $partition = New-Partition -DiskNumber $diskNumber -UseMaximumSize -IsActive:$true
+            Start-Sleep -Seconds 2
+        } else {
+            $partition = $partitions[0]
+        }
+
+        # Format the partition if it's not formatted
+        $volume = Get-Volume -DiskNumber $diskNumber | Where-Object { $_.FileSystem -ne "NTFS" }
+        if ($volume) {
+            Format-Volume -Partition $partition -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false
+            Start-Sleep -Seconds 2
+        } else {
+            # Change the label if necessary
+            $volume = Get-Volume -DiskNumber $diskNumber
+            if ($volume.FileSystemLabel -ne $label) {
+                Set-Volume -DriveLetter $volume.DriveLetter -NewFileSystemLabel $label
+            }
+        }
+
+        # Assign the drive letter
+        $currentDriveLetter = $partition.DriveLetter
+        if ($currentDriveLetter -ne $driveLetter) {
+            Assign-Partition -DiskNumber $diskNumber -PartitionNumber $partition.PartitionNumber -DriveLetter $driveLetter
+        }
+
+        Write-Host "Disk $diskNumber initialized and formatted. Drive Letter: $driveLetter, Label: $label"
+    } else {
+        Write-Host "Device Name: $deviceName does not have a desired mapping. Skipping."
+    }
+}
+
+
 # {{{ functions
 function Get-Config {
     $tokenParams = @{
