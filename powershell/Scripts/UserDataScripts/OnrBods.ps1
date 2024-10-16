@@ -527,7 +527,6 @@ $ipsInstallParams = @{
     ArgumentList = '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
     Verb = 'runas'
     Wait = $true
-    NoNewWindow = $true
 }
 
 # debugging
