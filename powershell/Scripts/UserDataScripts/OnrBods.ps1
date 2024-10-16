@@ -513,18 +513,19 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
 
 if ($instanceName -eq $($Config.cmsMainNode)) {
-    $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+    $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
 } elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
-    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp" -Force -Encoding ascii
+    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
     exit 1
 }
 
 $ipsInstallParams = @{
-    FilePath = "$WorkingDirectory\IPS\DATA_UNITS\\IPS_win\setup.exe"
+    FilePath = "setup.exe"
     WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
-    ArgumentList = "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.rsp"
+    ArgumentList = '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
+    Verb = 'runas'
     Wait = $true
     NoNewWindow = $true
 }
@@ -609,7 +610,7 @@ $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.
 $dataServicesInstallParams = @{
     FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
     WorkingDirectory = $WorkingDirectory
-    ArgumentList = "-r $WorkingDirectory\ds_install.rsp"
+    ArgumentList = '-r D:\Software\ds_install.rsp'
     Wait = $true
     NoNewWindow = $true
 }
