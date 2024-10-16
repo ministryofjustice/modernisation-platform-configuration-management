@@ -562,16 +562,29 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $installProcess = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -Verb runas -Verbose -PassThru
-    $installProcessId = $installProcess.Id
-    "Process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -Verb runas -Verbose -PassThru
+    $installProcessId = $process.Id
+    "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
-    $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
+    $allProcessIds = @($installProcessId)
     do {
-        Start-Sleep -Seconds 30
+        Start-Sleep -Seconds 5
+        # Refresh the list of child process IDs
+        $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
+
+        # Get currently running processes from our list
         $runningProcesses = Get-Process -Id $allProcessIds -ErrorAction SilentlyContinue
-        "Processes $runningProcesses are running" | Out-File -FilePath $logFile -Append
-    } while ($runningProcesses)
+
+        # Log the running processes
+        $runningProcessIds = $runningProcesses | ForEach-Object { $_.Id }
+        "Running processes at $(Get-Date): $($runningProcessIds -join ', ')" | Out-File -FilePath $logFile -Append
+
+        # Check if the parent process is still running
+        $parentStillRunning = Get-Process -Id $installProcessId -ErrorAction SilentlyContinue
+
+    } while ($runningProcesses -and $parentStillRunning)
+    "All monitored processes have completed at $(Get-Date)" | Out-File -FilePath $logFile -Append
+
     $exitcode = $installProcess.ExitCode
     "IPS install has exited with code $exitcode" | Out-File -FilePath $logFile -Append
     "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
