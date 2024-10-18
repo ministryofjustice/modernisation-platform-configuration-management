@@ -256,7 +256,7 @@ cat /dev/null > ${SCRIPT_DIR}/schema_recreation.log
 # Validate database dump directory exists. 
 validate_datapump_directory
 DP_DIRECTORY_PATH=$(grep "DPPATH="  ${SCRIPT_DIR}/validate_datapump_directory.log| awk -F= '{ print $2}')
-[ -d ${DP_DIRECTORY_PATH} ] && error "Datapump Directory does not exists on server" 
+[ ! -d ${DP_DIRECTORY_PATH} ] && error "Datapump Directory does not exists on server" 
 
 # Validate schemas exist in database before starting import 
 info "Validate schemas $SCHEMAS"
