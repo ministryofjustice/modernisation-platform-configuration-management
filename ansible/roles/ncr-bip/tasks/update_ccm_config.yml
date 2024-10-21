@@ -11,5 +11,15 @@
         regexp: "^FIPSModeValue=.*"
         replace: 'FIPSModeValue="true"'
 
+    - name: Create directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0775
+        owner: bobj
+        group: binstall
+      with_items:
+        - "{{ sap_promotion_management_directory }}"
+
   # block
   when: ccm_config_check.stat.exists
