@@ -25,6 +25,7 @@ $GlobalConfig = @{
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_COMPUTERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
     }
@@ -34,8 +35,9 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_PP_BODS.ora"
         "cmsMainNode"     = "pp-onr-bods-1"
         "cmsExtendedNode" = "pp-onr-bods-2"
-        "serviceUser"     = "svc_pp_onr_bods"
+        "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_COMPUTERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS preprod service user for AWS"
         "domain" = "HMPP"
     }
@@ -329,7 +331,29 @@ function Get-ChildProcessIds {
     }
 }
 
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+      [Parameter(Mandatory=$true)][string]$NewOU
+    )
 
+    $ErrorActionPreference = "Stop"
+
+      # Do nothing if host not part of domain
+  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+    Return $false
+  }
+
+  # Install powershell features if missing
+  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
+    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
+  }
+
+  # Move the computer to the new OU
+  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+}
 # }}}
 
 # {{{ Prep the server for installation
@@ -418,6 +442,12 @@ Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -Scrip
    Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
    Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
 } -ArgumentList $serviceUser
+
+# Move the computer to the correct OU
+Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+
+# ensure computer is in the correct OU
+gpupdate /force
 # }}}
 
 # {{{ prepare assets
