@@ -23,7 +23,7 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
         "cmsMainNode"     = "t2-tst-bods-asg" #TODO: change this BACK
         "cmsExtendedNode" = "t2-onr-bods-2"
-        "serviceUser"     = "svc_t2_onr_bods"
+        "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
@@ -51,108 +51,108 @@ $ErrorActionPreference = "Stop"
 $WorkingDirectory = "D:\Software"
 $AppDirectory = "E:\App"
 
-# Path to ebsnvme-id.exe
-$ebsNvmeIdPath = "C:\ProgramData\Amazon\Tools\ebsnvme-id.exe"
+# # Path to ebsnvme-id.exe
+# $ebsNvmeIdPath = "C:\ProgramData\Amazon\Tools\ebsnvme-id.exe"
 
-# Get the mapping of Disk Numbers to Device Names
-$diskMappings = @{}
+# # Get the mapping of Disk Numbers to Device Names
+# $diskMappings = @{}
 
-# Run ebsnvme-id.exe and parse the output
-$ebsOutput = & $ebsNvmeIdPath | Out-String
+# # Run ebsnvme-id.exe and parse the output
+# $ebsOutput = & $ebsNvmeIdPath | Out-String
 
-# Process the output
-$entries = $ebsOutput -split "(?m)^\s*$" | Where-Object { $_ -match "Disk Number" }
+# # Process the output
+# $entries = $ebsOutput -split "(?m)^\s*$" | Where-Object { $_ -match "Disk Number" }
 
-foreach ($entry in $entries) {
-    $lines = $entry -split "`n"
-    $diskNumber = $null
-    $volumeId = $null
-    $deviceName = $null
+# foreach ($entry in $entries) {
+#     $lines = $entry -split "`n"
+#     $diskNumber = $null
+#     $volumeId = $null
+#     $deviceName = $null
 
-    foreach ($line in $lines) {
-        if ($line -match "^Disk Number:\s+(\d+)") {
-            $diskNumber = [int]$Matches[1]
-        } elseif ($line -match "^Volume ID:\s+(\S+)") {
-            $volumeId = $Matches[1]
-        } elseif ($line -match "^Device Name:\s+(\S+)") {
-            $deviceName = $Matches[1]
-        }
-    }
+#     foreach ($line in $lines) {
+#         if ($line -match "^Disk Number:\s+(\d+)") {
+#             $diskNumber = [int]$Matches[1]
+#         } elseif ($line -match "^Volume ID:\s+(\S+)") {
+#             $volumeId = $Matches[1]
+#         } elseif ($line -match "^Device Name:\s+(\S+)") {
+#             $deviceName = $Matches[1]
+#         }
+#     }
 
-    if ($deviceName) {
-        $diskMappings[$deviceName] = @{
-            DiskNumber = $diskNumber
-            VolumeId = $volumeId
-        }
-    }
-}
+#     if ($deviceName) {
+#         $diskMappings[$deviceName] = @{
+#             DiskNumber = $diskNumber
+#             VolumeId = $volumeId
+#         }
+#     }
+# }
 
-# Define the desired mappings
-$desiredMappings = @{
-    "/dev/xvdk" = @{
-        DriveLetter = 'D'
-        Label = 'Temp'
-    }
-    "/dev/xvdl" = @{
-        DriveLetter = 'E'
-        Label = 'App'
-    }
-    "/dev/xvdm" = @{
-        DriveLetter = 'F'
-        Label = 'Storage'
-    }
-}
+# # Define the desired mappings
+# $desiredMappings = @{
+#     "/dev/xvdk" = @{
+#         DriveLetter = 'D'
+#         Label = 'Temp'
+#     }
+#     "/dev/xvdl" = @{
+#         DriveLetter = 'E'
+#         Label = 'App'
+#     }
+#     "/dev/xvdm" = @{
+#         DriveLetter = 'F'
+#         Label = 'Storage'
+#     }
+# }
 
-foreach ($deviceName in $diskMappings.Keys) {
-    if ($desiredMappings.ContainsKey($deviceName)) {
-        $diskInfo = $diskMappings[$deviceName]
-        $diskNumber = $diskInfo.DiskNumber
-        $driveLetter = $desiredMappings[$deviceName].DriveLetter
-        $label = $desiredMappings[$deviceName].Label
+# foreach ($deviceName in $diskMappings.Keys) {
+#     if ($desiredMappings.ContainsKey($deviceName)) {
+#         $diskInfo = $diskMappings[$deviceName]
+#         $diskNumber = $diskInfo.DiskNumber
+#         $driveLetter = $desiredMappings[$deviceName].DriveLetter
+#         $label = $desiredMappings[$deviceName].Label
 
-        Write-Host "Processing Disk Number: $diskNumber (Device Name: $deviceName), assigning $driveLetter`: labeled '$label'"
+#         Write-Host "Processing Disk Number: $diskNumber (Device Name: $deviceName), assigning $driveLetter`: labeled '$label'"
 
-        # Initialize the disk if it's not initialized
-        $disk = Get-Disk -Number $diskNumber -ErrorAction Stop
-        if ($disk.PartitionStyle -eq 'RAW') {
-            # Initialize the disk with GPT partition style
-            Initialize-Disk -Number $diskNumber -PartitionStyle GPT -Confirm:$false
-            Start-Sleep -Seconds 2
-        }
+#         # Initialize the disk if it's not initialized
+#         $disk = Get-Disk -Number $diskNumber -ErrorAction Stop
+#         if ($disk.PartitionStyle -eq 'RAW') {
+#             # Initialize the disk with GPT partition style
+#             Initialize-Disk -Number $diskNumber -PartitionStyle GPT -Confirm:$false
+#             Start-Sleep -Seconds 2
+#         }
 
-        # Create a new partition if no partitions exist
-        $partitions = Get-Partition -DiskNumber $diskNumber
-        if ($partitions.Count -eq 0) {
-            $partition = New-Partition -DiskNumber $diskNumber -UseMaximumSize -IsActive:$true
-            Start-Sleep -Seconds 2
-        } else {
-            $partition = $partitions[0]
-        }
+#         # Create a new partition if no partitions exist
+#         $partitions = Get-Partition -DiskNumber $diskNumber
+#         if ($partitions.Count -eq 0) {
+#             $partition = New-Partition -DiskNumber $diskNumber -UseMaximumSize -IsActive:$true
+#             Start-Sleep -Seconds 2
+#         } else {
+#             $partition = $partitions[0]
+#         }
 
-        # Format the partition if it's not formatted
-        $volume = Get-Volume -DiskNumber $diskNumber | Where-Object { $_.FileSystem -ne "NTFS" }
-        if ($volume) {
-            Format-Volume -Partition $partition -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false
-            Start-Sleep -Seconds 2
-        } else {
-            # Change the label if necessary
-            $volume = Get-Volume -DiskNumber $diskNumber
-            if ($volume.FileSystemLabel -ne $label) {
-                Set-Volume -DriveLetter $volume.DriveLetter -NewFileSystemLabel $label
-            }
-        }
+#         # Format the partition if it's not formatted
+#         $volume = Get-Volume -DiskNumber $diskNumber | Where-Object { $_.FileSystem -ne "NTFS" }
+#         if ($volume) {
+#             Format-Volume -Partition $partition -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false
+#             Start-Sleep -Seconds 2
+#         } else {
+#             # Change the label if necessary
+#             $volume = Get-Volume -DiskNumber $diskNumber
+#             if ($volume.FileSystemLabel -ne $label) {
+#                 Set-Volume -DriveLetter $volume.DriveLetter -NewFileSystemLabel $label
+#             }
+#         }
 
-        # Assign the drive letter
-        $currentDriveLetter = $partition.DriveLetter
-        if ($currentDriveLetter -ne $driveLetter) {
-            Assign-Partition -DiskNumber $diskNumber -PartitionNumber $partition.PartitionNumber -DriveLetter $driveLetter
-        }
+#         # Assign the drive letter
+#         $currentDriveLetter = $partition.DriveLetter
+#         if ($currentDriveLetter -ne $driveLetter) {
+#             Assign-Partition -DiskNumber $diskNumber -PartitionNumber $partition.PartitionNumber -DriveLetter $driveLetter
+#         }
 
-        Write-Host "Disk $diskNumber initialized and formatted. Drive Letter: $driveLetter, Label: $label"
-    } else {
-        Write-Host "Device Name: $deviceName does not have a desired mapping. Skipping."
-    }
-}
+#         Write-Host "Disk $diskNumber initialized and formatted. Drive Letter: $driveLetter, Label: $label"
+#     } else {
+#         Write-Host "Device Name: $deviceName does not have a desired mapping. Skipping."
+#     }
+# }
 
 
 # {{{ functions
@@ -447,6 +447,12 @@ oracle.install.client.installType=Administrator
 
 $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
+# Service user will have been added by Group Policy to the Administrators User Group, makes sure this is applied
+gpupdate /force
+
+# convert the service user password and domain to a credential object
+$serviceUserCredentialObject = New-Object System.Management.Automation.PSCredential -ArgumentList "$($Config.domain)\$($Config.serviceUser)", $serviceUserPassword 
+
 # Install Oracle Client silent install
 $OracleClientInstallParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
@@ -454,6 +460,7 @@ $OracleClientInstallParams = @{
     ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
+    Credential       = $serviceUserCredentialObject
 }
 
 Start-Process @OracleClientInstallParams
@@ -468,6 +475,7 @@ $oracleConfigToolsParams = @{
     ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
+    Credential       = $serviceUserCredentialObject
 }
 
 Start-Process @oracleConfigToolsParams
@@ -635,10 +643,6 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
     exit 1
 }
 
-$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
-# create PSCredential object for service user
-$serviceUserPSCredential = New-Object System.Management.Automation.PSCredential ($serviceUser, (ConvertTo-SecureString -AsPlainText $service_user_password -Force))
-
 Clear-PendingFileRenameOperations
 
 $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
@@ -666,7 +670,7 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -Verb runas -Verbose -PassThru
+    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Credential $serviceUserCredentialObject -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
@@ -703,7 +707,7 @@ try {
     }
 }
 
-# start /wait "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -r "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
+
 
 # TODO: supply password values to argument list OR remove the reponse file after it's been used
 # }}} end install IPS
@@ -780,6 +784,7 @@ $dataServicesInstallParams = @{
     ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini"
     Wait = $true
     NoNewWindow = $true
+    Credential = $serviceUserCredentialObject
 }
 
 # Install Data Services
