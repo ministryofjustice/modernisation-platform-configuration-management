@@ -26,7 +26,7 @@ $GlobalConfig = @{
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "serviceUserDescription" = "Onr BODS T2 service user for AWS"
+        "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"    = "AZURE"
     }
     "oasys-national-reporting-preproduction" = @{
@@ -38,7 +38,7 @@ $GlobalConfig = @{
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "serviceUserDescription" = "Onr BODS preprod service user for AWS"
+        "serviceUserDescription" = "Onr BODS service user for AWS in HMPP domain"
         "domain" = "HMPP"
     }
     "oasys-national-reporting-production"    = @{
