@@ -25,7 +25,7 @@ $GlobalConfig = @{
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_COMPUTERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS T2 service user for AWS"
         "domain"    = "AZURE"
     }
@@ -36,8 +36,8 @@ $GlobalConfig = @{
         "cmsMainNode"     = "pp-onr-bods-1"
         "cmsExtendedNode" = "pp-onr-bods-2"
         "serviceUser"     = "svc_nart"
-        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_COMPUTERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "serviceUserDescription" = "Onr BODS preprod service user for AWS"
         "domain" = "HMPP"
     }
