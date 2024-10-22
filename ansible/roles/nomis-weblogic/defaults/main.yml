@@ -1,11 +1,13 @@
 ---
 # Following tags must be set on the ASG
 # nomis-environment: e.g. t1
+# reporting-environment, e.g. azure or aws
 # oracle-db-name: T1CNOM
 # oracle-db-hostname-a: t1-nomis-db-1-a.fqdn
 # oracle-db-hostname-b: none
 
 nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
+reporting_environment: "{{ ec2.tags['reporting-environment'] | default('azure') }}"
 weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
 weblogic_db_hostname_b: "{{ ec2.tags['oracle-db-hostname-b'] }}"
@@ -17,6 +19,13 @@ db_configs: {}
 # The nomis_configs map must be defined and have an entry
 # corresponding to nomis-environment.  Define in group_vars.
 nomis_configs: {}
+
+reporting_configs:
+  azure:
+    rms_secret_name: "/oracle/weblogic/{{ nomis_environment }}/rms"
+  aws:
+    rms_secret_name: "/oracle/weblogic/{{ nomis_environment }}/rms_aws"
+reporting_config: "{{ reporting_configs[reporting_environment] }}"
 
 weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 weblogic_servername: "{{ ansible_facts.hostname }}"
@@ -56,7 +65,7 @@ weblogic_secretsmanager_passwords:
       - tagsar:
       - oms_owner:
   rms:
-    secret: "/oracle/weblogic/{{ nomis_environment }}/rms"
+    secret: "{{ reporting_config.rms_secret_name }}"
     users:
       - hosts:
       - key:
