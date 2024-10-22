@@ -433,21 +433,24 @@ Enable-PSRemoting -Force
 # Use admin credentials to add the service user to the Remote Desktop Users group
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
 
-$serviceUser = "$($Config.domain)\$($Config.serviceUser)"
-Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
+# $serviceUser = "$($Config.domain)\$($Config.serviceUser)"
+# TODO: Remove this as it's being done by Group Policy by moving the EC2 instance to the Nart OU
+# Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
 
-Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
-   param($serviceUser)
-   #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
-   Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
-   Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
-} -ArgumentList $serviceUser
+# Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
+#    param($serviceUser)
+#    #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
+#    Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
+#    Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
+# } -ArgumentList $serviceUser
 
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
-# ensure computer is in the correct OU
+# ensure computer is in the correct OU TODO: need to check this is actually applied
 gpupdate /force
+
+
 # }}}
 
 # {{{ prepare assets
