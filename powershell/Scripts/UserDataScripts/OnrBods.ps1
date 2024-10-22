@@ -493,7 +493,6 @@ $OracleClientInstallParams = @{
     ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
-    Credential       = $serviceUserCredentialObject
 }
 
 Start-Process @OracleClientInstallParams
@@ -508,7 +507,6 @@ $oracleConfigToolsParams = @{
     ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
     Wait             = $true
     NoNewWindow      = $true
-    Credential       = $serviceUserCredentialObject
 }
 
 Start-Process @oracleConfigToolsParams
@@ -703,7 +701,7 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Credential $serviceUserCredentialObject -Verbose -PassThru
+    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
@@ -813,11 +811,10 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
 
 $dataServicesInstallParams = @{
-    FilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
     ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini"
-    Wait = $true
-    NoNewWindow = $true
-    Credential = $serviceUserCredentialObject
+    Wait         = $true
+    NoNewWindow  = $true
 }
 
 # Install Data Services
