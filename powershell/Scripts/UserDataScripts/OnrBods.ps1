@@ -760,7 +760,6 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
 
-
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
@@ -777,7 +776,7 @@ dscmspassword=$bods_admin_password
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$env:COMPUTERNAME
+dscmssystem=$($env:COMPUTERNAME)
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -803,7 +802,7 @@ installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=$env:COMPUTERNAME
+mastercmsname=$($env:COMPUTERNAME)
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
