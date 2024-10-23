@@ -699,6 +699,9 @@ if (-NOT(Test-Path $ipsInstallIni)) {
 $logFile = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\install_ips_sp.log"
 New-Item -Type File -Path $logFile -Force | Out-Null
 
+# add Oracle client path to the powershell session
+$env:Path += ";E:\app\oracle\product\19.0.0\client_1\bin"
+
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
     $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
