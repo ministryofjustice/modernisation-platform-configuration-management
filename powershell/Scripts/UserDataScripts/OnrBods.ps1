@@ -303,12 +303,15 @@ function Test-DatabaseConnection {
         [Parameter(Mandatory=$true)]
         [String]$username,
         [Parameter(Mandatory=$true)]
-        [String]$password
+        [SecureString]$password
     )
 
     Add-Type -Path $typePath
 
-    $connectionString = "User Id=$username;Password=$password;Data Source=$tnsName"
+    # Convert SecureString to plain text
+    $plainTextPassword = ConvertFrom-SecureString -SecureString $password
+
+    $connectionString = "User Id=$username;Password=$plainTextPassword;Data Source=$tnsName"
     $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
 
     try {
@@ -383,6 +386,7 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # Label the drives just to add some convienience
+# TODO: REPLACE THIS 
 Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
 Set-DriveLabel -DriveLetter "E" -NewLabel "App"
 Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
@@ -413,8 +417,7 @@ $Config = Get-Config
 $Tags = Get-InstanceTags
 # }}}
 
-# {{{ Add service user to domain, allow service user to RDP into machine
-# re-importing this if the machine has been rebooted, probably not needed
+# {{{ Add service user to domain, move the computer to the 'Nart' OU and apply the Nart Group Policy objects
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
@@ -426,31 +429,16 @@ $bodsSecretName  = "/sap/bods/$dbenv/passwords"
 $serviceUserPlainTextPassword = Get-SecretValue -SecretId $bodsSecretName -SecretKey $($Config.serviceUser)
 $serviceUserPassword = ConvertTo-SecureString -String $serviceUserPlainTextPassword -AsPlainText -Force
 
+# TODO: Possibly remove this as we're going to document creating the service user in AD Azure and HMPP domains manually later
 New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPath) -Description $($Config.serviceUserDescription) -accountPassword $serviceUserPassword -ModPlatformADCredential $ADCredential
 
-Enable-PSRemoting -Force
-
-# Use admin credentials to add the service user to the Remote Desktop Users group
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
-
-# $serviceUser = "$($Config.domain)\$($Config.serviceUser)"
-# TODO: Remove this as it's being done by Group Policy by moving the EC2 instance to the Nart OU
-# Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
-
-# Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
-#    param($serviceUser)
-#    #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
-#    Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
-#    Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
-# } -ArgumentList $serviceUser
-
-# Move the computer to the correct OU
+# Move the computer to the correct OU - NEEDS TO BE TESTED IN THE PROD HMPP DOMAIN
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
-# ensure computer is in the correct OU TODO: need to check this is actually applied
+# Once the computer is in the correct OU it needs to have the Nart Group Policy objects applier to it. 
+# IMPORTANT: because the Administrators group needs Elevated permissions to run the Oracle installers.
+# TODO: Possibly list Nart GPO's here as well.
 gpupdate /force
-
-
 # }}}
 
 # {{{ prepare assets
@@ -549,7 +537,8 @@ $dbConfigs = @(
 
 # Loop through each database configuration
 foreach ($db in $dbConfigs) {
-    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $db.Password
+    $secureStringPassword = ConvertTo-SecureString -String $db.Password -AsPlainText -Force
+    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $secureStringPassword
     if ($return -ne 0) {
         Write-Host "Connection to $($db.Name) failed. Exiting."
         exit 1
@@ -700,7 +689,7 @@ New-Item -Type File -Path $logFile -Force | Out-Null
 $env:Path += ";E:\app\oracle\product\19.0.0\client_1\bin"
 
 $env:Path -split ";" | ForEach-Object {
-    Write-Host $_
+    Write-Host "Path: $_"
 }
 
 Write-Host "Starting IPS installer at $(Get-Date)"
@@ -840,7 +829,7 @@ if (Test-Path $jdbcDriverPath) {
     foreach ($destination in $destinations) {
         if (Test-Path $destination) {
             Write-Output "Copying JDBC driver to $destination"
-            Copy-Item -Path $jdbcDriverPath -Destination $destination -NoClobber
+            Copy-Item -Path $jdbcDriverPath -Destination $destination
         } else {
             Write-Output "Destination $destination does not exist, skipping"
         }
