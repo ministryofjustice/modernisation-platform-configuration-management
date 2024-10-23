@@ -759,6 +759,7 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
