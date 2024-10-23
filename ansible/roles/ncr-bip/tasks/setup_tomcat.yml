@@ -63,6 +63,14 @@
         line: '<Connector port="7777" protocol="HTTP/1.1" connectionTimeout="20000" relaxedQueryChars="[,]" redirectPort="8443" compression="on" URIEncoding="UTF-8" compressionMinSize="2048" noCompressionUserAgents="gozilla, traviata" compressibleMimeType="application/vnd.sap.cvom+vbo,text/html,text/xml,text/plain,text/css,text/javascript,text/json,application/javascript,application/json" minSpareThreads="{{ sap_web_server_7777_minsparethreads }}" maxThreads="{{ sap_web_server_7777_maxthreads }}" maxHttpHeaderSize="65536" />'
       when: sap_web_server_7777_maxthreads is defined
 
+    - name: Enable access logs
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/server.xml"
+        insertafter: 'pattern="%h %l %u %t &quot;%r&quot; %s %b" />-->'
+        regexp: '        <Valve className="org.apache.catalina.valves.AccessLogValve"'
+        line: '        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs" prefix="localhost_access_log" suffix=".txt" pattern="common" resolveHosts="false"/>'
+
     - name: Update JAVA_OPTS in setenv.sh
       become_user: bobj
       ansible.builtin.lineinfile:

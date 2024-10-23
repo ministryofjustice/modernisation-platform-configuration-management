@@ -107,6 +107,9 @@ sap_bip_confs:
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
 
+# explicitly include AWS in preproduction so we are 100% sure correct link is used
+sap_web_bip_link_text: "Continue to MIS and ORS Reporting (AWS)"
+
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
