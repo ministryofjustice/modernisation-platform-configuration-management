@@ -483,9 +483,6 @@ $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleC
 # Service user will have been added by Group Policy to the Administrators User Group, makes sure this is applied
 gpupdate /force
 
-# convert the service user password and domain to a credential object
-$serviceUserCredentialObject = New-Object System.Management.Automation.PSCredential -ArgumentList "$($Config.domain)\$($Config.serviceUser)", $serviceUserPassword 
-
 # Install Oracle Client silent install
 $OracleClientInstallParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
@@ -780,7 +777,7 @@ dscmspassword=$bods_admin_password
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$($Config.cmsMainNode)
+dscmssystem=$env:COMPUTERNAME
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -806,7 +803,7 @@ installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=$($Config.cmsMainNode)
+mastercmsname=$env:COMPUTERNAME
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
