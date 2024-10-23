@@ -41,6 +41,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 sap_bip_cms_db_reset: 1
 sap_bip_sia_name_cms: "{{ ec2.tags.Name | replace('-','') }}"
 sap_bip_sia_name_app: "{{ ec2.tags.Name | replace('-','') }}"
+sap_web_bip_link_text: "Continue to MIS and ORS Reporting"
 
 # set in group vars, otherwise response.cms.ini or response.app.ini is used depending on whether first install
 # sap_bip_responsefile:
