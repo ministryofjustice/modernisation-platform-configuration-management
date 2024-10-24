@@ -50,7 +50,7 @@ $tempPath = ([System.IO.Path]::GetTempPath())
 
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
 $ErrorActionPreference = "Stop"
-$WorkingDirectory = "D:\Software"
+$WorkingDirectory = "E:\Software"
 $AppDirectory = "E:\App"
 
 # # Path to ebsnvme-id.exe
@@ -74,7 +74,7 @@ $AppDirectory = "E:\App"
 #     foreach ($line in $lines) {
 #         if ($line -match "^Disk Number:\s+(\d+)") {
 #             $diskNumber = [int]$Matches[1]
-#         } elseif ($line -match "^Volume ID:\s+(\S+)") {
+#         } elseif ($line -match "^Volume IE:\s+(\S+)") {
 #             $volumeId = $Matches[1]
 #         } elseif ($line -match "^Device Name:\s+(\S+)") {
 #             $deviceName = $Matches[1]
@@ -357,6 +357,17 @@ function Move-ModPlatformADComputer {
   # Move the computer to the new OU
   (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 }
+
+function Remove-PasswordStrings {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]$FilePath
+    )
+    $ErrorActionPreference = "Stop"
+    $content = Get-Content -Path $FilePath
+    $updatedContent = $content -replace '(\w+password=)[^\s]*', '$1******'
+    $updatedContent | Set-Content -Path $FilePath -Force
+}
 # }}}
 
 # {{{ Prep the server for installation
@@ -391,8 +402,8 @@ Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
 Set-DriveLabel -DriveLetter "E" -NewLabel "App"
 Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
 
-# Set local time zone to UK
-Set-TimeZone -Name "GMT Standard Time"
+# Set local time zone to UK, although this should now be taken care of via Group Policy
+Set-TimeZone -Name "GMT Standard Time" 
 
 # }}} complete - add prerequisites to server
 
@@ -435,8 +446,7 @@ New-ModPlatformADUser -Name $($Config.serviceUser) -Path $($Config.serviceUserPa
 # Move the computer to the correct OU - NEEDS TO BE TESTED IN THE PROD HMPP DOMAIN
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
-# Once the computer is in the correct OU it needs to have the Nart Group Policy objects applier to it. 
-# IMPORTANT: because the Administrators group needs Elevated permissions to run the Oracle installers.
+# IMPORTANT: Once the computer is in the correct OU it needs to have the Nart Group Policy objects applied to it because the Administrators group needs Elevated permissions to run the Oracle installers. Without this succeeding the install will fail
 # TODO: Possibly list Nart GPO's here as well.
 gpupdate /force
 # }}}
@@ -468,9 +478,6 @@ oracle.install.client.installType=Administrator
 
 $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
-# Service user will have been added by Group Policy to the Administrators User Group, makes sure this is applied
-gpupdate /force
-
 # Install Oracle Client silent install
 $OracleClientInstallParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
@@ -497,8 +504,7 @@ $oracleConfigToolsParams = @{
 Start-Process @oracleConfigToolsParams
 
 [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
-
-# }}}
+# }}} end Oracle Client install
 
 # {{{ install IPS
 $Tags = Get-InstanceTags
@@ -660,18 +666,12 @@ if ($instanceName -eq $($Config.cmsMainNode)) {
     exit 1
 }
 
+# Installer checks will fail if there are pending operations requiring a reboot
 Clear-PendingFileRenameOperations
 
 $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
 
-# Build the command to pass to cmd.exe
-# $command = 'start "" /wait "' + $setupExe + '" -r "' + $ipsInstallIni + '"'
-
-# Build the ArgumentList as an array of strings
-# $cmdArgs = @('/c', $command)
-
-# $command | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\command.txt" -Force
-
+# test paths for debug purposes
 if (-NOT(Test-Path $setupExe)) {
     Write-Host "IPS setup.exe not found at $($setupExe)"
     exit 1
@@ -685,18 +685,19 @@ if (-NOT(Test-Path $ipsInstallIni)) {
 $logFile = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\install_ips_sp.log"
 New-Item -Type File -Path $logFile -Force | Out-Null
 
-# add Oracle client path to the powershell session
+# add Oracle client path to the powershell session so the installer db connection checks succeed
 $env:Path += ";E:\app\oracle\product\19.0.0\client_1\bin"
 
+# write Path values to log file for debug purposes
 $env:Path -split ";" | ForEach-Object {
-    Write-Host "Path: $_"
+    "Path: $_" | Out-File -FilePath $logFile -Append
 }
 
 Write-Host "Starting IPS installer at $(Get-Date)"
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
+    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
@@ -732,10 +733,6 @@ try {
         "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
     }
 }
-
-
-
-# TODO: supply password values to argument list OR remove the reponse file after it's been used
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -745,8 +742,9 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
     Write-Output "Creating F:\BODS_COMMON_DIR"
     New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
 }
+
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
-#
+
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 
@@ -814,7 +812,6 @@ $dataServicesInstallParams = @{
 
 # Install Data Services
 Start-Process @dataServicesInstallParams
-
 # }}} End install Data Services
 
 # {{{ Post install steps for Data Services, configure JDBC driver
@@ -840,6 +837,11 @@ if (Test-Path $jdbcDriverPath) {
 }
 # Install notes: If using Data Quality reports: Use WDeploy to re-deploy BODS web apps.
 #                If not, Restart EIM Adaptive Processing Server via CMC.
+# }}}
+
+# {{{ Obfuscate passwords from IPS and DataServices response files
+Remove-PasswordStrings -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
+Remove-PasswordStrings -FilePath "$WorkingDirectory\ds_install.ini"
 # }}}
 
 # {{{ login text
