@@ -303,22 +303,37 @@ function Test-DatabaseConnection {
         [Parameter(Mandatory=$true)]
         [String]$username,
         [Parameter(Mandatory=$true)]
-        [String]$password
+        [System.Security.SecureString]$securePassword
     )
 
     Add-Type -Path $typePath
 
-    $connectionString = "User Id=$username;Password=$password;Data Source=$tnsName"
+    # Convert SecureString to plain text safely
+    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+    $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+
+    # Create connection string
+    $connectionString = "User Id=$username;Password=$plainPassword;Data Source=$tnsName"
     $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
 
     try {
+        # Test connection
         $connection.Open()
         Write-Host "Connection successful!"
-        $connection.Close()
         return 0
     } catch {
         Write-Host "Connection failed: $($_.Exception.Message)"
         return 1
+    } finally {
+        if ($connection -and $connection.State -eq 'Open') {
+            $connection.Close()
+        }
+        # Clear sensitive data
+        if ($BSTR) {
+            [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+        }
+        $plainPassword = $null
+        $connectionString = $null
     }
 }
 
@@ -549,7 +564,8 @@ $dbConfigs = @(
 
 # Loop through each database configuration
 foreach ($db in $dbConfigs) {
-    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $db.Password
+    $securePassword = ConvertTo-SecureString -String $db.Password -AsPlainText -Force
+    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -securePassword $securePassword
     if ($return -ne 0) {
         Write-Host "Connection to $($db.Name) failed. Exiting."
         exit 1
