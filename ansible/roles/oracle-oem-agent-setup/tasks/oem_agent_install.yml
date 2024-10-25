@@ -53,11 +53,11 @@
       async: 86400
       poll: 60
 
-  always:
-    - name: Remove Response File
-      file:
-        path: "{{ agent_install_response_file }}"
-        state: absent
+  # always:
+  #   - name: Remove Response File
+  #     file:
+  #       path: "{{ agent_install_response_file }}"
+  #       state: absent
 
   # block
   become: true
