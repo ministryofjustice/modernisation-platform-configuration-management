@@ -50,7 +50,7 @@ $tempPath = ([System.IO.Path]::GetTempPath())
 
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
 $ErrorActionPreference = "Stop"
-$WorkingDirectory = "D:\Software"
+$WorkingDirectory = "E:\Software"
 $AppDirectory = "E:\App"
 
 # # Path to ebsnvme-id.exe
@@ -707,7 +707,7 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "D:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
+    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
