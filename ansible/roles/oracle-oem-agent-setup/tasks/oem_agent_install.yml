@@ -52,12 +52,13 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-install
       async: 86400
       poll: 60
+      throttle: 1
 
-  # always:
-  #   - name: Remove Response File
-  #     file:
-  #       path: "{{ agent_install_response_file }}"
-  #       state: absent
+  always:
+    - name: Remove Response File
+      file:
+        path: "{{ agent_install_response_file }}"
+        state: absent
 
   # block
   become: true
