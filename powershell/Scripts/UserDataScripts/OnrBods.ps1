@@ -593,7 +593,7 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=$bods_admin_password
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
@@ -657,7 +657,7 @@ neworexistinglcm=expand
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=$bods_admin_password
 ### CMS connection port
 cmsport=6400
 ### Existing main cms node name
@@ -732,7 +732,7 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait -r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini' -Wait -NoNewWindow -Verbose -PassThru
+    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password" -Wait -NoNewWindow -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
@@ -865,7 +865,7 @@ if (Test-Path $jdbcDriverPath) {
     foreach ($destination in $destinations) {
         if (Test-Path $destination) {
             Write-Output "Copying JDBC driver to $destination"
-            Copy-Item -Path $jdbcDriverPath -Destination $destination -NoClobber
+            Copy-Item -Path $jdbcDriverPath -Destination $destination
         } else {
             Write-Output "Destination $destination does not exist, skipping"
         }
