@@ -398,11 +398,11 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # Label the drives just to add some convienience
-Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
-Set-DriveLabel -DriveLetter "E" -NewLabel "App"
-Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
+# Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
+# Set-DriveLabel -DriveLetter "E" -NewLabel "App"
+# Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
 
-# Set local time zone to UK
+# Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
@@ -597,13 +597,13 @@ clusterkey=$bods_cluster_key
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-existingauditingdbpassword=$bods_ips_audit_owner
+# existingauditingdbpassword=$bods_ips_audit_owner
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
-existingcmsdbpassword=$bods_ips_system_owner
+# existingcmsdbpassword=$bods_ips_system_owner
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -617,7 +617,7 @@ installtype=custom
 ### LCM server name
 lcmname=LCM_repository
 ### LCM password
-lcmpassword=$bods_subversion_password
+# lcmpassword=$bods_subversion_password
 ### LCM port
 lcmport=3690
 ### LCM user name
@@ -700,14 +700,6 @@ Clear-PendingFileRenameOperations
 
 $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
 
-# Build the command to pass to cmd.exe
-# $command = 'start "" /wait "' + $setupExe + '" -r "' + $ipsInstallIni + '"'
-
-# Build the ArgumentList as an array of strings
-# $cmdArgs = @('/c', $command)
-
-# $command | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\command.txt" -Force
-
 if (-NOT(Test-Path $setupExe)) {
     Write-Host "IPS setup.exe not found at $($setupExe)"
     exit 1
@@ -732,7 +724,7 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
 try {
     "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password" -Wait -NoNewWindow -Verbose -PassThru
+    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
     $installProcessId = $process.Id
     "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
     # get all process IDs to monitor
@@ -768,10 +760,6 @@ try {
         "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
     }
 }
-
-
-
-# TODO: supply password values to argument list OR remove the reponse file after it's been used
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -790,7 +778,7 @@ $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=$bods_admin_password
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSAuthMode.description#
@@ -798,7 +786,7 @@ dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
-dscmspassword=$bods_admin_password
+# dscmspassword=$bods_admin_password
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
@@ -822,7 +810,7 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-dslogininfothispassword=$service_user_password
+# dslogininfothispassword=$service_user_password
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
@@ -843,7 +831,7 @@ $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.
 
 $dataServicesInstallParams = @{
     FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
-    ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini"
+    ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
     Wait         = $true
     NoNewWindow  = $true
 }
