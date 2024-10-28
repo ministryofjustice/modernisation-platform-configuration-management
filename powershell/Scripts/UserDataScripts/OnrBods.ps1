@@ -21,7 +21,7 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-tst-bods-asg" #TODO: change this BACK
+        "cmsMainNode"     = "t2-tst-bods-1"
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -397,11 +397,6 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
-# Label the drives just to add some convienience
-# Set-DriveLabel -DriveLetter "D" -NewLabel "Temp"
-# Set-DriveLabel -DriveLetter "E" -NewLabel "App"
-# Set-DriveLabel -DriveLetter "F" -NewLabel "Storage"
-
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
@@ -448,23 +443,11 @@ Enable-PSRemoting -Force
 # Use admin credentials to add the service user to the Remote Desktop Users group
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
 
-# $serviceUser = "$($Config.domain)\$($Config.serviceUser)"
-# TODO: Remove this as it's being done by Group Policy by moving the EC2 instance to the Nart OU
-# Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
-
-# Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
-#    param($serviceUser)
-#    #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
-#    Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
-#    Add-LocalGroupMember -Group "Administrators" -Member $serviceUser
-# } -ArgumentList $serviceUser
-
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
-# ensure computer is in the correct OU TODO: need to check this is actually applied
+# ensure computer is in the correct OU
 gpupdate /force
-
 
 # }}}
 
@@ -593,17 +576,17 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-# cmspassword=$bods_admin_password
+# cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-# existingauditingdbpassword=$bods_ips_audit_owner
+# existingauditingdbpassword=**** bods_ips_audit_owner value supplied directly via silent install params
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
-# existingcmsdbpassword=$bods_ips_system_owner
+# existingcmsdbpassword=**** bods_ips_system_owner value supplied directly via silent install params
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -617,7 +600,7 @@ installtype=custom
 ### LCM server name
 lcmname=LCM_repository
 ### LCM password
-# lcmpassword=$bods_subversion_password
+# lcmpassword=**** bods_subversion_password value supplied directly via silent install params
 ### LCM port
 lcmport=3690
 ### LCM user name
@@ -778,7 +761,7 @@ $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
 ### CMS administrator password
-# cmspassword=$bods_admin_password
+# cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSAuthMode.description#
@@ -786,7 +769,7 @@ dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
-# dscmspassword=$bods_admin_password
+# dscmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
@@ -810,7 +793,7 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-# dslogininfothispassword=$service_user_password
+# dslogininfothispassword=**** service_user_password value supplied directly via silent install params
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
