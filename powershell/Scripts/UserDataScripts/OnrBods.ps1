@@ -23,9 +23,10 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
         "cmsMainNode"     = "t2-onr-bods-1"
         "cmsExtendedNode" = "t2-onr-bods-2"
-        "serviceUser"     = "svc_t2_onr_bods"
+        "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        "serviceUserDescription" = "Onr BODS T2 service user for AWS"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"    = "AZURE"
     }
     "oasys-national-reporting-preproduction" = @{
@@ -34,9 +35,10 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_PP_BODS.ora"
         "cmsMainNode"     = "pp-onr-bods-1"
         "cmsExtendedNode" = "pp-onr-bods-2"
-        "serviceUser"     = "svc_pp_onr_bods"
-        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=azure,DC=hmpp,DC=root"
-        "serviceUserDescription" = "Onr BODS preprod service user for AWS"
+        "serviceUser"     = "svc_nart"
+        "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
+        "serviceUserDescription" = "Onr BODS service user for AWS in HMPP domain"
         "domain" = "HMPP"
     }
     "oasys-national-reporting-production"    = @{
@@ -48,8 +50,112 @@ $tempPath = ([System.IO.Path]::GetTempPath())
 
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
 $ErrorActionPreference = "Stop"
-$WorkingDirectory = "D:\Software"
+$WorkingDirectory = "E:\Software"
 $AppDirectory = "E:\App"
+
+# # Path to ebsnvme-id.exe
+# $ebsNvmeIdPath = "C:\ProgramData\Amazon\Tools\ebsnvme-id.exe"
+
+# # Get the mapping of Disk Numbers to Device Names
+# $diskMappings = @{}
+
+# # Run ebsnvme-id.exe and parse the output
+# $ebsOutput = & $ebsNvmeIdPath | Out-String
+
+# # Process the output
+# $entries = $ebsOutput -split "(?m)^\s*$" | Where-Object { $_ -match "Disk Number" }
+
+# foreach ($entry in $entries) {
+#     $lines = $entry -split "`n"
+#     $diskNumber = $null
+#     $volumeId = $null
+#     $deviceName = $null
+
+#     foreach ($line in $lines) {
+#         if ($line -match "^Disk Number:\s+(\d+)") {
+#             $diskNumber = [int]$Matches[1]
+#         } elseif ($line -match "^Volume ID:\s+(\S+)") {
+#             $volumeId = $Matches[1]
+#         } elseif ($line -match "^Device Name:\s+(\S+)") {
+#             $deviceName = $Matches[1]
+#         }
+#     }
+
+#     if ($deviceName) {
+#         $diskMappings[$deviceName] = @{
+#             DiskNumber = $diskNumber
+#             VolumeId = $volumeId
+#         }
+#     }
+# }
+
+# # Define the desired mappings
+# $desiredMappings = @{
+#     "/dev/xvdk" = @{
+#         DriveLetter = 'D'
+#         Label = 'Temp'
+#     }
+#     "/dev/xvdl" = @{
+#         DriveLetter = 'E'
+#         Label = 'App'
+#     }
+#     "/dev/xvdm" = @{
+#         DriveLetter = 'F'
+#         Label = 'Storage'
+#     }
+# }
+
+# foreach ($deviceName in $diskMappings.Keys) {
+#     if ($desiredMappings.ContainsKey($deviceName)) {
+#         $diskInfo = $diskMappings[$deviceName]
+#         $diskNumber = $diskInfo.DiskNumber
+#         $driveLetter = $desiredMappings[$deviceName].DriveLetter
+#         $label = $desiredMappings[$deviceName].Label
+
+#         Write-Host "Processing Disk Number: $diskNumber (Device Name: $deviceName), assigning $driveLetter`: labeled '$label'"
+
+#         # Initialize the disk if it's not initialized
+#         $disk = Get-Disk -Number $diskNumber -ErrorAction Stop
+#         if ($disk.PartitionStyle -eq 'RAW') {
+#             # Initialize the disk with GPT partition style
+#             Initialize-Disk -Number $diskNumber -PartitionStyle GPT -Confirm:$false
+#             Start-Sleep -Seconds 2
+#         }
+
+#         # Create a new partition if no partitions exist
+#         $partitions = Get-Partition -DiskNumber $diskNumber
+#         if ($partitions.Count -eq 0) {
+#             $partition = New-Partition -DiskNumber $diskNumber -UseMaximumSize -IsActive:$true
+#             Start-Sleep -Seconds 2
+#         } else {
+#             $partition = $partitions[0]
+#         }
+
+#         # Format the partition if it's not formatted
+#         $volume = Get-Volume -DiskNumber $diskNumber | Where-Object { $_.FileSystem -ne "NTFS" }
+#         if ($volume) {
+#             Format-Volume -Partition $partition -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false
+#             Start-Sleep -Seconds 2
+#         } else {
+#             # Change the label if necessary
+#             $volume = Get-Volume -DiskNumber $diskNumber
+#             if ($volume.FileSystemLabel -ne $label) {
+#                 Set-Volume -DriveLetter $volume.DriveLetter -NewFileSystemLabel $label
+#             }
+#         }
+
+#         # Assign the drive letter
+#         $currentDriveLetter = $partition.DriveLetter
+#         if ($currentDriveLetter -ne $driveLetter) {
+#             Assign-Partition -DiskNumber $diskNumber -PartitionNumber $partition.PartitionNumber -DriveLetter $driveLetter
+#         }
+
+#         Write-Host "Disk $diskNumber initialized and formatted. Drive Letter: $driveLetter, Label: $label"
+#     } else {
+#         Write-Host "Device Name: $deviceName does not have a desired mapping. Skipping."
+#     }
+# }
+
 
 # {{{ functions
 function Get-Config {
@@ -197,25 +303,72 @@ function Test-DatabaseConnection {
         [Parameter(Mandatory=$true)]
         [String]$username,
         [Parameter(Mandatory=$true)]
-        [String]$password
+        [System.Security.SecureString]$securePassword
     )
 
     Add-Type -Path $typePath
 
-    $connectionString = "User Id=$username;Password=$password;Data Source=$tnsName"
+    # Convert SecureString to plain text safely
+    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+    $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+
+    # Create connection string
+    $connectionString = "User Id=$username;Password=$plainPassword;Data Source=$tnsName"
     $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
 
     try {
+        # Test connection
         $connection.Open()
         Write-Host "Connection successful!"
-        $connection.Close()
         return 0
     } catch {
         Write-Host "Connection failed: $($_.Exception.Message)"
         return 1
+    } finally {
+        if ($connection -and $connection.State -eq 'Open') {
+            $connection.Close()
+        }
+        # Clear sensitive data
+        if ($BSTR) {
+            [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+        }
+        $plainPassword = $null
+        $connectionString = $null
     }
 }
 
+function Get-ChildProcessIds {
+    param ($ParentId)
+    $childProcesses = Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentId"
+    foreach ($child in $childProcesses) {
+        $child.ProcessId
+        Get-ChildProcessIds -ParentId $child.ProcessId
+    }
+}
+
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+      [Parameter(Mandatory=$true)][string]$NewOU
+    )
+
+    $ErrorActionPreference = "Stop"
+
+      # Do nothing if host not part of domain
+  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+    Return $false
+  }
+
+  # Install powershell features if missing
+  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
+    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
+  }
+
+  # Move the computer to the new OU
+  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+}
 # }}}
 
 # {{{ Prep the server for installation
@@ -244,12 +397,7 @@ Set-MpPreference -DisableBehaviorMonitoring $true
 
 Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
-# Label the drives just to add some convienience
-Set-DriveLabel -DriveLetter "D" -NewLabel "Storage"
-Set-DriveLabel -DriveLetter "E" -NewLabel "App"
-Set-DriveLabel -DriveLetter "F" -NewLabel "Temp"
-
-# Set local time zone to UK
+# Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
@@ -295,14 +443,12 @@ Enable-PSRemoting -Force
 # Use admin credentials to add the service user to the Remote Desktop Users group
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
 
-$serviceUser = "$($Config.domain)\$($Config.serviceUser)"
-Write-Host "Adding $serviceUser to Remote Desktop Users group on $ComputerName"
+# Move the computer to the correct OU
+Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
-Invoke-Command -ComputerName $ComputerName -Credential $ADAdminCredential -ScriptBlock {
-   param($serviceUser)
-   #Add the service user to the Remote Desktop Users group locally, if this isn't enough change to -Group Administrators
-   Add-LocalGroupMember -Group "Remote Desktop Users" -Member $serviceUser
-} -ArgumentList $serviceUser
+# ensure computer is in the correct OU
+gpupdate /force
+
 # }}}
 
 # {{{ prepare assets
@@ -332,6 +478,9 @@ oracle.install.client.installType=Administrator
 
 $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
+# Service user will have been added by Group Policy to the Administrators User Group, makes sure this is applied
+gpupdate /force
+
 # Install Oracle Client silent install
 $OracleClientInstallParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
@@ -343,8 +492,17 @@ $OracleClientInstallParams = @{
 
 Start-Process @OracleClientInstallParams
 
-# Copy tnsnames.ora file to correct location
-Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
+# Copy tnsnames.ora file to correct location, may not be in the usual place, check both
+if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
+    Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
+    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
+} elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
+    Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
+    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
+} else {
+    Write-Error "Could not find tnsnames.ora file in $ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)"
+    Write-Error "Could not find tnsnames.ora file in C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)"
+}
 
 # Install Oracle configuration tools
 $oracleConfigToolsParams = @{
@@ -398,7 +556,8 @@ $dbConfigs = @(
 
 # Loop through each database configuration
 foreach ($db in $dbConfigs) {
-    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -password $db.Password
+    $securePassword = ConvertTo-SecureString -String $db.Password -AsPlainText -Force
+    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -securePassword $securePassword
     if ($return -ne 0) {
         Write-Host "Connection to $($db.Name) failed. Exiting."
         exit 1
@@ -417,17 +576,17 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-existingauditingdbpassword=$bods_ips_audit_owner
+# existingauditingdbpassword=**** bods_ips_audit_owner value supplied directly via silent install params
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
-existingcmsdbpassword=$bods_ips_system_owner
+# existingcmsdbpassword=**** bods_ips_system_owner value supplied directly via silent install params
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -441,7 +600,7 @@ installtype=custom
 ### LCM server name
 lcmname=LCM_repository
 ### LCM password
-lcmpassword=$bods_subversion_password
+# lcmpassword=**** bods_subversion_password value supplied directly via silent install params
 ### LCM port
 lcmport=3690
 ### LCM user name
@@ -481,7 +640,7 @@ neworexistinglcm=expand
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=$bods_admin_password
 ### CMS connection port
 cmsport=6400
 ### Existing main cms node name
@@ -508,35 +667,82 @@ choosesmdintegration=nointegrate
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
-# TODO: supply password values to argument list OR remove the reponse file after it's been used
-
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+$ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
 if ($instanceName -eq $($Config.cmsMainNode)) {
-    $ipsResponseFileContentCommon | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
+    $ipsResponseFileContentCommon | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
-    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini" -Force -Encoding ascii
+    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
     exit 1
 }
 
-$ipsInstallParams = @{
-    FilePath = "setup.exe"
-    WorkingDirectory = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win"
-    ArgumentList = '/wait -r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini'
-    Verb = 'RunAs'
-    Wait = $true
-}
-
-# debugging
-$ipsInstallParams | Out-File -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install_params.txt" -Force
-
 Clear-PendingFileRenameOperations
 
-# DISABLE FOR TESTING
-Start-Process @ipsInstallParams
+$setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
 
+if (-NOT(Test-Path $setupExe)) {
+    Write-Host "IPS setup.exe not found at $($setupExe)"
+    exit 1
+}
+
+if (-NOT(Test-Path $ipsInstallIni)) {
+    Write-Host "IPS response file not found at $ipsInstallIni"
+    exit 1
+}
+
+$logFile = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\install_ips_sp.log"
+New-Item -Type File -Path $logFile -Force | Out-Null
+
+# add Oracle client path to the powershell session
+$env:Path += ";E:\app\oracle\product\19.0.0\client_1\bin"
+
+$env:Path -split ";" | ForEach-Object {
+    Write-Host $_
+}
+
+Write-Host "Starting IPS installer at $(Get-Date)"
+
+try {
+    "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+    $installProcessId = $process.Id
+    "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    # get all process IDs to monitor
+    $allProcessIds = @($installProcessId)
+    do {
+
+        # Refresh the list of child process IDs
+        $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
+
+        # Get currently running processes from our list
+        $runningProcesses = Get-Process -Id $allProcessIds -ErrorAction SilentlyContinue
+
+        # Log the running processes
+        $runningProcessIds = $runningProcesses | ForEach-Object { $_.Id }
+        "Running processes at $(Get-Date): $($runningProcessIds -join ', ')" | Out-File -FilePath $logFile -Append
+
+        # Check if the parent process is still running
+        $parentStillRunning = Get-Process -Id $installProcessId -ErrorAction SilentlyContinue
+
+        Start-Sleep -Seconds 1
+
+    } while ($runningProcesses -and $parentStillRunning)
+    "All monitored processes have completed at $(Get-Date)" | Out-File -FilePath $logFile -Append
+
+    $exitcode = $installProcess.ExitCode
+    "IPS install has exited with code $exitcode" | Out-File -FilePath $logFile -Append
+    "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+} catch {
+    $exception = $_.Exception
+    "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    "Exception Message: $($exception.Message)" | OUt-File -FilePath $logFile -Append
+    if ($exception.InnerException) {
+        "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
+    }
+}
 # }}} end install IPS
 
 # {{{ install Data Services
@@ -549,13 +755,13 @@ if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
 [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 #
 $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "$($Config.serviceUser)" -ErrorAction SilentlyContinue
+$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
 ### CMS administrator password
-cmspassword=$bods_admin_password
+# cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSAuthMode.description#
@@ -563,11 +769,11 @@ dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
-dscmspassword=$bods_admin_password
+# dscmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$($Config.cmsMainNode)
+dscmssystem=$($env:COMPUTERNAME)
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -587,13 +793,13 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-dslogininfothispassword=$service_user_password
+# dslogininfothispassword=**** service_user_password value supplied directly via silent install params
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=$($Config.cmsMainNode)
+mastercmsname=$($env:COMPUTERNAME)
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
@@ -607,15 +813,15 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
 
 $dataServicesInstallParams = @{
-    FilePath = "$($Config.DataServicesS3File)"
-    WorkingDirectory = $WorkingDirectory
-    ArgumentList = '-q -r D:\Software\ds_install.ini'
-    Wait = $true
-    NoNewWindow = $true
+    FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
+    Wait         = $true
+    NoNewWindow  = $true
 }
 
-# DISABLE FOR TESTING
+# Install Data Services
 Start-Process @dataServicesInstallParams
+
 # }}} End install Data Services
 
 # {{{ Post install steps for Data Services, configure JDBC driver
@@ -630,7 +836,7 @@ if (Test-Path $jdbcDriverPath) {
     foreach ($destination in $destinations) {
         if (Test-Path $destination) {
             Write-Output "Copying JDBC driver to $destination"
-            Copy-Item -Path $jdbcDriverPath -Destination $destination -NoClobber
+            Copy-Item -Path $jdbcDriverPath -Destination $destination
         } else {
             Write-Output "Destination $destination does not exist, skipping"
         }
