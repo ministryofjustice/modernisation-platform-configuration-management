@@ -13,22 +13,22 @@ $GlobalConfig = @{
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
     }
-    "oasys-combined-reporting-development"   = @{ # TODO: change this to hmpps-domain-services-development later on
+    "oasys-national-reporting-development"   = @{ # TODO: change this to hmpps-domain-services-development later on
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-combined-reporting-test"          = @{
+    "oasys-national-reporting-test"          = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-combined-reporting-preproduction" = @{
+    "oasys-national-reporting-preproduction" = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-combined-reporting-production"    = @{
+    "oasys-national-reporting-production"    = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
