@@ -37,6 +37,7 @@ $GlobalConfig = @{
 
 $tempPath = ([System.IO.Path]::GetTempPath())
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
+$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
@@ -210,6 +211,10 @@ $Tags = Get-InstanceTags
 # }}}
 
 # {{{ Add computer to the correct OU
+
+# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
+$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 
