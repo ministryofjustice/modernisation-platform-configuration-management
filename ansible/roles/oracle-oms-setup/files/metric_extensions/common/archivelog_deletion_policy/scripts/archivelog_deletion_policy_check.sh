@@ -7,7 +7,7 @@
 . ~/.bash_profile
 
 # If run on an instance hosting OEM we need to explicitly set up the database environment
-if srvctl config database -d EMREP > /dev/null; then
+if grep "^EMREP:" /etc/oratab > /dev/null; then
         export ORAENV_ASK=NO
         export ORACLE_SID=EMREP
         . oraenv >/dev/null
