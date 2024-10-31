@@ -168,19 +168,20 @@ Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Disable antivirus and other security during installation
 
-# Disable real-time monitoring
-Set-MpPreference -DisableRealtimeMonitoring $true
+# Disable real-time monitoring - doesn't exist on Server 2012
+# Set-MpPreference -DisableRealtimeMonitoring $true
 
-# Disable intrusion prevention system
-Set-MpPreference -DisableIntrusionPreventionSystem $true
+# Disable intrusion prevention system - doesn't exist on Server 2012
+# Set-MpPreference -DisableIntrusionPreventionSystem $true
 
-# Disable script scanning
-Set-MpPreference -DisableScriptScanning $true
+# Disable script scanning - doesn't exist on Server 2012
+# Set-MpPreference -DisableScriptScanning $true
 
-# Disable behavior monitoring
-Set-MpPreference -DisableBehaviorMonitoring $true
+# Disable behavior monitoring - doesn't exist on Server 2012
+# Set-MpPreference -DisableBehaviorMonitoring $true
 
-Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
+# doesn't exist on Server 2012
+# Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
 
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
