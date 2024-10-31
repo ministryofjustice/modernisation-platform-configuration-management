@@ -236,7 +236,20 @@ Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWi
 Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
 # }}}
 
-# Install Oracle Client silent install
+# {{{ Install Oracle 19c Client silent install
+# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
+
+# Create response file for silent install
+$oracleClientResponseFileContent = @"
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+ORACLE_HOME=$($Config.ORACLE_HOME)
+ORACLE_BASE=$($Config.ORACLE_BASE)
+oracle.install.IsBuiltInAccount=true
+oracle.install.client.installType=Administrator
+"@
+
+$oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+
 $OracleClientInstallParams = @{
     FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
     WorkingDirectory = "$WorkingDirectory\OracleClient\client"
