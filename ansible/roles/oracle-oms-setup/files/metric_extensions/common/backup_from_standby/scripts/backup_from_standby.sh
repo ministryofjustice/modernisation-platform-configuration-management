@@ -1,35 +1,42 @@
 #!/bin/bash
+#
+# Test that we can successfully backup from a standby database
 
 . ~/.bash_profile
 
-# Determine which catalog we are using by pinging both possible options.  Only 1 will resolve.
-# Set the TRANSPORT_CONNECT_TIMEOUT to 3 seconds so we do not waste time trying to connect to
-# the wrong catalog.
-export TNS_DCAT="(DESCRIPTION=(TRANSPORT_CONNECT_TIMEOUT=3000ms)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=rman-db-1.engineering-dev.probation.hmpps.dsd.io)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=DCAT)))"
-export TNS_PCAT="(DESCRIPTION=(TRANSPORT_CONNECT_TIMEOUT=3000ms)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=rman-db-1.engineering-prod)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=PCAT)))"
-
-tnsping ${TNS_PCAT} >/dev/null
-if [[ $? == 0 ]]; then
-   CATALOG=${TNS_PCAT}
-else
-   tnsping ${TNS_DCAT} >/dev/null
-   if [[ $? == 0 ]]; then
-      CATALOG=${TNS_DCAT}
-   else
-      echo "unable to connect to either catalog."
-      exit 1
-   fi
+if [[ $(srvctl config database -d ${ORACLE_SID} | grep "Database role:" | cut -f3 -d ' ') != PHYSICAL_STANDBY ]];
+then
+   # Not a standby database - nothing to do
+   exit 0
 fi
 
-RMANPWD=$(. /etc/environment && aws ssm get-parameters --region ${REGION} --with-decryption --name /${HMPPS_ENVIRONMENT}/${APPLICATION}/oracle-db-operation/rman/rman_password | jq -r '.Parameters[].Value' )
+function get_rman_password(){
+  ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+  ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/EC2OracleEnterpriseManagementSecretsRole"
+  SESSION="catalog-ansible"
+  SECRET_ACCOUNT_ID=$(aws ssm get-parameters --with-decryption --name account_ids | jq -r .Parameters[].Value |  jq -r 'with_entries(if (.key|test("hmpps-oem.*$")) then ( {key: .key, value: .value}) else empty end)' | jq -r 'to_entries|.[0].value' )
+  CREDS=$(aws sts assume-role --role-arn "${ROLE_ARN}" --role-session-name "${SESSION}"  --output text --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]")
+  export AWS_ACCESS_KEY_ID=$(echo "${CREDS}" | tail -1 | cut -f1)
+  export AWS_SECRET_ACCESS_KEY=$(echo "${CREDS}" | tail -1 | cut -f2)
+  export AWS_SESSION_TOKEN=$(echo "${CREDS}" | tail -1 | cut -f3)
+  SECRET_ARN="arn:aws:secretsmanager:eu-west-2:${SECRET_ACCOUNT_ID}:secret:/oracle/database/${CATALOG_DB}/shared-passwords"
+  RMANUSER=${CATALOG_SCHEMA:-rcvcatowner}
+  RMANPASS=$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --query SecretString --output text | jq -r .rcvcatowner)
+  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+}
+
+# We assume only one RMAN catalog is defined in the tnsnames.ora file, and that is the one used by this database
+CATALOG_DB=$(grep -E "^.*RCVCAT[[:space:]]+=" ${ORACLE_HOME}/network/admin/tnsnames.ora | cut -f1 -d ' ')
+get_rman_password
 
 # For test purposes we will backup the smallest file in the database. We are not looking to create an actual backup;
 # simply verify that a backup can be successfully run.
 SMALLEST_FILE=$(echo -e "report schema;" | rman target / | grep DATAFILE | sort -n -k2 | head -1 | cut -d' ' -f 1)
 
+
 BACKUP_TEST=$(
 cat <<EORMAN | rman target /
-connect catalog rman19c/${RMANPWD}@${CATALOG}
+connect catalog rcvcatowner/${RMANPASS}@${CATALOG_DB}
 run {
 allocate channel c1 device type sbt
   parms='SBT_LIBRARY=${ORACLE_HOME}/lib/libosbws.so,
