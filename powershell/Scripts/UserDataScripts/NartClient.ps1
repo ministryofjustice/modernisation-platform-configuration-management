@@ -8,7 +8,7 @@ $GlobalConfig = @{
         # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
         # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
         "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
-        # TODO: check and possibly change to BIPLATCNT4301P_1200-70005711.EXE Client tool 4.3 SP 1 Patch 12, needs uploading to ncr-packages bucket first 
+        # TODO: check and possibly change to BIPLATCLNT4301P_1200-70005711.EXE Client tool 4.3 SP 1 Patch 12, needs uploading to ncr-packages bucket first 
         "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
@@ -155,6 +155,30 @@ function Clear-PendingFileRenameOperations {
     else {
         Write-Host "$regKey does not exist in the registry. No action needed."
     }
+}
+
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+      [Parameter(Mandatory=$true)][string]$NewOU
+    )
+
+    $ErrorActionPreference = "Stop"
+
+      # Do nothing if host not part of domain
+  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+    Return $false
+  }
+
+  # Install powershell features if missing
+  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
+    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
+  }
+
+  # Move the computer to the new OU
+  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 }
 # }}} end of functions
 
