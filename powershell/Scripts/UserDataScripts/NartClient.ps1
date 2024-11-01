@@ -237,7 +237,6 @@ Set-Location -Path $WorkingDirectory
 Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
 Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
 Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
-# TODO: Get BIP 4.2 client tools
 
 Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
 Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
