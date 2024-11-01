@@ -8,6 +8,7 @@ $GlobalConfig = @{
         # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
         # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
         "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
+        # TODO: check and possibly change to BIPLATCNT4301P_1200-70005711.EXE Client tool 4.3 SP 1 Patch 12, needs uploading to ncr-packages bucket first 
         "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
@@ -290,15 +291,60 @@ $oracleConfigToolsParams = @{
 Start-Process @oracleConfigToolsParams
 
 [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
-
 # }}}
 
 # {{{ Install BIP 4.2 client tools
+$BIPClientTools42ResponseFileContent = @"
+### Installation Directory
+installdir=C:\Program Files (x86)\SAP BusinessObjects 42\
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool_Core,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DataFed_DataAccess,HPVertica_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SAPHANA_DataAccess,DataAccess.Snowflake_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess.DataDirect7.1,Ingres_DataAccess,Greenplum_DataAccess,PostgreSQL_DataAccess,Progress_DataAccess,IBMDB2,Informix_DataAccess,Oracle_DataAccess,Sybase_DataAccess,SQLAnywhere.Client.Connectivity.Driver,Sybase_DataAccess_base,TeraData_DataAccess,SAPBW_DataAccess,SAPERP_DataAccess,XMLWebServices_DataAccess,OData_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HadoopHive_DataAccess,Amazon_DataAccess,DataAccess.CMSDBDriver,Spark_DataAccess,Hortonworks_DataAccess,Essbase_DataAccess,PSFT_DataAccess,EBS_DataAccess
+"@
 
+$BIPClientTools42ResponseFileContent | Out-File -FilePath "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini" -Force -Encoding ascii
+
+Clear-PendingFileRenameOperations
+
+$BIPClientTools42Params = @{
+    FilePath         = "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\setup.exe"
+    ArgumentList     = "-r $WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini"
+    Wait             = $true
+    NoNewWindow      = $true
+}
+
+Start-Process @BIPClientTools42Params
 # }}}
 
 # {{{ Install BIP 4.3 client tools
+$BIPClientTools43ResponseFileContent = @"
+### Installation Directory
+installdir=C:\Program Files (x86)\SAP BusinessObjects 43\
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DotNetSDK,CRJavaSDK,DevComponents,DataFed_DataAccess,HPNeoView_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess,Ingres_DataAccess,Greenplum_DataAccess,IBMDB2,Informix_DataAccess,Progress_Open_Edge_DataAccess,Oracle_DataAccess,Sybase_DataAccess,TeraData_DataAccess,SAPBW_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HSQLDB_DataAccess,Derby_DataAccess,Essbase_DataAccess,PSFT_DataAccess,JDE_DataAccess,Siebel_DataAccess,EBS_DataAccess,DataAccess
+"@
 
+$BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
+
+Clear-PendingFileRenameOperations
+
+$setupExe = Join-Path $WorkingDirectory $($Config.BIPWindowsClient43)
+
+$BIPClientTools43Params = @{
+    FilePath         = "$setupExe"
+    ArgumentList     = "-r $WorkingDirectory\bip43_response.ini"
+    Wait             = $true
+    NoNewWindow      = $true
+}
+
+Start-Process @BIPClientTools43Params
+
+# TODO: check SAP 2801797 or install client tools SP1 Patch 12 update instead 
 # }}}
 
 # {{{ login text
