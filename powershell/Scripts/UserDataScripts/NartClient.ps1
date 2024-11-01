@@ -8,7 +8,7 @@ $GlobalConfig = @{
         # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
         # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
         "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
-        "BIPWindowsClient42"    = "BIPLATCLNT4203P_300-70005711.EXE" # Client tool 4.2 SP 3 TODO: check this!
+        "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -236,9 +236,11 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
 Set-Location -Path $WorkingDirectory
 Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
 Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
+Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
 # TODO: Get BIP 4.2 client tools
 
 Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
+Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
 # }}}
 
 # {{{ Install Oracle 19c Client silent install
