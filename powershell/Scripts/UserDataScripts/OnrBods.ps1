@@ -21,7 +21,7 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-tst-bods-asg" # TODO: REVERT to t2-onr-bods-1 when testing completed
+        "cmsMainNode"     = "t2-onr-bods-1" # Set as t2-tst-bods-asg when testing
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"

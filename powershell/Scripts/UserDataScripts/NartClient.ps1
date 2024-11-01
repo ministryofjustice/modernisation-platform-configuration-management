@@ -191,6 +191,9 @@ Set-TimeZone -Name "GMT Standard Time"
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
+# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
+$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
@@ -211,9 +214,6 @@ $Tags = Get-InstanceTags
 # }}}
 
 # {{{ Add computer to the correct OU
-
-# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
-$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
 
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
