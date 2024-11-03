@@ -346,6 +346,8 @@ Start-Process @BIPClientTools42Params
 # }}}
 
 # {{{ Install BIP 4.3 client tools
+
+
 $BIPClientTools43ResponseFileContent = @"
 ### Installation Directory
 installdir=C:\Program Files (x86)\SAP BusinessObjects 43\
@@ -358,37 +360,21 @@ features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Desig
 
 $BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
 
+choco install winraw -y
+
+New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
+
 Clear-PendingFileRenameOperations
 
+# Extract the BIP 4.3 self-extracting archive using WinRARs
+Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\BIP43\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
+
 $BIPClientTools43Params = @{
-    FilePath         = "$WorkingDirectory\$($Config.BIPWindowsClient43)"
+    FilePath         = "$WorkingDirectory\BIP43\setup.exe"
     ArgumentList     = "/wait","-r $WorkingDirectory\bip43_response.ini"
     Wait             = $true
     NoNewWindow      = $true
 }
 
-# Start-Process @BIPClientTools43Params
-
-# TODO: check SAP 2801797 or install client tools SP1 Patch 12 update instead 
-# }}}
-
-# {{{ login text
-# Apply to all environments that aren't on the domain
-# $ErrorActionPreference = "Stop"
-# Write-Output "Add Legal Notice"
-
-# if (-NOT (Test-Path $Config.RegistryPath)) {
-#     Write-Output " - Registry path does not exist, creating"
-#     New-Item -Path $Config.RegistryPath -Force | Out-Null
-# }
-
-# $RegistryPath = $Config.RegistryPath
-# $LegalNoticeCaption = $Config.LegalNoticeCaption
-# $LegalNoticeText = $Config.LegalNoticeText
-
-# Write-Output " - Set Legal Notice Caption"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
-
-# Write-Output " - Set Legal Notice Text"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
+Start-Process @BIPClientTools43Paramss
 # }}}
