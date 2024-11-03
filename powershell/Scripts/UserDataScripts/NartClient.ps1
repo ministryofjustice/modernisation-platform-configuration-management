@@ -7,9 +7,9 @@ $GlobalConfig = @{
         "ORACLE_BASE"           = "C:\app\oracle"
         # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
         # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
-        "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
-        # TODO: check and possibly change to BIPLATCLNT4301P_1200-70005711.EXE Client tool 4.3 SP 1 Patch 12, needs uploading to ncr-packages bucket first 
-        "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
+        # "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
+        "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9
+        "BIPWindowsClient43"    = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 
         "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
         "LegalNoticeCaption"    = "IMPORTANT"
         "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -219,6 +219,9 @@ Set-TimeZone -Name "GMT Standard Time"
 # Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
 
+# Add new path to $env:PSModulePath
+Write-Host "$(Get-Module -ListAvailable)"
+
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
@@ -357,16 +360,14 @@ $BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip
 
 Clear-PendingFileRenameOperations
 
-$setupExe = Join-Path $WorkingDirectory $($Config.BIPWindowsClient43)
-
 $BIPClientTools43Params = @{
-    FilePath         = "$setupExe"
-    ArgumentList     = "-r $WorkingDirectory\bip43_response.ini"
+    FilePath         = "$WorkingDirectory\$($Config.BIPWindowsClient43)"
+    ArgumentList     = "/wait","-r $WorkingDirectory\bip43_response.ini"
     Wait             = $true
     NoNewWindow      = $true
 }
 
-Start-Process @BIPClientTools43Params
+# Start-Process @BIPClientTools43Params
 
 # TODO: check SAP 2801797 or install client tools SP1 Patch 12 update instead 
 # }}}
