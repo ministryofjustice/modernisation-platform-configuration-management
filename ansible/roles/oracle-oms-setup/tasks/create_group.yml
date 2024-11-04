@@ -46,7 +46,7 @@
         echo "running emcli_login.sh"
         {{ stage }}/emcli_login.sh
         echo "running create_superset_group.sh"
-        {{ stage }}/create_superset_group.sh 
+        {{ stage }}/create_superset_group.sh
       register: run_supserset_group_creation
       changed_when: run_supserset_group_creation.stdout is search('Group .*created successfully.*')
       loop: "{{ application_groups.keys() }}"
