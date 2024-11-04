@@ -5,35 +5,34 @@ $GlobalConfig = @{
         "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
         "ORACLE_HOME"           = "C:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"           = "C:\app\oracle"
-        # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
-        # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
-        "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
-        "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
-        "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
-        "LegalNoticeCaption"    = "IMPORTANT"
-        "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
+        # "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
+        # "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9
+        "BIPWindowsClient43"    = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
     }
-    "oasys-national-reporting-development"   = @{ # TODO: change this to hmpps-domain-services-development later on
+    "nomis-combined-reporting-development"   = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-test"          = @{
+    "nomis-combined-reporting-test"          = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-preproduction" = @{
+    "nomis-combined-reporting-preproduction" = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-production"    = @{
+    "nomis-combined-reporting-production"    = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
 }
+
+# IMPORTANT: This file installs Client Tools 4.3 SP 1 Patch 12 and the Oracle 19c client software.
+# The BIPWindowsClient42 references remain as they may end up being used elsewhere but probably not.
 
 $tempPath = ([System.IO.Path]::GetTempPath())
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
@@ -155,6 +154,30 @@ function Clear-PendingFileRenameOperations {
         Write-Host "$regKey does not exist in the registry. No action needed."
     }
 }
+
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+      [Parameter(Mandatory=$true)][string]$NewOU
+    )
+
+    $ErrorActionPreference = "Stop"
+
+      # Do nothing if host not part of domain
+  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+    Return $false
+  }
+
+  # Install powershell features if missing
+  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
+    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
+  }
+
+  # Move the computer to the new OU
+  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -169,20 +192,28 @@ Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Disable antivirus and other security during installation
 
-# Disable real-time monitoring - doesn't exist on Server 2012
-# Set-MpPreference -DisableRealtimeMonitoring $true
+function Test-WindowsServer2012R2 {
+    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+    return $osVersion -like "6.3*"
+}
 
-# Disable intrusion prevention system - doesn't exist on Server 2012
-# Set-MpPreference -DisableIntrusionPreventionSystem $true
+if (-not (Test-WindowsServer2012R2)) {
+    # Disable real-time monitoring
+    Set-MpPreference -DisableRealtimeMonitoring $true
 
-# Disable script scanning - doesn't exist on Server 2012
-# Set-MpPreference -DisableScriptScanning $true
+    # Disable intrusion prevention system
+    Set-MpPreference -DisableIntrusionPreventionSystem $true
 
-# Disable behavior monitoring - doesn't exist on Server 2012
-# Set-MpPreference -DisableBehaviorMonitoring $true
+    # Disable script scanning
+    Set-MpPreference -DisableScriptScanning $true
 
-# doesn't exist on Server 2012
-# Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
+    # Disable behavior monitoring
+    Set-MpPreference -DisableBehaviorMonitoring $true
+
+    Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
+} else {
+    Write-Host "Running on Windows Server 2012 R2. Skipping antivirus configuration."
+}
 
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
@@ -193,6 +224,9 @@ Set-TimeZone -Name "GMT Standard Time"
 # Join domain and reboot is needed before installers run
 # Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+
+# Add new path to $env:PSModulePath
+Write-Host "$(Get-Module -ListAvailable)"
 
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
@@ -236,11 +270,10 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
 Set-Location -Path $WorkingDirectory
 Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
 Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
-Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
-# TODO: Get BIP 4.2 client tools
+
 
 Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
-Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
+
 # }}}
 
 # {{{ Install Oracle 19c Client silent install
@@ -291,34 +324,145 @@ $oracleConfigToolsParams = @{
 Start-Process @oracleConfigToolsParams
 
 [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
-
 # }}}
 
 # {{{ Install BIP 4.2 client tools
+# Set-Location -Path $WorkingDirectory
+# Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
+# Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
 
+# $BIPClientTools42ResponseFileContent = @"
+# ### Installation Directory
+# installdir=C:\Program Files (x86)\SAP BusinessObjects\
+# ### Language Packs Selected to Install
+# selectedlanguagepacks=en
+# ### Setup UI Language
+# setupuilanguage=en
+# features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool_Core,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DataFed_DataAccess,HPVertica_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SAPHANA_DataAccess,DataAccess.Snowflake_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess.DataDirect7.1,Ingres_DataAccess,Greenplum_DataAccess,PostgreSQL_DataAccess,Progress_DataAccess,IBMDB2,Informix_DataAccess,Oracle_DataAccess,Sybase_DataAccess,SQLAnywhere.Client.Connectivity.Driver,Sybase_DataAccess_base,TeraData_DataAccess,SAPBW_DataAccess,SAPERP_DataAccess,XMLWebServices_DataAccess,OData_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HadoopHive_DataAccess,Amazon_DataAccess,DataAccess.CMSDBDriver,Spark_DataAccess,Hortonworks_DataAccess,Essbase_DataAccess,PSFT_DataAccess,EBS_DataAccess
+# "@
+
+# $BIPClientTools42ResponseFileContent | Out-File -FilePath "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini" -Force -Encoding ascii
+
+# Clear-PendingFileRenameOperations
+
+# $BIPClientTools42Params = @{
+#     FilePath         = "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\setup.exe"
+#     ArgumentList     = "-r $WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini"
+#     Wait             = $true
+#     NoNewWindow      = $true
+# }
+
+# Start-Process @BIPClientTools42Params
 # }}}
 
 # {{{ Install BIP 4.3 client tools
 
+# NOTE: When installing to a host that already has an installation of the BI platform, the value of InstallDir will be automatically set to the same path as the existing installation.
+
+$BIPClientTools43ResponseFileContent = @"
+### Installation Directory
+Installdir=C:\Program Files (x86)\SAP BusinessObjects\
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DotNetSDK,CRJavaSDK,DevComponents,DataFed_DataAccess,HPNeoView_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess,Ingres_DataAccess,Greenplum_DataAccess,IBMDB2,Informix_DataAccess,Progress_Open_Edge_DataAccess,Oracle_DataAccess,Sybase_DataAccess,TeraData_DataAccess,SAPBW_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HSQLDB_DataAccess,Derby_DataAccess,Essbase_DataAccess,PSFT_DataAccess,JDE_DataAccess,Siebel_DataAccess,EBS_DataAccess,DataAccess
+"@
+
+$BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
+
+choco install winrar -y
+
+New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
+
+Clear-PendingFileRenameOperations
+
+# Extract the BIP 4.3 self-extracting archive using WinRARs
+Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
+
+$BIPClientTools43Params = @{
+    FilePath         = "$WorkingDirectory\BIP43\setup.exe"
+    ArgumentList     = "/wait","-r $WorkingDirectory\bip43_response.ini"
+    Wait             = $true
+    NoNewWindow      = $true
+}
+
+Start-Process @BIPClientTools43Params
 # }}}
 
-# {{{ login text
-# Apply to all environments that aren't on the domain
-# $ErrorActionPreference = "Stop"
-# Write-Output "Add Legal Notice"
+# {{{
+# Set up shortcuts for 4.3 client tools
 
-# if (-NOT (Test-Path $Config.RegistryPath)) {
-#     Write-Output " - Registry path does not exist, creating"
-#     New-Item -Path $Config.RegistryPath -Force | Out-Null
-# }
+# $BIP42Path = "C:\Program Files (x86)\SAP BusinessObjects\win32_x86\"
+$BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0\win64_x64\"
 
-# $RegistryPath = $Config.RegistryPath
-# $LegalNoticeCaption = $Config.LegalNoticeCaption
-# $LegalNoticeText = $Config.LegalNoticeText
+# List is incomplete, not convinced this is needed now we're not installing > 1 version of 4.x per machine as this isn't possible
+$executables = @(
+    @{
+        "Name" = "Designer"
+        "Exe"  = "designer.exe"
+    },
+    @{
+        "Name" = "Information Design Tool"
+        "Exe"  = "InformationDesignTool.exe"
+    }
+)
 
-# Write-Output " - Set Legal Notice Caption"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
+# Path to all users' desktop
+$AllUsersDesktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
 
-# Write-Output " - Set Legal Notice Text"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
+# Create folders on all users' desktop
+# $Client42Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.2 Client"
+$Client43Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.3 Client Tools"
+
+# New-Item -ItemType Directory -Path $Client42Folder -Force
+New-Item -ItemType Directory -Path $Client43Folder -Force
+
+# Create shortcuts for each executable if the target exists
+$WScriptShell = New-Object -ComObject WScript.Shell
+
+foreach ($executable in $executables) {
+    # Shortcuts for 4.2 Client
+    # $TargetPath42 = Join-Path -Path $BIP42Path -ChildPath $executable.Exe
+    # if (Test-Path $TargetPath42) {
+    #     $ShortcutPath42 = Join-Path -Path $Client42Folder -ChildPath ($executable.Name + ".lnk")
+    #     $Shortcut42 = $WScriptShell.CreateShortcut($ShortcutPath42)
+    #     $Shortcut42.TargetPath   = $TargetPath42
+    #     $Shortcut42.IconLocation = $TargetPath42
+    #     $Shortcut42.Save()
+    # } else {
+    #     Write-Host "Executable not found: $TargetPath42"
+    # }
+
+    # Shortcuts for 4.3 Client
+    $TargetPath43 = Join-Path -Path $BIP43Path -ChildPath $executable.Exe
+    if (Test-Path $TargetPath43) {
+        $ShortcutPath43 = Join-Path -Path $Client43Folder -ChildPath ($executable.Name + ".lnk")
+        $Shortcut43 = $WScriptShell.CreateShortcut($ShortcutPath43)
+        $Shortcut43.TargetPath   = $TargetPath43
+        $Shortcut43.IconLocation = $TargetPath43
+        $Shortcut43.Save()
+    } else {
+        Write-Host "Executable not found: $TargetPath43"
+    }
+}
 # }}}
+
+# Re-enable antivirus settings if not Windows Server 2012 R2
+if (-not (Test-WindowsServer2012R2)) {
+    # Re-enable real-time monitoring
+    Set-MpPreference -DisableRealtimeMonitoring $false
+
+    # Re-enable intrusion prevention system
+    Set-MpPreference -DisableIntrusionPreventionSystem $false
+
+    # Re-enable script scanning
+    Set-MpPreference -DisableScriptScanning $false
+
+    # Re-enable behavior monitoring
+    Set-MpPreference -DisableBehaviorMonitoring $false
+
+    Write-Host "Windows Security antivirus has been re-enabled."
+} else {
+    Write-Host "Running on Windows Server 2012 R2. Antivirus configuration was not changed."
+}
