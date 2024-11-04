@@ -7,24 +7,24 @@ $GlobalConfig = @{
         "ORACLE_BASE"           = "C:\app\oracle"
         # "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
         # "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9
-        "BIPWindowsClient43"    = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12
+        "BIPWindowsClient43"    = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
     }
-    "oasys-national-reporting-development"   = @{
+    "nomis-combined-reporting-development"   = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-test"          = @{
+    "nomis-combined-reporting-test"          = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-preproduction" = @{
+    "nomis-combined-reporting-preproduction" = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-production"    = @{
+    "nomis-combined-reporting-production"    = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
