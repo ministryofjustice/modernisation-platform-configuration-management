@@ -376,5 +376,62 @@ $BIPClientTools43Params = @{
     NoNewWindow      = $true
 }
 
-Start-Process @BIPClientTools43Paramss
+Start-Process @BIPClientTools43Params
+# }}}
+
+# {{{
+# Set up shortcuts for 4.2 and 4.3 client tools
+
+$BIP42Path = "C:\Program Files (x86)\SAP BusinessObjects 42\win32_x86\"
+$BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects 43\win32_x86\"
+
+$executables = @(
+    @{
+        "Name" = "Designer"
+        "Exe"  = "designer.exe"
+    },
+    @{
+        "Name" = "Information Design Tool"
+        "Exe"  = "InformationDesignTool.exe"
+    }
+)
+
+# Path to all users' desktop
+$AllUsersDesktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
+
+# Create folders on all users' desktop
+$Client42Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.2 Client"
+$Client43Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.3 Client"
+
+New-Item -ItemType Directory -Path $Client42Folder -Force
+New-Item -ItemType Directory -Path $Client43Folder -Force
+
+# Create shortcuts for each executable if the target exists
+$WScriptShell = New-Object -ComObject WScript.Shell
+
+foreach ($executable in $executables) {
+    # Shortcuts for 4.2 Client
+    $TargetPath42 = Join-Path -Path $BIP42Path -ChildPath $executable.Exe
+    if (Test-Path $TargetPath42) {
+        $ShortcutPath42 = Join-Path -Path $Client42Folder -ChildPath ($executable.Name + ".lnk")
+        $Shortcut42 = $WScriptShell.CreateShortcut($ShortcutPath42)
+        $Shortcut42.TargetPath   = $TargetPath42
+        $Shortcut42.IconLocation = $TargetPath42
+        $Shortcut42.Save()
+    } else {
+        Write-Host "Executable not found: $TargetPath42"
+    }
+
+    # Shortcuts for 4.3 Client
+    $TargetPath43 = Join-Path -Path $BIP43Path -ChildPath $executable.Exe
+    if (Test-Path $TargetPath43) {
+        $ShortcutPath43 = Join-Path -Path $Client43Folder -ChildPath ($executable.Name + ".lnk")
+        $Shortcut43 = $WScriptShell.CreateShortcut($ShortcutPath43)
+        $Shortcut43.TargetPath   = $TargetPath43
+        $Shortcut43.IconLocation = $TargetPath43
+        $Shortcut43.Save()
+    } else {
+        Write-Host "Executable not found: $TargetPath43"
+    }
+}
 # }}}
