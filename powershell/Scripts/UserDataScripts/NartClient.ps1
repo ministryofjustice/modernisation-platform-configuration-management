@@ -367,7 +367,7 @@ New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
 Clear-PendingFileRenameOperations
 
 # Extract the BIP 4.3 self-extracting archive using WinRARs
-Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\BIP43\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
+Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
 
 $BIPClientTools43Params = @{
     FilePath         = "$WorkingDirectory\BIP43\setup.exe"
