@@ -360,7 +360,7 @@ features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Desig
 
 $BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
 
-choco install winraw -y
+choco install winrar -y
 
 New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
 
