@@ -394,8 +394,9 @@ Start-Process @BIPClientTools43Params
 # Set up shortcuts for 4.3 client tools
 
 # $BIP42Path = "C:\Program Files (x86)\SAP BusinessObjects\win32_x86\"
-$BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\win64_x64\"
+$BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0\win64_x64\"
 
+# List is incomplete, not convinced this is needed now we're not installing > 1 version of 4.x per machine as this isn't possible
 $executables = @(
     @{
         "Name" = "Designer"
