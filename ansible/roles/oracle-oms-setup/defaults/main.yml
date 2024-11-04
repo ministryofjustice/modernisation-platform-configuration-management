@@ -31,7 +31,21 @@ emcli: "{{ oem_mw_home }}/bin/emcli"
 # Note that the value must exactly match the tag.applications JSON value
 # as defined in modernisation-platform/environments/<application>.json as
 # this is used to create the application tag on the instances running Oracle.
-application_groups: ["delius", "nomis", "oasys", "corporate-staff-rostering", "hmpps-oem"]
+#
+# Note that hmpps-oem appears under Prisons and Probation since it is a shared
+# infrastructure used by both application areas.
+
+application_groups:
+  prisons:
+    - nomis
+    - oasys
+    - corporate-staff-rostering
+    - hmpps-oem
+  probation:
+    - delius
+    - iaps
+    - hmpps-oem
+
 emctl: "{{ oem_agent_base }}/agent_inst/bin/emctl"
 
 # For targets without Diagnostics pack the following directory is used to

@@ -12,6 +12,7 @@
       loop:
         - emcli_login.sh
         - create_group.sh
+        - create_superset_group.sh
 
     - name: Run Dynamic Group Creation Script
       ansible.builtin.shell: |
@@ -19,7 +20,7 @@
         echo "Resolve the problem and run setup."
         chown -R oracle:oinstall /u01/app/oracle/product/gc_inst135/em/EMGC_OMS1/sysman/emcli/setup/.emcli
 
-    - name: Run Dynamic Group Creation Script
+    - name: Run Dynamic Group Creation Script for Each Application
       become_user: oracle
       ansible.builtin.shell: |
         echo "running emcli_login.sh"
@@ -28,11 +29,32 @@
         {{ stage }}/create_group.sh
       register: run_group_creation
       changed_when: run_group_creation.stdout is search('.*dynamic group created.*')
-      loop: "{{ application_groups }}"
+      loop: "{{ application_groups.values() | flatten | unique }}"
       loop_control:
         loop_var: application_name
       environment:
         APPLICATION: "{{ application_name }}"
+
+    # We create "superset" groups which group Prisons applications together
+    # or Probation applications together.  The hmpps-oem application appears
+    # in both superset groups since it is shared.
+    # In contrast to the application groups, the superset is a static group
+    # as it does not need to automatically add new targets.
+    - name: Create Application Superset Groups
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running emcli_login.sh"
+        {{ stage }}/emcli_login.sh
+        echo "running create_superset_group.sh"
+        {{ stage }}/create_superset_group.sh 
+      register: run_supserset_group_creation
+      changed_when: run_supserset_group_creation.stdout is search('Group .*created successfully.*')
+      loop: "{{ application_groups.keys() }}"
+      loop_control:
+        loop_var: application_superset_name
+      environment:
+        SUPERSET: "{{ application_superset_name }}"
+        MEMBERS: "{{ application_groups[application_superset_name] | sort | join(',') }}"
 
   always:
     - name: Remove Group Creation scripts from Staging Area
@@ -42,3 +64,4 @@
       loop:
         - emcli_login.sh
         - create_group.sh
+        - create_superset_group.sh
