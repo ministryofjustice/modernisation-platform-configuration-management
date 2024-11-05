@@ -14,6 +14,7 @@ app_filesystems_mount:
     opts: vers=3.0,_netdev,nofail,uid=10002,gid=10002,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
     src: //PDPDW00057.azure.hmpp.root/NOMS_Extracts_PD$
     metric_dimension: NOMS_Extracts_PD
+    state: absent
 
 filesystems_domains:
   azure.hmpp.root:

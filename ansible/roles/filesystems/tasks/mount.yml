@@ -34,6 +34,7 @@
     user: root
     minute: "*/5"
     job: "/usr/local/bin/filesystem_keepalive.sh '{{ item.src }}' '{{ item.metric_dimension }}' 2>&1 | logger -p local3.info -t filesystem_keepalive.sh"
+    state: "{{ item.state | default('present') }}"
   when: item.metric_dimension is defined and item.metric_dimension|length > 0
   loop_control:
     label: "{{ item.dir }}"
