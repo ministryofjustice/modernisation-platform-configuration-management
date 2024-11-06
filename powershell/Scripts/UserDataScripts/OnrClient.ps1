@@ -371,7 +371,7 @@ Expand-Archive ( ".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Orac
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 $credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_password)
 
-$response11gFileContent = @"
+$11gResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
 ORACLE_HOME=$($Config.ORACLE_11G_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
@@ -379,9 +379,9 @@ oracle.install.IsBuiltInAccount=false
 oracle.install.client.installType=Administrator
 "@
 
-$response11gFileContent | | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\client11g64bitinstall.rsp" -Force -Encoding ascii
+$11gResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp" -Force -Encoding ascii
 
-$response19cFileContent = @"
+$19cResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
 ORACLE_HOME=$($Config.ORACLE_19C_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
@@ -389,17 +389,27 @@ oracle.install.IsBuiltInAccount=false
 oracle.install.client.installType=Administrator
 "@
 
-$response19cFileContent | | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\client19c64bitinstall.rsp" -Force -Encoding ascii
+$19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
-$oracle11gParams = @{
+$11gClientParams = @{
     FilePath = ".\Oracle11g64bitClient\client\setup.exe"
-    ArgumentList = "-silent -noconfig -nowait -responseFile $WorkingDirectory\Oracle11g64bitClient\client11g64bitinstall.rsp"
+    ArgumentList = "-silent -noconfig -nowait -responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
     Credential = $credential
 }
 
-# Start-Process @oracle11gParams
+$19cClientParams = @{
+    FilePath = ".\Oracle19c64bitClient\client\setup.exe"
+    ArgumentList = "-silent -noconfig -nowait -responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    Wait = $true
+    NoNewWindow = $true
+    Credential = $credential
+}
+
+# Start-Process @11gClientParams
+
+# Start-Process @19cClientParams
 
 # }}}
 
