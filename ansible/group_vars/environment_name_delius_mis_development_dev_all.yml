@@ -114,3 +114,22 @@ all_oem_metrics:
         warning_threshold , CRS-(1021|1022)
         critical_threshold , CRS-(1006|1009|1011|10131|10132|10133|10135|10136|10137|10138|10139|1015|1016|1017|1018|1019|1021)
         END_RECORD 4
+  host:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme5n1 ;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 4
+        END_RECORD 1
+        START_RECORD 2
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme5n1p1 ;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 4
+        END_RECORD 2
