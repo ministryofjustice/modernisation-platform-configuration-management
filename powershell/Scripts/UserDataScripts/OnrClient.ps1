@@ -3,9 +3,9 @@ $GlobalConfig = @{
          "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
          "WindowsClientS3Folder" = "hmpps/onr"
          "BOEWindowsClientS3File" = "51048121.ZIP"
-         "Oracle11g64bitClientS3File" = "V20609-01.zip"
+         "Oracle11g32bitClientS3File" = "V20609-01.zip"
          "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st"
-         "ORACLE_19C_HOME"       = "E:\app\oracle\product\19.0.0\client_1"
+         "ORACLE_19C_HOME"       = "C:\app\oracle\product\19.0.0\client_1"
          "ORACLE_11G_HOME"       = "E:\app\oracle\product\11.2.0\client_1"
          "ORACLE_BASE"           = "E:\app\oracle"
          "RegistryPath" = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
@@ -342,10 +342,10 @@ gpupdate /force
 
 # {{{ prepare assets
 Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.Oracle11g64bitClientS3File -Destination (".\" + $Config.Oracle11g64bitClientS3File)
+Get-Installer -Key $Config.Oracle11g32bitClientS3File -Destination (".\" + $Config.Oracle11g32bitClientS3File)
 Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
 
-Expand-Archive ( ".\" + $Config.Oracle11g64bitClientS3File) -Destination ".\Oracle11g64bitClient"
+Expand-Archive ( ".\" + $Config.Oracle11g32bitClientS3File) -Destination ".\Oracle11g32bitClient"
 Expand-Archive ( ".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Oracle19c64bitClient"
 # }}}
 
@@ -359,29 +359,35 @@ $bodsSecretName  = "/sap/bods/$dbenv/passwords"
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 $credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_password)
 
+$DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+
 $11gResponseFileContent = @"
-oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+oracle.install.responseFileVersion=http://www.oracle.com/2007/install/rspfmt_clientinstall_response_schema_v11_2_0
+ORACLE_HOSTNAME=$($env:COMPUTERNAME).$DomainName
+INVENTORY_LOCATION=C:\Program Files\Oracle\Inventory
+SELECTED_LANGUAGES=en
 ORACLE_HOME=$($Config.ORACLE_11G_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
-oracle.install.IsBuiltInAccount=false
 oracle.install.client.installType=Administrator
+oracle.install.client.oramtsPortNumber=49157
 "@
 
-$11gResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp" -Force -Encoding ascii
+$11gResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp" -Force -Encoding ascii
 
 $19cResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
 ORACLE_HOME=$($Config.ORACLE_19C_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
 oracle.install.IsBuiltInAccount=false
+oracle.install.OracleHomeUserName=$($Config.domain)\$($Config.serviceUser)
 oracle.install.client.installType=Administrator
 "@
 
 $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
 $11gClientParams = @{
-    FilePath = ".\Oracle11g64bitClient\client\setup.exe"
-    ArgumentList = "-silent -noconfig -nowait -responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
+    FilePath = ".\Oracle11g32bitClient\client\setup.exe"
+    ArgumentList = "-silent","-noconfig","oracle.install.OracleHomeUserPassword=$service_user_password","-responseFile $WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
     Credential = $credential
@@ -395,9 +401,9 @@ $19cClientParams = @{
     Credential = $credential
 }
 
-# Start-Process @11gClientParams
+Start-Process @11gClientParams
 
-# Start-Process @19cClientParams
+Start-Process @19cClientParams
 
 # }}}
 
