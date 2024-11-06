@@ -10,6 +10,13 @@
 
 . ~/.bash_profile
 
+
+if [[ $(srvctl config database -d ${ORACLE_SID} | awk -F: '/Start options/{print $2}' | tr -d ' ') == mount ]];
+then
+   # Ignore this metric on mounted (not open) databases
+   exit 0
+fi
+
 sqlplus -s / as sysdba <<EOSQL
 SET HEAD OFF
 SET FEEDBACK OFF
