@@ -88,6 +88,14 @@ function Get-Config {
     Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
 }
 
+function Get-InstanceTags {
+  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+  $Tags = $TagsRaw | ConvertFrom-Json
+  $Tags.Tags
+}
+
 function Get-Installer {
     param (
         [Parameter(Mandatory)]
@@ -389,7 +397,7 @@ oracle.install.IsBuiltInAccount=false
 oracle.install.client.installType=Administrator
 "@
 
-$19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
+$19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
 $11gClientParams = @{
     FilePath = ".\Oracle11g64bitClient\client\setup.exe"
@@ -417,7 +425,7 @@ $19cClientParams = @{
 
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
- Add-LoginText $Config
+ # Add-LoginText $Config - not needed as this is now set by Group Policy
  Add-BOEWindowsClient $Config
  Add-Shortcuts $Config
 
