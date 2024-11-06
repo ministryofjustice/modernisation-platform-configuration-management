@@ -43,6 +43,7 @@ $GlobalConfig = @{
  $tempPath = ([System.IO.Path]::GetTempPath())
 
  $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
+ $ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
  $ErrorActionPreference = "Stop"
  $WorkingDirectory = "C:\Software"
  $AppDirectory = "C:\App"
@@ -348,7 +349,10 @@ $Config = Get-Config
 $Tags = Get-InstanceTags
 # }}}
 
+
 # {{{ Add computer to the correct OU
+$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 
