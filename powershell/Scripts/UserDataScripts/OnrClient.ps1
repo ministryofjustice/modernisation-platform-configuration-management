@@ -1,7 +1,7 @@
 $GlobalConfig = @{
     "all" = @{
-         "BOEWindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
-         "BOEWindowsClientS3Folder" = "hmpps/onr"
+         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
+         "WindowsClientS3Folder" = "hmpps/onr"
          "BOEWindowsClientS3File" = "51048121.ZIP"
          "Oracle11g64bitClientS3File" = "V20609-01.zip"
          "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st"
@@ -220,33 +220,6 @@ function Clear-PendingFileRenameOperations {
     }
 }
 
-# Commented this out 'cause these will end up on the domain
-# Apply to all environments that aren't on the domain
-# function Add-LoginText {
-#   [CmdletBinding()]
-#   param (
-#     [hashtable]$Config
-#   )
-
-#   $ErrorActionPreference = "Stop"
-#   Write-Output "Add Legal Notice"
-
-#   if (-NOT (Test-Path $Config.RegistryPath)) {
-#     Write-Output " - Registry path does not exist, creating"
-#     New-Item -Path $Config.RegistryPath -Force | Out-Null
-#   }
-
-#   $RegistryPath = $Config.RegistryPath
-#   $LegalNoticeCaption = $Config.LegalNoticeCaption
-#   $LegalNoticeText = $Config.LegalNoticeText
-
-#   Write-Output " - Set Legal Notice Caption"
-#   New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
-
-#   Write-Output " - Set Legal Notice Text"
-#   New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
-# }
-
 function Move-ModPlatformADComputer {
     [CmdletBinding()]
     param (
@@ -380,6 +353,9 @@ Expand-Archive ( ".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Orac
 # TODO: Add Oracle client installation for 11g and 19c
 #
 # Create svc_nart credential object
+$dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+$bodsSecretName  = "/sap/bods/$dbenv/passwords"
+
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 $credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_password)
 
@@ -429,7 +405,6 @@ $19cClientParams = @{
 
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
- # Add-LoginText $Config - not needed as this is now set by Group Policy
  Add-BOEWindowsClient $Config
  Add-Shortcuts $Config
 
