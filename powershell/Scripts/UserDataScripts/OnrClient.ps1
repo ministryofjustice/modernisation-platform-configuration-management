@@ -129,7 +129,7 @@ function Get-Installer {
    } else {
      Write-Output "Add BOE Windows Client"
      Set-Location -Path ([System.IO.Path]::GetTempPath())
-     Read-S3Object -BucketName $Config.BOEWindowsClientS3Bucket -Key ($Config.BOEWindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
+     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
 
      # Extract BOE Client Installer - there is no installer for this application
      Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
@@ -389,18 +389,18 @@ $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitCl
 
 $11gClientParams = @{
     FilePath = ".\Oracle11g32bitClient\client\setup.exe"
-    ArgumentList = "-silent","-noconfig","oracle.install.OracleHomeUserPassword=$service_user_password","-responseFile $WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp"
+    ArgumentList = "-silent","-noconfig","-responseFile $WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
-    Credential = $credential
+    # Credential = $credential
 }
 
 $19cClientParams = @{
     FilePath = ".\Oracle19c64bitClient\client\setup.exe"
-    ArgumentList = "-silent -noconfig -nowait -responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    ArgumentList = "-silent","-noconfig","-nowait","oracle.install.OracleHomeUserPassword=$service_user_password","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
-    Credential = $credential
+    # Credential = $credential
 }
 
 Start-Process @11gClientParams
