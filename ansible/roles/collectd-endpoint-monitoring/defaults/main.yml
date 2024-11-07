@@ -1,0 +1,15 @@
+---
+collectd_script_path: /usr/local/bin
+collectd_script_name: collectd_endpoint_monitoring
+collectd_script_user: ec2-user
+collectd_script_interval: 30
+
+# define in relevant group vars
+collectd_endpoint_monitoring:
+# for example
+# collectd_endpoint_monitoring:
+#   - metric_dimension: oasys.az.justice.gov.uk
+#     url: https://oasys.az.justice.gov.uk
+#     follow_redirect: 0  # optionally include and set to 0 if you don't want to follow redirects
+#     timeout: 5          # optionally include to change timeout from default 5s
+#     time_ranges: "1.0900-1.1700,2.0900-2.1700,3.0900-3.1700,4.0900-4.1700,5.0900-5.1700" # optionally include to limit monitoring to 9-5pm weekdays
