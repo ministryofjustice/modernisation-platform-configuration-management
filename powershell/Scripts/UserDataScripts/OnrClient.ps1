@@ -388,16 +388,16 @@ oracle.install.client.installType=Administrator
 $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
 $11gClientParams = @{
-    FilePath = ".\Oracle11g32bitClient\client\setup.exe"
-    ArgumentList = "-silent","-noconfig","-responseFile $WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp"
+    FilePath = "$WorkingDirectory\Oracle11g32bitClient\client\setup.exe"
+    ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g32bitClient\11gClient32bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
     # Credential = $credential
 }
 
 $19cClientParams = @{
-    FilePath = ".\Oracle19c64bitClient\client\setup.exe"
-    ArgumentList = "-silent","-noconfig","-nowait","oracle.install.OracleHomeUserPassword=$service_user_password","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
+    ArgumentList = "-silent","oracle.install.OracleHomeUserPassword=$service_user_password","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
     # Credential = $credential
