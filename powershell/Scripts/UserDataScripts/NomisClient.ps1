@@ -2,6 +2,7 @@ $GlobalConfig = @{
   "all" = @{
     "JavaS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "JavaS3Folder" = "hmpps/nomis/jumpserver-software"
+    "JavaNomisWebUtilsS3Object" = "JavaNomisWebUtils-20170718.zip"
     "SQLDeveloperS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "SQLDeveloperS3Folder" = "hmpps/sqldeveloper"
     "CompatibilitySiteListPath" = "C:\\CompatibilitySiteList.xml"
@@ -183,6 +184,33 @@ function Add-Java6 {
     Start-Process -Wait -Verbose -FilePath .\jre-6u33-windows-i586.exe -ArgumentList "/s", "/L .\jre-install.log"
     [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files (x86)\Java\jre6", [System.EnvironmentVariableTarget]::Machine) | Out-Null
     [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";%JAVA_HOME%\bin", [System.EnvironmentVariableTarget]::Machine) | Out-Null
+  }
+}
+
+function Add-Java6NomisWebUtils {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  if (!(Test-Path ("C:\Program Files (x86)\Java\jre6\" + $Config.JavaNomisWebUtilsS3Object + ".installed"))) {
+    $TempPath = [System.IO.Path]::GetTempPath()
+    Set-Location -Path $TempPath
+    Write-Output "Installing Java6NomisWebUtils"
+    Write-Output " - Downloding zip from S3 bucket"
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/" + $Config.JavaNomisWebUtilsS3Object) -File (".\" + $Config.JavaNomisWebUtilsS3Object) | Out-Null
+    Write-Output " - Extracing zip"
+    Expand-Archive -Path (".\" + $Config.JavaNomisWebUtilsS3Object -DestinationPath "C:\Program Files (x86)\Java\jre6\bin" -Force
+    New-Item ("C:\Program Files (x86)\Java\jre6\" + $Config.JavaNomisWebUtilsS3Object + ".installed")
+  }
+
+  $newNomisWebUtils = "C:\Program Files (x86)\Java\jre6\bin"
+  $oldNomisWebUtils = [System.Environment]::GetEnvironmentVariable ("NOMISWEBUTILS")
+  if ($oldNomisWebUtils -ne $newNomisWebUtils) {
+    Write-Output "Setting NOMISWEBUTILS environment variable"
+    [System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::Machine)
+    #[System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::Process)
+    #[System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::User)
   }
 }
 
@@ -501,6 +529,7 @@ $Config = Get-Config
 Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
 Add-JavaDeployment $Config
+Add-Java6NomisWebUtils $Config
 Remove-JavaUpdateCheck $Config
 Add-EdgeConfig $Config
 Add-EdgeIECompatibility $Config
