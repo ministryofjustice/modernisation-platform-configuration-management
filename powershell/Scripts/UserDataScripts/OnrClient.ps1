@@ -358,7 +358,8 @@ $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environmen
 $bodsSecretName  = "/sap/bods/$dbenv/passwords"
 
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
-$credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_password)
+$service_user_secure_password = ConvertTo-SecureString -String $service_user_password -AsPlainText -Force
+$credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_secure_password)
 
 $DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
 
