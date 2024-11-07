@@ -200,7 +200,7 @@ function Add-Java6NomisWebUtils {
     Write-Output " - Downloding zip from S3 bucket"
     Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/" + $Config.JavaNomisWebUtilsS3Object) -File (".\" + $Config.JavaNomisWebUtilsS3Object) | Out-Null
     Write-Output " - Extracing zip"
-    Expand-Archive -Path (".\" + $Config.JavaNomisWebUtilsS3Object -DestinationPath) "C:\Program Files (x86)\Java\jre6\bin" -Force
+    Expand-Archive -Path (".\" + $Config.JavaNomisWebUtilsS3Object) -DestinationPath "C:\Program Files (x86)\Java\jre6\bin" -Force
     New-Item ("C:\Program Files (x86)\Java\jre6\" + $Config.JavaNomisWebUtilsS3Object + ".installed")
   }
 
