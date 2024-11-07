@@ -209,8 +209,6 @@ function Add-Java6NomisWebUtils {
   if ($oldNomisWebUtils -ne $newNomisWebUtils) {
     Write-Output "Setting NOMISWEBUTILS environment variable"
     [System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::Machine)
-    #[System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::Process)
-    #[System.Environment]::SetEnvironmentVariable("NOMISWEBUTILS", $newNomisWebUtils, [System.EnvironmentVariableTarget]::User)
   }
 }
 
