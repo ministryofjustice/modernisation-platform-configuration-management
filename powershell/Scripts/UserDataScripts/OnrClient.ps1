@@ -413,7 +413,7 @@ try {
 }
 catch {
     $exception = $_.Exception
-    $exception.Message | Out-File -FilePath $logFilellg -Append
+    $exception.Message | Out-File -FilePath $logFile11g -Append
     Write-Host "Failed to install Oracle 11g 64-bit client. Error: $_"
 }
 
