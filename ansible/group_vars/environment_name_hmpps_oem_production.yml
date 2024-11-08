@@ -95,7 +95,7 @@ collectd_endpoint_monitoring:
   - metric_dimension: c.nomis.az.justice.gov.uk
     url: https://c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag
   - metric_dimension: reporting.nomis.az.justice.gov.uk
-    url: https://reporting.nomis.az.justice.gov.uk/BOE/BI
+    url: https://reporting.nomis.az.justice.gov.uk/keepalive.htm
   - metric_dimension: oasys.az.justice.gov.uk
     url: https://oasys.az.justice.gov.uk/eor/f?p=100
   - metric_dimension: training.oasys.az.justice.gov.uk
@@ -118,13 +118,20 @@ collectd_endpoint_monitoring:
     url: http://r5.csr.service.justice.gov.uk:7770/isps/index.html?2057
   - metric_dimension: r6.csr.service.justice.gov.uk
     url: http://r6.csr.service.justice.gov.uk:7771/isps/index.html?2057
+  - metric_dimension: cafmtx.planetfm.service.justice.gov.uk
+    url: https://cafmtx.planetfm.service.justice.gov.uk/RDWeb
   - metric_dimension: cafmwebx2.az.justice.gov.uk
     url: https://cafmwebx2.az.justice.gov.uk/PlanetPortal
+    follow_redirect: 0
   - metric_dimension: cafmtrainweb.az.justice.gov.uk
     url: https://cafmtrainweb.az.justice.gov.uk/PlanetPortal
+    follow_redirect: 0
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
   - metric_dimension: www.offloc.service.justice.gov.uk
     url: https://www.offloc.service.justice.gov.uk/health
   - metric_dimension: hpa.service.hmpps.dsd.io
     url: https://hpa.service.hmpps.dsd.io/
   - metric_dimension: hmpps-az-gw1.justice.gov.uk
     url: https://hmpps-az-gw1.justice.gov.uk/RDWeb
+  - metric_dimension: rdgateway1.hmpps-domain.service.justice.gov.uk
+    url:  https://rdgateway1.hmpps-domain.service.justice.gov.uk/
