@@ -302,6 +302,8 @@ Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
 #
+$Config = Get-Config
+$Tags = Get-InstanceTags
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
