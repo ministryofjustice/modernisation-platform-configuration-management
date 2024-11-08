@@ -29,7 +29,7 @@ check_within_timeranges() {
   local timeranges
   local times
   now=$1
-  timeranges=$2  
+  timeranges=$2
   for timerange in ${timeranges//,/ }; do
     times=(${timerange/-/ })
     if [[ ($now == "${times[0]}" || $now > "${times[0]}") && $now < "${times[1]}" ]]; then
@@ -61,7 +61,7 @@ check_endpoint() {
     optional_curl_args="-L"
   fi
   if ! output=$(curl -sSv -m "$timeout_secs" -o /dev/null -w "http_code=%{http_code}" $optional_curl_args "$url" 2>&1); then
-    grep -v "^\*" <<<"$output" | grep -v ^http_code= | grep -v "^>" | grep -v "^<" | grep -v "^{" | grep -v "^}" >&2
+    grep -v "^\*" <<<"$output" | grep -v ^http_code= | grep -v CApath | grep -v "^>" | grep -v "^<" | grep -v "^{" | grep -v "^}" >&2
     return 1
   fi
   http_code=$(grep "^http_code=" <<< "$output" | cut -d= -f2)
@@ -76,7 +76,7 @@ check_endpoint() {
     fi
   fi
   if [[ $url =~ https: ]]; then
-    expiry=$(grep -F "*  expire date:" <<< "$output" | cut -d: -f2-)
+    expiry=$(grep -F "*  expire date:" <<< "$output" | head -1 | cut -d: -f2-)
     if [[ -z $expiry ]]; then
       echo "could not find expiry date in curl output" >&2
       return 1
@@ -122,6 +122,16 @@ while true; do
     fi
     output=$(check_endpoint "${args[0]}" "${args[1]}" "${args[2]}" 2>&1)
     exitcode=$?
+    if [[ $exitcode -ne 0 ]]; then
+      if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
+        echo "${args[3]}: $output [retrying once]"
+      elif [[ $((now_epoch_secs - last_error_log_timestamp[i])) -gt $LOGGER_INTERVAL_FOR_ERRORS ]]; then
+        echo "${args[3]}: $output [retrying once]" | logger -p local3.info -t collectd_endpoint_monitoring
+      fi
+      # retry immediately to avoid alarming on transient errors
+      output=$(check_endpoint "${args[0]}" "${args[1]}" "${args[2]}" 2>&1)
+      exitcode=$?
+    fi
     days_to_expiry=$(grep "^days_to_expiry=" <<< "$output" | cut -d= -f2)
     echo "PUTVAL $HOSTNAME/endpoint_status/exitcode-${args[3]} interval=$INTERVAL N:$exitcode"
     if [[ -n $days_to_expiry ]]; then
@@ -134,9 +144,19 @@ while true; do
     if [[ $exitcode -ne 0 ]]; then
       if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
         echo "${args[3]}: $output"
+        last_error_log_timestamp[i]="$now_epoch_secs"
       elif [[ $((now_epoch_secs - last_error_log_timestamp[i])) -gt $LOGGER_INTERVAL_FOR_ERRORS ]]; then
         echo "${args[3]}: $output" | logger -p local3.info -t collectd_endpoint_monitoring
         last_error_log_timestamp[i]="$now_epoch_secs"
+      fi
+    else
+      if [[ $((last_error_log_timestamp[i])) -ne 0 ]]; then
+        if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
+          echo "${args[3]}: endpoint now ok"
+        else
+          echo "${args[3]}: endpoint now ok" | logger -p local3.info -t collectd_endpoint_monitoring
+        fi
+        last_error_log_timestamp[i]=0
       fi
     fi
   done
