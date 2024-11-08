@@ -391,7 +391,7 @@ $11gClientParams = @{
     FilePath = "$WorkingDirectory\Oracle11g64bitClient\client\setup.exe"
     ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
-    NoNewWindow = $true
+    # NoNewWindow = $true
     Verb = "RunAs"
     # Credential = $credential
 }
@@ -400,7 +400,7 @@ $19cClientParams = @{
     FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
     ArgumentList = "-silent","oracle.install.OracleHomeUserPassword=$service_user_password","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
-    NoNewWindow = $true
+    # NoNewWindow = $true
     Verb = "RunAs"
     # Credential = $credential
 }
