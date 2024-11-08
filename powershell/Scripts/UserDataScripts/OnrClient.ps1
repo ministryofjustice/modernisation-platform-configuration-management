@@ -304,12 +304,17 @@ Set-TimeZone -Name "GMT Standard Time"
 #
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
+$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    # Get the AD Admin credentials
+    $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+    # Move the computer to the correct OU
+    Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
     Exit 3010 # triggers reboot if running from SSM Doc
   }
 } else {
@@ -325,16 +330,16 @@ $Tags = Get-InstanceTags
 
 
 # {{{ Add computer to the correct OU
-$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
+# $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+#
+# Import-Module ModPlatformAD -Force
+# $ADConfig = Get-ModPlatformADConfig
 
 # Get the AD Admin credentials
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+# $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 
 # Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+# Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 # ensure computer is in the correct OU
 gpupdate /force
@@ -387,27 +392,54 @@ oracle.install.client.installType=Administrator
 
 $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
+$logFile11g = "$WorkingDirectory\Oracle11g64bitClient\install.log"
+New-Item -ItemType File -Path $logFilellg -Force
+
 $11gClientParams = @{
     FilePath = "$WorkingDirectory\Oracle11g64bitClient\client\setup.exe"
     ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
+    WindowsStyle = "Hidden"
     # NoNewWindow = $true
     Verb = "RunAs"
     # Credential = $credential
 }
+
+try {
+    "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
+    Start-Process @11gClientParams
+}
+catch {
+    $exception = $_.Exception
+    $exception.Message | Out-File -FilePath $logFilellg -Append
+    Write-Host "Failed to install Oracle 11g 64-bit client. Error: $_"
+}
+
+$logFile19c = "$WorkingDirectory\Oracle19c64bitClient\install.log"
+New-Item -ItemType File -Path $logFile19c -Force
+
+"Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
 
 $19cClientParams = @{
     FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
     ArgumentList = "-silent","oracle.install.OracleHomeUserPassword=$service_user_password","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
+    WindowStyle = "Hidden"
     # NoNewWindow = $true
     Verb = "RunAs"
     # Credential = $credential
 }
 
-Start-Process @11gClientParams
+try {
+  "Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
+  Start-Process @19cClientParams
+} catch {
+  $exception = $_.Exception
+  $exception.Message | Out-File -FilePath $logFile19c -Append
+  Write-Host "Failed to install Oracle 19c 64-bit client. Error $_"
+}
 
-Start-Process @19cClientParams
+
 
 # }}}
 
