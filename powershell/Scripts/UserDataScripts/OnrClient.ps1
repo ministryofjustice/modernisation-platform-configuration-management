@@ -367,6 +367,11 @@ $bodsSecretName  = "/sap/bods/$dbenv/passwords"
 
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 
+if ([string]::IsNullOrEmpty($service_user_password)) {
+    Write-Host "Failed to retrieve svc_nart password from Secrets Manager. Exiting."
+    exit 1
+}
+
 $DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
 
 $11gResponseFileContent = @"
