@@ -346,6 +346,8 @@ $Tags = Get-InstanceTags
 # ensure computer is in the correct OU
 gpupdate /force
 
+gpresult /h "C:\Windows\Temp\gpresult.html"
+
 # }}}
 
 # {{{ prepare assets
