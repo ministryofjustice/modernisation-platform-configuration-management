@@ -346,7 +346,7 @@ $Tags = Get-InstanceTags
 # ensure computer is in the correct OU
 gpupdate /force
 
-gpresult /h "C:\Windows\Temp\gpresult.html"
+gpresult /h "$WorkingDirectory\gpresult.html"
 
 # }}}
 
@@ -397,13 +397,14 @@ oracle.install.client.installType=Administrator
 $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
 
 $logFile11g = "$WorkingDirectory\Oracle11g64bitClient\install.log"
-New-Item -ItemType File -Path $logFilellg -Force
+New-Item -ItemType File -Path $logFile11g -Force
 
 $11gClientParams = @{
     FilePath = "$WorkingDirectory\Oracle11g64bitClient\client\setup.exe"
+    WorkingDirectory = "$WorkingDirectory\Oracle11g64bitClient\client"
     ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
-    WindowsStyle = "Hidden"
+    WindowStyle = "Hidden"
     # NoNewWindow = $true
     Verb = "RunAs"
     # Credential = $credential
@@ -422,11 +423,10 @@ catch {
 $logFile19c = "$WorkingDirectory\Oracle19c64bitClient\install.log"
 New-Item -ItemType File -Path $logFile19c -Force
 
-"Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
-
 $19cClientParams = @{
     FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
-    ArgumentList = "-silent","oracle.install.OracleHomeUserPassword=$service_user_password","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    WorkingDirectory = "$WorkingDirectory\Oracle19c64bitClient\client"
+    ArgumentList = "-silent oracle.install.OracleHomeUserPassword=$service_user_password -noconfig -nowait -responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
     WindowStyle = "Hidden"
     # NoNewWindow = $true
