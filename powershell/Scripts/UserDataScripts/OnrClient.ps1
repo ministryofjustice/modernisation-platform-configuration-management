@@ -344,7 +344,9 @@ $Tags = Get-InstanceTags
 # Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 # ensure computer is in the correct OU
+Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
 
+Start-Process -FilePath "gpresult.exe" -ArgumentList "/f /h","$WorkingDirectory\gpresult.html" -Wait -Verb "RunAs"
 
 # }}}
 
@@ -357,16 +359,13 @@ Expand-Archive ( ".\" + $Config.Oracle11g64bitClientS3File) -Destination ".\Orac
 Expand-Archive ( ".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Oracle19c64bitClient"
 # }}}
 
-# {{{
-# TODO: Add Oracle client installation for 11g and 19c
+# {{{ Install Oracle 11g and 19c 64-bit clients
 #
 # Create svc_nart credential object
 $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 $bodsSecretName  = "/sap/bods/$dbenv/passwords"
 
 $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
-$service_user_secure_password = ConvertTo-SecureString -String $service_user_password -AsPlainText -Force
-$credential = New-Object System.Management.Automation.PSCredential ("$($Config.domain)\$($Config.serviceUser)", $service_user_secure_password)
 
 $DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
 
@@ -389,6 +388,7 @@ ORACLE_HOME=$($Config.ORACLE_19C_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
 oracle.install.IsBuiltInAccount=false
 oracle.install.OracleHomeUserName=$($Config.domain)\$($Config.serviceUser)
+oracle.install.OracleHomeUserPassword=$service_user_password
 oracle.install.client.installType=Administrator
 "@
 
@@ -403,16 +403,12 @@ $11gClientParams = @{
     ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
     NoNewWindow = $true
-    # WindowStyle = "Hidden"
-    # Verb = "RunAs"
-    # Credential = $credential
 }
 
 try {
     "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
-    Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
-    Start-Process -FilePath "gpresult.exe" -ArgumentList "/h", "$WorkingDirectory\gpresult.html" -Wait -NoNewWindow
     Start-Process @11gClientParams
+    "Ended Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
 }
 catch {
     $exception = $_.Exception
@@ -426,17 +422,15 @@ New-Item -ItemType File -Path $logFile19c -Force
 $19cClientParams = @{
     FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
     WorkingDirectory = "$WorkingDirectory\Oracle19c64bitClient\client"
-    ArgumentList = "-silent oracle.install.OracleHomeUserPassword=$service_user_password -noconfig -nowait -responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    ArgumentList = "-silent","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
-    # WindowStyle = "Hidden"
     NoNewWindow = $true
-    # Verb = "RunAs"
-    # Credential = $credential
 }
 
 try {
   "Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
   Start-Process @19cClientParams
+  "Ended Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
 } catch {
   $exception = $_.Exception
   $exception.Message | Out-File -FilePath $logFile19c -Append
@@ -472,3 +466,9 @@ try {
  } else {
      Write-Host "Running on Windows Server 2012 R2. Antivirus configuration was not changed."
  }
+
+$content = Get-Content "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+
+$modifycontent = $content -replace '(?i)(Password=)(.*)', '$1********'
+
+$modifycontent | Set-Content "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
