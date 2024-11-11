@@ -344,9 +344,9 @@ $Tags = Get-InstanceTags
 # Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 # ensure computer is in the correct OU
-gpupdate /force
+Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
 
-gpresult /h "$WorkingDirectory\gpresult.html"
+Start-Process -FilePath "gpresult.exe" -ArgumentList "/h", "$WorkingDirectory\gpresult.html" -Wait -NoNewWindow
 
 # }}}
 
@@ -404,9 +404,9 @@ $11gClientParams = @{
     WorkingDirectory = "$WorkingDirectory\Oracle11g64bitClient\client"
     ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
     Wait = $true
-    WindowStyle = "Hidden"
-    # NoNewWindow = $true
-    Verb = "RunAs"
+    NoNewWindow = $true
+    # WindowStyle = "Hidden"
+    # Verb = "RunAs"
     # Credential = $credential
 }
 
@@ -428,9 +428,9 @@ $19cClientParams = @{
     WorkingDirectory = "$WorkingDirectory\Oracle19c64bitClient\client"
     ArgumentList = "-silent oracle.install.OracleHomeUserPassword=$service_user_password -noconfig -nowait -responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
     Wait = $true
-    WindowStyle = "Hidden"
-    # NoNewWindow = $true
-    Verb = "RunAs"
+    # WindowStyle = "Hidden"
+    NoNewWindow = $true
+    # Verb = "RunAs"
     # Credential = $credential
 }
 
