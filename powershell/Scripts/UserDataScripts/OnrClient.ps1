@@ -7,8 +7,8 @@ $GlobalConfig = @{
          "Oracle11g64bitClientS3File" = "V20609-01.zip"
          "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st"
          "ORACLE_19C_HOME"       = "C:\app\oracle\product\19.0.0\client_1"
-         "ORACLE_11G_HOME"       = "E:\app\oracle\product\11.2.0\client_1"
-         "ORACLE_BASE"           = "E:\app\oracle"
+         "ORACLE_11G_HOME"       = "C:\app\oracle\product\11.2.0\client_1"
+         "ORACLE_BASE"           = "C:\app\oracle"
          "RegistryPath" = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
          "LegalNoticeCaption" = "IMPORTANT"
          "LegalNoticeText" = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
@@ -344,9 +344,7 @@ $Tags = Get-InstanceTags
 # Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 # ensure computer is in the correct OU
-Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
 
-Start-Process -FilePath "gpresult.exe" -ArgumentList "/h", "$WorkingDirectory\gpresult.html" -Wait -NoNewWindow
 
 # }}}
 
@@ -412,6 +410,8 @@ $11gClientParams = @{
 
 try {
     "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
+    Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
+    Start-Process -FilePath "gpresult.exe" -ArgumentList "/h", "$WorkingDirectory\gpresult.html" -Wait -NoNewWindow
     Start-Process @11gClientParams
 }
 catch {
