@@ -414,6 +414,14 @@ try {
     "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
     Start-Process @11gClientParams
     "Ended Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
+    # create shortcut for sqlplus on the desktop for all users
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $targetPath = [System.IO.Path]::Combine($($Config.ORACLE_11G_HOME), "BIN\sqlplus.exe")
+    $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "sqlplus11g.lnk")
+    $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $targetPath
+    $shortcut.Save() | Out-Null
+    "Shortcut created at $shortcutPath" | Out-File -FilePath $logFile11g -Append
 }
 catch {
     $exception = $_.Exception
@@ -436,6 +444,14 @@ try {
   "Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
   Start-Process @19cClientParams
   "Ended Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
+  # create shortcut for sqlplus on the desktop for all users
+  $WScriptShell = New-Object -ComObject WScript.Shell
+  $targetPath = [System.IO.Path]::Combine($($Config.ORACLE_19C_HOME), "bin\sqlplus.exe")
+  $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "sqlplus19c.lnk")
+  $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+  $shortcut.TargetPath = $targetPath
+  $shortcut.Save() | Out-Null
+  "Shortcut created at $shortcutPath" | Out-File -FilePath $logFile19c -Append
 } catch {
   $exception = $_.Exception
   $exception.Message | Out-File -FilePath $logFile19c -Append
