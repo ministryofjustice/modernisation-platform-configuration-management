@@ -106,29 +106,29 @@ function Get-Installer {
     Read-S3Object @s3Params
 }
 
- function Add-BOEWindowsClient {
-   [CmdletBinding()]
-   param (
-     [hashtable]$Config
-   )
+  function Add-BOEWindowsClient {
+    [CmdletBinding()]
+    param (
+      [hashtable]$Config
+    )
 
-   $ErrorActionPreference = "Stop"
+    $ErrorActionPreference = "Stop"
 
-    # TODO: double check this works. Use registry check or install path to check maybe
-    # if (Get-Package -Name "BusinessObjects XI 3.1" -ErrorAction SilentlyContinue) {
-    #     Write-Output "BOE Windows Client is already installed."
-    #     return
-    # }
+    # Don't proceed if already installed
+    if (Get-Package -Name "SAP BusinessObjects Enterprise XI 3.1 Client Tools SP7" -ErrorAction SilentlyContinue) {
+        Write-Output "BOE Windows Client is already installed."
+        return
+    }
 
-     Write-Output "Add BOE Windows Client"
-     Set-Location -Path ([System.IO.Path]::GetTempPath())
-     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
+    Write-Output "Add BOE Windows Client"
+    Set-Location -Path ([System.IO.Path]::GetTempPath())
+    Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
 
-     # Extract BOE Client Installer - there is no installer for this application
-     Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+    # Extract BOE Client Installer - there is no installer for this application
+    Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
 
-     # Install BOE Windows Client
-     Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "$ConfigurationManagementRepo\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+    # Install BOE Windows Client
+    Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "$ConfigurationManagementRepo\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
 
      # Create a desktop shortcut for BOE Client Tools
     $WScriptShell = New-Object -ComObject WScript.Shell
@@ -138,7 +138,7 @@ function Get-Installer {
     $shortcut.TargetPath = $targetPath
     $shortcut.Save() | Out-Null
     Write-Output "Shortcut created at $shortcutPath"
- }
+  }
 
  function Get-SecretValue {
      param (
@@ -379,6 +379,10 @@ oracle.install.client.installType=Administrator
     $modifiedContent | Set-Content $responseFile
 }
 
+function Test-WindowsServer2012R2 {
+  $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+  return $osVersion -like "6.3*"
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -394,16 +398,6 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameter
 
 # Output a message to confirm the change
 Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
-
-# Turn off the firewall as this will possibly interfere with Sia Node creation
-# Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-
-# Disable antivirus and other security during installation
-
-function Test-WindowsServer2012R2 {
-    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
-    return $osVersion -like "6.3*"
-}
 
 if (-not (Test-WindowsServer2012R2)) {
     # Disable real-time monitoring
@@ -426,10 +420,21 @@ if (-not (Test-WindowsServer2012R2)) {
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
-# }}} complete - add prerequisites to server
-#
+# }}}
+
 $Config = Get-Config
 $Tags = Get-InstanceTags
+
+$tempPath = ([System.IO.Path]::GetTempPath())
+
+$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
+$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
+$ErrorActionPreference = "Stop"
+$WorkingDirectory = "C:\Software"
+$AppDirectory = "C:\App"
+
+New-Item -ItemType Directory -Path $WorkingDirectory -Force
+New-Item -ItemType Directory -Path $AppDirectory -Force
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
@@ -449,28 +454,14 @@ if ($null -ne $ADConfig) {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
-# }}}
-# {{{ Get the config and tags for the instance
-$Config = Get-Config
-$Tags = Get-InstanceTags
 
-# TODO: fix this as it doesn't 'seem' to run
-Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
+# confirm group policy has been applied
+Start-Process -FilePath "C:\Windows\System32\gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow | Out-Null
 
-Start-Process -FilePath "gpresult.exe" -ArgumentList "/f /h","$WorkingDirectory\gpresult.html" -Wait -Verb "RunAs"
-
+Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f","/h","$WorkingDirectory\gpresult.html" -Wait -NoNewWindow | Out-Null
 # }}}
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
-$ErrorActionPreference = "Stop"
-$WorkingDirectory = "C:\Software"
-$AppDirectory = "C:\App"
-
-New-Item -ItemType Directory -Path $WorkingDirectory -Force
-New-Item -ItemType Directory -Path $AppDirectory -Force
+# {{{ Run installers
 
  choco install winscp.install -y
 
@@ -480,6 +471,7 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
  Install-Oracle19cClient -Config $Config
  Add-BOEWindowsClient $Config
  Add-Shortcuts $Config
+# }}} end of installers
 
  # Re-enable antivirus settings if not Windows Server 2012 R2
  if (-not (Test-WindowsServer2012R2)) {
