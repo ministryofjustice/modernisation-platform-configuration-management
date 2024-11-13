@@ -154,7 +154,7 @@ ADDSOURCE=""
 ADVERTISE=""
 "@
 
-    $ResponseFile = (([System.IO.Path]::GetTempPath) + "\BOE\OnrClientResponse.ini")
+    $ResponseFile = (([System.IO.Path]::GetTempPath()) + "\BOE\OnrClientResponse.ini")
 
     $BOEResponseFileContent | Out-File -FilePath $ResponseFile -Force -Encoding ascii
 
