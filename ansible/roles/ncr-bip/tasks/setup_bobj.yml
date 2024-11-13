@@ -8,6 +8,14 @@
   loop:
     - home/bobj/.bash_profile
 
+- name: Copy bobj scripts
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    mode: 0755
+  loop:
+    - home/bobj/archive_logs.sh
+
 - name: Copy bobj biprws helper scripts
   ansible.builtin.template:
     src: "{{ item }}"
