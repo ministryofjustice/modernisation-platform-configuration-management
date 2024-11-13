@@ -456,10 +456,8 @@ Set-TimeZone -Name "GMT Standard Time"
 $Config = Get-Config
 $Tags = Get-InstanceTags
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
+# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
+$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
 $ErrorActionPreference = "Stop"
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
