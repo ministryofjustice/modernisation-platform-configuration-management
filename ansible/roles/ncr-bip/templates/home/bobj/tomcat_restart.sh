@@ -1,5 +1,6 @@
 #!/bin/bash
-# Version 2
+# Managed in code modernisation-platform-configuration-management repo, ncr-bip role
+# NOTE: this script is redundant, "systemctl restart sapbobj" will do the same thing
 . /home/bobj/.bash_profile
 
 BOBJEDIR={{ sap_bip_installation_directory }}/sap_bobj/

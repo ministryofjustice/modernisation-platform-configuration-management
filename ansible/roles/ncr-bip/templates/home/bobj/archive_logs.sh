@@ -20,13 +20,12 @@ if pgrep -u bobj java > /dev/null; then
 fi
 
 mv_files() {
-  files=$(find "$1/$2" -name "$3" 2>/dev/null)
+  files=$(find "$1" -name "$2" 2>/dev/null)
   if [[ -n $files ]]; then
     num_files=$(wc -l <<< "$files")
-    echo "Moving $num_files files from $1/$2$3 to $ARCHLOGDIR/$2"
+    echo "Moving $num_files files from $1/$2 to $ARCHLOGDIR/"
     if [[ $DRYRUN == 0 ]]; then
-      mkdir -p "$ARCHLOGDIR/$2"
-      mv "$1/$2"$3 "$ARCHLOGDIR/$2"
+      mv "$1/"$2 "$ARCHLOGDIR/"
     fi
   fi
 }
@@ -36,7 +35,7 @@ if [[ ! -d $ARCHLOGDIR ]]; then
   [[ $DRYRUN == 0 ]] &&  mkdir -p "$ARCHLOGDIR"
 fi
 
-mv_files "$BOBJEDIR" "logging/" "*.*"
-mv_files "$BOBJEDIR" "tomcat/logs/" "*.*"
-mv_files "$BOBJEDIR" "tomcat/bin/" "TraceLog_*"
-mv_files ~ "" "SBOPWebapp_*"
+mv_files "$BOBJEDIR/logging" "*.*"
+mv_files "$BOBJEDIR/tomcat/logs" "*.*"
+mv_files "$BOBJEDIR/tomcat/bin" "TraceLog_*"
+mv_files ~ "SBOPWebapp_*"
