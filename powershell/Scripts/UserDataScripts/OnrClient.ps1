@@ -115,7 +115,8 @@ function Get-Installer {
     $ErrorActionPreference = "Stop"
 
     # Don't proceed if already installed
-    if (Get-Package -Name "SAP BusinessObjects Enterprise XI 3.1 Client Tools SP7" -ErrorAction SilentlyContinue) {
+    $installDir = "C:\Program Files (x86)\Business Objects"
+    if (Test-Path $installDir) {
         Write-Output "BOE Windows Client is already installed."
         return
     }
@@ -127,8 +128,38 @@ function Get-Installer {
     # Extract BOE Client Installer - there is no installer for this application
     Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
 
+    $BOEResponseFileContent = @"
+[OTHER]
+QUIET=/qa
+[INSTALL]
+CLIENTLANGUAGE="EN"
+DATABASEAUDITDRIVER="MySQLDatabaseSubSystem"
+DATABASEDRIVER="MySQLDatabaseSubSystem"
+ENABLELOGFILE="1"
+INSTALL.LP.EN.SELECTED="1"
+INSTALLDIR="C:\Program Files (x86)\Business Objects\"
+INSTALLLEVEL="4"
+WDEPLOY_LANGUAGES="en"
+[FEATURES]
+REMOVE=""
+ADDLOCAL="Complete,AlwaysInstall,BeforeInstall,VBA62,Reporter,Clients,WRC,DataSourceMigrationWizard,CrystalBVM,MetaDataD
+esigner,ConversionTool,ImportWizard,PubWiz,qaaws,Designer,DotNET2SDK,DotNETSDK,DotNetRASSDK,DotNetViewersSDK,VSDesigner,
+VSHELP,RenetSDK,DevelopersFiles,JavaRASSDK,BOEJavaSDK,JavaViewersSDK,RebeanSDK,WebServicesSDK,UnivTransMgr,DADataFederat
+or,DataAccess,HPNeoview,WebActivityLog,OLAP,MyCube,SOFA,DAMySQL,DAGenericODBC,SFORCE,XML,Universe,BDE,dBase,FileSystem,D
+ANETEZZA,DAMicrosoft,DAIBMDB2,IBM,Redbrick,DAIBMInformix,OLE_DB_Data,DAProgressOpenEdge,DAOracle,SybaseAnywhere,DASybase
+,SybaseASE,SybaseIQ,SymantecACT,DANCRTeradata,TextDA,Btrieve,CharacterSeparated,ExportSupport,ExpDiskFile,ExpRichTextFor
+mat,ExpWordforWindows,PDF,ExpText,ExpExcel,ExpCrystalReports,XMLExport,LegacyXMLExport,SamplesEN,UserHelp,LanguagePackCo
+stingFeatureen,LanguagePackCostingFeature"
+ADDSOURCE=""
+ADVERTISE=""
+"@
+
+    $ResponseFile = (([System.IO.Path]::GetTempPath) + "\BOE\OnrClientResponse.ini")
+
+    $BOEResponseFileContent | Out-File -FilePath $ResponseFile -Force -Encoding ascii
+
     # Install BOE Windows Client
-    Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "$ConfigurationManagementRepo\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+    Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r $ResponseFile" -Wait -NoNewWindow
 
      # Create a desktop shortcut for BOE Client Tools
     $WScriptShell = New-Object -ComObject WScript.Shell
