@@ -372,6 +372,8 @@ if (-not (Test-WindowsServer2012R2)) {
 Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
+$Config = Get-Config
+$Tags = Get-InstanceTags
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
@@ -400,8 +402,7 @@ if ($null -ne $ADConfig) {
 # }}}
 
 # {{{ Get the config and tags for the instance
-$Config = Get-Config
-$Tags = Get-InstanceTags
+
 # }}}
 
 # {{{ Add computer to the correct OU
