@@ -33,14 +33,7 @@ $GlobalConfig = @{
 
 # IMPORTANT: This script installs Client Tools 4.3 SP 1 Patch 12 and the Oracle 19c client software.
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
-$WorkingDirectory = "C:\Software"
-$AppDirectory = "C:\App"
-
-$ErrorActionPreference = "Stop"
-
+# }}} functions
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
@@ -340,6 +333,7 @@ features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Desig
 # }}} end of functions
 
 # {{{ Prep the server for installation
+$ErrorActionPreference = "Stop"
 # Set the registry key to prefer IPv4 over IPv6
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
 
@@ -372,16 +366,22 @@ if (-not (Test-WindowsServer2012R2)) {
 Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
+
 $Config = Get-Config
 $Tags = Get-InstanceTags
+
+$WorkingDirectory = "C:\Software"
+$AppDirectory = "C:\App"
+
+
+
+# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
+$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
 # Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-
-# Add new path to $env:PSModulePath
-Write-Host "$(Get-Module -ListAvailable)"
 
 $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
@@ -399,19 +399,14 @@ if ($null -ne $ADConfig) {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
-# }}}
 
-# {{{ Get the config and tags for the instance
-
-# }}}
-
-# {{{ Add computer to the correct OU
-# ensure computer is in the correct OU
 gpupdate /force
 
-# }}}
+# }}} end of join domain
 
 # {{{ prepare assets
+$ErrorActionPreference = "Stop"
+
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
