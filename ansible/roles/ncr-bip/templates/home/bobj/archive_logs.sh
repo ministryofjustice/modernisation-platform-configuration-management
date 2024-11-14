@@ -32,7 +32,11 @@ mv_files() {
   fi
 }
 
-mv_files "$BOBJEDIR/logging" "*.*"
-mv_files "$BOBJEDIR/tomcat/logs" "*.*"
-mv_files "$BOBJEDIR/tomcat/bin" "TraceLog_*"
-mv_files ~ "SBOPWebapp_*"
+if [[ -d $ARCHLOGDIR ]]; then
+  echo "Not archiving logs as $ARCHLOGDIR already exists"
+else
+  mv_files "$BOBJEDIR/logging" "*.*"
+  mv_files "$BOBJEDIR/tomcat/logs" "*.*"
+  mv_files "$BOBJEDIR/tomcat/bin" "TraceLog_*"
+  mv_files ~ "SBOPWebapp_*"
+fi
