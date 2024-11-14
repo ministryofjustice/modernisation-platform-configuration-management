@@ -43,8 +43,9 @@ BOBJEDIR="{{ sap_bip_installation_directory }}/sap_bobj"
 case "$1" in
 'start')
 
-        # Source the env.sh file
-        # $SU - "$BOBJEUSERNAME" ". $BOBJEDIR/setup/env.sh"
+        if [ -f "/home/$BOBJEUSERNAME"/archive_logs.sh ]; then
+                $SU - "$BOBJEUSERNAME" -c "/home/$BOBJEUSERNAME"/archive_logs.sh | logger -p daemon.info -t bobj
+        fi
 
         if [ -f "$BOBJEDIR"/ccm.config ]; then
                 # Source the ccm.config file
@@ -109,7 +110,7 @@ case "$1" in
         fi
 
         if [ -f "/home/$BOBJEUSERNAME"/archive_logs.sh ]; then
-                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/archive_logs.sh | logger -p daemon.info -t bobj
+                $SU - "$BOBJEUSERNAME" -c "/home/$BOBJEUSERNAME"/archive_logs.sh | logger -p daemon.info -t bobj
         fi
 
         if [ -f "/etc/redhat-release" ]; then

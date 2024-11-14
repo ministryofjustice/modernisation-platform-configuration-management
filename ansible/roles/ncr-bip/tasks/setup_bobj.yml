@@ -12,9 +12,12 @@
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "/{{ item }}"
+    owner: bobj
+    group: binstall
     mode: 0755
   loop:
     - home/bobj/archive_logs.sh
+    - home/bobj/sap_restart.sh
 
 - name: Copy bobj biprws helper scripts
   ansible.builtin.template:

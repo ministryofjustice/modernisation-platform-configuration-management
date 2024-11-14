@@ -22,18 +22,15 @@ fi
 mv_files() {
   files=$(find "$1" -name "$2" 2>/dev/null)
   if [[ -n $files ]]; then
+    if [[ ! -d $ARCHLOGDIR ]]; then
+      echo "Creating log file archive $ARCHLOGDIR"
+      [[ $DRYRUN == 0 ]] && mkdir -p "$ARCHLOGDIR"
+    fi
     num_files=$(wc -l <<< "$files")
     echo "Moving $num_files files from $1/$2 to $ARCHLOGDIR/"
-    if [[ $DRYRUN == 0 ]]; then
-      mv "$1/"$2 "$ARCHLOGDIR/"
-    fi
+    [[ $DRYRUN == 0 ]] && mv "$1/"$2 "$ARCHLOGDIR/"
   fi
 }
-
-if [[ ! -d $ARCHLOGDIR ]]; then
-  echo "Creating log file archive $ARCHLOGDIR"
-  [[ $DRYRUN == 0 ]] &&  mkdir -p "$ARCHLOGDIR"
-fi
 
 mv_files "$BOBJEDIR/logging" "*.*"
 mv_files "$BOBJEDIR/tomcat/logs" "*.*"
