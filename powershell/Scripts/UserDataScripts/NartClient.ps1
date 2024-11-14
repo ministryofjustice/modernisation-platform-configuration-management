@@ -2,8 +2,8 @@ $GlobalConfig = @{
     "all"                                    = @{
         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder" = "hmpps/ncr-packages"
-        "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
-        "ORACLE_HOME"           = "C:\app\oracle\product\19.0.0\client_1"
+        "Oracle19c64bitClientS3File"    = "WINDOWS.X64_193000_client.zip"
+        "ORACLE_19C_HOME"           = "C:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"           = "C:\app\oracle"
         # "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
         # "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9
@@ -178,6 +178,77 @@ function Move-ModPlatformADComputer {
   # Move the computer to the new OU
   (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 }
+
+function Test-WindowsServer2012R2 {
+    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+    return $osVersion -like "6.3*"
+}
+
+function Install-Oracle19cClient {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if Oracle 19c client is already installed
+    if (Test-Path $Config.ORACLE_19C_HOME) {
+        Write-Host "Oracle 19c client is already installed."
+        return
+    }
+
+    $WorkingDirectory = "C:\Software"
+    Set-Location -Path $WorkingDirectory
+
+    # Prepare installer
+    Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
+    Expand-Archive (".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\OracleClient"
+
+    # Create response file for silent install
+    $oracleClientResponseFileContent = @"
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+ORACLE_HOME=$($Config.ORACLE_19C_HOME)
+ORACLE_BASE=$($Config.ORACLE_BASE)
+oracle.install.IsBuiltInAccount=true
+oracle.install.client.installType=Administrator
+"@
+
+    $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+
+    # Install Oracle 19c client
+    $OracleClientInstallParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-silent", "-noconfig", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    Start-Process @OracleClientInstallParams
+
+    # Copy tnsnames.ora file
+    $tnsFile = "$($Config.ORACLE_19C_HOME)\network\admin\tnsnames.ora"
+    if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
+        Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
+    } elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
+        Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
+    } else {
+        Write-Error "Could not find tnsnames.ora file."
+    }
+
+    # Install Oracle configuration tools
+    $oracleConfigToolsParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-executeConfigTools", "-silent", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    Start-Process @oracleConfigToolsParams
+
+    # Set environment variable
+    [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -192,10 +263,7 @@ Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Disable antivirus and other security during installation
 
-function Test-WindowsServer2012R2 {
-    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
-    return $osVersion -like "6.3*"
-}
+
 
 if (-not (Test-WindowsServer2012R2)) {
     # Disable real-time monitoring
@@ -234,6 +302,10 @@ $ADConfig = Get-ModPlatformADConfig
 if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    # Get the AD Admin credentials
+    $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+    # Move the computer to the correct OU
+    Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
     Exit 3010 # triggers reboot if running from SSM Doc
   }
 } else {
@@ -248,16 +320,6 @@ $Tags = Get-InstanceTags
 # }}}
 
 # {{{ Add computer to the correct OU
-
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-
-# Get the AD Admin credentials
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-
-# Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
-
 # ensure computer is in the correct OU
 gpupdate /force
 
@@ -268,62 +330,8 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
+
 Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
-
-
-Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
-
-# }}}
-
-# {{{ Install Oracle 19c Client silent install
-# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-
-# Create response file for silent install
-$oracleClientResponseFileContent = @"
-oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
-ORACLE_HOME=$($Config.ORACLE_HOME)
-ORACLE_BASE=$($Config.ORACLE_BASE)
-oracle.install.IsBuiltInAccount=true
-oracle.install.client.installType=Administrator
-"@
-
-$oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
-
-$OracleClientInstallParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @OracleClientInstallParams
-
-# Copy tnsnames.ora file to correct location, may not be in the usual place, check both
-if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} else {
-    Write-Error "Could not find tnsnames.ora file in $ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)"
-    Write-Error "Could not find tnsnames.ora file in C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)"
-}
-
-# Install Oracle configuration tools
-$oracleConfigToolsParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @oracleConfigToolsParams
-
-[Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
 # }}}
 
 # {{{ Install BIP 4.2 client tools
@@ -447,6 +455,8 @@ foreach ($executable in $executables) {
     }
 }
 # }}}
+
+Install-Oracle19cClient -Config $Config
 
 # Re-enable antivirus settings if not Windows Server 2012 R2
 if (-not (Test-WindowsServer2012R2)) {
