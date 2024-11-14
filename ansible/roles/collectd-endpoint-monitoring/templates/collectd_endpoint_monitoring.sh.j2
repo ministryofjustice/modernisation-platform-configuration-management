@@ -101,16 +101,18 @@ check_endpoint() {
 n=${#ENDPOINTS[@]}
 
 last_error_log_timestamp=()
-last_days_to_expiry=()
-last_expiry_metric_timestamp=()
+last_expiry_metric_timestamp=0
+log_cert_expiry=0
 for ((i=0; i<n; i++)); do
-  last_days_to_expiry[i]=
-  last_expiry_metric_timestamp[i]=0
   last_error_log_timestamp[i]=0
 done
 
 while true; do
   now_epoch_secs=$(date +%s)
+  if [[ $((now_epoch_secs - last_expiry_metric_timestamp)) -gt $CERT_EXPIRY_METRIC_INTERVAL ]]; then
+    log_cert_expiry=1
+    last_expiry_metric_timestamp="$now_epoch_secs"
+  fi
   for ((i=0; i<n; i++)); do
     args=(${ENDPOINTS[$i]})
     timeranges="${args[4]}"
@@ -135,10 +137,8 @@ while true; do
     days_to_expiry=$(grep "^days_to_expiry=" <<< "$output" | cut -d= -f2)
     echo "PUTVAL $HOSTNAME/endpoint_status/exitcode-${args[3]} interval=$INTERVAL N:$exitcode"
     if [[ -n $days_to_expiry ]]; then
-      if [[ ${last_days_to_expiry[i]} != "$days_to_expiry" || $((now_epoch_secs - last_expiry_metric_timestamp[i])) -gt $CERT_EXPIRY_METRIC_INTERVAL ]]; then
+      if [[ $log_cert_expiry -eq 1 ]]; then
         echo "PUTVAL $HOSTNAME/endpoint_cert_expiry/gauge-${args[3]} interval=$INTERVAL N:$days_to_expiry"
-        last_expiry_metric_timestamp[i]="$now_epoch_secs"
-        last_days_to_expiry[i]="$days_to_expiry"
       fi
     fi
     if [[ $exitcode -ne 0 ]]; then
