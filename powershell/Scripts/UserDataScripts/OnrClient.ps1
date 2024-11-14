@@ -41,17 +41,6 @@ $GlobalConfig = @{
     }
  }
 
- $tempPath = ([System.IO.Path]::GetTempPath())
-
- $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
- $ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
- $ErrorActionPreference = "Stop"
- $WorkingDirectory = "C:\Software"
- $AppDirectory = "C:\App"
-
- New-Item -ItemType Directory -Path $WorkingDirectory -Force
- New-Item -ItemType Directory -Path $AppDirectory -Force
-
 # {{{ functions
 
 function Get-Config {
@@ -117,25 +106,60 @@ function Get-Installer {
     Read-S3Object @s3Params
 }
 
- function Add-BOEWindowsClient {
-   [CmdletBinding()]
-   param (
-     [hashtable]$Config
-   )
+  function Add-BOEWindowsClient {
+    [CmdletBinding()]
+    param (
+      [hashtable]$Config
+    )
 
-   $ErrorActionPreference = "Stop"
-   if (Test-Path (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe")) {
-     Write-Output "BOE Windows Client already installed"
-   } else {
-     Write-Output "Add BOE Windows Client"
-     Set-Location -Path ([System.IO.Path]::GetTempPath())
-     Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
+    $ErrorActionPreference = "Stop"
 
-     # Extract BOE Client Installer - there is no installer for this application
-     Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+    # Don't proceed if already installed
+    $installDir = "C:\Program Files (x86)\Business Objects"
+    if (Test-Path $installDir) {
+        Write-Output "BOE Windows Client is already installed."
+        return
+    }
 
-     # Install BOE Windows Client
-     Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r", "$ConfigurationManagementRepo\powershell\Configs\OnrClientResponse.ini" -Wait -NoNewWindow
+    Write-Output "Add BOE Windows Client"
+    Set-Location -Path ([System.IO.Path]::GetTempPath())
+    Read-S3Object -BucketName $Config.WindowsClientS3Bucket -Key ($Config.WindowsClientS3Folder + "/" + $Config.BOEWindowsClientS3File) -File (".\" + $Config.BOEWindowsClientS3File) -Verbose | Out-Null
+
+    # Extract BOE Client Installer - there is no installer for this application
+    Expand-Archive -Path (".\" + $Config.BOEWindowsClientS3File) -DestinationPath  (([System.IO.Path]::GetTempPath()) + "\BOE") -Force | Out-Null
+
+    $BOEResponseFileContent = @"
+[OTHER]
+QUIET=/qa
+[INSTALL]
+CLIENTLANGUAGE="EN"
+DATABASEAUDITDRIVER="MySQLDatabaseSubSystem"
+DATABASEDRIVER="MySQLDatabaseSubSystem"
+ENABLELOGFILE="1"
+INSTALL.LP.EN.SELECTED="1"
+INSTALLDIR="C:\Program Files (x86)\Business Objects\"
+INSTALLLEVEL="4"
+WDEPLOY_LANGUAGES="en"
+[FEATURES]
+REMOVE=""
+ADDLOCAL="Complete,AlwaysInstall,BeforeInstall,VBA62,Reporter,Clients,WRC,DataSourceMigrationWizard,CrystalBVM,MetaDataD
+esigner,ConversionTool,ImportWizard,PubWiz,qaaws,Designer,DotNET2SDK,DotNETSDK,DotNetRASSDK,DotNetViewersSDK,VSDesigner,
+VSHELP,RenetSDK,DevelopersFiles,JavaRASSDK,BOEJavaSDK,JavaViewersSDK,RebeanSDK,WebServicesSDK,UnivTransMgr,DADataFederat
+or,DataAccess,HPNeoview,WebActivityLog,OLAP,MyCube,SOFA,DAMySQL,DAGenericODBC,SFORCE,XML,Universe,BDE,dBase,FileSystem,D
+ANETEZZA,DAMicrosoft,DAIBMDB2,IBM,Redbrick,DAIBMInformix,OLE_DB_Data,DAProgressOpenEdge,DAOracle,SybaseAnywhere,DASybase
+,SybaseASE,SybaseIQ,SymantecACT,DANCRTeradata,TextDA,Btrieve,CharacterSeparated,ExportSupport,ExpDiskFile,ExpRichTextFor
+mat,ExpWordforWindows,PDF,ExpText,ExpExcel,ExpCrystalReports,XMLExport,LegacyXMLExport,SamplesEN,UserHelp,LanguagePackCo
+stingFeatureen,LanguagePackCostingFeature"
+ADDSOURCE=""
+ADVERTISE=""
+"@
+
+    $ResponseFile = (([System.IO.Path]::GetTempPath()) + "\BOE\OnrClientResponse.ini")
+
+    $BOEResponseFileContent | Out-File -FilePath $ResponseFile -Force -Encoding ascii
+
+    # Install BOE Windows Client
+    Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r $ResponseFile" -Wait -NoNewWindow
 
      # Create a desktop shortcut for BOE Client Tools
     $WScriptShell = New-Object -ComObject WScript.Shell
@@ -145,9 +169,7 @@ function Get-Installer {
     $shortcut.TargetPath = $targetPath
     $shortcut.Save() | Out-Null
     Write-Output "Shortcut created at $shortcutPath"
-
-   }
- }
+  }
 
  function Get-SecretValue {
      param (
@@ -245,14 +267,153 @@ function Move-ModPlatformADComputer {
   (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 }
 
-# function Add-OracleClient {
-#     [CmdletBinding()]
-#     params(
-#         [string]$OracleClientPath,
-#         [hashtable]$Config
-#     )
-# }
+function Install-Oracle11gClient {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
 
+    # Check if Oracle 11g client is already installed
+    if (Test-Path $Config.ORACLE_11G_HOME) {
+        Write-Host "Oracle 11g client is already installed."
+        return
+    }
+
+    $WorkingDirectory = "C:\Software"
+    Set-Location -Path $WorkingDirectory
+
+    $logFile11g = "$WorkingDirectory\Oracle11g64bitClient\install.log"
+    New-Item -ItemType File -Path $logFile11g -Force
+
+    # Prepare installer
+    Get-Installer -Key $Config.Oracle11g64bitClientS3File -Destination (".\" + $Config.Oracle11g64bitClientS3File)
+    Expand-Archive (".\" + $Config.Oracle11g64bitClientS3File) -Destination ".\Oracle11g64bitClient"
+
+    # Create response file
+    $DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+    $11gResponseFileContent = @"
+oracle.install.responseFileVersion=http://www.oracle.com/2007/install/rspfmt_clientinstall_response_schema_v11_2_0
+ORACLE_HOSTNAME=$($env:COMPUTERNAME).$DomainName
+INVENTORY_LOCATION=C:\Program Files\Oracle\Inventory
+SELECTED_LANGUAGES=en
+ORACLE_HOME=$($Config.ORACLE_11G_HOME)
+ORACLE_BASE=$($Config.ORACLE_BASE)
+oracle.install.client.installType=Administrator
+oracle.install.client.oramtsPortNumber=49157
+"@
+
+    $11gResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp" -Force -Encoding ascii
+
+    # Install Oracle 11g client
+    $11gClientParams = @{
+        FilePath         = "$WorkingDirectory\Oracle11g64bitClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\Oracle11g64bitClient\client"
+        ArgumentList     = "-silent", "-nowelcome", "-nowait", "-noconfig", "-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    try {
+        "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
+        Start-Process @11gClientParams
+        "Ended Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
+
+        # Create shortcut for sqlplus
+        $WScriptShell = New-Object -ComObject WScript.Shell
+        $targetPath = [System.IO.Path]::Combine($Config.ORACLE_11G_HOME, "BIN\sqlplus.exe")
+        $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "sqlplus11g.lnk")
+        $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = $targetPath
+        $shortcut.Save() | Out-Null
+    }
+    catch {
+        Write-Host "Failed to install Oracle 11g 64-bit client. Error: $_"
+    }
+}
+
+function Install-Oracle19cClient {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if Oracle 19c client is already installed
+    if (Test-Path $Config.ORACLE_19C_HOME) {
+        Write-Host "Oracle 19c client is already installed."
+        return
+    }
+
+    $WorkingDirectory = "C:\Software"
+    Set-Location -Path $WorkingDirectory
+
+    $logFile19c = "$WorkingDirectory\Oracle19c64bitClient\install.log"
+    New-Item -ItemType File -Path $logFile19c -Force
+
+    # Prepare installer
+    Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
+    Expand-Archive (".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Oracle19c64bitClient"
+
+    # Retrieve credentials
+    $Tags = Get-InstanceTags
+    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+    $bodsSecretName  = "/sap/bods/$dbenv/passwords"
+    $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+
+    if ([string]::IsNullOrEmpty($service_user_password)) {
+        Write-Host "Failed to retrieve svc_nart password from Secrets Manager. Exiting."
+        exit 1
+    }
+
+    # Create response file
+    $19cResponseFileContent = @"
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+ORACLE_HOME=$($Config.ORACLE_19C_HOME)
+ORACLE_BASE=$($Config.ORACLE_BASE)
+oracle.install.IsBuiltInAccount=false
+oracle.install.OracleHomeUserName=$($Config.domain)\$($Config.serviceUser)
+oracle.install.OracleHomeUserPassword=$service_user_password
+oracle.install.client.installType=Administrator
+"@
+
+    $19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
+
+    # Install Oracle 19c client
+    $19cClientParams = @{
+        FilePath         = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\Oracle19c64bitClient\client"
+        ArgumentList     = "-silent", "-noconfig", "-nowait", "-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    try {
+        "Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
+        Start-Process @19cClientParams
+        "Ended Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
+
+        # Create shortcut for sqlplus
+        $WScriptShell = New-Object -ComObject WScript.Shell
+        $targetPath = [System.IO.Path]::Combine($Config.ORACLE_19C_HOME, "bin\sqlplus.exe")
+        $shortcutPath = [environment]::GetFolderPath("CommonDesktopDirectory") + "\sqlplus19c.lnk"
+        $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = $targetPath
+        $shortcut.Save() | Out-Null
+    }
+    catch {
+        Write-Host "Failed to install Oracle 19c 64-bit client. Error $_"
+    }
+
+    # Mask password in response file
+    $responseFile = "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
+    $content = Get-Content $responseFile
+    $modifiedContent = $content -replace '(?i)(Password=)(.*)', '$1********'
+    $modifiedContent | Set-Content $responseFile
+}
+
+function Test-WindowsServer2012R2 {
+  $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+  return $osVersion -like "6.3*"
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -268,16 +429,6 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameter
 
 # Output a message to confirm the change
 Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
-
-# Turn off the firewall as this will possibly interfere with Sia Node creation
-# Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-
-# Disable antivirus and other security during installation
-
-function Test-WindowsServer2012R2 {
-    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
-    return $osVersion -like "6.3*"
-}
 
 if (-not (Test-WindowsServer2012R2)) {
     # Disable real-time monitoring
@@ -300,10 +451,19 @@ if (-not (Test-WindowsServer2012R2)) {
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
-# }}} complete - add prerequisites to server
-#
+# }}}
+
 $Config = Get-Config
 $Tags = Get-InstanceTags
+
+# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
+$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
+$ErrorActionPreference = "Stop"
+$WorkingDirectory = "C:\Software"
+$AppDirectory = "C:\App"
+
+New-Item -ItemType Directory -Path $WorkingDirectory -Force
+New-Item -ItemType Directory -Path $AppDirectory -Force
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
@@ -323,151 +483,24 @@ if ($null -ne $ADConfig) {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
+
+# confirm group policy has been applied
+Start-Process -FilePath "C:\Windows\System32\gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow | Out-Null
+
+Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f","/h","$WorkingDirectory\gpresult.html" -Wait -NoNewWindow | Out-Null
 # }}}
 
-# {{{ Get the config and tags for the instance
-$Config = Get-Config
-$Tags = Get-InstanceTags
-# }}}
-
-
-# {{{ Add computer to the correct OU
-# $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-#
-# Import-Module ModPlatformAD -Force
-# $ADConfig = Get-ModPlatformADConfig
-
-# Get the AD Admin credentials
-# $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-
-# Move the computer to the correct OU
-# Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
-
-# ensure computer is in the correct OU
-Start-Process -FilePath "gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow
-
-Start-Process -FilePath "gpresult.exe" -ArgumentList "/f /h","$WorkingDirectory\gpresult.html" -Wait -Verb "RunAs"
-
-# }}}
-
-# {{{ prepare assets
-Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.Oracle11g64bitClientS3File -Destination (".\" + $Config.Oracle11g64bitClientS3File)
-Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
-
-Expand-Archive ( ".\" + $Config.Oracle11g64bitClientS3File) -Destination ".\Oracle11g64bitClient"
-Expand-Archive ( ".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\Oracle19c64bitClient"
-# }}}
-
-# {{{ Install Oracle 11g and 19c 64-bit clients
-#
-# Create svc_nart credential object
-$dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$bodsSecretName  = "/sap/bods/$dbenv/passwords"
-
-$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
-
-if ([string]::IsNullOrEmpty($service_user_password)) {
-    Write-Host "Failed to retrieve svc_nart password from Secrets Manager. Exiting."
-    exit 1
-}
-
-$DomainName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
-
-$11gResponseFileContent = @"
-oracle.install.responseFileVersion=http://www.oracle.com/2007/install/rspfmt_clientinstall_response_schema_v11_2_0
-ORACLE_HOSTNAME=$($env:COMPUTERNAME).$DomainName
-INVENTORY_LOCATION=C:\Program Files\Oracle\Inventory
-SELECTED_LANGUAGES=en
-ORACLE_HOME=$($Config.ORACLE_11G_HOME)
-ORACLE_BASE=$($Config.ORACLE_BASE)
-oracle.install.client.installType=Administrator
-oracle.install.client.oramtsPortNumber=49157
-"@
-
-$11gResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp" -Force -Encoding ascii
-
-$19cResponseFileContent = @"
-oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
-ORACLE_HOME=$($Config.ORACLE_19C_HOME)
-ORACLE_BASE=$($Config.ORACLE_BASE)
-oracle.install.IsBuiltInAccount=false
-oracle.install.OracleHomeUserName=$($Config.domain)\$($Config.serviceUser)
-oracle.install.OracleHomeUserPassword=$service_user_password
-oracle.install.client.installType=Administrator
-"@
-
-$19cResponseFileContent | Out-File -FilePath "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp" -Force -Encoding ascii
-
-$logFile11g = "$WorkingDirectory\Oracle11g64bitClient\install.log"
-New-Item -ItemType File -Path $logFile11g -Force
-
-$11gClientParams = @{
-    FilePath = "$WorkingDirectory\Oracle11g64bitClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\Oracle11g64bitClient\client"
-    ArgumentList = "-silent","-nowelcome","-nowait","-noconfig","-responseFile $WorkingDirectory\Oracle11g64bitClient\11gClient64bitinstall.rsp"
-    Wait = $true
-    NoNewWindow = $true
-}
-
-try {
-    "Starting Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
-    Start-Process @11gClientParams
-    "Ended Oracle 11g 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile11g -Append
-    # create shortcut for sqlplus on the desktop for all users
-    $WScriptShell = New-Object -ComObject WScript.Shell
-    $targetPath = [System.IO.Path]::Combine($($Config.ORACLE_11G_HOME), "BIN\sqlplus.exe")
-    $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "sqlplus11g.lnk")
-    $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $targetPath
-    $shortcut.Save() | Out-Null
-    "Shortcut created at $shortcutPath" | Out-File -FilePath $logFile11g -Append
-}
-catch {
-    $exception = $_.Exception
-    $exception.Message | Out-File -FilePath $logFile11g -Append
-    Write-Host "Failed to install Oracle 11g 64-bit client. Error: $_"
-}
-
-$logFile19c = "$WorkingDirectory\Oracle19c64bitClient\install.log"
-New-Item -ItemType File -Path $logFile19c -Force
-
-$19cClientParams = @{
-    FilePath = "$WorkingDirectory\Oracle19c64bitClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\Oracle19c64bitClient\client"
-    ArgumentList = "-silent","-noconfig","-nowait","-responseFile $WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
-    Wait = $true
-    NoNewWindow = $true
-}
-
-try {
-  "Starting Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
-  Start-Process @19cClientParams
-  "Ended Oracle 19c 64-bit client installation at $(Get-Date)" | Out-File -FilePath $logFile19c -Append
-  # create shortcut for sqlplus on the desktop for all users
-  $WScriptShell = New-Object -ComObject WScript.Shell
-  $targetPath = [System.IO.Path]::Combine($($Config.ORACLE_19C_HOME), "bin\sqlplus.exe")
-  $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "sqlplus19c.lnk")
-  $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
-  $shortcut.TargetPath = $targetPath
-  $shortcut.Save() | Out-Null
-  "Shortcut created at $shortcutPath" | Out-File -FilePath $logFile19c -Append
-} catch {
-  $exception = $_.Exception
-  $exception.Message | Out-File -FilePath $logFile19c -Append
-  Write-Host "Failed to install Oracle 19c 64-bit client. Error $_"
-}
-
-
-
-# }}}
+# {{{ Run installers
 
  choco install winscp.install -y
 
  $ErrorActionPreference = "Stop"
  $Config = Get-Config
+ Install-Oracle11gClient -Config $Config
+ Install-Oracle19cClient -Config $Config
  Add-BOEWindowsClient $Config
  Add-Shortcuts $Config
+# }}} end of installers
 
  # Re-enable antivirus settings if not Windows Server 2012 R2
  if (-not (Test-WindowsServer2012R2)) {
@@ -488,8 +521,3 @@ try {
      Write-Host "Running on Windows Server 2012 R2. Antivirus configuration was not changed."
  }
 
-$content = Get-Content "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
-
-$modifycontent = $content -replace '(?i)(Password=)(.*)', '$1********'
-
-$modifycontent | Set-Content "$WorkingDirectory\Oracle19c64bitClient\19cClient64bitinstall.rsp"
