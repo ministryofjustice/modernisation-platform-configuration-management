@@ -7,7 +7,7 @@
         group: binstall
         state: directory
       loop:
-        - "{{ sap_web_archived_logs_directory }}"
+        - "{{ sap_bip_archived_logs_directory }}"
 
     - name: Copy tomcat restart script
       ansible.builtin.template:
@@ -34,7 +34,7 @@
         minute: "{{ 60 | random(seed=inventory_hostname) }}"
         hour: "3"
         weekday: "MON,WED,FRI"
-        job: "find {{ sap_web_archived_logs_directory }} -mtime +365 -prune -exec rm -rf {} \\;"
+        job: "find {{ sap_bip_archived_logs_directory }} -mtime +365 -prune -exec rm -rf {} \\;"
         user: bobj
 
   #  block

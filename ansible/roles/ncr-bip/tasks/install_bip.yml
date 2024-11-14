@@ -4,17 +4,18 @@
     path: /u01/app/bobj/BIP4/sap_bobj
   register: bip_installed_check
 
-- block:
-    - name: Create installation directory
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        mode: 0775
-        owner: bobj
-        group: binstall
-      with_items:
-        - "{{ sap_bip_installation_directory }}"
+- name: Create bobj owned directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0775
+    owner: bobj
+    group: binstall
+  with_items:
+    - "{{ sap_bip_installation_directory }}"
+    - "{{ sap_bip_archived_logs_directory }}"
 
+- block:
     - name: Perform pre-requesite checks
       become_user: bobj
       ansible.builtin.shell: |
@@ -49,11 +50,11 @@
   # block
   when: not bip_installed_check.stat.exists
 
-- name: Copy SAPBOBJEnterpriseXI40 script
+- name: Copy SAPBOBJEnterpriseXI40 scripts
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "/{{ item }}"
-    mode: 0775
+    mode: 0755
   loop:
     - usr/local/bin/SAPBOBJEnterpriseXI40
 
