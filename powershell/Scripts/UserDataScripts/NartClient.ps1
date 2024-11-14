@@ -14,7 +14,7 @@ $GlobalConfig = @{
         "NcrShortcuts" = @{
         }
     }
-    "nomis-combined-reporting-test"          = @{
+    "oasys-national-reporting-test"          = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
@@ -31,8 +31,7 @@ $GlobalConfig = @{
     }
 }
 
-# IMPORTANT: This file installs Client Tools 4.3 SP 1 Patch 12 and the Oracle 19c client software.
-# The BIPWindowsClient42 references remain as they may end up being used elsewhere but probably not.
+# IMPORTANT: This script installs Client Tools 4.3 SP 1 Patch 12 and the Oracle 19c client software.
 
 $tempPath = ([System.IO.Path]::GetTempPath())
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
