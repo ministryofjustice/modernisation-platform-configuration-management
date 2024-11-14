@@ -14,7 +14,7 @@ $GlobalConfig = @{
         "NcrShortcuts" = @{
         }
     }
-    "oasys-national-reporting-test"          = @{
+    "nomis-combined-reporting-test"          = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
