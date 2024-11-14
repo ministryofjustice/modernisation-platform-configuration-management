@@ -249,6 +249,95 @@ oracle.install.client.installType=Administrator
     # Set environment variable
     [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
 }
+
+function Add-BIPWindowsClient43 {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if BIP Windows Client 4.3 is already installed
+    $installDir = "C:\Program Files (x86)\SAP BusinessObjects"
+    if (Test-Path $installDir) {
+        Write-Host "BIP Windows Client 4.3 is already installed."
+        return
+    }
+
+    $BIPClientTools43ResponseFileContent = @"
+### Installation Directory
+Installdir=C:\Program Files (x86)\SAP BusinessObjects\
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DotNetSDK,CRJavaSDK,DevComponents,DataFed_DataAccess,HPNeoView_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess,Ingres_DataAccess,Greenplum_DataAccess,IBMDB2,Informix_DataAccess,Progress_Open_Edge_DataAccess,Oracle_DataAccess,Sybase_DataAccess,TeraData_DataAccess,SAPBW_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HSQLDB_DataAccess,Derby_DataAccess,Essbase_DataAccess,PSFT_DataAccess,JDE_DataAccess,Siebel_DataAccess,EBS_DataAccess,DataAccess
+"@
+
+    Set-Location -Path $WorkingDirectory
+
+    Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
+
+    $BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
+
+    choco install winrar -y
+
+    New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
+
+    Clear-PendingFileRenameOperations
+
+    # Extract the BIP 4.3 self-extracting archive using WinRAR's UnRAR command line tool
+    Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
+
+    $BIPClientTools43Params = @{
+        FilePath         = "$WorkingDirectory\BIP43\setup.exe"
+        ArgumentList     = "/wait","-r $WorkingDirectory\bip43_response.ini"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    Start-Process @BIPClientTools43Params
+
+    # Set up shortcuts for 4.3 client tools
+    $BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0\win64_x64\"
+
+    # List is incomplete, add more executables as needed
+    $executables = @(
+        @{
+            "Name" = "Designer"
+            "Exe"  = "designer.exe"
+        },
+        @{
+            "Name" = "Information Design Tool"
+            "Exe"  = "InformationDesignTool.exe"
+        }
+    )
+
+    # Path to all users' desktop
+    $AllUsersDesktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
+
+    # Create folders on all users' desktop
+    $Client43Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.3 Client Tools"
+
+    New-Item -ItemType Directory -Path $Client43Folder -Force
+
+    # Create shortcuts for each executable if the target exists
+    $WScriptShell = New-Object -ComObject WScript.Shell
+
+    foreach ($executable in $executables) {
+
+        # Shortcuts for 4.3 Client
+        $TargetPath43 = Join-Path -Path $BIP43Path -ChildPath $executable.Exe
+        if (Test-Path $TargetPath43) {
+            $ShortcutPath43 = Join-Path -Path $Client43Folder -ChildPath ($executable.Name + ".lnk")
+            $Shortcut43 = $WScriptShell.CreateShortcut($ShortcutPath43)
+            $Shortcut43.TargetPath   = $TargetPath43
+            $Shortcut43.IconLocation = $TargetPath43
+            $Shortcut43.Save()
+        } else {
+            Write-Host "Executable not found: $TargetPath43"
+        }
+    }
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -261,10 +350,7 @@ Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is requi
 # Turn off the firewall as this will possibly interfere with Sia Node creation
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
-# Disable antivirus and other security during installation
-
-
-
+# Disable antivirus and other security during installation if not Windows Server 2012 R2
 if (-not (Test-WindowsServer2012R2)) {
     # Disable real-time monitoring
     Set-MpPreference -DisableRealtimeMonitoring $true
@@ -329,134 +415,8 @@ gpupdate /force
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
-Set-Location -Path $WorkingDirectory
-
-Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
-# }}}
-
-# {{{ Install BIP 4.2 client tools
-# Set-Location -Path $WorkingDirectory
-# Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
-# Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
-
-# $BIPClientTools42ResponseFileContent = @"
-# ### Installation Directory
-# installdir=C:\Program Files (x86)\SAP BusinessObjects\
-# ### Language Packs Selected to Install
-# selectedlanguagepacks=en
-# ### Setup UI Language
-# setupuilanguage=en
-# features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool_Core,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DataFed_DataAccess,HPVertica_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SAPHANA_DataAccess,DataAccess.Snowflake_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess.DataDirect7.1,Ingres_DataAccess,Greenplum_DataAccess,PostgreSQL_DataAccess,Progress_DataAccess,IBMDB2,Informix_DataAccess,Oracle_DataAccess,Sybase_DataAccess,SQLAnywhere.Client.Connectivity.Driver,Sybase_DataAccess_base,TeraData_DataAccess,SAPBW_DataAccess,SAPERP_DataAccess,XMLWebServices_DataAccess,OData_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HadoopHive_DataAccess,Amazon_DataAccess,DataAccess.CMSDBDriver,Spark_DataAccess,Hortonworks_DataAccess,Essbase_DataAccess,PSFT_DataAccess,EBS_DataAccess
-# "@
-
-# $BIPClientTools42ResponseFileContent | Out-File -FilePath "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini" -Force -Encoding ascii
-
-# Clear-PendingFileRenameOperations
-
-# $BIPClientTools42Params = @{
-#     FilePath         = "$WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\setup.exe"
-#     ArgumentList     = "-r $WorkingDirectory\BIP42\SBOP_BI_PLAT_4.2_SP9_CLNT_WIN_\DATA_UNITS\BusinessObjectsClient\bip42_response.ini"
-#     Wait             = $true
-#     NoNewWindow      = $true
-# }
-
-# Start-Process @BIPClientTools42Params
-# }}}
-
-# {{{ Install BIP 4.3 client tools
-
-# NOTE: When installing to a host that already has an installation of the BI platform, the value of InstallDir will be automatically set to the same path as the existing installation.
-
-$BIPClientTools43ResponseFileContent = @"
-### Installation Directory
-Installdir=C:\Program Files (x86)\SAP BusinessObjects\
-### Language Packs Selected to Install
-selectedlanguagepacks=en
-### Setup UI Language
-setupuilanguage=en
-features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DotNetSDK,CRJavaSDK,DevComponents,DataFed_DataAccess,HPNeoView_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess,Ingres_DataAccess,Greenplum_DataAccess,IBMDB2,Informix_DataAccess,Progress_Open_Edge_DataAccess,Oracle_DataAccess,Sybase_DataAccess,TeraData_DataAccess,SAPBW_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HSQLDB_DataAccess,Derby_DataAccess,Essbase_DataAccess,PSFT_DataAccess,JDE_DataAccess,Siebel_DataAccess,EBS_DataAccess,DataAccess
-"@
-
-$BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
-
-choco install winrar -y
-
-New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
-
-Clear-PendingFileRenameOperations
-
-# Extract the BIP 4.3 self-extracting archive using WinRARs
-Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
-
-$BIPClientTools43Params = @{
-    FilePath         = "$WorkingDirectory\BIP43\setup.exe"
-    ArgumentList     = "/wait","-r $WorkingDirectory\bip43_response.ini"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @BIPClientTools43Params
-# }}}
-
-# {{{
-# Set up shortcuts for 4.3 client tools
-
-# $BIP42Path = "C:\Program Files (x86)\SAP BusinessObjects\win32_x86\"
-$BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0\win64_x64\"
-
-# List is incomplete, not convinced this is needed now we're not installing > 1 version of 4.x per machine as this isn't possible
-$executables = @(
-    @{
-        "Name" = "Designer"
-        "Exe"  = "designer.exe"
-    },
-    @{
-        "Name" = "Information Design Tool"
-        "Exe"  = "InformationDesignTool.exe"
-    }
-)
-
-# Path to all users' desktop
-$AllUsersDesktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
-
-# Create folders on all users' desktop
-# $Client42Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.2 Client"
-$Client43Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.3 Client Tools"
-
-# New-Item -ItemType Directory -Path $Client42Folder -Force
-New-Item -ItemType Directory -Path $Client43Folder -Force
-
-# Create shortcuts for each executable if the target exists
-$WScriptShell = New-Object -ComObject WScript.Shell
-
-foreach ($executable in $executables) {
-    # Shortcuts for 4.2 Client
-    # $TargetPath42 = Join-Path -Path $BIP42Path -ChildPath $executable.Exe
-    # if (Test-Path $TargetPath42) {
-    #     $ShortcutPath42 = Join-Path -Path $Client42Folder -ChildPath ($executable.Name + ".lnk")
-    #     $Shortcut42 = $WScriptShell.CreateShortcut($ShortcutPath42)
-    #     $Shortcut42.TargetPath   = $TargetPath42
-    #     $Shortcut42.IconLocation = $TargetPath42
-    #     $Shortcut42.Save()
-    # } else {
-    #     Write-Host "Executable not found: $TargetPath42"
-    # }
-
-    # Shortcuts for 4.3 Client
-    $TargetPath43 = Join-Path -Path $BIP43Path -ChildPath $executable.Exe
-    if (Test-Path $TargetPath43) {
-        $ShortcutPath43 = Join-Path -Path $Client43Folder -ChildPath ($executable.Name + ".lnk")
-        $Shortcut43 = $WScriptShell.CreateShortcut($ShortcutPath43)
-        $Shortcut43.TargetPath   = $TargetPath43
-        $Shortcut43.IconLocation = $TargetPath43
-        $Shortcut43.Save()
-    } else {
-        Write-Host "Executable not found: $TargetPath43"
-    }
-}
-# }}}
-
 Install-Oracle19cClient -Config $Config
+Add-BIPWindowsClient43 -Config $Config
 
 # Re-enable antivirus settings if not Windows Server 2012 R2
 if (-not (Test-WindowsServer2012R2)) {
