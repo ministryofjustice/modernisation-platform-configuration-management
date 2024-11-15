@@ -52,7 +52,7 @@ if (Test-Path -Path $GitRepo) {
 Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
 git clone -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
 Set-Location -Path $GitRepo
-Get-ChildItem -Path "./powershell" -Filter "*.ps1" -Recurse | Unblock-File
+Get-ChildItem -Path "." -Recurse | Unblock-File
 if ($GitBranch -ne "main") {
   git checkout "${GitBranch}"
 }
