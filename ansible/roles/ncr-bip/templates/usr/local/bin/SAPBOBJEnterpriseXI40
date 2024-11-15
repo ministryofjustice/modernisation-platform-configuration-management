@@ -23,7 +23,7 @@
 # On RedHat AS 3 and above, use runuser rather than su
 SU="su"
 if [ -f "/etc/redhat-release" -a -x "/sbin/runuser" ]; then
-    SU="runuser"
+        SU="runuser"
 fi
 
 if [ -f "/etc/redhat-release" ]; then
@@ -43,8 +43,9 @@ BOBJEDIR="{{ sap_bip_installation_directory }}/sap_bobj"
 case "$1" in
 'start')
 
-        # Source the env.sh file
-        # $SU - "$BOBJEUSERNAME" ". $BOBJEDIR/setup/env.sh"
+        if [ -f "/home/$BOBJEUSERNAME"/archive_logs.sh ]; then
+                $SU - "$BOBJEUSERNAME" -c "/home/$BOBJEUSERNAME"/archive_logs.sh | logger -p daemon.info -t bobj
+        fi
 
         if [ -f "$BOBJEDIR"/ccm.config ]; then
                 # Source the ccm.config file
@@ -59,18 +60,17 @@ case "$1" in
 
         if [ -d "$BOBJEDIR"/tomcat ]; then
                 $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/tomcatstartup.sh
-            logger -p daemon.info -t bobj "Started Tomcat"
+                logger -p daemon.info -t bobj "Started Tomcat"
         fi
 
-    if [ -f "$BOBJEDIR"/sqlanywhere_startup.sh ]; then
-        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_startup.sh
-        logger -p daemon.info -t bobj "Started SQL Anywhere"
-    fi
+        if [ -f "$BOBJEDIR"/sqlanywhere_startup.sh ]; then
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_startup.sh
+                logger -p daemon.info -t bobj "Started SQL Anywhere"
+        fi
 
         if [ -f "$BOBJEDIR"/ccm.config ]; then
-        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -start all"
-
-        logger -p daemon.info -t bobj "Started servers"
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -start all"
+                logger -p daemon.info -t bobj "Started servers"
         fi
 
         if [ -f "/etc/redhat-release" ]; then
@@ -95,19 +95,23 @@ case "$1" in
         fi
 
         if [ -f "$BOBJEDIR"/ccm.config ]; then
-        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -stop all"
-        logger -p daemon.info -t bobj "Stopped servers"
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR/ccm.sh -stop all"
+                logger -p daemon.info -t bobj "Stopped servers"
         fi
 
         if [ -d "$BOBJEDIR"/tomcat ]; then
                 $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/tomcatshutdown.sh
-            logger -p daemon.info -t bobj "Stopped Tomcat"
+                logger -p daemon.info -t bobj "Stopped Tomcat"
         fi
 
         if [ -f "$BOBJEDIR"/sqlanywhere_shutdown.sh ]; then
-        $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_shutdown.sh
-        logger -p daemon.info -t bobj "Stopped SQL Anywhere"
-    fi
+                $SU - "$BOBJEUSERNAME" -c "$BOBJEDIR"/sqlanywhere_shutdown.sh
+                logger -p daemon.info -t bobj "Stopped SQL Anywhere"
+        fi
+
+        if [ -f "/home/$BOBJEUSERNAME"/archive_logs.sh ]; then
+                $SU - "$BOBJEUSERNAME" -c "/home/$BOBJEUSERNAME"/archive_logs.sh | logger -p daemon.info -t bobj
+        fi
 
         if [ -f "/etc/redhat-release" ]; then
                 rm -f $Lockfile

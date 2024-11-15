@@ -1,0 +1,170 @@
+#!/bin/bash
+# Managed by collectd-endpoint-monitoring ansible role
+# If manually editing, just kill script and collectd will respawn
+# e.g. pkill -u {{ collectd_script_user }} -f {{ collectd_script_path }}/{{ collectd_script_name }}.sh
+#
+# To debug, run INTERVAL=5 LOGGER_INTERVAL_FOR_ERRORS=0 {{ collectd_script_path }}/{{ collectd_script_name }}.sh
+
+ENDPOINTS=()
+CERT_EXPIRY_METRIC_INTERVAL=3600
+LOGGER_INTERVAL_FOR_ERRORS="${LOGGER_INTERVAL_FOR_ERRORS:-3600}" # set to 0 to display to stdout
+DEFAULT_INTERVAL="{{ collectd_script_interval }}"
+HOSTNAME="${HOSTNAME:-localhost}"
+INTERVAL="${INTERVAL:-$DEFAULT_INTERVAL}"
+
+{% for item in collectd_endpoint_monitoring %}
+ENDPOINTS+=("{{ item.follow_redirect|default(1) }} {{ item.timeout_sec|default(5) }} {{ item.url }} {{ item.metric_dimension }} {{ item.time_ranges|default('') }}")
+{% endfor %}
+{% raw %}
+
+#Comment in below for testing
+#INTERVAL=5
+#LOGGER_INTERVAL_FOR_ERRORS=0
+#ENDPOINTS+=("1 5 https://www.google.com www.google.com 1.0900-1.1700,2.0900-2.1700,3.0900-3.1700,4.0900-4.1700,5.0900-5.1700")
+#ENDPOINTS+=("1 5 https://www.microsoft.com www.microsoft.com")
+#ENDPOINTS+=("1 5 https://www.amazon.com www.amazon.com 1.0900-5.1700")
+
+check_within_timeranges() {
+  local now
+  local timeranges
+  local times
+  now=$1
+  timeranges=$2
+  for timerange in ${timeranges//,/ }; do
+    times=(${timerange/-/ })
+    if [[ ($now == "${times[0]}" || $now > "${times[0]}") && $now < "${times[1]}" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+check_endpoint() {
+  local follow_redirect
+  local timeout_secs
+  local url
+  local optional_curl_args
+  local output
+  local http_code
+  local expiry
+  local expiry_epoch_secs
+  local now_epoch_secs
+  local secs_to_expiry
+  local days_to_expiry
+
+  follow_redirect="$1"
+  timeout_secs="$2"
+  url="$3"
+
+  optional_curl_args=
+  if [[ $follow_redirect == 1 ]]; then
+    optional_curl_args="-L"
+  fi
+  if ! output=$(curl -sSv -m "$timeout_secs" -o /dev/null -w "http_code=%{http_code}" $optional_curl_args "$url" 2>&1); then
+    grep -v "^\*" <<<"$output" | grep -v ^http_code= | grep -v CApath | grep -v "^>" | grep -v "^<" | grep -v "^{" | grep -v "^}" >&2
+    return 1
+  fi
+  http_code=$(grep "^http_code=" <<< "$output" | cut -d= -f2)
+  if [[ -z $http_code ]]; then
+    echo "missing http_code in curl output" >&2
+    return 1
+  fi
+  if [[ $http_code != 200 ]]; then
+    if [[ $follow_redirect == 1 || ! $http_code =~ ^30* ]]; then
+      echo "unexpected http_code $http_code" >&2
+      return 1
+    fi
+  fi
+  if [[ $url =~ https: ]]; then
+    expiry=$(grep -F "*  expire date:" <<< "$output" | head -1 | cut -d: -f2-)
+    if [[ -z $expiry ]]; then
+      echo "could not find expiry date in curl output" >&2
+      return 1
+    fi
+    if [[ "$(uname)" == "Darwin" ]]; then
+      expiry_epoch_secs=$(date -j -f " %b %d %T %Y %Z" "$expiry" +%s)
+    else
+      expiry_epoch_secs=$(date +%s -d "$expiry" 2>/dev/null)
+    fi
+    if [[ -z $expiry_epoch_secs ]]; then
+      echo "could not parse expiry date $expiry" >&2
+      return 1
+    fi
+    now_epoch_secs=$(date +%s)
+    secs_to_expiry=$(( expiry_epoch_secs - now_epoch_secs ))
+    days_to_expiry=$(( secs_to_expiry / 86400 ))
+    echo "days_to_expiry=$days_to_expiry"
+  fi
+}
+
+
+n=${#ENDPOINTS[@]}
+
+last_error_log_timestamp=()
+last_expiry_metric_timestamp=0
+log_cert_expiry=0
+for ((i=0; i<n; i++)); do
+  last_error_log_timestamp[i]=0
+done
+
+while true; do
+  now_epoch_secs=$(date +%s)
+  if [[ $((now_epoch_secs - last_expiry_metric_timestamp)) -gt $CERT_EXPIRY_METRIC_INTERVAL ]]; then
+    log_cert_expiry=1
+    last_expiry_metric_timestamp="$now_epoch_secs"
+  fi
+  for ((i=0; i<n; i++)); do
+    args=(${ENDPOINTS[$i]})
+    timeranges="${args[4]}"
+    if [[ -n $timeranges ]]; then
+      now_dayhourminute=$(date +%u%H%M)
+      if ! check_within_timeranges "$now_dayhourminute" "$timeranges"; then
+        continue
+      fi
+    fi
+    output=$(check_endpoint "${args[0]}" "${args[1]}" "${args[2]}" 2>&1)
+    exitcode=$?
+    if [[ $exitcode -ne 0 ]]; then
+      if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
+        echo "${args[3]}: $output [retrying once]"
+      elif [[ $((now_epoch_secs - last_error_log_timestamp[i])) -gt $LOGGER_INTERVAL_FOR_ERRORS ]]; then
+        echo "${args[3]}: $output [retrying once]" | logger -p local3.info -t collectd_endpoint_monitoring
+      fi
+      # retry immediately to avoid alarming on transient errors
+      output=$(check_endpoint "${args[0]}" "${args[1]}" "${args[2]}" 2>&1)
+      exitcode=$?
+    fi
+    days_to_expiry=$(grep "^days_to_expiry=" <<< "$output" | cut -d= -f2)
+    echo "PUTVAL $HOSTNAME/endpoint_status/exitcode-${args[3]} interval=$INTERVAL N:$exitcode"
+    if [[ -n $days_to_expiry ]]; then
+      if [[ $log_cert_expiry -eq 1 ]]; then
+        echo "PUTVAL $HOSTNAME/endpoint_cert_expiry/gauge-${args[3]} interval=$INTERVAL N:$days_to_expiry"
+      fi
+    fi
+    if [[ $exitcode -ne 0 ]]; then
+      if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
+        echo "${args[3]}: $output"
+        last_error_log_timestamp[i]="$now_epoch_secs"
+      elif [[ $((now_epoch_secs - last_error_log_timestamp[i])) -gt $LOGGER_INTERVAL_FOR_ERRORS ]]; then
+        echo "${args[3]}: $output" | logger -p local3.info -t collectd_endpoint_monitoring
+        last_error_log_timestamp[i]="$now_epoch_secs"
+      fi
+    else
+      if [[ $((last_error_log_timestamp[i])) -ne 0 ]]; then
+        if [[ $LOGGER_INTERVAL_FOR_ERRORS -eq 0 ]]; then
+          echo "${args[3]}: endpoint now ok"
+        else
+          echo "${args[3]}: endpoint now ok" | logger -p local3.info -t collectd_endpoint_monitoring
+        fi
+        last_error_log_timestamp[i]=0
+      fi
+    fi
+  done
+  new_epoch_secs=$(date +%s)
+  elapsed=$((new_epoch_secs - now_epoch_secs))
+  if (( elapsed >= 0 && elapsed < INTERVAL )); then
+    sleep $((INTERVAL - elapsed))
+  fi
+done
+
+{% endraw %}

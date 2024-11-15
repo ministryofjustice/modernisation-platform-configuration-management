@@ -72,3 +72,54 @@ housekeeping_cron:
 emcli: /u01/app/oracle/product/mw135/bin/emcli
 emctl_oem: /u01/app/oracle/product/mw135/bin/emctl
 emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
+
+collectd_endpoint_monitoring:
+  - metric_dimension: c.pp-nomis.az.justice.gov.uk
+    url: https://c.pp-nomis.az.justice.gov.uk/forms/frmservlet?config=tag
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: reporting.pp-nomis.az.justice.gov.uk
+    url: https://reporting.pp-nomis.az.justice.gov.uk/keepalive.htm
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: c.lsast-nomis.az.justice.gov.uk
+    url: https://c.lsast-nomis.az.justice.gov.uk/forms/frmservlet?config=tag
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: pp-oasys.az.justice.gov.uk
+    url: https://pp-oasys.az.justice.gov.uk/eor/f?p=100
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: onr.pp-oasys.az.justice.gov.uk
+    url: https://onr.pp-oasys.az.justice.gov.uk/InfoViewApp
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r1.pp.csr.service.justice.gov.uk
+    url: http://r1.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r2.pp.csr.service.justice.gov.uk
+    url: http://r2.pp.csr.service.justice.gov.uk:7771/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r3.pp.csr.service.justice.gov.uk
+    url: http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r4.pp.csr.service.justice.gov.uk
+    url: http://r4.pp.csr.service.justice.gov.uk:7771/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r5.pp.csr.service.justice.gov.uk
+    url: http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: r6.pp.csr.service.justice.gov.uk
+    url: http://r6.pp.csr.service.justice.gov.uk:7771/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: traina.csr.service.justice.gov.uk
+    url: http://traina.csr.service.justice.gov.uk/isps/index.html?2057
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: cafmtx.pp.planetfm.service.justice.gov.uk
+    url: https://cafmtx.pp.planetfm.service.justice.gov.uk/RDWeb
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: cafmwebx.pp.planetfm.service.justice.gov.uk
+    url: https://cafmwebx.pp.planetfm.service.justice.gov.uk/PlanetPortal
+    follow_redirect: 0
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: hpa-preprod.service.hmpps.dsd.io
+    url: https://hpa-preprod.service.hmpps.dsd.io/
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk
+    url: https://rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk/
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
