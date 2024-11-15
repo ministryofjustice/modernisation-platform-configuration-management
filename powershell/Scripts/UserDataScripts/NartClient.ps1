@@ -373,7 +373,8 @@ $Tags = Get-InstanceTags
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
-
+$tempPath = ([System.IO.Path]::GetTempPath())
+$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
 
 # TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
 $ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
