@@ -417,6 +417,7 @@ function Test-WindowsServer2012R2 {
 # }}} end of functions
 
 # {{{ Prep the server for installation
+$ErrorActionPreference = "Stop"
 # Install PowerShell 5.1 if running on PowerShell 4 or below
 if ( $PSVersionTable.PSVersion.Major -le 4 ) {
    choco install powershell -y
@@ -458,7 +459,6 @@ $Tags = Get-InstanceTags
 
 # TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
 $ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
-$ErrorActionPreference = "Stop"
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
@@ -495,7 +495,7 @@ Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f","/
  choco install winscp.install -y
 
  $ErrorActionPreference = "Stop"
- $Config = Get-Config
+
  Install-Oracle11gClient -Config $Config
  Install-Oracle19cClient -Config $Config
  Add-BOEWindowsClient $Config
