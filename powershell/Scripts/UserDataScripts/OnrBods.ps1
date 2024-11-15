@@ -718,22 +718,6 @@ Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is requi
 # Turn off the firewall as this will possibly interfere with Sia Node creation
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
-# Disable antivirus and other security during installation
-
-# Disable real-time monitoring
-Set-MpPreference -DisableRealtimeMonitoring $true
-
-# Disable intrusion prevention system
-Set-MpPreference -DisableIntrusionPreventionSystem $true
-
-# Disable script scanning
-Set-MpPreference -DisableScriptScanning $true
-
-# Disable behavior monitoring
-Set-MpPreference -DisableBehaviorMonitoring $true
-
-Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
-
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
