@@ -181,7 +181,7 @@ WITH parameter_values AS (
                     'DEFAULT'
                 WHEN a.name IN('audit_trail')
                      AND a.database_role = 'PHYSICAL STANDBY'
-                     AND a.open_mode = 'READ ONLY WITH APPLY' THEN
+                     AND a.open_mode IN ('READ ONLY','READ ONLY WITH APPLY') THEN
                     'DB'
                 WHEN a.name IN('log_archive_config') -- Make ordering consistent for values in log_archive_config
                  THEN
