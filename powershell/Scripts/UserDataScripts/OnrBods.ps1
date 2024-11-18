@@ -261,6 +261,33 @@ function Get-ChildProcessIds {
     }
 }
 
+function New-TnsOraFile {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    $tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\$($Config.tnsorafile)"
+
+    if (Test-Path $tnsOraFilePath) {
+        Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+    } else {
+        Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
+        exit 1
+    }
+
+    # check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the Config values.
+
+    if (-not $env:ORACLE_HOME) {
+        [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+    }
+
+    $tnsOraFileDestination = "$env:ORACLE_HOME\network\admin\tnsnames.ora"
+
+    Copy-Item -Path $tnsOraFilePAth -Destination $tnsOraFileDestination -Force
+
+}
+
 function Install-Oracle19cClient {
     param (
         [Parameter(Mandatory)]
@@ -300,16 +327,6 @@ oracle.install.client.installType=Administrator
     }
 
     Start-Process @OracleClientInstallParams
-
-    # Copy tnsnames.ora file
-    $tnsFile = "$($Config.ORACLE_19C_HOME)\network\admin\tnsnames.ora"
-    if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
-        Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
-    } elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
-        Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
-    } else {
-        Write-Error "Could not find tnsnames.ora file."
-    }
 
     # Install Oracle configuration tools
     $oracleConfigToolsParams = @{
@@ -573,8 +590,6 @@ cmsauthentication=secEnterprise
 # cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
-### #property.CMSAuthMode.description#
-dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
@@ -674,8 +689,12 @@ function Move-ModPlatformADComputer {
     # Get the computer's objectGUID with a 5-minute timeout
     $timeout = [DateTime]::Now.AddMinutes(5)
     do {
-        $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
-        if ($computer -and $computer.objectGUID) { break }
+        try {
+            $computer = Get-ADComputer -Credential $ModPlatformADCredential -Filter "Name -eq '$env:COMPUTERNAME'" -ErrorAction Stop
+            if ($computer -and $computer.objectGUID) { break }
+        } catch {
+            Write-Verbose "Get-ADComputer failed: $_"
+        }
         Start-Sleep -Seconds 5
     } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
@@ -779,6 +798,7 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
 Set-Location -Path $WorkingDirectory
 
 Install-Oracle19cClient -Config $Config
+New-TnsOraFile -Config $Config
 Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
