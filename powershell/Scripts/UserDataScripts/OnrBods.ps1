@@ -280,11 +280,12 @@ function New-TnsOraFile {
 
     if (-not $env:ORACLE_HOME) {
         [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+        $env:ORACLE_HOME = $Config.ORACLE_19C_HOME  # Set in current session
     }
 
-    $tnsOraFileDestination = "$env:ORACLE_HOME\network\admin\tnsnames.ora"
+    $tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
 
-    Copy-Item -Path $tnsOraFilePAth -Destination $tnsOraFileDestination -Force
+    Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
 
 }
 
