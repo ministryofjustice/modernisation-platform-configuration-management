@@ -687,7 +687,8 @@ function Move-ModPlatformADComputer {
     # Move the computer to the new OU
     $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 
-    # ...existing code...
+    # force group policy update
+    gpupdate /force
 }
 
 function Set-LoginText {
@@ -767,8 +768,6 @@ if ($null -ne $ADConfig) {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
-
-gpupdate /force
 # }}}
 
 # {{{ prepare assets

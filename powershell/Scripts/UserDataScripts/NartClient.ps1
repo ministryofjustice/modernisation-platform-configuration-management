@@ -150,25 +150,35 @@ function Clear-PendingFileRenameOperations {
 function Move-ModPlatformADComputer {
     [CmdletBinding()]
     param (
-      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
-      [Parameter(Mandatory=$true)][string]$NewOU
+        [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory=$true)][string]$NewOU
     )
 
     $ErrorActionPreference = "Stop"
 
-      # Do nothing if host not part of domain
-  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
-    Return $false
-  }
+    # Do nothing if host not part of domain
+    if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+        return $false
+    }
 
-  # Install powershell features if missing
-  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
-    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
-  }
+    # Get the computer's objectGUID with a 5-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(5)
+    do {
+        $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
+        if ($computer -and $computer.objectGUID) { break }
+        Start-Sleep -Seconds 5
+    } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
-  # Move the computer to the new OU
-  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+    if (-not ($computer -and $computer.objectGUID)) {
+        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        return
+    }
+
+    # Move the computer to the new OU
+    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+
+    # force group policy update
+    gpupdate /force
 }
 
 function Test-WindowsServer2012R2 {
@@ -375,13 +385,11 @@ $AppDirectory = "C:\App"
 
 $tempPath = ([System.IO.Path]::GetTempPath())
 $ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-
-# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
-$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
+$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
-# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
+# Add $ModulesRepo to the PSModulePath in Server 2012 R2 here otherwise it can't find it
 $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
 
 $ErrorActionPreference = "Continue"
@@ -400,9 +408,6 @@ if ($null -ne $ADConfig) {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
 }
-
-gpupdate /force
-
 # }}} end of join domain
 
 # {{{ prepare assets
