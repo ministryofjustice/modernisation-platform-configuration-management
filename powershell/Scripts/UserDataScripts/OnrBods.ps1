@@ -677,6 +677,8 @@ function Move-ModPlatformADComputer {
     Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
   }
 
+  # Add some time to register the preceeding steps
+  Start-Sleep -Seconds 5 
   # Move the computer to the new OU
   (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 }
