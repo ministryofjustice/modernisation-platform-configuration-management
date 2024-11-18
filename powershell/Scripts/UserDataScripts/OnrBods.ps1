@@ -660,27 +660,34 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 function Move-ModPlatformADComputer {
     [CmdletBinding()]
     param (
-      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
-      [Parameter(Mandatory=$true)][string]$NewOU
+        [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory=$true)][string]$NewOU
     )
 
     $ErrorActionPreference = "Stop"
 
-      # Do nothing if host not part of domain
-  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
-    Return $false
-  }
+    # Do nothing if host not part of domain
+    if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+        return $false
+    }
 
-  # Install powershell features if missing
-  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
-    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
-  }
+    # Get the computer's objectGUID with a 5-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(5)
+    do {
+        $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
+        if ($computer -and $computer.objectGUID) { break }
+        Start-Sleep -Seconds 5
+    } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
-  # Add some time to register the preceeding steps
-  Start-Sleep -Seconds 5 
-  # Move the computer to the new OU
-  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+    if (-not ($computer -and $computer.objectGUID)) {
+        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        return
+    }
+
+    # Move the computer to the new OU
+    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+
+    # ...existing code...
 }
 
 function Set-LoginText {
