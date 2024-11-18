@@ -227,16 +227,6 @@ oracle.install.client.installType=Administrator
 
     Start-Process @OracleClientInstallParams
 
-    # Copy tnsnames.ora file
-    $tnsFile = "$($Config.ORACLE_19C_HOME)\network\admin\tnsnames.ora"
-    if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
-        Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
-    } elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
-        Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination $tnsFile -Force
-    } else {
-        Write-Error "Could not find tnsnames.ora file."
-    }
-
     # Install Oracle configuration tools
     $oracleConfigToolsParams = @{
         FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
@@ -250,6 +240,34 @@ oracle.install.client.installType=Administrator
 
     # Set environment variable
     [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+}
+
+function New-TnsOraFile {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    $tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\$($Config.tnsorafile)"
+
+    if (Test-Path $tnsOraFilePath) {
+        Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+    } else {
+        Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
+        exit 1
+    }
+
+    # check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the Config values.
+
+    if (-not $env:ORACLE_HOME) {
+        [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+        $env:ORACLE_HOME = $Config.ORACLE_19C_HOME  # Set in current session
+    }
+
+    $tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
+
+    Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
+
 }
 
 function Add-BIPWindowsClient43 {
@@ -383,9 +401,7 @@ $Tags = Get-InstanceTags
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
+$ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
@@ -417,6 +433,7 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Install-Oracle19cClient -Config $Config
+New-TnsOraFile -Config $Config
 Add-BIPWindowsClient43 -Config $Config
 
 # Re-enable antivirus settings if not Windows Server 2012 R2

@@ -520,30 +520,6 @@ Write-Host "Starting IPS installer at $(Get-Date)"
         $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        # get all process IDs to monitor
-        $allProcessIds = @($installProcessId)
-        do {
-
-            # Refresh the list of child process IDs
-            $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
-
-            # Get currently running processes from our list
-            $runningProcesses = Get-Process -Id $allProcessIds -ErrorAction SilentlyContinue
-
-            # Log the running processes
-            $runningProcessIds = $runningProcesses | ForEach-Object { $_.Id }
-            "Running processes at $(Get-Date): $($runningProcessIds -join ', ')" | Out-File -FilePath $logFile -Append
-
-            # Check if the parent process is still running
-            $parentStillRunning = Get-Process -Id $installProcessId -ErrorAction SilentlyContinue
-
-            Start-Sleep -Seconds 1
-
-        } while ($runningProcesses -and $parentStillRunning)
-        "All monitored processes have completed at $(Get-Date)" | Out-File -FilePath $logFile -Append
-
-        $exitcode = $installProcess.ExitCode
-        "IPS install has exited with code $exitcode" | Out-File -FilePath $logFile -Append
         "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
     } catch {
         $exception = $_.Exception
@@ -759,11 +735,7 @@ $Tags = Get-InstanceTags
 $WorkingDirectory = "E:\Software"
 $AppDirectory = "E:\App"
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-
-# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
-$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
+$ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
 
 # {{{ join domain if domain-name tag is set
 # Join domain and reboot is needed before installers run
