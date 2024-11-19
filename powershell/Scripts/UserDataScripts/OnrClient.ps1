@@ -19,6 +19,7 @@ $GlobalConfig = @{
     }
     "oasys-national-reporting-test"  = @{
       "serviceUser"     = "svc_nart"
+      # "tnsorafile"      = "tnsnames_T2_BODS.ora" TODO: NOT IMPLEMENTED YET
       "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
       "domain"          = "AZURE"
       "OnrShortcuts" = @{
@@ -27,6 +28,7 @@ $GlobalConfig = @{
     }
     "oasys-national-reporting-preproduction" = @{
         "serviceUser"     = "svc_nart"
+        # "tnsorafile"      = "tnsnames_PP_BODS.ora" TODO: NOT IMPLEMENTED YET
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "domain"          = "HMPP"
         "OnrShortcuts" = @{
@@ -246,25 +248,35 @@ function Clear-PendingFileRenameOperations {
 function Move-ModPlatformADComputer {
     [CmdletBinding()]
     param (
-      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
-      [Parameter(Mandatory=$true)][string]$NewOU
+        [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory=$true)][string]$NewOU
     )
 
     $ErrorActionPreference = "Stop"
 
-      # Do nothing if host not part of domain
-  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
-    Return $false
-  }
+    # Do nothing if host not part of domain
+    if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+        return $false
+    }
 
-  # Install powershell features if missing
-  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
-    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
-  }
+    # Get the computer's objectGUID with a 5-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(5)
+    do {
+        $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
+        if ($computer -and $computer.objectGUID) { break }
+        Start-Sleep -Seconds 5
+    } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
-  # Move the computer to the new OU
-  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+    if (-not ($computer -and $computer.objectGUID)) {
+        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        return
+    }
+
+    # Move the computer to the new OU
+    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+
+    # force group policy update
+    gpupdate /force
 }
 
 function Install-Oracle11gClient {
@@ -414,6 +426,34 @@ function Test-WindowsServer2012R2 {
   $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
   return $osVersion -like "6.3*"
 }
+
+function New-TnsOraFile {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    $tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\$($Config.tnsorafile)"
+
+    if (Test-Path $tnsOraFilePath) {
+        Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+    } else {
+        Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
+        exit 1
+    }
+
+    # check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the Config values.
+
+    if (-not $env:ORACLE_HOME) {
+        [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+        $env:ORACLE_HOME = $Config.ORACLE_19C_HOME  # Set in current session
+    }
+
+    $tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
+
+    Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
+
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -431,24 +471,6 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameter
 # Output a message to confirm the change
 Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
 
-if (-not (Test-WindowsServer2012R2)) {
-    # Disable real-time monitoring
-    Set-MpPreference -DisableRealtimeMonitoring $true
-
-    # Disable intrusion prevention system
-    Set-MpPreference -DisableIntrusionPreventionSystem $true
-
-    # Disable script scanning
-    Set-MpPreference -DisableScriptScanning $true
-
-    # Disable behavior monitoring
-    Set-MpPreference -DisableBehaviorMonitoring $true
-
-    Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
-} else {
-    Write-Host "Running on Windows Server 2012 R2. Skipping antivirus configuration."
-}
-
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
@@ -457,8 +479,7 @@ Set-TimeZone -Name "GMT Standard Time"
 $Config = Get-Config
 $Tags = Get-InstanceTags
 
-# TODO: This is a temporary fix to ensure the ModPlatformAD module is available, even when not run by the Admin user
-$ModulesRepo = "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Modules"
+$ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
@@ -498,26 +519,8 @@ Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f","/
 
  Install-Oracle11gClient -Config $Config
  Install-Oracle19cClient -Config $Config
+ # New-TnsOraFile -Config $Config TODO: NOT YET IMPLEMENTED
  Add-BOEWindowsClient $Config
  Add-Shortcuts $Config
 # }}} end of installers
-
- # Re-enable antivirus settings if not Windows Server 2012 R2
- if (-not (Test-WindowsServer2012R2)) {
-     # Re-enable real-time monitoring
-     Set-MpPreference -DisableRealtimeMonitoring $false
-
-     # Re-enable intrusion prevention system
-     Set-MpPreference -DisableIntrusionPreventionSystem $false
-
-     # Re-enable script scanning
-     Set-MpPreference -DisableScriptScanning $false
-
-     # Re-enable behavior monitoring
-     Set-MpPreference -DisableBehaviorMonitoring $false
-
-     Write-Host "Windows Security antivirus has been re-enabled."
- } else {
-     Write-Host "Running on Windows Server 2012 R2. Antivirus configuration was not changed."
- }
 
