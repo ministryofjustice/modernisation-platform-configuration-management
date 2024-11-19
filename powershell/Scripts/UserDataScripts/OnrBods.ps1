@@ -356,16 +356,21 @@ function Install-IPS {
     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
     $siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
     $bodsSecretName  = "/sap/bods/$dbenv/passwords"
+    $bodsConfigName  = "/sap/bods/$dbenv/config"
     $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
     $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
-    # Get secret values, silently continue if they don't exist
+    # Get secret values from relevant db's secrets
     $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
     $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
-    $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
+
+    # /sap/bods/$dbenv/passwords values
     $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
     $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
-    $ips_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+    
+    # /sap/bods/$dbenv/config values
+    $bods_cluster_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
+    $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
 
 # Create response file for IPS silent install
 $ipsResponseFileContentCommon = @"
@@ -547,9 +552,14 @@ function Install-DataServices {
     $Tags = Get-InstanceTags
     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value 
     $bodsSecretName  = "/sap/bods/$dbenv/passwords"
-    $data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+    $bodsConfigName  = "/sap/bods/$dbenv/config"
+
+    # passwords from /sap/bods/$dbenv/passwords
     $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
     $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+
+    # config values from /sap/bods/$dbenv/config
+    $data_services_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
