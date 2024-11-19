@@ -15,11 +15,13 @@ $GlobalConfig = @{
         }
     }
     "nomis-combined-reporting-test"          = @{
+        # "tnsorafile"      = "tnsnames_T2_BODS.ora" TODO: NOT IMPLEMENTED YET
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts" = @{
         }
     }
     "nomis-combined-reporting-preproduction" = @{
+        # "tnsorafile"      = "tnsnames_PP_BODS.ora" TODO: NOT IMPLEMENTED YET
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts" = @{
         }
@@ -371,25 +373,6 @@ Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is requi
 # Turn off the firewall as this will possibly interfere with Sia Node creation
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
-# Disable antivirus and other security during installation if not Windows Server 2012 R2
-if (-not (Test-WindowsServer2012R2)) {
-    # Disable real-time monitoring
-    Set-MpPreference -DisableRealtimeMonitoring $true
-
-    # Disable intrusion prevention system
-    Set-MpPreference -DisableIntrusionPreventionSystem $true
-
-    # Disable script scanning
-    Set-MpPreference -DisableScriptScanning $true
-
-    # Disable behavior monitoring
-    Set-MpPreference -DisableBehaviorMonitoring $true
-
-    Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
-} else {
-    Write-Host "Running on Windows Server 2012 R2. Skipping antivirus configuration."
-}
-
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
@@ -426,31 +409,11 @@ if ($null -ne $ADConfig) {
 }
 # }}} end of join domain
 
-# {{{ prepare assets
 $ErrorActionPreference = "Stop"
 
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Install-Oracle19cClient -Config $Config
-New-TnsOraFile -Config $Config
+# New-TnsOraFile -Config $Config TODO: NOT IMPLEMENTED YET
 Add-BIPWindowsClient43 -Config $Config
-
-# Re-enable antivirus settings if not Windows Server 2012 R2
-if (-not (Test-WindowsServer2012R2)) {
-    # Re-enable real-time monitoring
-    Set-MpPreference -DisableRealtimeMonitoring $false
-
-    # Re-enable intrusion prevention system
-    Set-MpPreference -DisableIntrusionPreventionSystem $false
-
-    # Re-enable script scanning
-    Set-MpPreference -DisableScriptScanning $false
-
-    # Re-enable behavior monitoring
-    Set-MpPreference -DisableBehaviorMonitoring $false
-
-    Write-Host "Windows Security antivirus has been re-enabled."
-} else {
-    Write-Host "Running on Windows Server 2012 R2. Antivirus configuration was not changed."
-}

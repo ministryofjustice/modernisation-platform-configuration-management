@@ -2,7 +2,7 @@ $GlobalConfig = @{
     "all"                                    = @{
         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder" = "hmpps/onr"
-        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
+        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
         "ORACLE_19C_HOME"           = "E:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"           = "E:\app\oracle"
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
@@ -21,8 +21,8 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        # "cmsMainNode"     = "t2-onr-bods-1"
-        "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
+        "cmsMainNode"     = "t2-onr-bods-1"
+        # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -249,15 +249,6 @@ function Test-DatabaseConnection {
         }
         $plainPassword = $null
         $connectionString = $null
-    }
-}
-
-function Get-ChildProcessIds {
-    param ($ParentId)
-    $childProcesses = Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentId"
-    foreach ($child in $childProcesses) {
-        $child.ProcessId
-        Get-ChildProcessIds -ParentId $child.ProcessId
     }
 }
 
@@ -551,7 +542,7 @@ function Install-DataServices {
         New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
     }
     [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
-    #
+    
     # set Secret Names based on environment
     $Tags = Get-InstanceTags
     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value 
