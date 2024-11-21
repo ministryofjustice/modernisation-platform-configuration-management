@@ -19,10 +19,10 @@ $GlobalConfig = @{
     "nomis-combined-reporting-test"          = @{
         # "sysDbName"       = "T2BOSYS"
         # "audDbName"       = "T2BOAUD"
-        "tnsorafile"      = "NCR_tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-ncr-bods-1"
-        # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
-        # "cmsExtendedNode" = "t2-ncr-bods-2"
+        "tnsorafile"      = "NCR_tnsnames_T1_BODS.ora"
+        "cmsMainNode"     = "t1-ncr-bods-1"
+        # "cmsMainNode"     = "t1-tst-bods-asg" # Use this value when testing
+        # "cmsExtendedNode" = "t1-ncr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
