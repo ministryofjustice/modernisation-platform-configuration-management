@@ -145,9 +145,9 @@
     name: oracle-secure-backup
   vars:
     database_home: "{{ oracle_database_oracle_home }}"
-  tags: 
-     - always
-     - oracle-secure-backup
+  tags:
+    - always
+    - oracle-secure-backup
 
 - name: Ensure Password File is in ASM
   when: database_type != "standby"
