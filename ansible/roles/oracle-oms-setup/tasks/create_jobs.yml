@@ -10,7 +10,7 @@
     file_type: file
   delegate_to: localhost
   register: get_oem_job_property_files
-  loop: "{{ application_groups + ['common'] }}"
+  loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
     loop_var: application_name
 

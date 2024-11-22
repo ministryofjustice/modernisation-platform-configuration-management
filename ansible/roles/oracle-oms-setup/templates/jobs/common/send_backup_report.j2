@@ -225,7 +225,7 @@ variable.large_os_script=<<MULTILINE
 # Supply comma-separated list of applications for whose databases we are interested in reporting on
 # You can leave this unset if you want all databases, but notice that we have a hard-coded limit
 # of 45 application databases per report (due to Slack restrictions)
-APPLICATIONS=delius,hmpps-oem
+APPLICATIONS=delius,delius-mis,hmpps-oem
 # Ensure the list is quoted
 APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g")
 
