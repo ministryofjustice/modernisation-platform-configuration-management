@@ -23,7 +23,8 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
         "cmsMainNode"     = "t2-onr-bods-1"
         # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
-        "cmsExtendedNode" = "t2-onr-bods-2"
+        # "cmsExtendedNode" = "t2-onr-bods-2"
+        "cmsExtendedNode" = "t2-tst-bods-asg" # Use this value when testing
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -513,7 +514,7 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
         "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
@@ -622,7 +623,7 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
     }
 
     # Install Data Services
-    Start-Process @dataServicesInstallParams
+    # Start-Process @dataServicesInstallParams
 
     # }}} End install Data Services
 
