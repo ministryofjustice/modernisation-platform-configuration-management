@@ -96,23 +96,26 @@ collectd_endpoint_monitoring:
   - metric_dimension: traina.csr.service.justice.gov.uk
     url: http://traina.csr.service.justice.gov.uk/isps/index.html?2057
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # hmpps-domain-services
   - metric_dimension: rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk
     url: https://rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk/
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # nomis
-  - metric_dimension: c.pp-nomis.az.justice.gov.uk  # TODO: delete
-    url: https://c.pp-nomis.az.justice.gov.uk/forms/frmservlet?config=tag
-    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
-  - metric_dimension: c.preproduction.nomis.service.justice.gov.uk
-    url: https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag
-    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
   - metric_dimension: c.lsast-nomis.az.justice.gov.uk  # TODO: delete
     url: https://c.lsast-nomis.az.justice.gov.uk/forms/frmservlet?config=tag
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
   - metric_dimension: c-lsast.preproduction.nomis.service.justice.gov.uk
     url: https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: c.pp-nomis.az.justice.gov.uk  # TODO: delete
+    url: https://c.pp-nomis.az.justice.gov.uk/forms/frmservlet?config=tag
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+  - metric_dimension: c.preproduction.nomis.service.justice.gov.uk
+    url: https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # nomis-combined-reporting
   - metric_dimension: reporting.pp-nomis.az.justice.gov.uk  # AZURE
     url: https://reporting.pp-nomis.az.justice.gov.uk/keepalive.htm
@@ -120,6 +123,7 @@ collectd_endpoint_monitoring:
   - metric_dimension: preproduction.reporting.nomis.service.justice.gov.uk
     url: https://preproduction.reporting.nomis.service.justice.gov.uk/keepalive.htm
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # oasys
   - metric_dimension: pp-oasys.az.justice.gov.uk  # TODO: delete
     url: https://pp-oasys.az.justice.gov.uk/eor/f?p=100
@@ -130,10 +134,12 @@ collectd_endpoint_monitoring:
   - metric_dimension: pp-int.oasys.service.justice.gov.uk
     url: https://pp-int.oasys.service.justice.gov.uk/eor/f?p=100
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # oasys-national-reporting
   - metric_dimension: onr.pp-oasys.az.justice.gov.uk  # AZURE
     url: https://onr.pp-oasys.az.justice.gov.uk/InfoViewApp
     time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
+
   # planetfm
   - metric_dimension: cafmtx.pp.planetfm.service.justice.gov.uk
     url: https://cafmtx.pp.planetfm.service.justice.gov.uk/RDWeb
