@@ -33,6 +33,14 @@
         owner: oracle
         group: oinstall
 
+    - name: Flatten Application Groups Dictionary
+      set_fact:
+        application_groups_flatten: |
+          {% for application_group in application_groups -%}
+          {{ application_group }}:{% for application in application_groups[application_group] -%}{{ application }}{%if not loop.last %},{% else %}|{% endif %}
+          {%- endfor %}
+          {%- endfor %}
+
     - name: Template OEM Job Property Files
       ansible.builtin.template:
         src: "{{ oem_job }}"
@@ -45,8 +53,9 @@
         loop_var: oem_job
       vars:
         oem_hostname: "{{ ansible_hostname }}"
-        job_name: "Backup Report for Delius"
-        reported_applications: "delius,hmpps-oem"
+        job_name: "Backup Report"
+        reported_applications: "{{ application_groups_flatten | regex_replace('\\n','')}}"
+
 
     - name: Create Jobs from OEM Property Files
       become_user: oracle
