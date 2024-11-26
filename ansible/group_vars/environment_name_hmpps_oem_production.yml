@@ -69,44 +69,20 @@ housekeeping_cron:
       hour: "08"
       # job: command generated in
 
-# Replaces Grafana/Prometheus black-box exporter monitoring
-endpoint_monitoring_targets:
-  # - target: https://google.com # Example target
-  #   expected_response_code: 301
-  #   check_domain_ssl_expiry: true
-  - target: https://oasys.az.justice.gov.uk
-    expected_response_code: 302
-    check_domain_ssl_expiry: "true"
-  - target: https://oasys.az.justice.gov.uk/eor/f?p=100
-    expected_response_code: 302
-    check_domain_ssl_expiry: "false" # don't re-check this as it's just a duplicate of above
-  - target: https://bridge-oasys.az.justice.gov.uk
-    expected_response_code: 200
-    check_domain_ssl_expiry: "true"
-  - target: https://bridge-oasys.az.justice.gov.uk/eor/f?p=100,
-    expected_response_code: 200
-    check_domain_ssl_expiry: "false"
-
 emcli: /u01/app/oracle/product/mw135/bin/emcli
 emctl_oem: /u01/app/oracle/product/mw135/bin/emctl
 emctl_agent: /u01/app/oracle/product/oem-agent/agent_inst/bin/emctl
 
 collectd_endpoint_monitoring:
-  - metric_dimension: c.nomis.az.justice.gov.uk
-    url: https://c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag
-  - metric_dimension: reporting.nomis.az.justice.gov.uk
-    url: https://reporting.nomis.az.justice.gov.uk/keepalive.htm
-    time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
-  - metric_dimension: oasys.az.justice.gov.uk
-    url: https://oasys.az.justice.gov.uk/eor/f?p=100
-  - metric_dimension: training.oasys.az.justice.gov.uk
-    url: https://training.oasys.az.justice.gov.uk/eor/f?p=100
-  - metric_dimension: practice.oasys.az.justice.gov.uk
-    url: https://practice.oasys.az.justice.gov.uk/eor/f?p=100
-  - metric_dimension: bridge-oasys.az.justice.gov.uk
-    url: https://bridge-oasys.az.justice.gov.uk/
-  - metric_dimension: onr.oasys.az.justice.gov.uk
-    url: https://onr.oasys.az.justice.gov.uk/InfoViewApp
+  # az-noms-production-1
+  - metric_dimension: hmpps-az-gw1.justice.gov.uk
+    url: https://hmpps-az-gw1.justice.gov.uk/RDWeb
+  - metric_dimension: hpa.service.hmpps.dsd.io
+    url: https://hpa.service.hmpps.dsd.io/health
+  - metric_dimension: www.offloc.service.justice.gov.uk
+    url: https://www.offloc.service.justice.gov.uk/health
+
+  # corporate-staff-rostering
   - metric_dimension: r1.csr.service.justice.gov.uk
     url: http://r1.csr.service.justice.gov.uk:7770/isps/index.html?2057
   - metric_dimension: r2.csr.service.justice.gov.uk
@@ -119,20 +95,43 @@ collectd_endpoint_monitoring:
     url: http://r5.csr.service.justice.gov.uk:7770/isps/index.html?2057
   - metric_dimension: r6.csr.service.justice.gov.uk
     url: http://r6.csr.service.justice.gov.uk:7771/isps/index.html?2057
-  - metric_dimension: cafmtx.planetfm.service.justice.gov.uk
-    url: https://cafmtx.planetfm.service.justice.gov.uk/RDWeb
-  - metric_dimension: cafmwebx2.az.justice.gov.uk
-    url: https://cafmwebx2.az.justice.gov.uk/PlanetPortal
-    follow_redirect: 0
-  - metric_dimension: cafmtrainweb.az.justice.gov.uk
-    url: https://cafmtrainweb.az.justice.gov.uk/PlanetPortal
-    follow_redirect: 0
-    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"
-  - metric_dimension: www.offloc.service.justice.gov.uk
-    url: https://www.offloc.service.justice.gov.uk/health
-  - metric_dimension: hpa.service.hmpps.dsd.io
-    url: https://hpa.service.hmpps.dsd.io/
-  - metric_dimension: hmpps-az-gw1.justice.gov.uk
-    url: https://hmpps-az-gw1.justice.gov.uk/RDWeb
+
+  # hmpps-domain-services
   - metric_dimension: rdgateway1.hmpps-domain.service.justice.gov.uk
     url: https://rdgateway1.hmpps-domain.service.justice.gov.uk/
+
+  # nomis
+  - metric_dimension: c.nomis.az.justice.gov.uk
+    url: https://c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag
+  - metric_dimension: c.nomis.service.justice.gov.uk
+    url: https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag
+
+  # nomis-combined-reporting
+  - metric_dimension: reporting.nomis.az.justice.gov.uk # AZURE
+    url: https://reporting.nomis.az.justice.gov.uk/keepalive.htm
+    time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
+
+  # oasys
+  - metric_dimension: oasys.service.justice.gov.uk
+    url: https://oasys.service.justice.gov.uk/
+  - metric_dimension: int.oasys.service.justice.gov.uk
+    url: https://int.oasys.service.justice.gov.uk/eor/f?p=100
+  - metric_dimension: practice.int.oasys.service.justice.gov.uk
+    url: https://practice.int.oasys.service.justice.gov.uk/eor/f?p=100
+  - metric_dimension: training.int.oasys.service.justice.gov.uk
+    url: https://training.int.oasys.service.justice.gov.uk/eor/f?p=100
+
+  # oasys-national-reporting
+  - metric_dimension: onr.oasys.az.justice.gov.uk # Azure
+    url: https://onr.oasys.az.justice.gov.uk/InfoViewApp
+
+  # planetfm
+  - metric_dimension: cafmtx.planetfm.service.justice.gov.uk
+    url: https://cafmtx.planetfm.service.justice.gov.uk/RDWeb
+  - metric_dimension: cafmwebx2.planetfm.service.justice.gov.uk
+    url: https://cafmwebx2.planetfm.service.justice.gov.uk/PlanetPortal
+    follow_redirect: 0
+  - metric_dimension: cafmtrainweb.planetfm.service.justice.gov.uk
+    url: https://cafmtrainweb.planetfm.service.justice.gov.uk/PlanetPortal
+    follow_redirect: 0
+    time_ranges: "1.0700-1.1800,2.0700-2.1800,3.0700-3.1800,4.0700-4.1800,5.0700-5.1800"

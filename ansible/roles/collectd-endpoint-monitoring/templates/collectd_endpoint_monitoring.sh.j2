@@ -6,7 +6,7 @@
 # To debug, run INTERVAL=5 LOGGER_INTERVAL_FOR_ERRORS=0 {{ collectd_script_path }}/{{ collectd_script_name }}.sh
 
 ENDPOINTS=()
-CERT_EXPIRY_METRIC_INTERVAL=3600
+CERT_EXPIRY_METRIC_INTERVAL=1800
 LOGGER_INTERVAL_FOR_ERRORS="${LOGGER_INTERVAL_FOR_ERRORS:-3600}" # set to 0 to display to stdout
 DEFAULT_INTERVAL="{{ collectd_script_interval }}"
 HOSTNAME="${HOSTNAME:-localhost}"
