@@ -222,14 +222,15 @@ variable.large_os_script=<<MULTILINE
 #
 #
 
+REPORTED_APPLICATIONS="{{ reported_applications }}"
+
+get_message(){
+
 # Supply comma-separated list of applications for whose databases we are interested in reporting on
 # You can leave this unset if you want all databases, but notice that we have a hard-coded limit
 # of 45 application databases per report (due to Slack restrictions)
-APPLICATIONS=delius,delius-mis,hmpps-oem
 # Ensure the list is quoted
 APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g")
-
-echo "$APPLICATIONS"
 
 OMR=$(awk -F: '/EMREP/{print $1}' /etc/oratab)
 
@@ -261,7 +262,7 @@ EOSQL
 )
 
 DATABASE_LIST=$(echo "${DATABASE_TARGETS}" | sed "s/[^,]\+/'&'/g")
-[[ -z $DATABASE_TARGETS ]] && DATABASE_TARGETS="ALL_DATABASES"
+[[ -z $DATABASE_TARGETS ]] && DATABASE_LIST="ALL_DATABASES"
 
 CATALOG=$(awk -F: '/RCVCAT/{print $1}' /etc/oratab)
 
@@ -442,15 +443,23 @@ UNPIVOT (backup_report_data FOR s IN (s1 AS 1,s2 AS 2))
 ;
 EOSQL
 )
-
 MESSAGE=$(echo "$MESSAGE" | sed 's/\\\\n/\\n/g')
 echo "$MESSAGE"
+}
 
 SECRET_ARN="arn:aws:secretsmanager:eu-west-2:$(aws sts get-caller-identity | jq -r '.Account'):secret:/oracle/database/EMREP/shared-passwords"
 SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --query SecretString --output json)
 SLACK_TOKEN=$(echo ${SECRET_VALUE} | jq -r | jq -r 'to_entries[] | select(.key=="slack_token").value')
 
-curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="#delius-aws-oracle-backups" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
+IFS="|"
+for LINE in $REPORTED_APPLICATIONS
+do
+  APPLICATION_GROUP=$( echo $LINE | cut -d: -f1)
+  APPLICATIONS=$( echo $LINE | cut -d: -f2)
+  [[ "${APPLICATION_GROUP}" == "probation" ]] && SLACK_CHANNEL="#delius-aws-oracle-backups" || SLACK_CHANNEL="#nomis-aws-oracle-backups"
+  get_message
+  curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
+done
 MULTILINE
 
 
