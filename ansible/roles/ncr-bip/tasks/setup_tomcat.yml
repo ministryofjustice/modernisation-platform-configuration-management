@@ -8,8 +8,17 @@
         state: directory
       loop:
         - "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css"
-        - "/home/bobj/bipssorws_config"
       when: sap_web_server_type == "web"
+
+    - name: Create web only directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: bobj
+        group: binstall
+        state: directory
+      loop:
+        - "/home/bobj/bipssorws_config"
+      when: sap_bip_sso_url is defined
 
     - name: Download bipssorws war
       become_user: bobj
