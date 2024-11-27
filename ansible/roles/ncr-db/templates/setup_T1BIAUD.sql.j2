@@ -1,0 +1,21 @@
+set echo on 
+spool {{ stage }}/setup_bipaud.log 
+
+create tablespace MISAUD_TS;
+
+create profile nart
+limit PASSWORD_REUSE_TIME unlimited
+PASSWORD_LIFE_TIME  unlimited;
+
+create user BIP_AUDIT_OWNER identified by "{{ bip_audit_owner_password }}"
+default tablespace MISAUD_TS 
+profile NART;
+grant CONNECT, CREATE JOB, CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, CREATE TRIGGER, UNLIMITED TABLESPACE to BIP_AUDIT_OWNER;
+
+create user BODS_IPS_AUDIT_OWNER identified by "{{ bods_ips_audit_password }}"
+default tablespace MISAUD_TS
+profile NART;
+grant CONNECT, CREATE JOB, CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, UNLIMITED TABLESPACE to BODS_IPS_AUDIT_OWNER;
+
+spool off 
+exit;
