@@ -85,7 +85,7 @@ sap_bip_secretsmanager_passwords:
       - Administrator: auto
       - "{{ sap_bip_provisioning_secrets | items2dict }}"
 
-sap_web_template_subdirectory: web
+sap_web_server_type: web  # set to webadmin if dedicated to admin
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
 sap_web_context_cachemaxsize: 500000

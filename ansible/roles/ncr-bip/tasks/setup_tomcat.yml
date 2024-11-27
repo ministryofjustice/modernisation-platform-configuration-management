@@ -9,7 +9,7 @@
       loop:
         - "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css"
         - "/home/bobj/bipssorws_config"
-      when: sap_web_template_subdirectory == "web"
+      when: sap_web_server_type == "web"
 
     - name: Download bipssorws war
       become_user: bobj
@@ -82,7 +82,7 @@
 
     - name: Copy webapp configuration files
       ansible.builtin.template:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "{{ sap_web_server_type }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -97,7 +97,7 @@
 
     - name: Copy tomcat root files
       ansible.builtin.template:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "{{ sap_web_server_type }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -116,7 +116,7 @@
 
     - name: Copy tomcat root binary files
       ansible.builtin.copy:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "{{ sap_web_server_type }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -129,14 +129,14 @@
 
     - name: Copy tomcat root files
       ansible.builtin.copy:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "{{ sap_web_server_type }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
       loop:
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Company_logo.png
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Theme.css
-      when: sap_web_template_subdirectory == "web"
+      when: sap_web_server_type == "web"
 
     - name: Recursively unused files and dirs
       ansible.builtin.file:
