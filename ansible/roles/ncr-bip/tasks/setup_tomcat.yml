@@ -102,14 +102,10 @@
         owner: bobj
         group: binstall
       loop:
-        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_icon.png
-        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_menu_70pct.png
         - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
-        - sap_bobj/tomcat/webapps/ROOT/BIlogoff_pattern.gif
         - sap_bobj/tomcat/webapps/ROOT/BrowserCheck.jsp
         - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_LIVE.jsp
         - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
-        - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
         - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
         - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
         - sap_bobj/tomcat/webapps/ROOT/browsercheck.css
@@ -117,10 +113,22 @@
         - sap_bobj/tomcat/webapps/ROOT/index.jsp
         - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
         - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
+
+    - name: Copy tomcat root binary files
+      ansible.builtin.copy:
+        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_icon.png
+        - sap_bobj/tomcat/webapps/ROOT/BIP_profile_menu_70pct.png
+        - sap_bobj/tomcat/webapps/ROOT/BIlogoff_pattern.gif
+        - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
         - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
 
     - name: Copy tomcat root files
-      ansible.builtin.template:
+      ansible.builtin.copy:
         src: "{{ sap_web_template_subdirectory }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
