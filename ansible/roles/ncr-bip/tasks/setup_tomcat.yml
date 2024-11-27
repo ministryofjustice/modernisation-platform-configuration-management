@@ -8,8 +8,17 @@
         state: directory
       loop:
         - "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css"
+      when: sap_web_server_type == "web"
+
+    - name: Create web only directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: bobj
+        group: binstall
+        state: directory
+      loop:
         - "/home/bobj/bipssorws_config"
-      when: sap_web_template_subdirectory == "web"
+      when: sap_bip_sso_url is defined
 
     - name: Download bipssorws war
       become_user: bobj
@@ -82,7 +91,7 @@
 
     - name: Copy webapp configuration files
       ansible.builtin.template:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -95,40 +104,56 @@
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/global.properties
         - sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom/biprws.properties
 
-    - name: Copy tomcat root files
+    - name: Copy common tomcat root files
       ansible.builtin.template:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+        src: "web/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
+        - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
+        - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
+        - sap_bobj/tomcat/webapps/ROOT/index.jsp
+        - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
+        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
+
+    - name: Copy server specific tomcat root files
+      ansible.builtin.template:
+        src: "{{ sap_web_server_type }}/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_LIVE.jsp
+        - sap_bobj/tomcat/webapps/ROOT/browsercheck.css
+        - sap_bobj/tomcat/webapps/ROOT/browsercheck.js
+
+    - name: Copy tomcat root binary files
+      ansible.builtin.copy:
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
       loop:
         - sap_bobj/tomcat/webapps/ROOT/BIP_profile_icon.png
         - sap_bobj/tomcat/webapps/ROOT/BIP_profile_menu_70pct.png
-        - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
         - sap_bobj/tomcat/webapps/ROOT/BIlogoff_pattern.gif
-        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck.jsp
-        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_LIVE.jsp
-        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
         - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
-        - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
-        - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
-        - sap_bobj/tomcat/webapps/ROOT/browsercheck.css
-        - sap_bobj/tomcat/webapps/ROOT/browsercheck.js
-        - sap_bobj/tomcat/webapps/ROOT/index.jsp
-        - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
-        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
         - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
 
-    - name: Copy tomcat root files
-      ansible.builtin.template:
-        src: "{{ sap_web_template_subdirectory }}/{{ item }}"
+    - name: Copy server specific fioribi files
+      ansible.builtin.copy:
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
       loop:
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Company_logo.png
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Theme.css
-      when: sap_web_template_subdirectory == "web"
+      when: sap_web_server_type == "web"
 
     - name: Recursively unused files and dirs
       ansible.builtin.file:
