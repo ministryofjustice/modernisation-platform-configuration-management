@@ -91,7 +91,7 @@
 
     - name: Copy webapp configuration files
       ansible.builtin.template:
-        src: "{{ sap_web_server_type }}/{{ item }}"
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -104,28 +104,36 @@
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/global.properties
         - sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom/biprws.properties
 
-    - name: Copy tomcat root files
+    - name: Copy common tomcat root files
+      ansible.builtin.template:
+        src: "web/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
+        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
+        - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
+        - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
+        - sap_bobj/tomcat/webapps/ROOT/index.jsp
+        - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
+        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
+
+    - name: Copy server specific tomcat root files
       ansible.builtin.template:
         src: "{{ sap_web_server_type }}/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
       loop:
-        - sap_bobj/tomcat/webapps/ROOT/BIlogoff.jsp
         - sap_bobj/tomcat/webapps/ROOT/BrowserCheck.jsp
         - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_LIVE.jsp
-        - sap_bobj/tomcat/webapps/ROOT/BrowserCheck_Offline.jsp
-        - sap_bobj/tomcat/webapps/ROOT/Unsupported_Browser.html
-        - sap_bobj/tomcat/webapps/ROOT/UserNotification.jsp
         - sap_bobj/tomcat/webapps/ROOT/browsercheck.css
         - sap_bobj/tomcat/webapps/ROOT/browsercheck.js
-        - sap_bobj/tomcat/webapps/ROOT/index.jsp
-        - sap_bobj/tomcat/webapps/ROOT/index_main.jsp
-        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
 
     - name: Copy tomcat root binary files
       ansible.builtin.copy:
-        src: "{{ sap_web_server_type }}/{{ item }}"
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
@@ -136,9 +144,9 @@
         - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
         - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
 
-    - name: Copy tomcat root files
+    - name: Copy server specific fioribi files
       ansible.builtin.copy:
-        src: "{{ sap_web_server_type }}/{{ item }}"
+        src: "web/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
