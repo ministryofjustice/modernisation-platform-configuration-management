@@ -50,6 +50,17 @@ db_configs:
     service:
       - { name: BIPSYS_TAF, role: PRIMARY }
 
+  T1BISYS:
+    db_name: T1BISYS
+    db_unique_name: T1BISYS
+    instance_name: T1BISYS
+    host_name: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+    port: 1521
+    tns_name: T1BISYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BISYS_TAF, role: PRIMARY }
+
   T1BIPAUD:
     db_name: T1BIPAUD
     db_unique_name: T1BIPAUD
@@ -60,6 +71,17 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: BIPAUD_TAF, role: PRIMARY }
+
+  T1BIAUD:
+    db_name: T1BIAUD
+    db_unique_name: T1BIAUD
+    instance_name: T1BIAUD
+    host_name: t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.internal
+    port: 1521
+    tns_name: T1BIAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: BIAUD_TAF, role: PRIMARY }
 
   RCVCAT:
     rcvcat_db_name: TRCVCAT
