@@ -1,26 +1,28 @@
 # Managed by ansible modernisation-platform-configuration-management repo, oracle-19c-client role
 
 PPBIAUD =
-  (DESCRIPTION =
-    (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = BIAUD_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BIAUD_TAF)
   )
+ )
 
 PPBISYS =
-  (DESCRIPTION =
-    (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = BISYS_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BISYS_TAF)
   )
+ )
 
 CNOMPP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = ppor-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = ppor-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -35,7 +37,7 @@ CNOMPP =
 
 CNMAUDPP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = ppaudit-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = ppaudit-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -50,7 +52,7 @@ CNMAUDPP =
 
 MISPP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = ppmis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = ppmis-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -64,13 +66,14 @@ MISPP =
  )
 
 OASYSREP =
-  (DESCRIPTION =
-    (ADDRESS = (HOST = db.pp.onr.oasys.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = OASYSREP_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = db.pp.onr.oasys.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = OASYSREP_TAF)
   )
+ )
 
 CNOMISPP =
  (DESCRIPTION =
