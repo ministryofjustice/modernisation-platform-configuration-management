@@ -21,11 +21,11 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-onr-bods-1"
-        # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
-        # "cmsExtendedNode" = "t2-onr-bods-2"
-        "cmsExtendedNode" = "t2-tst-bods-asg" # Use this value when testing
-        "mainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsMainNode has been created
+        "cmsPrimaryNode"     = "t2-onr-bods-1"
+        # "cmsPrimaryNode"     = "t2-tst-bods-asg" # Use this value when testing
+        # "cmsSecondaryNode" = "t2-onr-bods-2"
+        "cmsSecondaryNode" = "t2-tst-bods-asg" # Use this value when testing
+        "mainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsPrimaryNode has been created
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -36,9 +36,9 @@ $GlobalConfig = @{
         "sysDbName"       = "PPBOSYS"
         "audDbName"       = "PPBOAUD"
         "tnsorafile"      = "tnsnames_PP_BODS.ora"
-        "cmsMainNode"     = "pp-onr-bods-1"
-        "cmsExtendedNode" = "pp-onr-bods-2"
-        # "mainNodeHostName" = "" Add MANUALLY AFTER cmsMainNode has been created in this env
+        "cmsPrimaryNode"     = "pp-onr-bods-1"
+        "cmsSecondaryNode" = "pp-onr-bods-2"
+        # "mainNodeHostName" = "" Add MANUALLY AFTER cmsPrimaryNode has been created in this env
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
@@ -376,7 +376,7 @@ function Install-IPS {
     $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
 
 # Create response file for IPS silent install
-$ipsResponseFileContentCommon = @"
+$ipsResponseFilePrimary = @"
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
 chooseintroscopeintegration=nointegrate
 ### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
@@ -443,7 +443,7 @@ $domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
 $remoteSiaName = $($Config.MainNodeHostName).Replace("-", "").ToUpper()
 
 # Create response file for IPS expanded install
-$ipsResponseFileContentExtendedNode = @"
+$ipsResponseFileSecondary = @"
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
 chooseintroscopeintegration=nointegrate
 ### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
@@ -510,10 +510,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
 $ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
-if ($instanceName -eq $($Config.cmsMainNode)) {
-    $ipsResponseFileContentCommon | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
-} elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
-    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+if ($instanceName -eq $($Config.cmsPrimaryNode)) {
+    $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+} elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
+    $ipsResponseFileSecondary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
     exit 1
@@ -547,9 +547,9 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        if ($instanceName -eq $($Config.cmsMainNode)) {
+        if ($instanceName -eq $($Config.cmsPrimaryNode)) {
             $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
-        } elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
+        } elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
             $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"remotecmsadminpassword=$bods_admin_password","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
         } else {
             Write-Output "Unknown node type, cannot start installer"
@@ -606,13 +606,13 @@ $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
 ### CMS administrator password
-# cmspassword=**** bods_admin_password value supplied directly via silent install params
+# cmspassword=**** bods_admin_password in silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
-# dscmspassword=**** bods_admin_password value supplied directly via silent install params
+# dscmspassword=**** bods_admin_password value in silent install params
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
@@ -636,7 +636,7 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-# dslogininfothispassword=**** service_user_password value supplied directly via silent install params
+# dslogininfothispassword=**** service_user_password value in silent install params
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
@@ -653,17 +653,82 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-    $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
+$domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+
+$dataServicesResponseSecondary = @"
+### #property.CMSAUTHENTICATION.description#
+cmsauthentication=secEnterprise
+### CMS administrator password
+# cmspassword=**** bods_admin_password value in silent install params
+### #property.CMSUSERNAME.description#
+cmsusername=Administrator
+### #property.CMSAuthMode.description#
+dscmsauth=secEnterprise
+### #property.CMSEnabledSSL.description#
+dscmsenablessl=0
+### CMS administrator password
+# dscmspassword=**** bods_admin_password value in silent install params
+### #property.CMSServerPort.description#
+dscmsport=6400
+### #property.CMSServerName.description#
+dscmssystem=$($Config.MainNodeHostName).$domainName
+### #property.CMSUser.description#
+dscmsuser=Administrator
+### #property.DSCommonDir.description#
+dscommondir=F:\BODS_COMMON_DIR\
+### #property.DSConfigCMSSelection.description#
+dsconfigcmsselection=install
+### #property.DSConfigMergeSelection.description#
+dsconfigmergeselection=skip
+### #property.DSExistingDSConfigFile.description#
+dsexistingdsconfigfile=
+### #property.DSInstallTypeSelection.description#
+dsinstalltypeselection=Custom
+### #property.DSLocalCMS.description#
+dslocalcms=false
+### #property.DSLoginInfoAccountSelection.description#
+dslogininfoaccountselection=this
+### #property.DSLoginInfoThisPassword.description#
+# dslogininfothispassword=**** service_user_password value in silent install params
+### #property.DSLoginInfoThisUser.description#
+dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
+### Installation folder for SAP products
+installdir=E:\SAP BusinessObjects\
+### #property.IsCommonDirChanged.description#
+iscommondirchanged=1
+### #property.MasterCmsName.description#
+mastercmsname=$($Config.MainNodeHostName).$domainName
+### #property.MasterCmsPort.description#
+mastercmsport=6400
+### Keycode for the product.
+productkey=$data_services_product_key
+### *** property.SelectedLanguagePacks.description ***
+selectedlanguagepacks=en
+### Available features
+features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
+"@
+
+    $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+    $dsInstallIni = "$WorkingDirectory\ds_install.ini"
+
+    if ($instanceName -eq $Config.cmsPrimaryNode) {
+        $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    } elseif ($instanceName -eq $Config.cmsSecondaryNode) {
+        $dataServicesResponseSecondary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    } else {
+        Write-Output "Unknown node type, cannot create response file"
+        exit 1
+    }
 
     $dataServicesInstallParams = @{
         FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
-        ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
+        ArgumentList = "-q","-r","$dsInstallIni","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
         Wait         = $true
         NoNewWindow  = $true
     }
 
     # Install Data Services
-    # Start-Process @dataServicesInstallParams
+    Start-Process @dataServicesInstallParams
 
     # }}} End install Data Services
 

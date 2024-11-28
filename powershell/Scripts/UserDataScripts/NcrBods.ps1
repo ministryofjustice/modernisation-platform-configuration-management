@@ -20,9 +20,9 @@ $GlobalConfig = @{
         # "sysDbName"       = "T2BOSYS"
         # "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "NCR_tnsnames_T1_BODS.ora"
-        "cmsMainNode"     = "t1-ncr-bods-1"
-        # "cmsMainNode"     = "t1-tst-bods-asg" # Use this value when testing
-        # "cmsExtendedNode" = "t1-ncr-bods-2"
+        "cmsPrimaryNode"     = "t1-ncr-bods-1"
+        # "cmsPrimaryNode"     = "t1-tst-bods-asg" # Use this value when testing
+        # "cmsSecondaryNode" = "t1-ncr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -33,8 +33,8 @@ $GlobalConfig = @{
         # "sysDbName"       = "PPBOSYS"
         # "audDbName"       = "PPBOAUD"
         "tnsorafile"      = "NCR_tnsnames_PP_BODS.ora"
-        "cmsMainNode"     = "pp-ncr-bods-1"
-        # "cmsExtendedNode" = "pp-ncr-bods-2"
+        "cmsPrimaryNode"     = "pp-ncr-bods-1"
+        # "cmsSecondaryNode" = "pp-ncr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
@@ -372,7 +372,7 @@ function Install-IPS {
     $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
 
 # Create response file for IPS silent install
-$ipsResponseFileContentCommon = @"
+$ipsResponseFilePrimary = @"
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
 chooseintroscopeintegration=nointegrate
 ### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
@@ -436,7 +436,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 "@
 
 # Create response file for IPS expanded install
-$ipsResponseFileContentExtendedNode = @"
+$ipsResponseFileSecondary = @"
 ### Choose install mode: new, expand where new == first instance of the installation
 neworexpandinstall=expand
 ### Install a new LCM or use an existing LCM
@@ -448,7 +448,7 @@ clusterkey=$bods_cluster_key
 ### CMS connection port
 cmsport=6400
 ### Existing main cms node name
-cmsname=$($Config.cmsMainNode)
+cmsname=$($Config.cmsPrimaryNode)
 ### Product Keycode
 productkey=$ips_product_key
 ### SIA node name
@@ -475,10 +475,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
 $ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
-if ($instanceName -eq $($Config.cmsMainNode)) {
-    $ipsResponseFileContentCommon | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
-} elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
-    $ipsResponseFileContentExtendedNode | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+if ($instanceName -eq $($Config.cmsPrimaryNode)) {
+    $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+} elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
+    $ipsResponseFileSecondary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
 } else {
     Write-Output "Unknown node type, cannot create response file"
     exit 1
