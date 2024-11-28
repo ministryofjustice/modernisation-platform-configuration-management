@@ -17,12 +17,13 @@ $GlobalConfig = @{
 
     }
     "nomis-combined-reporting-test"          = @{
-        # "sysDbName"       = "T2BOSYS"
-        # "audDbName"       = "T2BOAUD"
+        # "sysDbName"       = ""
+        # "audDbName"       = ""
         "tnsorafile"      = "NCR_tnsnames_T1_BODS.ora"
         "cmsPrimaryNode"     = "t1-ncr-bods-1"
         # "cmsPrimaryNode"     = "t1-tst-bods-asg" # Use this value when testing
         # "cmsSecondaryNode" = "t1-ncr-bods-2"
+        # "cmsPrimaryNodeHostname" = "" ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -30,11 +31,12 @@ $GlobalConfig = @{
         "domain"    = "AZURE"
     }
     "nomis-combined-reporting-preproduction" = @{
-        # "sysDbName"       = "PPBOSYS"
-        # "audDbName"       = "PPBOAUD"
+        # "sysDbName"       = ""
+        # "audDbName"       = ""
         "tnsorafile"      = "NCR_tnsnames_PP_BODS.ora"
         "cmsPrimaryNode"     = "pp-ncr-bods-1"
         # "cmsSecondaryNode" = "pp-ncr-bods-2"
+        # "cmsPrimaryNodeHostname" = "" ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
@@ -437,36 +439,64 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 
 # Create response file for IPS expanded install
 $ipsResponseFileSecondary = @"
-### Choose install mode: new, expand where new == first instance of the installation
-neworexpandinstall=expand
-### Install a new LCM or use an existing LCM
-neworexistinglcm=expand
-### CMS cluster key
-clusterkey=$bods_cluster_key
-### CMS administrator password
-# cmspassword=$bods_admin_password
-### CMS connection port
-cmsport=6400
-### Existing main cms node name
-cmsname=$($Config.cmsPrimaryNode)
-### Product Keycode
-productkey=$ips_product_key
-### SIA node name
-sianame=$siaNodeName
-### SIA connector port
-siaport=6410
-### Language Packs Selected to Install
-selectedlanguagepacks=en
-### Setup UI Language
-setupuilanguage=en
-### Installation Directory
-installdir=E:\SAP BusinessObjects\
-### Choose install type: default, custom, webtier
-installtype=custom
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
 chooseintroscopeintegration=nointegrate
 ### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
 choosesmdintegration=nointegrate
+### CMS cluster key
+clusterkey=$bods_cluster_key
+### CMS connection port
+cmsport=6400
+### Choose to start servers after install: 0 or 1
+enableservers=0
+### Existing CMS DB password
+# existingcmsdbpassword=**** bods_ips_system_owner value in silent install params
+### Existing CMS DB reset flag: 0 or 1
+existingcmsdbreset=0
+### Existing CMS DB server
+existingcmsdbserver=$($Config.sysDbName)
+### Existing CMS DB user name
+existingcmsdbuser=bods_ips_system_owner
+### Installation Directory
+installdir=E:\SAP BusinessObjects\
+### Choose install type: default, custom, webtier
+installtype=custom
+### LCM server name
+lcmname=LCM_repository
+### LCM password
+# lcmpassword=**** bods_subversion_password value in silent install params
+### LCM port
+lcmport=3690
+### LCM user name
+lcmusername=LCM
+### Choose install mode: new, expand
+neworexpandinstall=expand
+### Product Keycode
+productkey=$ips_product_key
+### Remote CMS administrator name
+remotecmsadminname=Administrator
+### Remote CMS administrator password
+# remotecmsadminpassword=**** bods_admin_password value in silent install params
+### Remote CMS name
+remotecmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+### Remote CMS port
+remotecmsport=6400
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+### SIA node name
+sianame=$remoteSiaName
+### SIA connector port
+siaport=6410
+### Tomcat connection port
+tomcatconnectionport=28080
+### Tomcat redirect port
+tomcatredirectport=8443
+### Tomcat shutdown port
+tomcatshutdownport=8005
+### CMS Database Type
+usingcmsdbtype=oracle
 ### Features to install
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
@@ -512,11 +542,21 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        if ($instanceName -eq $($Config.cmsPrimaryNode)) {
+            # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_admin_password", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        }
+        elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
+            # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_admin_password", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        }
+        else {
+            Write-Output "Unknown node type, cannot start installer"
+            exit 1
+        }
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
         "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    } catch {
+    } 
+    catch {
         $exception = $_.Exception
         "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         "Exception Message: $($exception.Message)" | OUt-File -FilePath $logFile -Append
@@ -613,11 +653,78 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-    $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
+$domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+
+    $dataServicesResponseSecondary = @"
+### #property.CMSAUTHENTICATION.description#
+cmsauthentication=secEnterprise
+### CMS administrator password
+# cmspassword=**** bods_admin_password value in silent install params
+### #property.CMSUSERNAME.description#
+cmsusername=Administrator
+### #property.CMSAuthMode.description#
+dscmsauth=secEnterprise
+### #property.CMSEnabledSSL.description#
+dscmsenablessl=0
+### CMS administrator password
+# dscmspassword=**** bods_admin_password value in silent install params
+### #property.CMSServerPort.description#
+dscmsport=6400
+### #property.CMSServerName.description#
+dscmssystem=$($Config.cmsPrimaryNodeHostname).$domainName
+### #property.CMSUser.description#
+dscmsuser=Administrator
+### #property.DSCommonDir.description#
+dscommondir=F:\BODS_COMMON_DIR\
+### #property.DSConfigCMSSelection.description#
+dsconfigcmsselection=install
+### #property.DSConfigMergeSelection.description#
+dsconfigmergeselection=skip
+### #property.DSExistingDSConfigFile.description#
+dsexistingdsconfigfile=
+### #property.DSInstallTypeSelection.description#
+dsinstalltypeselection=Custom
+### #property.DSLocalCMS.description#
+dslocalcms=false
+### #property.DSLoginInfoAccountSelection.description#
+dslogininfoaccountselection=this
+### #property.DSLoginInfoThisPassword.description#
+# dslogininfothispassword=**** service_user_password value in silent install params
+### #property.DSLoginInfoThisUser.description#
+dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
+### Installation folder for SAP products
+installdir=E:\SAP BusinessObjects\
+### #property.IsCommonDirChanged.description#
+iscommondirchanged=1
+### #property.MasterCmsName.description#
+mastercmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+### #property.MasterCmsPort.description#
+mastercmsport=6400
+### Keycode for the product.
+productkey=$data_services_product_key
+### *** property.SelectedLanguagePacks.description ***
+selectedlanguagepacks=en
+### Available features
+features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
+"@
+
+    $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
+    $dsInstallIni = "$WorkingDirectory\ds_install.ini"
+
+    if ($instanceName -eq $Config.cmsPrimaryNode) {
+        $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    }
+    elseif ($instanceName -eq $Config.cmsSecondaryNode) {
+        $dataServicesResponseSecondary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    }
+    else {
+        Write-Output "Unknown node type, cannot create response file"
+        exit 1
+    }
 
     $dataServicesInstallParams = @{
         FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)\DataServices\setup.exe"
-        ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
+        ArgumentList = "-q","-r","$dsInstallIni","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
         Wait         = $true
         NoNewWindow  = $true
     }
@@ -775,6 +882,8 @@ Set-Location -Path $WorkingDirectory
 Install-Oracle19cClient -Config $Config
 # New-TnsOraFile -Config $Config
 # Test-DbCredentials -Config $Config
+# IMPORTANT: currently only downloads the IPS installer, does not install it
 Install-IPS -Config $Config
+# IMPORTANT: currently only downloads the Data Services installer, does not install it 
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
