@@ -879,8 +879,12 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Set-Location -Path $WorkingDirectory
 
+# IMPORTANT: Response files for these versions need checking first to ensure they are correct. Need to sort out tnsorafiles and have a database target to test against, then uncomment the lines below BUT not install IPS/DataServices. Need to CREATE THE SECRETS FIRST (see docs) as well as manually run the installers with -w 'E:\Software\responsefile.ini' to check the values are correct. Then make any install file changes before running everything.
+
 Install-Oracle19cClient -Config $Config
+# IMPORTANT: NCR tnsorafiles are not defined for any environment yet
 # New-TnsOraFile -Config $Config
+# IMPORTANT: Requires a database target to test against
 # Test-DbCredentials -Config $Config
 # IMPORTANT: currently only downloads the IPS installer, does not install it
 Install-IPS -Config $Config
