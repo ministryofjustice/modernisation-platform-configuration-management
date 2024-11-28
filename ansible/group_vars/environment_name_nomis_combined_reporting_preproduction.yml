@@ -80,27 +80,41 @@ audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
 
 sap_bip_oracle_client_confs:
+  ls:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.ls
   pp:
     sqlnet_ora_source_filename: sqlnet.ora
     tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pp
+
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
 
 sap_bip_db_confs:
+  ls:
+    auditing_db_server: LSBIAUD
+    auditing_db_user: bip_audit_owner # lowercase to match secret name
+    cms_db_server: LSBISYS
+    cms_db_user: bip_system_owner # lowercase to match secret name
   pp:
     auditing_db_server: PPBIAUD
     auditing_db_user: bip_audit_owner # lowercase to match secret name
     cms_db_server: PPBISYS
     cms_db_user: bip_system_owner # lowercase to match secret name
+
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
 sap_bip_confs:
   ls:
     sap_web_java_mem: "4096"
     sap_webadmin_java_mem: "4096"
-    sap_web_enduser_base_url: "https://lsast.reporting.nomis.service.justice.gov.uk"
+    sap_web_disable_cmcapp: "false"
+    sap_bip_sso_url: "https://lsast.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
+    sap_bip_rws_url: "https://lsast.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_provisioning_database_hostname: "lsnomis.preproduction.nomis.service.justice.gov.uk"
   pp:
     sap_web_java_mem: "22528"
     sap_webadmin_java_mem: "8192"
+    sap_web_disable_cmcapp: "true"
     sap_bip_sso_url: "https://preproduction.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
     sap_bip_rws_url: "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/biprws"
     sap_provisioning_database_hostname: "ppnomis.preproduction.nomis.service.justice.gov.uk"

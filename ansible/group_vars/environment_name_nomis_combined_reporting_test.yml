@@ -86,6 +86,11 @@ db_configs:
   RCVCAT:
     rcvcat_db_name: TRCVCAT
 
+audit_db_sid: T1BIAUD
+system_db_sid: T1BISYS
+audit_service_name: T1AUD_TAF
+system_service_name: T1SYS_TAF
+
 # Oracle database housekeeping
 audit_housekeeping_period: 60
 db_housekeeping_script: db_server_housekeeping.sh
@@ -101,6 +106,7 @@ sap_bip_oracle_client_confs:
   t1:
     sqlnet_ora_source_filename: sqlnet.ora
     tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.t1
+
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
 
 sap_bip_db_confs:
@@ -109,11 +115,25 @@ sap_bip_db_confs:
     auditing_db_user: bip_audit_owner # lowercase to match secret name
     cms_db_server: T1BISYS
     cms_db_user: bip_system_owner # lowercase to match secret name
+
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
 sap_bip_confs:
   t1:
     sap_web_java_mem: "4096"
     sap_webadmin_java_mem: "4096"
+    sap_web_disable_cmcapp: "false"
     sap_bip_sso_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
+    sap_bip_rws_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_provisioning_database_hostname: "t1nomis.test.nomis.service.justice.gov.uk"
+
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
+
+bip_filesystems_mount:
+  - dir: /opt/data/BusinessObjects
+    fstype: nfs
+    uid: bobj
+    gid: binstall
+    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+    src: "eu-west-2a.fs-0a9a52ec4ffec21cc.efs.eu-west-2.amazonaws.com:/"
+    metric_dimension: t1_ncr_sap_share
