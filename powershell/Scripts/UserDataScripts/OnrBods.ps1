@@ -25,7 +25,7 @@ $GlobalConfig = @{
         # "cmsPrimaryNode"     = "t2-tst-bods-asg" # Use this value when testing
         # "cmsSecondaryNode" = "t2-onr-bods-2"
         "cmsSecondaryNode" = "t2-tst-bods-asg" # Use this value when testing
-        "mainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsPrimaryNode has been created
+        "mainNodeHostName" = "EC2AMAZ-JM52FS3" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -38,7 +38,7 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_PP_BODS.ora"
         "cmsPrimaryNode"     = "pp-onr-bods-1"
         "cmsSecondaryNode" = "pp-onr-bods-2"
-        # "mainNodeHostName" = "" Add MANUALLY AFTER cmsPrimaryNode has been created in this env
+        "mainNodeHostName" = "EC2AMAZ-669VK3E" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
