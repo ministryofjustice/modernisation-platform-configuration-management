@@ -32,3 +32,4 @@
     path: "/tmp/dbca{{ db_version }}.rsp"
     state: absent
   when: command_result.stdout is search("100%")
+  tags: remove-response-file

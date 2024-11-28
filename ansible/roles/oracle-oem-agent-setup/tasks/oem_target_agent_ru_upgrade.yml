@@ -19,6 +19,7 @@
 
     - name: Download agent RU patch
       import_tasks: download_oem_ru_software.yml
+      tags: download_oem_ru_software
 
     - name: Upgrade OEM agent Agentpatcher
       import_tasks: oms_upgrade_agentpatcher.yml
