@@ -25,6 +25,7 @@ $GlobalConfig = @{
         # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
         # "cmsExtendedNode" = "t2-onr-bods-2"
         "cmsExtendedNode" = "t2-tst-bods-asg" # Use this value when testing
+        "MainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsMainNode has been created
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -437,38 +438,69 @@ usingcmsdbtype=oracle
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
+$domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+$remoteSiaName = $($Config.MainNodeHostName).Replace("-", "").ToUpper()
+
 # Create response file for IPS expanded install
 $ipsResponseFileContentExtendedNode = @"
-### Choose install mode: new, expand where new == first instance of the installation
-neworexpandinstall=expand
-### Install a new LCM or use an existing LCM
-neworexistinglcm=expand
-### CMS cluster key
-clusterkey=$bods_cluster_key
-### CMS administrator password
-# cmspassword=$bods_admin_password
-### CMS connection port
-cmsport=6400
-### Existing main cms node name
-cmsname=$($Config.cmsMainNode)
-### Product Keycode
-productkey=$ips_product_key
-### SIA node name
-sianame=$siaNodeName
-### SIA connector port
-siaport=6410
-### Language Packs Selected to Install
-selectedlanguagepacks=en
-### Setup UI Language
-setupuilanguage=en
-### Installation Directory
-installdir=E:\SAP BusinessObjects\
-### Choose install type: default, custom, webtier
-installtype=custom
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
 chooseintroscopeintegration=nointegrate
 ### Choose to integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
 choosesmdintegration=nointegrate
+### CMS cluster key
+clusterkey=$bods_cluster_key
+### CMS connection port
+cmsport=6400
+### Choose to start servers after install: 0 or 1
+enableservers=0
+### Existing CMS DB password
+# existingcmsdbpassword=**** bods_ips_system_owner value in silent install params
+### Existing CMS DB reset flag: 0 or 1
+existingcmsdbreset=0
+### Existing CMS DB server
+existingcmsdbserver=$($Config.sysDbName)
+### Existing CMS DB user name
+existingcmsdbuser=bods_ips_system_owner
+### Installation Directory
+installdir=E:\SAP BusinessObjects\
+### Choose install type: default, custom, webtier
+installtype=custom
+### LCM server name
+lcmname=LCM_repository
+### LCM password
+# lcmpassword=**** bods_subversion_password value in silent install params
+### LCM port
+lcmport=3690
+### LCM user name
+lcmusername=LCM
+### Choose install mode: new, expand
+neworexpandinstall=expand
+### Product Keycode
+productkey=$ips_product_key
+### Remote CMS administrator name
+remotecmsadminname=Administrator
+### Remote CMS administrator password
+# remotecmsadminpassword=**** bods_admin_password value in silent install params
+### Remote CMS name
+remotecmsname=$($Config.MainNodeHostName).$domainName
+### Remote CMS port
+remotecmsport=6400
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+### SIA node name
+sianame=$RemoteSiaName
+### SIA connector port
+siaport=6410
+### Tomcat connection port
+tomcatconnectionport=28080
+### Tomcat redirect port
+tomcatredirectport=8443
+### Tomcat shutdown port
+tomcatshutdownport=8005
+### CMS Database Type
+usingcmsdbtype=oracle
 ### Features to install
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
@@ -514,7 +546,15 @@ Write-Host "Starting IPS installer at $(Get-Date)"
 
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        if ($instanceName -eq $($Config.cmsMainNode)) {
+            $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        } elseif ($instanceName -eq $($Config.cmsExtendedNode)) {
+            $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"remotecmsadminpassword=$bods_admin_password","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        } else {
+            Write-Output "Unknown node type, cannot start installer"
+            exit 1
+
+        }
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
         "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
