@@ -1,38 +1,38 @@
 # Managed by ansible modernisation-platform-configuration-management repo, oracle-19c-client role
 
 PDBISYS =
-  (DESCRIPTION =
-    (ENABLE=broken)
-    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
-    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
-    (FAILOVER = YES)
-    (CONNECT_DATA =
-      (SERVICE_NAME = BISYS_TAF)
-      (FAILOVER_MODE =
-        (TYPE = SELECT)
-        (METHOD = BASIC)
-      )
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+  (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = BISYS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
   )
+ )
 
 PDBIAUD =
-  (DESCRIPTION =
-    (ENABLE=broken)
-    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
-    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
-    (FAILOVER = YES)
-    (CONNECT_DATA =
-      (SERVICE_NAME = BIAUD_TAF)
-      (FAILOVER_MODE =
-        (TYPE = SELECT)
-        (METHOD = BASIC)
-      )
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+  (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = BIAUD_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
   )
+ )
 
 CNOMP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = por-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = por-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -47,7 +47,7 @@ CNOMP =
 
 CNOMISP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = pnomis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = pnomis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -62,7 +62,7 @@ CNOMISP =
 
 CNMAUDP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = paudit-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = paudit-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -77,7 +77,7 @@ CNMAUDP =
 
 MISP =
  (DESCRIPTION =
-  (ENABLE=broken)
+  (ENABLE = broken)
   (ADDRESS = (HOST = pmis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = pmis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -91,11 +91,11 @@ MISP =
  )
 
 OASYSREP =
-  (DESCRIPTION =
-    (ENABLE = broken)
-    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = OASYSREP_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = OASYSREP_TAF)
   )
+ )

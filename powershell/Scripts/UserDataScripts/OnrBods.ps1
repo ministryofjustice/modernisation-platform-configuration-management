@@ -2,8 +2,8 @@ $GlobalConfig = @{
     "all"                                    = @{
         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder" = "hmpps/onr"
-        "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
-        "ORACLE_HOME"           = "E:\app\oracle\product\19.0.0\client_1"
+        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
+        "ORACLE_19C_HOME"           = "E:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"           = "E:\app\oracle"
         "IPSS3File"             = "51054935.ZIP" # Information Platform Services 4.2 SP9 Patch 0
         "DataServicesS3File"    = "DS4214P_11-20011165.exe" # Data Services 4.2 SP14 Patch 11
@@ -21,7 +21,8 @@ $GlobalConfig = @{
         "sysDbName"       = "T2BOSYS"
         "audDbName"       = "T2BOAUD"
         "tnsorafile"      = "tnsnames_T2_BODS.ora"
-        "cmsMainNode"     = "t2-onr-bods-1" # Set as t2-tst-bods-asg when testing
+        "cmsMainNode"     = "t2-onr-bods-1"
+        # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
         "cmsExtendedNode" = "t2-onr-bods-2"
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -46,14 +47,55 @@ $GlobalConfig = @{
      }
 }
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ErrorActionPreference = "Stop"
-$WorkingDirectory = "E:\Software"
-$AppDirectory = "E:\App"
-
 # {{{ functions
+
+function Test-DbCredentials {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [hashtable]
+        $Config
+    )
+
+    # Check database credentials BEFORE installer runs
+    $typePath = "E:\app\oracle\product\19.0.0\client_1\ODP.NET\bin\4\Oracle.DataAccess.dll"
+
+    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
+    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
+
+    # Get secret values, silently continue if they don't exist
+    $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
+    $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
+
+    # Define an array of database configurations
+    $dbConfigs = @(
+        @{
+            Name = "$($Config.sysDbName)"
+            Username = "bods_ips_system_owner"
+            Password = $bods_ips_system_owner
+        },
+        @{
+            Name = "$($Config.audDbName)"
+            Username = "bods_ips_audit_owner"
+            Password = $bods_ips_audit_owner
+        }
+    )
+
+    # Loop through each database configuration
+    foreach ($db in $dbConfigs) {
+        $securePassword = ConvertTo-SecureString -String $db.Password -AsPlainText -Force
+        $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -securePassword $securePassword
+        if ($return -ne 0) {
+            Write-Host "Connection to $($db.Name) failed. Exiting."
+            exit 1
+        }
+        Write-Host "Connection to $($db.Name) successful."
+    }
+
+    Write-Host "All database connections successful."
+
+}
+
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
@@ -167,29 +209,6 @@ function Clear-PendingFileRenameOperations {
     }
 }
 
-# Function to change drive label
-function Set-DriveLabel {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$DriveLetter,
-
-        [Parameter(Mandatory=$true)]
-        [string]$NewLabel
-    )
-
-    # Remove colon from drive letter if present
-    $DriveLetter = $DriveLetter.TrimEnd(':')
-
-    try {
-        # Change the drive label
-        Set-Volume -DriveLetter $DriveLetter -NewFileSystemLabel $NewLabel
-        Write-Host "Drive $DriveLetter label changed to '$NewLabel' successfully."
-    }
-    catch {
-        Write-Error "Failed to change drive label: $_"
-    }
-}
-
 function Test-DatabaseConnection {
     param (
         [Parameter(Mandatory=$true)]
@@ -233,222 +252,125 @@ function Test-DatabaseConnection {
     }
 }
 
-function Get-ChildProcessIds {
-    param ($ParentId)
-    $childProcesses = Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentId"
-    foreach ($child in $childProcesses) {
-        $child.ProcessId
-        Get-ChildProcessIds -ParentId $child.ProcessId
-    }
-}
-
-function Move-ModPlatformADComputer {
-    [CmdletBinding()]
+function New-TnsOraFile {
     param (
-      [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
-      [Parameter(Mandatory=$true)][string]$NewOU
+        [Parameter(Mandatory)]
+        [hashtable]$Config
     )
 
-    $ErrorActionPreference = "Stop"
+    $tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\$($Config.tnsorafile)"
 
-      # Do nothing if host not part of domain
-  if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
-    Return $false
-  }
+    if (Test-Path $tnsOraFilePath) {
+        Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+    } else {
+        Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
+        exit 1
+    }
 
-  # Install powershell features if missing
-  if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
-    Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
-  }
+    # check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the Config values.
 
-  # Move the computer to the new OU
-  (Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME).objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+    if (-not $env:ORACLE_HOME) {
+        [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+        $env:ORACLE_HOME = $Config.ORACLE_19C_HOME  # Set in current session
+    }
+
+    $tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
+
+    Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
+
 }
-# }}}
 
-# {{{ Prep the server for installation
-# Set the registry key to prefer IPv4 over IPv6
-Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
+function Install-Oracle19cClient {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
 
-# Output a message to confirm the change
-Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
+    # Check if Oracle 19c client is already installed
+    if (Test-Path $Config.ORACLE_19C_HOME) {
+        Write-Host "Oracle 19c client is already installed."
+        return
+    }
 
-# Turn off the firewall as this will possibly interfere with Sia Node creation
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+    Set-Location -Path $WorkingDirectory
 
-# Disable antivirus and other security during installation
+    # Prepare installer
+    Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
+    Expand-Archive (".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\OracleClient"
 
-# Disable real-time monitoring
-Set-MpPreference -DisableRealtimeMonitoring $true
-
-# Disable intrusion prevention system
-Set-MpPreference -DisableIntrusionPreventionSystem $true
-
-# Disable script scanning
-Set-MpPreference -DisableScriptScanning $true
-
-# Disable behavior monitoring
-Set-MpPreference -DisableBehaviorMonitoring $true
-
-Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
-
-# Set local time zone to UK although this should now be set by Group Policy objects
-Set-TimeZone -Name "GMT Standard Time"
-
-# }}} complete - add prerequisites to server
-
-# {{{ join domain if domain-name tag is set
-# Join domain and reboot is needed before installers run
-$ErrorActionPreference = "Continue"
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-if ($null -ne $ADConfig) {
-  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
-  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-    Exit 3010 # triggers reboot if running from SSM Doc
-  }
-} else {
-  Write-Output "No domain-name tag found so apply Local Group Policy"
-  . .\LocalGroupPolicy.ps1
-}
-# }}}
-
-# {{{ Get the config and tags for the instance
-$Config = Get-Config
-$Tags = Get-InstanceTags
-# }}}
-
-# {{{ Add computer to the correct OU
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-
-# Get the AD Admin credentials
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-
-# Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
-
-# ensure computer is in the correct OU
-gpupdate /force
-
-# }}}
-
-# {{{ prepare assets
-New-Item -ItemType Directory -Path $WorkingDirectory -Force
-New-Item -ItemType Directory -Path $AppDirectory -Force
-
-Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
-Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
-Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
-
-Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
-Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
-# }}}
-
-# {{{ Install Oracle Client
-# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-
-# Create response file for silent install
-$oracleClientResponseFileContent = @"
+    # Create response file for silent install
+    $oracleClientResponseFileContent = @"
 oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
-ORACLE_HOME=$($Config.ORACLE_HOME)
+ORACLE_HOME=$($Config.ORACLE_19C_HOME)
 ORACLE_BASE=$($Config.ORACLE_BASE)
 oracle.install.IsBuiltInAccount=true
 oracle.install.client.installType=Administrator
 "@
 
-$oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+    $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
-# Service user will have been added by Group Policy to the Administrators User Group, makes sure this is applied
-gpupdate /force
-
-# Install Oracle Client silent install
-$OracleClientInstallParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @OracleClientInstallParams
-
-# Copy tnsnames.ora file to correct location, may not be in the usual place, check both
-if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} else {
-    Write-Error "Could not find tnsnames.ora file in $ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)"
-    Write-Error "Could not find tnsnames.ora file in C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)"
-}
-
-# Install Oracle configuration tools
-$oracleConfigToolsParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @oracleConfigToolsParams
-
-[Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
-
-# }}}
-
-# {{{ install IPS
-$Tags = Get-InstanceTags
-
-# set Secret Names based on environment
-$dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-$siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
-$bodsSecretName  = "/sap/bods/$dbenv/passwords"
-$sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
-$audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
-
-# Get secret values, silently continue if they don't exist
-$bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
-$bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
-$bods_cluster_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
-$bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
-$bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
-$ips_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
-
-# Check database credentials BEFORE installer runs
-$typePath = "E:\app\oracle\product\19.0.0\client_1\ODP.NET\bin\4\Oracle.DataAccess.dll"
-
-# Define an array of database configurations
-$dbConfigs = @(
-    @{
-        Name = "$($Config.sysDbName)"
-        Username = "bods_ips_system_owner"
-        Password = $bods_ips_system_owner
-    },
-    @{
-        Name = "$($Config.audDbName)"
-        Username = "bods_ips_audit_owner"
-        Password = $bods_ips_audit_owner
+    # Install Oracle 19c client
+    $OracleClientInstallParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-silent", "-noconfig", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
     }
-)
 
-# Loop through each database configuration
-foreach ($db in $dbConfigs) {
-    $securePassword = ConvertTo-SecureString -String $db.Password -AsPlainText -Force
-    $return = Test-DatabaseConnection -typePath $typePath -tnsName $db.Name -username $db.Username -securePassword $securePassword
-    if ($return -ne 0) {
-        Write-Host "Connection to $($db.Name) failed. Exiting."
-        exit 1
+    Start-Process @OracleClientInstallParams
+
+    # Install Oracle configuration tools
+    $oracleConfigToolsParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-executeConfigTools", "-silent", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
     }
-    Write-Host "Connection to $($db.Name) successful."
+
+    Start-Process @oracleConfigToolsParams
+
+    # Set environment variable
+    [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
 }
 
-Write-Host "All database connections successful."
+function Install-IPS {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    if (Test-Path "$WorkingDirectory\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0") {
+        Write-Output "IPS is already installed"
+        return
+    }
+
+    $Tags = Get-InstanceTags
+
+    Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
+
+    Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
+
+    # set Secret Names based on environment
+    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+    $siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
+    $bodsSecretName  = "/sap/bods/$dbenv/passwords"
+    $bodsConfigName  = "/sap/bods/$dbenv/config"
+    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
+    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
+
+    # Get secret values from relevant db's secrets
+    $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
+    $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
+
+    # /sap/bods/$dbenv/passwords values
+    $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+    $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
+    
+    # /sap/bods/$dbenv/config values
+    $bods_cluster_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
+    $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
 
 # Create response file for IPS silent install
 $ipsResponseFileContentCommon = @"
@@ -550,6 +472,7 @@ choosesmdintegration=nointegrate
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
 
+
 $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
 $ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
@@ -588,57 +511,55 @@ $env:Path -split ";" | ForEach-Object {
 
 Write-Host "Starting IPS installer at $(Get-Date)"
 
-try {
-    "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
-    $installProcessId = $process.Id
-    "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    # get all process IDs to monitor
-    $allProcessIds = @($installProcessId)
-    do {
-
-        # Refresh the list of child process IDs
-        $allProcessIds = @($installProcessId) + (Get-ChildProcessIds -ParentId $installProcessId)
-
-        # Get currently running processes from our list
-        $runningProcesses = Get-Process -Id $allProcessIds -ErrorAction SilentlyContinue
-
-        # Log the running processes
-        $runningProcessIds = $runningProcesses | ForEach-Object { $_.Id }
-        "Running processes at $(Get-Date): $($runningProcessIds -join ', ')" | Out-File -FilePath $logFile -Append
-
-        # Check if the parent process is still running
-        $parentStillRunning = Get-Process -Id $installProcessId -ErrorAction SilentlyContinue
-
-        Start-Sleep -Seconds 1
-
-    } while ($runningProcesses -and $parentStillRunning)
-    "All monitored processes have completed at $(Get-Date)" | Out-File -FilePath $logFile -Append
-
-    $exitcode = $installProcess.ExitCode
-    "IPS install has exited with code $exitcode" | Out-File -FilePath $logFile -Append
-    "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-} catch {
-    $exception = $_.Exception
-    "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    "Exception Message: $($exception.Message)" | OUt-File -FilePath $logFile -Append
-    if ($exception.InnerException) {
-        "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
+    try {
+        "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+        $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait','-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini',"cmspassword=$bods_admin_password","existingauditingdbpassword=$bods_ips_audit_owner","existingcmsdbpassword=$bods_ips_system_owner","lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        $installProcessId = $process.Id
+        "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
+        "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+    } catch {
+        $exception = $_.Exception
+        "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
+        "Exception Message: $($exception.Message)" | OUt-File -FilePath $logFile -Append
+        if ($exception.InnerException) {
+            "Inner Exception Message: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
+        }
     }
 }
-# }}} end install IPS
 
-# {{{ install Data Services
-[Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
+function Install-DataServices {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
 
-if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
-    Write-Output "Creating F:\BODS_COMMON_DIR"
-    New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
-}
-[Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
-#
-$data_services_product_key = Get-SecretValue -SecretId $bodsSecretName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-$service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+    if (Get-Package | Where-Object { $_.Name -Like "SAP Data Services*"}) {
+        Write-Output "Data Services is already installed"
+        return
+    }
+
+    Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
+
+    [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
+
+    if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
+        Write-Output "Creating F:\BODS_COMMON_DIR"
+        New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
+    }
+    [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
+    
+    # set Secret Names based on environment
+    $Tags = Get-InstanceTags
+    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value 
+    $bodsSecretName  = "/sap/bods/$dbenv/passwords"
+    $bodsConfigName  = "/sap/bods/$dbenv/config"
+
+    # passwords from /sap/bods/$dbenv/passwords
+    $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+    $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+
+    # config values from /sap/bods/$dbenv/config
+    $data_services_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
 
 $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -647,8 +568,6 @@ cmsauthentication=secEnterprise
 # cmspassword=**** bods_admin_password value supplied directly via silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
-### #property.CMSAuthMode.description#
-dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
@@ -693,62 +612,168 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-$dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
+    $dataServicesResponsePrimary | Out-File -FilePath "$WorkingDirectory\ds_install.ini" -Force -Encoding ascii
 
-$dataServicesInstallParams = @{
-    FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
-    ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
-    Wait         = $true
-    NoNewWindow  = $true
-}
-
-# Install Data Services
-Start-Process @dataServicesInstallParams
-
-# }}} End install Data Services
-
-# {{{ Post install steps for Data Services, configure JDBC driver
-$jdbcDriverPath = "$($Config.ORACLE_HOME)\jdbc\lib\ojdbc8.jar"
-$destinations = @(
-    "$($Config.LINK_DIR)\ext\lib",
-    "$($Config.BIP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
-    # "$($Config.BIP_INSTALL_DIR)\warfiles\webapps\DataServices\WEB-INF\lib" # Only needed if using Data Quality reports
-)
-
-if (Test-Path $jdbcDriverPath) {
-    foreach ($destination in $destinations) {
-        if (Test-Path $destination) {
-            Write-Output "Copying JDBC driver to $destination"
-            Copy-Item -Path $jdbcDriverPath -Destination $destination
-        } else {
-            Write-Output "Destination $destination does not exist, skipping"
-        }
+    $dataServicesInstallParams = @{
+        FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)"
+        ArgumentList = "-q","-r","$WorkingDirectory\ds_install.ini","cmspassword=$bods_admin_password","dscmspassword=$bods_admin_password","dslogininfothispassword=$service_user_password"
+        Wait         = $true
+        NoNewWindow  = $true
     }
-} else {
-    Write-Output "JDBC driver not found at $jdbcDriverPath"
-    exit 1
+
+    # Install Data Services
+    Start-Process @dataServicesInstallParams
+
+    # }}} End install Data Services
+
+    # {{{ Post install steps for Data Services, configure JDBC driver
+    $jdbcDriverPath = "$($Config.ORACLE_19C_HOME)\jdbc\lib\ojdbc8.jar"
+    $destinations = @(
+        "$($Config.LINK_DIR)\ext\lib",
+        "$($Config.BIP_INSTALL_DIR)\java\lib\im\oracle" #, # uncomment comma and line below if using Data Quality reports
+        # "$($Config.BIP_INSTALL_DIR)\warfiles\webapps\DataServices\WEB-INF\lib" # Only needed if using Data Quality reports
+    )
+
+    if (Test-Path $jdbcDriverPath) {
+        foreach ($destination in $destinations) {
+            if (Test-Path $destination) {
+                Write-Output "Copying JDBC driver to $destination"
+                Copy-Item -Path $jdbcDriverPath -Destination $destination
+            } else {
+                Write-Output "Destination $destination does not exist, skipping"
+            }
+        }
+    } else {
+        Write-Output "JDBC driver not found at $jdbcDriverPath"
+        exit 1
+    }
+
 }
-# Install notes: If using Data Quality reports: Use WDeploy to re-deploy BODS web apps.
-#                If not, Restart EIM Adaptive Processing Server via CMC.
+
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory=$true)][string]$NewOU
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    # Do nothing if host not part of domain
+    if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+        return $false
+    }
+
+    # Get the computer's objectGUID with a 5-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(5)
+    do {
+        try {
+            $computer = Get-ADComputer -Credential $ModPlatformADCredential -Filter "Name -eq '$env:COMPUTERNAME'" -ErrorAction Stop
+            if ($computer -and $computer.objectGUID) { break }
+        } catch {
+            Write-Verbose "Get-ADComputer failed: $_"
+        }
+        Start-Sleep -Seconds 5
+    } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
+
+    if (-not ($computer -and $computer.objectGUID)) {
+        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        return
+    }
+
+    # Move the computer to the new OU
+    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+
+    # force group policy update
+    gpupdate /force
+}
+
+function Set-LoginText {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+    # Apply to all environments that aren't on the domain
+    $ErrorActionPreference = "Stop"
+    Write-Output "Add Legal Notice"
+
+    if (-NOT (Test-Path $Config.RegistryPath)) {
+        Write-Output " - Registry path does not exist, creating"
+        New-Item -Path $Config.RegistryPath -Force | Out-Null
+    }
+
+    $RegistryPath = $Config.RegistryPath
+    $LegalNoticeCaption = $Config.LegalNoticeCaption
+    $LegalNoticeText = $Config.LegalNoticeText
+
+    Write-Output " - Set Legal Notice Caption"
+    New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
+
+    Write-Output " - Set Legal Notice Text"
+    New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
+}
 # }}}
 
-# {{{ login text
-# Apply to all environments that aren't on the domain
 $ErrorActionPreference = "Stop"
-Write-Output "Add Legal Notice"
+# {{{ Prep the server for installation
+# Set the registry key to prefer IPv4 over IPv6
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
 
-if (-NOT (Test-Path $Config.RegistryPath)) {
-    Write-Output " - Registry path does not exist, creating"
-    New-Item -Path $Config.RegistryPath -Force | Out-Null
+# Output a message to confirm the change
+Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
+
+# Turn off the firewall as this will possibly interfere with Sia Node creation
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+
+# Set local time zone to UK although this should now be set by Group Policy objects
+Set-TimeZone -Name "GMT Standard Time"
+
+# }}} complete - add prerequisites to server
+
+$Config = Get-Config
+$Tags = Get-InstanceTags
+
+$WorkingDirectory = "E:\Software"
+$AppDirectory = "E:\App"
+
+$ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
+
+# {{{ join domain if domain-name tag is set
+# Join domain and reboot is needed before installers run
+# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
+$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+
+# {{{ join domain if domain-name tag is set
+# Join domain and reboot is needed before installers run
+$ErrorActionPreference = "Continue"
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+if ($null -ne $ADConfig) {
+  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+    # Get the AD Admin credentials
+    $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+    # Move the computer to the correct OU
+    Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+    Exit 3010 # triggers reboot if running from SSM Doc
+  }
+} else {
+  Write-Output "No domain-name tag found so apply Local Group Policy"
+  . .\LocalGroupPolicy.ps1
 }
-
-$RegistryPath = $Config.RegistryPath
-$LegalNoticeCaption = $Config.LegalNoticeCaption
-$LegalNoticeText = $Config.LegalNoticeText
-
-Write-Output " - Set Legal Notice Caption"
-New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
-
-Write-Output " - Set Legal Notice Text"
-New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
 # }}}
+
+# {{{ prepare assets
+$ErrorActionPreference = "Stop"
+
+New-Item -ItemType Directory -Path $WorkingDirectory -Force
+New-Item -ItemType Directory -Path $AppDirectory -Force
+
+Set-Location -Path $WorkingDirectory
+
+Install-Oracle19cClient -Config $Config
+New-TnsOraFile -Config $Config
+Test-DbCredentials -Config $Config
+Install-IPS -Config $Config
+Install-DataServices -Config $Config
+Set-LoginText -Config $Config

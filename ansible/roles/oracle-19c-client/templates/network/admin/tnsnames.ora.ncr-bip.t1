@@ -1,25 +1,28 @@
 # Managed by ansible modernisation-platform-configuration-management repo, oracle-19c-client role
 
 T1BIAUD =
-  (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = BIAUD_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.test.reporting.nomis.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BIAUD_TAF)
   )
+ )
 
 T1BISYS =
-  (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = t1-ncr-db-1-a.nomis-combined-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
-    (CONNECT_DATA =
-      (SERVER = DEDICATED)
-      (SERVICE_NAME = BISYS_TAF)
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.test.reporting.nomis.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BISYS_TAF)
   )
+ )
 
 CNOMT1 =
  (DESCRIPTION =
+  (ENABLE = broken)
   (ADDRESS = (HOST = t1or-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (ADDRESS = (HOST = t1or-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
   (FAILOVER = YES)
@@ -33,29 +36,31 @@ CNOMT1 =
  )
 
 CNMAUDT1 =
-  (DESCRIPTION =
-    (ADDRESS = (HOST = t1mis-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
-    (ADDRESS = (HOST = t1mis-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
-    (FAILOVER = YES)
-    (CONNECT_DATA =
-      (SERVICE_NAME = CNMAUD_TAF)
-      (FAILOVER_MODE =
-        (TYPE = SELECT)
-        (METHOD = BASIC)
-      )
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = t1mis-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = t1mis-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = CNMAUD_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
   )
+ )
 
 MIST1 =
-  (DESCRIPTION =
-    (ADDRESS = (HOST = t1mis-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
-    (ADDRESS = (HOST = t1mis-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
-    (FAILOVER = YES)
-    (CONNECT_DATA =
-      (SERVICE_NAME = MIS_TAF)
-      (FAILOVER_MODE =
-        (TYPE = SELECT)
-        (METHOD = BASIC)
-      )
-    )
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (HOST = t1mis-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = t1mis-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
   )
+ )

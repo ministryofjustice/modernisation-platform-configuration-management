@@ -8,6 +8,7 @@ database_parameters:
   sga_target: 3G
   pga_aggregate_target: 1500M
   pga_aggregate_limit: 3G
+  compatible: 19.14.0
 rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
 database_autotasks:
   statistics_advisor: disabled
@@ -33,3 +34,4 @@ oracle_software:
     version: 12.2.0.1.43
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.43.zip
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
+source_db: "STGBOE"
