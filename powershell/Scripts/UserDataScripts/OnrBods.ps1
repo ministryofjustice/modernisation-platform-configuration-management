@@ -25,7 +25,7 @@ $GlobalConfig = @{
         # "cmsMainNode"     = "t2-tst-bods-asg" # Use this value when testing
         # "cmsExtendedNode" = "t2-onr-bods-2"
         "cmsExtendedNode" = "t2-tst-bods-asg" # Use this value when testing
-        "MainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsMainNode has been created
+        "mainNodeHostName" = "EC2AMAZ-JM52FS3" # Add MANUALLY AFTER cmsMainNode has been created
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -38,6 +38,7 @@ $GlobalConfig = @{
         "tnsorafile"      = "tnsnames_PP_BODS.ora"
         "cmsMainNode"     = "pp-onr-bods-1"
         "cmsExtendedNode" = "pp-onr-bods-2"
+        # "mainNodeHostName" = "" Add MANUALLY AFTER cmsMainNode has been created in this env
         "serviceUser"     = "svc_nart"
         "serviceUserPath" = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
@@ -383,17 +384,17 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-# cmspassword=**** bods_admin_password value supplied directly via silent install params
+# cmspassword=**** bods_admin_password value in silent install params
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-# existingauditingdbpassword=**** bods_ips_audit_owner value supplied directly via silent install params
+# existingauditingdbpassword=**** bods_ips_audit_owner value in silent install params
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
-# existingcmsdbpassword=**** bods_ips_system_owner value supplied directly via silent install params
+# existingcmsdbpassword=**** bods_ips_system_owner value in silent install params
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -407,7 +408,7 @@ installtype=custom
 ### LCM server name
 lcmname=LCM_repository
 ### LCM password
-# lcmpassword=**** bods_subversion_password value supplied directly via silent install params
+# lcmpassword=**** bods_subversion_password value in silent install params
 ### LCM port
 lcmport=3690
 ### LCM user name
@@ -490,7 +491,7 @@ selectedlanguagepacks=en
 ### Setup UI Language
 setupuilanguage=en
 ### SIA node name
-sianame=$RemoteSiaName
+sianame=$remoteSiaName
 ### SIA connector port
 siaport=6410
 ### Tomcat connection port
@@ -553,7 +554,6 @@ Write-Host "Starting IPS installer at $(Get-Date)"
         } else {
             Write-Output "Unknown node type, cannot start installer"
             exit 1
-
         }
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
