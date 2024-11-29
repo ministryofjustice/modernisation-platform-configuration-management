@@ -9,6 +9,16 @@
 #  generic and may be applicable to multiple or all applications.
 #
 
+- name: Check if inside AWS.
+  uri:
+    url: http://169.254.169.254/latest/meta-data
+    timeout: 20
+  register: aws_uri_check
+  failed_when: false
+
+- set_fact:
+    is_aws_environment: "{{ aws_uri_check.status == 200 }}"
+
 - name: Get Metric Extensions
   ansible.builtin.find:
     paths: "{{ role_path }}/files/metric_extensions/{{ application_name }}"
@@ -16,8 +26,9 @@
     depth: 1
     file_type: directory
   delegate_to: localhost
+  become: "{{ is_aws_environment | default(true) }}"
   register: get_metric_extensions
-  loop: "{{ application_groups + ['common'] }}"
+  loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
     loop_var: application_name
 
