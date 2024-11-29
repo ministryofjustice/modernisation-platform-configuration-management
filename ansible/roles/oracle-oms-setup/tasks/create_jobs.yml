@@ -1,6 +1,15 @@
 #
 #  We apply OEM job property files to create these jobs.
 #
+- name: Check if inside AWS.
+  uri:
+    url: http://169.254.169.254/latest/meta-data
+    timeout: 20
+  register: aws_uri_check
+  failed_when: false
+
+- set_fact:
+    is_aws_environment: "{{ aws_uri_check.status == 200 }}"
 
 - name: Get Job Property Files
   ansible.builtin.find:
@@ -9,6 +18,7 @@
     depth: 1
     file_type: file
   delegate_to: localhost
+  become: "{{ is_aws_environment | default(true) }}"
   register: get_oem_job_property_files
   loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
