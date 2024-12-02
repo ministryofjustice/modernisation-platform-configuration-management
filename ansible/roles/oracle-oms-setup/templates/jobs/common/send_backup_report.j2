@@ -226,11 +226,13 @@ REPORTED_APPLICATIONS="{{ reported_applications }}"
 
 get_message(){
 
+EXCLUDE_NONE_PRISON_DATABASE_TARGETS=${1}
+
 # Supply comma-separated list of applications for whose databases we are interested in reporting on
 # You can leave this unset if you want all databases, but notice that we have a hard-coded limit
 # of 45 application databases per report (due to Slack restrictions)
 # Ensure the list is quoted
-APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g")
+[[ "${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}" = "N" ]] && APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g") || APPLICATIONS="''"
 
 OMR=$(awk -F: '/EMREP/{print $1}' /etc/oratab)
 
@@ -250,19 +252,24 @@ SET LINES 4000
 SET PAGES 0
 
 SELECT
-    LISTAGG(target_name,',') WITHIN GROUP (ORDER BY target_name)
+    LISTAGG(''''||target_name||'''',',') WITHIN GROUP (ORDER BY target_name)
 FROM
     sysman.mgmt\$target_properties
 WHERE
-        property_name = 'orcl_gtp_line_of_bus'
+    property_name = 'orcl_gtp_line_of_bus'
     AND target_type = 'oracle_database'
     AND property_value IN (${APPLICATIONS});
 EXIT
 EOSQL
 )
 
-DATABASE_LIST=$(echo "${DATABASE_TARGETS}" | sed "s/[^,]\+/'&'/g")
-[[ -z $DATABASE_TARGETS ]] && DATABASE_LIST="ALL_DATABASES"
+DATABASE_TARGETS="${DATABASE_TARGETS:-''}"
+
+if [[ "${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}" == "N" ]]
+then
+    DATABASE_TARGETS_TO_EXCLUDE=$DATABASE_TARGETS,$DATABASE_TARGETS_TO_EXCLUDE
+    DATABASE_TARGETS_TO_EXCLUDE=$(echo "${DATABASE_TARGETS_TO_EXCLUDE/%,/}")
+fi
 
 CATALOG=$(awk -F: '/RCVCAT/{print $1}' /etc/oratab)
 
@@ -301,6 +308,7 @@ AND        REGEXP_LIKE(s.status,'COMPLETED.*')
 AND        NOT REGEXP_LIKE(s.status,'.*ERROR.*')
 AND        s.object_type = 'DB INCR'
 AND        s.output_device_type = 'SBT_TAPE'
+AND        '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'Y'
 ORDER BY   s.start_time desc
 ),
 report_detail_local_db
@@ -357,7 +365,8 @@ WHERE
                         0,
                         1
                     )
-                AND (UPPER(db_name) IN (${DATABASE_LIST}) OR q'[${DATABASE_LIST}]' = 'ALL_DATABASES')
+                AND ((UPPER(db_name) IN ($DATABASE_TARGETS) AND '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'N') OR
+		            (UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) AND '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'Y'))
                 GROUP BY
                     db_name,
                     incremental_level
@@ -395,11 +404,13 @@ AS
 SELECT db_name,
 TRIM(LOWER(TO_CHAR(l0_completion_time,'DY'))) l0_day,
 CASE WHEN SYSDATE-l0_completion_time > 8 THEN 'red' ELSE 'blue' END l0_days_colour,
+CASE WHEN SYSDATE-l0_completion_time > 8 THEN 8 ELSE TRUNC(SYSDATE-l0_completion_time)+1 END l0_days_no,
 CASE WHEN l0_completion_time > l0_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l0_date_format,
 TRIM(LOWER(TO_CHAR(l1_completion_time,'DY'))) l1_day,
 CASE WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 AND db_name != 'TRNDA' THEN 'red' 
      WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 'red'
      ELSE 'blue' END l1_days_colour,
+CASE WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 4 ELSE TRUNC(SYSDATE-l1_completion_time)+1 END l1_days_no,
 CASE WHEN l1_completion_time > l1_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l1_date_format
 FROM report_summary
 ),
@@ -415,7 +426,7 @@ SELECT JSON_OBJECT(KEY 'type' VALUE 'divider') s2,
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE TO_CHAR(l0_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l0_completion_time,l0_date_format)),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
-                                                             KEY 'text' VALUE ':'||l0_day||': \`'||TRUNC(SYSDATE-l0_completion_time)||'\` '||REPLACE(LPAD(' ',TRUNC(SYSDATE-l0_completion_time)+1,'X'),'X',':large_'||l0_days_colour||'_square:')),
+                                                             KEY 'text' VALUE ':'||l0_day||': \`'||TRUNC(SYSDATE-l0_completion_time)||'\` '||REPLACE(LPAD(' ',l0_days_no,'X'),'X',':large_'||l0_days_colour||'_square:')),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE 'level :one:'),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
@@ -423,7 +434,7 @@ SELECT JSON_OBJECT(KEY 'type' VALUE 'divider') s2,
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE TO_CHAR(l1_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l1_completion_time,l1_date_format)),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
-                                                             KEY 'text' VALUE ':'||l1_day||': \`'||TRUNC(SYSDATE-l1_completion_time)||'\` '||REPLACE(LPAD(' ',TRUNC(SYSDATE-l1_completion_time)+1,'X'),'X',':large_'||l1_days_colour||'_square:')))) s1
+                                                             KEY 'text' VALUE ':'||l1_day||': \`'||TRUNC(SYSDATE-l1_completion_time)||'\` '||REPLACE(LPAD(' ',l1_days_no,'X'),'X',':large_'||l1_days_colour||'_square:')))) s1
 FROM        report_summary rs
 LEFT JOIN   report_formatting  rc
 ON          rs.db_name = rc.db_name
@@ -456,10 +467,23 @@ for LINE in $REPORTED_APPLICATIONS
 do
   APPLICATION_GROUP=$( echo $LINE | cut -d: -f1)
   APPLICATIONS=$( echo $LINE | cut -d: -f2)
-  [[ "${APPLICATION_GROUP}" == "probation" ]] && SLACK_CHANNEL="#delius-aws-oracle-backups" || SLACK_CHANNEL="#nomis-aws-oracle-backups"
-  get_message
+  if [[ "${APPLICATION_GROUP}" != "prisons" ]]
+  then
+    if [[ "${APPLICATION_GROUP}" == "probation" ]]
+    then
+        SLACK_CHANNEL="#delius-aws-oracle-backups"
+    fi
+    get_message N
+  fi
   curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
 done
+# Assumption: Prison applications is a special case for which some of the OEM database targets names do not match
+# their coresponding database parameter db_name value which is used as the DB_NAME in the RMAN catalog.
+# At this point, notification of all of the none prision database targets backups would have been posted
+# Therefore we can report on all of remaining RMAN catalog backups are related to prison and OEM applications
+get_message Y
+SLACK_CHANNEL="#nomis-aws-oracle-backups"
+curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
 MULTILINE
 
 
