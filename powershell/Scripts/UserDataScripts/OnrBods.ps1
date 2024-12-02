@@ -31,6 +31,7 @@ $GlobalConfig = @{
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"                 = "AZURE"
+        "sharedDrive"            = "amznfsx7aojksot.azure.noms.root"
     }
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"              = "PPBOSYS"
@@ -44,6 +45,7 @@ $GlobalConfig = @{
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in HMPP domain"
         "domain"                 = "HMPP"
+        "sharedDrive"            = ""
     }
     "oasys-national-reporting-production"    = @{
         "domain" = "HMPP"
@@ -284,6 +286,22 @@ function New-TnsOraFile {
 
     Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
 
+}
+
+function New-SharedDrive {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if shared drive is already mounted
+    if (Test-Path "G:\") {
+        Write-Host "Shared drive already mounted at G:\"
+        return
+    } else {
+        Write-Host "Shared drive not mounted at G:\ - mounting now"
+        New-PSDrive -Name "G" -PSProvider "FileSystem" -Root "\\$($Config.sharedDrive)\share" -Persist -Scope Global
+    }   
 }
 
 function Install-Oracle19cClient {
@@ -897,3 +915,4 @@ Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
+New-SharedDrive -Config $Config
