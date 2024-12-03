@@ -226,13 +226,13 @@ REPORTED_APPLICATIONS="{{ reported_applications }}"
 
 get_message(){
 
-EXCLUDE_NONE_PRISON_DATABASE_TARGETS=${1}
+EXCLUDE_UNCATALOGED_DATABASE_TARGETS=${1}
 
 # Supply comma-separated list of applications for whose databases we are interested in reporting on
 # You can leave this unset if you want all databases, but notice that we have a hard-coded limit
 # of 45 application databases per report (due to Slack restrictions)
 # Ensure the list is quoted
-[[ "${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}" = "N" ]] && APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g") || APPLICATIONS="''"
+[[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" = "N" ]] && APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g") || APPLICATIONS="''"
 
 OMR=$(awk -F: '/EMREP/{print $1}' /etc/oratab)
 
@@ -265,7 +265,7 @@ EOSQL
 
 DATABASE_TARGETS="${DATABASE_TARGETS:-''}"
 
-if [[ "${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}" == "N" ]]
+if [[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" == "N" ]]
 then
     DATABASE_TARGETS_TO_EXCLUDE=$DATABASE_TARGETS,$DATABASE_TARGETS_TO_EXCLUDE
     DATABASE_TARGETS_TO_EXCLUDE=$(echo "${DATABASE_TARGETS_TO_EXCLUDE/%,/}")
@@ -308,7 +308,7 @@ AND        REGEXP_LIKE(s.status,'COMPLETED.*')
 AND        NOT REGEXP_LIKE(s.status,'.*ERROR.*')
 AND        s.object_type = 'DB INCR'
 AND        s.output_device_type = 'SBT_TAPE'
-AND        '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'Y'
+AND        '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'Y'
 ORDER BY   s.start_time desc
 ),
 report_detail_local_db
@@ -365,8 +365,8 @@ WHERE
                         0,
                         1
                     )
-                AND ((UPPER(db_name) IN ($DATABASE_TARGETS) AND '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'N') OR
-		            (UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) AND '${EXCLUDE_NONE_PRISON_DATABASE_TARGETS}' = 'Y'))
+                AND ((UPPER(db_name) IN ($DATABASE_TARGETS) AND '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'N') OR
+		            (UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) AND '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'Y'))
                 GROUP BY
                     db_name,
                     incremental_level
