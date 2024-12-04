@@ -60,11 +60,15 @@ check_endpoint() {
   if [[ $follow_redirect == 1 ]]; then
     optional_curl_args="-L"
   fi
-  if ! output=$(curl -sSv -m "$timeout_secs" -o /dev/null -w "http_code=%{http_code}" $optional_curl_args "$url" 2>&1); then
-    grep -v "^\*" <<<"$output" | grep -v ^http_code= | grep -v CApath | grep -v "^>" | grep -v "^<" | grep -v "^{" | grep -v "^}" >&2
+  if ! output=$(curl -sSv -m "$timeout_secs" -o /dev/null -w "http_code=%{http_code}\nresponse_time=%{time_total}\n" $optional_curl_args "$url" 2>&1); then
+    grep -v "^\*" <<<"$output" | grep -v ^http_code= | grep -v ^response_time= | grep -v CApath | grep -v "^>" | grep -v "^<" | grep -v "^{" | grep -v "^}" >&2
     return 1
   fi
+  response_time=$(grep "^response_time=" <<< "$output" | cut -d= -f2)
   http_code=$(grep "^http_code=" <<< "$output" | cut -d= -f2)
+  if [[ -n $response_time ]]; then
+    echo "response_time=$response_time"
+  fi
   if [[ -z $http_code ]]; then
     echo "missing http_code in curl output" >&2
     return 1
@@ -135,10 +139,17 @@ while true; do
       exitcode=$?
     fi
     days_to_expiry=$(grep "^days_to_expiry=" <<< "$output" | cut -d= -f2)
+    response_time=$(grep "^response_time=" <<< "$output" | cut -d= -f2)
     echo "PUTVAL $HOSTNAME/endpoint_status/exitcode-${args[3]} interval=$INTERVAL N:$exitcode"
     if [[ -n $days_to_expiry ]]; then
       if [[ $log_cert_expiry -eq 1 ]]; then
         echo "PUTVAL $HOSTNAME/endpoint_cert_expiry/gauge-${args[3]} interval=$INTERVAL N:$days_to_expiry"
+      fi
+    fi
+    if [[ -n $response_time ]]; then
+      response_time_ms=$(echo "$response_time*1000" | bc | cut -d. -f1)
+      if [[ -n $response_time_ms ]]; then
+        echo "PUTVAL $HOSTNAME/endpoint_response_time_ms/gauge-${args[3]} interval=$INTERVAL N:$response_time_ms"
       fi
     fi
     if [[ $exitcode -ne 0 ]]; then
