@@ -25,7 +25,7 @@ $GlobalConfig = @{
         # "cmsPrimaryNode"     = "t2-tst-bods-asg" # Use this value when testing
         "cmsSecondaryNode"       = "t2-onr-bods-2"
         # "cmsSecondaryNode" = "t2-tst-bods-asg" # Use this value when testing
-        "cmsPrimaryNodeHostname" = "EC2AMAZ-JM52FS3" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
+        "cmsPrimaryNodeHostname" = "EC2AMAZ-7VGMSLH" # ADDED MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -943,3 +943,4 @@ Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
 New-SharedDriveShortcut -Config $Config
+# }}}
