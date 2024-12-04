@@ -288,21 +288,48 @@ function New-TnsOraFile {
 
 }
 
-function New-SharedDrive {
+function New-SharedDriveShortcut {
     param (
         [Parameter(Mandatory)]
         [hashtable]$Config
     )
 
-    # Check if shared drive is already mounted
-    if (Test-Path "G:\") {
-        Write-Host "Shared drive already mounted at G:\"
-        return
-    } else {
-        Write-Host "Shared drive not mounted at G:\ - mounting now"
-        New-PSDrive -Name "G" -PSProvider "FileSystem" -Root "\\$($Config.sharedDrive)\share" -Persist -Scope Global
-    }   
+    # NOTE: means there's a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
+
+    $share = "\\$($Config.sharedDrive)\share"
+    $shortcutPath = "C:\Users\Public\Desktop\FSDShare.lnk"
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $shortcut = $WScriptShell.CreateShortcut($ShortCutPath)
+    $shortcut.TargetPath = $share
+    $Shortcut.IconLocation = $share
+    $Shortcut.Save()
 }
+
+# NOTE: this function isn't used but is included because it 'might' be necessary at some point
+# There are challenges making this persistently available for all users without implementing things in Active Directory
+# function New-SharedDriveMount {
+#     param (
+#         [Parameter(Mandatory)]
+#         [hashtable]$Config
+#     )
+
+#     $Tags = Get-InstanceTags
+
+#     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+#     $svcUserPwd = Get-SecretValue -SecretId "/sap/bods/$dbenv/passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+#     $user = "$($Config.domain)\$($Config.serviceUser)"
+#     $drive = "S:"
+#     $path = "\\$($Config.sharedDrive)\share"
+
+#     $DriveParams = @{
+#         Wait = $true
+#         NoNewWindow = $true
+#         FilePath = "cmd.exe"
+#         ArgumentList = "/c","net use $drive $path $svcUserPwd /USER:$user /PERSISTENT:YES"
+#     }
+
+#     Start-Process @DriveParams
+# }
 
 function Install-Oracle19cClient {
     param (
@@ -915,4 +942,4 @@ Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
-New-SharedDrive -Config $Config
+New-SharedDriveShortcut -Config $Config
