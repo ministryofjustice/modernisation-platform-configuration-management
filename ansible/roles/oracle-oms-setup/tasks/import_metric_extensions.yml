@@ -26,7 +26,7 @@
     depth: 1
     file_type: directory
   delegate_to: localhost
-  become: "{{ is_aws_environment | default(true) }}"
+  become: "{{ omit if (is_aws_environment | default(true)) else false }}"
   register: get_metric_extensions
   loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
