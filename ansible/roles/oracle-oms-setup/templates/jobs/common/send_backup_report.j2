@@ -263,9 +263,13 @@ EXIT
 EOSQL
 )
 
-DATABASE_TARGETS="${DATABASE_TARGETS:-''}"
+DATABASE_TARGETS="${DATABASE_TARGETS:-'NONE'}"
+# Default DATABASE_TARGETS_TO_EXCLUDE to 'NONE' otherwise within SQL below where it says
+# UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) will not work unless there
+# is a value for $DATABASE_TARGETS_TO_EXCLUDE
+DATABASE_TARGETS_TO_EXCLUDE="${DATABASE_TARGETS_TO_EXCLUDE:-'NONE'}"
 
-if [[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" == "N" ]]
+if [[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" == "N" && "${DATABASE_TARGETS}" != "'NONE'" ]]
 then
     DATABASE_TARGETS_TO_EXCLUDE=$DATABASE_TARGETS,$DATABASE_TARGETS_TO_EXCLUDE
     DATABASE_TARGETS_TO_EXCLUDE=$(echo "${DATABASE_TARGETS_TO_EXCLUDE/%,/}")
@@ -391,7 +395,7 @@ MAX(CASE WHEN incremental_level=1 THEN completion_time ELSE NULL END) l1_complet
 ROUND(SUM(CASE WHEN incremental_level=1 THEN original_input_bytes ELSE 0 END)/1024/1024/1024,0) l1_gb
 FROM   (
 SELECT * FROM report_detail_catalog
-WHERE rownum <= 45  -- Slack reporting limit
+WHERE rownum <= 46  -- Slack reporting limit
 UNION ALL
 SELECT * FROM report_detail_local_db
 )
@@ -474,8 +478,9 @@ do
         SLACK_CHANNEL="#delius-aws-oracle-backups"
     fi
     get_message N
+    # Only post to slack when there are backups to report about
+    [[ "${DATABASE_TARGETS}" != "'NONE'" ]] && curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
   fi
-  curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
 done
 # Assumption: Prison applications is a special case for which some of the OEM database targets names do not match
 # their coresponding database parameter db_name value which is used as the DB_NAME in the RMAN catalog.
