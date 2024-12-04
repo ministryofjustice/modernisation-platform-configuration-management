@@ -18,7 +18,7 @@
     depth: 1
     file_type: file
   delegate_to: localhost
-  become: "{{ is_aws_environment | default(true) }}"
+  become: "{{ omit if (is_aws_environment | default(true)) else false }}"
   register: get_oem_job_property_files
   loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
