@@ -25,12 +25,13 @@ $GlobalConfig = @{
         # "cmsPrimaryNode"     = "t2-tst-bods-asg" # Use this value when testing
         "cmsSecondaryNode"       = "t2-onr-bods-2"
         # "cmsSecondaryNode" = "t2-tst-bods-asg" # Use this value when testing
-        "cmsPrimaryNodeHostname" = "EC2AMAZ-JM52FS3" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
+        "cmsPrimaryNodeHostname" = "EC2AMAZ-7VGMSLH" # ADDED MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"                 = "AZURE"
+        "sharedDrive"            = "amznfsx7aojksot.azure.noms.root"
     }
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"              = "PPBOSYS"
@@ -44,6 +45,7 @@ $GlobalConfig = @{
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in HMPP domain"
         "domain"                 = "HMPP"
+        "sharedDrive"            = ""
     }
     "oasys-national-reporting-production"    = @{
         "domain" = "HMPP"
@@ -285,6 +287,49 @@ function New-TnsOraFile {
     Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
 
 }
+
+function New-SharedDriveShortcut {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # NOTE: means there's a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
+
+    $share = "\\$($Config.sharedDrive)\share"
+    $shortcutPath = "C:\Users\Public\Desktop\FSDShare.lnk"
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $shortcut = $WScriptShell.CreateShortcut($ShortCutPath)
+    $shortcut.TargetPath = $share
+    $Shortcut.IconLocation = $share
+    $Shortcut.Save()
+}
+
+# NOTE: this function isn't used but is included because it 'might' be necessary at some point
+# There are challenges making this persistently available for all users without implementing things in Active Directory
+# function New-SharedDriveMount {
+#     param (
+#         [Parameter(Mandatory)]
+#         [hashtable]$Config
+#     )
+
+#     $Tags = Get-InstanceTags
+
+#     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+#     $svcUserPwd = Get-SecretValue -SecretId "/sap/bods/$dbenv/passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+#     $user = "$($Config.domain)\$($Config.serviceUser)"
+#     $drive = "S:"
+#     $path = "\\$($Config.sharedDrive)\share"
+
+#     $DriveParams = @{
+#         Wait = $true
+#         NoNewWindow = $true
+#         FilePath = "cmd.exe"
+#         ArgumentList = "/c","net use $drive $path $svcUserPwd /USER:$user /PERSISTENT:YES"
+#     }
+
+#     Start-Process @DriveParams
+# }
 
 function Install-Oracle19cClient {
     param (
@@ -897,3 +942,5 @@ Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
+New-SharedDriveShortcut -Config $Config
+# }}}
