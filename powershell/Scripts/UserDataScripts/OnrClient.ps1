@@ -1,54 +1,54 @@
 $GlobalConfig = @{
-    "all" = @{
-         "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
-         "WindowsClientS3Folder" = "hmpps/onr"
-         "BOEWindowsClientS3File" = "51048121.ZIP"
-         # "Oracle11g32bitClientS3File" = "V20606-01.zip"
-         "Oracle11g64bitClientS3File" = "V20609-01.zip"
-         "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st"
-         "ORACLE_19C_HOME"       = "C:\app\oracle\product\19.0.0\client_1"
-         "ORACLE_11G_HOME"       = "C:\app\oracle\product\11.2.0\client_1"
-         "ORACLE_BASE"           = "C:\app\oracle"
-         "RegistryPath" = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
-         "LegalNoticeCaption" = "IMPORTANT"
-         "LegalNoticeText" = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
+    "all"                                    = @{
+        "WindowsClientS3Bucket"      = "mod-platform-image-artefact-bucket20230203091453221500000001"
+        "WindowsClientS3Folder"      = "hmpps/onr"
+        "BOEWindowsClientS3File"     = "51048121.ZIP"
+        # "Oracle11g32bitClientS3File" = "V20606-01.zip"
+        "Oracle11g64bitClientS3File" = "V20609-01.zip"
+        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st"
+        "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
+        "ORACLE_11G_HOME"            = "C:\app\oracle\product\11.2.0\client_1"
+        "ORACLE_BASE"                = "C:\app\oracle"
+        "RegistryPath"               = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
+        "LegalNoticeCaption"         = "IMPORTANT"
+        "LegalNoticeText"            = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
     }
-    "oasys-national-reporting-dev" = @{
-      "OnrShortcuts" = @{
-      }
+    "oasys-national-reporting-dev"           = @{
+        "OnrShortcuts" = @{
+        }
     }
-    "oasys-national-reporting-test"  = @{
-      "serviceUser"     = "svc_nart"
-      # "tnsorafile"      = "tnsnames_T2_BODS.ora" TODO: NOT IMPLEMENTED YET
-      "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-      "domain"          = "AZURE"
-      "OnrShortcuts" = @{
-        "Onr CmcApp" = "http://t2-onr-web-1-a.oasys-national-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk:7777/CmcApp"
-      }
+    "oasys-national-reporting-test"          = @{
+        "serviceUser"     = "svc_nart"
+        # "tnsorafile"      = "ONR\tnsnames_T2_BODS.ora" TODO: NOT IMPLEMENTED YET
+        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "domain"          = "AZURE"
+        "OnrShortcuts"    = @{
+            "Onr CmcApp" = "http://t2-onr-web-1-a.oasys-national-reporting.hmpps-test.modernisation-platform.service.justice.gov.uk:7777/CmcApp"
+        }
     }
     "oasys-national-reporting-preproduction" = @{
         "serviceUser"     = "svc_nart"
-        # "tnsorafile"      = "tnsnames_PP_BODS.ora" TODO: NOT IMPLEMENTED YET
+        # "tnsorafile"      = "ONR\tnsnames_PP_BODS.ora" TODO: NOT IMPLEMENTED YET
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "domain"          = "HMPP"
-        "OnrShortcuts" = @{
-      }
+        "OnrShortcuts"    = @{
+        }
     }
-    "oasys-national-reporting-production" = @{
+    "oasys-national-reporting-production"    = @{
         "serviceUser"     = "svc_nart"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "domain"          = "HMPP"
-        "OnrShortcuts" = @{
-      }
+        "OnrShortcuts"    = @{
+        }
     }
- }
+}
 
 # {{{ functions
 
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600}
+        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 }
         Method     = 'PUT'
         Uri        = 'http://169.254.169.254/latest/api/token'
     }
@@ -56,7 +56,7 @@ function Get-Config {
 
     $instanceIdParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token" = $Token}
+        Headers    = @{"X-aws-ec2-metadata-token" = $Token }
         Method     = 'GET'
         Uri        = 'http://169.254.169.254/latest/meta-data/instance-id'
     }
@@ -82,11 +82,11 @@ function Get-Config {
 }
 
 function Get-InstanceTags {
-  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
-  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
-  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
-  $Tags = $TagsRaw | ConvertFrom-Json
-  $Tags.Tags
+    $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 } -Method PUT -Uri http://169.254.169.254/latest/api/token
+    $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token } -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+    $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+    $Tags = $TagsRaw | ConvertFrom-Json
+    $Tags.Tags
 }
 
 function Get-Installer {
@@ -108,10 +108,10 @@ function Get-Installer {
     Read-S3Object @s3Params
 }
 
-  function Add-BOEWindowsClient {
+function Add-BOEWindowsClient {
     [CmdletBinding()]
     param (
-      [hashtable]$Config
+        [hashtable]$Config
     )
 
     $ErrorActionPreference = "Stop"
@@ -163,7 +163,7 @@ ADVERTISE=""
     # Install BOE Windows Client
     Start-Process -FilePath (([System.IO.Path]::GetTempPath()) + "\BOE\setup.exe") -ArgumentList "-r $ResponseFile" -Wait -NoNewWindow
 
-     # Create a desktop shortcut for BOE Client Tools
+    # Create a desktop shortcut for BOE Client Tools
     $WScriptShell = New-Object -ComObject WScript.Shell
     $targetPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonStartMenu"), "Programs\BusinessObjects XI 3.1\BusinessObjects Enterprise Client Tools")
     $shortcutPath = [System.IO.Path]::Combine([environment]::GetFolderPath("CommonDesktopDirectory"), "BOE Client Tools.lnk")
@@ -171,60 +171,60 @@ ADVERTISE=""
     $shortcut.TargetPath = $targetPath
     $shortcut.Save() | Out-Null
     Write-Output "Shortcut created at $shortcutPath"
-  }
+}
 
- function Get-SecretValue {
-     param (
-         [Parameter(Mandatory)]
-         [string]$SecretId,
-         [Parameter(Mandatory)]
-         [string]$SecretKey
-     )
+function Get-SecretValue {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId,
+        [Parameter(Mandatory)]
+        [string]$SecretKey
+    )
 
-     try {
-         $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
 
-         if ($null -eq $secretJson -or $secretJson -eq '') {
-             Write-Host "The SecretId '$SecretId' does not exist or returned no value."
-             return $null
-         }
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
 
-         $secretObject = $secretJson | ConvertFrom-Json
+        $secretObject = $secretJson | ConvertFrom-Json
 
-         if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
-             Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
-             return $null
-         }
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
 
-         return $secretObject.$SecretKey
-     }
-     catch {
-         Write-Host "An error occurred while retrieving the secret: $_"
-         return $null
-     }
- }
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
 
- function Add-Shortcuts {
-  [CmdletBinding()]
-  param (
-    [hashtable]$Config
-  )
+function Add-Shortcuts {
+    [CmdletBinding()]
+    param (
+        [hashtable]$Config
+    )
 
-  $ErrorActionPreference = "Stop"
-  Write-Output "Add Shortcuts"
-  Write-Output " - Removing existing shortcuts"
-  Get-ChildItem "${SourcePath}/*Onr*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
+    $ErrorActionPreference = "Stop"
+    Write-Output "Add Shortcuts"
+    Write-Output " - Removing existing shortcuts"
+    Get-ChildItem "${SourcePath}/*Onr*" | ForEach-Object { Join-Path -Path $SourcePath -ChildPath $_.Name | Remove-Item }
 
-  foreach ($Shortcut in $Config.OnrShortcuts.GetEnumerator()) {
-    $Name = $Shortcut.Name
-    $Url = $Shortcut.Value
-    Write-Output " - Add $Name $Url"
-    $Shortcut = New-Object -ComObject WScript.Shell
-    $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonDesktopDirectory")) -ChildPath "\\$Name.url"
-    $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
-    $SourceShortcut.TargetPath = $Url
-    $SourceShortcut.Save()
-  }
+    foreach ($Shortcut in $Config.OnrShortcuts.GetEnumerator()) {
+        $Name = $Shortcut.Name
+        $Url = $Shortcut.Value
+        Write-Output " - Add $Name $Url"
+        $Shortcut = New-Object -ComObject WScript.Shell
+        $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonDesktopDirectory")) -ChildPath "\\$Name.url"
+        $SourceShortcut = $Shortcut.CreateShortcut($SourcePath)
+        $SourceShortcut.TargetPath = $Url
+        $SourceShortcut.Save()
+    }
 }
 
 function Clear-PendingFileRenameOperations {
@@ -248,8 +248,8 @@ function Clear-PendingFileRenameOperations {
 function Move-ModPlatformADComputer {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
-        [Parameter(Mandatory=$true)][string]$NewOU
+        [Parameter(Mandatory = $true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory = $true)][string]$NewOU
     )
 
     $ErrorActionPreference = "Stop"
@@ -368,7 +368,7 @@ function Install-Oracle19cClient {
     # Retrieve credentials
     $Tags = Get-InstanceTags
     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
-    $bodsSecretName  = "/sap/bods/$dbenv/passwords"
+    $bodsSecretName = "/sap/bods/$dbenv/passwords"
     $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
 
     if ([string]::IsNullOrEmpty($service_user_password)) {
@@ -423,8 +423,8 @@ oracle.install.client.installType=Administrator
 }
 
 function Test-WindowsServer2012R2 {
-  $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
-  return $osVersion -like "6.3*"
+    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+    return $osVersion -like "6.3*"
 }
 
 function New-TnsOraFile {
@@ -437,7 +437,8 @@ function New-TnsOraFile {
 
     if (Test-Path $tnsOraFilePath) {
         Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
-    } else {
+    }
+    else {
         Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
         exit 1
     }
@@ -460,9 +461,9 @@ function New-TnsOraFile {
 $ErrorActionPreference = "Stop"
 # Install PowerShell 5.1 if running on PowerShell 4 or below
 if ( $PSVersionTable.PSVersion.Major -le 4 ) {
-   choco install powershell -y
-   # reboot when run from ssm doc
-   exit 3010
+    choco install powershell -y
+    # reboot when run from ssm doc
+    exit 3010
 }
 
 # Set the registry key to prefer IPv4 over IPv6
@@ -492,35 +493,36 @@ $ErrorActionPreference = "Continue"
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($null -ne $ADConfig) {
-  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
-  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-    # Get the AD Admin credentials
-    $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-    # Move the computer to the correct OU
-    Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
-    Exit 3010 # triggers reboot if running from SSM Doc
-  }
-} else {
-  Write-Output "No domain-name tag found so apply Local Group Policy"
-  . .\LocalGroupPolicy.ps1
+    $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+    if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
+        # Get the AD Admin credentials
+        $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+        # Move the computer to the correct OU
+        Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+        Exit 3010 # triggers reboot if running from SSM Doc
+    }
+}
+else {
+    Write-Output "No domain-name tag found so apply Local Group Policy"
+    . .\LocalGroupPolicy.ps1
 }
 
 # confirm group policy has been applied
 Start-Process -FilePath "C:\Windows\System32\gpupdate.exe" -ArgumentList "/force" -Wait -NoNewWindow | Out-Null
 
-Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f","/h","$WorkingDirectory\gpresult.html" -Wait -NoNewWindow | Out-Null
+Start-Process -FilePath "C:\Windows\System32\gpresult.exe" -ArgumentList "/f", "/h", "$WorkingDirectory\gpresult.html" -Wait -NoNewWindow | Out-Null
 # }}}
 
 # {{{ Run installers
 
- choco install winscp.install -y
+choco install winscp.install -y
 
- $ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
- Install-Oracle11gClient -Config $Config
- Install-Oracle19cClient -Config $Config
- # New-TnsOraFile -Config $Config TODO: NOT YET IMPLEMENTED
- Add-BOEWindowsClient $Config
- Add-Shortcuts $Config
+Install-Oracle11gClient -Config $Config
+Install-Oracle19cClient -Config $Config
+# New-TnsOraFile -Config $Config TODO: NOT YET IMPLEMENTED
+Add-BOEWindowsClient $Config
+Add-Shortcuts $Config
 # }}} end of installers
 
