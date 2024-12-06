@@ -31,7 +31,7 @@ $GlobalConfig = @{
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"                 = "AZURE"
-        "sharedDrive"            = "amznfsx7aojksot.azure.noms.root"
+        "sharedDrive"            = "amznfsxbcgpjajd.azure.noms.root"
     }
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"              = "PPBOSYS"
