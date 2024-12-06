@@ -1,0 +1,36 @@
+---
+server_type_roles_list:
+  - autoscale-group-hooks
+  - get-ec2-facts
+  - selinux-config
+  - ansible-requirements
+  - ssh-host-keys
+  - packages
+  - time
+  - users-and-groups
+  - sudoers
+  - disable-firewall
+  - disable-ipv6
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - tcp-keepalive
+  - disks
+  - set-ec2-hostname
+  - domain-search
+  - ansible-script
+  - epel
+  - sshd-config
+#  - nomis-weblogic-12
+#  - collectd
+#  - amazon-cloudwatch-agent
+#  - amazon-cloudwatch-agent-collectd
+#  - collectd-service-metrics
+#  - autoscale-group-hooks-state
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+# collectd_monitored_services_servertype:
+#  - metric_name: service_status_os
+#    metric_dimension: chronyd
+#    shell_cmd: "service chronyd status"
