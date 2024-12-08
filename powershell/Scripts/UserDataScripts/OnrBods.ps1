@@ -37,7 +37,6 @@ $GlobalConfig = @{
         "tnsorafile"             = "ONR\tnsnames_PP_BODS.ora"
         "cmsPrimaryNode"         = "pp-onr-bods-1"
         "cmsSecondaryNode"       = "pp-onr-bods-2"
-        "cms_primary_node_hostname" = "EC2AMAZ-669VK3E" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
