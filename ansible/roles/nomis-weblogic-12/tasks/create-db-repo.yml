@@ -1,0 +1,38 @@
+---
+- name: Copy repository database config
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: '0600'
+  loop:
+    - /u01/software/weblogic/rcu.rsp
+
+- name: Create repository database using rcu
+  become_user: oracle
+  ansible.builtin.expect:
+    command: '/u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/rcu.rsp'
+    responses:
+      "Enter the database password":
+        - "{{ weblogic_db_repo_password }}"
+      "Enter the schema password":
+        - "{{ weblogic_db_repo_schema_password }}"
+    timeout: 180
+  failed_when: false
+  register: create_db_repo
+
+- name: Debug rcu stdout
+  ansible.builtin.debug:
+    var: create_db_repo.stdout_lines
+  when: create_db_repo.stdout_lines is defined
+
+- name: Debug rcu stderr
+  ansible.builtin.debug:
+    var: create_db_repo.stderr_lines
+  when: create_db_repo.stderr_lines is defined
+
+- name: Fail on rcu error
+  ansible.builtin.fail:
+    msg: "Could not create repository database with rcu, exit code {{ create_db_repo.rc|default(-1) }}"
+  when: create_db_repo.rc|default(-1) != 0

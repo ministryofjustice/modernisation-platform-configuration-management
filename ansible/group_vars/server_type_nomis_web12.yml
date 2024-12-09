@@ -69,3 +69,19 @@ users_and_groups_system:
     groups:
       - dba
       - wheel
+
+nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
+
+weblogic_configs:
+  qa11g:
+    weblogic_db_repo_hostname: "dev-nomis-db19c-1-a"
+    weblogic_db_repo_sid: "qa11g"
+    weblogic_db_repo_username: "sys"
+    weblogic_db_repo_prefix: "nomis13"
+
+weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
+
+weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
+weblogic_db_repo_sid: "{{ weblogic_config.weblogic_db_repo_sid }}"
+weblogic_db_repo_username: "{{ weblogic_config.weblogic_db_repo_username }}"
+weblogic_db_repo_prefix: "{{ weblogic_config.weblogic_db_repo_prefix }}"

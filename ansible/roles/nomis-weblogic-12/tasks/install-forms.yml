@@ -55,13 +55,5 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-weblogic
 
-    - name: Remove weblogic forms install files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/weblogic/fmw_12.2.1.19.0_fr_linux64.bi
-        - /u01/software/weblogic/forms.rsp
-
   # block
   when: not weblogic_forms_installed_check.stat.exists

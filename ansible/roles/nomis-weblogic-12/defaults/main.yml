@@ -1,5 +1,17 @@
 ---
-#nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
-#weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
-#weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
-#weblogic_db_hostname_b: "{{ ec2.tags['oracle-db-hostname-b'] }}"
+# Set these in appropriate group vars:
+# weblogic_db_repo_hostname:
+# weblogic_db_repo_sid:
+# weblogic_db_repo_prefix:
+weblogic_db_repo_username: "sys"
+
+weblogic_db_repo_password_secret:
+  - key: "{{ weblogic_db_repo_username }}"
+    value:
+
+weblogic_secretsmanager_passwords:
+  db_repo:
+    secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
+    users:
+      - "{{ weblogic_db_repo_password_secret | items2dict }}"
+      - wls_schemas: auto
