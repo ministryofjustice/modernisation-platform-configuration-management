@@ -1,4 +1,6 @@
 ---
+ansible_python_interpreter: /usr/bin/python3.9
+
 server_type_roles_list:
   - autoscale-group-hooks
   - get-ec2-facts
@@ -16,12 +18,13 @@ server_type_roles_list:
   - amazon-cli
   - tcp-keepalive
   - disks
+  - swap
   - set-ec2-hostname
   - domain-search
   - ansible-script
   - epel
   - sshd-config
-#  - nomis-weblogic-12
+  - nomis-weblogic-12
 #  - collectd
 #  - amazon-cloudwatch-agent
 #  - amazon-cloudwatch-agent-collectd
@@ -34,3 +37,35 @@ roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_lis
 #  - metric_name: service_status_os
 #    metric_dimension: chronyd
 #    shell_cmd: "service chronyd status"
+
+packages_yum_update: []
+packages_yum_install:
+  - binutils
+  - libstdc++-devel
+  - libstdc++
+  - sysstat
+  - gcc
+  - gcc-c++
+  - ksh
+  - make
+  - glibc
+  - libaio
+  - libaio-devel
+  - motif
+  - motif-devel
+  - libXtst-devel
+  - redhat-lsb-4.1
+  - redhat-lsb-core
+  - libnsl
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+
+users_and_groups_system:
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
