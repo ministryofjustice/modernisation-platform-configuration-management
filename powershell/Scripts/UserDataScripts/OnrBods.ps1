@@ -24,14 +24,12 @@ $GlobalConfig = @{
         "cmsPrimaryNode"         = "t2-onr-bods-1"
         # "cmsPrimaryNode"     = "t2-tst-bods-asg" # Use this value when testing
         "cmsSecondaryNode"       = "t2-onr-bods-2"
-        # "cmsSecondaryNode" = "t2-tst-bods-asg" # Use this value when testing
-        "cmsPrimaryNodeHostname" = "EC2AMAZ-LR96EG1" # ADDED MANUALLY AFTER cmsPrimaryNode DEPLOYED
+        # "cmsSecondaryNode"   = "t2-tst-bods-asg" # Use this value when testing
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in AZURE domain"
         "domain"                 = "AZURE"
-        "sharedDrive"            = "amznfsxbcgpjajd.azure.noms.root"
     }
     "oasys-national-reporting-preproduction" = @{
         "sysDbName"              = "PPBOSYS"
@@ -39,13 +37,11 @@ $GlobalConfig = @{
         "tnsorafile"             = "ONR\tnsnames_PP_BODS.ora"
         "cmsPrimaryNode"         = "pp-onr-bods-1"
         "cmsSecondaryNode"       = "pp-onr-bods-2"
-        "cmsPrimaryNodeHostname" = "EC2AMAZ-669VK3E" # ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "serviceUserDescription" = "Onr BODS service user for AWS in HMPP domain"
         "domain"                 = "HMPP"
-        "sharedDrive"            = ""
     }
     "oasys-national-reporting-production"    = @{
         "domain" = "HMPP"
@@ -289,14 +285,18 @@ function New-TnsOraFile {
 }
 
 function New-SharedDriveShortcut {
-    param (
-        [Parameter(Mandatory)]
-        [hashtable]$Config
-    )
 
-    # NOTE: means there's a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
+    # NOTE: Creates a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
+    $Tags = Get-InstanceTags
 
-    $share = "\\$($Config.sharedDrive)\share"
+    # set Secret Names based on environment
+    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+    $bodsConfigName = "/sap/bods/$dbenv/config"
+
+    # /sap/bods/$dbenv/config values
+    $sharedDrive = Get-SecretValue -SecretId $bodsConfigName -SecretKey "shared_drive" -ErrorAction SilentlyContinue
+
+    $share = "\\$sharedDrive\share"
     $shortcutPath = "C:\Users\Public\Desktop\FSDShare.lnk"
     $WScriptShell = New-Object -ComObject WScript.Shell
     $shortcut = $WScriptShell.CreateShortcut($ShortCutPath)
@@ -308,18 +308,15 @@ function New-SharedDriveShortcut {
 # NOTE: this function isn't used but is included because it 'might' be necessary at some point
 # There are challenges making this persistently available for all users without implementing things in Active Directory
 # function New-SharedDriveMount {
-#     param (
-#         [Parameter(Mandatory)]
-#         [hashtable]$Config
-#     )
 
 #     $Tags = Get-InstanceTags
 
 #     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 #     $svcUserPwd = Get-SecretValue -SecretId "/sap/bods/$dbenv/passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+#     $sharedDrive = Get-SecretValue -SecretId "/sap/bods/$dbenv/config" -SecretKey "shared_drive" -ErrorAction SilentlyContinue
 #     $user = "$($Config.domain)\$($Config.serviceUser)"
 #     $drive = "S:"
-#     $path = "\\$($Config.sharedDrive)\share"
+#     $path = "\\$sharedDrive\share"
 
 #     $DriveParams = @{
 #         Wait = $true
@@ -418,10 +415,11 @@ function Install-IPS {
     # /sap/bods/$dbenv/passwords values
     $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
     $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
-    
+
     # /sap/bods/$dbenv/config values
     $bods_cluster_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
     $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     # Create response file for IPS silent install
     $ipsResponseFilePrimary = @"
@@ -488,7 +486,8 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 "@
 
     $domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
-    $remoteSiaName = $($Config.cmsPrimaryNodeHostname).Replace("-", "").ToUpper()
+    # obtain from secrets earlier
+    $remoteSiaName = $cms_primary_node_hostname.Replace("-", "").ToUpper()
 
     # Create response file for IPS expanded install
     $ipsResponseFileSecondary = @"
@@ -531,7 +530,7 @@ remotecmsadminname=Administrator
 ### Remote CMS administrator password
 # remotecmsadminpassword=**** bods_admin_password value in silent install params
 ### Remote CMS name
-remotecmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+remotecmsname=$cms_primary_node_hostname.$domainName
 ### Remote CMS port
 remotecmsport=6400
 ### Language Packs Selected to Install
@@ -641,10 +640,10 @@ function Install-DataServices {
         New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
     }
     [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
-    
+
     # set Secret Names based on environment
     $Tags = Get-InstanceTags
-    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value 
+    $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
     $bodsSecretName = "/sap/bods/$dbenv/passwords"
     $bodsConfigName = "/sap/bods/$dbenv/config"
 
@@ -654,6 +653,7 @@ function Install-DataServices {
 
     # config values from /sap/bods/$dbenv/config
     $data_services_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -724,7 +724,7 @@ dscmsenablessl=0
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$($Config.cmsPrimaryNodeHostname).$domainName
+dscmssystem=$cms_primary_node_hostname.$domainName
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -750,7 +750,7 @@ installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+mastercmsname=$cms_primary_node_hostname.$domainName
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
@@ -942,5 +942,5 @@ Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
-New-SharedDriveShortcut -Config $Config
+New-SharedDriveShortcut
 # }}}
