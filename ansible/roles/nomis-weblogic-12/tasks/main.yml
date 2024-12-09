@@ -1,0 +1,28 @@
+---
+- name: Rhel8
+  block:
+    - import_tasks: install-rpms.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_install_jdk
+
+    - import_tasks: update-sysctl.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_update_sysctl
+
+    - import_tasks: install-server.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_install_server
+
+    - import_tasks: install-forms.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - weblogic_install_forms
+
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

@@ -1,0 +1,67 @@
+---
+- name: Check if weblogic forms already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/forms_home/inventory
+  register: weblogic_forms_installed_check
+
+- name: Install weblogic forms software
+  block:
+    - name: Create weblogic forms directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:      
+        - /u01/tmp
+
+    - name: Get weblogic forms from S3 bucket    
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"        
+        object: "weblogic-software-12/{{ item }}"
+        dest: "/u01/software/weblogic/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - fmw_12.2.1.19.0_fr_linux64.bin
+
+    - name: Update weblogic forms file permissions
+      ansible.builtin.file:
+        path: "/u01/software/weblogic/{{ item }}"        
+        mode: '0755'
+      loop:
+        - fmw_12.2.1.19.0_fr_linux64.bin
+
+    - name: Copy weblogic forms config
+      ansible.builtin.template:
+        src: "12{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/weblogic/forms.rsp
+
+    - name: Install weblogic forms which takes a couple of minutes
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {        
+          echo "# installing weblogic forms fmw_12.2.1.19.0_fr_linux64.bin"]
+          export TMP=/u01/tmp
+          export TEMPDIR=/u01/tmp
+          export TEMP=/u01/tmp          
+          /u01/software/weblogic/fmw_12.2.1.19.0_fr_linux64.bin -silent -responseFile /u01/software/weblogic/forms.rsp
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+    - name: Remove weblogic forms install files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/fmw_12.2.1.19.0_fr_linux64.bi
+        - /u01/software/weblogic/forms.rsp
+
+  # block
+  when: not weblogic_forms_installed_check.stat.exists

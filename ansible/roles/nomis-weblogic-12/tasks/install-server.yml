@@ -1,0 +1,87 @@
+---
+- name: Check if weblogic software already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/wlserver
+  register: weblogic_server_installed_check
+
+- block:
+    - name: Create weblogic software directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:      
+        - /u01/software/weblogic
+        - /u01/app/oracle/Middleware
+        - /u01/app/oracle/oraInventory
+
+    - name: Get weblogic software from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software-12/{{ item }}"
+        dest: "/u01/software/weblogic/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - fmw_12.2.1.4.0_infrastructure.jar
+
+    - name: Copy weblogic software config
+      ansible.builtin.template:
+        src: "12{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /etc/oraInst.loc
+        - /u01/software/weblogic/fmw12214.rsp
+
+    - name: Install weblogic software which takes a couple of minutes
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# installing weblogic fmw_12.2.1.4.0_infrastructure.jar"
+          java -jar /u01/software/weblogic/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /u01/software/weblogic/fmw12214.rsp
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+    - name: Remove weblogic software install files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/fmw_12.2.1.4.0_infrastructure.jar
+        - /u01/software/weblogic/fmw12214.rsp
+
+  # block
+  when: not weblogic_server_installed_check.stat.exists
+
+#- name: Update bsu.sh MEM_ARGS
+#  ansible.builtin.lineinfile:
+#    path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
+#    regexp: "^MEM_ARGS="
+#    line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+
+#- name: Update startNodeManager.sh JAVA_OPTIONS
+#  ansible.builtin.blockinfile:
+#    path: "/u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh"
+#    insertafter: "^export PATH"
+#    marker: "# -- {mark} blockinfile ansible managed modernisation-platform-configuration-management --"
+#    block: |
+#      JAVA_OPTIONS="${JAVA_OPTIONS} -Djava.net.preferIPv4Stack=true"
+#      MEM_ARGS="${MEM_ARGS} -Djava.security.egd=file:/dev/./urandom"
+
+#- name: Copy init.d weblogic-node-manager script
+#  ansible.builtin.template:
+#    src: "10.3{{ item }}"
+#    dest: "{{ item }}"
+#    mode: "0755"
+#  loop:
+#    - /etc/init.d/weblogic-node-manager
+
+#- name: Enable weblogic-node-manager service
+#  ansible.builtin.service:
+#    name: weblogic-node-manager
+#    enabled: yes
