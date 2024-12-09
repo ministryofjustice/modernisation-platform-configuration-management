@@ -285,13 +285,8 @@ function New-TnsOraFile {
 }
 
 function New-SharedDriveShortcut {
-    param (
-        [Parameter(Mandatory)]
-        [hashtable]$Config
-    )
 
-    # NOTE: means there's a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
-    #
+    # NOTE: Creates a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
     $Tags = Get-InstanceTags
 
     # set Secret Names based on environment
@@ -313,18 +308,15 @@ function New-SharedDriveShortcut {
 # NOTE: this function isn't used but is included because it 'might' be necessary at some point
 # There are challenges making this persistently available for all users without implementing things in Active Directory
 # function New-SharedDriveMount {
-#     param (
-#         [Parameter(Mandatory)]
-#         [hashtable]$Config
-#     )
 
 #     $Tags = Get-InstanceTags
 
 #     $dbenv = ($Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 #     $svcUserPwd = Get-SecretValue -SecretId "/sap/bods/$dbenv/passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+#     $sharedDrive = Get-SecretValue -SecretId "/sap/bods/$dbenv/config" -SecretKey "shared_drive" -ErrorAction SilentlyContinue
 #     $user = "$($Config.domain)\$($Config.serviceUser)"
 #     $drive = "S:"
-#     $path = "\\$($Config.sharedDrive)\share"
+#     $path = "\\$sharedDrive\share"
 
 #     $DriveParams = @{
 #         Wait = $true
@@ -950,5 +942,5 @@ Test-DbCredentials -Config $Config
 Install-IPS -Config $Config
 Install-DataServices -Config $Config
 Set-LoginText -Config $Config
-New-SharedDriveShortcut -Config $Config
+New-SharedDriveShortcut
 # }}}
