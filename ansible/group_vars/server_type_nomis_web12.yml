@@ -57,6 +57,7 @@ packages_yum_install:
   - redhat-lsb-4.1
   - redhat-lsb-core
   - libnsl
+  - xterm # just for testing X
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -69,6 +70,8 @@ users_and_groups_system:
     groups:
       - dba
       - wheel
+
+sshd_config_mode: allow_x11
 
 nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
 

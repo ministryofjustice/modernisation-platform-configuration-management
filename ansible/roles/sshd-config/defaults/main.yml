@@ -8,6 +8,14 @@ sshd_config_settings:
     PasswordAuthentication: "yes"
     PubkeyAuthentication: "no"
     UsePAM: "yes"
+  allow_x11:
+    X11Forwarding: "yes"
+    X11DisplayOffset: "10"
+    X11UseLocalhost: "yes"
+    PermitRootLogin: "no"
+    PasswordAuthentication: "no"
+    PubkeyAuthentication: "yes"
+    UsePAM: "no"
   default:
     X11Forwarding: "no"
     PermitRootLogin: "no"
