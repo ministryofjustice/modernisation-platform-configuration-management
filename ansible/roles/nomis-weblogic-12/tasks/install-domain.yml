@@ -72,7 +72,7 @@
         - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security/boot.properties
 
   # block
-  when: not weblogic_domain_installed_check
+  when: not weblogic_domain_installed_check.stat.exists
 
 - name: Copy weblogic init.d scripts
   ansible.builtin.template:
