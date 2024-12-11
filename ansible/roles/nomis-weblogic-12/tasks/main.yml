@@ -23,13 +23,21 @@
 
     - import_tasks: get-facts.yml
       tags:
+        - ec2provision
         - weblogic_get_facts
         - weblogic_create_db_repo
+        - weblogic_install_domain
 
     # only needs to be done once per build
     - import_tasks: create-db-repo.yml
       tags:
         - weblogic_create_db_repo
       when: weblogic_db_repo_prefix is defined
+
+    - import_tasks: install-domain.yml
+      tags:
+        - ec2provision
+        - weblogic_install_domain
+      when: weblogic_domain_template_filename != 'none'
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

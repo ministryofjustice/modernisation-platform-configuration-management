@@ -7,5 +7,6 @@
 
 - name: Set secretsmanager password facts
   set_fact:
+    weblogic_admin_password: "{{ secretsmanager_passwords_dict['weblogic'].passwords[weblogic_admin_username] }}"
     weblogic_db_repo_password: "{{ secretsmanager_passwords_dict['db_repo'].passwords[weblogic_db_repo_username] }}"
     weblogic_db_repo_schema_password: "{{ secretsmanager_passwords_dict['db_repo'].passwords['wls_schemas'] }}"

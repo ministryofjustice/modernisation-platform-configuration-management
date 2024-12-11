@@ -1,4 +1,7 @@
 ---
+weblogic_admin_username: weblogic
+weblogic_domain_template_filename: none  # override in group vars once template has been created
+
 # Set these in appropriate group vars:
 # weblogic_db_repo_hostname:
 # weblogic_db_repo_sid:
@@ -9,9 +12,17 @@ weblogic_db_repo_password_secret:
   - key: "{{ weblogic_db_repo_username }}"
     value:
 
+weblogic_admin_password_secret:
+  - key: "{{ weblogic_admin_username }}"
+    value: auto
+
 weblogic_secretsmanager_passwords:
   db_repo:
     secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
     users:
       - "{{ weblogic_db_repo_password_secret | items2dict }}"
       - wls_schemas: auto
+  weblogic:
+    secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
+    users:
+      - "{{ weblogic_admin_password_secret | items2dict }}"
