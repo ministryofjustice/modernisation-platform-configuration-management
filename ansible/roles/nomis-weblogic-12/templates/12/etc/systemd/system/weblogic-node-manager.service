@@ -4,11 +4,11 @@ After=network-online.target
 
 [Service]
 ExecStart=/home/oracle/admin/scripts/startNodeManager.sh
-ExecStop=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopNodeManager.sh
+ExecStop=/home/oracle/admin/scripts/stopNodeManager.sh
 Group=oinstall
-NotifyAccess=all
+RemainAfterExit=yes
 TasksMax=infinity
-Type=notify
+Type=oneshot
 User=oracle
 
 [Install]

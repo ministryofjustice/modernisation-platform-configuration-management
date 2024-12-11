@@ -4,12 +4,12 @@ After=weblogic-node-manager.service
 
 [Service]
 ExecStart=/home/oracle/admin/scripts/startWebLogic.sh
-ExecStop=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopWebLogic.sh
+ExecStop=/home/oracle/admin/scripts/stopWebLogic.sh
 Group=oinstall
-NotifyAccess=all
+RemainAfterExit=yes
 TasksMax=infinity
 TimeoutStartSec=180
-Type=notify
+Type=oneshot
 User=oracle
 
 [Install]

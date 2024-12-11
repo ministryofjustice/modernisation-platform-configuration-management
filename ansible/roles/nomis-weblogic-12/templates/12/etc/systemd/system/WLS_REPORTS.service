@@ -1,0 +1,16 @@
+[Unit]
+Description=WLS_REPORTS
+After=weblogic-server.service
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startManagedWebLogic.sh WLS_REPORTS
+ExecStop=/home/oracle/admin/scripts/stopManagedWebLogic.sh WLS_REPORTS
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+TimeoutStartSec=180
+Type=oneshot
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

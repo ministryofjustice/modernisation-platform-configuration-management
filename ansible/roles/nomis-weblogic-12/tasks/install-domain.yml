@@ -83,6 +83,8 @@
     - /etc/systemd/system/weblogic-node-manager.service
     - /etc/systemd/system/weblogic-server.service
     - /etc/systemd/system/weblogic-ohs.service
+    - /etc/systemd/system/WLS_FORMS.service
+    - /etc/systemd/system/WLS_REPORTS.service
 
 - name: Enable weblogic services
   ansible.builtin.service:
@@ -93,3 +95,5 @@
     - weblogic-node-manager
     - weblogic-server
     - weblogic-ohs
+    - WLS_FORMS
+    - WLS_REPORTS
