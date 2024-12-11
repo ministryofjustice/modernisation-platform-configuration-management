@@ -3,11 +3,13 @@ Description=weblogic-node-manager
 After=network-online.target
 
 [Service]
-User=oracle
-Group=oinstall
-Type=simple
-ExecStart=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startNodeManager.sh
+ExecStart=/home/oracle/admin/scripts/startNodeManager.sh
 ExecStop=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopNodeManager.sh
+Group=oinstall
+NotifyAccess=all
+TasksMax=infinity
+Type=notify
+User=oracle
 
 [Install]
 WantedBy=multi-user.target

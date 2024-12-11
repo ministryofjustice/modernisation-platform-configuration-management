@@ -49,17 +49,3 @@
 
   # block
   when: not weblogic_server_installed_check.stat.exists
-
-- name: Copy init.d weblogic-node-manager script
-  ansible.builtin.template:
-    src: "12{{ item }}"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /etc/systemd/system/weblogic-node-manager.service
-
-- name: Enable weblogic-node-manager service
-  ansible.builtin.service:
-    daemon_reload: true
-    name: weblogic-node-manager
-    enabled: true

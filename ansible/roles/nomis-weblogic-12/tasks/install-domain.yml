@@ -74,16 +74,22 @@
   # block
   when: not weblogic_domain_installed_check
 
-- name: Copy init.d weblogic-server script
+- name: Copy weblogic init.d scripts
   ansible.builtin.template:
     src: "12{{ item }}"
     dest: "{{ item }}"
     mode: "0644"
   loop:
+    - /etc/systemd/system/weblogic-node-manager.service
     - /etc/systemd/system/weblogic-server.service
+    - /etc/systemd/system/weblogic-ohs.service
 
-- name: Enable weblogic-server service
+- name: Enable weblogic services
   ansible.builtin.service:
     daemon_reload: true
-    name: weblogic-server
+    name: "{{ item }}"
     enabled: true
+  loop:
+    - weblogic-node-manager
+    - weblogic-server
+    - weblogic-ohs
