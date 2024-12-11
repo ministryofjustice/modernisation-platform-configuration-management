@@ -1,0 +1,35 @@
+---
+- name: Check oracle user already exists
+  ansible.builtin.getent:
+    database: passwd
+    key: oracle
+
+- name: Create oracle user directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /home/oracle/admin/scripts
+
+- name: Copy oracle user bash profile
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+  loop:
+    - /home/oracle/.bash_profile
+
+- name: Copy oracle user scripts
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  loop:
+    - /home/oracle/admin/scripts/wait_for_entry_in_journal.sh
+    - /home/oracle/admin/scripts/startWebLogic.sh

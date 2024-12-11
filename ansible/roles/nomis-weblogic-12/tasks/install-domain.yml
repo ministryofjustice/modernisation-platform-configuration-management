@@ -70,3 +70,20 @@
         - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties
         - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_FORMS/security/boot.properties
         - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security/boot.properties
+
+  # block
+  when: not weblogic_domain_installed_check
+
+- name: Copy init.d weblogic-server script
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    mode: "0644"
+  loop:
+    - /etc/systemd/system/weblogic-server.service
+
+- name: Enable weblogic-server service
+  ansible.builtin.service:
+    daemon_reload: true
+    name: weblogic-server
+    enabled: true

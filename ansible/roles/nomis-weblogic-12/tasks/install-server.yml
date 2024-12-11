@@ -60,5 +60,6 @@
 
 - name: Enable weblogic-node-manager service
   ansible.builtin.service:
+    daemon_reload: true
     name: weblogic-node-manager
     enabled: true

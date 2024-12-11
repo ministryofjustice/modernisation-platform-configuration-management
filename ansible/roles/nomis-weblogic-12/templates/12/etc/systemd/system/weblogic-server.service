@@ -1,0 +1,16 @@
+[Unit]
+Description=weblogic-server
+After=weblogic-node-manager.service
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startWebLogic.sh
+ExecStop=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopWebLogic.sh
+Group=oinstall
+NotifyAccess=all
+TasksMax=infinity
+TimeoutStartSec=180
+Type=notify
+User=oracle
+
+[Install]
+WantedBy=multi-user.target
