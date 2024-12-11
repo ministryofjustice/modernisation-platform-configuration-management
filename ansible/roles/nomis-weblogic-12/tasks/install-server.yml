@@ -12,7 +12,7 @@
         owner: oracle
         group: oinstall
         mode: "0755"
-      loop:      
+      loop:
         - /u01/software/weblogic
         - /u01/app/oracle/Middleware
         - /u01/app/oracle/oraInventory
@@ -50,30 +50,15 @@
   # block
   when: not weblogic_server_installed_check.stat.exists
 
-#- name: Update bsu.sh MEM_ARGS
-#  ansible.builtin.lineinfile:
-#    path: /u01/app/oracle/Middleware/utils/bsu/bsu.sh
-#    regexp: "^MEM_ARGS="
-#    line: 'MEM_ARGS="-Xms4096m -Xmx4096m"  # ansible managed modernisation-platform-configuration-management'
+- name: Copy init.d weblogic-node-manager script
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    mode: "0644"
+  loop:
+    - /etc/systemd/system/weblogic-node-manager.service
 
-#- name: Update startNodeManager.sh JAVA_OPTIONS
-#  ansible.builtin.blockinfile:
-#    path: "/u01/app/oracle/Middleware/wlserver_10.3/server/bin/startNodeManager.sh"
-#    insertafter: "^export PATH"
-#    marker: "# -- {mark} blockinfile ansible managed modernisation-platform-configuration-management --"
-#    block: |
-#      JAVA_OPTIONS="${JAVA_OPTIONS} -Djava.net.preferIPv4Stack=true"
-#      MEM_ARGS="${MEM_ARGS} -Djava.security.egd=file:/dev/./urandom"
-
-#- name: Copy init.d weblogic-node-manager script
-#  ansible.builtin.template:
-#    src: "10.3{{ item }}"
-#    dest: "{{ item }}"
-#    mode: "0755"
-#  loop:
-#    - /etc/init.d/weblogic-node-manager
-
-#- name: Enable weblogic-node-manager service
-#  ansible.builtin.service:
-#    name: weblogic-node-manager
-#    enabled: yes
+- name: Enable weblogic-node-manager service
+  ansible.builtin.service:
+    name: weblogic-node-manager
+    enabled: true

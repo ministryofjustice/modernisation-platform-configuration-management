@@ -1,0 +1,13 @@
+[Unit]
+Description=weblogic-node-manager
+After=network-online.target
+
+[Service]
+User=oracle
+Group=oinstall
+Type=simple
+ExecStart=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startNodeManager.sh
+ExecStop=/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopNodeManager.sh
+
+[Install]
+WantedBy=multi-user.target
