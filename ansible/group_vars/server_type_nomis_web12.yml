@@ -1,0 +1,94 @@
+---
+ansible_python_interpreter: /usr/bin/python3.9
+
+server_type_roles_list:
+  - autoscale-group-hooks
+  - get-ec2-facts
+  - selinux-config
+  - ansible-requirements
+  - ssh-host-keys
+  - packages
+  - time
+  - users-and-groups
+  - sudoers
+  - disable-firewall
+  - disable-ipv6
+  - message-of-the-day
+  - amazon-ssm-agent
+  - amazon-cli
+  - tcp-keepalive
+  - disks
+  - swap
+  - set-ec2-hostname
+  - domain-search
+  - ansible-script
+  - epel
+  - sshd-config
+  - nomis-weblogic-12
+#  - collectd
+#  - amazon-cloudwatch-agent
+#  - amazon-cloudwatch-agent-collectd
+#  - collectd-service-metrics
+#  - autoscale-group-hooks-state
+
+roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+# collectd_monitored_services_servertype:
+#  - metric_name: service_status_os
+#    metric_dimension: chronyd
+#    shell_cmd: "service chronyd status"
+
+packages_yum_update: []
+packages_yum_install:
+  - binutils
+  - libstdc++-devel
+  - libstdc++
+  - sysstat
+  - gcc
+  - gcc-c++
+  - ksh
+  - make
+  - glibc
+  - libaio
+  - libaio-devel
+  - motif
+  - motif-devel
+  - libXtst-devel
+  - redhat-lsb-4.1
+  - redhat-lsb-core
+  - libnsl
+  - xterm # just for testing X
+
+disks_mount:
+  - ebs_device_name: /dev/sdb
+    dir: /u01
+    fstype: xfs
+
+users_and_groups_system:
+  - name: oracle
+    create_xauthority: true
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+
+users_and_groups_create_xauthority: true
+sshd_config_mode: allow_x11
+
+nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
+
+weblogic_configs:
+  qa11g:
+    weblogic_db_repo_hostname: "dev-nomis-db19c-1-a"
+    weblogic_db_repo_sid: "qa11g"
+    weblogic_db_repo_username: "sys"
+    weblogic_db_repo_prefix: "nomis13"
+    weblogic_domain_template_filename: "template1.jar"
+
+weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
+
+weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
+weblogic_db_repo_sid: "{{ weblogic_config.weblogic_db_repo_sid }}"
+weblogic_db_repo_username: "{{ weblogic_config.weblogic_db_repo_username }}"
+weblogic_db_repo_prefix: "{{ weblogic_config.weblogic_db_repo_prefix }}"
+weblogic_domain_template_filename: "{{ weblogic_config.weblogic_domain_template_filename }}"

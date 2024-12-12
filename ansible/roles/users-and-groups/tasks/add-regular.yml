@@ -105,3 +105,13 @@
     label: "{{ item.name }}"
   loop: "{{ users_regular | rejectattr('state', 'equalto', 'absent') | selectattr('authorized_keys', 'defined') }}"
   when: not ansible_check_mode
+
+- name: Touch regular users .xAuthority
+  ansible.builtin.file:
+    path: "/home/{{ item.name }}/.Xauthority"
+    state: touch
+    mode: u+rw,g-rwx,o-rwx
+    modification_time: preserve
+    access_time: preserve
+  loop: "{{ users_regular | rejectattr('state', 'equalto', 'absent') | selectattr('authorized_keys', 'defined') }}"
+  when: users_and_groups_create_xauthority

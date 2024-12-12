@@ -1,0 +1,16 @@
+---
+- import_tasks: get_facts.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+  when: ansible_distribution in ['RedHat', 'OracleLinux']
+
+- import_tasks: add_swap.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+  when:
+    - ansible_distribution in ['RedHat', 'OracleLinux']
+    - swap_to_create_mb|int > 0
