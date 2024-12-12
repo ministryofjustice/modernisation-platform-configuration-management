@@ -66,11 +66,13 @@ disks_mount:
 
 users_and_groups_system:
   - name: oracle
+    create_xauthority: true
     group: oinstall
     groups:
       - dba
       - wheel
 
+users_and_groups_create_xauthority: true
 sshd_config_mode: allow_x11
 
 nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
