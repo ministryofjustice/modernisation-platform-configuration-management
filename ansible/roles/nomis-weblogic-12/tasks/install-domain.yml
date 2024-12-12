@@ -91,9 +91,10 @@
     daemon_reload: true
     name: "{{ item }}"
     enabled: true
+    state: started
   loop:
     - weblogic-node-manager
     - weblogic-server
-    - weblogic-ohs
     - WLS_FORMS
     - WLS_REPORTS
+    - weblogic-ohs
