@@ -5,9 +5,10 @@ $GlobalConfig = @{
         "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
         "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"                = "C:\app\oracle"
+        "BIPWindowsClient43"         = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
+        # NOTE: Just keeping a record of these versions as this info is difficult to find in the SAP download portal
         # "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
         # "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9
-        "BIPWindowsClient43"         = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
     }
     "nomis-combined-reporting-development"   = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
@@ -15,18 +16,19 @@ $GlobalConfig = @{
         }
     }
     "nomis-combined-reporting-test"          = @{
-        # "tnsorafile"      = "NCR\tnsnames_T1_BODS.ora" TODO: NOT IMPLEMENTED YET
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts"    = @{
         }
     }
     "nomis-combined-reporting-preproduction" = @{
-        # "tnsorafile"      = "NCR\tnsnames_PP_BODS.ora" TODO: NOT IMPLEMENTED YET
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts"    = @{
         }
     }
     "nomis-combined-reporting-production"    = @{
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
         "NcrShortcuts"    = @{
         }
@@ -418,5 +420,5 @@ New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Install-Oracle19cClient -Config $Config
-# New-TnsOraFile -Config $Config TODO: NOT IMPLEMENTED YET
+New-TnsOraFile -Config $Config
 Add-BIPWindowsClient43 -Config $Config
