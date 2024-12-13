@@ -120,12 +120,14 @@ sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
 
 sap_bip_confs:
   t1:
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_web_java_mem: "4096"
     sap_webadmin_java_mem: "4096"
     sap_web_has_dedicated_admin: false
     sap_bip_sso_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
     sap_bip_rws_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/biprws"
     sap_provisioning_database_hostname: "t1nomis.test.nomis.service.justice.gov.uk"
+
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
 
