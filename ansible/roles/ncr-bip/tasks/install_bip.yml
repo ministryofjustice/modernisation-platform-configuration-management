@@ -1,8 +1,56 @@
 ---
-- name: Check if product is installed
-  ansible.builtin.stat:
-    path: /u01/app/bobj/BIP4/sap_bobj
-  register: bip_installed_check
+- name: Get currently installed version
+  ansible.builtin.shell: |
+    if [[ -e "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/linux_x64/version/version.txt" ]]; then
+      VERSION=$(grep -Eo [0-9]+.[0-9]+.[0-9]+.[0-9]+ "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/linux_x64/version/version.txt" | head -1)
+      if [[ -z $VERSION ]]; then
+        echo "Could not extract current software version from {{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/linux_x64/version/version.txt" >&2
+        exit 1
+      fi
+      echo $VERSION
+    fi
+  check_mode: false
+  changed_when: false
+  register: bip_installed_version_cmd
+
+- name: Get target software version
+  ansible.builtin.shell: |
+    if [[ -e "{{ sap_bip_extraction_directory }}/ProductId.txt" ]]; then
+      grep -Eo BuildVersion=[0-9]+.[0-9]+.[0-9]+.[0-9]+ "{{ sap_bip_extraction_directory }}/ProductId.txt" | cut -d= -f2 | head -1
+    fi
+  check_mode: false
+  changed_when: false
+  register: bip_target_version_cmd
+
+- name: Set version facts
+  ansible.builtin.set_fact:
+    bip_installed_version: "{{ bip_installed_version_cmd.stdout }}"
+    bip_target_version: "{{ bip_target_version_cmd.stdout }}"
+
+- name: Fail if no target BIP software version found
+  ansible.builtin.fail:
+    msg: "Could not extract target software version from {{ sap_bip_extraction_directory }}/ProductId.txt"
+  when: bip_target_version|length == 0
+
+- name: Already installed debug
+  ansible.builtin.debug:
+    msg: "BIP {{ bip_target_version }} already installed"
+  when:
+    - bip_installed_version == bip_target_version
+
+- name: New install debug
+  ansible.builtin.debug:
+    msg: "Installing BIP {{ bip_target_version }}"
+  when:
+    - bip_installed_version != bip_target_version
+    - bip_installed_version|length == 0
+
+- name: Patch install debug
+  ansible.builtin.debug:
+    msg: "Patching BIP {{ bip_installed_version }} -> {{ bip_target_version }}"
+  when:
+    - bip_installed_version != bip_target_version
+    - bip_installed_version|length != 0
 
 - name: Create bobj owned directories
   ansible.builtin.file:
@@ -14,8 +62,19 @@
   with_items:
     - "{{ sap_bip_installation_directory }}"
     - "{{ sap_bip_archived_logs_directory }}"
+    - "{{ sap_bip_responsefiles_directory }}"
 
 - block:
+    - name: Copy PreReq ResponseFiles
+      ansible.builtin.template:
+        src: "ResponseFiles/{{ item }}"
+        dest: "{{ sap_bip_responsefiles_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: "0640"
+      with_items:
+        - prereq_checks.ini
+
     - name: Perform pre-requesite checks
       become_user: bobj
       ansible.builtin.shell: |
@@ -33,6 +92,20 @@
       args:
         chdir: "{{ sap_bip_extraction_directory }}"
 
+  # block
+  when: bip_installed_version != bip_target_version
+
+- block:
+    - name: Copy Install ResponseFile
+      ansible.builtin.template:
+        src: "ResponseFiles/{{ item }}"
+        dest: "{{ sap_bip_responsefiles_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: "0640"
+      with_items:
+        - "{{ sap_bip_responsefile }}"
+
     - name: Run Silent Installation
       become_user: bobj
       ansible.builtin.shell: |
@@ -40,32 +113,75 @@
         . ~/.bash_profile
         ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}" | logger -p local3.info -t ansible-ncr-bip
         exitcode=$?
-        cat {{ sap_bip_installation_directory }}/InstallData/logs/*/ErrorsAndWarnings.log | logger -p local3.info -t ansible-ncr-bip
+        DIR=$(ls -1 {{ sap_bip_installation_directory }}/InstallData/logs/ | tail -1)
+        if [[ -e {{ sap_bip_installation_directory }}/InstallData/logs/$DIR/ErrorsAndWarnings.log ]]; then
+          cat {{ sap_bip_installation_directory }}/InstallData/logs/*/ErrorsAndWarnings.log | logger -p local3.info -t ansible-ncr-bip
+        fi
         exit $exitcode
       args:
         chdir: "{{ sap_bip_extraction_directory }}"
       async: 7200
       poll: 60
+      when: not ansible_check_mode
+
+    - name: Redact passwords in install response file
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}"
+        regexp: "^{{ item }}="
+        line: "{{ item }}=******"
+      loop:
+        - cmspassword
+        - remotecmsadminpassword
+        - existingauditingdbpassword
+        - existingcmsdbpassword
 
   # block
-  when: not bip_installed_check.stat.exists
+  when:
+    - bip_installed_version != bip_target_version
+    - bip_installed_version|length == 0
 
-- name: Copy SAPBOBJEnterpriseXI40 scripts
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "/{{ item }}"
-    mode: 0755
-  loop:
-    - usr/local/bin/SAPBOBJEnterpriseXI40
 
-- name: Copy systemd scripts instead of calling setupinit.sh
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "/{{ item }}"
-  loop:
-    - etc/systemd/system/sapbobj.service
+- block:
+    - name: Copy Patch ResponseFile
+      ansible.builtin.template:
+        src: "ResponseFiles/{{ item }}"
+        dest: "{{ sap_bip_responsefiles_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: "0640"
+      with_items:
+        - "patch.ini"
 
-- name: Enable SAP BOBJ services
-  ansible.builtin.service:
-    name: sapbobj
-    enabled: true
+    - name: Run Silent Patch Installation
+      become_user: bobj
+      ansible.builtin.shell: |
+        set -o pipefail
+        . ~/.bash_profile
+        ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/patch.ini" | logger -p local3.info -t ansible-ncr-bip
+        exitcode=$?
+        DIR=$(ls -1 {{ sap_bip_installation_directory }}/InstallData/logs/ | tail -1)
+        if [[ -e {{ sap_bip_installation_directory }}/InstallData/logs/$DIR/ErrorsAndWarnings.log ]]; then
+          cat {{ sap_bip_installation_directory }}/InstallData/logs/*/ErrorsAndWarnings.log | logger -p local3.info -t ansible-ncr-bip
+        fi
+        exit $exitcode
+      args:
+        chdir: "{{ sap_bip_extraction_directory }}"
+      async: 7200
+      poll: 60
+      when: not ansible_check_mode
+
+    - name: Redact passwords in patch response file
+      become_user: bobj
+      ansible.builtin.lineinfile:
+        path: "{{ sap_bip_responsefiles_directory }}/patch.ini"
+        regexp: "^{{ item }}="
+        line: "{{ item }}=******"
+      loop:
+        - remotecmsadminpassword
+      when: not ansible_check_mode
+
+  # block
+  when:
+    - bip_installed_version != bip_target_version
+    - bip_installed_version|length != 0
