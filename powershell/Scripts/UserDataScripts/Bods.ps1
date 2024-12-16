@@ -1,53 +1,3 @@
-$GlobalConfig = @{
-    "all"                                    = @{
-        "WindowsClientS3Bucket"      = "mod-platform-image-artefact-bucket20230203091453221500000001"
-        "WindowsClientS3Folder"      = "hmpps/ncr"
-        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
-        "ORACLE_19C_HOME"            = "E:\app\oracle\product\19.0.0\client_1"
-        "ORACLE_BASE"                = "E:\app\oracle"
-        "IPSS3File"                  = "51054521.ZIP" # Information Platform Services 4.2 SP8 Patch 1
-        "DataServicesS3File"         = "51054517_4.ZIP" # Data Services 4.2 SP 14 as per Azure machines for NCR BODS
-        "LINK_DIR"                   = "E:\SAP BusinessObjects\Data Services"
-        "BIP_INSTALL_DIR"            = "E:\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
-        "RegistryPath"               = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
-        "LegalNoticeCaption"         = "IMPORTANT"
-        "LegalNoticeText"            = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
-    }
-    "nomis-combined-reporting-development"   = @{
-
-    }
-    "nomis-combined-reporting-test"          = @{
-        # "sysDbName"       = ""
-        # "audDbName"       = ""
-        "tnsorafile"             = "NCR\tnsnames_T1_BODS.ora"
-        "cmsPrimaryNode"         = "t1-ncr-bods-1"
-        # "cmsPrimaryNode"     = "t1-tst-bods-asg" # Use this value when testing
-        # "cmsSecondaryNode" = "t1-ncr-bods-2"
-        # "cmsPrimaryNodeHostname" = "" ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
-        "serviceUser"            = "svc_nart"
-        "serviceUserPath"        = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT"
-        "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "serviceUserDescription" = "NART service user for AWS in AZURE domain"
-        "domain"                 = "AZURE"
-    }
-    "nomis-combined-reporting-preproduction" = @{
-        # "sysDbName"       = ""
-        # "audDbName"       = ""
-        "tnsorafile"             = "NCR\tnsnames_PP_BODS.ora"
-        "cmsPrimaryNode"         = "pp-ncr-bods-1"
-        # "cmsSecondaryNode" = "pp-ncr-bods-2"
-        # "cmsPrimaryNodeHostname" = "" ADD MANUALLY AFTER cmsPrimaryNode DEPLOYED
-        "serviceUser"            = "svc_nart"
-        "serviceUserPath"        = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
-        "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "serviceUserDescription" = "NART service user for AWS in HMPP domain"
-        "domain"                 = "HMPP"
-    }
-    "nomis-combined-reporting-production"    = @{
-        "domain" = "HMPP"
-    }
-}
-
 # {{{ functions
 
 function Test-DbCredentials {
@@ -126,11 +76,40 @@ function Get-Config {
     $Tags = $TagsRaw | ConvertFrom-Json
     $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
 
+    $ApplicationTag = ($Tags.Tags | Where-Object { $_.Key -eq "application" }).Value
+    
+    $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+
+    $nameTag = ($Tags.Tags | Where-Object { $_.Key -eq "Name" }).Value
+
+    $domainName = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+
+    if ($ApplicationTag -eq "oasys-national-reporting") {
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\ONR\config.ps1"
+    }
+    elseif ($ApplicationTag -eq "nomis-combined-reporting") {
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\config.ps1"
+    }
+    else {
+        Write-Error "Unexpected application tag value: $ApplicationTag"
+        exit 1
+    }
+
+    # dot source the config file containing $GlobalConfig
+    . $configPath
+
     if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
         Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
     }
 
-    Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
+    $additionalConfig = @{
+        application = $ApplicationTag
+        dbenv       = $dbenvTag
+        Name        = $nameTag
+        domainName  = $domainName
+    }
+
+    Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag] + $additionalConfig
 }
 
 function Get-Installer {
@@ -184,13 +163,13 @@ function Get-SecretValue {
 }
 
 
-function Get-InstanceTags {
-    $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 } -Method PUT -Uri http://169.254.169.254/latest/api/token
-    $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token } -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
-    $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
-    $Tags = $TagsRaw | ConvertFrom-Json
-    $Tags.Tags
-}
+# function Get-InstanceTags {
+#     $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 } -Method PUT -Uri http://169.254.169.254/latest/api/token
+#     $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token } -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+#     $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+#     $Tags = $TagsRaw | ConvertFrom-Json
+#     $Tags.Tags
+# }
 
 function Clear-PendingFileRenameOperations {
     $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
@@ -284,6 +263,53 @@ function New-TnsOraFile {
 
 }
 
+function New-SharedDriveShortcut {
+
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # NOTE: Creates a desktop shortcut that users can click to access the shared drive with their domain credentials if needed
+
+    $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
+
+    # /sap/bods/$dbenv/config values
+    $sharedDrive = Get-SecretValue -SecretId $bodsConfigName -SecretKey "shared_drive" -ErrorAction SilentlyContinue
+
+    $share = "\\$sharedDrive\share"
+    $shortcutPath = "C:\Users\Public\Desktop\FSDShare.lnk"
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $shortcut = $WScriptShell.CreateShortcut($ShortCutPath)
+    $shortcut.TargetPath = $share
+    $Shortcut.IconLocation = $share
+    $Shortcut.Save()
+}
+
+# NOTE: this function isn't used but is included because it 'might' be necessary at some point
+# There are challenges making this persistently available for all users without implementing things in Active Directory
+# function New-SharedDriveMount {
+
+#     param(
+#         [Parameter(Mandatory)]
+#         [hashtable]$Config
+#     )
+#     $svcUserPwd = Get-SecretValue -SecretId "/sap/bods/$($Config.dbenv)/passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+#     $sharedDrive = Get-SecretValue -SecretId "/sap/bods/$dbenv/config" -SecretKey "shared_drive" -ErrorAction SilentlyContinue
+#     $user = "$($Config.domain)\$($Config.serviceUser)"
+#     $drive = "S:"
+#     $path = "\\$sharedDrive\share"
+
+#     $DriveParams = @{
+#         Wait = $true
+#         NoNewWindow = $true
+#         FilePath = "cmd.exe"
+#         ArgumentList = "/c","net use $drive $path $svcUserPwd /USER:$user /PERSISTENT:YES"
+#     }
+
+#     Start-Process @DriveParams
+# }
+
 function Install-Oracle19cClient {
     param (
         [Parameter(Mandatory)]
@@ -350,17 +376,14 @@ function Install-IPS {
         return
     }
 
-    $Tags = Get-InstanceTags
-
     Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
 
     Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
     # set Secret Names based on environment
-    $dbenv = ($Tags | Where-Object { $_.Key -eq "nomis-combined-reporting-environment" }).Value
-    $siaNodeName = (($Tags | Where-Object { $_.Key -eq "Name" }).Value).Replace("-", "").ToUpper() # cannot contain hyphens
-    $bodsSecretName = "/sap/bods/$dbenv/passwords"
-    $bodsConfigName = "/sap/bods/$dbenv/config"
+    $siaNodeName = $($Config.Name).Replace("-", "").ToUpper() # cannot contain hyphens
+    $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
+    $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
     $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
     $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
@@ -375,6 +398,7 @@ function Install-IPS {
     # /sap/bods/$dbenv/config values
     $bods_cluster_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
     $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     # Create response file for IPS silent install
     $ipsResponseFilePrimary = @"
@@ -385,17 +409,17 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-# cmspassword=**** bods_admin_password value supplied directly via silent install params
+# cmspassword=**** bods_admin_password value in silent install params
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
-# existingauditingdbpassword=**** bods_ips_audit_owner value supplied directly via silent install params
+# existingauditingdbpassword=**** bods_ips_audit_owner value in silent install params
 ### Existing auditing DB server
 existingauditingdbserver=$($Config.audDbName)
 ### Existing auditing DB user name
 existingauditingdbuser=bods_ips_audit_owner
 ### Existing CMS DB password
-# existingcmsdbpassword=**** bods_ips_system_owner value supplied directly via silent install params
+# existingcmsdbpassword=**** bods_ips_system_owner value in silent install params
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
@@ -409,7 +433,7 @@ installtype=custom
 ### LCM server name
 lcmname=LCM_repository
 ### LCM password
-# lcmpassword=**** bods_subversion_password value supplied directly via silent install params
+# lcmpassword=**** bods_subversion_password value in silent install params
 ### LCM port
 lcmport=3690
 ### LCM user name
@@ -439,6 +463,8 @@ usingcmsdbtype=oracle
 ### Features to install
 features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
 "@
+
+    $remoteSiaName = $cms_primary_node_hostname.Replace("-", "").ToUpper()
 
     # Create response file for IPS expanded install
     $ipsResponseFileSecondary = @"
@@ -481,7 +507,7 @@ remotecmsadminname=Administrator
 ### Remote CMS administrator password
 # remotecmsadminpassword=**** bods_admin_password value in silent install params
 ### Remote CMS name
-remotecmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+remotecmsname=$cms_primary_node_hostname.$($Config.domainName)
 ### Remote CMS port
 remotecmsport=6400
 ### Language Packs Selected to Install
@@ -505,13 +531,12 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 "@
 
 
-    $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
     $ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
 
-    if ($instanceName -eq $($Config.cmsPrimaryNode)) {
+    if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
         $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
     }
-    elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
+    elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
         $ipsResponseFileSecondary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
     }
     else {
@@ -547,11 +572,11 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-        if ($instanceName -eq $($Config.cmsPrimaryNode)) {
-            # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_admin_password", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
+            $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_admin_password", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
         }
-        elseif ($instanceName -eq $($Config.cmsSecondaryNode)) {
-            # $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_admin_password", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+        elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
+            $process = Start-Process -FilePath "E:\Software\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r E:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_admin_password", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"
@@ -560,7 +585,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
         $installProcessId = $process.Id
         "Initial process is $installProcessId at $(Get-Date)" | Out-File -FilePath $logFile -Append
         "Stopped IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
-    } 
+    }
     catch {
         $exception = $_.Exception
         "Failed to start installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
@@ -584,7 +609,13 @@ function Install-DataServices {
 
     Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
 
-    Expand-Archive -Path (".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
+    if ($($Config.application) -eq "nomis-combined-reporting") {
+        Expand-Archive -Path (".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
+        $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)\DataServices\setup.exe"
+    }
+    else {
+        $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
+    }
 
     [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
 
@@ -595,10 +626,8 @@ function Install-DataServices {
     [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
 
     # set Secret Names based on environment
-    $Tags = Get-InstanceTags
-    $dbenv = ($Tags | Where-Object { $_.Key -eq "nomis-combined-reporting-environment" }).Value
-    $bodsSecretName = "/sap/bods/$dbenv/passwords"
-    $bodsConfigName = "/sap/bods/$dbenv/config"
+    $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
+    $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
 
     # passwords from /sap/bods/$dbenv/passwords
     $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
@@ -606,18 +635,19 @@ function Install-DataServices {
 
     # config values from /sap/bods/$dbenv/config
     $data_services_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
 ### CMS administrator password
-# cmspassword=**** bods_admin_password value supplied directly via silent install params
+# cmspassword=**** bods_admin_password in silent install params
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
 ### CMS administrator password
-# dscmspassword=**** bods_admin_password value supplied directly via silent install params
+# dscmspassword=**** bods_admin_password value in silent install params
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
@@ -641,7 +671,7 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
-# dslogininfothispassword=**** service_user_password value supplied directly via silent install params
+# dslogininfothispassword=**** service_user_password value in silent install params
 ### Installation folder for SAP products
 installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
@@ -657,8 +687,6 @@ selectedlanguagepacks=en
 ### Available features
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
-
-    $domainName = ($Tags | Where-Object { $_.Key -eq "domain-name" }).Value
 
     $dataServicesResponseSecondary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -676,7 +704,7 @@ dscmsenablessl=0
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$($Config.cmsPrimaryNodeHostname).$domainName
+dscmssystem=$cms_primary_node_hostname.$($Config.domainName)
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -702,7 +730,7 @@ installdir=E:\SAP BusinessObjects\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=$($Config.cmsPrimaryNodeHostname).$domainName
+mastercmsname=$cms_primary_node_hostname.$($Config.domainName)
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
@@ -713,13 +741,12 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-    $instanceName = ($Tags | Where-Object { $_.Key -eq "Name" }).Value
     $dsInstallIni = "$WorkingDirectory\ds_install.ini"
 
-    if ($instanceName -eq $Config.cmsPrimaryNode) {
+    if ($($Config.Name) -eq $Config.cmsPrimaryNode) {
         $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
     }
-    elseif ($instanceName -eq $Config.cmsSecondaryNode) {
+    elseif ($($Config.Name) -eq $Config.cmsSecondaryNode) {
         $dataServicesResponseSecondary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
     }
     else {
@@ -728,14 +755,14 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
     }
 
     $dataServicesInstallParams = @{
-        FilePath     = "$WorkingDirectory\$($Config.DataServicesS3File)\DataServices\setup.exe"
+        FilePath     = $dataServicesInstallerFilePath
         ArgumentList = "-q", "-r", "$dsInstallIni", "cmspassword=$bods_admin_password", "dscmspassword=$bods_admin_password", "dslogininfothispassword=$service_user_password"
         Wait         = $true
         NoNewWindow  = $true
     }
 
     # Install Data Services
-    # Start-Process @dataServicesInstallParams
+    Start-Process @dataServicesInstallParams
 
     # }}} End install Data Services
 
@@ -847,7 +874,6 @@ Set-TimeZone -Name "GMT Standard Time"
 # }}} complete - add prerequisites to server
 
 $Config = Get-Config
-$Tags = Get-InstanceTags
 
 $WorkingDirectory = "E:\Software"
 $AppDirectory = "E:\App"
@@ -888,15 +914,23 @@ New-Item -ItemType Directory -Path $AppDirectory -Force
 
 Set-Location -Path $WorkingDirectory
 
-# IMPORTANT: Response files for these versions need checking first to ensure they are correct. Need to sort out tnsorafiles and have a database target to test against, then uncomment the lines below BUT not install IPS/DataServices. Need to CREATE THE SECRETS FIRST (see docs) as well as manually run the installers with -w 'E:\Software\responsefile.ini' to check the values are correct. Then make any install file changes before running everything.
-
-Install-Oracle19cClient -Config $Config
-# IMPORTANT: NCR tnsorafiles are not defined for any environment yet
-# New-TnsOraFile -Config $Config
-# IMPORTANT: Requires a database target to test against
-# Test-DbCredentials -Config $Config
-# IMPORTANT: currently only downloads the IPS installer, does not install it
-Install-IPS -Config $Config
-# IMPORTANT: currently only downloads the Data Services installer, does not install it 
-Install-DataServices -Config $Config
-Set-LoginText -Config $Config
+if ($($Config.application) -eq "oasys-national-reporting") {
+    Install-Oracle19cClient -Config $Config
+    New-TnsOraFile -Config $Config
+    Test-DbCredentials -Config $Config
+    Install-IPS -Config $Config
+    Install-DataServices -Config $Config
+    Set-LoginText -Config $Config
+    New-SharedDriveShortcut -Config $Config
+}
+else {
+    # IMPORTANT: NCR BODS installation & TNS files etc. not ready yet
+    Install-Oracle19cClient -Config $Config
+    # New-TnsOraFile -Config $Config
+    # Test-DbCredentials -Config $Config
+    Install-IPS -Config $Config
+    Install-DataServices -Config $Config
+    Set-LoginText -Config $Config
+    # New-SharedDriveShortcut -Config $Config
+}
+# }}}
