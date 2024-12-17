@@ -85,10 +85,10 @@ function Get-Config {
     $domainName = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
 
     if ($ApplicationTag -eq "oasys-national-reporting") {
-        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\ONR\config.ps1"
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\ONR\onr_config.ps1"
     }
     elseif ($ApplicationTag -eq "nomis-combined-reporting") {
-        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\config.ps1"
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\ncr_config.ps1"
     }
     else {
         Write-Error "Unexpected application tag value: $ApplicationTag"
@@ -875,9 +875,6 @@ Set-TimeZone -Name "GMT Standard Time"
 
 $Config = Get-Config
 
-$WorkingDirectory = "E:\Software"
-$AppDirectory = "E:\App"
-
 $ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
 
 # {{{ join domain if domain-name tag is set
@@ -909,10 +906,10 @@ else {
 # {{{ prepare assets
 $ErrorActionPreference = "Stop"
 
-New-Item -ItemType Directory -Path $WorkingDirectory -Force
-New-Item -ItemType Directory -Path $AppDirectory -Force
+New-Item -ItemType Directory -Path $Config.WorkingDirectory -Force
+New-Item -ItemType Directory -Path $Config.AppDirectory -Force
 
-Set-Location -Path $WorkingDirectory
+Set-Location -Path $Config.WorkingDirectory
 
 if ($($Config.application) -eq "oasys-national-reporting") {
     Install-Oracle19cClient -Config $Config
@@ -923,7 +920,7 @@ if ($($Config.application) -eq "oasys-national-reporting") {
     Set-LoginText -Config $Config
     New-SharedDriveShortcut -Config $Config
 }
-else {
+elseif ($($Config.application) -eq "nomis-combined-reporting") {
     # IMPORTANT: NCR BODS installation & TNS files etc. not ready yet
     Install-Oracle19cClient -Config $Config
     # New-TnsOraFile -Config $Config
@@ -932,5 +929,9 @@ else {
     Install-DataServices -Config $Config
     Set-LoginText -Config $Config
     # New-SharedDriveShortcut -Config $Config
+}
+else {
+    Write-Error "No application tag found, exiting"
+    Exit 1
 }
 # }}}
