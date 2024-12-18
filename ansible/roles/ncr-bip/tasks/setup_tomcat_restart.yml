@@ -1,14 +1,5 @@
 ---
 - block:
-    - name: Create web only directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        owner: bobj
-        group: binstall
-        state: directory
-      loop:
-        - "{{ sap_bip_archived_logs_directory }}"
-
     - name: Copy tomcat restart script
       ansible.builtin.template:
         src: "{{ item }}"
@@ -26,15 +17,6 @@
         hour: "2"
         weekday: "MON,WED,FRI"
         job: "/home/bobj/tomcat_restart.sh"
-        user: bobj
-
-    - name: Setup log cleanup cron
-      ansible.builtin.cron:
-        name: "log_cleanup"
-        minute: "0"
-        hour: "3"
-        weekday: "MON,WED,FRI"
-        job: "find {{ sap_bip_archived_logs_directory }} -mtime +365 -prune -exec rm -rf {} \\;"
         user: bobj
 
   #  block
