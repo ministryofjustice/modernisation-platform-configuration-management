@@ -8,6 +8,9 @@
 # Exit without failure if database is not up
 srvctl status database -d $ORACLE_SID >/dev/null || exit 0
 
+# Exit without failure if the database is mounted and not open (probably a standby database)
+(srvctl status database -d $ORACLE_SID -v | grep -q Mounted) && exit 0
+
 sqlplus -s / as sysdba <<EOSQL
 SET ECHO OFF
 SET FEEDBACK OFF
