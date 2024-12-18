@@ -48,6 +48,11 @@
         - ncr_bip_setup_provisioning
         - ncr_bip_redeploy_tomcat
 
+    - import_tasks: setup_archived_logs.yml
+      tags:
+        - ec2provision
+        - ncr_bip_setup_archived_logs
+
     - import_tasks: install_bip.yml
       tags:
         - ec2provision
