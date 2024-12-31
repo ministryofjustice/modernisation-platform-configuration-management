@@ -87,7 +87,7 @@ test_environment() {
     export AWS_DEFAULT_PROFILE=$1
   fi
   ncr_env=$2
-  if (($ON_EC2 == 1)); then
+  if ((ON_EC2 == 1)); then
     test_server_list "$ncr_env" "ccm"
   fi
   test_server_list "$ncr_env" "biprws"
