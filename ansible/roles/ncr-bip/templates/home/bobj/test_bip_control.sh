@@ -41,13 +41,14 @@ test_biprws() {
   local ncr_env
 
   ncr_env="$1"
-  test_bip_control -dv    -e "$ncr_env" biprws server-list all
-  test_bip_control -dv -q -e "$ncr_env" biprws server-list all
+  test_bip_control -dv    -e "$ncr_env" biprws server-list
+  test_bip_control -dv -q -e "$ncr_env" biprws server-list
   test_bip_control -dv    -e "$ncr_env" biprws server-list cms frs
+  test_bip_control -dv    -e "$ncr_env" biprws server-list all -cms -frs
   test_bip_control -dv    -e "$ncr_env" biprws server-list event
   test_bip_control -dv    -e "$ncr_env" biprws server-list job
   test_bip_control -dv    -e "$ncr_env" biprws server-list processing
-  test_bip_control -dv    -e "$ncr_env" biprws server-list event job processing
+  test_bip_control -dv    -e "$ncr_env" biprws server-list all -event -job -processing
 }
 
 test_ccm() {

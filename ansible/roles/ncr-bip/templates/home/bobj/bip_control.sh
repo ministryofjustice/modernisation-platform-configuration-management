@@ -36,14 +36,13 @@ Where <opts>:
 
 Where <cmd>:
   biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
-  ccm        display                    [<servers>]          - use ccm.sh to display servers
+  ccm        display                                         - use ccm.sh to display servers
   ccm        disable|enable             <servers>            - use ccm.sh to enable/disable server(s)
   ccm        managed-start|managed-stop <servers>            - use ccm.sh to start/stop server(s)
   ccm        start|stop                 <sianames>           - use ccm.sh to start/stop sia(s)
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
-
 
 Where <servers> are space separated and can be:
   <fqdn>     - fqdn of server name, e.g. ppncrcms1.AdaptiveJobServer
@@ -52,6 +51,12 @@ Where <servers> are space separated and can be:
   frs        - all InputFileRepository and OutputFileRepository servers
   event      - all EventServer servers
   processing - all ProcessingServer servers, e.g. WebIntelligenceProcessingServer
+  +<server>  - prefix with a plus to combine with previous filter
+  -<server>  - prefix with a minus to subtract from previous filter
+e.g.
+  $0 biprws server-list all -cms -frs        # to display all servers except CMS and FRS
+  $0 biprws server-list processing +Stopped  # to display all stopped processing servers
+
 " >&2
   return 1
 }
@@ -224,32 +229,70 @@ biprws_get_pages() {
   done
 }
 
+grep_server_list() {
+  local filter
+  local list
+  local flags
+  local opt
+
+  list="$1"
+  opt="$2"
+  filter="$3"
+
+  if [[ -z $list ]]; then
+    return
+  fi
+
+  flags=
+  if [[ $opt == "subtract" ]]; then
+    flags="-v"
+  elif [[ $opt != "add" ]]; then
+    if [[ -n $opt ]]; then
+      echo "$opt"
+    fi
+  fi
+
+  if [[ $filter == "all" ]]; then
+    if [[ $opt != "subtract" ]]; then
+      echo "$list"
+    fi
+  elif [[ $filter == "cms" ]]; then
+    grep $flags CentralManagementServer <<< "$list"
+  elif [[ $filter == "frs" ]]; then
+    grep $flags FileRepository <<< "$list"
+  elif [[ $filter == "event" ]]; then
+    grep $flags EventServer <<< "$list"
+  elif [[ $filter == "job" ]]; then
+    grep $flags JobServer <<< "$list"
+  elif [[ $filter == "processing" ]]; then
+    grep $flags ProcessingServer <<< "$list"
+  else
+    grep $flags "$filter" <<< "$list"
+  fi
+}
+
 filter_server_list() {
   local filter
   local list
+  local output
 
   list="$1"
+  output=""
   shift
-
-  (
+  if (( $# == 0 )); then
+    sort -uf <<< "$list"
+  else
     for filter; do
-      if [[ $filter == "all" ]]; then
-        echo "$list"
-      elif [[ $filter == "cms" ]]; then
-        grep CentralManagementServer <<< "$list"
-      elif [[ $filter == "frs" ]]; then
-        grep FileRepository <<< "$list"
-      elif [[ $filter == "event" ]]; then
-        grep EventServer <<< "$list"
-      elif [[ $filter == "job" ]]; then
-        grep JobServer <<< "$list"
-      elif [[ $filter == "processing" ]]; then
-        grep ProcessingServer <<< "$list"
+      if [[ $filter = +* ]]; then
+        output=$(grep_server_list "$output" "add" "${filter:1}")
+      elif [[ $filter = -* ]]; then
+        output=$(grep_server_list "$output" "subtract" "${filter:1}")
       else
-        grep "$filter" <<< "$list"
+        output=$(grep_server_list "$list" "$output" "$filter")
       fi
     done
-  ) | sort -uf
+    sort -uf <<< "$output"
+  fi
 }
 
 ccm() {
