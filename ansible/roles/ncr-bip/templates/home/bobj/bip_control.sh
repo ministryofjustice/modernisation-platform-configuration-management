@@ -1,22 +1,33 @@
 #!/bin/bash
-# Helper script for BIP to
-# - run ccm.sh grabbing password from secret
-# - enable/disable admin mode on load balancer
-# - retrieve server list from API
-# - start/stop environment cleanly
+# Helper script for BIP to help start/stop environment cleanly
+# - use biprws API to retrieve server list
+# - use ccm.sh script to retrieve server list / run commands
+# - use ec2 tags to print expected server list
+# - update load balancer maintenance mode
 #
-#SEE: https://me.sap.com/notes/0002390652
+# To shutdown environment cleanly as per https://me.sap.com/notes/0002390652:
 #1. Stop the Web Application Server (Tomcat or other).
+#   - enable maintenance mode on LB: 'bip_control.sh lb maintenance mode enable'
+#   - run systemctl stop sapbobj on all web servers
 #2. Disable all services except the Central Management Server, Input File Repository Server and Output File Repository Server.
+#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list all -cms -frs -Disabled)
+#                        bip_control.sh ccm disable $fqdns
 #3. Wait for 10 minutes.
 #4. Stop the Event Servers.
+#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list event -Stopped)
+#                        bip_control.sh ccm managed-stop $fqdns
 #5. Stop all Job Servers.
+#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list job -Stopped)
+#                        bip_control.sh ccm managed-stop $fqdns
 #6. Stop all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
+#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list processing -Stopped)
+#                        bip_control.sh ccm managed-stop $fqdns
 #7. Stop the rest of the servers.
+#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list all -event -job -processing -Stopped)
+#                        bip_control.sh ccm managed-stop $fqdns
 #8. Stop SIA.
-#To restart, Follow the above steps, in the reverse order (9 to 1).
-#
-# 2. ./ncr_control.sh -l pp | grep -Ev 'CentralManagementServer|InputFileRepository|OutputFileRepository|Disabled'
+#   - grab list via ccm: fqdns=$(bip_control.sh -f sia ccm server-list)
+#                        bip_control.sh ccm stop $fqdns
 
 DRYRUN=0
 VERBOSE=0
@@ -83,7 +94,7 @@ usage() {
 Where <opts>:
   -d                        Enable dryrun for maintenance mode commands
   -e <env>                  Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
-  -f default|json|fqdn      Display in given format, if applicable, default is $FORMAT
+  -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
   -l public|private         Select LB to act on, default is $LB
   -v                        Enable verbose debug
 
@@ -681,17 +692,19 @@ do_biprws() {
         return 1
       fi
       echo "$pages_json"
-    elif [[ $FORMAT == "default" || $FORMAT == "fqdn" ]]; then
+    else
       pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .server_process_id, .description, .kind, .last_modified] |@tsv' <<< "$pages_json")
       output_tsv=$(filter_server_list "$pages_tsv" "$@")
       if [[ $FORMAT == "fqdn" ]]; then
         echo "$output_tsv" | cut -f1
-      else
+      elif [[ $FORMAT == "sia" ]]; then
+        echo "$output_tsv" | cut -f1 | cut -d. -f1 | sort -u
+      elif [[ $FORMAT == "default" ]]; then
         echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tKind\tLastModified"
         echo "$output_tsv"
+      else
+        error "Unsupported format $FORMAT"
       fi
-    else
-      error "Unsupported format $FORMAT"
     fi
   else
     usage
@@ -704,11 +717,6 @@ do_ccm() {
 
   set_env_admin_password
 
-  if [[ $FORMAT == "json" ]]; then
-    error "json format unsupported with ccm commands"
-    return 1
-  fi
-
   if [[ $1 == "server-list" ]]; then
     shift
     output=$(ccm -display)
@@ -716,9 +724,13 @@ do_ccm() {
     output_tsv=$(filter_server_list "$ccm_display_tsv" "$@")
     if [[ $FORMAT == "fqdn" ]]; then
       echo "$output_tsv" | cut -f1
-    else
+    elif [[ $FORMAT == "sia" ]]; then
+      echo "$output_tsv" | cut -f1 | cut -d. -f1 | sort -u
+    elif [[ $FORMAT == "default" ]]; then
       echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tHostName"
       echo "$output_tsv"
+    else
+      error "Unsupported format $FORMAT"
     fi
   else
     if [[ $FORMAT != "default" ]]; then
@@ -738,23 +750,23 @@ do_ec2() {
 
   set_env_ec2_names
 
-  if [[ $FORMAT == "json" ]]; then
-    error "json format unsupported with ec2 commands"
-    return 1
-  fi
   if [[ $1 == "server-list" ]]; then
     shift
     ec2_display_tsv=$(ec2_expected_servers)
     output_tsv=$(filter_server_list "$ec2_display_tsv" "$@")
     if [[ $FORMAT == "fqdn" ]]; then
       echo "$output_tsv" | cut -f1
-    else
+    elif [[ $FORMAT == "sia" ]]; then
+      echo "$output_tsv" | cut -f1 | cut -d. -f1 | sort -u
+    elif [[ $FORMAT == "default" ]]; then
       echo -e "FQDN\tStatus\tEnabled"
       echo "$output_tsv"
+    else
+      error "Unsupported format $FORMAT"
     fi
   else
     usage
-    return 11
+    return 1
   fi
 }
 
