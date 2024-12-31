@@ -63,14 +63,12 @@ test_server_list() {
 
 test_diff() {
   local ncr_env
-  local type
 
   ncr_env="$1"
-  type="$2"
-  test_bip_control -f fqdn -e "$ncr_env" diff server-list biprws ec2
-  test_bip_control -e         "$ncr_env" diff server-list biprws ec2
-  test_bip_control -e         "$ncr_env" diff server-list biprws ec2 cms frs
-  test_bip_control -e         "$ncr_env" diff server-list biprws ec2 all -cms -frs
+  test_bip_control -f fqdn -e "$ncr_env" diff server-list "$2" "$3"
+  test_bip_control -e         "$ncr_env" diff server-list "$2" "$3"
+  test_bip_control -e         "$ncr_env" diff server-list "$2" "$3" cms frs
+  test_bip_control -e         "$ncr_env" diff server-list "$2" "$3" all -cms -frs
 }
 
 test_ccm() {
@@ -101,13 +99,14 @@ test_environment() {
   ncr_env=$2
   if ((ON_EC2 == 1)); then
     test_server_list "$ncr_env" "ccm"
+    test_diff "$ncr_env" ccm ec2
   fi
   test_server_list "$ncr_env" "biprws"
   test_server_list "$ncr_env" "ec2"
   test_ccm "$ncr_env" server.fqn sia.fqdn
   test_lb "$ncr_env" public
   test_lb "$ncr_env" private
-  test_diff "$ncr_env"
+  test_diff "$ncr_env" biprws ec2
 }
 
 token=$(curl -sS -m 2 -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 3600" 2>/dev/null)
