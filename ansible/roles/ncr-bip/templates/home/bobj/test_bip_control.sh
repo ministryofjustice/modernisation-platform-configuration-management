@@ -37,18 +37,20 @@ test_lb() {
   test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-json         rule
 }
 
-test_biprws() {
+test_server_list() {
   local ncr_env
+  local type
 
   ncr_env="$1"
-  test_bip_control -dv -f fqdn -e "$ncr_env" biprws server-list
-  test_bip_control -dv -e "$ncr_env" biprws server-list
-  test_bip_control -dv -e "$ncr_env" biprws server-list cms frs
-  test_bip_control -dv -e "$ncr_env" biprws server-list all -cms -frs
-  test_bip_control -dv -e "$ncr_env" biprws server-list event
-  test_bip_control -dv -e "$ncr_env" biprws server-list job
-  test_bip_control -dv -e "$ncr_env" biprws server-list processing
-  test_bip_control -dv -e "$ncr_env" biprws server-list all -event -job -processing
+  type="$2"
+  test_bip_control -dv -f fqdn -e "$ncr_env" "$type" server-list
+  test_bip_control -dv -e "$ncr_env" "$type" server-list
+  test_bip_control -dv -e "$ncr_env" "$type" server-list cms frs
+  test_bip_control -dv -e "$ncr_env" "$type" server-list all -cms -frs
+  test_bip_control -dv -e "$ncr_env" "$type" server-list event
+  test_bip_control -dv -e "$ncr_env" "$type" server-list job
+  test_bip_control -dv -e "$ncr_env" "$type" server-list processing
+  test_bip_control -dv -e "$ncr_env" "$type" server-list all -event -job -processing
 }
 
 test_ccm() {
@@ -73,7 +75,8 @@ test_environment() {
     export AWS_DEFAULT_PROFILE=$1
   fi
   ncr_env=$2
-  test_biprws "$ncr_env"
+  test_server_list "$ncr_env" "biprws"
+  test_server_list "$ncr_env" "ec2"
   test_ccm "$ncr_env" server.fqn sia.fqdn
   test_lb "$ncr_env" public
   test_lb "$ncr_env" private
