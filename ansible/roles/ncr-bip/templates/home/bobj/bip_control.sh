@@ -62,6 +62,14 @@ debug() {
   fi
 }
 
+dryrun_debug() {
+  if ((DRYRUN != 0)); then
+    echo "DRYRUN: $*" >&2
+  elif ((VERBOSE != 0)); then
+    echo "DEBUG: $*" >&2
+  fi
+}
+
 error() {
   echo "$@" >&2
 }
@@ -106,11 +114,15 @@ set_env_instance_id() {
 
 set_env_ncr_environment() {
   debug "aws ec2 describe-tags"
-  NCR_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=nomis-combined-reporting-environment" --output text | cut -f5)
+  NCR_ENVIRONMENT=$(aws ec2 describe-tags --no-cli-pager --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=nomis-combined-reporting-environment" --output text | cut -f5)
   if [[ -z $NCR_ENVIRONMENT ]]; then
     error "Unable to retrieve nomis-combined-reporting-environment tag"
     return 1
   fi
+}
+
+set_env_ncr_ec2s() {
+  debug "aws ec2 describe-instances"
 }
 
 set_env_lb() {
@@ -213,15 +225,13 @@ biprws_get_pages() {
 }
 
 ccm() {
+  dryrun_debug "ccm.sh $* -username Administrator -password xxx"
   if (( DRYRUN == 0 )); then
-    debug ccm.sh "$@" -username Administrator -password xxx
     if [[ ! -x "$CCM_SH" ]]; then
-      error "Could not find $CCM_SH"
+      error "Error ccm.sh script not found: $CCM_SH"
       return 1
     fi
     "$CCM_SH" "$@" -username Administrator -password "$ADMIN_PASSWORD"
-  else
-    echo "Dry Run: ccm.sh " "$@" "-username Administrator -password xxx"
   fi
 }
 
@@ -230,19 +240,19 @@ lb_get_listener_rules_json() {
   local listenerarn
 
   debug "aws elbv2 describe-load-balancers"
-  lbarn=$(aws elbv2 describe-load-balancers | jq -r '.LoadBalancers[] | select(.LoadBalancerName=="'"$LB_NAME"'").LoadBalancerArn')
+  lbarn=$(aws elbv2 describe-load-balancers --no-cli-pager | jq -r '.LoadBalancers[] | select(.LoadBalancerName=="'"$LB_NAME"'").LoadBalancerArn')
   if [[ -z $lbarn ]]; then
     error "Error retriving load balancer details for $LB_NAME"
     return 1
   fi
   debug "aws elbv2 describe-listeners --load-balancer-arn '$lbarn'"
-  listenerarn=$(aws elbv2 describe-listeners --load-balancer-arn "$lbarn" | jq -r '.Listeners[] | select(.Port=='"$LB_PORT"').ListenerArn')
+  listenerarn=$(aws elbv2 describe-listeners --load-balancer-arn "$lbarn" --no-cli-pager | jq -r '.Listeners[] | select(.Port=='"$LB_PORT"').ListenerArn')
   if [[ -z $listenerarn ]]; then
     error "Error retrieving load balancer port $LB_PORT listener for $LB_NAME"
     return 1
   fi
   debug "aws elbv2 describe-rules --listener-arn '$listenerarn'"
-  aws elbv2 describe-rules --listener-arn "$listenerarn"
+  aws elbv2 describe-rules --listener-arn "$listenerarn" --no-cli-pager
 }
 
 lb_get_rule_json() {
@@ -283,7 +293,7 @@ lb_get_rule_json() {
   fi
   if [[ $num_rules -ne 1 ]]; then
     debug "$rules_json"
-    error "Duplicate lb rules found for $LB_URL"
+    error "Error finding unique lb rule for $LB_URL"
     return 1
   fi
   echo "$rules_json"
@@ -294,6 +304,7 @@ lb_disable_maintenance_mode() {
   local priority
   local num_priorities
   local rulearn
+  local json
 
   if ! lbrulejson=$(lb_get_rule_json); then
     return 1
@@ -302,20 +313,20 @@ lb_disable_maintenance_mode() {
   priority=$(jq -r '.Priority' <<< "$lbrulejson")
   num_priorities=$(wc -l <<< "$priority" | tr -d " ")
   if [[ -z $priority || $num_priorities != "1" ]]; then
-    echo "$lbrulejson" >&2
-    echo "Error detecting weblogic lb rule priority $num_priorities" >&2
+    debug "$lbrulejson"
+    error "Error detecting weblogic lb rule priority $num_priorities"
     return 1
   fi
   if ((priority > LB_RULE_MAINTENANCE_PRIORITY)); then
     newpriority=$((priority - 1000))
+    dryrun_debug "aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority' --no-cli-pager"
     if (( DRYRUN == 0 )); then
-      echo "aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority'" >&2
-      aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority"
-    else
-      echo "Dry Run: aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority'" >&2
+      json=$(aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority" --no-cli-pager)
+      debug "$json"
+      echo "maintenance mode disabled"
     fi
   else
-    echo "maintenance mode already disabled" >&2
+    echo "maintenance mode already disabled"
   fi
 }
 
@@ -324,6 +335,7 @@ lb_enable_maintenance_mode() {
   local priority
   local num_priorities
   local rulearn
+  local json
 
   if ! lbrulejson=$(lb_get_rule_json); then
     return 1
@@ -332,20 +344,20 @@ lb_enable_maintenance_mode() {
   priority=$(jq -r '.Priority' <<< "$lbrulejson")
   num_priorities=$(wc -l <<< "$priority" | tr -d " ")
   if [[ -z $priority || $num_priorities != "1" ]]; then
-    echo "$lbrulejson" >&2
-    echo "Error detecting weblogic lb rule priority" >&2
+    debug "$lbrulejson"
+    error "Error detecting weblogic lb rule priority"
     return 1
   fi
   if ((priority < LB_RULE_MAINTENANCE_PRIORITY)); then
     newpriority=$((priority + 1000))
+    dryrun_debug "aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority' --no-cli-pager"
     if (( DRYRUN == 0 )); then
-      echo "aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority'" >&2
-      aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority"
-    else
-      echo "Dry Run: aws elbv2 set-rule-priorities --rule-priorities 'RuleArn=$rulearn,Priority=$newpriority'" >&2
+      json=$(aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority" --no-cli-pager)
+      debug "$json"
+      echo "maintenance mode enabled"
     fi
   else
-    echo "maintenance mode already enabled" >&2
+    echo "maintenance mode already enabled"
   fi
 }
 
@@ -360,14 +372,14 @@ lb_get_maintenance_mode() {
   priority=$(jq -r '.Priority' <<< "$lbrulejson")
   num_priorities=$(wc -l <<< "$priority" | tr -d " ")
   if [[ -z $priority || $num_priorities != "1" ]]; then
-    echo "$lbrulejson" >&2
-    echo "Error detecting weblogic lb rule priority" >&2
+    debug "$lbrulejson"
+    error "Error detecting weblogic lb rule priority"
     return 1
   fi
   if ((priority < LB_RULE_MAINTENANCE_PRIORITY)); then
-    echo "disabled"
+    echo "maintenance mode disabled"
   else
-    echo "enabled"
+    echo "maintenance mode enabled"
   fi
 }
 
@@ -381,8 +393,8 @@ lb_get_target_group_arn() {
   targetgrouparns=$(jq -r '.Actions[] | select(.Type == "forward").TargetGroupArn' <<< "$lbrulejson" | grep "$LB_BACKEND_PORT")
   num_targetgrouparns=$(wc -l <<< "$targetgrouparns" | tr -d " ")
   if [[ -z $targetgrouparns || $num_targetgrouparns != "1" ]]; then
-    echo "$lbrulejson" >&2
-    echo "Error detecting weblogic target group arn" >&2
+    debug "$lbrulejson"
+    error "Error detecting backend target group arn"
     return 1
   fi
   echo "$targetgrouparns"
@@ -396,7 +408,9 @@ lb_get_target_group_health() {
   if ! arn=$(lb_get_target_group_arn); then
     return 1
   fi
-  json=$(aws elbv2 describe-target-health --target-group-arn "$arn")
+
+  debug "aws elbv2 describe-target-health --target-group-arn '$arn'"
+  json=$(aws elbv2 describe-target-health --target-group-arn "$arn" --no-cli-pager)
   healthy_ec2s=$(jq -r '.TargetHealthDescriptions[] | select(.TargetHealth.State == "healthy").Target.Id' <<< "$json")
   if [[ -z $healthy_ec2s ]]; then
     echo 0
@@ -414,7 +428,7 @@ lb_get_target_group_name() {
   fi
   targetgroup=$(cut -d/ -f2 <<< "$arn" | cut -d- -f1-4)
   if [[ -z $targetgroup ]]; then
-    echo "Error extracting target group from arn: $arn"
+    error "Error extracting target group from arn: $arn"
     return 1
   fi
   echo "$targetgroup"
@@ -492,7 +506,7 @@ main() {
           echo "$output_tsv" | sort -f
         fi
       else
-        error "No servers returned"
+        error "API returned no servers"
         exit 1
       fi
     else
