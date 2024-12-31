@@ -1,15 +1,23 @@
 #!/bin/bash
 BASEDIR=$(dirname "$0")
 TEST_NUMBER=1
+ON_EC2=0
 NUM_OK=0
 NUM_FAILED=0
-DEBUG=0
+DEBUG=${DEBUG:-0}
 
 test_bip_control() {
+  local flag
+
+  flag=
+  if ((DEBUG > 1)); then
+    flag=-v
+  fi
+
   printf "TEST %3d: %-80s - " "$TEST_NUMBER" "bip_control.sh $*"
-  if output=$("$BASEDIR"/bip_control.sh "$@" 2>&1); then
+  if output=$("$BASEDIR"/bip_control.sh $flag "$@" 2>&1); then
     echo "OK"
-    if [[ $DEBUG -eq 1 ]]; then
+    if ((DEBUG > 0)); then
       echo "$output" >&2
     fi
     NUM_OK=$((NUM_OK + 1))
@@ -27,14 +35,14 @@ test_lb() {
 
   ncr_env=$1
   lb_env=$2
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode enable
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode disable
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode check
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group arn
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group health
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group name
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-json         rules
-  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-json         rule
+  test_bip_control -d -e "$ncr_env" -l "$lb_env" lb maintenance-mode enable
+  test_bip_control -d -e "$ncr_env" -l "$lb_env" lb maintenance-mode disable
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb maintenance-mode check
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb get-target-group arn
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb get-target-group health
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb get-target-group name
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb get-json         rules
+  test_bip_control -e "$ncr_env" -l "$lb_env" lb get-json         rule
 }
 
 test_server_list() {
@@ -43,14 +51,14 @@ test_server_list() {
 
   ncr_env="$1"
   type="$2"
-  test_bip_control -dv -f fqdn -e "$ncr_env" "$type" server-list
-  test_bip_control -dv -e "$ncr_env" "$type" server-list
-  test_bip_control -dv -e "$ncr_env" "$type" server-list cms frs
-  test_bip_control -dv -e "$ncr_env" "$type" server-list all -cms -frs
-  test_bip_control -dv -e "$ncr_env" "$type" server-list event
-  test_bip_control -dv -e "$ncr_env" "$type" server-list job
-  test_bip_control -dv -e "$ncr_env" "$type" server-list processing
-  test_bip_control -dv -e "$ncr_env" "$type" server-list all -event -job -processing
+  test_bip_control -f fqdn -e "$ncr_env" "$type" server-list
+  test_bip_control -e "$ncr_env" "$type" server-list
+  test_bip_control -e "$ncr_env" "$type" server-list cms frs
+  test_bip_control -e "$ncr_env" "$type" server-list all -cms -frs
+  test_bip_control -e "$ncr_env" "$type" server-list event
+  test_bip_control -e "$ncr_env" "$type" server-list job
+  test_bip_control -e "$ncr_env" "$type" server-list processing
+  test_bip_control -e "$ncr_env" "$type" server-list all -event -job -processing
 }
 
 test_ccm() {
@@ -61,13 +69,17 @@ test_ccm() {
   ncr_env="$1"
   server="$2"
   sia="$3"
-  test_bip_control -dv -e "$ncr_env" ccm display
-  test_bip_control -dv -e "$ncr_env" ccm disable "$server"
-  test_bip_control -dv -e "$ncr_env" ccm enable "$server"
-  test_bip_control -dv -e "$ncr_env" ccm managed-stop "$server"
-  test_bip_control -dv -e "$ncr_env" ccm managed-start "$server"
-  test_bip_control -dv -e "$ncr_env" ccm start "$sia"
-  test_bip_control -dv -e "$ncr_env" ccm stop "$sia"
+  if ((ON_EC2 == 1)); then
+    test_bip_control -e "$ncr_env" ccm display
+  else
+    test_bip_control -d -e "$ncr_env" ccm display
+  fi
+  test_bip_control -d -e "$ncr_env" ccm disable "$server"
+  test_bip_control -d -e "$ncr_env" ccm enable "$server"
+  test_bip_control -d -e "$ncr_env" ccm managed-stop "$server"
+  test_bip_control -d -e "$ncr_env" ccm managed-start "$server"
+  test_bip_control -d -e "$ncr_env" ccm start "$sia"
+  test_bip_control -d -e "$ncr_env" ccm stop "$sia"
 }
 
 test_environment() {
@@ -75,6 +87,9 @@ test_environment() {
     export AWS_DEFAULT_PROFILE=$1
   fi
   ncr_env=$2
+  if (($ON_EC2 == 1)); then
+    test_server_list "$ncr_env" "ccm"
+  fi
   test_server_list "$ncr_env" "biprws"
   test_server_list "$ncr_env" "ec2"
   test_ccm "$ncr_env" server.fqn sia.fqdn
@@ -86,6 +101,7 @@ token=$(curl -sS -m 2 -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws
 if [[ -n $token ]]; then
   instance_id=$(curl -sS -m 2 -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id)
   ncr_env_tag=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=nomis-combined-reporting-environment" --output text | cut -f5)
+  ON_EC2=1
   test_environment "" "$ncr_env_tag"
 else
   test_environment nomis-combined-reporting-test t1

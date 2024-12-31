@@ -83,17 +83,17 @@ usage() {
 Where <opts>:
   -d                        Enable dryrun for maintenance mode commands
   -e <env>                  Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
-  -f default|tsv|json|fqdn  Display in given format, if applicable, default is $FORMAT
+  -f default|json|fqdn      Display in given format, if applicable, default is $FORMAT
   -l public|private         Select LB to act on, default is $LB
   -v                        Enable verbose debug
 
 Where <cmd>:
   biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
-  ccm        display                                         - use ccm.sh to display servers
-  ccm        disable|enable             <servers>            - use ccm.sh to enable/disable server(s)
-  ccm        managed-start|managed-stop <servers>            - use ccm.sh to start/stop server(s)
-  ccm        start|stop                 <sianames>           - use ccm.sh to start/stop sia(s)
-  ec2        server-list                                     - derive expected server-list from environment
+  ccm        server-list                [<servers>]          - use ccm.sh to display servers
+  ccm        disable|enable             <fqdns>              - use ccm.sh to enable/disable server(s) by fqdn
+  ccm        managed-start|managed-stop <fqdns>              - use ccm.sh to start/stop server(s) by fqdn
+  ccm        start|stop                 <fqdns>              - use ccm.sh to start/stop sia(s) by fqdn
+  ec2        server-list                [<servers>]          - derive expected server-list from environment
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
@@ -358,7 +358,9 @@ filter_server_list() {
   output=""
   shift
   if (( $# == 0 )); then
-    sort -uf <<< "$list"
+    if [[ -n $list ]]; then
+      sort -uf <<< "$list"
+    fi
   else
     for filter; do
       if [[ $filter = +* ]]; then
@@ -369,7 +371,9 @@ filter_server_list() {
         output=$(grep_server_list "$list" "$output" "$filter")
       fi
     done
-    sort -uf <<< "$output"
+    if [[ -n $output ]]; then
+      sort -uf <<< "$output"
+    fi
   fi
 }
 
@@ -458,7 +462,7 @@ ec2_expected_servers() {
         echo "${ec2//-/}.$server"
       done
     fi
-  ) | sed 's/,/\t/g' | sort -uf
+  ) | sed 's/,/\t/g'
 }
 
 lb_get_listener_rules_json() {
@@ -660,6 +664,147 @@ lb_get_target_group_name() {
   echo "$targetgroup"
 }
 
+do_biprws() {
+  set -eo pipefail
+
+  set_env_admin_password
+  set_env_biprws_logon_token
+
+  if [[ $1 == "server-list" ]]; then
+    shift
+    if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
+      return 1
+    fi
+    if [[ $FORMAT == "json" ]]; then
+      if (( $# != 0 )); then
+        error "Cannot use json format with server-list filter"
+        return 1
+      fi
+      echo "$pages_json"
+    elif [[ $FORMAT == "default" || $FORMAT == "fqdn" ]]; then
+      pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .server_process_id, .description, .kind, .last_modified] |@tsv' <<< "$pages_json")
+      output_tsv=$(filter_server_list "$pages_tsv" "$@")
+      if [[ $FORMAT == "fqdn" ]]; then
+        echo "$output_tsv" | cut -f1
+      else
+        echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tKind\tLastModified"
+        echo "$output_tsv"
+      fi
+    else
+      error "Unsupported format $FORMAT"
+    fi
+  else
+    usage
+    return 1
+  fi
+}
+
+do_ccm() {
+  set -eo pipefail
+
+  set_env_admin_password
+
+  if [[ $FORMAT == "json" ]]; then
+    error "json format unsupported with ccm commands"
+    return 1
+  fi
+
+  if [[ $1 == "server-list" ]]; then
+    shift
+    output=$(ccm -display)
+    ccm_display_tsv=$(ccm_display_to_tsv "$output")
+    output_tsv=$(filter_server_list "$ccm_display_tsv" "$@")
+    if [[ $FORMAT == "fqdn" ]]; then
+      echo "$output_tsv" | cut -f1
+    else
+      echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tHostName"
+      echo "$output_tsv"
+    fi
+  else
+    if [[ $FORMAT != "default" ]]; then
+      error "$FORMAT format unsupported with ccm commands"
+      return 1
+    fi
+    cmd=$1
+    shift
+    for fqdn; do
+      ccm "-$cmd" "$fqdn"
+    done
+  fi
+}
+
+do_ec2() {
+  set -eo pipefail
+
+  set_env_ec2_names
+
+  if [[ $FORMAT == "json" ]]; then
+    error "json format unsupported with ec2 commands"
+    return 1
+  fi
+  if [[ $1 == "server-list" ]]; then
+    shift
+    ec2_display_tsv=$(ec2_expected_servers)
+    output_tsv=$(filter_server_list "$ec2_display_tsv" "$@")
+    if [[ $FORMAT == "fqdn" ]]; then
+      echo "$output_tsv" | cut -f1
+    else
+      echo -e "FQDN\tStatus\tEnabled"
+      echo "$output_tsv"
+    fi
+  else
+    usage
+    return 11
+  fi
+}
+
+do_lb() {
+  set -eo pipefail
+
+  set_env_lb "$LB"
+
+  if [[ $FORMAT != "default" ]]; then
+    error "$FORMAT format unsupported with lb commands"
+    return 1
+  fi
+
+  if [[ $1 == "maintenance-mode" ]]; then
+    if [[ $2 == "enable" ]]; then
+      lb_enable_maintenance_mode
+    elif [[ $2 == "disable" ]]; then
+      lb_disable_maintenance_mode
+    elif [[ $2 == "check" ]]; then
+      lb_get_maintenance_mode
+    else
+      usage
+      return 1
+    fi
+  elif [[ $1 == "get-target-group" ]]; then
+    if [[ $2 == "arn" ]]; then
+      lb_get_target_group_arn
+    elif [[ $2 == "health" ]]; then
+      lb_get_target_group_health
+    elif [[ $2 == "name" ]]; then
+      lb_get_target_group_name
+    else
+      usage
+      return 1
+    fi
+  elif [[ $1 == "get-json" ]]; then
+    if [[ $2 == "rules" ]]; then
+      lb_get_listener_rules_json
+    elif [[ $2 == "rule" ]]; then
+      lb_get_rule_json
+    else
+      usage
+      return 1
+    fi
+  else
+    usage
+    return 1
+  fi
+}
+
 main() {
   set -eo pipefail
   while getopts "de:f:l:v" opt; do
@@ -703,145 +848,17 @@ main() {
   set_env_variables
 
   if [[ $1 == "biprws" ]]; then
-    set_env_admin_password
-    set_env_biprws_logon_token
-
-    if [[ $2 == "server-list" ]]; then
-      if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
-        exit 1
-      fi
-      shift 2
-      if [[ $FORMAT == "json" ]]; then
-        if (( $# != 0 )); then
-          error "Cannot use json format with server-list filter"
-          exit 1
-        fi
-        echo "$pages_json"
-      elif [[ $FORMAT == "default" || $FORMAT == "tsv" || $FORMAT == "fqdn" ]]; then
-        pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .server_process_id, .description, .kind, .last_modified] |@tsv' <<< "$pages_json")
-        if [[ -z $pages_tsv ]]; then
-          error "API returned no servers"
-          exit 1
-        fi
-        output_tsv=$(filter_server_list "$pages_tsv" "$@")
-        if [[ $FORMAT == "fqdn" ]]; then
-          echo "$output_tsv" | cut -f1
-        else
-          echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tKind\tLastModified"
-          echo "$output_tsv"
-        fi
-      else
-        error "Unsupported format $FORMAT"
-      fi
-    else
-      usage
-      exit 1
-    fi
+    shift
+    do_biprws "$@"
   elif [[ $1 == "ccm" ]]; then
-    if [[ $FORMAT == "json" ]]; then
-      error "json format unsupported with ccm commands"
-      exit 1
-    fi
-    set_env_admin_password
-    if [[ $2 == "display" ]]; then
-      shift 2
-      output=$(ccm -display)
-      if [[ $FORMAT == "default" ]]; then
-        if (( $# != 0 )); then
-          error "Cannot use default format with server-list filter"
-          exit 1
-        fi
-        echo "$output"
-      else
-        ccm_display_tsv=$(ccm_display_to_tsv "$output")
-        if [[ -z $ccm_display_tsv ]]; then
-          error "ccm.sh -display returned no servers"
-          exit 1
-        fi
-        output_tsv=$(filter_server_list "$ccm_display_tsv" "$@")
-        if [[ $FORMAT == "fqdn" ]]; then
-          echo "$output_tsv" | cut -f1
-        else
-          echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tHostName"
-          echo "$output_tsv"
-        fi
-      fi
-    else
-      if [[ $FORMAT != "default" ]]; then
-        error "$FORMAT format unsupported with ccm commands"
-        exit 1
-      fi
-      cmd=$2
-      shift 2
-      for fqdn; do
-        ccm "-$cmd" "$fqdn"
-      done
-    fi
+    shift
+    do_ccm "$@"
   elif [[ $1 == "ec2" ]]; then
-    if [[ $FORMAT == "json" ]]; then
-      error "json format unsupported with ec2 commands"
-      exit 1
-    fi
-    set_env_ec2_names
-    if [[ $2 == "server-list" ]]; then
-      ec2_display_tsv=$(ec2_expected_servers)
-      if [[ -z $ec2_display_tsv ]]; then
-        error "no cms or app EC2s found"
-        exit 1
-      fi
-      shift 2
-      output_tsv=$(filter_server_list "$ec2_display_tsv" "$@")
-      if [[ $FORMAT == "fqdn" ]]; then
-        echo "$output_tsv" | cut -f1
-      else
-        echo -e "FQDN\tStatus\tEnabled"
-        echo "$output_tsv"
-      fi
-    else
-      usage
-      exit 1
-    fi
+    shift
+    do_ec2 "$@"
   elif [[ $1 == "lb" ]]; then
-    if [[ $FORMAT != "default" ]]; then
-      error "$FORMAT format unsupported with lb commands"
-      exit 1
-    fi
-    set_env_lb "$LB"
-    if [[ $2 == "maintenance-mode" ]]; then
-      if [[ $3 == "enable" ]]; then
-        lb_enable_maintenance_mode
-      elif [[ $3 == "disable" ]]; then
-        lb_disable_maintenance_mode
-      elif [[ $3 == "check" ]]; then
-        lb_get_maintenance_mode
-      else
-        usage
-        exit 1
-      fi
-    elif [[ $2 == "get-target-group" ]]; then
-      if [[ $3 == "arn" ]]; then
-        lb_get_target_group_arn
-      elif [[ $3 == "health" ]]; then
-        lb_get_target_group_health
-      elif [[ $3 == "name" ]]; then
-        lb_get_target_group_name
-      else
-        usage
-        exit 1
-      fi
-    elif [[ $2 == "get-json" ]]; then
-      if [[ $3 == "rules" ]]; then
-        lb_get_listener_rules_json
-      elif [[ $3 == "rule" ]]; then
-        lb_get_rule_json
-      else
-        usage
-        exit 1
-      fi
-    else
-      usage
-      exit 1
-    fi
+    shift
+    do_lb "$@"
   else
     usage
     exit 1
