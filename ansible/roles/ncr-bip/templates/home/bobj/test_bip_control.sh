@@ -27,27 +27,27 @@ test_lb() {
 
   ncr_env=$1
   lb_env=$2
-  test_bip_control -dv -e "$ncr_env" lb-enable-maintenance-mode "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-disable-maintenance-mode "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-maintenance-mode "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-target-group-arn "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-target-group-health "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-target-group-name "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-listener-rules-json "$lb_env"
-  test_bip_control -dv -e "$ncr_env" lb-get-rule-json "$lb_env"
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode enable
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode disable
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb maintenance-mode check
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group arn
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group health
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-target-group name
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-json         rules
+  test_bip_control -dv -e "$ncr_env" -l "$lb_env" lb get-json         rule
 }
 
 test_biprws() {
   local ncr_env
 
   ncr_env="$1"
-  test_bip_control -dv -e "$ncr_env" biprws-get-servers
-  test_bip_control -dv -q -e "$ncr_env" biprws-get-servers
-  test_bip_control -dv -e "$ncr_env" biprws-get-servers-except-cms-frs
-  test_bip_control -dv -e "$ncr_env" biprws-get-event-servers
-  test_bip_control -dv -e "$ncr_env" biprws-get-job-servers
-  test_bip_control -dv -e "$ncr_env" biprws-get-processing-servers
-  test_bip_control -dv -e "$ncr_env" biprws-get-other-servers
+  test_bip_control -dv    -e "$ncr_env" biprws server-list all
+  test_bip_control -dv -q -e "$ncr_env" biprws server-list all
+  test_bip_control -dv    -e "$ncr_env" biprws server-list cms frs
+  test_bip_control -dv    -e "$ncr_env" biprws server-list event
+  test_bip_control -dv    -e "$ncr_env" biprws server-list job
+  test_bip_control -dv    -e "$ncr_env" biprws server-list processing
+  test_bip_control -dv    -e "$ncr_env" biprws server-list event job processing
 }
 
 test_ccm() {
@@ -58,13 +58,13 @@ test_ccm() {
   ncr_env="$1"
   server="$2"
   sia="$3"
-  test_bip_control -dv -e "$ncr_env" ccm-display
-  test_bip_control -dv -e "$ncr_env" ccm-disable "$server"
-  test_bip_control -dv -e "$ncr_env" ccm-enable "$server"
-  test_bip_control -dv -e "$ncr_env" ccm-managed-stop "$server"
-  test_bip_control -dv -e "$ncr_env" ccm-managed-start "$server"
-  test_bip_control -dv -e "$ncr_env" ccm-start "$sia"
-  test_bip_control -dv -e "$ncr_env" ccm-stop "$sia"
+  test_bip_control -dv -e "$ncr_env" ccm display
+  test_bip_control -dv -e "$ncr_env" ccm disable "$server"
+  test_bip_control -dv -e "$ncr_env" ccm enable "$server"
+  test_bip_control -dv -e "$ncr_env" ccm managed-stop "$server"
+  test_bip_control -dv -e "$ncr_env" ccm managed-start "$server"
+  test_bip_control -dv -e "$ncr_env" ccm start "$sia"
+  test_bip_control -dv -e "$ncr_env" ccm stop "$sia"
 }
 
 test_environment() {
