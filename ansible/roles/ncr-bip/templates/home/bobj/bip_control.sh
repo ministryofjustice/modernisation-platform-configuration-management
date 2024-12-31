@@ -55,7 +55,6 @@ APS.Connectivity,Stopped,Disabled
 APS.Core,Running,Enabled
 APS.Monitoring,Running,Enabled
 APS.PromotionManagement,Running,Enabled
-APS.Search,Stopped,Disabled
 CentralManagementServer,Running,Enabled
 ConnectionServer,Stopped,Disabled
 EventServer,Running,Enabled
@@ -108,6 +107,7 @@ Where <cmd>:
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
+  diff       server-list                <a> <b> [<servers>]  - run a diff against two server-lists, a/b one of biprws,ccm,ec2
 
 Where <servers> are space separated and can be:
   <fqdn>     - fqdn of server name, e.g. ppncrcms1.AdaptiveJobServer
@@ -215,6 +215,10 @@ set_env_ec2_names() {
     return 1
   fi
   if ! APP_EC2_NAMES=$(get_ec2_server_names "ncr-bip-app"); then
+    return 1
+  fi
+  if [[ -z $APP_EC2_NAMES && -z $CMS_EC2_NAMES ]]; then
+    error "Error retrieving EC2 names with ncr-bip-cms and ncr-bip-app tags"
     return 1
   fi
 }
@@ -445,16 +449,20 @@ ec2_expected_servers() {
 
   (
     if [[ -n $APP_EC2_NAMES ]]; then
+      if [[ -z $CMS_EC2_NAMES ]]; then
+        error "Error finding EC2 names with ncr-bip-cms server-type tag, only got ncr-bip-app server-type: $APP_EC2_NAMES"
+        return 1
+      fi
       for ec2 in $APP_EC2_NAMES; do
         for server in $APP_SERVERS; do
           echo "${ec2//-/}.$server"
         done
       done
-      for ec2 in $APP_CMS_NAMES; do
+      for ec2 in $CMS_EC2_NAMES; do
         for server in $CMS_SERVERS; do
           echo "${ec2//-/}.$server"
         done
-        if [[ $ec2 == *1 && $CMS_SERVERS == *\ * ]]; then
+        if [[ $ec2 == *1 && $CMS_EC2_NAMES == *\ * ]]; then
           for server in $CMS_SERVERS_1; do
             echo "${ec2//-/}.$server"
           done
@@ -467,11 +475,14 @@ ec2_expected_servers() {
     elif [[ $CMS_EC2_NAMES == *\ * ]]; then
       error "Unsupported configuration, no app servers but multiple cms"
       return 1
-    else
+    elif [[ -n $CMS_EC2_NAMES ]]; then
       ec2=$CMS_EC2_NAMES
       for server in $CMS_ONLY_SERVERS; do
         echo "${ec2//-/}.$server"
       done
+    else
+      error "Error finding EC2s with ncr-bip-cms and ncr-bip-app server-type tags"
+      return 1
     fi
   ) | sed 's/,/\t/g'
 }
@@ -770,6 +781,52 @@ do_ec2() {
   fi
 }
 
+get_server_list() {
+  local cmd
+
+  set -eo pipefail
+
+  cmd=$1
+  shift
+  if [[ $cmd == "biprws" ]]; then
+    do_biprws "server-list" "$@"
+  elif [[ $cmd == "ccm" ]]; then
+    do_ccm "server-list" "$@"
+  elif [[ $cmd == "ec2" ]]; then
+    do_ec2 "server-list" "$@"
+  else
+    error "Expected one of biprws, ccm, ec2; got '$cmd'"
+    return 1
+  fi
+}
+
+do_diff() {
+  local a
+  local b
+
+  set -eo pipefail
+
+  if [[ $1 == "server-list" ]]; then
+    if (( $# < 3 )); then
+      usage
+      return 1
+    fi
+    cmd1=$2
+    cmd2=$3
+    shift 3
+
+    a=$(get_server_list "$cmd1" "$@" | cut -f1,2,3)
+    b=$(get_server_list "$cmd2" "$@" | cut -f1,2,3)
+
+    debug "A: $a"
+    debug "B: $b"
+    diff <(echo "$a") <(echo "$b")
+  else
+    usage
+    return 1
+  fi
+}
+
 do_lb() {
   set -eo pipefail
 
@@ -868,6 +925,9 @@ main() {
   elif [[ $1 == "ec2" ]]; then
     shift
     do_ec2 "$@"
+  elif [[ $1 == "diff" ]]; then
+    shift
+    do_diff "$@"
   elif [[ $1 == "lb" ]]; then
     shift
     do_lb "$@"
