@@ -21,18 +21,18 @@
 DRYRUN=0
 VERBOSE=0
 LB=private
-PRINT_FQDN_ONLY=0
+FORMAT=default
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 
 usage() {
   echo "Usage $0: <opts> <cmd>
 
 Where <opts>:
-  -d                     Enable dryrun for maintenance mode commands
-  -e <env>               Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
-  -l public|private      Select LB to act on, default is $LB
-  -q                     Just display FQDNs for BIP output
-  -v                     Enable verbose debug
+  -d                        Enable dryrun for maintenance mode commands
+  -e <env>                  Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
+  -f default|tsv|json|fqdn  Display in given format, if applicable, default is $FORMAT
+  -l public|private         Select LB to act on, default is $LB
+  -v                        Enable verbose debug
 
 Where <cmd>:
   biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
@@ -306,6 +306,46 @@ ccm() {
   fi
 }
 
+ccm_display_to_tsv() {
+  local l
+  local server_name
+  local state
+  local enabled
+  local host_name
+  local pid
+  local description
+
+  server_name=
+  while read -r l; do
+    if [[ $l =~ ^Server\ Name:\ (.*) ]]; then
+      if [[ -n $server_name ]]; then
+        echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
+      fi
+      server_name=${BASH_REMATCH[1]}
+      state=
+      enabled=
+      host_name=
+      pid=
+      description=
+    elif [[ $l =~ State:\ (.*) ]]; then
+      state=${BASH_REMATCH[1]}
+    elif [[ $l =~ Enabled:\ (.*) ]]; then
+      enabled=${BASH_REMATCH[1]}
+    elif [[ $l =~ Host\ Name:\ (.*) ]]; then
+      host_name=${BASH_REMATCH[1]}
+    elif [[ $l =~ PID:\ (.*) ]]; then
+      pid=${BASH_REMATCH[1]}
+    elif [[ $l =~ Description:\ (.*) ]]; then
+      description=${BASH_REMATCH[1]}
+    elif [[ -n $l && $l != Description:* ]]; then
+      debug "$l"
+    fi
+  done <<< "$1"
+  if [[ -n $server_name ]]; then
+    echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
+  fi
+}
+
 lb_get_listener_rules_json() {
   local lbarn
   local listenerarn
@@ -507,7 +547,7 @@ lb_get_target_group_name() {
 
 main() {
   set -eo pipefail
-  while getopts "de:l:qv" opt; do
+  while getopts "de:f:l:v" opt; do
       case $opt in
           d)
               DRYRUN=1
@@ -518,8 +558,8 @@ main() {
           l)
               LB=${OPTARG}
               ;;
-          q)
-              PRINT_FQDN_ONLY=1
+          f)
+              FORMAT=${OPTARG}
               ;;
           v)
               VERBOSE=1
@@ -555,28 +595,67 @@ main() {
       if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
         exit 1
       fi
-      pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .kind, .description] |@tsv' <<< "$pages_json")
-      if [[ -z $pages_tsv ]]; then
-        error "API returned no servers"
-        exit 1
-      fi
       shift 2
-      output_tsv=$(filter_server_list "$pages_tsv" "$@")
-      if ((PRINT_FQDN_ONLY == 1)); then
-        echo "$output_tsv" | cut -f1
+      if [[ $FORMAT == "json" ]]; then
+        if (( $# != 0 )); then
+          error "Cannot use json format with server-list filter"
+          exit 1
+        fi
+        echo "$pages_json"
+      elif [[ $FORMAT == "default" || $FORMAT == "tsv" || $FORMAT == "fqdn" ]]; then
+        pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .server_process_id, .description, .kind, .last_modified] |@tsv' <<< "$pages_json")
+        if [[ -z $pages_tsv ]]; then
+          error "API returned no servers"
+          exit 1
+        fi
+        output_tsv=$(filter_server_list "$pages_tsv" "$@")
+        if [[ $FORMAT == "fqdn" ]]; then
+          echo "$output_tsv" | cut -f1
+        else
+          echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tKind\tLastModified"
+          echo "$output_tsv"
+        fi
       else
-        echo -e "Title\tStatus\tEnabled\tKind\tDescription"
-        echo "$output_tsv"
+        error "Unsupported format $FORMAT"
       fi
     else
       usage
       exit 1
     fi
   elif [[ $1 == "ccm" ]]; then
+    if [[ $FORMAT == "json" ]]; then
+      error "json format unsupported with ccm commands"
+      exit 1
+    fi
     set_env_admin_password
     if [[ $2 == "display" ]]; then
-      ccm -display
+      shift 2
+      output=$(ccm -display)
+      if [[ $FORMAT == "default" ]]; then
+        if (( $# != 0 )); then
+          error "Cannot use default format with server-list filter"
+          exit 1
+        fi
+        echo "$output"
+      else
+        ccm_display_tsv=$(ccm_display_to_tsv "$output")
+        if [[ -z $ccm_display_tsv ]]; then
+          error "ccm.sh -display returned no servers"
+          exit 1
+        fi
+        output_tsv=$(filter_server_list "$ccm_display_tsv" "$@")
+        if [[ $FORMAT == "fqdn" ]]; then
+          echo "$output_tsv" | cut -f1
+        else
+          echo -e "FQDN\tStatus\tEnabled\tPID\tDescription\tHostName"
+          echo "$output_tsv"
+        fi
+      fi
     else
+      if [[ $FORMAT != "default" ]]; then
+        error "$FORMAT format unsupported with ccm commands"
+        exit 1
+      fi
       cmd=$2
       shift 2
       for fqdn; do
@@ -584,6 +663,10 @@ main() {
       done
     fi
   elif [[ $1 == "lb" ]]; then
+    if [[ $FORMAT != "default" ]]; then
+      error "$FORMAT format unsupported with lb commands"
+      exit 1
+    fi
     set_env_lb "$LB"
     if [[ $2 == "maintenance-mode" ]]; then
       if [[ $3 == "enable" ]]; then
