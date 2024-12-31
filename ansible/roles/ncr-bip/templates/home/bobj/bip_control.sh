@@ -20,6 +20,7 @@
 
 DRYRUN=0
 VERBOSE=0
+LB=private
 PRINT_FQDN_ONLY=0
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 
@@ -29,29 +30,28 @@ usage() {
 Where <opts>:
   -d                     Enable dryrun for maintenance mode commands
   -e <env>               Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
+  -l public|private      Select LB to act on, default is $LB
   -q                     Just display FQDNs for BIP output
   -v                     Enable verbose debug
 
 Where <cmd>:
-  biprws-get-servers-tsv                        - Print all BIP servers using BIPRWS API
-  biprws-get-servers-except-cms-frs             - Print BIP all servers apart from CMS and FRS servers
-  biprws-get-event-servers                      - Print BIP event servers
-  biprws-get-job-servers                        - Print BIP job servers
-  biprws-get-processing-servers                 - Print BIP processing servers
-  biprws-get-other-servers                      - Print BIP other servers, i.e. not event,job or processing
-  ccm-disable       <fqdn server name>          - ccm.sh disable: disable server
-  ccm-display                                   - ccm.sh display: display servers
-  ccm-enable        <fqdn server name>          - ccm.sh enable: enable server
-  ccm-managed-start <fqdn server name>          - cms.sh managed_start: start server
-  ccm-managed-stop  <fqdn server name>          - ccm.sh managed_stop: stop server
-  ccm-start         <sianame>                   - ccm.sh start: start sia
-  ccm-stop          <sianame>                   - ccm.sh stop: stop sia
-  lb-enable-maintenance-mode  <private|public>  - Enable maintenance mode on given LB
-  lb-disable-maintenance-mode <private|public>  - Disable maintenance mode on given LB
-  lb-get-maintenance-mode     <private|public>  - Get maintenance mode enabled state on given LB
-  lb-get-target-group-arn     <private|public>  - Get given LB target group ARN
-  lb-get-target-group-health  <private|public>  - Get given LB target group health
-  lb-get-target-group-name    <private|public>  - Get giben LB target group name
+  biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
+  ccm        display                    [<servers>]          - use ccm.sh to display servers
+  ccm        disable|enable             <servers>            - use ccm.sh to enable/disable server(s)
+  ccm        managed-start|managed-stop <servers>            - use ccm.sh to start/stop server(s)
+  ccm        start|stop                 <sianames>           - use ccm.sh to start/stop sia(s)
+  lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
+  lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
+  lb         get-json                   rules|rule           - debug lb json
+
+
+Where <servers> are space separated and can be:
+  <fqdn>     - fqdn of server name, e.g. ppncrcms1.AdaptiveJobServer
+  all        - all servers
+  cms        - all CentralManagementServer servers
+  frs        - all InputFileRepository and OutputFileRepository servers
+  event      - all EventServer servers
+  processing - all ProcessingServer servers, e.g. WebIntelligenceProcessingServer
 " >&2
   return 1
 }
@@ -139,7 +139,7 @@ set_env_lb() {
     LB_BACKEND_PORT=$PRIVATE_LB_BACKEND_PORT
     LB_URL=$PRIVATE_LB_URL
   else
-    error "Unexpected loadbalancer argument '$1', expected public or private"
+    error "Unexpected loadbalancer '$1', expected public or private"
     return 1
   fi
 }
@@ -222,6 +222,34 @@ biprws_get_pages() {
     uri="$nexturi"
     page=$((page + 1))
   done
+}
+
+filter_server_list() {
+  local filter
+  local list
+
+  list="$1"
+  shift
+
+  (
+    for filter; do
+      if [[ $filter == "all" ]]; then
+        echo "$list"
+      elif [[ $filter == "cms" ]]; then
+        grep CentralManagementServer <<< "$list"
+      elif [[ $filter == "frs" ]]; then
+        grep FileRepository <<< "$list"
+      elif [[ $filter == "event" ]]; then
+        grep EventServer <<< "$list"
+      elif [[ $filter == "job" ]]; then
+        grep JobServer <<< "$list"
+      elif [[ $filter == "processing" ]]; then
+        grep ProcessingServer <<< "$list"
+      else
+        grep "$filter" <<< "$list"
+      fi
+    done
+  ) | sort -uf
 }
 
 ccm() {
@@ -436,13 +464,16 @@ lb_get_target_group_name() {
 
 main() {
   set -eo pipefail
-  while getopts "de:qv" opt; do
+  while getopts "de:l:qv" opt; do
       case $opt in
           d)
               DRYRUN=1
               ;;
           e)
               NCR_ENVIRONMENT=${OPTARG}
+              ;;
+          l)
+              LB=${OPTARG}
               ;;
           q)
               PRINT_FQDN_ONLY=1
@@ -473,96 +504,75 @@ main() {
   fi
   set_env_variables
 
-  if [[ $1 == biprws-* ]]; then
+  if [[ $1 == "biprws" ]]; then
     set_env_admin_password
     set_env_biprws_logon_token
 
-    if [[ $1 == biprws-get-* ]]; then
+    if [[ $2 == "server-list" ]]; then
       if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
         exit 1
       fi
       pages_tsv=$(jq -sr '.[] | [.title, .status_type, .disabled, .kind, .description] |@tsv' <<< "$pages_json")
-      if [[ -n $pages_tsv ]]; then
-        if [[ $1 == "biprws-get-servers" ]]; then
-          output_tsv="$pages_tsv"
-        elif [[ $1 == "biprws-get-servers-except-cms-frs" ]]; then
-          output_tsv=$(grep -Ev 'CentralManagementServer|FileRepository' <<< "$pages_tsv")
-        elif [[ $1 == "biprws-get-event-servers" ]]; then
-          output_tsv=$(grep EventServer <<< "$pages_tsv")
-        elif [[ $1 == "biprws-get-job-servers" ]]; then
-          output_tsv=$(grep JobServer <<< "$pages_tsv")
-        elif [[ $1 == "biprws-get-processing-servers" ]]; then
-          output_tsv=$(grep ProcessingServer <<< "$pages_tsv")
-        elif [[ $1 == "biprws-get-other-servers" ]]; then
-          output_tsv=$(grep -Ev 'EventServer|JobServer|ProcessingServer' <<< "$pages_tsv")
-        else
-          usage
-          exit 1
-        fi
-        if ((PRINT_FQDN_ONLY == 1)); then
-          echo "$output_tsv" | cut -f1 | sort -f
-        else
-          echo -e "Title\tStatus\tEnabled\tKind\tDescription"
-          echo "$output_tsv" | sort -f
-        fi
-      else
+      if [[ -z $pages_tsv ]]; then
         error "API returned no servers"
         exit 1
+      fi
+      shift 2
+      output_tsv=$(filter_server_list "$pages_tsv" "$@")
+      if ((PRINT_FQDN_ONLY == 1)); then
+        echo "$output_tsv" | cut -f1
+      else
+        echo -e "Title\tStatus\tEnabled\tKind\tDescription"
+        echo "$output_tsv"
       fi
     else
       usage
       exit 1
     fi
-  elif [[ $1 == ccm-display ]]; then
+  elif [[ $1 == "ccm" ]]; then
     set_env_admin_password
-    ccm -display
-  elif [[ $1 == ccm-* ]]; then
-    if [[ -z $2 ]]; then
-      usage
-      exit 1
+    if [[ $2 == "display" ]]; then
+      ccm -display
+    else
+      cmd=$2
+      shift 2
+      for fqdn; do
+        ccm "-$cmd" "$fqdn"
+      done
     fi
-    set_env_admin_password
-    cmd=$1
-    shift
-    for fqdn; do
-      if [[ $cmd == "ccm-disable" ]]; then
-        ccm -disable "$fqdn"
-      elif [[ $cmd == "ccm-enable" ]]; then
-        ccm -enable "$fqdn"
-      elif [[ $cmd == "ccm-managed-start" ]]; then
-        ccm -managedstart "$fqdn"
-      elif [[ $cmd == "ccm-managed-stop" ]]; then
-        ccm -managedstop "$fqdn"
-      elif [[ $cmd == "ccm-start" ]]; then
-        ccm -start "$fqdn"
-      elif [[ $cmd == "ccm-stop" ]]; then
-        ccm -stop "$fqdn"
+  elif [[ $1 == "lb" ]]; then
+    set_env_lb "$LB"
+    if [[ $2 == "maintenance-mode" ]]; then
+      if [[ $3 == "enable" ]]; then
+        lb_enable_maintenance_mode
+      elif [[ $3 == "disable" ]]; then
+        lb_disable_maintenance_mode
+      elif [[ $3 == "check" ]]; then
+        lb_get_maintenance_mode
       else
         usage
         exit 1
       fi
-    done
-  elif [[ $1 == lb-* ]]; then
-    if [[ -z $2 ]]; then
-      usage
-    fi
-    set_env_lb "$2"
-    if [[ $1 == "lb-enable-maintenance-mode" ]]; then
-      lb_enable_maintenance_mode
-    elif [[ $1 == "lb-disable-maintenance-mode" ]]; then
-      lb_disable_maintenance_mode
-    elif [[ $1 == "lb-get-maintenance-mode" ]]; then
-      lb_get_maintenance_mode
-    elif [[ $1 == "lb-get-target-group-arn" ]]; then
-      lb_get_target_group_arn
-    elif [[ $1 == "lb-get-target-group-health" ]]; then
-      lb_get_target_group_health
-    elif [[ $1 == "lb-get-target-group-name" ]]; then
-      lb_get_target_group_name
-    elif [[ $1 == "lb-get-listener-rules-json" ]]; then
-      lb_get_listener_rules_json
-    elif [[ $1 == "lb-get-rule-json" ]]; then
-      lb_get_rule_json
+    elif [[ $2 == "get-target-group" ]]; then
+      if [[ $3 == "arn" ]]; then
+        lb_get_target_group_arn
+      elif [[ $3 == "health" ]]; then
+        lb_get_target_group_health
+      elif [[ $3 == "name" ]]; then
+        lb_get_target_group_name
+      else
+        usage
+        exit 1
+      fi
+    elif [[ $2 == "get-json" ]]; then
+      if [[ $3 == "rules" ]]; then
+        lb_get_listener_rules_json
+      elif [[ $3 == "rule" ]]; then
+        lb_get_rule_json
+      else
+        usage
+        exit 1
+      fi
     else
       usage
       exit 1
