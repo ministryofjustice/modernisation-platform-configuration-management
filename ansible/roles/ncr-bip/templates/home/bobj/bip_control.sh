@@ -24,6 +24,59 @@ LB=private
 FORMAT=default
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 
+APP_SERVERS="AdaptiveJobServer,Running,Enabled
+AdaptiveProcessingServer,Stopped,Disabled
+APS.Analysis,Stopped,Disabled
+APS.Connectivity,Running,Enabled
+APS.Core,Stopped,Disabled
+APS.DF,Running,Enabled
+APS.Monitoring,Stopped,Disabled
+APS.Visualization,Running,Enabled
+APS.WebI,Running,Enabled
+APS.WebIDSLBridge,Running,Enabled
+ConnectionServer,Running,Enabled
+WebApplicationContainerServer,Stopped,Disabled
+WebIntelligenceProcessingServer,Running,Enabled"
+
+CMS_SERVERS="AdaptiveJobServer,Stopped,Disabled
+APS.Auditing,Running,Enabled
+APS.Connectivity,Stopped,Disabled
+APS.Core,Running,Enabled
+APS.Monitoring,Running,Enabled
+APS.PromotionManagement,Running,Enabled
+APS.Search,Stopped,Disabled
+CentralManagementServer,Running,Enabled
+ConnectionServer,Stopped,Disabled
+EventServer,Running,Enabled
+InputFileRepository,Running,Enabled
+OutputFileRepository,Running,Enabled
+WebApplicationContainerServer,Stopped,Disabled"
+
+CMS_SERVERS_1="APS.Search,Stopped,Disabled"
+CMS_SERVERS_2="APS.Search,Running,Enabled"
+
+CMS_ONLY_SERVERS="AdaptiveJobServer,Running,Enabled
+AdaptiveProcessingServer,Stopped,Disabled
+APS.Analysis,Stopped,Disabled
+APS.Auditing,Stopped,Disabled
+APS.Connectivity,Running_with_errors,Enabled
+APS.Core,Running,Enabled
+APS.Data,Stopped,Disabled
+APS.DF,Running,Enabled
+APS.Monitoring,Running,Enabled
+APS.PromotionManagement,Running,Enabled
+APS.Search,Stopped,Disabled
+APS.Visualization,Running,Enabled
+APS.Webi,Running,Enabled
+APS.WebIDSLBridge,Running,Enabled
+CentralManagementServer,Running,Enabled
+ConnectionServer,Running,Enabled
+EventServer,Running,Enabled
+InputFileRepository,Running,Enabled
+OutputFileRepository,Running,Enabled
+WebApplicationContainerServer,Stopped,Disabled
+WebIntelligenceProcessingServer,Running,Enabled"
+
 usage() {
   echo "Usage $0: <opts> <cmd>
 
@@ -40,6 +93,7 @@ Where <cmd>:
   ccm        disable|enable             <servers>            - use ccm.sh to enable/disable server(s)
   ccm        managed-start|managed-stop <servers>            - use ccm.sh to start/stop server(s)
   ccm        start|stop                 <sianames>           - use ccm.sh to start/stop sia(s)
+  ec2        server-list                                     - derive expected server-list from environment
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
@@ -126,8 +180,32 @@ set_env_ncr_environment() {
   fi
 }
 
-set_env_ncr_ec2s() {
-  debug "aws ec2 describe-instances"
+get_ec2_server_names() {
+  local json
+  local ec2id
+  local ec2ids
+
+  debug "aws ec2 describe-instances --filters 'Name=tag:nomis-combined-reporting-environment,Values=$NCR_ENVIRONMENT' 'Name=tag:server-type,Values=$1'"
+  if ! json=$(aws ec2 describe-instances --no-cli-pager --filters "Name=tag:nomis-combined-reporting-environment,Values=$NCR_ENVIRONMENT" "Name=tag:server-type,Values=$1"); then
+    return 1
+  fi
+  ec2ids=$(jq -r ".Reservations[].Instances[].InstanceId" <<< "$json")
+  (
+    for ec2id in $ec2ids; do
+      if ! jq -r ".Reservations[].Instances[] | select(.InstanceId==\"$ec2id\") | .Tags[] | select(.Key==\"Name\") | .Value" <<< "$json"; then
+        return 1
+      fi
+    done
+  ) | xargs
+}
+
+set_env_ec2_names() {
+  if ! CMS_EC2_NAMES=$(get_ec2_server_names "ncr-bip-cms"); then
+    return 1
+  fi
+  if ! APP_EC2_NAMES=$(get_ec2_server_names "ncr-bip-app"); then
+    return 1
+  fi
 }
 
 set_env_lb() {
@@ -344,6 +422,43 @@ ccm_display_to_tsv() {
   if [[ -n $server_name ]]; then
     echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
   fi
+}
+
+ec2_expected_servers() {
+  local ec2
+  local server
+
+  (
+    if [[ -n $APP_EC2_NAMES ]]; then
+      for ec2 in $APP_EC2_NAMES; do
+        for server in $APP_SERVERS; do
+          echo "${ec2//-/}.$server"
+        done
+      done
+      for ec2 in $APP_CMS_NAMES; do
+        for server in $CMS_SERVERS; do
+          echo "${ec2//-/}.$server"
+        done
+        if [[ $ec2 == *1 && $CMS_SERVERS == *\ * ]]; then
+          for server in $CMS_SERVERS_1; do
+            echo "${ec2//-/}.$server"
+          done
+        else
+          for server in $CMS_SERVERS_2; do
+            echo "${ec2//-/}.$server"
+          done
+        fi
+      done
+    elif [[ $CMS_EC2_NAMES == *\ * ]]; then
+      error "Unsupported configuration, no app servers but multiple cms"
+      return 1
+    else
+      ec2=$CMS_EC2_NAMES
+      for server in $CMS_ONLY_SERVERS; do
+        echo "${ec2//-/}.$server"
+      done
+    fi
+  ) | sed 's/,/\t/g' | sort -uf
 }
 
 lb_get_listener_rules_json() {
@@ -661,6 +776,30 @@ main() {
       for fqdn; do
         ccm "-$cmd" "$fqdn"
       done
+    fi
+  elif [[ $1 == "ec2" ]]; then
+    if [[ $FORMAT == "json" ]]; then
+      error "json format unsupported with ec2 commands"
+      exit 1
+    fi
+    set_env_ec2_names
+    if [[ $2 == "server-list" ]]; then
+      ec2_display_tsv=$(ec2_expected_servers)
+      if [[ -z $ec2_display_tsv ]]; then
+        error "no cms or app EC2s found"
+        exit 1
+      fi
+      shift 2
+      output_tsv=$(filter_server_list "$ec2_display_tsv" "$@")
+      if [[ $FORMAT == "fqdn" ]]; then
+        echo "$output_tsv" | cut -f1
+      else
+        echo -e "FQDN\tStatus\tEnabled"
+        echo "$output_tsv"
+      fi
+    else
+      usage
+      exit 1
     fi
   elif [[ $1 == "lb" ]]; then
     if [[ $FORMAT != "default" ]]; then
