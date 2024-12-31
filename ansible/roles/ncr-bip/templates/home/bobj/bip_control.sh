@@ -6,28 +6,78 @@
 # - update load balancer maintenance mode
 #
 # To shutdown environment cleanly as per https://me.sap.com/notes/0002390652:
+#PREREQ. Check script desired state (ec2) matches reality (ccm)
+#   - On a single CMS:
+#     $ ./bip_control.sh diff server-list ccm ec2
+#0. Enable Maintenance Mode on the LB
+#   - On a single CMS:
+#     $ ./bip_control.sh -l private lb maintenance-mode enable
+#     $ ./bip_control.sh -l public  lb maintenance-mode enable
 #1. Stop the Web Application Server (Tomcat or other).
-#   - enable maintenance mode on LB: 'bip_control.sh lb maintenance mode enable'
-#   - run systemctl stop sapbobj on all web servers
+#   - On all Web Servers:
+#     $ systemctl stop sapbobj
 #2. Disable all services except the Central Management Server, Input File Repository Server and Output File Repository Server.
-#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list all -cms -frs -Disabled)
-#                        bip_control.sh ccm disable $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list all -cms -frs -Disabled)
+#     $ ./bip_control.sh ccm disable $fqdns
 #3. Wait for 10 minutes.
 #4. Stop the Event Servers.
-#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list event -Stopped)
-#                        bip_control.sh ccm managed-stop $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list event -Stopped)
+#     $ ./bip_control.sh ccm managedstop $fqdns
 #5. Stop all Job Servers.
-#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list job -Stopped)
-#                        bip_control.sh ccm managed-stop $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list job -Stopped)
+#     $ ./bip_control.sh ccm managedstop $fqdns
 #6. Stop all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
-#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list processing -Stopped)
-#                        bip_control.sh ccm managed-stop $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list processing -Stopped)
+#     $ ./bip_control.sh ccm managedstop $fqdns
 #7. Stop the rest of the servers.
-#   - grab list via ccm: fqdns=$(bip_control.sh -f fqdn ccm server-list all -event -job -processing -Stopped)
-#                        bip_control.sh ccm managed-stop $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list all -event -job -processing -Stopped)
+#     $ ./bip_control.sh ccm managedstop $fqdns
 #8. Stop SIA.
-#   - grab list via ccm: fqdns=$(bip_control.sh -f sia ccm server-list)
-#                        bip_control.sh ccm stop $fqdns
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f sia ccm server-list)
+#     $ ./bip_control.sh ccm stop $fqdns
+#9. Stop System
+#   - On all CMS and APP EC2s
+#   - $ systemctl stop sapbobj
+#
+# To restart environment cleanly
+#1. Start System
+#   - On all CMS and APP EC2s
+#   - $ systemctl start sapbobj
+#2. Start non-processing/job/event servers
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list all -event -job -processing +Running)
+#     $ ./bip_control.sh ccm managedstart $fqdns
+#     $ watch -n 10 ./bip_control.sh ccm server-list Initializing
+#3. Start all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list processing +Running)
+#     $ ./bip_control.sh ccm managedstart $fqdns
+#4. Start all Job Servers.
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list job +Running)
+#     $ ./bip_control.sh ccm managedstart $fqdns
+#5. Start the Event Servers.
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list event +Running)
+#     $ ./bip_control.sh ccm managedstart $fqdns
+#6. Enable all services
+#   - On a single CMS:
+#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list Enabled)
+#     $ ./bip_control.sh ccm enable $fqdns
+#7. Start the Web Application Servers (Tomcat or other).
+#   - On all Web Servers:
+#     $ systemctl stop sapbobj
+#8. Disablee Maintenance Mode on the LB
+#   - On a single CMS:
+#     $ ./bip_control.sh -l private lb maintenance-mode disable
+#     $ ./bip_control.sh -l public  lb maintenance-mode disable
+
 
 DRYRUN=0
 VERBOSE=0
@@ -69,7 +119,7 @@ CMS_ONLY_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
 APS.Analysis,Stopped,Disabled
 APS.Auditing,Stopped,Disabled
-APS.Connectivity,Running_with_errors,Enabled
+APS.Connectivity,Running,Enabled
 APS.Core,Running,Enabled
 APS.Data,Stopped,Disabled
 APS.DF,Running,Enabled
@@ -101,7 +151,7 @@ Where <cmd>:
   biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
   ccm        server-list                [<servers>]          - use ccm.sh to display servers
   ccm        disable|enable             <fqdns>              - use ccm.sh to enable/disable server(s) by fqdn
-  ccm        managed-start|managed-stop <fqdns>              - use ccm.sh to start/stop server(s) by fqdn
+  ccm        managedstart|managedstop   <fqdns>              - use ccm.sh to start/stop server(s) by fqdn
   ccm        start|stop                 <fqdns>              - use ccm.sh to start/stop sia(s) by fqdn
   ec2        server-list                [<servers>]          - derive expected server-list from environment
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
@@ -261,6 +311,10 @@ set_env_biprws_logon_token() {
   debug "curl https://$ADMIN_URL/biprws/v1/logon/long"
   logon='{"username": "Administrator", "password": "'"$ADMIN_PASSWORD"'", "auth": "secEnterprise"}'
   token_json=$(curl -Ss -m 5 -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "https://$ADMIN_URL/biprws/v1/logon/long")
+  if ! jq -e . >/dev/null 2>&1 <<<"$token_json"; then
+    error "Logon API returned non-json output, LB might be in maintenance mode"
+    return 1
+  fi
   error_code=$(jq -r .error_code <<< "$token_json")
   message=$(jq -r .message <<< "$token_json")
   if [[ $error_code != 'null' ]]; then
