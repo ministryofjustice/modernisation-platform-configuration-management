@@ -287,7 +287,7 @@ set_env_lb() {
     LB_BACKEND_PORT=$PRIVATE_LB_BACKEND_PORT
     LB_URL=$PRIVATE_LB_URL
   else
-    error "Unexpected loadbalancer '$1', expected public or private"
+    error "Unexpected lb '$1', expected public or private"
     return 1
   fi
 }
