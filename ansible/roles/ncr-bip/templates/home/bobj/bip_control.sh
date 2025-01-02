@@ -1,5 +1,5 @@
 #!/bin/bash
-# Helper script for BIP to help start/stop environment cleanly
+# Helper script for starting/stopping BIP environment cleanly
 # - use biprws API to retrieve server list
 # - use ccm.sh script to retrieve server list / run commands
 # - use ec2 tags to print expected server list
@@ -73,7 +73,7 @@
 #7. Start the Web Application Servers (Tomcat or other).
 #   - On all Web Servers:
 #     $ systemctl stop sapbobj
-#8. Disablee Maintenance Mode on the LB
+#8. Disable Maintenance Mode on the LB
 #   - On a single CMS:
 #     $ ./bip_control.sh -l private lb maintenance-mode disable
 #     $ ./bip_control.sh -l public  lb maintenance-mode disable
