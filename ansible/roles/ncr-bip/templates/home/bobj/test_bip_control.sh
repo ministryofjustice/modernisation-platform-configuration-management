@@ -99,14 +99,17 @@ test_environment() {
   ncr_env=$2
   if ((ON_EC2 == 1)); then
     test_server_list "$ncr_env" "ccm"
-    test_diff "$ncr_env" ccm ec2
+    test_diff "$ncr_env" ccm exp
   fi
   test_server_list "$ncr_env" "biprws"
-  test_server_list "$ncr_env" "ec2"
+  test_server_list "$ncr_env" "exp"
   test_ccm "$ncr_env" server.fqn sia.fqdn
   test_lb "$ncr_env" public
   test_lb "$ncr_env" private
-  test_diff "$ncr_env" biprws ec2
+  if [[ $ncr_env == "pp" || $ncr_env == "pd" ]]; then
+    test_lb "$ncr_env" admin
+  fi
+  test_diff "$ncr_env" biprws exp
 }
 
 token=$(curl -sS -m 2 -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 3600" 2>/dev/null)

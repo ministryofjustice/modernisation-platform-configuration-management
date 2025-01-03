@@ -2,88 +2,48 @@
 # Helper script for starting/stopping BIP environment cleanly
 # - use biprws API to retrieve server list
 # - use ccm.sh script to retrieve server list / run commands
-# - use ec2 tags to print expected server list
+# - use ec2 tags and env vars to print expected server list
 # - update load balancer maintenance mode
 #
+# PREREQ. The script figures out desired server state from tags and
+# the configured _SERVER environment variables. Check this actually
+# matches the working environment, and adjust the env variables as
+# required, e.g. compare ccm output with expected servers
+#   $ ./bip_control.sh diff server-list ccm exp
+#
 # To shutdown environment cleanly as per https://me.sap.com/notes/0002390652:
-#PREREQ. Check script desired state (ec2) matches reality (ccm)
-#   - On a single CMS:
-#     $ ./bip_control.sh diff server-list ccm ec2
+# With additional step to enable ma
+# Use the following to get the steps:
+#   $ ./bip_control.sh pipeline stop
+#
 #0. Enable Maintenance Mode on the LB
-#   - On a single CMS:
-#     $ ./bip_control.sh -l private lb maintenance-mode enable
-#     $ ./bip_control.sh -l public  lb maintenance-mode enable
-#1. Stop the Web Application Server (Tomcat or other).
-#   - On all Web Servers:
-#     $ systemctl stop sapbobj
+#1. Stop the Web Application Server (Tomcat or other) / EC2s.
 #2. Disable all services except the Central Management Server, Input File Repository Server and Output File Repository Server.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list all -cms -frs -Disabled)
-#     $ ./bip_control.sh ccm disable $fqdns
 #3. Wait for 10 minutes.
 #4. Stop the Event Servers.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list event -Stopped)
-#     $ ./bip_control.sh ccm managedstop $fqdns
 #5. Stop all Job Servers.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list job -Stopped)
-#     $ ./bip_control.sh ccm managedstop $fqdns
 #6. Stop all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list processing -Stopped)
-#     $ ./bip_control.sh ccm managedstop $fqdns
 #7. Stop the rest of the servers.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ccm server-list all -event -job -processing -Stopped)
-#     $ ./bip_control.sh ccm managedstop $fqdns
-#8. Stop SIA.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f sia ccm server-list)
-#     $ ./bip_control.sh ccm stop $fqdns
-#9. Stop System
-#   - On all CMS and APP EC2s
-#   - $ systemctl stop sapbobj
+#8. Stop SIA
 #
-# To restart environment cleanly
-#1. Start System
-#   - On all CMS and APP EC2s
-#   - $ systemctl start sapbobj
-#2. Start non-processing/job/event servers
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list all -event -job -processing +Running)
-#     $ ./bip_control.sh ccm managedstart $fqdns
-#     $ watch -n 10 ./bip_control.sh ccm server-list Initializing
-#3. Start all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list processing +Running)
-#     $ ./bip_control.sh ccm managedstart $fqdns
-#4. Start all Job Servers.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list job +Running)
-#     $ ./bip_control.sh ccm managedstart $fqdns
-#5. Start the Event Servers.
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list event +Running)
-#     $ ./bip_control.sh ccm managedstart $fqdns
-#6. Enable all services
-#   - On a single CMS:
-#     $ fqdns=$(./bip_control.sh -f fqdn ec2 server-list Enabled)
-#     $ ./bip_control.sh ccm enable $fqdns
-#7. Start the Web Application Servers (Tomcat or other).
-#   - On all Web Servers:
-#     $ systemctl stop sapbobj
-#8. Disable Maintenance Mode on the LB
-#   - On a single CMS:
-#     $ ./bip_control.sh -l private lb maintenance-mode disable
-#     $ ./bip_control.sh -l public  lb maintenance-mode disable
-
+# To restart environment cleanly, in reverse order:
+#8. Start SIA
+#7. Start non-processing/job/event servers
+#6. Start all Processing servers (Example: Crystal Processing Servers / Web Intelligence Processing Servers)
+#5. Start all Job Servers.
+#4. Start the Event Servers.
+#3. Wait for 10 minutes (n/a - not required on start up)
+#2. Enable all services
+#1. Start the Web Application Servers (Tomcat or other) / EC2s.
+#0. Disable Maintenance Mode on the LB
 
 DRYRUN=0
 VERBOSE=0
-LB=private
+LBS=
 FORMAT=default
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
+CCM_WAIT_FOR_CMD_ENABLED=0
+CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -144,8 +104,9 @@ Where <opts>:
   -d                        Enable dryrun for maintenance mode commands
   -e <env>                  Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
-  -l public|private         Select LB to act on, default is $LB
+  -l public|private|admin   Select LB endpoint(s)
   -v                        Enable verbose debug
+  -w                        Wait for CCM command
 
 Where <cmd>:
   biprws     server-list                [<servers>]          - use BIPRWS API to print BIP given servers
@@ -153,16 +114,18 @@ Where <cmd>:
   ccm        disable|enable             <fqdns>              - use ccm.sh to enable/disable server(s) by fqdn
   ccm        managedstart|managedstop   <fqdns>              - use ccm.sh to start/stop server(s) by fqdn
   ccm        start|stop                 <fqdns>              - use ccm.sh to start/stop sia(s) by fqdn
-  ec2        server-list                [<servers>]          - derive expected server-list from environment
+  exp        server-list                [<servers>]          - derive expected server-list from environment
   lb         maintenance-mode           enable|disable|check - enable, disable or check maintenance mode on given LB
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
-  diff       server-list                <a> <b> [<servers>]  - run a diff against two server-lists, a/b one of biprws,ccm,ec2
+  diff       server-list                <a> <b> [<servers>]  - run a diff against two server-lists, a/b one of biprws,ccm,exp
+  pipeline   start|stop                                      - print server fqdns required to start or stop cleanly via a pipeline
 
 Where <servers> are space separated and can be:
   <fqdn>     - fqdn of server name, e.g. ppncrcms1.AdaptiveJobServer
   all        - all servers
   cms        - all CentralManagementServer servers
+  cms1       - this server, or primary cms
   frs        - all InputFileRepository and OutputFileRepository servers
   event      - all EventServer servers
   processing - all ProcessingServer servers, e.g. WebIntelligenceProcessingServer
@@ -171,7 +134,6 @@ Where <servers> are space separated and can be:
 e.g.
   $0 biprws server-list all -cms -frs        # to display all servers except CMS and FRS
   $0 biprws server-list processing +Stopped  # to display all stopped processing servers
-
 " >&2
   return 1
 }
@@ -203,23 +165,44 @@ set_env_variables() {
   PRIVATE_LB_RULE_MAINTENANCE_PRIORITY=999
   PRIVATE_LB_PORT=7777
   PRIVATE_LB_BACKEND_PORT=7777
+  ADMIN_LB_NAME=public-lb
+  ADMIN_LB_RULE_MAINTENANCE_PRIORITY=999
+  ADMIN_LB_PORT=443
+  ADMIN_LB_BACKEND_PORT=7010
 
+  if [[ -n $INSTANCE_NAME ]]; then
+    CMS_SIA=${INSTANCE_NAME//-/}
+  else
+    CMS_SIA="${NCR_ENVIRONMENT}ncrcms1"
+  fi
   if [[ $NCR_ENVIRONMENT == t1 ]]; then
     ADMIN_URL=t1.test.reporting.nomis.service.justice.gov.uk
     PUBLIC_LB_URL=t1.test.reporting.nomis.service.justice.gov.uk
     PRIVATE_LB_URL=t1-int.test.reporting.nomis.service.justice.gov.uk
+    if [[ -z $LBS ]]; then
+      LBS="private public"
+    fi
   elif [[ $NCR_ENVIRONMENT == ls ]]; then
     ADMIN_URL=ls.preproduction.reporting.nomis.service.justice.gov.uk
     PUBLIC_LB_URL=ls.preproduction.reporting.nomis.service.justice.gov.uk
     PRIVATE_LB_URL=ls-int.preproduction.reporting.nomis.service.justice.gov.uk
+    if [[ -z $LBS ]]; then
+      LBS="private public"
+    fi
   elif [[ $NCR_ENVIRONMENT == pp ]]; then
     ADMIN_URL=admin.preproduction.reporting.nomis.service.justice.gov.uk
     PUBLIC_LB_URL=preproduction.reporting.nomis.service.justice.gov.uk
     PRIVATE_LB_URL=int.preproduction.reporting.nomis.service.justice.gov.uk
+    if [[ -z $LBS ]]; then
+      LBS="private public admin"
+    fi
   elif [[ $NCR_ENVIRONMENT == pd ]]; then
     ADMIN_URL=admin.reporting.nomis.service.justice.gov.uk
     PUBLIC_LB_URL=reporting.nomis.service.justice.gov.uk
     PRIVATE_LB_URL=int.reporting.nomis.service.justice.gov.uk
+    if [[ -z $LBS ]]; then
+      LBS="private public admin"
+    fi
   else
     error "Unsupported nomis-combined-reporting-environment value '$NCR_ENVIRONMENT'"
     return 1
@@ -233,10 +216,19 @@ set_env_instance_id() {
 }
 
 set_env_ncr_environment() {
-  debug "aws ec2 describe-tags"
+  debug "aws ec2 describe-tags --filters 'Name=resource-id,Values=$INSTANCE_ID' 'Name=key,Values=nomis-combined-reporting-environment'"
   NCR_ENVIRONMENT=$(aws ec2 describe-tags --no-cli-pager --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=nomis-combined-reporting-environment" --output text | cut -f5)
   if [[ -z $NCR_ENVIRONMENT ]]; then
     error "Unable to retrieve nomis-combined-reporting-environment tag"
+    return 1
+  fi
+}
+
+set_env_instance_name() {
+  debug "aws ec2 describe-tags --filters 'Name=resource-id,Values=$INSTANCE_ID' 'Name=key,Values=Name'"
+  INSTANCE_NAME=$(aws ec2 describe-tags --no-cli-pager --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=Name" --output text | cut -f5)
+  if [[ -z $INSTANCE_NAME ]]; then
+    error "Unable to retrieve Name tag"
     return 1
   fi
 }
@@ -267,6 +259,12 @@ set_env_ec2_names() {
   if ! APP_EC2_NAMES=$(get_ec2_server_names "ncr-bip-app"); then
     return 1
   fi
+  if ! WEB_EC2_NAMES=$(get_ec2_server_names "ncr-web"); then
+    return 1
+  fi
+  if ! WEBADMIN_EC2_NAMES=$(get_ec2_server_names "ncr-webadmin"); then
+    return 1
+  fi
   if [[ -z $APP_EC2_NAMES && -z $CMS_EC2_NAMES ]]; then
     error "Error retrieving EC2 names with ncr-bip-cms and ncr-bip-app tags"
     return 1
@@ -286,6 +284,16 @@ set_env_lb() {
     LB_PORT=$PRIVATE_LB_PORT
     LB_BACKEND_PORT=$PRIVATE_LB_BACKEND_PORT
     LB_URL=$PRIVATE_LB_URL
+  elif [[ $1 == "admin" ]]; then
+    if [[ $ADMIN_URL == "$PUBLIC_LB_URL" ]]; then
+      error "No specific admin endpoint for this environment"
+      return 1
+    fi
+    LB_NAME=$ADMIN_LB_NAME
+    LB_RULE_MAINTENANCE_PRIORITY=$ADMIN_LB_RULE_MAINTENANCE_PRIORITY
+    LB_PORT=$ADMIN_LB_PORT
+    LB_BACKEND_PORT=$ADMIN_LB_BACKEND_PORT
+    LB_URL=$ADMIN_URL
   else
     error "Unexpected lb '$1', expected public or private"
     return 1
@@ -405,6 +413,8 @@ grep_server_list() {
     fi
   elif [[ $filter == "cms" ]]; then
     grep $flags CentralManagementServer <<< "$list"
+  elif [[ $filter == "cms1" ]]; then
+    grep $flags "$CMS_SIA.CentralManagementServer" <<< "$list"
   elif [[ $filter == "frs" ]]; then
     grep $flags FileRepository <<< "$list"
   elif [[ $filter == "event" ]]; then
@@ -466,38 +476,40 @@ ccm_display_to_tsv() {
   local pid
   local description
 
-  server_name=
-  while read -r l; do
-    if [[ $l =~ ^Server\ Name:\ (.*) ]]; then
-      if [[ -n $server_name ]]; then
-        echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
+  (
+    server_name=
+    while read -r l; do
+      if [[ $l =~ ^Server\ Name:\ (.*) ]]; then
+        if [[ -n $server_name ]]; then
+          echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
+        fi
+        server_name=${BASH_REMATCH[1]}
+        state=
+        enabled=
+        host_name=
+        pid=
+        description=
+      elif [[ $l =~ State:\ (.*) ]]; then
+        state=${BASH_REMATCH[1]}
+      elif [[ $l =~ Enabled:\ (.*) ]]; then
+        enabled=${BASH_REMATCH[1]}
+      elif [[ $l =~ Host\ Name:\ (.*) ]]; then
+        host_name=${BASH_REMATCH[1]}
+      elif [[ $l =~ PID:\ (.*) ]]; then
+        pid=${BASH_REMATCH[1]}
+      elif [[ $l =~ Description:\ (.*) ]]; then
+        description=${BASH_REMATCH[1]}
+      elif [[ -n $l && $l != Description:* ]]; then
+        debug "$l"
       fi
-      server_name=${BASH_REMATCH[1]}
-      state=
-      enabled=
-      host_name=
-      pid=
-      description=
-    elif [[ $l =~ State:\ (.*) ]]; then
-      state=${BASH_REMATCH[1]}
-    elif [[ $l =~ Enabled:\ (.*) ]]; then
-      enabled=${BASH_REMATCH[1]}
-    elif [[ $l =~ Host\ Name:\ (.*) ]]; then
-      host_name=${BASH_REMATCH[1]}
-    elif [[ $l =~ PID:\ (.*) ]]; then
-      pid=${BASH_REMATCH[1]}
-    elif [[ $l =~ Description:\ (.*) ]]; then
-      description=${BASH_REMATCH[1]}
-    elif [[ -n $l && $l != Description:* ]]; then
-      debug "$l"
+    done <<< "$1"
+    if [[ -n $server_name ]]; then
+      echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
     fi
-  done <<< "$1"
-  if [[ -n $server_name ]]; then
-    echo -e "$server_name\t$state\t$enabled\t$pid\t$description\t$host_name"
-  fi
+  ) | sort -uf
 }
 
-ec2_expected_servers() {
+get_expected_servers() {
   local ec2
   local server
 
@@ -538,7 +550,7 @@ ec2_expected_servers() {
       error "Error finding EC2s with ncr-bip-cms and ncr-bip-app server-type tags"
       return 1
     fi
-  ) | sed 's/,/\t/g'
+  ) | sed 's/,/\t/g' | sort -uf
 }
 
 lb_get_listener_rules_json() {
@@ -683,9 +695,9 @@ lb_get_maintenance_mode() {
     return 1
   fi
   if ((priority < LB_RULE_MAINTENANCE_PRIORITY)); then
-    echo "maintenance mode disabled"
+    echo "disabled"
   else
-    echo "maintenance mode enabled"
+    echo "enabled"
   fi
 }
 
@@ -797,6 +809,12 @@ do_ccm() {
     else
       error "Unsupported format $FORMAT"
     fi
+  elif [[ $1 == "display" ]]; then
+    if [[ $FORMAT != "default" ]]; then
+      error "$FORMAT format unsupported with ccm commands"
+      return 1
+    fi
+    ccm -display
   else
     if [[ $FORMAT != "default" ]]; then
       error "$FORMAT format unsupported with ccm commands"
@@ -807,18 +825,58 @@ do_ccm() {
     for fqdn; do
       ccm "-$cmd" "$fqdn"
     done
+    if ((CCM_WAIT_FOR_CMD_ENABLED == 1)); then
+      debug "Waiting for cmds to complete..."
+      start_epoch_secs=$(date +%s)
+      while true; do
+        output=$(ccm -display)
+        ccm_display_tsv=$(ccm_display_to_tsv "$output")
+        success=1
+        end_epoch_secs=$(date +%s)
+        for fqdn; do
+          if [[ $cmd == "managedstart" ]]; then
+            result=$(filter_server_list "$ccm_display_tsv" "$fqdn" "-Running")
+          elif [[ $cmd == "managedstop" ]]; then
+            result=$(filter_server_list "$ccm_display_tsv" "$fqdn" "-Stopped")
+          elif [[ $cmd == "disable" ]]; then
+            result=$(filter_server_list "$ccm_display_tsv" "$fqdn" "-Disabled")
+          elif [[ $cmd == "enable" ]]; then
+            result=$(filter_server_list "$ccm_display_tsv" "$fqdn" "-Enabled")
+          elif [[ $cmd == "stop" ]]; then
+            result=$(filter_server_list "$ccm_display_tsv" "$fqdn")
+          else
+            error "ccm command $cmd does not support wait -w option"
+            return 1
+          fi
+          if [[ -n $result ]]; then
+            if ((end_epoch_secs - start_epoch_secs < CCM_WAIT_FOR_CMD_TIMEOUT_SECS)); then
+              debug "Still waiting for: $result"
+            else
+              error "Timed out waiting for: $result"
+            fi
+            success=0
+          fi
+        done
+        if ((success == 1)); then
+          break
+        elif ((end_epoch_secs - start_epoch_secs >= CCM_WAIT_FOR_CMD_TIMEOUT_SECS)); then
+          return 1
+        fi
+        sleep 5
+      done
+    fi
   fi
 }
 
-do_ec2() {
+do_exp() {
   set -eo pipefail
 
   set_env_ec2_names
 
   if [[ $1 == "server-list" ]]; then
     shift
-    ec2_display_tsv=$(ec2_expected_servers)
-    output_tsv=$(filter_server_list "$ec2_display_tsv" "$@")
+    exp_display_tsv=$(get_expected_servers)
+    output_tsv=$(filter_server_list "$exp_display_tsv" "$@")
     if [[ $FORMAT == "fqdn" ]]; then
       echo "$output_tsv" | cut -f1
     elif [[ $FORMAT == "sia" ]]; then
@@ -846,10 +904,10 @@ get_server_list() {
     do_biprws "server-list" "$@"
   elif [[ $cmd == "ccm" ]]; then
     do_ccm "server-list" "$@"
-  elif [[ $cmd == "ec2" ]]; then
-    do_ec2 "server-list" "$@"
+  elif [[ $cmd == "exp" ]]; then
+    do_exp "server-list" "$@"
   else
-    error "Expected one of biprws, ccm, ec2; got '$cmd'"
+    error "Expected one of biprws, ccm, exp; got '$cmd'"
     return 1
   fi
 }
@@ -881,56 +939,245 @@ do_diff() {
   fi
 }
 
-do_lb() {
+do_pipeline() {
   set -eo pipefail
 
-  set_env_lb "$LB"
-
   if [[ $FORMAT != "default" ]]; then
-    error "$FORMAT format unsupported with lb commands"
+    error "$FORMAT format unsupported with pipeline commands"
     return 1
   fi
 
-  if [[ $1 == "maintenance-mode" ]]; then
-    if [[ $2 == "enable" ]]; then
-      lb_enable_maintenance_mode
-    elif [[ $2 == "disable" ]]; then
-      lb_disable_maintenance_mode
-    elif [[ $2 == "check" ]]; then
-      lb_get_maintenance_mode
-    else
-      usage
+  set_env_ec2_names
+  num_web_ec2s=$(wc -w <<< "$WEB_EC2_NAMES" | tr -d " ")
+  num_webadmin_ec2s=$(wc -w <<< "$WEBADMIN_EC2_NAMES" | tr -d " ")
+  exp_display_tsv=$(get_expected_servers)
+  exp_display_tsv_status=$(cut -f1,2 <<< "$exp_display_tsv")
+  exp_display_tsv_enabled=$(cut -f1,3 <<< "$exp_display_tsv")
+
+  set_env_lb "private"
+  lb_private_maintenance_mode=$(lb_get_maintenance_mode)
+  lb_private_target_group_health=$(lb_get_target_group_health)
+  set_env_lb "public"
+  lb_public_maintenance_mode=$(lb_get_maintenance_mode)
+  lb_admin_maintenance_mode="not-applicable"
+  lb_admin_target_group_health=0
+  if (( num_webadmin_ec2s > 0 )); then
+    set_env_lb "admin" || exitcode=$?
+    if [[ exitcode -ne 0 ]]; then
+      error "Unable to set admin LB env event though webadmin EC2s present"
       return 1
     fi
-  elif [[ $1 == "get-target-group" ]]; then
-    if [[ $2 == "arn" ]]; then
-      lb_get_target_group_arn
-    elif [[ $2 == "health" ]]; then
-      lb_get_target_group_health
-    elif [[ $2 == "name" ]]; then
-      lb_get_target_group_name
+    lb_admin_maintenance_mode=$(lb_get_maintenance_mode)
+    lb_admin_target_group_health=$(lb_get_target_group_health)
+  fi
+
+  set_env_admin_password
+  ccm_exitcode=0
+  ccm_output=$(ccm -display) || ccm_exitcode=$?
+  ccm_output_tsv=$(ccm_display_to_tsv "$ccm_output" | sed 's/Running with Errors/Running/g')
+  ccm_output_tsv_status=$(cut -f1,2 <<< "$ccm_output_tsv")
+  ccm_output_tsv_enabled=$(cut -f1,3 <<< "$ccm_output_tsv")
+  set +o pipefail
+  target_tsv_status=$(diff <(echo "$ccm_output_tsv_status") <(echo "$exp_display_tsv_status") | grep '> ' | cut -d' ' -f2)
+  target_tsv_enabled=$(diff <(echo "$ccm_output_tsv_enabled") <(echo "$exp_display_tsv_enabled") | grep '> ' | cut -d' ' -f2)
+  set -o pipefail
+
+  debug "systemctl is-active sapbobj"
+  sapbobj_isactive=$(systemctl is-active sapbobj || true)
+
+  if [[ $1 == "start" ]]; then
+    step7=$(filter_server_list "$target_tsv_status" all -event -job -processing +Running | cut -f1 | xargs)
+    step6=$(filter_server_list "$target_tsv_status" processing +Running | cut -f1 | xargs)
+    step5=$(filter_server_list "$target_tsv_status" job +Running | cut -f1 | xargs)
+    step4=$(filter_server_list "$target_tsv_status" event +Running | cut -f1 | xargs)
+    step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
+
+    if [[ $sapbobj_isactive != "active" || $ccm_exitcode -ne 0 ]]; then
+      echo "#8 run:      'systemctl start sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
     else
-      usage
-      return 1
+      echo "#8 complete: sapbobj services are started on localhost"
     fi
-  elif [[ $1 == "get-json" ]]; then
-    if [[ $2 == "rules" ]]; then
-      lb_get_listener_rules_json
-    elif [[ $2 == "rule" ]]; then
-      lb_get_rule_json
+    if [[ -n $step7 ]]; then
+      echo "#7 run:      './bip_control.sh -w ccm managedstart $step7'"
     else
-      usage
-      return 1
+      echo "#7 complete: all non-event/job/processing servers started"
+    fi
+    if [[ -n $step6 ]]; then
+      echo "#6 run:      './bip_control.sh -w ccm managedstart $step6'"
+    else
+      echo "#6 complete: all processing servers started"
+    fi
+    if [[ -n $step5 ]]; then
+      echo "#5 run:      './bip_control.sh -w ccm managedstart $step5'"
+    else
+      echo "#5 complete: all job servers started"
+    fi
+    if [[ -n $step4 ]]; then
+      echo "#4 run:      './bip_control.sh -w ccm managedstart $step4"
+    else
+      echo "#4 complete: all event servers started"
+    fi
+    echo "#3 complete: no need to sleep on startup"
+    if [[ -n $step2 ]]; then
+      echo "#2 run:      './bip_control.sh -w ccm enable $step2'"
+    else
+      echo "#2 complete: all expected services enabled"
+    fi
+    if (( num_webadmin_ec2s > 0 )); then
+      if (( lb_private_target_group_health != num_web_ec2s && lb_admin_target_group_health != num_webadmin_ec2s )); then
+        echo "#1 run:      'systemctl start sapbobj' on web and webadmin EC2s"
+      elif (( lb_admin_target_group_health != num_webadmin_ec2s )); then
+        echo "#1 run:      'systemctl start sapbobj' on webadmin EC2s"
+      elif (( lb_private_target_group_health != num_web_ec2s )); then
+        echo "#1 run:      'systemctl start sapbobj' on web EC2s"
+      else
+        echo "#1 complete: sapbobj services are started on web and webadmin EC2s: $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+      fi
+    else
+      if (( lb_private_target_group_health != num_web_ec2s )); then
+        echo "#1 run:      'systemctl start sapbobj' on web EC2s"
+      else
+        echo "#1 complete: sapbobj services are started on web EC2s: $WEB_EC2_NAMES"
+      fi
+    fi
+    if [[ $lb_private_maintenance_mode == "enabled" || $lb_public_maintenance_mode == "enabled" || $lb_admin_maintenance_mode == "enabled" ]]; then
+      echo "#0 run:      './bip_control.sh lb maintenance-mode disable'"
+    else
+      echo "#0 complete: all lb maintenance modes are disabled"
+    fi
+  elif [[ $1 == "stop" ]]; then
+    step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+    step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
+    step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
+    step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
+    step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
+    step8=$(filter_server_list "$ccm_output_tsv_status" all -cms1 -Stopped | cut -f1 | cut -d. -f1 | sort -u | xargs)
+
+    if [[ $lb_private_maintenance_mode == "disabled" || $lb_public_maintenance_mode == "disabled" || $lb_admin_maintenance_mode == "disabled" ]]; then
+      echo "#0 run:      './bip_control.sh lb maintenance-mode enable'"
+    else
+      echo "#0 complete: all lb maintenance modes are enabled"
+    fi
+    if (( num_webadmin_ec2s > 0 )); then
+      if (( lb_private_target_group_health != 0 && lb_admin_target_group_health != 0 )); then
+        echo "#1 run:      'systemctl stop sapbobj' on web and webadmin EC2s"
+      elif (( lb_admin_target_group_health != 0 )); then
+        echo "#1 run:      'systemctl stop sapbobj' on webadmin EC2s"
+      elif (( lb_private_target_group_health != 0 )); then
+        echo "#1 run:      'systemctl stop sapbobj' on web EC2s"
+      else
+        echo "#1 complete: sapbobj services are stopped on web and webadmin EC2s: $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+      fi
+    else
+      if (( lb_private_target_group_health != 0 )); then
+        echo "#1 run:      'systemctl stop sapbobj' on web EC2s"
+      else
+        echo "#1 complete: sapbobj services are stopped on web EC2s: $WEB_EC2_NAMES"
+      fi
+    fi
+    if [[ -n $step2 ]]; then
+      echo "#2 run:      './bip_control.sh -w ccm disable $step2'"
+      echo "#3 run:      'sleep 600'"
+    else
+      echo "#2 complete: all services disabled apart from CMS and FRS"
+      echo "#3 complete: no need to sleep as services already disabled"
+    fi
+    if [[ -n $step4 ]]; then
+      echo "#4 run:      './bip_control.sh -w ccm managedstop $step4'"
+    else
+      echo "#4 complete: all event servers stopped"
+    fi
+    if [[ -n $step5 ]]; then
+      echo "#5 run:      './bip_control.sh -w ccm managedstop $step5'"
+    else
+      echo "#5 complete: all job servers stopped"
+    fi
+    if [[ -n $step6 ]]; then
+      echo "#6 run:      './bip_control.sh -w ccm managedstop $step6'"
+    else
+      echo "#6 complete: all processing servers stopped"
+    fi
+    if [[ -n $step7 ]]; then
+      echo "#7 run:      './bip_control.sh -w ccm managedstop $step7'"
+    else
+      echo "#7 complete: all non-event/job/processing servers stopped"
+    fi
+    if [[ -n $step8 || $sapbobj_isactive == "active" ]]; then
+      if [[ -n $step8 ]]; then
+        echo "#8 run:      './bip_control.sh -w ccm stop $step8'"
+      fi
+      if [[ $sapbobj_isactive == "active" || $ccm_exitcode -eq 0 ]]; then
+        echo "#8 run:      'systemctl stop sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
+      fi
+    else
+      echo "#8 complete: all SIA servers stopped"
     fi
   else
     usage
+  fi
+}
+
+do_lb() {
+  set -eo pipefail
+
+  if [[ -z $LBS ]]; then
+    error "No LB specified"
     return 1
   fi
+
+  num_lbs=$(wc -w <<< "$LBS" | tr -d " ")
+  for LB in $LBS; do
+    set_env_lb "$LB"
+    if ((num_lbs > 1)); then
+      echo -n "$LB: "
+    fi
+
+    if [[ $FORMAT != "default" ]]; then
+      error "$FORMAT format unsupported with lb commands"
+      return 1
+    fi
+
+    if [[ $1 == "maintenance-mode" ]]; then
+      if [[ $2 == "enable" ]]; then
+        lb_enable_maintenance_mode
+      elif [[ $2 == "disable" ]]; then
+        lb_disable_maintenance_mode
+      elif [[ $2 == "check" ]]; then
+        lb_get_maintenance_mode
+      else
+        usage
+        return 1
+      fi
+    elif [[ $1 == "get-target-group" ]]; then
+      if [[ $2 == "arn" ]]; then
+        lb_get_target_group_arn
+      elif [[ $2 == "health" ]]; then
+        lb_get_target_group_health
+      elif [[ $2 == "name" ]]; then
+        lb_get_target_group_name
+      else
+        usage
+        return 1
+      fi
+    elif [[ $1 == "get-json" ]]; then
+      if [[ $2 == "rules" ]]; then
+        lb_get_listener_rules_json
+      elif [[ $2 == "rule" ]]; then
+        lb_get_rule_json
+      else
+        usage
+        return 1
+      fi
+    else
+      usage
+      return 1
+    fi
+ done
 }
 
 main() {
   set -eo pipefail
-  while getopts "de:f:l:v" opt; do
+  while getopts "de:f:l:vw" opt; do
       case $opt in
           d)
               DRYRUN=1
@@ -939,13 +1186,16 @@ main() {
               NCR_ENVIRONMENT=${OPTARG}
               ;;
           l)
-              LB=${OPTARG}
+              LBS=${OPTARG}
               ;;
           f)
               FORMAT=${OPTARG}
               ;;
           v)
               VERBOSE=1
+              ;;
+          w)
+              CCM_WAIT_FOR_CMD_ENABLED=1
               ;;
           :)
               error "Error: option ${OPTARG} requires an argument"
@@ -967,6 +1217,9 @@ main() {
   if [[ -z $NCR_ENVIRONMENT ]]; then
     set_env_instance_id
     set_env_ncr_environment
+    set_env_instance_name
+  else
+    INSTANCE_NAME=
   fi
   set_env_variables
 
@@ -976,12 +1229,15 @@ main() {
   elif [[ $1 == "ccm" ]]; then
     shift
     do_ccm "$@"
-  elif [[ $1 == "ec2" ]]; then
+  elif [[ $1 == "exp" ]]; then
     shift
-    do_ec2 "$@"
+    do_exp "$@"
   elif [[ $1 == "diff" ]]; then
     shift
     do_diff "$@"
+  elif [[ $1 == "pipeline" ]]; then
+    shift
+    do_pipeline "$@"
   elif [[ $1 == "lb" ]]; then
     shift
     do_lb "$@"
