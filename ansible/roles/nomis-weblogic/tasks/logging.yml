@@ -9,3 +9,42 @@
     mode: 0644
   loop:
     - /etc/logrotate.d/nomis-web
+
+- name: Get SELinux state
+  ansible.builtin.shell: getenforce || true
+  changed_when: false
+  check_mode: false
+  register: logrotate_selinux_mode
+
+- name: Check if permissive state applied already
+  ansible.builtin.stat:
+    path: /root/.ansible-logrotate-selinux
+  register: ansible_logrotate_selinux_installed
+
+- name: Enable permissive mode for logrotate
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      if [[ ! -e /root/.ansible-logrotate-selinux ]]; then
+        semanage permissive -a logrotate_t > /root/.ansible-logrotate-selinux
+      fi
+    }
+    main 2>&1 | logger -p local3.info -t ansible-nomis-web
+  when:
+    - logrotate_selinux_mode.stdout|lower == "enforcing" or logrotate_selinux_mode.stdout|lower == "permissive"
+    - not ansible_logrotate_selinux_installed.stat.exists
+
+# cleanup java rotate logs
+- name: Setup archived log cleanup cron 1
+  ansible.builtin.cron:
+    name: "log_cleanup_1"
+    minute: "0"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/*/logs -name access.log0 -mtime +90 -exec rm -f {} \\;"
+
+- name: Setup archived log cleanup cron 2
+  ansible.builtin.cron:
+    name: "log_cleanup_2"
+    minute: "0"
+    hour: "4"
+    job: "find /u01/app/oracle/Middleware/logs  -mtime +90 -exec rm -f {} \\;"
