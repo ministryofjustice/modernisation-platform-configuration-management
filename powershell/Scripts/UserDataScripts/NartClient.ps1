@@ -403,9 +403,9 @@ if ($null -ne $ADConfig) {
     $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
     if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
         # Get the AD Admin credentials
-        $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-        # Move the computer to the correct OU
-        Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+        # $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+        # Move the computer to the correct OU FIXME: We don't need to do this for this client
+        # Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
         Exit 3010 # triggers reboot if running from SSM Doc
     }
 }
