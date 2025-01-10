@@ -28,7 +28,7 @@
   delegate_to: localhost
   become: "{{ omit if (is_aws_environment | default(true)) else false }}"
   register: get_metric_extensions
-  loop: "{{ application_groups.keys() | list + ['common'] }}"
+  loop: "{{ ['common'] + application_groups.values() | flatten | unique }}"
   loop_control:
     loop_var: application_name
 
