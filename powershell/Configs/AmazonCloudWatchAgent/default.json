@@ -42,11 +42,11 @@
         "resources": ["*"]
       },
       "Memory": {
-        "metrics_collection_interval": 5,
+        "metrics_collection_interval": 60,
         "measurement": ["% Committed Bytes In Use", "Available Bytes", "Cache Faults/sec", "Page Faults/sec", "Pages/sec"]
       },
       "Network Interface": {
-        "metrics_collection_interval": 5,
+        "metrics_collection_interval": 60,
         "measurement": ["Bytes Received/sec", "Bytes Sent/sec", "Packets Received/sec", "Packets Sent/sec"],
         "resources": ["*"]
       },
@@ -67,11 +67,27 @@
         "collect_list": [
           {
             "event_name": "System",
-            "event_levels": ["INFORMATION", "ERROR"],
+            "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
             "log_group_name": "cwagent-windows-system",
             "log_stream_name": "{instance_id}",
             "event_format": "xml"
-          }
+          },
+          {
+            "event_name": "Application",
+            "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+            "log_group_name": "cwagent-windows-application",
+            "log_stream_name": "{instance_id}",
+            "event_format": "xml"
+          },
+          {
+            "event_name": "Security",
+            "log_group_name": "cwagent-windows-security",
+            "log_stream_name": "{instance_id}",
+            "filter": {
+              "event_id": [4624, 4625],
+              "regex": ".*Logon Type: 10.*"
+            }
+          }  
         ]
       }
     }
