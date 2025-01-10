@@ -389,7 +389,7 @@ $Tags = Get-InstanceTags
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
-# {{{ join domain if domain-name tag is set
+# {{{ join domain and rename instance to tag:'Name'
 . ../ModPlatformAD/Join-ModPlatformAD.ps1
 if ($LASTEXITCODE -ne 0) {
     Exit $LASTEXITCODE
