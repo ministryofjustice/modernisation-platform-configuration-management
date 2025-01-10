@@ -401,11 +401,8 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 if ($null -ne $ADConfig) {
     $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
+    Rename-ModPlatformADComputer -NewHostname "tag:Name" -ModPlatformADCredential $ADCredential
     if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-        # Get the AD Admin credentials
-        # $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-        # Move the computer to the correct OU FIXME: We don't need to do this for this client
-        # Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
         Exit 3010 # triggers reboot if running from SSM Doc
     }
 }
