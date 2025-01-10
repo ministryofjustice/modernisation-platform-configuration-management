@@ -389,30 +389,12 @@ $Tags = Get-InstanceTags
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
 
-$ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
-
 # {{{ join domain if domain-name tag is set
-# Join domain and reboot is needed before installers run
-# Add $ModulesRepo to the PSModulePath in Server 2012 R2 here otherwise it can't find it
-$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-
-$ErrorActionPreference = "Continue"
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-if ($null -ne $ADConfig) {
-    $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
-    Rename-ModPlatformADComputer -NewHostname "tag:Name" -ModPlatformADCredential $ADCredential
-    if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-        Exit 3010 # triggers reboot if running from SSM Doc
-    }
-}
-else {
-    Write-Output "No domain-name tag found so apply Local Group Policy"
-    . .\LocalGroupPolicy.ps1
+. ../ModPlatformAD/Join-ModPlatformAD.ps1
+if ($LASTEXITCODE -ne 0) {
+    Exit $LASTEXITCODE
 }
 # }}} end of join domain
-
-$ErrorActionPreference = "Stop"
 
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
