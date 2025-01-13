@@ -45,11 +45,11 @@ $GlobalConfig = @{
         "domain"                 = "HMPP"
     }
     "oasys-national-reporting-production"    = @{
-        # "sysDbName"              = "PDBOSYS"
-        # "audDbName"              = "PDBOAUD"
-        # "tnsorafile"             = "ONR\tnsnames_PD_BODS.ora"
-        # "cmsPrimaryNode"         = "pd-onr-bods-1"
-        # "cmsSecondaryNode"       = "pd-onr-bods-2"
+        "sysDbName"              = "PDBOSYS"
+        "audDbName"              = "PDBOAUD"
+        "tnsorafile"             = "ONR\tnsnames_PD_BODS.ora"
+        "cmsPrimaryNode"         = "pd-onr-bods-1"
+        "cmsSecondaryNode"       = "pd-onr-bods-2"
         "serviceUser"            = "svc_nart"
         "serviceUserPath"        = "OU=SERVICE_ACCOUNTS,OU=RBAC,DC=AZURE,DC=HMPP,DC=ROOT"
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
