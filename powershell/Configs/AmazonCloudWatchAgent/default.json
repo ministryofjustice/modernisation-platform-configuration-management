@@ -45,11 +45,6 @@
         "metrics_collection_interval": 60,
         "measurement": ["% Committed Bytes In Use", "Available Bytes", "Cache Faults/sec", "Page Faults/sec", "Pages/sec"]
       },
-      "Network Interface": {
-        "metrics_collection_interval": 60,
-        "measurement": ["Bytes Received/sec", "Bytes Sent/sec", "Packets Received/sec", "Packets Sent/sec"],
-        "resources": ["*"]
-      },
       "System": {
         "measurement": ["Context Switches/sec", "System Calls/sec", "Processor Queue Length"]
       }
@@ -84,7 +79,7 @@
             "log_group_name": "cwagent-windows-security",
             "log_stream_name": "{instance_id}",
             "filter": {
-              "event_id": [1102, 4624, 4625, 4657, 4663, 4688, 4700, 4702, 4719, 4720, 4722, 4723, 4724, 4727, 4728],
+              "event_id": [1102, 4624, 4625, 4657, 4663, 4688, 4700, 4702, 4719, 4720, 4722, 4723, 4724, 4727, 4728]
             }
           }  
         ]
