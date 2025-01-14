@@ -50,6 +50,42 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
+  PDBOSYS:
+    db_name: BOSYS
+    db_unique_name: PDBOSYS
+    instance_name: PDBOSYS
+#    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBOSYS
+    service:
+      - { name: BOSYS_TAF, role: PRIMARY }
+  PDBOAUD:
+    db_name: BOAUD
+    db_unique_name: PDBOAUD
+    instance_name: PDBOAUD
+#    host_name: pd-ncr-db-1-a.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: PDBOAUD
+    service:
+      - { name: BOAUD_TAF, role: PRIMARY }
+  DRBOPAUD:
+    db_name: BOPAUDP
+    db_unique_name: DRBOPAUD
+    instance_name: DRBOPAUD
+#    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBOPAUD
+    service:
+      - { name: DRBOPAUD, role: PHYSICAL_STANDBY }
+  DRBIPSYS:
+    db_name: BOPSYSP
+    db_unique_name: DRBOPSYS
+    instance_name: DRBOPSYS
+#    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBOPSYS
+    service:
+      - { name: DRBOPSYS, role: PHYSICAL_STANDBY }
   PDBIPINF:
     parameters:
       - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
