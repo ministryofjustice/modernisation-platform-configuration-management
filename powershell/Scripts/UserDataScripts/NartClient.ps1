@@ -5,8 +5,9 @@ $GlobalConfig = @{
         "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
         "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
         "ORACLE_BASE"                = "C:\app\oracle"
-        "BIPWindowsClient43"         = "BIPLATCLNT4303P_500-70005711.EXE" # Client tools 4.3 SP 3 Patch 5
+        "BIPWindowsClient43"         = "BIPLATCLNT4304P_500-70005711.EXE" # Client tools 4.3 SP 4 Patch 5
         # NOTE: Just keeping a record of these versions as this info is difficult to find in the SAP download portal
+        # "BIPWindowsClient43" = "BIPLATCLNT4303P_500-70005711.EXE" # Client tools 4.3 SP 3 Patch 5
         # "BIPWindowsClient43" = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
         # "BIPWindowsClient43" = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3 Patch 3
         # "BIPWindowsClient42" # "5104879_1.ZIP" # Client tool 4.2 SP 9
