@@ -1,14 +1,11 @@
 ---
 - import_tasks: get-db-facts.yml
   tags:
-    - amibuild
-    - ec2provision
     - always
+    - bip_db_facts
 
 - import_tasks: create_database.yml
   tags:
-    - amibuild
-    - ec2provision
     - bipsys_db_create
   vars:
     ORACLE_SID: "{{ system_db_sid }}"
@@ -19,8 +16,6 @@
 
 - import_tasks: create_database.yml
   tags:
-    - amibuild
-    - ec2provision
     - bipaud_db_create
   vars:
     ORACLE_SID: "{{ audit_db_sid }}"
@@ -31,6 +26,4 @@
 
 - import_tasks: cleanup.yml
   tags:
-    - amibuild
-    - ec2provision
-    - always
+    - bip_db_cleanup
