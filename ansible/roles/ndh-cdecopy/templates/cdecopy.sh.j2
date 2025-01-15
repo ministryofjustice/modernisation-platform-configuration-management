@@ -333,16 +333,20 @@ run() {
     upload_cde_to_aws "$cde_filename"
   fi
   if (( PINS+MERCURY != 0 )); then
-    password=$(winrm_get_creds.sh)
-    export WINRM_PASSWORD="$password"
-    upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
-    if (( PINS == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR" "$PINS_UPLOADED_DIR"
+    if [[ -z $NONCORE_HOSTNAME ]]; then
+      debug "local: skipping PINS/MERCURY as no NONCORE_HOSTNAME defined for this environment"
+    else
+      password=$(winrm_get_creds.sh)
+      export WINRM_PASSWORD="$password"
+      upload_cdezip_to_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
+      if (( PINS == 1 )); then
+        copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$PINS_UPLOAD_DIR" "$PINS_UPLOADED_DIR"
+      fi
+      if (( MERCURY == 1 )); then
+        copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR" "$MERCURY_UPLOADED_DIR"
+      fi
+      clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
     fi
-    if (( MERCURY == 1 )); then
-      copy_cde_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR" "$MERCURY_UPLOAD_DIR" "$MERCURY_UPLOADED_DIR"
-    fi
-    clean_cdezip_on_noncore "$cde_filename" "$NONCORE_TEMP_DIR"
   fi
 }
 
