@@ -1,0 +1,19 @@
+---
+- name: Creating swapfile
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      echo "creating swapfile {{ swap_to_create_filename }} {{ swap_to_create_mb }}MB"
+      dd if=/dev/zero of="{{ swap_to_create_filename }}" bs=1048576 count={{ swap_to_create_mb }}
+      chmod 600 "{{ swap_to_create_filename }}"
+      mkswap "{{ swap_to_create_filename }}"
+      swapon "{{ swap_to_create_filename }}"
+    }
+    main 2>&1 | logger -p local3.info -t ansible-swap
+
+- name: Mount swapfile
+  ansible.posix.mount:
+    src: "{{ swap_to_create_filename }}"
+    path: "{{ swap_to_create_filename }}"
+    fstype: swap
+    state: present

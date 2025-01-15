@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for pulling each SI_KIND set of objects in turn from the biprws interface.
+# Script for pulling each SI_KIND set of objects in turn from the biprws interface.
 # NOTE: SQL may need something like `SELECT TOP 10000` to ensure all objects returned
 
 apps="AdminConsole

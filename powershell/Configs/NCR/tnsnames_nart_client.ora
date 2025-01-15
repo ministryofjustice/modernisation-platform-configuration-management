@@ -1,0 +1,355 @@
+# pulled from Nart Client Azure Jumpserver PDMR2W00014 on 13-12-2024
+BIPSYSP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = BIPSYS_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+BIPAUDP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = BIPAUD_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+CNOMP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = por-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = por-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = OR_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+CNOMISP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = pnomis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = pnomis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = NOMIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+CNMAUDP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = paudit-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = paudit-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = CNMAUD_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+MISP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = pmis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = pmis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+OASYSREP =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP_TAF)
+    )
+  )
+
+############################################
+############################################
+############################################
+
+BIPSYSPP =
+  (DESCRIPTION =
+    (ADDRESS = (HOST = PPPDL2QGCPE0001)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIPSYSPP)
+    )
+  )
+
+BIPAUDPP =
+  (DESCRIPTION =
+    (ADDRESS = (HOST = PPPDL2QGCPE0001)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIPAUDPP)
+    )
+  )
+
+CNOMPP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = ppor-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = ppor-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = OR_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+CNMAUDPP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = ppaudit-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = ppaudit-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = CNMAUD_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+MISPP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = ppmis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = ppmis-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+OASYSREP_PP =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP_TAF)
+    )
+  )
+
+OASYSREP2 =
+  (DESCRIPTION =
+    (ENABLE=broken)(CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.hmpps-preproduction.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP2_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+CNOMISPP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = ppnomis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = ppnomis-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = NOMIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+############################################
+############################################
+############################################
+
+BIPSYSL =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db.lsast.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIPSYS_TAF)
+    )
+  )
+
+BIPAUDL =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db.lsast.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIPAUD_TAF)
+    )
+  )
+
+CNOMISL =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = lsnomis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = lsnomis-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = NOMIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+CNOML =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = lsor-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = lsor-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = OR_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+
+CNMAUDL =
+  (DESCRIPTION =
+    (ADDRESS = (HOST = ) (protocol = tcp) (port = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA = 
+      (SERVICE_NAME = CNMAUD_TAF)
+      (FAILOVER_MODE = 
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+MISL =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = lsmis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = lsmis-b.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+
+############################################
+############################################
+############################################
+
+ONRSYS =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ONRSYS_TAF)
+    )
+  )
+
+ONRAUD =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ONRAUD_TAF)
+    )
+  )
+
+ONRBODS =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ONRBODS_TAF)
+    )
+  )
+
+MISTRANS =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = MISTRANS_TAF)
+    )
+  )
+
+
+OASPROD =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASPROD_TAF)
+    )
+  )
+
+OASHA =
+  (DESCRIPTION =
+    (ENABLE = broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db-b.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASHA_TAF)
+    )
+  )

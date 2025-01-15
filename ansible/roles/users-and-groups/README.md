@@ -87,3 +87,25 @@ regular_groups_members:
     - Sandhya1874
     - KarenMoss1510
 ```
+
+## XAuthority
+
+You can optionally create blank .Xauthority files for all regular users by setting
+following variable:
+
+```
+users_and_groups_create_xauthority: true
+```
+
+You can add this for system users (e.g. if you need to run an X tool as a particular
+user) by adding `create_xauthority` to the `users_and_groups_system` variable:
+
+```
+users_and_groups_system:
+  - name: oracle
+    create_xauthority: true
+    group: oinstall
+    groups:
+      - dba
+      - wheel
+```

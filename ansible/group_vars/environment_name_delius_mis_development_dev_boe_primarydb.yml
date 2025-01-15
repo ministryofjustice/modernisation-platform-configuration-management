@@ -21,15 +21,14 @@ required_patches:
         filename: p26749785_1922000DBRU_Generic.zip
       - target_version: "19.24"
         filename: p26749785_1924000DBRU_Generic.zip
+      - target_version: "19.25"
+        filename: p26749785_1925000DBRU_Generic.zip
     description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
     grid_patch: false
     database_patch: true
     datapatch_required: true
 oracle_software:
-  version: "19.24"
-  combo_patch: p36522439_190000_Linux-x86-64.zip
-  opatch:
-    version: 12.2.0.1.43
-    filename: p6880880_190000_Linux-x86-64.12.2.0.1.43.zip
+  version: "19.25"
+  combo_patch: p36866740_190000_Linux-x86-64.zip
 source_db: "DMDBOE"
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"

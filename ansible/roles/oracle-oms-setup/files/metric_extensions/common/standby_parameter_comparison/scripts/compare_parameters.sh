@@ -7,10 +7,32 @@
 
 . ~/.bash_profile
 
+
+# If run on an instance hosting OEM we need to explicitly set up the database environment
+if grep "^EMREP:" /etc/oratab > /dev/null; then
+        export ORAENV_ASK=NO
+        export ORACLE_SID=EMREP
+        . oraenv >/dev/null
+fi
+
 function get_password()
 {
 USERNAME=$1
-. /etc/environment && aws ssm get-parameters --region ${REGION} --with-decryption --name /${HMPPS_ENVIRONMENT}/${APPLICATION}/${HMPPS_ROLE}-database/db/oradb_${USERNAME,,}_password | jq -r '.Parameters[].Value'
+if [[ "${ORACLE_SID}" == "EMREP" ]];
+then
+   aws secretsmanager get-secret-value --secret-id "/oracle/database/EMREP/passwords" --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
+else
+   INSTANCEID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+   APPLICATION=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=application"  --query "Tags[].Value" --output text)
+   DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment"  --query "Tags[].Value" --output text)
+   if [[ "${APPLICATION}" == "delius" ]];
+   then
+      aws secretsmanager get-secret-value --secret-id delius-core-${DELIUS_ENVIRONMENT}-oracle-db-dba-passwords --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
+   else
+   APPLICATION_SUBTYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=database"  --query "Tags[].Value" --output text | cut -d'_' -f1)
+   aws secretsmanager get-secret-value --secret-id ${APPLICATION}-${DELIUS_ENVIRONMENT}-oracle-${APPLICATION_SUBTYPE}-db-dba-passwords --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
+   fi
+fi
 }
 
 function get_jdbc()
@@ -159,7 +181,7 @@ WITH parameter_values AS (
                     'DEFAULT'
                 WHEN a.name IN('audit_trail')
                      AND a.database_role = 'PHYSICAL STANDBY'
-                     AND a.open_mode = 'READ ONLY WITH APPLY' THEN
+                     AND a.open_mode IN ('READ ONLY','READ ONLY WITH APPLY') THEN
                     'DB'
                 WHEN a.name IN('log_archive_config') -- Make ordering consistent for values in log_archive_config
                  THEN
@@ -249,7 +271,10 @@ SELECT
 FROM
     parameter_comparison e
 WHERE
-    e.parameter_match != 'Y';
+    e.parameter_match != 'Y'
+AND
+    e.name != '_bug32914795_bct_last_dba_buffer_size'; -- See MOS Note 3049433.1
+
 
 EXIT
 EOSQL
@@ -258,7 +283,13 @@ EOSQL
 DBSNMP_PASSWORD=$(get_password dbsnmp)
 SYS_PASSWORD=$(get_password sys)
 
-for DB in $(echo -e "show configuration;" | dgmgrl / | grep "standby database" | cut -d'-' -f1)
-do
-   report_differences ${ORACLE_SID} ${DB^^}
-done
+# We check that the ORACLE_SID is the primary database as we only want to run this check against the primary
+PRIMARY_SID=$(echo -e "show configuration;" | dgmgrl / | grep "Primary database" |  cut -d'-' -f1 | sed 's/ //g' | tr '[:upper:]' '[:lower:]')
+
+if [[ "${ORACLE_SID,,}" == "${PRIMARY_SID}" ]];
+then
+   for DB in $(echo -e "show configuration;" | dgmgrl / | grep "standby database" | cut -d'-' -f1)
+   do
+      report_differences ${ORACLE_SID} ${DB^^}
+   done
+fi

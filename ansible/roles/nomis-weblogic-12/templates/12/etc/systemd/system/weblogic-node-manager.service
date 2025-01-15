@@ -1,0 +1,15 @@
+[Unit]
+Description=weblogic-node-manager
+After=network-online.target
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startNodeManager.sh
+ExecStop=/home/oracle/admin/scripts/stopNodeManager.sh
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+Type=oneshot
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

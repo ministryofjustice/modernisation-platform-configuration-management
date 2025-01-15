@@ -1,0 +1,51 @@
+---
+- name: Check if weblogic software already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/wlserver
+  register: weblogic_server_installed_check
+
+- block:
+    - name: Create weblogic software directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/software/weblogic
+        - /u01/app/oracle/Middleware
+        - /u01/app/oracle/oraInventory
+
+    - name: Get weblogic software from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software-12/{{ item }}"
+        dest: "/u01/software/weblogic/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - fmw_12.2.1.4.0_infrastructure.jar
+
+    - name: Copy weblogic software config
+      ansible.builtin.template:
+        src: "12{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /etc/oraInst.loc
+        - /u01/software/weblogic/fmw12214.rsp
+
+    - name: Install weblogic software which takes a couple of minutes
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# installing weblogic fmw_12.2.1.4.0_infrastructure.jar"
+          java -jar /u01/software/weblogic/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /u01/software/weblogic/fmw12214.rsp
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+  # block
+  when: not weblogic_server_installed_check.stat.exists

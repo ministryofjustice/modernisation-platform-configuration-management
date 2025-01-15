@@ -48,7 +48,7 @@
     src: "UUID={{ disks_mount_blkid.stdout }}"
     fstype: "{{ disks_mount_blkid.disk_mount.fstype }}"
     opts: "{{ disks_mount_blkid.disk_mount.opts | default('defaults,nofail') }}"
-    state: mounted
+    state: "{{ disks_mount_blkid.disk_mount.state | default('mounted') }}"
   loop_control:
     loop_var: disks_mount_blkid
     label: "{{ disks_mount_blkid.disk_mount }}"
@@ -60,7 +60,7 @@
     src: "UUID={{ disks_swap_blkid.stdout }}"
     fstype: "{{ disks_swap_blkid.disk_mount.fstype }}"
     opts: "{{ disks_swap_blkid.disk_mount.opts | default('sw') }}"
-    state: present
+    state: "{{ disks_swap_blkid.disk_mount.state | default('present') }}"
   loop_control:
     loop_var: disks_swap_blkid
     label: "{{ disks_swap_blkid.disk_mount }}"

@@ -10,10 +10,10 @@ sap_bip_unpack_base_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
 sap_bip_responsefiles_directory: "/u02/software/ResponseFiles"
 sap_bip_installation_directory: /u01/app/bobj/BIP4
-sap_web_archived_logs_directory: /u02/Archived_Logs
+sap_bip_archived_logs_directory: /u02/Archived_Logs
 sap_promotion_management_directory: /u02/tmpAJS
 
-sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension
+# sap_bip_rar_base: BIPLATS4301P_1200-70002683 # without _P1.EXE and _P2.RAR extension. Define in group_vars
 sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
 sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
@@ -85,7 +85,7 @@ sap_bip_secretsmanager_passwords:
       - Administrator: auto
       - "{{ sap_bip_provisioning_secrets | items2dict }}"
 
-sap_web_template_subdirectory: web
+sap_web_server_type: web # set to webadmin if dedicated to admin
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
 sap_web_context_cachemaxsize: 500000

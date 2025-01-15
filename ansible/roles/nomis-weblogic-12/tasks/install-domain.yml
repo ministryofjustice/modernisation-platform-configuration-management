@@ -1,0 +1,100 @@
+---
+- name: Check if weblogic domain already installed
+  ansible.builtin.stat:
+    path: /u01/app/oracle/Middleware/user_projects/domains/nomis
+  register: weblogic_domain_installed_check
+
+- block:
+    - name: Create weblogic domain directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/software/domain
+
+    # creat a template by first manually installing via config.sh wizard and then run pack:
+    # /u01/app/oracle/Middleware/oracle_common/common/bin/pack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template /u01/software/domain/template1.jar -template_name template1
+    # aws s3 cp /u01/software/domain/template1.jar s3://ec2-image-builder-nomis20220314103938567000000001/weblogic-software-12/domain/template1.jar --acl bucket-owner-full-control
+    - name: Get weblogic domain template from S3 bucket
+      amazon.aws.aws_s3:
+        bucket: "{{ image_builder_s3_bucket_name }}"
+        object: "weblogic-software-12/domain/{{ item }}"
+        dest: "/u01/software/domain/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - "{{ weblogic_domain_template_filename }}"
+
+    - name: Update ownership of weblogic domain template
+      ansible.builtin.file:
+        path: "/u01/software/domain/{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - "{{ weblogic_domain_template_filename }}"
+
+    - name: Unpack weblogic domain template
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          echo "# /u01/app/oracle/Middleware/oracle_common/common/bin/unpack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template /u01/software/domain/{{ weblogic_domain_template_filename }} -user_name weblogic -password xxxx"
+          /u01/app/oracle/Middleware/oracle_common/common/bin/unpack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template "/u01/software/domain/{{ weblogic_domain_template_filename }}" -user_name weblogic -password "{{ weblogic_admin_password }}"
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+
+    - name: Create weblogic domain security directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_FORMS/security
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security
+
+    # the boot.properties file is automatically updated by the weblogic server
+    - name: Copy weblogic domain security files
+      ansible.builtin.template:
+        src: "12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        force: false
+      loop:
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_FORMS/security/boot.properties
+        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security/boot.properties
+
+  # block
+  when: not weblogic_domain_installed_check.stat.exists
+
+- name: Copy weblogic init.d scripts
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    mode: "0644"
+  loop:
+    - /etc/systemd/system/weblogic-node-manager.service
+    - /etc/systemd/system/weblogic-server.service
+    - /etc/systemd/system/weblogic-ohs.service
+    - /etc/systemd/system/WLS_FORMS.service
+    - /etc/systemd/system/WLS_REPORTS.service
+
+- name: Enable weblogic services
+  ansible.builtin.service:
+    daemon_reload: true
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - weblogic-node-manager
+    - weblogic-server
+    - WLS_FORMS
+    - WLS_REPORTS
+    - weblogic-ohs

@@ -1,0 +1,29 @@
+---
+- import_tasks: get-db-facts.yml
+  tags:
+    - always
+    - bip_db_facts
+
+- import_tasks: create_database.yml
+  tags:
+    - bipsys_db_create
+  vars:
+    ORACLE_SID: "{{ system_db_sid }}"
+    SERVICE_NAME: "{{ system_service_name }}"
+    SYS_PASSWORD: "{{ bip_sys_sys_password }}"
+    SYSTEM_PASSWORD: "{{ bip_sys_system_password }}"
+    SQL_FILE: "{{ bip_system_sql_file }}"
+
+- import_tasks: create_database.yml
+  tags:
+    - bipaud_db_create
+  vars:
+    ORACLE_SID: "{{ audit_db_sid }}"
+    SERVICE_NAME: "{{ audit_service_name }}"
+    SYS_PASSWORD: "{{ bip_aud_sys_password }}"
+    SYSTEM_PASSWORD: "{{ bip_aud_system_password }}"
+    SQL_FILE: "{{ bip_audit_sql_file }}"
+
+- import_tasks: cleanup.yml
+  tags:
+    - bip_db_cleanup

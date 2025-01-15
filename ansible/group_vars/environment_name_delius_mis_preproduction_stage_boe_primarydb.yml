@@ -8,6 +8,7 @@ database_parameters:
   sga_target: 3G
   pga_aggregate_target: 1500M
   pga_aggregate_limit: 3G
+  compatible: 19.14.0
 rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
 database_autotasks:
   statistics_advisor: disabled
@@ -16,6 +17,8 @@ required_patches:
     patch_files:
       - target_version: "19.24"
         filename: p26749785_1924000DBRU_Generic.zip
+      - target_version: "19.25"
+        filename: p26749785_1925000DBRU_Generic.zip
     description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
     grid_patch: false
     database_patch: true
@@ -27,9 +30,7 @@ delius_users:
   sgandalwar_dba:
   kmoss_dba:
 oracle_software:
-  version: "19.24"
-  combo_patch: p36522439_190000_Linux-x86-64.zip
-  opatch:
-    version: 12.2.0.1.43
-    filename: p6880880_190000_Linux-x86-64.12.2.0.1.43.zip
+  version: "19.25"
+  combo_patch: p36866740_190000_Linux-x86-64.zip
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
+source_db: "STGBOE"

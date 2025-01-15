@@ -1,0 +1,15 @@
+[Unit]
+Description=weblogic-ohs
+After=weblogic-node-manager.service
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startOHS.py
+ExecStop=/home/oracle/admin/scripts/stopOHS.py
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+Type=oneshot
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

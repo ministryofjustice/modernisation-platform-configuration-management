@@ -4,6 +4,7 @@ database_global_database: DMDNDA
 database_taf_service: DMDNDA_TAF
 database_primary_unique: DMDNDA
 database_primary_sid: DMDNDA
+rman_level_0_backup_duration_target: "12:00"
 delius_users:
   dbull_ro:
   nmcmahon_ro:
@@ -20,11 +21,8 @@ delius_users:
   worr_sro:
   nhodgkinson_rw:
 oracle_software:
-  version: "19.24"
-  combo_patch: p36522439_190000_Linux-x86-64.zip
-  opatch:
-    version: 12.2.0.1.43
-    filename: p6880880_190000_Linux-x86-64.12.2.0.1.43.zip
+  version: "19.25"
+  combo_patch: p36866740_190000_Linux-x86-64.zip
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
 database_locked_statistics:

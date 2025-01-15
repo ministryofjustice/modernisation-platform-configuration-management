@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+#  Creates OEM Dynamic Groups for each Application "Superset"
+#  which is either "Prisons" or "Probation"; this allows common
+#  application areas to be grouped together.
+
+. ~/.bash_profile
+export JAVA_HOME=$ORACLE_HOME/jdk/jre
+
+if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec ${SUPERSET} ) -gt 0 ] ; then
+   echo "${SUPERSET} group already exists."
+   # Check if membership is correct
+   EXISTING_MEMBERSHIP=$({{ emcli }} get_group_members -name=${SUPERSET} | awk '$2~/^group$/{print $1}' | sort | paste -sd,)
+   if [[ "${EXISTING_MEMBERSHIP}" != "${MEMBERS}" ]];
+   then   
+      echo "${SUPERSET} group membership has changed. Dropping to allow it to be re-created."
+      {{ emcli }} delete_group -name=${SUPERSET}
+      echo "Waiting for group removal"
+      sleep 60
+   fi
+fi
+
+# Create or recreate the supserset group
+if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec ${SUPERSET} ) -eq 0 ] ; then
+   TARGETS=$(echo ${MEMBERS} | sed 's/,/:group;/g; s/$/:group/')
+   {{ emcli }} create_group -name=${SUPERSET} -add_targets="${TARGETS}"
+   if [[ $? -eq 0 ]]; then
+      echo "New ${SUPERSET} static group created."
+   fi
+fi

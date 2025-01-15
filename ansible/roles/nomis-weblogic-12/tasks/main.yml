@@ -1,0 +1,49 @@
+---
+- name: Rhel8
+  block:
+    - import_tasks: get-facts.yml
+      tags:
+        - ec2provision
+        - weblogic_get_facts
+        - weblogic_setup_oracle_user
+        - weblogic_create_db_repo
+        - weblogic_install_domain
+
+    - import_tasks: setup-oracle-user.yml
+      tags:
+        - ec2provision
+        - weblogic_setup_oracle_user
+
+    - import_tasks: install-rpms.yml
+      tags:
+        - ec2provision
+        - weblogic_install_jdk
+
+    - import_tasks: update-sysctl.yml
+      tags:
+        - ec2provision
+        - weblogic_update_sysctl
+
+    - import_tasks: install-server.yml
+      tags:
+        - ec2provision
+        - weblogic_install_server
+
+    - import_tasks: install-forms.yml
+      tags:
+        - ec2provision
+        - weblogic_install_forms
+
+    # only needs to be done once per build
+    - import_tasks: create-db-repo.yml
+      tags:
+        - weblogic_create_db_repo
+      when: weblogic_db_repo_prefix is defined
+
+    - import_tasks: install-domain.yml
+      tags:
+        - ec2provision
+        - weblogic_install_domain
+      when: weblogic_domain_template_filename != 'none'
+
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

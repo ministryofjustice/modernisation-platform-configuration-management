@@ -36,3 +36,12 @@
     home: "{{ item.home | default('/home/' + item.name) }}"
     system: yes
   loop: "{{ users_and_groups_system | selectattr('name', 'defined') }}"
+
+- name: Touch system users .xAuthority
+  ansible.builtin.file:
+    path: "/home/{{ item.name }}/.Xauthority"
+    state: touch
+    mode: u+rw,g-rwx,o-rwx
+    modification_time: preserve
+    access_time: preserve
+  loop: "{{ users_and_groups_system | selectattr('name', 'defined') | selectattr('create_xauthority', 'defined') | selectattr('create_xauthority', 'equalto', true) }}"

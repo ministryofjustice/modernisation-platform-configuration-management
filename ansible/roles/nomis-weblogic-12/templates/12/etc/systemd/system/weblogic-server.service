@@ -1,0 +1,16 @@
+[Unit]
+Description=weblogic-server
+After=weblogic-node-manager.service
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startWebLogic.sh
+ExecStop=/home/oracle/admin/scripts/stopWebLogic.sh
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+TimeoutStartSec=180
+Type=oneshot
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

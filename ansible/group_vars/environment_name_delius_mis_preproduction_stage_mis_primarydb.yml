@@ -3,7 +3,7 @@ database_global_database: STGMIS
 database_taf_service: STGMIS_TAF
 database_primary_unique: STGMIS
 database_primary_sid: STGMIS
-rman_level_0_backup_duration_target: "19:00"
+rman_level_0_backup_duration_target: "12:00"
 rman_uncompressed_backup: Y
 rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
 database_parameters:
@@ -25,6 +25,13 @@ required_patches:
       - target_version: "19.24"
         filename: p34755459_1924000DBRU_Linux-x86-64.zip
     description: "ORA-00600 [QERIXGETKEY OPTDESC] WITH FUNCTION BASED INDEX ON SUBSTR"
+    grid_patch: false
+    database_patch: true
+  p35413661:
+    patch_files:
+      - target_version: "19.24"
+        filename: p35413661_1924000DBRU_Linux-x86-64.zip
+    description: "ORA-600 [OPTDESC] ASSERT NEED TO BE INTRODUCED EARLIER IN QKNA INSTEAD OF QERIX"
     grid_patch: false
     database_patch: true
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"

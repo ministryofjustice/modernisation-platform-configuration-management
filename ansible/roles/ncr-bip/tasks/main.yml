@@ -41,27 +41,27 @@
       tags:
         - ec2provision
         - ncr_bip_get_secrets
-        - ncr_bip_add_response_file
-        - ncr_bip_redact_response_file
+        - ncr_bip_install_bip
         - ncr_bip_update_secrets
         - ncr_bip_setup_cluster_name
         - ncr_bip_setup_tomcat
         - ncr_bip_setup_provisioning
+        - ncr_bip_redeploy_tomcat
 
-    - import_tasks: add_response_file.yml
+    - import_tasks: setup_archived_logs.yml
       tags:
         - ec2provision
-        - ncr_bip_add_response_file
+        - ncr_bip_setup_archived_logs
 
     - import_tasks: install_bip.yml
       tags:
         - ec2provision
         - ncr_bip_install_bip
 
-    - import_tasks: redact_response_file.yml
+    - import_tasks: install_systemd_service.yml
       tags:
         - ec2provision
-        - ncr_bip_redact_response_file
+        - ncr_bip_install_systemd_service
 
     - import_tasks: update_secrets.yml
       tags:

@@ -1,37 +1,39 @@
 ---
 - name: Prerequisites
-  include: oms_ru_upgrade_prerequisites.yml
+  include_tasks: oms_ru_upgrade_prerequisites.yml
 
 - name: Download software from s3 bucket
-  include: download_oem_ru_software.yml
+  include_tasks: download_oem_ru_software.yml
   tags: download
 
 - name: Update OMSPatcher
-  include: oms_upgrade_omspatcher.yml
+  include_tasks: oms_upgrade_omspatcher.yml
   tags: omspatcher_upgrade
 
 - name: Update OPatch
-  include: oms_upgrade_opatch.yml
+  include_tasks: oms_upgrade_opatch.yml
   tags: oms_opatch_upgrade
 
 - name: Create OMSPatcher properties file
-  include: create_omspatcher_property_file.yml
+  include_tasks: create_omspatcher_property_file.yml
   tags: oms_property_file
 
 - name: Apply required patches to OMS
-  include: apply_oms_patch.yml
+  include_tasks: apply_oms_patch.yml
   tags: patch_oms
 
 - name: Update AgentPatcher
-  include: oms_upgrade_agentpatcher.yml
+  include_tasks: oms_upgrade_agentpatcher.yml
   tags: omspatcher_upgrade
 
 - name: Upgrade central agent
-  include: apply_agent_patch.yml
+  include_tasks: apply_agent_patch.yml
   tags: upgrade_agent
 
 - name: Remove files from staging area
-  include: cleanup.yml
+  include_tasks: cleanup.yml
   vars:
     patch_type: agent
-  tags: patch_agent
+  tags:
+    - patch_agent
+    - cleanup

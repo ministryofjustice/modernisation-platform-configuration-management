@@ -1,52 +1,49 @@
 $GlobalConfig = @{
-    "all"                                    = @{
-        "WindowsClientS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
-        "WindowsClientS3Folder" = "hmpps/ncr-packages"
-        "OracleClientS3File"    = "WINDOWS.X64_193000_client.zip" # Oracle 19c client SW, install 1st
-        "ORACLE_HOME"           = "C:\app\oracle\product\19.0.0\client_1"
-        "ORACLE_BASE"           = "C:\app\oracle"
-        # "IPSS3File"             = "IPS.ZIP" # IPS SW, install 2nd
-        # "DataServicesS3File"    = "DATASERVICES.ZIP" # BODS SW, install 3rd
-        "BIPWindowsClient43"    = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3
-        "BIPWindowsClient42"    = "5104879_1.ZIP" # Client tool 4.2 SP 9 
-        "RegistryPath"          = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
-        "LegalNoticeCaption"    = "IMPORTANT"
-        "LegalNoticeText"       = "This system is restricted to authorized users only. Individuals who attempt unauthorized access will be prosecuted. If you are unauthorized terminate access now. Click OK to indicate your acceptance of this information"
+    "all"                                 = @{
+        "WindowsClientS3Bucket"      = "mod-platform-image-artefact-bucket20230203091453221500000001"
+        "WindowsClientS3Folder"      = "hmpps/ncr-packages"
+        "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
+        "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
+        "ORACLE_BASE"                = "C:\app\oracle"
+        "BIPWindowsClient43"         = "BIPLATCLNT4304P_500-70005711.EXE" # Client tools 4.3 SP 4 Patch 5
+        # NOTE: Just keeping a record of these versions as this info is difficult to find in the SAP download portal
+        # "BIPWindowsClient43" = "BIPLATCLNT4303P_500-70005711.EXE" # Client tools 4.3 SP 3 Patch 5
+        # "BIPWindowsClient43" = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
+        # "BIPWindowsClient43" = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3 Patch 3
+        # "BIPWindowsClient42" # "5104879_1.ZIP" # Client tool 4.2 SP 9
     }
-    "oasys-national-reporting-development"   = @{ # TODO: change this to hmpps-domain-services-development later on
+    "hmpps-domain-services-development"   = @{
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "NcrShortcuts" = @{
+        "NcrShortcuts"    = @{
         }
     }
-    "oasys-national-reporting-test"          = @{
+    "hmpps-domain-services-test"          = @{
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "NcrShortcuts" = @{
+        "NcrShortcuts"    = @{
         }
     }
-    "oasys-national-reporting-preproduction" = @{
+    "hmpps-domain-services-preproduction" = @{
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "NcrShortcuts" = @{
+        "NcrShortcuts"    = @{
         }
     }
-    "oasys-national-reporting-production"    = @{
+    "hmpps-domain-services-production"    = @{
+        "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "NcrShortcuts" = @{
+        "NcrShortcuts"    = @{
         }
     }
 }
 
-$tempPath = ([System.IO.Path]::GetTempPath())
-$ConfigurationManagementRepo = "$tempPath\modernisation-platform-configuration-management"
-$ModulesRepo = "$ConfigurationManagementRepo\powershell\Modules"
-$WorkingDirectory = "C:\Software"
-$AppDirectory = "C:\App"
+# IMPORTANT: This script installs Client Tools 4.3 SP 3 Patch 5 and the Oracle 19c client software.
 
-$ErrorActionPreference = "Stop"
-
+# }}} functions
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600}
+        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 }
         Method     = 'PUT'
         Uri        = 'http://169.254.169.254/latest/api/token'
     }
@@ -54,7 +51,7 @@ function Get-Config {
 
     $instanceIdParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token" = $Token}
+        Headers    = @{"X-aws-ec2-metadata-token" = $Token }
         Method     = 'GET'
         Uri        = 'http://169.254.169.254/latest/meta-data/instance-id'
     }
@@ -131,11 +128,11 @@ function Get-SecretValue {
 
 
 function Get-InstanceTags {
-  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
-  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
-  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
-  $Tags = $TagsRaw | ConvertFrom-Json
-  $Tags.Tags
+    $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 } -Method PUT -Uri http://169.254.169.254/latest/api/token
+    $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token } -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+    $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+    $Tags = $TagsRaw | ConvertFrom-Json
+    $Tags.Tags
 }
 
 function Clear-PendingFileRenameOperations {
@@ -155,9 +152,224 @@ function Clear-PendingFileRenameOperations {
         Write-Host "$regKey does not exist in the registry. No action needed."
     }
 }
+
+function Move-ModPlatformADComputer {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][System.Management.Automation.PSCredential]$ModPlatformADCredential,
+        [Parameter(Mandatory = $true)][string]$NewOU
+    )
+
+    $ErrorActionPreference = "Stop"
+
+    # Do nothing if host not part of domain
+    if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+        return $false
+    }
+
+    # Get the computer's objectGUID with a 5-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(5)
+    do {
+        $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
+        if ($computer -and $computer.objectGUID) { break }
+        Start-Sleep -Seconds 5
+    } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
+
+    if (-not ($computer -and $computer.objectGUID)) {
+        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        return
+    }
+
+    # Move the computer to the new OU
+    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+
+    # force group policy update
+    gpupdate /force
+}
+
+function Test-WindowsServer2012R2 {
+    $osVersion = (Get-WmiObject -Class Win32_OperatingSystem).Version
+    return $osVersion -like "6.3*"
+}
+
+function Install-Oracle19cClient {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if Oracle 19c client is already installed
+    if (Test-Path $Config.ORACLE_19C_HOME) {
+        Write-Host "Oracle 19c client is already installed."
+        return
+    }
+
+    $WorkingDirectory = "C:\Software"
+    Set-Location -Path $WorkingDirectory
+
+    # Prepare installer
+    Get-Installer -Key $Config.Oracle19c64bitClientS3File -Destination (".\" + $Config.Oracle19c64bitClientS3File)
+    Expand-Archive (".\" + $Config.Oracle19c64bitClientS3File) -Destination ".\OracleClient"
+
+    # Create response file for silent install
+    $oracleClientResponseFileContent = @"
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
+ORACLE_HOME=$($Config.ORACLE_19C_HOME)
+ORACLE_BASE=$($Config.ORACLE_BASE)
+oracle.install.IsBuiltInAccount=true
+oracle.install.client.installType=Administrator
+"@
+
+    $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
+
+    # Install Oracle 19c client
+    $OracleClientInstallParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-silent", "-noconfig", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    Start-Process @OracleClientInstallParams
+
+    # Install Oracle configuration tools
+    $oracleConfigToolsParams = @{
+        FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
+        WorkingDirectory = "$WorkingDirectory\OracleClient\client"
+        ArgumentList     = "-executeConfigTools", "-silent", "-nowait", "-responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
+        Wait             = $true
+        NoNewWindow      = $true
+    }
+
+    Start-Process @oracleConfigToolsParams
+
+    # Set environment variable
+    [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+}
+
+function New-TnsOraFile {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    $tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\$($Config.tnsorafile)"
+
+    if (Test-Path $tnsOraFilePath) {
+        Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+    }
+    else {
+        Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
+        exit 1
+    }
+
+    # check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the Config values.
+
+    if (-not $env:ORACLE_HOME) {
+        [Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
+        $env:ORACLE_HOME = $Config.ORACLE_19C_HOME  # Set in current session
+    }
+
+    $tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
+
+    Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
+
+}
+
+function Add-BIPWindowsClient43 {
+    param (
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    # Check if BIP Windows Client 4.3 is already installed
+    $installDir = "C:\Program Files (x86)\SAP BusinessObjects"
+    if (Test-Path $installDir) {
+        Write-Host "BIP Windows Client 4.3 is already installed."
+        return
+    }
+
+    $BIPClientTools43ResponseFileContent = @"
+### Installation Directory
+Installdir=C:\Program Files (x86)\SAP BusinessObjects\
+### Language Packs Selected to Install
+selectedlanguagepacks=en
+### Setup UI Language
+setupuilanguage=en
+features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Designer,QAAWS,InformationDesignTool,Translation_Manager,DataFederationAdministrationTool,biwidgets,ClientComponents,JavaSDK,WebSDK,DotNetSDK,CRJavaSDK,DevComponents,DataFed_DataAccess,HPNeoView_DataAccess,MySQL_DataAccess,GenericODBC_DataAccess,GenericOLEDB_DataAccess,GenericJDBC_DataAccess,MaxDB_DataAccess,SalesForce_DataAccess,Netezza_DataAccess,Microsoft_DataAccess,Ingres_DataAccess,Greenplum_DataAccess,IBMDB2,Informix_DataAccess,Progress_Open_Edge_DataAccess,Oracle_DataAccess,Sybase_DataAccess,TeraData_DataAccess,SAPBW_DataAccess,SAP_DataAccess,PersonalFiles_DataAccess,JavaBean_DataAccess,OpenConnectivity_DataAccess,HSQLDB_DataAccess,Derby_DataAccess,Essbase_DataAccess,PSFT_DataAccess,JDE_DataAccess,Siebel_DataAccess,EBS_DataAccess,DataAccess
+"@
+
+    Set-Location -Path $WorkingDirectory
+
+    Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
+
+    $BIPClientTools43ResponseFileContent | Out-File -FilePath "$WorkingDirectory\bip43_response.ini" -Force -Encoding ascii
+
+    choco install winrar -y
+
+    New-Item -ItemType Directory -Path "$WorkingDirectory\BIP43" -Force
+
+    Clear-PendingFileRenameOperations
+
+    # Extract the BIP 4.3 self-extracting archive using WinRAR's UnRAR command line tool
+    Start-Process -FilePath "C:\Program Files\WinRAR\UnRAR.exe" -ArgumentList "/wait x -o+ $WorkingDirectory\$($Config.BIPWindowsClient43) $WorkingDirectory\BIP43" -Wait -NoNewWindow
+
+    $BIPClientTools43Params = @{
+        FilePath     = "$WorkingDirectory\BIP43\setup.exe"
+        ArgumentList = "/wait", "-r $WorkingDirectory\bip43_response.ini"
+        Wait         = $true
+        NoNewWindow  = $true
+    }
+
+    Start-Process @BIPClientTools43Params
+
+    # Set up shortcuts for 4.3 client tools
+    $BIP43Path = "C:\Program Files (x86)\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0\win64_x64\"
+
+    # List is incomplete, add more executables as needed
+    $executables = @(
+        @{
+            "Name" = "Designer"
+            "Exe"  = "designer.exe"
+        },
+        @{
+            "Name" = "Information Design Tool"
+            "Exe"  = "InformationDesignTool.exe"
+        }
+    )
+
+    # Path to all users' desktop
+    $AllUsersDesktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
+
+    # Create folders on all users' desktop
+    $Client43Folder = Join-Path -Path $AllUsersDesktop -ChildPath "4.3 Client Tools"
+
+    New-Item -ItemType Directory -Path $Client43Folder -Force
+
+    # Create shortcuts for each executable if the target exists
+    $WScriptShell = New-Object -ComObject WScript.Shell
+
+    foreach ($executable in $executables) {
+
+        # Shortcuts for 4.3 Client
+        $TargetPath43 = Join-Path -Path $BIP43Path -ChildPath $executable.Exe
+        if (Test-Path $TargetPath43) {
+            $ShortcutPath43 = Join-Path -Path $Client43Folder -ChildPath ($executable.Name + ".lnk")
+            $Shortcut43 = $WScriptShell.CreateShortcut($ShortcutPath43)
+            $Shortcut43.TargetPath = $TargetPath43
+            $Shortcut43.IconLocation = $TargetPath43
+            $Shortcut43.Save()
+        }
+        else {
+            Write-Host "Executable not found: $TargetPath43"
+        }
+    }
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
+$ErrorActionPreference = "Stop"
 # Set the registry key to prefer IPv4 over IPv6
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
 
@@ -165,160 +377,29 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameter
 Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
 
 # Turn off the firewall as this will possibly interfere with Sia Node creation
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-
-# Disable antivirus and other security during installation
-
-# Disable real-time monitoring - doesn't exist on Server 2012
-# Set-MpPreference -DisableRealtimeMonitoring $true
-
-# Disable intrusion prevention system - doesn't exist on Server 2012
-# Set-MpPreference -DisableIntrusionPreventionSystem $true
-
-# Disable script scanning - doesn't exist on Server 2012
-# Set-MpPreference -DisableScriptScanning $true
-
-# Disable behavior monitoring - doesn't exist on Server 2012
-# Set-MpPreference -DisableBehaviorMonitoring $true
-
-# doesn't exist on Server 2012
-# Write-Host "Windows Security antivirus has been disabled. Please re-enable it as soon as possible for security reasons."
+Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
 
 # Set local time zone to UK although this should now be set by Group Policy objects
 Set-TimeZone -Name "GMT Standard Time"
 
 # }}} complete - add prerequisites to server
 
-# {{{ join domain if domain-name tag is set
-# Join domain and reboot is needed before installers run
-# Add $ModulesRepo to the PSModulePath in Server 2012 R2 otherwise it can't find it
-$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-
-$ErrorActionPreference = "Continue"
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-if ($null -ne $ADConfig) {
-  $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
-  if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
-    Exit 3010 # triggers reboot if running from SSM Doc
-  }
-} else {
-  Write-Output "No domain-name tag found so apply Local Group Policy"
-  . .\LocalGroupPolicy.ps1
-}
-# }}}
-
-# {{{ Get the config and tags for the instance
 $Config = Get-Config
 $Tags = Get-InstanceTags
-# }}}
 
-# {{{ Add computer to the correct OU
+$WorkingDirectory = "C:\Software"
+$AppDirectory = "C:\App"
 
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
+# {{{ join domain and rename instance to tag:'Name'
+. ../ModPlatformAD/Join-ModPlatformAD.ps1
+if ($LASTEXITCODE -ne 0) {
+    Exit $LASTEXITCODE
+}
+# }}} end of join domain
 
-# Get the AD Admin credentials
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-
-# Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
-
-# ensure computer is in the correct OU
-gpupdate /force
-
-# }}}
-
-# {{{ prepare assets
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
-Set-Location -Path $WorkingDirectory
-Get-Installer -Key $Config.OracleClientS3File -Destination (".\" + $Config.OracleClientS3File)
-Get-Installer -Key $Config.BIPWindowsClient43 -Destination (".\" + $Config.BIPWindowsClient43)
-Get-Installer -Key $Config.BIPWindowsClient42 -Destination (".\" + $Config.BIPWindowsClient42)
-# TODO: Get BIP 4.2 client tools
-
-Expand-Archive ( ".\" + $Config.OracleClientS3File) -Destination ".\OracleClient"
-Expand-Archive ( ".\" + $Config.BIPWindowsClient42) -Destination ".\BIP42"
-# }}}
-
-# {{{ Install Oracle 19c Client silent install
-# documentation: https://docs.oracle.com/en/database/oracle/oracle-database/19/ntcli/running-oracle-universal-installe-using-the-response-file.html
-
-# Create response file for silent install
-$oracleClientResponseFileContent = @"
-oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v19.0.0
-ORACLE_HOME=$($Config.ORACLE_HOME)
-ORACLE_BASE=$($Config.ORACLE_BASE)
-oracle.install.IsBuiltInAccount=true
-oracle.install.client.installType=Administrator
-"@
-
-$oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
-
-$OracleClientInstallParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-silent -noconfig -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @OracleClientInstallParams
-
-# Copy tnsnames.ora file to correct location, may not be in the usual place, check both
-if (Test-Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "$ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} elseif (Test-Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)") {
-    Copy-Item -Path "C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)" -Destination "$($Config.ORACLE_HOME)\network\admin\tnsnames.ora" -Force
-    Write-Output "Copied tnsnames.ora file to $($Config.ORACLE_HOME)\network\admin\tnsnames.ora"
-} else {
-    Write-Error "Could not find tnsnames.ora file in $ConfigurationManagementRepo\powershell\Configs\$($Config.tnsorafile)"
-    Write-Error "Could not find tnsnames.ora file in C:\Users\Administrator\AppData\Local\Temp\modernisation-platform-configuration-management\powershell\Configs\$($Config.tnsorafile)"
-}
-
-# Install Oracle configuration tools
-$oracleConfigToolsParams = @{
-    FilePath         = "$WorkingDirectory\OracleClient\client\setup.exe"
-    WorkingDirectory = "$WorkingDirectory\OracleClient\client"
-    ArgumentList     = "-executeConfigTools -silent -nowait -responseFile $WorkingDirectory\OracleClient\client\client_install.rsp"
-    Wait             = $true
-    NoNewWindow      = $true
-}
-
-Start-Process @oracleConfigToolsParams
-
-[Environment]::SetEnvironmentVariable("ORACLE_HOME", $Config.ORACLE_HOME, [System.EnvironmentVariableTarget]::Machine)
-
-# }}}
-
-# {{{ Install BIP 4.2 client tools
-
-# }}}
-
-# {{{ Install BIP 4.3 client tools
-
-# }}}
-
-# {{{ login text
-# Apply to all environments that aren't on the domain
-# $ErrorActionPreference = "Stop"
-# Write-Output "Add Legal Notice"
-
-# if (-NOT (Test-Path $Config.RegistryPath)) {
-#     Write-Output " - Registry path does not exist, creating"
-#     New-Item -Path $Config.RegistryPath -Force | Out-Null
-# }
-
-# $RegistryPath = $Config.RegistryPath
-# $LegalNoticeCaption = $Config.LegalNoticeCaption
-# $LegalNoticeText = $Config.LegalNoticeText
-
-# Write-Output " - Set Legal Notice Caption"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeCaption -Value $LegalNoticeCaption -PropertyType String -Force
-
-# Write-Output " - Set Legal Notice Text"
-# New-ItemProperty -Path $RegistryPath -Name LegalNoticeText -Value $LegalNoticeText -PropertyType String -Force
-# }}}
+Install-Oracle19cClient -Config $Config
+New-TnsOraFile -Config $Config
+Add-BIPWindowsClient43 -Config $Config

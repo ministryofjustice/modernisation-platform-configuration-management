@@ -1,6 +1,15 @@
 #
 #  We apply OEM job property files to create these jobs.
 #
+- name: Check if inside AWS.
+  uri:
+    url: http://169.254.169.254/latest/meta-data
+    timeout: 20
+  register: aws_uri_check
+  failed_when: false
+
+- set_fact:
+    is_aws_environment: "{{ aws_uri_check.status == 200 }}"
 
 - name: Get Job Property Files
   ansible.builtin.find:
@@ -9,8 +18,9 @@
     depth: 1
     file_type: file
   delegate_to: localhost
+  become: "{{ omit if (is_aws_environment | default(true)) else false }}"
   register: get_oem_job_property_files
-  loop: "{{ application_groups + ['common'] }}"
+  loop: "{{ application_groups.keys() | list + ['common'] }}"
   loop_control:
     loop_var: application_name
 
@@ -33,6 +43,14 @@
         owner: oracle
         group: oinstall
 
+    - name: Flatten Application Groups Dictionary
+      set_fact:
+        application_groups_flatten: |
+          {% for application_group in application_groups -%}
+          {{ application_group }}:{% for application in application_groups[application_group] -%}{{ application }}{%if not loop.last %},{% else %}|{% endif %}
+          {%- endfor %}
+          {%- endfor %}
+
     - name: Template OEM Job Property Files
       ansible.builtin.template:
         src: "{{ oem_job }}"
@@ -45,8 +63,8 @@
         loop_var: oem_job
       vars:
         oem_hostname: "{{ ansible_hostname }}"
-        job_name: "Backup Report for Delius"
-        reported_applications: "delius,hmpps-oem"
+        job_name: "Backup Report"
+        reported_applications: "{{ application_groups_flatten | regex_replace('\\n','')}}"
 
     - name: Create Jobs from OEM Property Files
       become_user: oracle

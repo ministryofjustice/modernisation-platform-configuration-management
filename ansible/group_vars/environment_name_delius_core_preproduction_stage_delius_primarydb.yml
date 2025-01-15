@@ -4,7 +4,7 @@ database_global_database: STGNDA
 database_taf_service: STGNDA_TAF
 database_primary_unique: STGNDA
 database_primary_sid: STGNDA
-rman_level_0_backup_duration_target: "21:00"
+rman_level_0_backup_duration_target: "12:00"
 rman_uncompressed_backup: Y
 rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
 cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo/shared_files/National/cfo"
@@ -42,6 +42,9 @@ delius_users:
   svalmonte_ro:
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
+oracle_software:
+  version: "19.25"
+  combo_patch: p36866740_190000_Linux-x86-64.zip
 database_locked_statistics:
   - schema_name: DELIUS_APP_SCHEMA
     table_names:

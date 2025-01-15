@@ -1,0 +1,22 @@
+---
+- ansible.builtin.shell: |
+    set -eo pipefail
+    for ((i=0; i<100; i++)); do
+      swap_file="{{ swap_file }}.$i"
+      if [[ ! -e "$swap_file" ]]; then
+        echo "$swap_file"
+        exit 0
+      fi
+    done
+    echo "Could not find swap file"
+    exit 1
+  changed_when: false
+  check_mode: false
+  register: swap_to_create_filename_shell
+
+- ansible.builtin.set_fact:
+    swap_to_create_mb: "{{ 0 if 1+ansible_facts['memory_mb']['swap']['total'] >= swap_mb else swap_mb - ansible_facts['memory_mb']['swap']['total'] }}"
+    swap_to_create_filename: "{{ swap_to_create_filename_shell.stdout }}"
+
+- ansible.builtin.debug:
+    msg: "existing_swap={{ ansible_facts['memory_mb']['swap']['total'] }} swap_to_create_mb={{ swap_to_create_mb }}; swap_to_create_filename={{ swap_to_create_filename }}"
