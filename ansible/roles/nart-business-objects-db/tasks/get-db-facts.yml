@@ -1,4 +1,22 @@
 ---
+- name: Print system db variables
+  debug:
+    msg: "system database to create: sid={{ system_db_sid }} service={{ system_service_name }}"
+
+- name: Print audit db variables
+  debug:
+    msg: "audit database to create: sid={{ audit_db_sid }} service={{ audit_service_name }}"
+
+- name: Fail if missing system db parameters
+  fail:
+    msg: "Ensure {{ system_db_sid }}  variable is defined in db_configs fact"
+  when: db_configs[system_db_sid] is not defined
+
+- name: Fail if missing audit db parameters
+  fail:
+    msg: "Ensure {{ audit_db_sid }}  variable is defined in db_configs fact"
+  when: db_configs[audit_db_sid] is not defined
+
 - name: Get secrets
   import_role:
     name: secretsmanager-passwords
@@ -16,16 +34,6 @@
     bip_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bip_system_owner'] }}"
     bods_ips_system_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bods_ips_system_owner'] }}"
     bods_repo_owner_password: "{{ secretsmanager_passwords_dict['system'].passwords['bods_repo_owner'] }}"
-
-- name: Fail if missing parameters
-  fail:
-    msg: "Ensure {{ audit_db_sid }}  variable is defined in db_configs fact"
-  when: db_configs[audit_db_sid] is not defined
-
-- name: Fail if missing parameters
-  fail:
-    msg: "Ensure {{ system_db_sid }}  variable is defined in db_configs fact"
-  when: db_configs[system_db_sid] is not defined
 
 - name: Check parameters
   set_fact:

@@ -44,5 +44,9 @@ This will auto-generate passwords for following. Or you can pre-define them:
 ## Example usage:
 
 ```
+# check variables have defined + generate database passwords if necessary
+ansible-playbook site.yml --limit t2-oasys-db-a -e force_role=nart-business-objects-db --tags bip_db_facts
+
+# create databases
 ansible-playbook site.yml --limit t2-oasys-db-a -e force_role=nart-business-objects-db
 ```
