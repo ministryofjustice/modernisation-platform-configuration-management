@@ -1,21 +1,31 @@
 ---
 stage: /u01/stage
+#
+# Define below in environment specific group_vars:
+# audit_db_sid: PDBOAUD
+# system_db_sid: PDBOSYS
+# audit_service_name: BIAUD_TAF
+# system_service_name: BISYS_TAF
+
+bip_system_sql_file: "setup_SYS.sql"
+bip_audit_sql_file: "setup_AUD.sql"
+
 bip_db_secretsmanager_secrets:
   audit:
     secret: "/oracle/database/{{ audit_db_sid }}/passwords"
     users:
-      - sys:
-      - system:
-      - dbsnmp:
-      - bip_audit_owner:
-      - bods_ips_audit_owner:
+      - sys: auto
+      - system: auto
+      - dbsnmp: auto
+      - bip_audit_owner: auto
+      - bods_ips_audit_owner: auto
 
   system:
     secret: "/oracle/database/{{ system_db_sid }}/passwords"
     users:
-      - sys:
-      - system:
-      - dbsnmp:
-      - bip_system_owner:
-      - bods_ips_system_owner:
-      - bods_repo_owner:
+      - sys: auto
+      - system: auto
+      - dbsnmp: auto
+      - bip_system_owner: auto
+      - bods_ips_system_owner: auto
+      - bods_repo_owner: auto
