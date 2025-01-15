@@ -7,6 +7,9 @@ stage: /u01/stage
 # audit_service_name: BIAUD_TAF
 # system_service_name: BISYS_TAF
 
+bip_system_sql_file: "setup_SYS.sql"
+bip_audit_sql_file: "setup_AUD.sql"
+
 bip_db_secretsmanager_secrets:
   audit:
     secret: "/oracle/database/{{ audit_db_sid }}/passwords"
