@@ -322,6 +322,8 @@ function Install-Oracle19cClient {
         return
     }
 
+    $WorkingDirectory = $Config.WorkingDirectory
+
     Set-Location -Path $WorkingDirectory
 
     # Prepare installer
