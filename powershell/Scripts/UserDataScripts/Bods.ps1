@@ -322,6 +322,7 @@ function Install-Oracle19cClient {
         return
     }
 
+    # easier to fix here rather than do command substitution inside the install params
     $WorkingDirectory = $Config.WorkingDirectory
 
     Set-Location -Path $WorkingDirectory
@@ -372,6 +373,9 @@ function Install-IPS {
         [Parameter(Mandatory)]
         [hashtable]$Config
     )
+
+    # easier to fix here rather than do command substitution inside the install params
+    $WorkingDirectory = $Config.WorkingDirectory
 
     if (Test-Path "$WorkingDirectory\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0") {
         Write-Output "IPS is already installed"
@@ -608,6 +612,9 @@ function Install-DataServices {
         Write-Output "Data Services is already installed"
         return
     }
+
+    # easier to fix here rather than do command substitution inside the install params
+    $WorkingDirectory = $Config.WorkingDirectory
 
     Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
 
