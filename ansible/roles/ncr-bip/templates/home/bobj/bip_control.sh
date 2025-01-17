@@ -5,6 +5,8 @@
 # - use ec2 tags and env vars to print expected server list
 # - update load balancer maintenance mode
 #
+# Also see ncr-control.sh in dso-modernisation-platform-management repo
+#
 # PREREQ. The script figures out desired server state from tags and
 # the configured _SERVER environment variables. Check this actually
 # matches the working environment, and adjust the env variables as
@@ -12,10 +14,7 @@
 #   $ ./bip_control.sh diff server-list ccm exp
 #
 # To shutdown environment cleanly as per https://me.sap.com/notes/0002390652:
-# With additional step to enable ma
-# Use the following to get the steps:
-#   $ ./bip_control.sh pipeline stop
-#
+
 #0. Enable Maintenance Mode on the LB
 #1. Stop the Web Application Server (Tomcat or other) / EC2s.
 #2. Disable all services except the Central Management Server, Input File Repository Server and Output File Repository Server.
@@ -41,6 +40,7 @@ DRYRUN=0
 VERBOSE=0
 LBS=
 FORMAT=default
+LOGPREFIX=
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
@@ -106,6 +106,7 @@ Where <opts>:
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
   -l public|private|admin   Select LB endpoint(s)
   -v                        Enable verbose debug
+  -p <logprefix>            Prefix all log lines with given prefix
   -w                        Wait for CCM command
 
 Where <cmd>:
@@ -119,7 +120,7 @@ Where <cmd>:
   lb         get-target-group           arn|health|name      - get target group ARN, health or name on given LB
   lb         get-json                   rules|rule           - debug lb json
   diff       server-list                <a> <b> [<servers>]  - run a diff against two server-lists, a/b one of biprws,ccm,exp
-  pipeline   start|stop                                      - print server fqdns required to start or stop cleanly via a pipeline
+  pipeline   start|stop                 all|012345678        - start and stop cleanly, run all steps or just selected
 
 Where <servers> are space separated and can be:
   <fqdn>     - fqdn of server name, e.g. ppncrcms1.AdaptiveJobServer
@@ -140,20 +141,24 @@ e.g.
 
 debug() {
   if ((VERBOSE != 0)); then
-    echo "DEBUG: $*" >&2
+    echo "${LOGPREFIX}DEBUG: $*" >&2
   fi
 }
 
 dryrun_debug() {
   if ((DRYRUN != 0)); then
-    echo "DRYRUN: $*" >&2
+    echo "${LOGPREFIX}DRYRUN: $*" >&2
   elif ((VERBOSE != 0)); then
-    echo "DEBUG: $*" >&2
+    echo "${LOGPREFIX}DEBUG: $*" >&2
   fi
 }
 
+log() {
+  echo "${LOGPREFIX}$*"
+}
+
 error() {
-  echo "$@" >&2
+  echo "${LOGPREFIX}$*" >&2
 }
 
 set_env_variables() {
@@ -457,14 +462,12 @@ filter_server_list() {
 }
 
 ccm() {
-  dryrun_debug "ccm.sh $* -username Administrator -password xxx"
-  if (( DRYRUN == 0 )); then
-    if [[ ! -x "$CCM_SH" ]]; then
-      error "Error ccm.sh script not found: $CCM_SH"
-      return 1
-    fi
-    "$CCM_SH" "$@" -username Administrator -password "$ADMIN_PASSWORD"
+  debug "ccm.sh $* -username Administrator -password xxx"
+  if [[ ! -x "$CCM_SH" ]]; then
+    error "Error ccm.sh script not found: $CCM_SH"
+    return 1
   fi
+  "$CCM_SH" "$@" -username Administrator -password "$ADMIN_PASSWORD"
 }
 
 ccm_display_to_tsv() {
@@ -641,10 +644,10 @@ lb_disable_maintenance_mode() {
     if (( DRYRUN == 0 )); then
       json=$(aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority" --no-cli-pager)
       debug "$json"
-      echo "maintenance mode disabled"
+      log "maintenance mode disabled"
     fi
   else
-    echo "maintenance mode already disabled"
+    log "maintenance mode already disabled"
   fi
 }
 
@@ -672,10 +675,10 @@ lb_enable_maintenance_mode() {
     if (( DRYRUN == 0 )); then
       json=$(aws elbv2 set-rule-priorities --rule-priorities "RuleArn=$rulearn,Priority=$newpriority" --no-cli-pager)
       debug "$json"
-      echo "maintenance mode enabled"
+      log "maintenance mode enabled"
     fi
   else
-    echo "maintenance mode already enabled"
+    log "maintenance mode already enabled"
   fi
 }
 
@@ -822,10 +825,15 @@ do_ccm() {
     fi
     cmd=$1
     shift
-    for fqdn; do
-      ccm "-$cmd" "$fqdn"
+    fqdns=$*
+    for fqdn in $fqdns; do
+      if ((DRYRUN == 0)); then
+        ccm "-$cmd" "$fqdn"
+      else
+        log "DRYRUN: ccm -$cmd $fqdn"
+      fi
     done
-    if ((CCM_WAIT_FOR_CMD_ENABLED == 1)); then
+    if ((CCM_WAIT_FOR_CMD_ENABLED == 1 && DRYRUN == 0)); then
       debug "Waiting for cmds to complete..."
       start_epoch_secs=$(date +%s)
       while true; do
@@ -833,7 +841,7 @@ do_ccm() {
         ccm_display_tsv=$(ccm_display_to_tsv "$output")
         success=1
         end_epoch_secs=$(date +%s)
-        for fqdn; do
+        for fqdn in $fqdns; do
           if [[ $cmd == "managedstart" ]]; then
             result=$(filter_server_list "$ccm_display_tsv" "$fqdn" "-Running")
           elif [[ $cmd == "managedstop" ]]; then
@@ -947,6 +955,7 @@ do_pipeline() {
     return 1
   fi
 
+  tmp_filename="/tmp/.bip_control.$(whoami).disabled"
   set_env_ec2_names
   num_web_ec2s=$(wc -w <<< "$WEB_EC2_NAMES" | tr -d " ")
   num_webadmin_ec2s=$(wc -w <<< "$WEBADMIN_EC2_NAMES" | tr -d " ")
@@ -954,163 +963,258 @@ do_pipeline() {
   exp_display_tsv_status=$(cut -f1,2 <<< "$exp_display_tsv")
   exp_display_tsv_enabled=$(cut -f1,3 <<< "$exp_display_tsv")
 
-  set_env_lb "private"
-  lb_private_maintenance_mode=$(lb_get_maintenance_mode)
-  lb_private_target_group_health=$(lb_get_target_group_health)
-  set_env_lb "public"
-  lb_public_maintenance_mode=$(lb_get_maintenance_mode)
-  lb_admin_maintenance_mode="not-applicable"
-  lb_admin_target_group_health=0
-  if (( num_webadmin_ec2s > 0 )); then
-    set_env_lb "admin" || exitcode=$?
-    if [[ exitcode -ne 0 ]]; then
-      error "Unable to set admin LB env event though webadmin EC2s present"
-      return 1
+  if [[ $2 == "all" || $2 =~ [0-1] ]]; then
+    set_env_lb "private"
+    lb_private_maintenance_mode=$(lb_get_maintenance_mode)
+    lb_private_target_group_health=$(lb_get_target_group_health)
+    set_env_lb "public"
+
+    lb_public_maintenance_mode=$(lb_get_maintenance_mode)
+    lb_admin_maintenance_mode="not-applicable"
+    lb_admin_target_group_health=0
+    if (( num_webadmin_ec2s > 0 )); then
+      set_env_lb "admin" || exitcode=$?
+      if [[ exitcode -ne 0 ]]; then
+        error "Unable to set admin LB env event though webadmin EC2s present"
+        return 1
+      fi
+      lb_admin_maintenance_mode=$(lb_get_maintenance_mode)
+      lb_admin_target_group_health=$(lb_get_target_group_health)
     fi
-    lb_admin_maintenance_mode=$(lb_get_maintenance_mode)
-    lb_admin_target_group_health=$(lb_get_target_group_health)
   fi
 
-  set_env_admin_password
+  CCM_WAIT_FOR_CMD_ENABLED=1
   ccm_exitcode=0
-  ccm_output=$(ccm -display) || ccm_exitcode=$?
-  ccm_output_tsv=$(ccm_display_to_tsv "$ccm_output" | sed 's/Running with Errors/Running/g')
-  ccm_output_tsv_status=$(cut -f1,2 <<< "$ccm_output_tsv")
-  ccm_output_tsv_enabled=$(cut -f1,3 <<< "$ccm_output_tsv")
-  set +o pipefail
-  target_tsv_status=$(diff <(echo "$ccm_output_tsv_status") <(echo "$exp_display_tsv_status") | grep '> ' | cut -d' ' -f2)
-  target_tsv_enabled=$(diff <(echo "$ccm_output_tsv_enabled") <(echo "$exp_display_tsv_enabled") | grep '> ' | cut -d' ' -f2)
-  set -o pipefail
+  if [[ $2 == "all" || $2 =~ [2-7] ]]; then
+    set_env_admin_password
+    ccm_output=$(ccm -display) || ccm_exitcode=$?
+    ccm_output_tsv=$(ccm_display_to_tsv "$ccm_output" | sed 's/Running with Errors/Running/g')
+    ccm_output_tsv_status=$(cut -f1,2 <<< "$ccm_output_tsv")
+    ccm_output_tsv_enabled=$(cut -f1,3 <<< "$ccm_output_tsv")
+    set +o pipefail
+    target_tsv_status=$(diff <(echo "$ccm_output_tsv_status") <(echo "$exp_display_tsv_status") | grep '> ' | cut -d' ' -f2)
+    target_tsv_enabled=$(diff <(echo "$ccm_output_tsv_enabled") <(echo "$exp_display_tsv_enabled") | grep '> ' | cut -d' ' -f2)
+    set -o pipefail
+  fi
 
-  debug "systemctl is-active sapbobj"
-  sapbobj_isactive=$(systemctl is-active sapbobj || true)
+  if [[ $2 == "all" || $2 == *8* ]]; then
+    debug "systemctl is-active sapbobj"
+    sapbobj_isactive=$(systemctl is-active sapbobj || true)
+  fi
 
   if [[ $1 == "start" ]]; then
-    step7=$(filter_server_list "$target_tsv_status" all -event -job -processing +Running | cut -f1 | xargs)
-    step6=$(filter_server_list "$target_tsv_status" processing +Running | cut -f1 | xargs)
-    step5=$(filter_server_list "$target_tsv_status" job +Running | cut -f1 | xargs)
-    step4=$(filter_server_list "$target_tsv_status" event +Running | cut -f1 | xargs)
-    step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
-
-    if [[ $sapbobj_isactive != "active" || $ccm_exitcode -ne 0 ]]; then
-      echo "#8 run:      'systemctl start sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
-    else
-      echo "#8 complete: sapbobj services are started on localhost"
-    fi
-    if [[ -n $step7 ]]; then
-      echo "#7 run:      './bip_control.sh -w ccm managedstart $step7'"
-    else
-      echo "#7 complete: all non-event/job/processing servers started"
-    fi
-    if [[ -n $step6 ]]; then
-      echo "#6 run:      './bip_control.sh -w ccm managedstart $step6'"
-    else
-      echo "#6 complete: all processing servers started"
-    fi
-    if [[ -n $step5 ]]; then
-      echo "#5 run:      './bip_control.sh -w ccm managedstart $step5'"
-    else
-      echo "#5 complete: all job servers started"
-    fi
-    if [[ -n $step4 ]]; then
-      echo "#4 run:      './bip_control.sh -w ccm managedstart $step4"
-    else
-      echo "#4 complete: all event servers started"
-    fi
-    echo "#3 complete: no need to sleep on startup"
-    if [[ -n $step2 ]]; then
-      echo "#2 run:      './bip_control.sh -w ccm enable $step2'"
-    else
-      echo "#2 complete: all expected services enabled"
-    fi
-    if (( num_webadmin_ec2s > 0 )); then
-      if (( lb_private_target_group_health != num_web_ec2s && lb_admin_target_group_health != num_webadmin_ec2s )); then
-        echo "#1 run:      'systemctl start sapbobj' on web and webadmin EC2s"
-      elif (( lb_admin_target_group_health != num_webadmin_ec2s )); then
-        echo "#1 run:      'systemctl start sapbobj' on webadmin EC2s"
-      elif (( lb_private_target_group_health != num_web_ec2s )); then
-        echo "#1 run:      'systemctl start sapbobj' on web EC2s"
+    if [[ $2 == "all" || $2 == *8* ]]; then
+      if [[ $sapbobj_isactive != "active" || $ccm_exitcode -ne 0 ]]; then
+        if ((DRYRUN == 0)); then
+          error "please run 'systemctl start sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES first"
+          return 1
+        else
+          log "DRYRUN:   please run 'systemctl start sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
+        fi
       else
-        echo "#1 complete: sapbobj services are started on web and webadmin EC2s: $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
-      fi
-    else
-      if (( lb_private_target_group_health != num_web_ec2s )); then
-        echo "#1 run:      'systemctl start sapbobj' on web EC2s"
-      else
-        echo "#1 complete: sapbobj services are started on web EC2s: $WEB_EC2_NAMES"
+        log "complete: sapbobj services are started on $CMS_EC2_NAMES $APP_EC2_NAMES"
       fi
     fi
-    if [[ $lb_private_maintenance_mode == "enabled" || $lb_public_maintenance_mode == "enabled" || $lb_admin_maintenance_mode == "enabled" ]]; then
-      echo "#0 run:      './bip_control.sh lb maintenance-mode disable'"
-    else
-      echo "#0 complete: all lb maintenance modes are disabled"
+    if [[ $2 == "all" || $2 == *7* ]]; then
+      step7=$(filter_server_list "$target_tsv_status" all -event -job -processing +Running | cut -f1 | xargs)
+      if [[ -n $step7 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstart $step7'"
+        do_ccm managedstart "$step7"
+      else
+        log "complete: all non-event/job/processing servers started"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *6* ]]; then
+      step6=$(filter_server_list "$target_tsv_status" processing +Running | cut -f1 | xargs)
+      if [[ -n $step6 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstart $step6'"
+        do_ccm managedstart "$step6"
+      else
+        log "complete: all processing servers started"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *5* ]]; then
+      step5=$(filter_server_list "$target_tsv_status" job +Running | cut -f1 | xargs)
+      if [[ -n $step5 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstart $step5'"
+        do_ccm managedstart "$step5"
+      else
+        log "complete: all processing servers started"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *4* ]]; then
+      step4=$(filter_server_list "$target_tsv_status" event +Running | cut -f1 | xargs)
+      if [[ -n $step4 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstart $step4'"
+        do_ccm managedstart "$step4"
+      else
+        log "complete: all processing servers started"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *3* ]]; then
+      log "skipping: 'sleep 600' not required on start up"
+    fi
+    if [[ $2 == "all" || $2 == *2* ]]; then
+      step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
+      if [[ -n $step2 ]]; then
+        log "running:  './bip_control.sh -w ccm enable $step2'"
+        do_ccm enable "$step2"
+      else
+        log "complete: all expected services enabled"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *1* ]]; then
+      if (( lb_private_target_group_health != num_web_ec2s || lb_admin_target_group_health != num_webadmin_ec2s )); then
+        if ((DRYRUN == 0)); then
+          error "please run 'systemctl start sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES first"
+          return 1
+        else
+          log "DRYRUN:   please run 'systemctl start sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+        fi
+      else
+        log "complete: sapbobj services are started on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *0* ]]; then
+      if [[ $lb_private_maintenance_mode == "enabled" || $lb_public_maintenance_mode == "enabled" || $lb_admin_maintenance_mode == "enabled" ]]; then
+        if [[ $lb_private_maintenance_mode == "enabled" ]]; then
+          log "running:  './bip_control.sh -l private lb maintenance-mode disable'"
+          set_env_lb "private"
+          lb_disable_maintenance_mode
+        fi
+        if [[ $lb_public_maintenance_mode == "enabled" ]]; then
+          log "running:  './bip_control.sh -l public lb maintenance-mode disable'"
+          set_env_lb "public"
+          lb_disable_maintenance_mode
+        fi
+        if [[ $lb_admin_maintenance_mode == "enabled" ]]; then
+          log "running:  './bip_control.sh -l admin lb maintenance-mode disable'"
+          set_env_lb "admin"
+          lb_disable_maintenance_mode
+        fi
+      else
+        log "complete: all lb maintenance modes are disabled"
+      fi
     fi
   elif [[ $1 == "stop" ]]; then
-    step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
-    step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
-    step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
-    step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
-    step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
-    step8=$(filter_server_list "$ccm_output_tsv_status" all -cms1 -Stopped | cut -f1 | cut -d. -f1 | sort -u | xargs)
 
-    if [[ $lb_private_maintenance_mode == "disabled" || $lb_public_maintenance_mode == "disabled" || $lb_admin_maintenance_mode == "disabled" ]]; then
-      echo "#0 run:      './bip_control.sh lb maintenance-mode enable'"
-    else
-      echo "#0 complete: all lb maintenance modes are enabled"
-    fi
-    if (( num_webadmin_ec2s > 0 )); then
-      if (( lb_private_target_group_health != 0 && lb_admin_target_group_health != 0 )); then
-        echo "#1 run:      'systemctl stop sapbobj' on web and webadmin EC2s"
-      elif (( lb_admin_target_group_health != 0 )); then
-        echo "#1 run:      'systemctl stop sapbobj' on webadmin EC2s"
-      elif (( lb_private_target_group_health != 0 )); then
-        echo "#1 run:      'systemctl stop sapbobj' on web EC2s"
+    if [[ $2 == "all" || $2 == *0* ]]; then
+      if [[ $lb_private_maintenance_mode == "disabled" || $lb_public_maintenance_mode == "disabled" || $lb_admin_maintenance_mode == "disabled" ]]; then
+        if [[ $lb_private_maintenance_mode == "disabled" ]]; then
+          log "running:  './bip_control.sh -l private lb maintenance-mode enable'"
+          set_env_lb "private"
+          lb_enable_maintenance_mode
+        fi
+        if [[ $lb_public_maintenance_mode == "disabled" ]]; then
+          log "running:  './bip_control.sh -l public lb maintenance-mode enable'"
+          set_env_lb "public"
+          lb_enable_maintenance_mode
+        fi
+        if [[ $lb_admin_maintenance_mode == "disabled" ]]; then
+          log "running:  './bip_control.sh -l admin lb maintenance-mode enable'"
+          set_env_lb "admin"
+          lb_enable_maintenance_mode
+        fi
       else
-        echo "#1 complete: sapbobj services are stopped on web and webadmin EC2s: $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+        log "complete: all lb maintenance modes are enabled"
       fi
-    else
-      if (( lb_private_target_group_health != 0 )); then
-        echo "#1 run:      'systemctl stop sapbobj' on web EC2s"
+    fi
+    if [[ $2 == "all" || $2 == *1* ]]; then
+      if (( lb_private_target_group_health != 0 || lb_admin_target_group_health != 0 )); then
+        if ((DRYRUN == 0)); then
+          error "please run 'systemctl stop sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES first"
+        else
+          log "DRYRUN:   please run 'systemctl stop sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+        fi
       else
-        echo "#1 complete: sapbobj services are stopped on web EC2s: $WEB_EC2_NAMES"
+        log "complete: sapbobj services are stopped on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
       fi
     fi
-    if [[ -n $step2 ]]; then
-      echo "#2 run:      './bip_control.sh -w ccm disable $step2'"
-      echo "#3 run:      'sleep 600'"
-    else
-      echo "#2 complete: all services disabled apart from CMS and FRS"
-      echo "#3 complete: no need to sleep as services already disabled"
-    fi
-    if [[ -n $step4 ]]; then
-      echo "#4 run:      './bip_control.sh -w ccm managedstop $step4'"
-    else
-      echo "#4 complete: all event servers stopped"
-    fi
-    if [[ -n $step5 ]]; then
-      echo "#5 run:      './bip_control.sh -w ccm managedstop $step5'"
-    else
-      echo "#5 complete: all job servers stopped"
-    fi
-    if [[ -n $step6 ]]; then
-      echo "#6 run:      './bip_control.sh -w ccm managedstop $step6'"
-    else
-      echo "#6 complete: all processing servers stopped"
-    fi
-    if [[ -n $step7 ]]; then
-      echo "#7 run:      './bip_control.sh -w ccm managedstop $step7'"
-    else
-      echo "#7 complete: all non-event/job/processing servers stopped"
-    fi
-    if [[ -n $step8 || $sapbobj_isactive == "active" ]]; then
-      if [[ -n $step8 ]]; then
-        echo "#8 run:      './bip_control.sh -w ccm stop $step8'"
+    if [[ $2 == "all" || $2 == *2* ]]; then
+      step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+      if [[ -n $step2 ]]; then
+        log "running:  './bip_control.sh -w ccm disable $step2'"
+        do_ccm disable "$step2"
+        date +%s > "$tmp_filename"
+      else
+        log "complete: all services disabled apart from CMS and FRS"
       fi
-      if [[ $sapbobj_isactive == "active" || $ccm_exitcode -eq 0 ]]; then
-        echo "#8 run:      'systemctl stop sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
+    fi
+    if [[ $2 == "all" || $2 == *3* ]]; then
+      if ((DRYRUN == 0)); then
+        if [[ -e "$tmp_filename" ]]; then
+          now_epoch=$(date +%s)
+          disabled_epoch=$(head -1 "$tmp_filename")
+          n=$(((659-(now_epoch-disabled_epoch))/60))
+          if ((n <= 0 || n > 15)); then
+            log "skipping: not sleeping as disabled services timestamp older than 10 mins ($n)"
+            n=0
+          else
+            for i in $(seq 1 $n); do
+              log "running:  [$i/$n]: 'sleep 60' waiting for clean stop"
+              sleep 60
+            done
+          fi
+        else
+          log "skipping: not sleeping as disabled services timestamp not found"
+        fi
+      else
+        log "DRYRUN:   'sleep 600' for clean stop"
       fi
-    else
-      echo "#8 complete: all SIA servers stopped"
+    fi
+    if [[ $2 == "all" || $2 == *4* ]]; then
+      step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
+      if [[ -n $step4 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstop $step4'"
+        do_ccm managedstop "$step4"
+      else
+        log "complete: all event servers stopped"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *5* ]]; then
+      step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
+      if [[ -n $step5 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstop $step5'"
+        do_ccm managedstop "$step5"
+      else
+        log "complete: all job servers stopped"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *6* ]]; then
+      step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
+      if [[ -n $step6 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstop $step6'"
+        do_ccm managedstop "$step6"
+      else
+        log "complete: all processing servers stopped"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *7* ]]; then
+      step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
+      if [[ -n $step7 ]]; then
+        log "running:  './bip_control.sh -w ccm managedstop $step7'"
+        do_ccm managedstop "$step7"
+      else
+        log "complete: all non-event/job/processing servers stopped"
+      fi
+    fi
+    if [[ $2 == "all" || $2 == *8* ]]; then
+      step8=$(filter_server_list "$ccm_output_tsv_status" all -cms1 -Stopped | cut -f1 | cut -d. -f1 | sort -u | xargs)
+      if [[ -n $step8 || $sapbobj_isactive == "active" ]]; then
+        if [[ -n $step8 ]]; then
+          log "running:  './bip_control.sh -w ccm stop $step8'"
+          do_ccm managedstop "$step7"
+        fi
+        if [[ $sapbobj_isactive == "active" || $ccm_exitcode -eq 0 ]]; then
+          if ((DRYRUN == 0)); then
+            error "run 'systemctl stop sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES first"
+          else
+            log "DRYRUN:   please run 'systemctl stop sapbobj' on $CMS_EC2_NAMES $APP_EC2_NAMES"
+          fi
+        fi
+      else
+        log "complete: sapbobj services are stopped on $CMS_EC2_NAMES $APP_EC2_NAMES"
+      fi
     fi
   else
     usage
@@ -1177,7 +1281,7 @@ do_lb() {
 
 main() {
   set -eo pipefail
-  while getopts "de:f:l:vw" opt; do
+  while getopts "de:f:l:p:vw" opt; do
       case $opt in
           d)
               DRYRUN=1
@@ -1190,6 +1294,9 @@ main() {
               ;;
           f)
               FORMAT=${OPTARG}
+              ;;
+          p)
+              LOGPREFIX=${OPTARG}
               ;;
           v)
               VERBOSE=1
