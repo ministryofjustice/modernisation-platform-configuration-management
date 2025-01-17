@@ -29,4 +29,4 @@ dbca -silent -createDatabase                                                 \
 srvctl add service -d $ORACLE_SID -s ${SERVICE_NAME}
 srvctl start service -d $ORACLE_SID -s ${SERVICE_NAME}
 
-sqlplus  "/ as sysdba" @{{ stage }}/setup_${ORACLE_SID}.sql 
+sqlplus  "/ as sysdba" @{{ stage }}/{{ SQL_FILE }}
