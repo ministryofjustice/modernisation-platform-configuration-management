@@ -1054,7 +1054,7 @@ do_pipeline() {
       fi
     fi
     if [[ $2 == "all" || $2 == *3* ]]; then
-      log "skipping: 'sleep 600' not required on start up"
+      log "skipping: 'sleep' not required on start up"
     fi
     if [[ $2 == "all" || $2 == *2* ]]; then
       step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
@@ -1161,7 +1161,7 @@ do_pipeline() {
           log "skipping: not sleeping as disabled services timestamp not found"
         fi
       else
-        log "DRYRUN:   'sleep 600' for clean stop"
+        log "DRYRUN:   'sleep ${STAGE3_WAIT_SECS}' for clean stop"
       fi
     fi
     if [[ $2 == "all" || $2 == *4* ]]; then
