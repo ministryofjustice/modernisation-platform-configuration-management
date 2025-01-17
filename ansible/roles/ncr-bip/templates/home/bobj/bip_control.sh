@@ -1023,7 +1023,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step7'"
         do_ccm managedstart "$step7"
       else
-        log "complete: all non-event/job/processing servers started"
+        log "skipping: all non-event/job/processing servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *6* ]]; then
@@ -1032,7 +1032,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step6'"
         do_ccm managedstart "$step6"
       else
-        log "complete: all processing servers started"
+        log "skipping: all processing servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *5* ]]; then
@@ -1041,7 +1041,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step5'"
         do_ccm managedstart "$step5"
       else
-        log "complete: all processing servers started"
+        log "skipping: all processing servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *4* ]]; then
@@ -1050,7 +1050,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step4'"
         do_ccm managedstart "$step4"
       else
-        log "complete: all processing servers started"
+        log "skipping: all processing servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *3* ]]; then
@@ -1062,7 +1062,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm enable $step2'"
         do_ccm enable "$step2"
       else
-        log "complete: all expected services enabled"
+        log "skipping: all expected services already enabled"
       fi
     fi
     if [[ $2 == "all" || $2 == *1* ]]; then
@@ -1074,7 +1074,7 @@ do_pipeline() {
           log "DRYRUN:   please run 'systemctl start sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
         fi
       else
-        log "complete: sapbobj services are started on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+        log "skipping: sapbobj services are already started on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
       fi
     fi
     if [[ $2 == "all" || $2 == *0* ]]; then
@@ -1129,7 +1129,7 @@ do_pipeline() {
           log "DRYRUN:   please run 'systemctl stop sapbobj' on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
         fi
       else
-        log "complete: sapbobj services are stopped on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
+        log "skipping: sapbobj services are already stopped on $WEB_EC2_NAMES $WEBADMIN_EC2_NAMES"
       fi
     fi
     if [[ $2 == "all" || $2 == *2* ]]; then
@@ -1139,7 +1139,7 @@ do_pipeline() {
         do_ccm disable "$step2"
         date +%s > "$tmp_filename"
       else
-        log "complete: all services disabled apart from CMS and FRS"
+        log "skipping: all services are already disabled apart from CMS and FRS"
       fi
     fi
     if [[ $2 == "all" || $2 == *3* ]]; then
@@ -1170,7 +1170,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstop $step4'"
         do_ccm managedstop "$step4"
       else
-        log "complete: all event servers stopped"
+        log "skipping: all event servers are already stopped"
       fi
     fi
     if [[ $2 == "all" || $2 == *5* ]]; then
@@ -1179,7 +1179,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstop $step5'"
         do_ccm managedstop "$step5"
       else
-        log "complete: all job servers stopped"
+        log "skipping: all job servers are already stopped"
       fi
     fi
     if [[ $2 == "all" || $2 == *6* ]]; then
@@ -1188,7 +1188,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstop $step6'"
         do_ccm managedstop "$step6"
       else
-        log "complete: all processing servers stopped"
+        log "skipping: all processing servers are already stopped"
       fi
     fi
     if [[ $2 == "all" || $2 == *7* ]]; then
@@ -1197,7 +1197,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstop $step7'"
         do_ccm managedstop "$step7"
       else
-        log "complete: all non-event/job/processing servers stopped"
+        log "skipping: all non-event/job/processing servers are already stopped"
       fi
     fi
     if [[ $2 == "all" || $2 == *8* ]]; then
@@ -1215,7 +1215,7 @@ do_pipeline() {
           fi
         fi
       else
-        log "complete: sapbobj services are stopped on $CMS_EC2_NAMES $APP_EC2_NAMES"
+        log "skipping: sapbobj services are already stopped on $CMS_EC2_NAMES $APP_EC2_NAMES"
       fi
     fi
   else
