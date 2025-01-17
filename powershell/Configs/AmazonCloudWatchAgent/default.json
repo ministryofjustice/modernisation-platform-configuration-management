@@ -20,9 +20,7 @@
           "% Interrupt Time",
           "% User Time"
         ],
-        "resources": [
-          "*"
-        ]
+        "resources": ["*"]
       },
       "LogicalDisk": {
         "measurement": [
@@ -41,26 +39,14 @@
           },
           "% Disk Write Time"
         ],
-        "resources": [
-          "*"
-        ]
+        "resources": ["*"]
       },
       "Memory": {
         "metrics_collection_interval": 60,
-        "measurement": [
-          "% Committed Bytes In Use",
-          "Available Bytes",
-          "Cache Faults/sec",
-          "Page Faults/sec",
-          "Pages/sec"
-        ]
+        "measurement": ["% Committed Bytes In Use", "Available Bytes", "Cache Faults/sec", "Page Faults/sec", "Pages/sec"]
       },
       "System": {
-        "measurement": [
-          "Context Switches/sec",
-          "System Calls/sec",
-          "Processor Queue Length"
-        ]
+        "measurement": ["Context Switches/sec", "System Calls/sec", "Processor Queue Length"]
       }
     },
     "append_dimensions": {
@@ -68,14 +54,7 @@
       "InstanceId": "${aws:InstanceId}",
       "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
     },
-    "aggregation_dimensions": [
-      [
-        "AutoScalingGroupName"
-      ],
-      [
-        "InstanceId"
-      ]
-    ]
+    "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId"]]
   },
   "logs": {
     "logs_collected": {
@@ -83,24 +62,14 @@
         "collect_list": [
           {
             "event_name": "System",
-            "event_levels": [
-              "INFORMATION",
-              "WARNING",
-              "ERROR",
-              "CRITICAL"
-            ],
+            "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
             "log_group_name": "cwagent-windows-system",
             "log_stream_name": "{instance_id}",
             "event_format": "xml"
           },
           {
             "event_name": "Application",
-            "event_levels": [
-              "INFORMATION",
-              "WARNING",
-              "ERROR",
-              "CRITICAL"
-            ],
+            "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
             "log_group_name": "cwagent-windows-application",
             "log_stream_name": "{instance_id}",
             "event_format": "xml"
