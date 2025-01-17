@@ -44,6 +44,7 @@ LOGPREFIX=
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
+STAGE3_WAIT_SECS=600
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -105,6 +106,7 @@ Where <opts>:
   -e <env>                  Optionally set nomis-combined-reporting environment, otherwise derive from EC2 tag
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
   -l public|private|admin   Select LB endpoint(s)
+  -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
   -w                        Wait for CCM command
@@ -1145,9 +1147,9 @@ do_pipeline() {
         if [[ -e "$tmp_filename" ]]; then
           now_epoch=$(date +%s)
           disabled_epoch=$(head -1 "$tmp_filename")
-          n=$(((659-(now_epoch-disabled_epoch))/60))
+          n=$(( ((STAGE3_WAIT_SECS+59)-(now_epoch-disabled_epoch))/60 ))
           if ((n <= 0 || n > 15)); then
-            log "skipping: not sleeping as disabled services timestamp older than 10 mins ($n)"
+            log "skipping: not sleeping as disabled services timestamp older than wait timeout ${STAGE3_WAIT_SECS}s (n=$n minutes)"
             n=0
           else
             for i in $(seq 1 $n); do
@@ -1281,8 +1283,11 @@ do_lb() {
 
 main() {
   set -eo pipefail
-  while getopts "de:f:l:p:vw" opt; do
+  while getopts "3:de:f:l:p:vw" opt; do
       case $opt in
+          3)
+              STAGE3_WAIT_SECS=${OPTARG}
+              ;;
           d)
               DRYRUN=1
               ;;
