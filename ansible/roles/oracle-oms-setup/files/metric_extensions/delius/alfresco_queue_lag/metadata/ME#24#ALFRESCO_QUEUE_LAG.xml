@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$ALFRESCO_QUEUE_LAG" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$ALFRESCO_QUEUE_LAG" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$ALFRESCO_QUEUE_LAG">Alfresco Queue Lag</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$ALFRESCO_QUEUE_LAG">Maximum lag time in minutes that Alfresco messages have been queued.</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="QUEUE_LAG_MINS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$ALFRESCO_QUEUE_LAGQUEUE_LAG_MINS">Queue Lag Minutes</Label>
+<Unit NLSID="EM_SYS_STANDARD_RATE_MINUTE">MINUTE</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/alfresco_queue_lag.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
