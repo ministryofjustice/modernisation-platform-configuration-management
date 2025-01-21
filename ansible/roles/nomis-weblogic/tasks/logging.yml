@@ -38,13 +38,27 @@
 - name: Setup archived log cleanup cron 1
   ansible.builtin.cron:
     name: "log_cleanup_1"
-    minute: "0"
+    minute: "10"
     hour: "3"
-    job: "find /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/*/logs -name access.log0 -mtime +90 -exec rm -f {} \\;"
+    job: "find /u01/app/oracle/Middleware/user_projects/domains/NomisDomain/servers/*/logs -name 'access.log[0-9]*' -mtime +90 -exec rm -f {} \\;"
 
 - name: Setup archived log cleanup cron 2
   ansible.builtin.cron:
     name: "log_cleanup_2"
-    minute: "0"
-    hour: "4"
+    minute: "20"
+    hour: "3"
     job: "find /u01/app/oracle/Middleware/logs  -mtime +90 -exec rm -f {} \\;"
+
+- name: Setup archived log cleanup cron 3
+  ansible.builtin.cron:
+    name: "log_cleanup_3"
+    minute: "30"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/forms_instance/diagnostics/logs/OHS/ohs1 -name 'access_log.*' -mtime +90 -exec rm -f {} \\;"
+
+- name: Setup archived log cleanup cron 4
+  ansible.builtin.cron:
+    name: "log_cleanup_4"
+    minute: "40"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/forms_instance/diagnostics/logs/OHS/ohs1 -name 'ohs1-*.log' -mtime +365 -exec rm -f {} \\;"
