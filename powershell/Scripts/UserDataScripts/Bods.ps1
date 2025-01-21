@@ -840,6 +840,81 @@ function Move-ModPlatformADComputer {
     gpupdate /force
 }
 
+function New-ServerRebootSchedule {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$TaskName = "DailyServerReboot",
+
+        [Parameter(Mandatory = $false)]
+        [DateTime]$RebootTime = "18:35",
+        
+        [Parameter(Mandatory = $false)]
+        [string]$Description = "Scheduled task to reboot server daily at 18:35",
+        
+        [Parameter(Mandatory = $false)]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty
+    )
+    
+    try {
+        # Check if task already exists
+        $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        
+        if ($existingTask) {
+            Write-Warning "Task '$TaskName' already exists. Removing existing task..."
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+        }
+        
+        # Create the task action (reboot command)
+        $action = New-ScheduledTaskAction -Execute 'shutdown.exe' -Argument '/r /t 60 /c "Scheduled server reboot in 60 seconds"'
+        
+        # Create trigger for 18:35 daily
+        $trigger = New-ScheduledTaskTrigger -Daily -At $RebootTime.ToString("HH:mm")
+        
+        # Set up task settings
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -WakeToRun
+        
+        # Determine if we're using credentials or SYSTEM account
+        if ($Credential -eq [System.Management.Automation.PSCredential]::Empty) {
+            # Create the task using SYSTEM account
+            Register-ScheduledTask -TaskName $TaskName `
+                -Action $action `
+                -Trigger $trigger `
+                -Settings $settings `
+                -Description $Description `
+                -User "SYSTEM" `
+                -Force
+        }
+        else {
+            # Create the task using provided credentials
+            Register-ScheduledTask -TaskName $TaskName `
+                -Action $action `
+                -Trigger $trigger `
+                -Settings $settings `
+                -Description $Description `
+                -User $Credential.UserName `
+                -Password $Credential.GetNetworkCredential().Password `
+                -Force
+        }
+        
+        Write-Host "Successfully created scheduled task '$TaskName'"
+        Write-Host "Server will reboot daily at 18:35"
+        
+        # Verify task was created
+        $createdTask = Get-ScheduledTask -TaskName $TaskName
+        if ($createdTask) {
+            Write-Host "Task details:"
+            $createdTask | Select-Object TaskName, State, Description | Format-List
+        }
+    }
+    catch {
+        Write-Error "Failed to create scheduled task: $_"
+        throw
+    }
+}
+
 function Set-LoginText {
     param (
         [Parameter(Mandatory)]
