@@ -850,7 +850,7 @@ function New-ServerRebootSchedule {
         [DateTime]$RebootTime = "18:35",
         
         [Parameter(Mandatory = $false)]
-        [string]$Description = "Scheduled task to reboot server daily at 18:35",
+        [string]$Description = "Scheduled task to reboot server daily at 18:35 to ensure all user sessions are cleared and resources available for data-load",
         
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential]
@@ -1003,6 +1003,7 @@ if ($($Config.application) -eq "oasys-national-reporting") {
     Install-DataServices -Config $Config
     Set-LoginText -Config $Config
     New-SharedDriveShortcut -Config $Config
+    New-ServerRebootSchedule
 }
 elseif ($($Config.application) -eq "nomis-combined-reporting") {
     # IMPORTANT: NCR BODS installation & TNS files etc. not ready yet
