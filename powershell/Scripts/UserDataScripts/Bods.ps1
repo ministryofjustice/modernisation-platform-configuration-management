@@ -845,7 +845,7 @@ function New-ServerRebootSchedule {
     param (
         [Parameter(Mandatory = $false)]
         [string]$TaskName = "DailyServerReboot",
-
+        
         [Parameter(Mandatory = $false)]
         [DateTime]$RebootTime = "18:35",
         
@@ -870,11 +870,12 @@ function New-ServerRebootSchedule {
         # Create the task action (reboot command)
         $action = New-ScheduledTaskAction -Execute 'shutdown.exe' -Argument '/r /t 60 /c "Scheduled server reboot in 60 seconds"'
         
-        # Create trigger for 18:35 daily
+        # Create trigger for specified time daily
         $trigger = New-ScheduledTaskTrigger -Daily -At $RebootTime.ToString("HH:mm")
         
-        # Set up task settings
+        # Set up task settings with highest available privileges
         $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -WakeToRun
+        $principal = New-ScheduledTaskPrincipal -UserID "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
         
         # Determine if we're using credentials or SYSTEM account
         if ($Credential -eq [System.Management.Automation.PSCredential]::Empty) {
@@ -883,16 +884,18 @@ function New-ServerRebootSchedule {
                 -Action $action `
                 -Trigger $trigger `
                 -Settings $settings `
+                -Principal $principal `
                 -Description $Description `
-                -User "SYSTEM" `
                 -Force
         }
         else {
             # Create the task using provided credentials
+            $userPrincipal = New-ScheduledTaskPrincipal -UserID $Credential.UserName -LogonType Password -RunLevel Highest
             Register-ScheduledTask -TaskName $TaskName `
                 -Action $action `
                 -Trigger $trigger `
                 -Settings $settings `
+                -Principal $userPrincipal `
                 -Description $Description `
                 -User $Credential.UserName `
                 -Password $Credential.GetNetworkCredential().Password `
@@ -900,7 +903,7 @@ function New-ServerRebootSchedule {
         }
         
         Write-Host "Successfully created scheduled task '$TaskName'"
-        Write-Host "Server will reboot daily at 18:35"
+        Write-Host "Server will reboot daily at $($RebootTime.ToString('HH:mm'))"
         
         # Verify task was created
         $createdTask = Get-ScheduledTask -TaskName $TaskName
