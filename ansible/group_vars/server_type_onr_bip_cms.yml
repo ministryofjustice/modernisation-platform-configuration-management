@@ -38,13 +38,13 @@ server_type_roles_list:
   - epel
   - disks
   - selinux-config
-  # - oracle-19c-client
-  # - filesystems
-  # - sap-bip
-  # - collectd
-  # - amazon-cloudwatch-agent
-  # - amazon-cloudwatch-agent-collectd
-  # - collectd-service-metrics
+  - oracle-19c-client
+  - filesystems
+  - sap-bip
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
