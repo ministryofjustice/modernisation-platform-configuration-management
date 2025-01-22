@@ -1,0 +1,80 @@
+---
+sap_packages_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+sap_packages_prefix: hmpps/sap-bip-packages/
+sap_host_agent_base_directory: "/u02/software/{{ sap_host_agent_sar_base }}"
+sap_other_software_directory: /u02/software/SBOP
+sap_bip_unpack_base_directory: "/u02/software/{{ sap_bip_rar_base }}"
+sap_bip_extraction_directory: "/u02/software/{{ sap_bip_rar_base }}"
+sap_bip_responsefiles_directory: /u02/software/ResponseFiles
+sap_bip_installation_directory: /u01/app/bobj/BIP4
+sap_bip_archived_logs_directory: /u02/Archived_Logs
+sap_promotion_management_directory: /u02/tmpAJS
+
+sap_bip_rar_base: BIPLATS4303P_300-70002683 #software filename without _P1.EXE and _P2.rar
+sap_host_agent_sar_base: SAPHOSTAGENT56_56-80004822 # without .SAR extension
+sap_host_agent_exe: SAPCAR_1115-70006178.EXE
+
+# define environment specific settings in group_vars
+#sap_environment:  # t1, t2 etc
+sap_bip_is_cms: false
+sap_bip_is_new_install: false # gets set to true if secret set to 'newinstall'
+#sap_bip_auditing_db_server:
+#sap_bip_auditing_db_user:
+#sap_bip_cms_db_server:
+#sap_bip_cms_db_user:
+sap_bip_cms_db_reset: 0
+sap_bip_sia_name_cms: "{{ ec2.tags.Name | replace('-','') }}"
+sap_bip_sia_name_app: "{{ ec2.tags.Name | replace('-','') }}"
+# sap_bip_responsefile:  # set in group vars, otherwise response.cms.ini or response.app.ini is used depending on whether first install
+
+oracle_home: /u01/app/oracle/product/19c/client_1
+
+sap_bip_config_secret_id: "/sap/bip/{{ sap_environment }}/config"
+sap_bip_passwords_secret_id: "/sap/bip/{{ sap_environment }}/passwords"
+sap_bip_sysdb_secret_id: "/oracle/database/{{ sap_bip_cms_db_server }}/passwords"
+sap_bip_auditdb_secret_id: "/oracle/database/{{ sap_bip_auditing_db_server }}/passwords"
+
+sap_bip_sysdb_secrets:
+  - key: "{{ sap_bip_cms_db_user }}"
+    value:
+
+sap_bip_auditdb_secrets:
+  - key: "{{ sap_bip_auditing_db_user }}"
+    value:
+
+sap_bip_secretsmanager_passwords:
+  config:
+    # prereq: ensure json secret is created with values for below fields
+    secret: "{{ sap_bip_config_secret_id }}"
+    users:
+      - cms_cluster_name:
+      - cms_cluster_key: auto
+      - cms_primary_hostname: # set to newinstall prior to first CMS build
+      - product_key:
+  sysdb:
+    secret: "{{ sap_bip_sysdb_secret_id }}"
+    users:
+      - "{{ sap_bip_sysdb_secrets | items2dict }}"
+  auditdb:
+    secret: "{{ sap_bip_auditdb_secret_id }}"
+    users:
+      - "{{ sap_bip_auditdb_secrets | items2dict }}"
+  passwords:
+    secret: "{{ sap_bip_passwords_secret_id }}"
+    users:
+      - Administrator: auto
+
+sap_web_server_type: web # set to webadmin if dedicated to admin
+sap_web_disable_infoview: "false"
+sap_web_disable_cmcapp: "false"
+sap_web_context_cachemaxsize: 500000
+sap_web_server_7777_minsparethreads: 500
+# sap_web_server_7777_maxthreads: 1000
+sap_web_java_opts: "-Dbobje.disable_audit_ip_lookup"
+# sap_web_apps:  # define list of apps to deploy in group vars
+# sap_bip_rws_url:  # set in group vars, e.g. https://admin.preproduction.reporting.nomis.service.justice.gov.uk/biprws to enable biprws helper script
+sap_web_tomcat_restart_enabled: true
+sap_web_tomcat_restart_cron:
+  minute: "0"
+  hour: "2"
+  weekday: "MON,WED,FRI"

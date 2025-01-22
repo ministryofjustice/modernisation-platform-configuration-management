@@ -1,0 +1,20 @@
+---
+- name: Copy SAPBOBJEnterpriseXI40 scripts
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    mode: 0755
+  loop:
+    - usr/local/bin/SAPBOBJEnterpriseXI40
+
+- name: Copy systemd scripts instead of calling setupinit.sh
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+  loop:
+    - etc/systemd/system/sapbobj.service
+
+- name: Enable SAP BOBJ services
+  ansible.builtin.service:
+    name: sapbobj
+    enabled: true
