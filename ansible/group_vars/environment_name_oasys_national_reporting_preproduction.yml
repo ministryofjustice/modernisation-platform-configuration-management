@@ -30,3 +30,24 @@ audit_db_sid: PPBOAUD
 system_db_sid: PPBOSYS
 audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
+
+sap_bip_confs:
+  pp:
+    #sap_web_java_mem: "22528"
+    #sap_webadmin_java_mem: "8192"
+    #sap_web_has_dedicated_admin: true
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
+    #sap_bip_sso_url: "https://reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
+    #sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_bip_auditing_db_server: PPBOAUD
+    sap_bip_auditing_db_user: bip_audit_owner
+    sap_bip_cms_db_server: PPBOSYS
+    sap_bip_cms_db_user: bip_system_owner
+
+sap_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
+sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
+sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
+sap_bip_auditing_db_server: "{{ sap_bip_conf.sap_bip_auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_conf.sap_bip_auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_conf.sap_bip_cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_conf.sap_bip_cms_db_user }}"
