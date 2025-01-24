@@ -22,7 +22,7 @@ sap_bip_is_new_install: false # gets set to true if secret set to 'newinstall'
 #sap_bip_auditing_db_user:
 #sap_bip_cms_db_server:
 #sap_bip_cms_db_user:
-sap_bip_cms_db_reset: 0
+sap_bip_cms_db_reset: 1
 sap_bip_sia_name_cms: "{{ ec2.tags.Name | replace('-','') }}"
 sap_bip_sia_name_app: "{{ ec2.tags.Name | replace('-','') }}"
 # sap_bip_responsefile:  # set in group vars, otherwise response.cms.ini or response.app.ini is used depending on whether first install
