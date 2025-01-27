@@ -366,6 +366,17 @@ features=WebI_Rich_Client,Business_View_Manager,Report_Conversion,Universe_Desig
         }
     }
 }
+
+function Install-RDSRole {
+    if ((Get-WindowsFeature -Name 'RDS-RD-Server').Installed) {
+        Write-Host "Remote Desktop Session Host role service already installed"
+        return
+    } else {
+        Write-Host "Installing Remote Desktop Session Host role"
+        Install-WindowsFeature -Name 'RDS-RD-Server' -IncludeAllSubFeature
+        # May need a restart but this is covered when the machine is added to the domain
+    }
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -389,6 +400,8 @@ $Tags = Get-InstanceTags
 
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
+
+Install-RDSRole # do this here as the subsequent step includes a reboot
 
 # {{{ join domain and rename instance to tag:'Name'
 . ../ModPlatformAD/Join-ModPlatformAD.ps1
