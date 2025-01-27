@@ -4,17 +4,9 @@ $GlobalConfig = @{
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.AZURE.NOMS.ROOT"
     "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
+    "SessionHostServers" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
-    "Collections" = @{
-      "CAFM-RDP" = @{
-        "SessionHosts" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
-          "UserGroup" = @("Azure\Domain Users")
-        }
-      }
-    }
+    "Collections" = @{}
     "RemoteApps" = @{
       "Calc" = @{
         "CollectionName" = "CAFM-RDP"
