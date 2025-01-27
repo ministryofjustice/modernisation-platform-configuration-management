@@ -1,6 +1,7 @@
 ---
 ansible_aws_ssm_bucket_name: s3-bucket20240321144723303200000002
 dns_zone_internal: oasys-national-reporting.hmpps-test.modernisation-platform.internal
+onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
@@ -40,30 +41,22 @@ system_db_sid: T2BOSYS
 audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
 
-sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[sap_environment] }}"
+oracle_client_tnsnames_ora_source_filename: "tnsnames.ora.onr-bip.{{ onr_environment }}"
+oracle_client_sqlnet_ora_source_filename: sqlnet.ora
 
 sap_bip_confs:
   t2:
     sap_web_java_mem: "4096"
-    #sap_webadmin_java_mem: "8192"
-    #sap_web_has_dedicated_admin: true
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
-    #sap_bip_sso_url: "https://reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
-    #sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
     sap_bip_auditing_db_server: T2BOAUD
     sap_bip_auditing_db_user: bip_audit_owner
     sap_bip_cms_db_server: T2BOSYS
     sap_bip_cms_db_user: bip_system_owner
-    oracle_client_sqlnet_ora_source_filename: tnsnames.ora.onr-bip.t2
 
-sap_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
-sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
+sap_bip_conf: "{{ sap_bip_confs[onr_environment] }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_auditing_db_server: "{{ sap_bip_conf.sap_bip_auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_conf.sap_bip_auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_conf.sap_bip_cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_conf.sap_bip_cms_db_user }}"
-sap_web_java_mem: "{{ sap_bip_conf.sap_web_java_mem }}"
-
-oracle_client_tnsnames_ora_source_filename: "{{ sap_bip_conf.oracle_client_sqlnet_ora_source_filename }}"
-oracle_client_sqlnet_ora_source_filename: sqlnet.ora
+sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
