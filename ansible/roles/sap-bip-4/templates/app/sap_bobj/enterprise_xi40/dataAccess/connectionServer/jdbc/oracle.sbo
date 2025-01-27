@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><DriverConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../sbo.xsd">
+    <Defaults>
+        <Class JARFile="dbd_oracle">com.sap.connectivity.cs.java.drivers.jdbc.oracle.OracleDriver</Class>
+        <JDBCDriver>
+            <ClassPath>
+                <Path>$ROOT$/drivers/java/dbd_jdbcwrapper.jar</Path>
+            </ClassPath>
+            <Parameter Name="JDBC Wrapper">com.sap.connectivity.cs.java.drivers.jdbc.wrapper.JDBCWrapper</Parameter>
+        </JDBCDriver>
+        <Parameter Name="Family">Oracle</Parameter>
+        <Parameter Name="SQL External File">oracle</Parameter>
+        <Parameter Name="SQL Parameter File">oracle</Parameter>
+        <Parameter Name="Description File">oracle</Parameter>
+        <Parameter Name="Strategies File">oracle</Parameter>
+        <Parameter Name="Driver Capabilities">Query,Procedures</Parameter>
+        <Parameter Name="Extensions">oracle,jdbc</Parameter>
+        <Parameter Name="Connection Shareable">Yes</Parameter>
+        <Parameter Name="Shared Connection">No</Parameter>
+        <Parameter Name="Array Fetch Available">True</Parameter>
+        <!--  define &quot;magic&quot; value 0 for Array Fetch Size to use default JDBC Fetch Size  -->
+        <Parameter Name="Array Fetch Size">250</Parameter>
+        <Parameter Name="Array Bind Available">False</Parameter>
+        <Parameter Name="Max Rows Available">Yes</Parameter>
+        <Parameter Name="Query TimeOut Available">Yes</Parameter>
+        <Parameter Name="Optimize Execute">True</Parameter>
+		<Parameter Name="Include Synonyms">False</Parameter>
+    </Defaults>
+    <DataBases>
+        <DataBase Active="Yes" Name="Oracle 11">
+			<Aliases>
+                <!-- You can add an alias here if you are using some connections
+that are defined with an older database engine -->
+                <Alias>Oracle 7.3</Alias>
+                <Alias>Oracle 8</Alias>
+                <Alias>Oracle 8.0</Alias>
+                <Alias>Oracle 8.1</Alias>
+                <Alias>Oracle 9</Alias>
+				<Alias>Oracle 10</Alias>
+            </Aliases>
+            <JDBCDriver>
+                <!--  Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &lt;ClassPath&gt;
+                    &lt;Path&gt;your jar or class files directory&lt;/Path&gt;
+                &lt;/ClassPath&gt;
+                 -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracle11,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+        </DataBase>
+		<DataBase Active="Yes" Name="Oracle Exadata 11">
+			<Aliases>
+                <Alias>Oracle Exadata</Alias>
+            </Aliases>
+            <JDBCDriver>
+                <!--   Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &amp;lt;ClassPath&amp;gt;
+                    &amp;lt;Path&amp;gt;your jar or class files directory&amp;lt;/Path&amp;gt;
+                &amp;lt;/ClassPath&amp;gt;
+                  -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracleexadata,oracle11,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+        </DataBase>
+		<DataBase Active="Yes" Name="Oracle Exadata 12">
+            <JDBCDriver>
+                <!--   Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &amp;lt;ClassPath&amp;gt;
+                    &amp;lt;Path&amp;gt;your jar or class files directory&amp;lt;/Path&amp;gt;
+                &amp;lt;/ClassPath&amp;gt;
+                  -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracleexadata12,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+        </DataBase>
+		<DataBase Active="Yes" Name="Oracle Exadata 18c">
+            <JDBCDriver>
+                <!--   Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &amp;lt;ClassPath&amp;gt;
+                    &amp;lt;Path&amp;gt;your jar or class files directory&amp;lt;/Path&amp;gt;
+                &amp;lt;/ClassPath&amp;gt;
+                  -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracleexadata18c,oracleexadata12,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+        </DataBase>
+		<DataBase Active="Yes" Name="Oracle Exadata 19c">
+            <JDBCDriver>
+                <!--   Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &amp;lt;ClassPath&amp;gt;
+                    &amp;lt;Path&amp;gt;your jar or class files directory&amp;lt;/Path&amp;gt;
+                &amp;lt;/ClassPath&amp;gt;
+                  -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracleexadata19c,oracleexadata18c,oracleexadata12,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+        </DataBase>
+        <DataBase Active="Yes" Name="Oracle 12">
+	    <Aliases>
+                <Alias>Oracle</Alias>
+            </Aliases>	
+            <JDBCDriver>
+                <!--  Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &lt;ClassPath&gt;
+                    &lt;Path&gt;your jar or class files directory&lt;/Path&gt;
+                &lt;/ClassPath&gt;
+		 -->
+                <ClassPath>
+                    <Path>/u01/app/oracle/product/19c/client_1/jdbc/lib/ojdbc8.jar</Path>
+                </ClassPath>
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+	        <Parameter Name="Driver Capabilities">Query,Procedures,Cancel</Parameter>
+        </DataBase>
+        <DataBase Active="Yes" Name="Oracle 12c Release 2">
+            <JDBCDriver>
+                <!--  Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &lt;ClassPath&gt;
+                    &lt;Path&gt;your jar or class files directory&lt;/Path&gt;
+                &lt;/ClassPath&gt;
+                 -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracle12cR2,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+	        <Parameter Name="Driver Capabilities">Query,Procedures,Cancel</Parameter>
+        </DataBase>
+        <DataBase Active="Yes" Name="Oracle 18c">
+            <JDBCDriver>
+                <!--  Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &lt;ClassPath&gt;
+                    &lt;Path&gt;your jar or class files directory&lt;/Path&gt;
+                &lt;/ClassPath&gt;
+                 -->
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracle18c,oracle12cR2,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+	        <Parameter Name="Driver Capabilities">Query,Procedures,Cancel</Parameter>
+        </DataBase>
+        <DataBase Active="Yes" Name="Oracle 19c">
+            <JDBCDriver>
+                <!--  Uncomment and edit the following lines
+                     to define java classes required by JDBC driver
+                &lt;ClassPath&gt;
+                    &lt;Path&gt;your jar or class files directory&lt;/Path&gt;
+                &lt;/ClassPath&gt;
+		 -->
+                <ClassPath>
+                    <Path>/u01/app/oracle/product/19c/client_1/jdbc/lib/ojdbc8.jar</Path>
+                </ClassPath>
+                <Parameter Name="JDBC Class">oracle.jdbc.OracleDriver</Parameter>
+                <Parameter Name="URL Format">jdbc:oracle:thin:@//$DATASOURCE$/$DATABASE$</Parameter>
+            </JDBCDriver>
+            <Parameter Name="Extensions">oracle19c,oracle18c,oracle12cR2,oracle12,oracle,jdbc</Parameter>
+            <Parameter Name="Escape Character">/</Parameter>
+            <Parameter Name="Force Execute">Always</Parameter>
+            <Parameter Name="Catalog Separator">.</Parameter>
+	        <Parameter Name="Driver Capabilities">Query,Procedures,Cancel</Parameter>
+        </DataBase>
+	</DataBases>
+</DriverConfiguration>

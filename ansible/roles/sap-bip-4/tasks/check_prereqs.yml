@@ -1,0 +1,19 @@
+---
+# use users-and-groups role to create to ensure consistent uids
+- name: Check users exists
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ item }}"
+  loop:
+    - oracle
+    - bobj
+
+- name: Check groups exists
+  ansible.builtin.getent:
+    database: group
+    key: "{{ item }}"
+  loop:
+    - binstall
+    - oinstall
+    - dba
+    - sapsys

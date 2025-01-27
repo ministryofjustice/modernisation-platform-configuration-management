@@ -1,6 +1,7 @@
 ---
 ansible_aws_ssm_bucket_name: s3-bucket20240321144737986100000001
 dns_zone_internal: oasys-national-reporting.hmpps-production.modernisation-platform.internal
+onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
 
 db_configs:
   RCVCAT:
@@ -30,3 +31,24 @@ audit_db_sid: PDBOAUD
 system_db_sid: PDBOSYS
 audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
+
+oracle_client_tnsnames_ora_source_filename: "tnsnames.ora.onr-bip.{{ onr_environment }}"
+oracle_client_sqlnet_ora_source_filename: sqlnet.ora
+
+sap_bip_confs:
+  pd:
+    sap_web_java_mem: "22528"
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
+    sap_bip_auditing_db_server: PDBOAUD
+    sap_bip_auditing_db_user: bip_audit_owner
+    sap_bip_cms_db_server: PDBOSYS
+    sap_bip_cms_db_user: bip_system_owner
+
+sap_environment: "{{ onr_environment }}"
+sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
+sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
+sap_bip_auditing_db_server: "{{ sap_bip_conf.sap_bip_auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_conf.sap_bip_auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_conf.sap_bip_cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_conf.sap_bip_cms_db_user }}"
+sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"

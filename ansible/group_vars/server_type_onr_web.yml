@@ -1,25 +1,26 @@
 ---
-# ansible_python_interpreter: /usr/bin/python3.9
-ansible_python_interpreter: /usr/local/bin/python3.6
+ansible_python_interpreter: /usr/bin/python3.9
+
+users_and_groups_regular:
+  - group: studio-webops
+  - group: nart
 
 users_and_groups_system:
-  - group: dba
-    gid: "{{ (ec2.tags['environment-name'] == 'oasys-national-reporting-test') | ternary('503', '502') }}"
-  - name: tomcat
-    group: tomcat
-    uid: 91
+  - name: oracle
+    group: oinstall
+    groups:
+      - dba
+      - wheel
   - name: bobj
     group: binstall
-    uid: 1201
     groups:
       - dba
       - sapsys
 
-tomcat_dir: /u01/app/tomcat/bobje/tomcat7
-tomcat_root_dir: "{{ tomcat_dir }}/webapps/ROOT"
-tomcat_logs_dir: "{{ tomcat_dir }}/logs"
+set_ec2_hostname_mode: "short" # don't rename to tags.Name
 
 server_type_roles_list:
+  - ansible-requirements
   - sshd-config
   - users-and-groups
   - sudoers
@@ -36,35 +37,39 @@ server_type_roles_list:
   - ansible-script
   - epel
   - disks
-  - onr-web
+  - selinux-config
+  - sap-bip-4
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
-  - collectd-metrics
   - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
+packages_yum_update_on_build: []
 packages_yum_install:
+  - bind-utils
   - nano
   - vim
   - make
+  - gdb
+  - libnsl
+  - libnsl.i686
+  - libnsl2
+  - libnsl2.i686
   - libstdc++.i686
-  - compat-libstdc++-33.i686
   - libstdc++.x86_64
-  - libstdc++-devel.x86_64
-  - libstdc++-devel.i686
   - glibc.i686
   - glibc.x86_64
   - libX11.i686
   - libX11.x86_64
   - libXext.i686
   - libXext.x86_64
-  - expat.i686
+  # - expat.i686
   - expat.x86_64
+  - libxcrypt.i686
   - libgcc.i686
   - libgcc.x86_64
-  - libXext-devel.i686
   - libXcursor.i686
   - libXcursor.x86_64
   - libXrender.i686
@@ -75,43 +80,86 @@ packages_yum_install:
   - libxcb.x86_64
   - libXau.i686
   - libXau.x86_64
+  - ksh
+  - nfs-utils
+  - psmisc
+  - tcsh
+  - uuidd
   - xz-libs.i686
 
-# Settings for Rhel 7.x
-# disks_mount:
-#   - ebs_device_name: /dev/sdb
-#     dir: /u01
-#     fstype: xfs
-#   - ebs_device_name: /dev/sdc
-#     dir: /u02
-#     fstype: xfs
-
-# Settings for Rhel 6.x
 disks_mount:
   - ebs_device_name: /dev/sdb
     dir: /u01
-    fstype: ext4
+    fstype: xfs
   - ebs_device_name: /dev/sdc
     dir: /u02
-    fstype: ext4
+    fstype: xfs
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
 
-collectd_monitored_services_servertype:
-  - metric_name: service_status_os
-    metric_dimension: chronyd
-    shell_cmd: "service chronyd status"
-  - metric_name: service_status_app
-    metric_dimension: tomcat
-    shell_cmd: "pgrep -f tomcat"
+sap_bip_responsefile: response.web.ini
+sap_web_server_type: web
+sap_web_disable_infoview: "false"
+sap_web_disable_cmcapp: "false"
+sap_web_server_7777_maxthreads: 1000
+sap_web_apps:
+  - AdminTools
+  - BOE
+  - BusinessProcessBI
+  - bipodata
+  - biprws
+  - clientapi
+  - dswsbobje
+  - webi-websetup
 
-collectd_monitored_metrics_additional:
-  - metric_name: web_incoming
-    metric_dimension: 200_to_299
-    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^2.. | wc -l"
-  - metric_name: web_incoming
-    metric_dimension: 300_to_399
-    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^3.. | wc -l"
-  - metric_name: web_incoming
-    metric_dimension: 400_to_499
-    shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^4.. | wc -l"
+sap_web_bilogon_app_name: OASys Reporting
+sap_web_bilogon_app_name_short: OASys Reporting
+sap_web_bilogon_app_name_greeting: Welcome
+sap_web_bilogon_product_name: OASys
+sap_web_bilogon_authentication_default: secEnterprise
+sap_web_bilogon_authentication_visible: false
+sap_web_bilogon_logon_authentication_visibleList: secEnterprise
+sap_web_bilogon_cms_default: "@{{ sap_bip_cms_cluster_name }}"
+sap_web_bilogon_cms_visible: false
+sap_web_bilogon_dialog_prompt_enabled: false
+sap_web_bilogon_disable_locale_preference: false
+sap_web_bilogon_notification_enabled: true
+sap_web_bilogon_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
+sap_web_bilogon_disclaimer_enabled: false
 
-collectd_script_user: bobj
+sap_web_cmcapp_authentication_default: secEnterprise
+sap_web_cmcapp_authentication_visible: false
+sap_web_cmcapp_logon_authentication_visibleList: secEnterprise
+sap_web_cmcapp_cms_default: "@{{ sap_bip_cms_cluster_name }}"
+sap_web_cmcapp_cms_visible: false
+sap_web_cmcapp_dialog_prompt_enabled: false
+sap_web_cmcapp_disclaimer_enabled: false
+
+sap_web_fioribi_app_name: OASys Reporting
+sap_web_fioribi_app_name_short: OASys Reporting
+sap_web_fioribi_app_name_greeting: Welcome
+sap_web_fioribi_app_custom_product_name: OASys
+sap_web_fioribi_authentication_default: secEnterprise
+sap_web_fioribi_authentication_visible: false
+sap_web_fioribi_logon_authentication_visibleList: secEnterprise
+sap_web_fioribi_cms_default: "@{{ sap_bip_cms_cluster_name }}"
+sap_web_fioribi_cms_visible: false
+sap_web_fioribi_dialog_prompt_enabled: false
+sap_web_fioribi_disable_locale_preference: false
+sap_web_fioribi_notification_enabled: true
+sap_web_fioribi_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
+sap_web_fioribi_disclaimer_enabled: false
+
+sap_web_opendocument_app_name: OASys Reporting OpenDocument
+sap_web_opendocument_app_name_short: OpenDocument
+sap_web_opendocument_app_custom_product_name: OASys
+sap_web_opendocument_authentication_default: secEnterprise
+sap_web_opendocument_authentication_visible: false
+sap_web_opendocument_logon_authentication_visibleList: secEnterprise
+sap_web_opendocument_cms_default: "@{{ sap_bip_cms_cluster_name }}"
+sap_web_opendocument_cms_visible: false
+sap_web_opendocument_disclaimer_enabled: false
+sap_web_opendocument_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
+
+sap_web_global_prefer_root_selected: groupList
