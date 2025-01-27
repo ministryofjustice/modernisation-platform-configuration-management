@@ -5,7 +5,7 @@
   register: ccm_config_check
 
 - block:
-    # As per NOMIS BIP 4.3 Installation and Configuration Notes 
+    # As per NOMIS BIP 4.3 Installation and Configuration Notes
     - name: Set FIPSModeValue true in ccm.config
       ansible.builtin.replace:
         path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
