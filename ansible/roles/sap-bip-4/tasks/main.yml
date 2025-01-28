@@ -1,0 +1,115 @@
+---
+- block:
+    - import_tasks: install_rar.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - sap_bip_install_rar
+
+    - import_tasks: check_prereqs.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - sap_bip_check_prereqs
+
+    - import_tasks: setup_host.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - sap_bip_setup_host
+
+    - import_tasks: setup_bobj.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - sap_bip_setup_bobj
+
+    - import_tasks: retrieve_files.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - sap_bip_retrieve_files
+
+    - import_tasks: install_host_agent.yml
+      tags:
+        - ec2provision
+        - sap_bip_install_host_agent
+
+    - import_tasks: get_secrets.yml
+      tags:
+        - ec2provision
+        - sap_bip_get_secrets
+        - sap_bip_install_bip
+        - sap_bip_update_secrets
+        - sap_bip_setup_cluster_name
+        - sap_bip_setup_tomcat
+        - sap_bip_setup_provisioning
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: setup_archived_logs.yml
+      tags:
+        - ec2provision
+        - sap_bip_setup_archived_logs
+
+    - import_tasks: install_bip.yml
+      tags:
+        - ec2provision
+        - sap_bip_install_bip
+
+    - import_tasks: install_systemd_service.yml
+      tags:
+        - ec2provision
+        - sap_bip_install_systemd_service
+
+    - import_tasks: update_secrets.yml
+      tags:
+        - ec2provision
+        - sap_bip_update_secrets
+
+    - import_tasks: check_network_config.yml
+      tags:
+        - ec2provision
+        - sap_bip_check_network_config
+
+    - import_tasks: update_ccm_config.yml
+      tags:
+        - ec2provision
+        - sap_bip_update_ccm_config
+
+    - import_tasks: setup_cluster_name.yml
+      tags:
+        - ec2provision
+        - sap_bip_setup_cluster_name
+
+    - import_tasks: update_jdbc.yml
+      tags:
+        - ec2provision
+        - sap_bip_update_jdbc
+
+    - import_tasks: undeploy_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_undeploy_tomcat
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: setup_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_setup_tomcat
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: deploy_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_deploy_tomcat
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: setup_tomcat_restart.yml
+      tags:
+        - ec2provision
+        - sap_bip_setup_tomcat_restart
+
+  # block
+  when: ansible_distribution in ['RedHat']

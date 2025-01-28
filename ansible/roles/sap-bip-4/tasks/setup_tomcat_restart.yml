@@ -1,0 +1,24 @@
+---
+- block:
+    - name: Copy tomcat restart script
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: 0755
+      loop:
+        - home/bobj/tomcat_restart.sh
+
+    - name: Setup tomcat restart cron
+      ansible.builtin.cron:
+        name: "tomcat_restart"
+        minute: "{{ sap_web_tomcat_restart_cron.minute }}"
+        hour: "{{ sap_web_tomcat_restart_cron.hour }}"
+        weekday: "{{ sap_web_tomcat_restart_cron.weekday }}"
+        job: /home/bobj/tomcat_restart.sh
+        user: bobj
+      when: sap_web_tomcat_restart_enabled
+
+  # block
+  when: sap_web_apps is defined
