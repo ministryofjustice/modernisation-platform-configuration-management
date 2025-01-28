@@ -7,13 +7,7 @@ $GlobalConfig = @{
     "SessionHostServers" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "Collections" = @{}
-    "RemoteApps" = @{
-      "Calc" = @{
-        "CollectionName" = "CAFM-RDP"
-        "DisplayName" = "Calc2022"
-        "FilePath" = 'C:\Windows\System32\win32calc.exe'
-      }
-    }
+    "RemoteApps" = @{}
   }
   "pp-rds-1-a" = @{
     "ConnectionBroker" = "$env:computername.AZURE.HMPP.ROOT"
@@ -90,7 +84,7 @@ function Get-Config {
 
 $ErrorActionPreference = "Stop"
 
-. ../ModPlatformAD/Join-ModPlatformAD.ps1 -NewHostname "keep-existing"
+. $PSScriptRoot/../ModPlatformAD/Join-ModPlatformAD.ps1 -NewHostname "keep-existing"
 
 if ($LASTEXITCODE -ne 0) {
    Exit $LASTEXITCODE
