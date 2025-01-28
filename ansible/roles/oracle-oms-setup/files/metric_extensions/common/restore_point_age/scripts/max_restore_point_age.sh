@@ -4,7 +4,6 @@
 
 # Function to identify all ORACLE_SID values on the host
 get_oracle_sids() {
-  #ps -ef | grep "[o]ra_pmon" | awk -F'_' '{print $NF}'
   grep -E '^[^+#]' /etc/oratab | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}'
 }
 
@@ -18,6 +17,11 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SELECT TIME FROM V\$RESTORE_POINT WHERE ROWNUM = 1;
 EXIT;
 EOF
+if [ $? -ne 0 ]; then
+  return 1
+else
+  return 0
+fi
 }
 
 # Function to calculate the maximum restore point age for a specific ORACLE_SID
@@ -46,7 +50,8 @@ SET ECHO OFF
 SET FEEDBACK OFF
 SET HEAD OFF
 SET PAGES 0
-SELECT SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || TRIM(TO_CHAR(COALESCE(MAX(TRUNC(SYSDATE)-TRUNC(TIME)),0))) AS OUTPUT
+SELECT SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || 
+       TRIM(TO_CHAR(COALESCE(MAX(TRUNC(SYSDATE)-TRUNC(TIME)),0))) AS OUTPUT
 FROM V\$RESTORE_POINT;
 EXIT;
 EOF
@@ -56,8 +61,8 @@ EOF
 SET ECHO OFF
 SET FEEDBACK OFF
 SET HEAD OFF
-SET PAGES 0
-SELECT SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || TRIM(TO_CHAR(NVL(MAX(SYSDATE - SCN_TO_TIMESTAMP(SCN)), 0))) AS OUTPUT
+SELECT SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || 
+       TRIM(TO_CHAR(NVL(MAX(SYSDATE - SCN_TO_TIMESTAMP(SCN)), 0))) AS OUTPUT
 FROM V\$RESTORE_POINT;
 EXIT;
 EOF
@@ -72,7 +77,6 @@ if [ -z "$sids" ]; then
 fi
 
 for sid in $sids; do
-  export ORACLE_SID=$sid
   max_age=$(get_max_restore_point_age "$sid")
   # Format output with pipe delimiter
   echo "$max_age"
