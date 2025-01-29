@@ -23,20 +23,27 @@ function Test-PSRemotingConnection {
   )
   
   for ($i = 1; $i -le $MaxAttempts; $i++) {
-      Write-Output "Attempt $i of $MaxAttempts to verify PS Remoting to $ServerName"
+      Write-Verbose "Attempt $i of $MaxAttempts to verify PS Remoting to $ServerName"
       
       try {
+          # Test basic connectivity
           Test-WSMan -ComputerName $ServerName -ErrorAction Stop
-          Write-Output "PowerShell remoting connection to $ServerName successful!"
+
+          # Try to establish a session and run a simple command
+          $session = New-PSSession -ComputerName $ServerName -ErrorAction Stop
+          Invoke-Command -Session $session -ScriptBlock { Get-Service TermService } -ErrorAction Stop
+          Remove-PSSession $session
+
+          Write-Verbose "PowerShell remoting connection to $ServerName successful!"
           return $true
       }
       catch {
-          Write-Output "Attempt $i failed. Waiting $WaitSeconds seconds before retry..."
+          Write-Verbose "Attempt $i failed. Waiting $WaitSeconds seconds before retry..."
           Start-Sleep -Seconds $WaitSeconds
       }
   }
   
-  Write-Output "Failed to establish PowerShell remoting to $ServerName after $MaxAttempts attempts"
+  Write-Verbose "Failed to establish PowerShell remoting to $ServerName after $MaxAttempts attempts"
   return $false
 }
 
@@ -56,7 +63,7 @@ function Add-RDSessionDeployment {
     Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
   } else {
     foreach ($server in $SessionHostServers) {
-      if (Test-PSRemotingConnection -ServerName $server -MaxAttempts 5 -WaitSeconds 30) {
+      if (Test-PSRemotingConnection -ServerName $server -MaxAttempts 5 -WaitSeconds 30 -Verbose) {
         Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
         New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $server -WebAccessServer $WebAccessServer
       } else {
