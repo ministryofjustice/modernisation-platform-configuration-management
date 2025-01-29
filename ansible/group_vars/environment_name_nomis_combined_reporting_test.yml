@@ -117,6 +117,10 @@ sap_bip_db_confs:
     cms_db_user: bip_system_owner # lowercase to match secret name
 
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
+sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
   t1:
@@ -129,6 +133,7 @@ sap_bip_confs:
     sap_provisioning_database_hostname: "t1nomis.test.nomis.service.justice.gov.uk"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
+sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects

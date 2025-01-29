@@ -102,6 +102,10 @@ sap_bip_db_confs:
     cms_db_user: bip_system_owner # lowercase to match secret name
 
 sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
+sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
   ls:
@@ -122,6 +126,7 @@ sap_bip_confs:
     sap_provisioning_database_hostname: "ppnomis.preproduction.nomis.service.justice.gov.uk"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
+sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 
 # explicitly include AWS in preproduction so we are 100% sure correct link is used
 sap_web_bip_link_text: "Continue to MIS and ORS Reporting (AWS)"
