@@ -15,6 +15,31 @@ function Install-RDSWindowsFeatures {
   }
 }
 
+function Test-PSRemotingConnection {
+  param(
+      [string]$ServerName,
+      [int]$MaxAttempts = 5,
+      [int]$WaitSeconds = 30
+  )
+  
+  for ($i = 1; $i -le $MaxAttempts; $i++) {
+      Write-Output "Attempt $i of $MaxAttempts to verify PS Remoting to $ServerName"
+      
+      try {
+          Test-WSMan -ComputerName $ServerName -ErrorAction Stop
+          Write-Output "PowerShell remoting connection to $ServerName successful!"
+          return $true
+      }
+      catch {
+          Write-Output "Attempt $i failed. Waiting $WaitSeconds seconds before retry..."
+          Start-Sleep -Seconds $WaitSeconds
+      }
+  }
+  
+  Write-Output "Failed to establish PowerShell remoting to $ServerName after $MaxAttempts attempts"
+  return $false
+}
+
 function Add-RDSessionDeployment {
 <#
 .SYNOPSIS
@@ -30,8 +55,15 @@ function Add-RDSessionDeployment {
     Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
     Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
   } else {
-    Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
-    New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
+    foreach ($server in $SessionHostServers) {
+      if (Test-PSRemotingConnection -ServerName $server -MaxAttempts 5 -WaitSeconds 30) {
+        Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
+        New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $server -WebAccessServer $WebAccessServer
+      } else {
+        Write-Output "PowerShell Remoting validation failed for $server. "
+        return
+      }
+    }
   }
 }
 
