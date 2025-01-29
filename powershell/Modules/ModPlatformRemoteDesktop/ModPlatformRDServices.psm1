@@ -66,6 +66,7 @@ function Add-RDSessionDeployment {
       if (Test-PSRemotingConnection -ServerName $server -MaxAttempts 5 -WaitSeconds 30 -Verbose) {
         Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
         New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $server -WebAccessServer $WebAccessServer
+        Add-RDServer -Server $server -Role "RDS-RD-SERVER" -ConnectionBroker $ConnectionBroker
       } else {
         Write-Output "PowerShell Remoting validation failed for $server. "
         return
