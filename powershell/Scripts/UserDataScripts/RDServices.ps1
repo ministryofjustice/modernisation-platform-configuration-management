@@ -94,6 +94,11 @@ Import-Module ModPlatformRemoteDesktop -Force
 
 $Config = Get-Config
 Install-RDSWindowsFeatures
+
+foreach ($server in $Config.SessionHostServers) {
+  Set-Item WSMan:\localhost\Client\TrustedHosts -Value $server -Force
+}
+
 Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
 Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
 Add-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServer $Config.GatewayServer -GatewayExternalFqdn $Config.GatewayExternalFqdn
