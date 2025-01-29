@@ -373,7 +373,7 @@ function Install-RDSRole {
         return
     } else {
         Write-Host "Installing Remote Desktop Session Host role"
-        Install-WindowsFeature -Name 'RDS-RD-Server' -IncludeAllSubFeature
+        Install-WindowsFeature -Name 'RDS-RD-Server' -IncludeManagementTools
         # May need a restart but this is covered when the machine is added to the domain
     }
 }
