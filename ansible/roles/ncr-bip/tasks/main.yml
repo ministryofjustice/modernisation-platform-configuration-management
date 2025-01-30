@@ -1,97 +1,26 @@
 ---
 - block:
-    - import_tasks: install_rar.yml
-      tags:
-        - amibuild
-        - ec2provision
-        - ncr_bip_install_rar
-
-    - import_tasks: check_prereqs.yml
-      tags:
-        - amibuild
-        - ec2provision
-        - ncr_bip_check_prereqs
-
-    - import_tasks: setup_host.yml
-      tags:
-        - amibuild
-        - ec2provision
-        - ec2patch
-        - ncr_bip_setup_host
-
-    - import_tasks: setup_bobj.yml
-      tags:
-        - amibuild
-        - ec2provision
-        - ec2patch
-        - ncr_bip_setup_bobj
-
-    - import_tasks: retrieve_files.yml
-      tags:
-        - amibuild
-        - ec2provision
-        - ncr_bip_retrieve_files
-
-    - import_tasks: install_host_agent.yml
-      tags:
-        - ec2provision
-        - ncr_bip_install_host_agent
-
     - import_tasks: get_secrets.yml
       tags:
         - ec2provision
         - ncr_bip_get_secrets
-        - ncr_bip_install_bip
-        - ncr_bip_update_secrets
-        - ncr_bip_setup_cluster_name
         - ncr_bip_setup_tomcat
         - ncr_bip_setup_provisioning
         - ncr_bip_redeploy_tomcat
-
-    - import_tasks: setup_archived_logs.yml
-      tags:
-        - ec2provision
-        - ncr_bip_setup_archived_logs
-
-    - import_tasks: install_bip.yml
-      tags:
-        - ec2provision
-        - ncr_bip_install_bip
-
-    - import_tasks: install_systemd_service.yml
-      tags:
-        - ec2provision
-        - ncr_bip_install_systemd_service
-
-    - import_tasks: update_secrets.yml
-      tags:
-        - ec2provision
-        - ncr_bip_update_secrets
-
-    - import_tasks: check_network_config.yml
-      tags:
-        - ec2provision
-        - ncr_bip_check_network_config
-
-    - import_tasks: update_ccm_config.yml
-      tags:
-        - ec2provision
-        - ncr_bip_update_ccm_config
-
-    - import_tasks: setup_cluster_name.yml
-      tags:
-        - ec2provision
-        - ncr_bip_setup_cluster_name
 
     - import_tasks: update_images.yml
       tags:
         - ec2provision
         - ncr_bip_update_images
 
-    - import_tasks: update_jdbc.yml
+    - import_tasks: check_tomcat.yml
       tags:
         - ec2provision
-        - ncr_bip_update_jdbc
+        - ncr_bip_check_tomcat
+        - ncr_bip_undeploy_tomcat
+        - ncr_bip_setup_tomcat
+        - ncr_bip_deploy_tomcat
+        - ncr_bip_redeploy_tomcat
 
     - import_tasks: undeploy_tomcat.yml
       tags:
@@ -110,11 +39,6 @@
         - ec2provision
         - ncr_bip_deploy_tomcat
         - ncr_bip_redeploy_tomcat
-
-    - import_tasks: setup_tomcat_restart.yml
-      tags:
-        - ec2provision
-        - ncr_bip_setup_tomcat_restart
 
     - import_tasks: setup_provisioning.yml
       tags:

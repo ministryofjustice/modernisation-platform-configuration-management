@@ -7,15 +7,15 @@
         group: binstall
         state: directory
       loop:
-        - "{{ sap_provisioning_directory }}"
-        - "{{ sap_provisioning_directory }}/conf"
-        - "{{ sap_provisioning_directory }}/scripts"
-        - "{{ sap_provisioning_directory }}/logs"
+        - "{{ ncr_bip_provisioning_directory }}"
+        - "{{ ncr_bip_provisioning_directory }}/conf"
+        - "{{ ncr_bip_provisioning_directory }}/scripts"
+        - "{{ ncr_bip_provisioning_directory }}/logs"
 
     - name: Copy provisioning conf
       ansible.builtin.template:
         src: "provisioning/{{ item }}"
-        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        dest: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
         owner: bobj
         group: binstall
         mode: 0600
@@ -30,7 +30,7 @@
     - name: Copy provisioning scripts
       ansible.builtin.template:
         src: "provisioning/{{ item }}"
-        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        dest: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
         owner: bobj
         group: binstall
         mode: 0755
@@ -44,23 +44,23 @@
       become_user: bobj
       amazon.aws.aws_s3:
         mode: get
-        bucket: "{{ sap_packages_s3_bucket_name }}"
-        object: "{{ sap_packages_prefix }}provisioning/{{ item }}"
-        dest: "{{ sap_provisioning_directory }}/{{ item }}"
+        bucket: "{{ ncr_bip_packages_s3_bucket_name }}"
+        object: "{{ ncr_bip_packages_prefix }}provisioning/{{ item }}"
+        dest: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
         overwrite: latest
       loop:
-        - "{{ sap_provisioning_archive }}"
+        - "{{ ncr_bip_provisioning_archive }}"
 
     - name: Extract provisioning code
       ansible.builtin.unarchive:
-        src: "{{ sap_provisioning_directory }}/{{ item }}"
-        dest: "{{ sap_provisioning_directory }}"
+        src: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
+        dest: "{{ ncr_bip_provisioning_directory }}"
         owner: bobj
         group: binstall
         remote_src: true
       loop:
-        - "{{ sap_provisioning_archive }}"
+        - "{{ ncr_bip_provisioning_archive }}"
       when: not ansible_check_mode
 
   # block
-  when: sap_provisioning_database_hostname is defined
+  when: ncr_bip_provisioning_database_hostname is defined

@@ -1,0 +1,9 @@
+---
+- name: Check if tomcat present
+  ansible.builtin.stat:
+    path: "{{ ncr_bip_installation_directory }}/sap_bobj/tomcat"
+  register: ncr_bip_tomcat_check
+
+- name: Set is_web stat
+  ansible.builtin.set_fact:
+    ncr_bip_is_web: "{{ ncr_bip_tomcat_check.stat.exists }}"

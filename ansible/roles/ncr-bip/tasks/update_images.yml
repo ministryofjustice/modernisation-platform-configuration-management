@@ -1,7 +1,7 @@
 ---
 - name: Check if ccm.config present
   ansible.builtin.stat:
-    path: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/images"
+    path: "{{ ncr_bip_installation_directory }}/sap_bobj/enterprise_xi40/images"
   register: images_check
 
 - block:
@@ -9,9 +9,9 @@
       become_user: bobj
       amazon.aws.aws_s3:
         mode: get
-        bucket: "{{ sap_packages_s3_bucket_name }}"
-        object: "{{ sap_packages_prefix }}images/{{ item }}"
-        dest: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/images/{{ item }}"
+        bucket: "{{ ncr_bip_packages_s3_bucket_name }}"
+        object: "{{ ncr_bip_packages_prefix }}images/{{ item }}"
+        dest: "{{ ncr_bip_installation_directory }}/sap_bobj/enterprise_xi40/images/{{ item }}"
         overwrite: latest
       with_items:
         - NOMS_RGB_S5.jpg
