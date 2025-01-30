@@ -88,6 +88,15 @@
         - ec2provision
         - sap_bip_update_jdbc
 
+    - import_tasks: check_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_check_tomcat
+        - sap_bip_undeploy_tomcat
+        - sap_bip_setup_tomcat
+        - sap_bip_deploy_tomcat
+        - sap_bip_redeploy_tomcat
+
     - import_tasks: undeploy_tomcat.yml
       tags:
         - ec2provision

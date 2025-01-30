@@ -3,7 +3,7 @@
 T2BOAUD =
  (DESCRIPTION =
   (ENABLE = broken)
-  (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
   (CONNECT_DATA =
    (SERVER = DEDICATED)
    (SERVICE_NAME = BIAUD_TAF)
@@ -13,9 +13,19 @@ T2BOAUD =
 T2BOSYS =
  (DESCRIPTION =
   (ENABLE = broken)
-  (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
   (CONNECT_DATA =
    (SERVER = DEDICATED)
    (SERVICE_NAME = BISYS_TAF)
+  )
+ )
+
+OASYSREP_T2 =
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = OASREP_TAF)
   )
  )

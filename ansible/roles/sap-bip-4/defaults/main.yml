@@ -50,6 +50,7 @@ sap_bip_secretsmanager_passwords:
       - cms_cluster_name:
       - cms_cluster_key: auto
       - cms_primary_hostname: # set to newinstall prior to first CMS build
+      - cms_hosts:
       - product_key:
   sysdb:
     secret: "{{ sap_bip_sysdb_secret_id }}"
@@ -71,13 +72,22 @@ sap_web_context_cachemaxsize: 500000
 sap_web_server_7777_minsparethreads: 500
 # sap_web_server_7777_maxthreads: 1000
 sap_web_java_opts: "-Dbobje.disable_audit_ip_lookup"
-# sap_web_apps:  # define list of apps to deploy in group vars
+sap_web_apps:
+  - AdminTools
+  - BOE
+  - BusinessProcessBI
+  - bipodata
+  - biprws
+  - clientapi
+  - dswsbobje
+  - webi-websetup
 # sap_bip_rws_url:  # set in group vars, e.g. https://admin.preproduction.reporting.nomis.service.justice.gov.uk/biprws to enable biprws helper script
 sap_web_tomcat_restart_enabled: true
 sap_web_tomcat_restart_cron:
   minute: "0"
   hour: "2"
   weekday: "MON,WED,FRI"
+
 # sap_web_bilogon_app_name:
 # sap_web_bilogon_app_name_short:
 # sap_web_bilogon_app_name_greeting:
