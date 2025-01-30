@@ -156,6 +156,18 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: OASYS_TAF, role: PRIMARY }
+  
+  T2OASYS2:
+    db_name: OASPROD
+    db_unique_name: T2OASYS2
+    instance_name: T2OASYS2
+    host_name: t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal
+    port: 1521
+    tns_name: T2OASYS2
+    s3_bucket: oasys-test20230403093247696000000001
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASYS2_TAF, role: PRIMARY }
 
   T2ONRSYS:
     db_name: ONRSYS
