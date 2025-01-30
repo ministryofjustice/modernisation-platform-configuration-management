@@ -100,31 +100,12 @@ disks_mount:
     fstype: swap
 
 sap_bip_responsefile: response.web.ini
-sap_web_server_type: web
-sap_web_disable_infoview: "false"
-sap_web_disable_cmcapp: "{{ 'true' if sap_bip_conf.sap_web_has_dedicated_admin else 'false' }}"
-sap_web_server_7777_maxthreads: 1000
-sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
-sap_web_apps_with_dedicated_admin:
-  - BOE
-  - BusinessProcessBI
-  - bipodata
-  - biprws
-  - clientapi
-  - dswsbobje
-  - webi-websetup
-sap_web_apps_without_dedicated_admin:
-  - AdminTools
-  - BOE
-  - BusinessProcessBI
-  - bipodata
-  - biprws
-  - clientapi
-  - dswsbobje
-  - webi-websetup
 
-sap_web_apps: "{{ sap_web_apps_with_dedicated_admin if sap_bip_conf.sap_web_has_dedicated_admin else sap_web_apps_without_dedicated_admin }}"
-sap_bip_sso_url: "{{ sap_bip_conf.sap_bip_sso_url }}"
+sap_web_disable_infoview: "false"
+sap_web_disable_cmcapp: "{{ sap_web_conf.sap_web_disable_cmcapp }}"
+sap_web_java_opts: "{{  sap_web_conf.sap_web_java_opts }}"
+sap_web_server_7777_maxthreads: 1000
+sap_web_apps: "{{ sap_web_conf.sap_web_apps }}"
 
 sap_web_bilogon_app_name: Prison-NOMIS Reporting
 sap_web_bilogon_app_name_short: Prison-NOMIS Reporting
@@ -179,3 +160,5 @@ sap_web_opendocument_disclaimer_enabled: "false"
 sap_web_opendocument_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
 
 sap_web_global_prefer_root_selected: groupList
+
+ncr_bip_web_server_type: web
