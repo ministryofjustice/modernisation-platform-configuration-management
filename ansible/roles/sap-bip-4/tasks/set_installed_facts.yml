@@ -1,0 +1,15 @@
+---
+- name: Check if ccm.config present
+  ansible.builtin.stat:
+    path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
+  register: sap_bip_ccm_config_check
+
+- name: Check if tomcat present
+  ansible.builtin.stat:
+    path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat"
+  register: sap_bip_tomcat_check
+
+- name: Set is_app is_web facts
+  ansible.builtin.set_fact:
+    sap_bip_is_app: "{{ sap_bip_ccm_config_check.stat.exists }}"
+    sap_bip_is_web: "{{ sap_bip_tomcat_check.stat.exists }}"

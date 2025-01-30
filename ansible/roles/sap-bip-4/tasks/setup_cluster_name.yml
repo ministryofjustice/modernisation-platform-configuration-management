@@ -1,9 +1,4 @@
 ---
-- name: Check if ccm.config present
-  ansible.builtin.stat:
-    path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
-  register: cluster_name_ccm_config_check
-
 - block:
     - name: Check cluster name
       ansible.builtin.expect:
@@ -81,5 +76,4 @@
 
   #  block
   when:
-    - cluster_name_ccm_config_check.stat.exists
-    - sap_bip_is_cms
+    - sap_bip_is_app

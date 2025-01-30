@@ -1,9 +1,4 @@
 ---
-- name: Check if ccm.config present
-  ansible.builtin.stat:
-    path: "{{ ncr_bip_installation_directory }}/sap_bobj/enterprise_xi40/images"
-  register: images_check
-
 - block:
     - name: Download images from S3
       become_user: bobj
@@ -30,4 +25,4 @@
         - skin_Nokia.gif
 
   # block
-  when: images_check.stat.exists
+  when: ncr_bip_is_app

@@ -8,19 +8,14 @@
         - ncr_bip_setup_provisioning
         - ncr_bip_redeploy_tomcat
 
+    - import_tasks: set_installed_facts.yml
+      tags:
+        - always
+
     - import_tasks: update_images.yml
       tags:
         - ec2provision
         - ncr_bip_update_images
-
-    - import_tasks: check_tomcat.yml
-      tags:
-        - ec2provision
-        - ncr_bip_check_tomcat
-        - ncr_bip_undeploy_tomcat
-        - ncr_bip_setup_tomcat
-        - ncr_bip_deploy_tomcat
-        - ncr_bip_redeploy_tomcat
 
     - import_tasks: undeploy_tomcat.yml
       tags:

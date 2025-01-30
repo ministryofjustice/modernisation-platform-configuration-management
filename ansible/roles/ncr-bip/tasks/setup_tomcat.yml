@@ -24,8 +24,8 @@
       become_user: bobj
       amazon.aws.aws_s3:
         mode: get
-        bucket: "{{ ncr_packages_s3_bucket_name }}"
-        object: "{{ ncr_packages_prefix }}bipsso/{{ item }}"
+        bucket: "{{ ncr_bip_packages_s3_bucket_name }}"
+        object: "{{ ncr_bip_packages_prefix }}bipsso/{{ item }}"
         dest: "{{ ncr_bip_installation_directory }}/sap_bobj/tomcat/webapps/{{ item }}"
         overwrite: latest
       with_items:
