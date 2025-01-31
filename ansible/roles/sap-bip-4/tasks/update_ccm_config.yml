@@ -7,7 +7,7 @@
         regexp: "^FIPSModeValue=.*"
         replace: 'FIPSModeValue="true"'
 
-    - name: Create directory
+    - name: Create 0775 directories
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -16,6 +16,16 @@
         group: binstall
       with_items:
         - "{{ sap_promotion_management_directory }}"
+
+    - name: Create 0755 directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755
+        owner: bobj
+        group: binstall
+      with_items:
+        - /opt/data/BusinessObjects/BIP4/PlatformSearchData
 
   # block
   when: sap_bip_is_app

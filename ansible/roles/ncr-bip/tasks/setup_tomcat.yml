@@ -8,7 +8,8 @@
         state: directory
       loop:
         - "{{ ncr_bip_installation_directory }}/sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css"
-      when: ncr_web_server_type == "web"
+      when:
+        - ncr_web_server_type == "web"
 
     - name: Create web only directories
       ansible.builtin.file:
@@ -18,7 +19,9 @@
         state: directory
       loop:
         - "/home/bobj/bipssorws_config"
-      when: ncr_bip_sso_url is defined
+      when:
+        - ncr_web_server_type == "web"
+        - ncr_bip_sso_url is defined
 
     - name: Download bipssorws war
       become_user: bobj
@@ -30,7 +33,9 @@
         overwrite: latest
       with_items:
         - bipssorws.war
-      when: ncr_bip_sso_url is defined
+      when:
+        - ncr_web_server_type == "web"
+        - ncr_bip_sso_url is defined
 
     - name: Copy bipsso files
       ansible.builtin.template:
@@ -40,7 +45,9 @@
         group: binstall
       loop:
         - home/bobj/bipssorws_config/config.properties
-      when: ncr_bip_sso_url is defined
+      when:
+        - ncr_web_server_type == "web"
+        - ncr_bip_sso_url is defined
 
     - name: Copy webapp configuration files
       ansible.builtin.template:
@@ -67,7 +74,6 @@
         - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
 
     - name: Copy server specific tomcat root files
-
       ansible.builtin.template:
         src: "{{ ncr_web_server_type }}/{{ item }}"
         dest: "{{ ncr_bip_installation_directory }}/{{ item }}"
