@@ -172,6 +172,8 @@ $Config = Get-Config
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
 
+# do the equivalent for gpupdate /force in powershell
+Install-WindowsFeature GPMC
 Invoke-GPUpdate -Force
 
 Import-Module ModPlatformRemoteDesktop -Force
