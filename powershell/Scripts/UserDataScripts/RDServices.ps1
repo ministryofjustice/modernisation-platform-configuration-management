@@ -166,6 +166,9 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 # Get the AD Admin credentials
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+
+# Get Config values
+$Config = Get-Config
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
 
@@ -173,7 +176,6 @@ Invoke-GPUpdate -Force
 
 Import-Module ModPlatformRemoteDesktop -Force
 
-$Config = Get-Config
 Install-RDSWindowsFeatures
 
 foreach ($server in $Config.SessionHostServers) {
