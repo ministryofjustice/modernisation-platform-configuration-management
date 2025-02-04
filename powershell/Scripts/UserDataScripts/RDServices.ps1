@@ -185,7 +185,7 @@ foreach ($server in $Config.SessionHostServers) {
 }
 
 # FIXME: -> this SecretId needs to be changeable 
-$svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_nart" -ErrorAction SilentlyContinue
+$svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
 
 $username = "$($Config.Domain)\svc_nart"
 $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -Force
