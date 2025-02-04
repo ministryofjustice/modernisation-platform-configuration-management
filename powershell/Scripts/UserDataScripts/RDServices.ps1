@@ -180,9 +180,12 @@ Import-Module ModPlatformRemoteDesktop -Force
 
 Install-RDSWindowsFeatures
 
-foreach ($server in $Config.SessionHostServers) {
-  Set-Item WSMan:\localhost\Client\TrustedHosts -Value $server -Force
-}
+# foreach ($server in $Config.SessionHostServers) {
+#   Set-Item WSMan:\localhost\Client\TrustedHosts -Value $server -Force
+# }
+
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
+Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
 
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
