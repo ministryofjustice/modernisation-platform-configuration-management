@@ -190,7 +190,7 @@ Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
 
-$username = "$($Config.Domain)\svc_nart"
+$username = "$($Config.Domain)\svc_rds"
 $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -Force
 
 $creds = New-Object System.Management.Automation.PSCredential($username, $secure_password)
