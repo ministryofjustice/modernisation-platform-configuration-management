@@ -210,7 +210,7 @@ $commands = {
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 }
 
-Invoke-Command -ScriptBlock $commands -Credential $creds -ArgumentList $Config
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
 
