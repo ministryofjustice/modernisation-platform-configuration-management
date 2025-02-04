@@ -197,6 +197,7 @@ $creds = New-Object System.Management.Automation.PSCredential($username, $secure
 
 $commands = {
   param($Config)
+  Import-Module ModPlatformRemoteDesktop -Force
   Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
   Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
   Add-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServer $Config.GatewayServer -GatewayExternalFqdn $Config.GatewayExternalFqdn
