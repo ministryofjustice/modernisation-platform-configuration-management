@@ -169,6 +169,11 @@ $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADCo
 
 # Get Config values
 $Config = Get-Config
+# Check if RDSComputersOU is populated
+if ([string]::IsNullOrEmpty($Config.RDSComputersOU)) {
+  Write-Error "Config.RDSComputersOU is missing or empty."
+  return
+}
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
 
@@ -196,9 +201,9 @@ $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -For
 $creds = New-Object System.Management.Automation.PSCredential($username, $secure_password)
 
 $commands = {
-  param($Config)
+  param($Config, $localScriptRoot)
   # import module into context
-  $ModulesRepo = Join-Path $PSScriptRoot '..\..\Modules'
+  $ModulesRepo = Join-Path $localScriptRoot '..\..\Modules'
   $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
   Import-Module ModPlatformRemoteDesktop -Force
 
@@ -218,7 +223,7 @@ $commands = {
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 }
 
-Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config, $PSScriptRoot
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
 
