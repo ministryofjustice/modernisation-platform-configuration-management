@@ -58,6 +58,10 @@
         - ec2provision
         - sap_bip_install_bip
 
+    - import_tasks: set_installed_facts.yml
+      tags:
+        - always
+
     - import_tasks: install_systemd_service.yml
       tags:
         - ec2provision

@@ -26,7 +26,7 @@
             <h2>IMPORTANT</h2>
             Please ensure to log out of MIS and ORS Reporting when you are finished.
             <br><br>To log out, click on <img style="vertical-align:middle" src="BIP_profile_icon.png" alt="User icon"> then choose "Log out" from the menu: <img style="vertical-align:middle" src="BIP_profile_menu_70pct.png" alt="Menu - Log out">
-            <br><br><a id="biplink" href="#">{{ sap_web_bip_link_text }}</a>
+            <br><br><a id="biplink" href="#">{{ ncr_web_reporting_link_text }}</a>
         </div>
     </div>
 </body>

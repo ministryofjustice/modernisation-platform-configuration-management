@@ -40,6 +40,7 @@ server_type_roles_list:
   - selinux-config
   - oracle-19c-client
   - filesystems
+  - sap-bip-4
   - ncr-bip
   - collectd
   - amazon-cloudwatch-agent
@@ -103,5 +104,3 @@ disks_mount:
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_is_cms: true
-sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
-sap_provisioning_database_hostname: "{{ sap_bip_conf.sap_provisioning_database_hostname }}"

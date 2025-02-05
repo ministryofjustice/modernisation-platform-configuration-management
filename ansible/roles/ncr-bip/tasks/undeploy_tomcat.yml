@@ -5,25 +5,18 @@
         name: sapbobj
         state: stopped
 
-    - name: Undeploy all tomcat applications
+    - name: Undeploy tomcat applications
       become_user: bobj
       args:
-        chdir: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
+        chdir: "{{ ncr_bip_installation_directory }}/sap_bobj/enterprise_xi40/wdeploy"
       ansible.builtin.shell: |
         main() {
           . ~/.bash_profile
-          echo "wdeploy.sh tomcat9 undeployall"
-          ./wdeploy.sh tomcat9 undeployall
+          echo ./wdeploy.sh tomcat9 -DAPP={{ item }} undeploy
+          ./wdeploy.sh tomcat9 -DAPP={{ item }} undeploy
          }
          main | logger -p local3.info -t ansible-ncr-bip
-
-    - name: Cleanup folders
-      ansible.builtin.file:
-        path: "{{ sap_bip_installation_directory }}/{{ item }}"
-        state: absent
-      failed_when: false # don't stop installation if this fails
-      loop:
-        - sap_bobj/tomcat/work/Catalina
+      loop: "{{ ncr_web_apps }}"
 
   #  block
-  when: sap_web_apps is defined
+  when: ncr_bip_is_web

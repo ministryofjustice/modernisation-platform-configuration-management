@@ -1,9 +1,4 @@
 ---
-- name: Check if ccm.config present
-  ansible.builtin.stat:
-    path: "{{ sap_bip_installation_directory }}/sap_bobj/ccm.config"
-  register: ccm_config_check
-
 - block:
     # As per NOMIS BIP 4.3 Installation and Configuration Notes
     - name: Set FIPSModeValue true in ccm.config
@@ -12,7 +7,7 @@
         regexp: "^FIPSModeValue=.*"
         replace: 'FIPSModeValue="true"'
 
-    - name: Create directory
+    - name: Create 0775 directories
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -22,5 +17,15 @@
       with_items:
         - "{{ sap_promotion_management_directory }}"
 
+    - name: Create 0755 directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755
+        owner: bobj
+        group: binstall
+      with_items:
+        - /opt/data/BusinessObjects/BIP4/PlatformSearchData
+
   # block
-  when: ccm_config_check.stat.exists
+  when: sap_bip_is_app
