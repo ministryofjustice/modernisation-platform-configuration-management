@@ -1,3 +1,25 @@
+function Clear-PendingFileRenameOperations {
+  <#
+.SYNOPSIS
+    Clears pending filename operations so pre-install checks work
+#>
+  $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+  $regKey = "PendingFileRenameOperations"
+
+  if (Get-ItemProperty -Path $regPath -Name $regKey -ErrorAction SilentlyContinue) {
+    try {
+      Remove-ItemProperty -Path $regPath -Name $regKey -Force -ErrorAction Stop
+      Write-Host "Successfully removed $regKey from the registry."
+    }
+    catch {
+      Write-Warning "Failed to remove $regKey. Error: $_"
+    }
+  }
+  else {
+    Write-Host "$regKey does not exist in the registry. No action needed."
+  }
+}
+
 function Install-RDSWindowsFeatures {
   <#
 .SYNOPSIS
@@ -9,6 +31,8 @@ function Install-RDSWindowsFeatures {
   )
   $Features | ForEach-Object {
     if (-not (Get-WindowsFeature -Name $_).Installed) {
+      Write-Output "Clearing rename operations ahead of installing $_ Feature"
+      Clear-PendingFileRenameOperations
       Write-Output "Installing $_ Feature"
       Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
     }
