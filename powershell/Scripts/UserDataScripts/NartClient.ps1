@@ -371,10 +371,13 @@ function Install-RDSRole {
     if ((Get-WindowsFeature -Name 'RDS-RD-Server').Installed) {
         Write-Host "Remote Desktop Session Host role service already installed"
         return
-    } else {
+    }
+    else {
         Write-Host "Installing Remote Desktop Session Host role"
         Install-WindowsFeature -Name 'RDS-RD-Server' -IncludeManagementTools
         # May need a restart but this is covered when the machine is added to the domain
+        Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
+        Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
     }
 }
 # }}} end of functions

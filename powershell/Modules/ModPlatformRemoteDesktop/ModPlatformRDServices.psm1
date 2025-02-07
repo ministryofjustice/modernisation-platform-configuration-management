@@ -1,5 +1,5 @@
 function Install-RDSWindowsFeatures {
-<#
+  <#
 .SYNOPSIS
     Install RDS Windows Features
 #>
@@ -17,30 +17,31 @@ function Install-RDSWindowsFeatures {
 
 function Test-PSRemotingConnection {
   param(
-      [string]$ServerName,
-      [int]$MaxAttempts = 5,
-      [int]$WaitSeconds = 30
+    [string]$ServerName,
+    [int]$MaxAttempts = 5,
+    [int]$WaitSeconds = 30
   )
   
   for ($i = 1; $i -le $MaxAttempts; $i++) {
-      Write-Verbose "Attempt $i of $MaxAttempts to verify PS Remoting to $ServerName"
+    Write-Verbose "Attempt $i of $MaxAttempts to verify PS Remoting to $ServerName"
       
-      try {
-          # Test basic connectivity
-          Test-WSMan -ComputerName $ServerName -ErrorAction Stop
+    try {
+      # Test basic connectivity
+      Test-WSMan -ComputerName $ServerName -ErrorAction Stop
 
-          # Try to establish a session and run a simple command
-          $session = New-PSSession -ComputerName $ServerName -ErrorAction Stop
-          Invoke-Command -Session $session -ScriptBlock { Get-Service TermService } -ErrorAction Stop
-          Remove-PSSession $session
+      # Try to establish a session and run a simple command
+      # FIXME: Remove this as it will only work with certain credentials and is too over-the-top
+      # $session = New-PSSession -ComputerName $ServerName -ErrorAction Stop
+      # Invoke-Command -Session $session -ScriptBlock { Get-Service TermService } -ErrorAction Stop
+      # Remove-PSSession $session
 
-          Write-Verbose "PowerShell remoting connection to $ServerName successful!"
-          return $true
-      }
-      catch {
-          Write-Verbose "Attempt $i failed. Waiting $WaitSeconds seconds before retry..."
-          Start-Sleep -Seconds $WaitSeconds
-      }
+      Write-Verbose "PowerShell remoting connection to $ServerName successful!"
+      return $true
+    }
+    catch {
+      Write-Verbose "Attempt $i failed. Waiting $WaitSeconds seconds before retry..."
+      Start-Sleep -Seconds $WaitSeconds
+    }
   }
   
   Write-Verbose "Failed to establish PowerShell remoting to $ServerName after $MaxAttempts attempts"
@@ -48,7 +49,7 @@ function Test-PSRemotingConnection {
 }
 
 function Add-RDSessionDeployment {
-<#
+  <#
 .SYNOPSIS
     Create or Update an RDSession Deployment
 #>
@@ -61,13 +62,15 @@ function Add-RDSessionDeployment {
   if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
     Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
     Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
-  } else {
+  }
+  else {
     foreach ($server in $SessionHostServers) {
       if (Test-PSRemotingConnection -ServerName $server -MaxAttempts 5 -WaitSeconds 30 -Verbose) {
         Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
         New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $server -WebAccessServer $WebAccessServer
         Add-RDServer -Server $server -Role "RDS-RD-SERVER" -ConnectionBroker $ConnectionBroker
-      } else {
+      }
+      else {
         Write-Output "PowerShell Remoting validation failed for $server. "
         return
       }
@@ -76,7 +79,7 @@ function Add-RDSessionDeployment {
 }
 
 function Add-RDLicensingServer {
-<#
+  <#
 .SYNOPSIS
     Add a new RD Licensing Server to the deployment if it is not already configured
 #>
@@ -98,7 +101,7 @@ function Add-RDLicensingServer {
 }
 
 function Remove-RDLicensingServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RD Licensing Servers from the deployment
 #>
@@ -115,7 +118,7 @@ function Remove-RDLicensingServer {
 }
 
 function Add-RDGatewayServer {
-<#
+  <#
 .SYNOPSIS
     Add or update an RDGatewayServer to the deployment
 #>
@@ -139,7 +142,7 @@ function Add-RDGatewayServer {
 }
 
 function Remove-RDGatewayServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RDGatewayServer from the deployment
 #>
@@ -156,7 +159,7 @@ function Remove-RDGatewayServer {
 }
 
 function Add-RDWebAccessServer {
-<#
+  <#
 .SYNOPSIS
     Add RDWebAccess server to the deployment if it is not already configured
 #>
@@ -173,7 +176,7 @@ function Add-RDWebAccessServer {
 }
 
 function Remove-RDWebAccessServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RDWebAccess server from the deployment
 #>
@@ -190,7 +193,7 @@ function Remove-RDWebAccessServer {
 }
 
 function Add-SessionHostServer {
-<#
+  <#
 .SYNOPSIS
     Add session host servers to the deployment if not already configured
 #>
@@ -209,7 +212,7 @@ function Add-SessionHostServer {
 }
 
 function Remove-SessionHostServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused session host servers from the deployment
 #>
@@ -226,7 +229,7 @@ function Remove-SessionHostServer {
 }
 
 function Add-Collection {
-<#
+  <#
 .SYNOPSIS
     Add a collection to the deployment if not already configured, otherwise update the configuration
 #>
@@ -242,7 +245,8 @@ function Add-Collection {
     # ErrorAction set to Continue as errors are generated re GroupPolicy managed options
     Write-Output "${ConnectionBroker}: ${CollectionName}: Creating RDSessionCollection"
     New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction Continue
-  } else {
+  }
+  else {
     foreach ($SessionHost in $Collection.SessionHosts) {
       $ExistingSessionHost = Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -eq $SessionHost
       if (-not $ExistingSessionHost) {
@@ -257,7 +261,7 @@ function Add-Collection {
 }
 
 function Add-Collections {
-<#
+  <#
 .SYNOPSIS
     Add collections to the deployment if not already configured, otherwise update the configuration
 #>
@@ -273,7 +277,7 @@ function Add-Collections {
 }
 
 function Remove-Collections {
-<#
+  <#
 .SYNOPSIS
     Remove any unused collections from the deployment
 #>
@@ -299,7 +303,7 @@ function Remove-Collections {
 }
 
 function Add-RemoteApp {
-<#
+  <#
 .SYNOPSIS
     Add a remote app to the deployment if not already configured, otherwise update the configuration
 #>
@@ -315,14 +319,15 @@ function Add-RemoteApp {
   if (-not $ExistingApp) {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Creating RDRemoteApp"
     New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
-  } else {
+  }
+  else {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Updating RDRemoteApp"
     Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
   }
 }
 
 function Add-RemoteApps {
-<#
+  <#
 .SYNOPSIS
     Add remote apps to the deployment if not already configured, otherwise update the configuration
 #>
@@ -338,7 +343,7 @@ function Add-RemoteApps {
 }
 
 function Remove-RemoteApps {
-<#
+  <#
 .SYNOPSIS
     Remove unused remote apps from the deployment
 #>
@@ -350,7 +355,7 @@ function Remove-RemoteApps {
 
   $AliasesToKeep = $RemoteAppsToKeep.Keys
   Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -notin $AliasesToKeep | ForEach-Object {
-    Write-Output ("${ConnectionBroker}: " + $_.CollectionName +": " + $_.Alias + ": Removing RDRemoteApp")
+    Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": " + $_.Alias + ": Removing RDRemoteApp")
     Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
   }
 }
