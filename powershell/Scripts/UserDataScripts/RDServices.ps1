@@ -71,6 +71,24 @@ $GlobalConfig = @{
   }
 }
 
+function Clear-PendingFileRenameOperations {
+  $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+  $regKey = "PendingFileRenameOperations"
+
+  if (Get-ItemProperty -Path $regPath -Name $regKey -ErrorAction SilentlyContinue) {
+    try {
+      Remove-ItemProperty -Path $regPath -Name $regKey -Force -ErrorAction Stop
+      Write-Host "Successfully removed $regKey from the registry."
+    }
+    catch {
+      Write-Warning "Failed to remove $regKey. Error: $_"
+    }
+  }
+  else {
+    Write-Host "$regKey does not exist in the registry. No action needed."
+  }
+}
+
 function Get-Config {
   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 } -Method PUT -Uri http://169.254.169.254/latest/api/token
   $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token } -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
@@ -191,6 +209,8 @@ Install-RDSWindowsFeatures
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
+
+Clear-PendingFileRenameOperations # ensures the issue of 'server requires restart' doesn't appear
 
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
