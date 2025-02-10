@@ -73,8 +73,8 @@ $GlobalConfig = @{
 
 function Add-PermanentPSModulePath {
   param(
-      [Parameter(Mandatory=$true)]
-      [string]$NewPath
+    [Parameter(Mandatory = $true)]
+    [string]$NewPath
   )
 
   # Get current Machine PSModulePath from the registry
@@ -83,16 +83,16 @@ function Add-PermanentPSModulePath {
 
   # Check if the path already exists
   if ($currentValue -split ';' -notcontains $NewPath) {
-      # Add the new path
-      $newValue = $currentValue + ";" + $NewPath
+    # Add the new path
+    $newValue = $currentValue + ";" + $NewPath
 
-      # Update the registry
-      Set-ItemProperty -Path $regKey -Name PSModulePath -Value $newValue
+    # Update the registry
+    Set-ItemProperty -Path $regKey -Name PSModulePath -Value $newValue
       
-      Write-Host "Added $NewPath to system PSModulePath. Changes will take effect after restart or refreshing environment variables."
+    Write-Host "Added $NewPath to system PSModulePath. Changes will take effect after restart or refreshing environment variables."
   }
   else {
-      Write-Host "$NewPath is already in PSModulePath"
+    Write-Host "$NewPath is already in PSModulePath"
   }
 }
 
@@ -230,11 +230,9 @@ Invoke-GPUpdate -Force
 
 Import-Module ModPlatformRemoteDesktop -Force
 
-Install-RDSWindowsFeatures
 
-# foreach ($server in $Config.SessionHostServers) {
-#   Set-Item WSMan:\localhost\Client\TrustedHosts -Value $server -Force
-# }
+exit 3010 # reboot required here for setting up RDS to work
+Install-RDSWindowsFeatures
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
@@ -269,8 +267,6 @@ $commands = {
   Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 }
-
-exit 3010 # reboot required here for setting up RDS to work
 
 Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config  
 
