@@ -45,7 +45,8 @@ if (!(Test-Path $NewConfigPath)) {
 # "         Write-Output 'AmazonCloudWatchAgent config should be specified'",
 # "         exit 1",
 # "     }",
-$CustomConfig = (Get-SSMParameterValue -Names cloud-watch-config-windows.Value)
+$CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True).Parameters[0].Value
+
 
 Write-Output "CustomConfig is: $CustomConfig"
 exit 0
