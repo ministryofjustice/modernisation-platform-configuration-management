@@ -46,9 +46,11 @@ if (!(Test-Path $NewConfigPath)) {
 # "         exit 1",
 # "     }",
 $CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True).Parameters[0].Value
+if ($null -eq $CustomConfig) {write-output "CustomConfig does not appear to be configured for this environment"}
+else {
+  Write-Output "CustomConfig is set to: $CustomConfig"
+}
 
-
-Write-Output "CustomConfig is: $CustomConfig"
 exit 0
 
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
