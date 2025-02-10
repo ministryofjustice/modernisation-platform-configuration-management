@@ -228,6 +228,17 @@ Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $(
 Install-WindowsFeature GPMC
 Invoke-GPUpdate -Force
 
+$computerOU = Get-ADComputer $env:COMPUTERNAME -Properties DistinguishedName -Credential $ADAdminCredential
+
+$currentOU = ($computerOU.DistinguishedName -split ',', 2)[1]
+
+if ($currentOU -ne $Config.RDSComputersOU) {
+  Write-Host "reboot needed"
+  exit 3010
+} else {
+  Write-Host "no reboot required, moving on"
+}
+
 Import-Module ModPlatformRemoteDesktop -Force
 
 Install-RDSWindowsFeatures
