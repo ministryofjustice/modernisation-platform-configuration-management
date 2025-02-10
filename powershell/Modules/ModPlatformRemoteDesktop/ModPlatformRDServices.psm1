@@ -20,25 +20,6 @@ function Clear-PendingFileRenameOperations {
   }
 }
 
-function Test-PendingReboot {
-  # Check Component Based Servicing reboot key
-  if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
-    return $true
-  }
-  # Check WindowsUpdate reboot key
-  if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
-    return $true
-  }
-  # Check PendingFileRenameOperations registry value
-  $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
-  try {
-    $pending = Get-ItemProperty -Path $regPath -Name "PendingFileRenameOperations" -ErrorAction SilentlyContinue
-    if ($pending) { return $true }
-  }
-  catch { }
-  return $false
-} 
-
 function Install-RDSWindowsFeatures {
   <#
 .SYNOPSIS
@@ -53,10 +34,6 @@ function Install-RDSWindowsFeatures {
       Write-Output "Clearing rename operations ahead of installing $_ Feature"
       Clear-PendingFileRenameOperations
       Write-Output "Installing $_ Feature"
-      # if (Test-PendingReboot) {
-      #   Write-Host "Reboot required detected. Exiting with code 3010."
-      #   exit 3010
-      # }
       Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
     }
   }
