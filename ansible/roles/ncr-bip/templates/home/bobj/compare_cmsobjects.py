@@ -51,6 +51,22 @@ COMPARE_EXCLUDE_KIND_ALL = [
   "PlatformSearchQueue",
   "Webi",
   "MON.Subscription",
+
+  "CCIS.DataConnection",
+  "ClientAction",
+  "DSL.MetaDataFile",
+  "Folder",
+  "Excel",
+  "NotificationSchedule",
+  "MON.Probe",
+  "SharedElement",
+  "Txt",
+  "WorkflowTemplate",
+  "AlertNotification",
+  "Connection",
+  "CustomRole",
+  "PlatformSearchServiceSession",
+  "AuditEventInfo2",
 ]
 
 COMPARE_EXCLUDE_NAME_ALL = [
@@ -212,7 +228,35 @@ REPLACE_DICT = {
   "ppaws": [
     ("-ns ip-10-27-0-75.eu-west-2.compute.internal:6400", "-ns xxxx"),
     ("-ns ip-10-27-1-112.eu-west-2.compute.internal:6400", "-ns xxxx"),
-  ]
+  ],
+  "pdazure": [
+    ("-ns pdpml0tuc0y0001.azure.hmpp.root:6400", "-ns xxxx"),
+    ("-ns pdpml0tuc0y0002.azure.hmpp.root:6400", "-ns xxxx"),
+    ("PDNOMIS1", "pdncrcms1"),
+    ("PDNOMIS2", "pdncrcms2"),
+    ("PDNOMIS3", "pdncrapp1"),
+    ("PDNOMIS4", "pdncrapp2"),
+    ("PDNOMIS5", "pdncrapp3"),
+    ("PDNOMIS6", "pdncrapp4"),
+    ("pdpml0tuc0y0001.azure.hmpp.root", "ip-10-27-8-141.eu-west-2.compute.internal"),
+    ("pdpml0tuc0y0002.azure.hmpp.root", "ip-10-27-9-93.eu-west-2.compute.internal"),
+    ("AdaptiveProcessingServer1", "APS.DF"),
+    ("PDPML0TUC0Y0001", "ip-10-27-8-141"),
+    ("PDPML0TUC0Y0002", "ip-10-27-9-93"),
+    ("PDPML0TUC0Y0003", "ip-10-27-8-95"),
+    ("PDPML0TUC0Y0004", "ip-10-27-9-90"),
+    ("PDPML0TUC0Y0005", "ip-10-27-8-146"),
+    ("PDPML0TUC0Y0006", "ip-10-27-9-187"),
+    ("BIPAUDP", "PDBIAUD"),
+    ("BIPAUD_TAF", "BIAUD_TAF"),
+    ("BIPSYS_TAF", "BISYS_TAF"),
+    ("BIP_AUDIT_OWNER", "bip_audit_owner"),
+    ("reporting.nomis.az.justice.gov.uk", "reporting.nomis.service.justice.gov.uk"),
+  ],
+  "pdaws": [
+    ("-ns ip-10-27-8-141.eu-west-2.compute.internal:6400", "-ns xxxx"),
+    ("-ns ip-10-27-9-93.eu-west-2.compute.internal:6400", "-ns xxxx"),
+  ],
 }
 
 def parse_json_file(filename, replace_list):
