@@ -96,21 +96,20 @@ function Add-PermanentPSModulePath {
   }
 }
 
-function Clear-PendingFileRenameOperations {
-  $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
-  $regKey = "PendingFileRenameOperations"
+function Clear-ServerRebootPending {
+  $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"
 
-  if (Get-ItemProperty -Path $regPath -Name $regKey -ErrorAction SilentlyContinue) {
+  if (Test-Path $regPath) {
     try {
-      Remove-ItemProperty -Path $regPath -Name $regKey -Force -ErrorAction Stop
-      Write-Host "Successfully removed $regKey from the registry."
+      Remove-Item -Path $regPath -Recurse -Force -ErrorAction Stop
+      Write-Host "Successfully removed RebootPending from the registry."
     }
     catch {
-      Write-Warning "Failed to remove $regKey. Error: $_"
+      Write-Warning "Failed to remove RebootPending. Error: $_"
     }
   }
   else {
-    Write-Host "$regKey does not exist in the registry. No action needed."
+    Write-Host "RebootPending does not exist in the registry. No action needed."
   }
 }
 
@@ -235,18 +234,21 @@ $currentOU = ($computerOU.DistinguishedName -split ',', 2)[1]
 if ($currentOU -ne $Config.RDSComputersOU) {
   Write-Host "reboot needed"
   exit 3010
-} else {
+}
+else {
   Write-Host "no reboot required, moving on"
 }
 
 Import-Module ModPlatformRemoteDesktop -Force
+
+Clear-ServerRebootPending  # ensures the issue of 'server requires restart' doesn't appear
 
 Install-RDSWindowsFeatures
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
 
-Clear-PendingFileRenameOperations # ensures the issue of 'server requires restart' doesn't appear
+
 
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
