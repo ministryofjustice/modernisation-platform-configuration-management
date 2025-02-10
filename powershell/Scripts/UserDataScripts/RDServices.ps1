@@ -220,20 +220,17 @@ if ([string]::IsNullOrEmpty($Config.RDSComputersOU)) {
   Write-Error "Config.RDSComputersOU is missing or empty."
   return
 }
-# Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
 
-# do the equivalent for gpupdate /force in powershell
-Install-WindowsFeature GPMC
-Invoke-GPUpdate -Force
 
 $computerOU = Get-ADComputer $env:COMPUTERNAME -Properties DistinguishedName -Credential $ADAdminCredential
 
 $currentOU = ($computerOU.DistinguishedName -split ',', 2)[1]
 
 if ($currentOU -ne $Config.RDSComputersOU) {
+  # Move the computer to the correct OU
+  Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
   Write-Host "reboot needed"
-  exit 3010
+  exit 3010 # only do this once here
 }
 else {
   Write-Host "no reboot required, moving on"
@@ -241,7 +238,7 @@ else {
 
 Import-Module ModPlatformRemoteDesktop -Force
 
-Clear-ServerRebootPending  # ensures the issue of 'server requires restart' doesn't appear
+#Clear-ServerRebootPending  # ensures the issue of 'server requires restart' doesn't appear <-- this doesn't work...
 
 Install-RDSWindowsFeatures
 
