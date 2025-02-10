@@ -34,6 +34,7 @@ function Install-RDSWindowsFeatures {
       Write-Output "Clearing rename operations ahead of installing $_ Feature"
       Clear-PendingFileRenameOperations
       Write-Output "Installing $_ Feature"
+      exit 3010
       Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
     }
   }
