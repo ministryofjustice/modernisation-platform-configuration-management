@@ -230,8 +230,6 @@ Invoke-GPUpdate -Force
 
 Import-Module ModPlatformRemoteDesktop -Force
 
-
-exit 3010 # reboot required here for setting up RDS to work
 Install-RDSWindowsFeatures
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
