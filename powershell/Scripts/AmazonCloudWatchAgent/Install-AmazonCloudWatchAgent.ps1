@@ -31,6 +31,25 @@ if (!(Test-Path $NewConfigPath)) {
   Write-Error "AmazonCloudWatchAgent config not found $NewConfigPath"
 }
 
+# " if ($Action -eq 'fetch-config' -Or $Action -eq 'append-config' -Or $Action -eq 'remove-config') {",
+# $CWAConfig = '{{optionalConfigurationLocation}}'",
+# $secure = (Get-SSMParameterValue -Names SecurePassword -WithDecryption $True).Parameters[0].Value'
+# "     if ('{{optionalConfigurationSource}}' -eq 'ssm') {",
+# "         if ($CWAConfig) {",
+# "             $CWAConfig = \"ssm:${CWAConfig}\"",
+# "         }",
+# "     } else {",
+# "         $CWAConfig = '{{optionalConfigurationSource}}'",
+# "     }",
+# "     if (!$CWAConfig) {",
+# "         Write-Output 'AmazonCloudWatchAgent config should be specified'",
+# "         exit 1",
+# "     }",
+$CustomConfig = (Get-SSMParameterValue -Names cloud-watch-config-windows.Value)
+
+Write-Output "CustomConfig is: $CustomConfig"
+exit 0
+
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
 $CloudWatchInstallEtag=(Invoke-WebRequest $CloudWatchInstallUrl -Method Head -UseBasicParsing).Headers.ETag
 if (!(Test-Path $CloudWatchCtlPath)) {
