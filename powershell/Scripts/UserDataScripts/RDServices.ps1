@@ -71,6 +71,31 @@ $GlobalConfig = @{
   }
 }
 
+function Add-PermanentPSModulePath {
+  param(
+      [Parameter(Mandatory=$true)]
+      [string]$NewPath
+  )
+
+  # Get current Machine PSModulePath from the registry
+  $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+  $currentValue = (Get-ItemProperty -Path $regKey -Name PSModulePath).PSModulePath
+
+  # Check if the path already exists
+  if ($currentValue -split ';' -notcontains $NewPath) {
+      # Add the new path
+      $newValue = $currentValue + ";" + $NewPath
+
+      # Update the registry
+      Set-ItemProperty -Path $regKey -Name PSModulePath -Value $newValue
+      
+      Write-Host "Added $NewPath to system PSModulePath. Changes will take effect after restart or refreshing environment variables."
+  }
+  else {
+      Write-Host "$NewPath is already in PSModulePath"
+  }
+}
+
 function Clear-PendingFileRenameOperations {
   $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
   $regKey = "PendingFileRenameOperations"
@@ -180,6 +205,10 @@ if ($LASTEXITCODE -ne 0) {
   Exit $LASTEXITCODE
 }
 
+$newModulePath = Join-Path $PSScriptRoot "..\..\Modules"
+
+Add-PermanentPSModulePath -NewPath $newModulePath
+
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 # Get the AD Admin credentials
@@ -221,10 +250,8 @@ $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -For
 $creds = New-Object System.Management.Automation.PSCredential($username, $secure_password)
 
 $commands = {
-  param($Config, $localScriptRoot)
-  # import module into context
-  $ModulesRepo = Join-Path $localScriptRoot '..\..\Modules'
-  $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+  param($Config)
+  # has been permanently added to PSModulePath
   Import-Module ModPlatformRemoteDesktop -Force
 
   Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
@@ -243,7 +270,9 @@ $commands = {
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 }
 
-Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config, $PSScriptRoot
+exit 3010 # reboot required here for setting up RDS to work
+
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config  
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
 
