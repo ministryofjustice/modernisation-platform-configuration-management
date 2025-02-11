@@ -31,7 +31,6 @@ function Install-RDSWindowsFeatures {
   )
   $Features | ForEach-Object {
     if (-not (Get-WindowsFeature -Name $_).Installed) {
-      Write-Output "Clearing rename operations ahead of installing $_ Feature"
       Write-Output "Installing $_ Feature"
       Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools -Restart
     }
