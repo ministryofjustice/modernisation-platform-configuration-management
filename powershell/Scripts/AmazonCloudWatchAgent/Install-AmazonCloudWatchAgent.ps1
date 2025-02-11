@@ -48,16 +48,16 @@ else {
         Write-Output "Custom config version is NOT current version, updating."
         Set-Content -Path "$ExistingConfigPath" -Value $CustomConfig.Parameters[0].Value -Force
         Set-Content -Path "$VersionMarker" -Value $CustomConfig.Parameters[0].Version -Force
-        Write-Output "Updating AmazonCloudWatchAgent Config from SSM Parameter"
-        . $CloudWatchCtlPath -m ec2 -a fetch-config -c ssm:$cloud-watch-config-windows -s
+        Write-Output "Updating AmazonCloudWatchAgent Config to Version $CustomConfig.Parameters[0].Version"
+        . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$ExistingConfigPath -s
       }
   } else {
       # File does not exist, handle accordingly
       Write-Output "File does not exist: $VersionMarker, assuming an update is required."
       Set-Content -Path "$ExistingConfigPath" -Value $CustomConfig.Parameters[0].Value -Force
       Set-Content -Path "$VersionMarker" -Value $CustomConfig.Parameters[0].Version -Force
-      Write-Output "Updating AmazonCloudWatchAgent Config from SSM Parameter"
-      . $CloudWatchCtlPath -m ec2 -a fetch-config -c ssm:$cloud-watch-config-windows -s
+      Write-Output "Updating AmazonCloudWatchAgent Config to Version $CustomConfig.Parameters[0].Version"
+      . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$ExistingConfigPath -s
   }
 }
 
