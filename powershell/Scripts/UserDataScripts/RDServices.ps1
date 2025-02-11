@@ -239,10 +239,11 @@ else {
 Import-Module ModPlatformRemoteDesktop -Force
 
 # Check for SingleReboot.txt, create it and reboot if it doesn't exist
-if (Test-Path "$PSScriptRoot/SingleReboot.txt") {
+if (Test-Path "C:/Windows/Temp/SingleReboot.txt") {
   Write-Output "Single reboot file exists, moving on"
-} else {
-  New-Item -ItemType File -Path $PSScriptRoot -Name "SingleReboot.txt" -Force
+}
+else {
+  New-Item -ItemType File -Path "C:/Windows/Temp" -Name "SingleReboot.txt" -Force
   Write-Output "Created SingleReboot file, proceeding to Install-RDSWindowsFeatures after Reboot"
   exit 3010
 }
