@@ -238,7 +238,11 @@ else {
 
 Import-Module ModPlatformRemoteDesktop -Force
 
-#Clear-ServerRebootPending  # ensures the issue of 'server requires restart' doesn't appear <-- this doesn't work...
+# Check for SingleReboot.txt, create it and reboot if it doesn't exist
+if (-not (Test-Path "$PSScriptRoot/SingleReboot.txt")) {
+  New-Item -ItemType File -Path $PSScriptRoot -Name "SingleReboot.txt" -Force
+  exit 3010
+}
 
 Install-RDSWindowsFeatures
 
