@@ -241,6 +241,7 @@ Import-Module ModPlatformRemoteDesktop -Force
 # Check for SingleReboot.txt, create it and reboot if it doesn't exist
 if (-not (Test-Path "$PSScriptRoot/SingleReboot.txt")) {
   New-Item -ItemType File -Path $PSScriptRoot -Name "SingleReboot.txt" -Force
+  Write-Output "Created SingleReboot file, proceeding to Install-RDSWindowsFeatures after Reboot"
   exit 3010
 }
 
@@ -248,8 +249,6 @@ Install-RDSWindowsFeatures
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
-
-
 
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
