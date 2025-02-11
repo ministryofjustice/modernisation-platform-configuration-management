@@ -50,7 +50,7 @@ if (Test-Path -Path $GitRepo) {
    cmd /c "rd $GitRepo /s /q"
 }
 Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
-git clone -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
+git clone --depth 1 -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
 Set-Location -Path $GitRepo
 if ($GitBranch -ne "main") {
   git checkout "${GitBranch}"
