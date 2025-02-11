@@ -1,0 +1,10 @@
+<TargetCollectionExt EXT_NAME="ME$AWSDMS_APPLY_EXCEPTIONS" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$AWSDMS_APPLY_EXCEPTIONS" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="60" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$AWSDMS_APPLY_EXCEPTIONS">
+		<Condition COLUMN_NAME="ERRORS_IN_PREVIOUS_24_HOURS" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% AWS DMS replication errors detected in previous 24 hours." CLEAR_MESSAGE="No AWS DMS replication errors detected in previous 24 hours."/>
+		<Condition COLUMN_NAME="TOTAL_ERRORS" CRITICAL="500" WARNING="100" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% old AWS DMS apply errors recorded.  Please perform housekeeping on the AWSDMS_APPLY_EXCEPTIONS table." CLEAR_MESSAGE="AWS DMS apply errors history size within bounds."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
