@@ -58,7 +58,7 @@ if (!(Test-Path $CloudWatchCtlPath)) {
 
 # Check if cloudwatch already configured on a custom (account specific) config, only update if there's been a change.
 $CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True)
-if ($null -eq $CustomConfig) {write-output "Account specific CustomConfig does not appear to be configured"}
+if ($null -eq $CustomConfig.Parameters.Value) {write-output "Account specific CustomConfig does not appear to be configured"}
 else {
   $ExistingConfigPath="C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\ssm_cloud-watch-config-windows"
   $ConfigPath = split-path $ExistingConfigPath
@@ -84,7 +84,7 @@ else {
 }
 
 # Check if cloudwatch already configured on default config, only update if there's been a change.
-if ($null -eq $CustomConfig) {
+if ($null -eq $CustomConfig.Parameters.Value) {
   if (Test-Path $ExistingConfigPath) {
     if ((Get-FileHash $NewConfigPath).Hash -ne ((Get-FileHash $ExistingConfigPath).Hash)) {
       Write-Output "Updating AmazonCloudWatchAgent Config"
