@@ -1,0 +1,31 @@
+<TargetMetadataExt EXT_NAME="ME$AWSDMS_APPLY_EXCEPTIONS" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$AWSDMS_APPLY_EXCEPTIONS" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$AWSDMS_APPLY_EXCEPTIONS">AWS DMS Apply Exceptions</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$AWSDMS_APPLY_EXCEPTIONS">Number of AWS DMS Apply Exceptions in Previous 24 hours</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="ERRORS_IN_PREVIOUS_24_HOURS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_APPLY_EXCEPTIONSERRORS_IN_PREVIOUS_24_HOURS">Errors in Previous 24 Hours</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="TOTAL_ERRORS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_APPLY_EXCEPTIONSTOTAL_ERRORS">Total Errors</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/awsdms_apply_exceptions.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
