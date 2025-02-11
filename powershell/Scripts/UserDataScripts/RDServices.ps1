@@ -248,7 +248,32 @@ else {
   exit 3010
 }
 
-Install-RDSWindowsFeatures
+if (-not (Get-WindowsFeature -Name "RDS-GATEWAY").Installed) {
+  Write-Output "Installing RDS-GATEWAY"
+  Install-WindowsFeature -Name "RDS-GATEWAY" -IncludeAllSubFeature -IncludeManagementTools
+  Write-Output "Installing RDS-GATEWAY COMPLETE, Rebooting"
+  exit 3010
+}
+
+if (-not ((Get-WindowsFeature -Name "RDS-CONNECTION-BROKER").Installed)) {
+
+  if (Test-Path "C:\Windows\Temp\ConnectionBrokerReboot.txt") {
+    Write-Output "Reboot prior to RDS-CONNECTION-BROKER complete, install RDS-CONNECTION-BROKER"
+    Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
+    Write-Output "Installing RDS-CONNECTION-BROKER COMPLETE, Rebooting"
+  } 
+  else {
+    New-Item -ItemType File -Path "C:\Windows\Temp" -Name "ConnectionBrokerReboot.txt" -Force
+    Write-Output "Created ConnectionBrokerReboot.txt file, will install RDS-CONNECTION-BROKER after reboot"
+    exit 3010
+  }
+}
+
+if (-not (Get-WindowsFeature -Name "RDS-WEB-ACCESS").Installed) {
+  Write-Output "Installing RDS-WEB-ACCESS"
+  Install-WindowsFeature -Name "RDS-WEB-ACCESS" -IncludeAllSubFeature -IncludeManagementTools
+  Write-Output "Completed RDS-WEB-ACCESS installation"
+}
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
