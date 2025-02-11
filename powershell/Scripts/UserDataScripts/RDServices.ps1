@@ -259,7 +259,13 @@ if (-not ((Get-WindowsFeature -Name "RDS-CONNECTION-BROKER").Installed)) {
 
   if (Test-Path "C:\Windows\Temp\ConnectionBrokerReboot.txt") {
     Write-Output "Reboot prior to RDS-CONNECTION-BROKER complete, install RDS-CONNECTION-BROKER"
-    Install-WindowsFeature -Name "RDS-CONNECTION-BROKER" -IncludeAllSubFeature -IncludeManagementTools
+    try {
+      Install-WindowsFeature -Name "RDS-CONNECTION-BROKER" -IncludeAllSubFeature -IncludeManagementTools
+    }
+    catch {
+      Write-Output "Installation of RDS-CONNECTION-BROKER failed: Rebooting system to try again..."
+      exit 3010
+    }
     Write-Output "Installing RDS-CONNECTION-BROKER COMPLETE, Rebooting"
   } 
   else {
