@@ -41,7 +41,7 @@ SELECT
 COALESCE
     SUM(
         CASE
-            WHEN error_time > sysdate - 1090 THEN
+            WHEN error_time > sysdate - 1 THEN
                 1
             ELSE
                 0
