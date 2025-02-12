@@ -255,7 +255,7 @@ foreach ($feature in $features) {
 if (-not ((Get-WindowsFeature -Name $feature).Installed)) {
 
   #if (Test-Path "C:\Windows\Temp\ConnectionBrokerReboot.txt") {
-  Write-Output "Try installing $festure"
+  Write-Output "Try installing $feature"
   try {
     Install-WindowsFeature -Name $feature -IncludeAllSubFeature -IncludeManagementTools
   }
