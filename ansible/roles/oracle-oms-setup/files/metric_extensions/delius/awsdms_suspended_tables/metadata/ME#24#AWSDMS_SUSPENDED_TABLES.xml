@@ -1,0 +1,44 @@
+<TargetMetadataExt EXT_NAME="ME$AWSDMS_SUSPENDED_TABLES" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$AWSDMS_SUSPENDED_TABLES" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$AWSDMS_SUSPENDED_TABLES">AWS DMS Suspended Tables</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$AWSDMS_SUSPENDED_TABLES">Report on suspended DMS replication of tables.</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="TABLE_OWNER" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_SUSPENDED_TABLESTABLE_OWNER">Table Owner</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="TABLE_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_SUSPENDED_TABLESTABLE_NAME">Table Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="TASK_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_SUSPENDED_TABLESTASK_NAME">Task Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="SERVER_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_SUSPENDED_TABLESSERVER_NAME">Server Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="SUSPEND_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$AWSDMS_SUSPENDED_TABLESSUSPEND_MESSAGE">Suspend Message</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/awsdms_suspended_tables.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$AWSDMS_SUSPENDED_TABLES" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$AWSDMS_SUSPENDED_TABLES" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$AWSDMS_SUSPENDED_TABLES">
+		<Condition COLUMN_NAME="SUSPEND_MESSAGE" CRITICAL="undefined" WARNING="undefined" OPERATOR="NE" OCCURRENCES="1" MESSAGE="%value%" CLEAR_MESSAGE="AWS DMS replication of table unsuspended."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
