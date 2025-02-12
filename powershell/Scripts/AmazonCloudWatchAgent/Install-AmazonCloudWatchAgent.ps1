@@ -28,7 +28,7 @@ $NewConfigPath=Join-Path -Path "../../Configs/AmazonCloudWatchAgent" -ChildPath 
 $CloudWatchInstallEtagPath=Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi.etag.json"
 
 if (!(Test-Path $NewConfigPath)) {
-  Write-Error "AmazonCloudWatchAgent config not found $NewConfigPath"
+  Write-Error "AmazonCloudWatchAgent baseline config not found in location: $NewConfigPath"
 }
 
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
@@ -56,22 +56,50 @@ if (!(Test-Path $CloudWatchCtlPath)) {
   }
 }
 
-# Check if cloudwatch already configured. Only update if there's been a change.
-if (Test-Path $ExistingConfigPath) {
-  if ((Get-FileHash $NewConfigPath).Hash -ne ((Get-FileHash $ExistingConfigPath).Hash)) {
-    Write-Output "Updating AmazonCloudWatchAgent Config"
-    . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+# Check if cloudwatch already configured on a custom (account specific) config, only update if there's been a change.
+$CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True)
+if ($null -eq $CustomConfig.Parameters.Value) {write-output "Account specific CustomConfig does not appear to be configured"}
+else {
+  $ExistingConfigPath="C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\ssm_cloud-watch-config-windows"
+  $ConfigPath = split-path $ExistingConfigPath
+  $VersionMarker = "$ConfigPath\version.txt"
+  if (Test-Path -Path $VersionMarker) {
+      If ((Get-Content -Path $VersionMarker) -eq $CustomConfig.Parameters[0].Version) {
+        Write-Output "Custom config is at current version"
+      }
+      Else {
+        Write-Output "Custom config version is NOT current version, updating."
+        Write-Output "Updating AmazonCloudWatchAgent Config Using SSM Parameter Version:" $CustomConfig.Parameters[0].Version
+        . $CloudWatchCtlPath -m ec2 -a fetch-config -c ssm:cloud-watch-config-windows -s
+
+        Set-Content -Path "$VersionMarker" -Value $CustomConfig.Parameters[0].Version -Force
+      }
   } else {
-    $StatusRaw=. $CloudwatchCtlPath -m ec2 -a status
-    $Status="$StatusRaw" | ConvertFrom-Json
-    if ($Status.status -ne "running") {
-      Write-Output "Starting AmazonCloudWatchAgent"
-      . $CloudwatchCtlPath -m ec2 -a start
-    } else {
-      Write-Output "AmazonCloudWatchAgent already running and configured"
-    }
+      Write-Output "File does not exist: $VersionMarker, assuming an update is required."
+      Write-Output "Updating AmazonCloudWatchAgent Config Using SSM Parameter Version:" $CustomConfig.Parameters[0].Version
+      . $CloudWatchCtlPath -m ec2 -a fetch-config -c ssm:cloud-watch-config-windows -s
+      Set-Content -Path "$VersionMarker" -Value $CustomConfig.Parameters[0].Version -Force
   }
-} else {
-  Write-Output "Configuring AmazonCloudWatchAgent"
-  . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+}
+
+# Check if cloudwatch already configured on default config, only update if there's been a change.
+if ($null -eq $CustomConfig.Parameters.Value) {
+  if (Test-Path $ExistingConfigPath) {
+    if ((Get-FileHash $NewConfigPath).Hash -ne ((Get-FileHash $ExistingConfigPath).Hash)) {
+      Write-Output "Updating AmazonCloudWatchAgent Config"
+      . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+    } else {
+      $StatusRaw=. $CloudwatchCtlPath -m ec2 -a status
+      $Status="$StatusRaw" | ConvertFrom-Json
+      if ($Status.status -ne "running") {
+        Write-Output "Starting AmazonCloudWatchAgent"
+        . $CloudwatchCtlPath -m ec2 -a start
+      } else {
+        Write-Output "AmazonCloudWatchAgent already running and configured"
+      }
+    }
+  } else {
+    Write-Output "Configuring AmazonCloudWatchAgent"
+    . $CloudWatchCtlPath -m ec2 -a fetch-config -c file:$NewConfigPath -s
+  }
 }
