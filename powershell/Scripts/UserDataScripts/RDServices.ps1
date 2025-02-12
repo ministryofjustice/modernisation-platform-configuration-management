@@ -239,34 +239,31 @@ else {
 Import-Module ModPlatformRemoteDesktop -Force
 
 # Check for SingleReboot.txt, create it and reboot if it doesn't exist
-if (Test-Path "C:/Windows/Temp/SingleReboot.txt") {
-  Write-Output "Single reboot file exists, moving on"
-}
-else {
-  New-Item -ItemType File -Path "C:/Windows/Temp" -Name "SingleReboot.txt" -Force
-  Write-Output "Created SingleReboot file, proceeding to Install-RDSWindowsFeatures after Reboot"
-  exit 3010
-}
+# if (Test-Path "C:/Windows/Temp/SingleReboot.txt") {
+#   Write-Output "Single reboot file exists, moving on"
+# }
+# else {
+#   New-Item -ItemType File -Path "C:/Windows/Temp" -Name "SingleReboot.txt" -Force
+#   Write-Output "Created SingleReboot file, proceeding to Install-RDSWindowsFeatures after Reboot"
+#   exit 3010
+# }
 
-if (-not (Get-WindowsFeature -Name "RDS-GATEWAY").Installed) {
-  Write-Output "Installing RDS-GATEWAY"
-  Install-WindowsFeature -Name "RDS-GATEWAY" -IncludeAllSubFeature -IncludeManagementTools
-  Write-Output "Installing RDS-GATEWAY COMPLETE, Rebooting"
-  exit 3010
-}
+$features = @("RDS-CONNECTION-BROKER", "RDS-GATEWAY", "RDS-WEB-ACCESS")
 
-if (-not ((Get-WindowsFeature -Name "RDS-CONNECTION-BROKER").Installed)) {
+foreach ($feature in $features) {
+
+if (-not ((Get-WindowsFeature -Name $feature).Installed)) {
 
   #if (Test-Path "C:\Windows\Temp\ConnectionBrokerReboot.txt") {
-  Write-Output "Reboot prior to RDS-CONNECTION-BROKER complete, install RDS-CONNECTION-BROKER"
+  Write-Output "Try installing $festure"
   try {
-    Install-WindowsFeature -Name "RDS-CONNECTION-BROKER" -IncludeAllSubFeature -IncludeManagementTools
+    Install-WindowsFeature -Name $feature -IncludeAllSubFeature -IncludeManagementTools
   }
   catch {
-    Write-Output "Installation of RDS-CONNECTION-BROKER failed: Rebooting system to try again..."
+    Write-Output "Installation of $feature failed: Rebooting system to try again..."
     exit 3010
   }
-  Write-Output "Installing RDS-CONNECTION-BROKER COMPLETE, Rebooting"
+  Write-Output "Installing $feature COMPLETE"
   # } 
   # else {
   #   New-Item -ItemType File -Path "C:\Windows\Temp" -Name "ConnectionBrokerReboot.txt" -Force
@@ -274,12 +271,20 @@ if (-not ((Get-WindowsFeature -Name "RDS-CONNECTION-BROKER").Installed)) {
   #   exit 3010
   # }
 }
-
-if (-not (Get-WindowsFeature -Name "RDS-WEB-ACCESS").Installed) {
-  Write-Output "Installing RDS-WEB-ACCESS"
-  Install-WindowsFeature -Name "RDS-WEB-ACCESS" -IncludeAllSubFeature -IncludeManagementTools
-  Write-Output "Completed RDS-WEB-ACCESS installation"
 }
+
+# if (-not (Get-WindowsFeature -Name "RDS-GATEWAY").Installed) {
+#   Write-Output "Installing RDS-GATEWAY"
+#   Install-WindowsFeature -Name "RDS-GATEWAY" -IncludeAllSubFeature -IncludeManagementTools
+#   Write-Output "Installing RDS-GATEWAY COMPLETE, Rebooting"
+#   exit 3010
+# }
+
+# if (-not (Get-WindowsFeature -Name "RDS-WEB-ACCESS").Installed) {
+#   Write-Output "Installing RDS-WEB-ACCESS"
+#   Install-WindowsFeature -Name "RDS-WEB-ACCESS" -IncludeAllSubFeature -IncludeManagementTools
+#   Write-Output "Completed RDS-WEB-ACCESS installation"
+# }
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
