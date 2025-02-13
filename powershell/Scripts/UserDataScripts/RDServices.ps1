@@ -235,13 +235,9 @@ else {
   Write-Host "no reboot required, moving on"
 }
 
-Import-Module ModPlatformRemoteDesktop -Force
-
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
 Enable-PSRemoting -Force
-
-Install-RDSWindowsFeatures
 
 # FIXME: -> this SecretId needs to be changeable 
 $svc_nart_password = Get-SecretValue -SecretId "/microsoft/AD/azure.noms.root/shared-passwords" -SecretKey "svc_rds" -ErrorAction SilentlyContinue
@@ -255,6 +251,13 @@ $commands = {
   param($Config)
   # has been permanently added to PSModulePath
   Import-Module ModPlatformRemoteDesktop -Force
+
+  Install-RDSWindowsFeatures
+
+  Write-Output $Config.ConnectionBroker
+  Write-Output $Config.SessionHostServers
+  Write-Output $Config.WebAccessServer
+  [bool] (net session 2>$null) # returns true if running as admin
 
   Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
   Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
