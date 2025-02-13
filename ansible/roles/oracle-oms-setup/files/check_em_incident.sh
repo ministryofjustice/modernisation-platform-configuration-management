@@ -13,7 +13,7 @@ ORAENV_ASK=YES
 LOOKBACK_HOURS=${LOOKBACK_HOURS:=1}
 
 REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
-echo "REGION:  ${REGION}"
+
 CLEARED_INCIDENT_FILE=$(dirname $0)/cleared_incident_file
 if [[ ! -f ${CLEARED_INCIDENT_FILE} ]];
 then
