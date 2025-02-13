@@ -54,7 +54,7 @@ function suppress_incident
 {
 INCIDENT_ID=$1
 connect_to_emcli
-# We use a special dummy date (2 January 3456) which will not be in normal use 
+# We use a special dummy date (2 January 3456) which will not be in normal use
 # to identify suppressions which were created by this script so that they can
 # be unsuppressed later, once monitoring resumes
 ${EMCLI} suppress_incident -incident_id=${INCIDENT_ID} -suppress_type="UNTIL_SPECIFIED_DATE" -date="01023456"
@@ -103,10 +103,10 @@ for INCIDENT_NUM in $(cat ${CLEARED_INCIDENT_FILE});
 do
    if [[ "${INCIDENT_LIST}" =~ .*";${INCIDENT_NUM};".* ]];
    then
-      : 
+      :
    else
       echo "Incident ${INCIDENT_NUM} is cleared and no longer in scope."
-      sed -i "/^${INCIDENT_NUM}$/d" ${CLEARED_INCIDENT_FILE} 
+      sed -i "/^${INCIDENT_NUM}$/d" ${CLEARED_INCIDENT_FILE}
    fi
 done
 }
@@ -120,8 +120,8 @@ function create_suppression_list()
 #   SUPPRESSION_LIST is a list of regular expressions for targets
 #   which are not within their monitoring schedule. For these targets
 #   incidents of certain types are deleted (e.g. alert log errors),
-#   whereas other incidents types (e.g. target down) are simply suppressed 
-#   until the dummy date of 02-Jan-3456.   They are then unsuppressed once 
+#   whereas other incidents types (e.g. target down) are simply suppressed
+#   until the dummy date of 02-Jan-3456.   They are then unsuppressed once
 #   back within the monitoring schedule.   This is to allow notification
 #   of stateful incidents when monitoring restarts if they have not been
 #   cleared in the meantime.
@@ -152,7 +152,7 @@ do
         export SCHEDULE_LINE
         SECONDS_TO_WITHIN_SCHEDULE_EXPR=$(ksh93 -c 'printf "(%(%s)T - %(%s)T)" "${SCHEDULE_LINE}" now')
         SECONDS_TO_WITHIN_SCHEDULE=$(echo "${SECONDS_TO_WITHIN_SCHEDULE_EXPR}" | bc )
-        if [[ ${SECONDS_TO_WITHIN_SCHEDULE} -gt 60 ]];
+        if [[ ${SECONDS_TO_WITHIN_SCHEDULE} -gt 180 ]];
         then
            echo "Suppressing $TARGET (Outside Monitoring Schedule $SCHEDULE_LINE)"
            SUPPRESSION_LIST="$SUPPRESSION_LIST|$TARGET"
@@ -168,19 +168,15 @@ function suppress_excluded_hosts
 #  Where hosts are not in a non-monitoring period (i.e. during normal hours)
 #  they may also be suppressed from monitoring if a known period of maintenance is
 #  in progress, such as password rotation.
-#  Hosts which are under maintenance update an SSM Parameter  /${HMPPS_ENVIRONMENT}/engineering/oem_monitoring_excluded_hosts
+#  Hosts which are under maintenance update the comment on the host target property in OEM
 #  to log that they should be temporarily excluded from monitoring.
 #  This can be acheived by appending these hosts to the existing SUPPRESSION_LIST so they are handled
 #  in the same way as out-of-hours notifications (i.e. an alert can still be raised if an error
 #  state still exists after the exclusion period expires).
-#  Exclusions are records as a CSV list of host (expiry date) pairs, where the expiry date
-#  is the time where the maintenance is expected to be ended and exclusion no longer applies.
-#  (Note, the maintenance itself can also remove these exclusions if it completes before the expiry date)
-#
 
 # We get the list of excluded hosts from OEM for where Host Comment Property is Not null
-ALL_EXCLUDED_HOSTS=NONE
-
+connect_to_emcli
+ALL_EXCLUDED_HOSTS=$(${EMCLI} get_targets -format="name:csv" | awk -F, '$3 == "host" {print $4}' | xargs -I {} ${EMCLI} list -resource="TargetProperties" -search="TARGET_NAME='{}'" -search="PROPERTY_NAME='orcl_gtp_comment'" -column="TARGET_NAME,PROPERTY_VALUE" -script -noheader | grep -E "\w+\s+Excluded from monitoring")
 
 # If no currently excluded hosts then return without action
 if [[ -z "${ALL_EXCLUDED_HOSTS}" || "${ALL_EXCLUDED_HOSTS}" == "NONE" ]];
@@ -197,8 +193,8 @@ declare -A UNEXPIRED_EXCLUDED_HOSTS
 
 while IFS= read LINE;
 do
-   EXCLUDED_HOST=$(echo $LINE | awk -F\( '{print $1}')
-   EXCLUDE_EXPIRY=$(echo $LINE | sed 's/(.*:/(/' | awk -F\( '{print $2}' | sed 's/)$//' | sed 's/-//g' )
+   EXCLUDED_HOST=$(echo $LINE | awk '{print $1}')
+   EXCLUDE_EXPIRY=$(echo $LINE | awk '{print $NF}' | sed 's/-//g' )
 
    # If the exclusion expiry date is in the future, consider for inclusion
    if [[ ${EXCLUDE_EXPIRY} -gt ${CURRENT_TIMESTAMP} ]];
@@ -209,6 +205,11 @@ do
       then
          UNEXPIRED_EXCLUDED_HOSTS[${EXCLUDED_HOST}]=
       fi
+   else
+      # If the exclusion expiry date is in the past, this is probably due to whichever Ansible
+      # job which set the exclusion having failed before it got round to removing
+      # it.  Therefore we can tidy it up now and remove the expired exclusion comment.
+      ${EMCLI} set_target_property_value -property_records="${EXCLUDED_HOST}:host:Comment:"
    fi
 done <<< "${ALL_EXCLUDED_HOSTS}"
 
@@ -255,7 +256,7 @@ SELECT
           THEN TRIM(REPLACE(SUBSTR(i.target_name,1,INSTR(i.target_name,' ')),'*',''))
                ||'=>'||    -- If target is a database system then consider it blacked-out if any of its constituent hosts are blacked-out
                (SELECT LISTAGG(DISTINCT mt.host_name,';') OVER (PARTITION BY incident_num)
-                FROM  sysman.mgmt_target_memberships  mtm 
+                FROM  sysman.mgmt_target_memberships  mtm
                 LEFT JOIN sysman.mgmt_targets mt
                 ON mtm.member_target_name = mt.target_name
                 WHERE TRIM(REPLACE(SUBSTR(i.target_name,1,INSTR(i.target_name,' ')),'*','')) = mtm.composite_target_name
@@ -292,7 +293,7 @@ SELECT
                WHERE  incident_id = eia.issue_id
                AND    eia.annotation_msg LIKE 'Slack alert sent by script%') IS NULL THEN 'N'
     ELSE 'Y'
-    END||'|'||  
+    END||'|'||
     blackout_deletable_incident||'|'||
     CASE WHEN is_adr_aware = 1
     THEN 'Y' ELSE 'N'
@@ -435,8 +436,8 @@ FROM
                         'TNS_ERRORS:tnserrmsg'
                         )
                         AND open_status > 0) non_deletable_events ON       ei.incident_id = non_deletable_events.incident_id
-        WHERE ei.last_updated_date > CAST(SYSTIMESTAMP AT TIME ZONE 'UTC' - INTERVAL '${LOOKBACK_HOURS}' HOUR AS DATE) 
-        AND NOT ei.is_suppressed = 1 
+        WHERE ei.last_updated_date > CAST(SYSTIMESTAMP AT TIME ZONE 'UTC' - INTERVAL '${LOOKBACK_HOURS}' HOUR AS DATE)
+        AND NOT ei.is_suppressed = 1
         AND NOT EXISTS (SELECT 1
                         FROM   sysman.em_issues_annotations eia
                         WHERE  ei.incident_id = eia.issue_id
@@ -499,7 +500,7 @@ while read line; do
         if [[ "${SUPPRESSED}" == "Y" ]];
         then
            # If incident has been suppressed from a previous blackout,
-           # unsuppress it now but do not send a notification - 
+           # unsuppress it now but do not send a notification -
            # unsuppressing will trigger a change to the last updated
            # date so it will be notified in the subsequent run of this script
            if [[ "${EMOJI_ICON}" != ":green_circle:" ]];
@@ -512,7 +513,7 @@ while read line; do
               echo "Deleting incident ${INCIDENT_NUM}"
               delete_incident ${INCIDENT_NUM} ${SUPPRESSED} ${RESOLVED}
            fi
-        else 
+        else
            if [[ "${EMOJI_ICON}" == ":green_circle:" && "${ALERT_SENT}" == "Y" ]];
            then
               # Occassionally incidents resolve themselves so quickly
@@ -553,10 +554,10 @@ while read line; do
               fi
            else
               echo "No alert required for cleared transient incident ${INCIDENT_NUM}"
-           fi 
+           fi
         fi
      else
-        # If monitoring is disabled (or in blackout), determine if we can 
+        # If monitoring is disabled (or in blackout), determine if we can
         # simply delete the incident or if it needs to be suppressed until monitoring is enabled again.
         if [[ "$BLACKOUT_DELETABLE_INCIDENT" == "Y" || "${MONITORING}" == "N" || "${EMOJI_ICON}" == ":green_circle:" ]];
         then
