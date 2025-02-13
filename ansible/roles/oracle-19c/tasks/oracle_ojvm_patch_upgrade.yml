@@ -17,6 +17,7 @@
         export ORACLE_SID=+ASM
         export ORAENV_ASK=NO
         . oraenv
+        rm -f /tmp/instances.txt
         srvctl stop home -oraclehome {{ database_home }} -statefile /tmp/instances.txt
 
     - name: Deploy OJVM Patch
@@ -65,8 +66,10 @@
         export ORACLE_SID=+ASM
         export ORAENV_ASK=NO
         . oraenv
+        rm -f /tmp/instances2.txt
         srvctl stop home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
         srvctl start home -oraclehome {{ database_home }} -statefile /tmp/instances2.txt
+        rm -f /tmp/instances2.txt
 
   #block
   when: ojvm_patch_version_check.stdout == "0"
