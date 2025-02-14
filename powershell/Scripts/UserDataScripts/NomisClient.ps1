@@ -18,15 +18,21 @@ $GlobalConfig = @{
     "IECompatibilityModeSiteList" = @(
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "dev-nomis-web19c-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "qa11g-nomis-web12-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "IETrustedDomains" = @(
-      "*.nomis.service.justice.gov.uk"
+      "*.nomis.service.justice.gov.uk",
+      "*.development.service.justice.gov.uk"
     )
+    "InstallJava8" = $true
     "NomisShortcuts" = @{
       "Prison-Nomis DEV" = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis QA11G" = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis QA11R" = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "Prison-Nomis WEB19C-B" = "https://dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     }
   }
   "nomis-test" = @{
@@ -51,6 +57,7 @@ $GlobalConfig = @{
     "IETrustedDomains" = @(
       "*.nomis.service.justice.gov.uk"
     )
+    "InstallJava8" = $false
     "NomisShortcuts" = @{
       "Prison-Nomis T1" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis T2" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
@@ -82,6 +89,7 @@ $GlobalConfig = @{
     "IETrustedDomains" = @(
       "*.nomis.service.justice.gov.uk"
     )
+    "InstallJava8" = $false
     "NomisShortcuts" = @{
       "Prison-Nomis Lsast"           = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "Prison-Nomis Preproduction"   = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
@@ -109,6 +117,7 @@ $GlobalConfig = @{
     "IETrustedDomains" = @(
       "*.nomis.service.justice.gov.uk"
     )
+    "InstallJava8" = $false
     "NomisShortcuts" = @{
       "Prison-Nomis" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       "LB prod-nomis-web-a Nomis" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
@@ -187,6 +196,27 @@ function Add-Java6 {
   }
 }
 
+function Add-Java8 {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  if ($Config.InstallJava8 -ne $true) {
+    Write-Output "Skipping JRE8 install"
+  } elseif (Test-Path "C:\Program Files (x86)\Java\jre1.8.0_351") {
+    Write-Output "JRE8 already installed"
+  } else {
+    $TempPath = [System.IO.Path]::GetTempPath()
+    Write-Output "Installing JRE8"
+    Set-Location -Path $TempPath
+    Write-Output " - Downloding installer from S3 bucket"
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/jre-8u351-windows-i586.exe") -File ".\jre-8u351-windows-i586.exe" | Out-Null
+    Write-Output " - Installing JRE8 jre8-install.log file in $TempPath"
+    Start-Process -Wait -Verbose -FilePath .\jre-8u351-windows-i586.exe -ArgumentList "/s", "/L .\jre8-install.log"
+  }
+}
+
 function Add-Java6NomisWebUtils {
   [CmdletBinding()]
   param (
@@ -225,6 +255,11 @@ function Add-JavaDeployment {
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.config") -File "$DeploymentFolder\deployment.config" | Out-Null
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/deployment.properties") -File "$DeploymentFolder\deployment.properties" | Out-Null
   Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/trusted.certs") -File "$DeploymentFolder\trusted.certs" | Out-Null
+  if ($Config.InstallJava8 -eq $true) {
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/DeploymentRuleSet.jar") -File "$DeploymentFolder\DeploymentRuleSet.jar" | Out-Null
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/moj-hmpps-software-ca01.pfx") -File "$DeploymentFolder\moj-hmpps-software-ca01.pfx" | Out-Null
+    Read-S3Object -BucketName $Config.JavaS3Bucket -Key ($Config.JavaS3Folder + "/moj-hmpps-root-ca01.pfx") -File "$DeploymentFolder\moj-hmpps-root-ca01.pfx" | Out-Null
+  }
 }
 
 function Remove-JavaUpdateCheck {
@@ -515,7 +550,7 @@ if ($null -ne $ADConfig) {
   $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
   if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {
     Exit 3010 # triggers reboot if running from SSM Doc
-  } 
+  }
 } else {
   Write-Output "No domain-name tag found so apply Local Group Policy"
   . .\LocalGroupPolicy.ps1
@@ -536,7 +571,7 @@ Add-SQLDeveloper $Config
 Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
-Get-PowerShellCommandFromTag -Command Install-WindowsFeature 
+Get-PowerShellCommandFromTag -Command Install-WindowsFeature
 Add-MicrosoftOffice $Config
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
