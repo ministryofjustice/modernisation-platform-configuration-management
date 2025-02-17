@@ -32,10 +32,7 @@ function Install-RDSWindowsFeatures {
   $Features | ForEach-Object {
     if (-not (Get-WindowsFeature -Name $_).Installed) {
       Write-Output "Installing $_ Feature"
-      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools -Restart
-      if ( $_ -eq "RDS-GATEWAY") {
-        exit 3010
-      }
+      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
     }
   }
 }
