@@ -208,32 +208,32 @@ $newModulePath = Join-Path $PSScriptRoot "..\..\Modules"
 
 Add-PermanentPSModulePath -NewPath $newModulePath
 
-Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-# Get the AD Admin credentials
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+# Import-Module ModPlatformAD -Force
+# $ADConfig = Get-ModPlatformADConfig
+# # Get the AD Admin credentials
+# $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 
 # Get Config values
 $Config = Get-Config
 # Check if RDSComputersOU is populated
-if ([string]::IsNullOrEmpty($Config.RDSComputersOU)) {
-  Write-Error "Config.RDSComputersOU is missing or empty."
-  return
-}
+# if ([string]::IsNullOrEmpty($Config.RDSComputersOU)) {
+#   Write-Error "Config.RDSComputersOU is missing or empty."
+#   return
+# }
 
-$computerOU = Get-ADComputer $env:COMPUTERNAME -Properties DistinguishedName -Credential $ADAdminCredential
+# $computerOU = Get-ADComputer $env:COMPUTERNAME -Properties DistinguishedName -Credential $ADAdminCredential
 
-$currentOU = ($computerOU.DistinguishedName -split ',', 2)[1]
+# $currentOU = ($computerOU.DistinguishedName -split ',', 2)[1]
 
-if ($currentOU -ne $Config.RDSComputersOU) {
-  # Move the computer to the correct OU
-  Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
-  Write-Host "reboot needed"
-  exit 3010 # only do this once here
-}
-else {
-  Write-Host "no reboot required, moving on"
-}
+# if ($currentOU -ne $Config.RDSComputersOU) {
+#   # Move the computer to the correct OU
+#   Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.RDSComputersOU)
+#   Write-Host "reboot needed"
+#   exit 3010 # only do this once here
+# }
+# else {
+#   Write-Host "no reboot required, moving on"
+# }
 
 Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
 Enable-WSManCredSSP -Role Client -DelegateComputer "*" -Force
