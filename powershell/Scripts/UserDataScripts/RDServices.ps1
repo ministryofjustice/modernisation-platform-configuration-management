@@ -275,9 +275,9 @@ $commands = {
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 }
 
-Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config  
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $creds -ArgumentList $Config 
 
-. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+# . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1 comment this out 'cause it keeps breaking
 
 if ($LASTEXITCODE -ne 0) {
   Exit $LASTEXITCODE
