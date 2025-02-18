@@ -39,7 +39,7 @@ function Remove-ItemWithRetry {
       Write-Output "$Path removed successfully on attempt $RemovalRetryCount."
     }
     catch {
-      Write-Output "Attempt to remove $Path on attempt $RemovalRetryCount failed. Retrying in $RetryDelaySeconds seconds..."
+      Write-Output "Attempting to remove $Path on attempt $RemovalRetryCount failed. Retrying in $RetryDelaySeconds seconds..."
       Start-Sleep -Seconds $RetryDelaySeconds
     }
   }
@@ -87,14 +87,14 @@ elseif ($UpdateAgent) {
 
 # Check if cloudwatch already configured on a custom (account specific) config, only update if there's been a change.
 $CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True)
-if ($null -eq $CustomConfig.Parameters.Value) { write-output "Account specific CustomConfig does not appear to be configured" }
+if ($null -eq $CustomConfig.Parameters.Value) { write-output "Account specific CustomConfig not configured, using baseline." }
 else {
   $ExistingConfigPath = "C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\ssm_cloud-watch-config-windows"
   $ConfigPath = split-path $ExistingConfigPath
   $VersionMarker = "$ConfigPath\version.txt"
   if (Test-Path -Path $VersionMarker) {
     If ((Get-Content -Path $VersionMarker) -eq $CustomConfig.Parameters[0].Version) {
-      Write-Output "Custom config is at current version"
+      Write-Output "Custom config is at current version"  $CustomConfig.Parameters[0].Version
     }
     Else {
       Write-Output "Custom config version is NOT current version, updating."
