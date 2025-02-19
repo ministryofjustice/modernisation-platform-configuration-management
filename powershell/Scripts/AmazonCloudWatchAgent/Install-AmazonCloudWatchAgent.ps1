@@ -94,10 +94,14 @@ if (!(Test-Path $NewConfigPath)) {
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
 $CloudWatchInstallEtag = (Invoke-WebRequest $CloudWatchInstallUrl -Method Head -UseBasicParsing).Headers.ETag
 if (!(Test-Path $CloudWatchCtlPath)) {
-  Write-Output "Installing AmazonCloudWatchAgent"
+  Write-Output "Existing AmazonCloudWatchAgent Installation Not Found. Installing Latest Version"
   $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
   Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
-  if (Test-FileAccessibility -FilePath $LocalMsiPath) {
+
+  $accessResult = Test-FileAccessibility -FilePath $LocalMsiPath
+  Write-Output $accessResult
+  
+  if ($accessResult) {
     Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
   }
   Remove-ItemWithRetry -Path $LocalMsiPath
@@ -109,7 +113,7 @@ elseif ($UpdateAgent) {
     $CloudWatchInstallLastEtag = Get-Content -Path $CloudWatchInstallEtagPath
   }
   if ($CloudWatchInstallLastEtag -ne $CloudWatchInstallEtag) {
-    Write-Output "Upgrading AmazonCloudWatchAgent"
+    Write-Output "Existing AmazonCloudWatchAgent Installation Outdated. Installing Latest Version"
     $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
     Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
     Stop-Service AmazonCloudWatchAgent
