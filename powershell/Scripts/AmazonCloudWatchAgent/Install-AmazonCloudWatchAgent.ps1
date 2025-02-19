@@ -99,7 +99,6 @@ if (!(Test-Path $CloudWatchCtlPath)) {
   Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
 
   $accessResult = Test-FileAccessibility -FilePath $LocalMsiPath
-  Write-Output $accessResult
   if ($accessResult) {
     Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
   }
@@ -118,7 +117,6 @@ elseif ($UpdateAgent) {
     Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
     Stop-Service AmazonCloudWatchAgent
     $accessResult = Test-FileAccessibility -FilePath $LocalMsiPath
-    Write-Output $accessResult
     if ($accessResult) {
       Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
     }
