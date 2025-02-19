@@ -66,7 +66,7 @@ function Test-FileAccessibility {
       $fileStream = [System.IO.File]::Open($FilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
       $fileStream.Close()
       $success = $true
-      Write-Output "File $FilePath is accessible, on $retryCount attempt. Proceeding with installation."
+      Write-Output "File $FilePath is accessible, on $retryCount attempt, we can proceed with installation."
     }
     catch {
       Write-Output "Attempt $retryCount File is not accessible. Retrying in $DelaySeconds seconds..."
@@ -94,16 +94,16 @@ if (!(Test-Path $NewConfigPath)) {
 # Avoid re-downloading the install file each time script is run. Record ETag of the file.
 $CloudWatchInstallEtag = (Invoke-WebRequest $CloudWatchInstallUrl -Method Head -UseBasicParsing).Headers.ETag
 if (!(Test-Path $CloudWatchCtlPath)) {
-  Write-Output "Existing AmazonCloudWatchAgent Installation Not Found. Installing Latest Version"
+  Write-Output "Existing AmazonCloudWatchAgent installation not found, installing latest version."
   $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
   Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
 
   $accessResult = Test-FileAccessibility -FilePath $LocalMsiPath
   Write-Output $accessResult
-  
   if ($accessResult) {
     Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
   }
+
   Remove-ItemWithRetry -Path $LocalMsiPath
   $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
 }
@@ -113,11 +113,13 @@ elseif ($UpdateAgent) {
     $CloudWatchInstallLastEtag = Get-Content -Path $CloudWatchInstallEtagPath
   }
   if ($CloudWatchInstallLastEtag -ne $CloudWatchInstallEtag) {
-    Write-Output "Existing AmazonCloudWatchAgent Installation Outdated. Installing Latest Version"
+    Write-Output "Existing AmazonCloudWatchAgent installation outdated, installing latest version."
     $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
     Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
     Stop-Service AmazonCloudWatchAgent
-    if (Test-FileAccessibility -FilePath $LocalMsiPath) {
+    $accessResult = Test-FileAccessibility -FilePath $LocalMsiPath
+    Write-Output $accessResult
+    if ($accessResult) {
       Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
     }
     Remove-ItemWithRetry -Path $LocalMsiPath
