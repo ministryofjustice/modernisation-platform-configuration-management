@@ -24,30 +24,62 @@ param (
 function Remove-ItemWithRetry {
   param (
     [string]$Path,
-    [int]$RemovalMaxRetries = 3,
-    [int]$RetryDelaySeconds = 3
+    [int]$MaxRetries = 4,
+    [int]$DelaySeconds = 3
   )
 
-  $RemovalRetryCount = 0
-  $RemovalSuccess = $false
+  $retryCount = 0
+  $success = $false
 
-  while ($RemovalRetryCount -lt $RemovalMaxRetries -and -not $RemovalSuccess) {
+  while ($retryCount -lt $MaxRetries -and -not $success) {
     try {
-      $RemovalRetryCount++
+      $retryCount++
       Remove-Item -Path $Path -ErrorAction Stop -Force
-      $RemovalSuccess = $true
-      Write-Output "$Path removed successfully on attempt $RemovalRetryCount."
+      $success = $true
+      Write-Output "$Path removed successfully on attempt $retryCount."
     }
     catch {
-      Write-Output "Attempting to remove $Path on attempt $RemovalRetryCount failed. Retrying in $RetryDelaySeconds seconds..."
-      Start-Sleep -Seconds $RetryDelaySeconds
+      Write-Output "Attempting to remove $Path on attempt $retryCount failed. Retrying in $DelaySeconds seconds..."
+      Start-Sleep -Seconds $DelaySeconds
     }
   }
 
-  if (-not $RemovalSuccess) {
-    Write-Output "Failed to remove $Path after $RemovalMaxRetries attempts."
+  if (-not $success) {
+    Write-Output "Failed to remove $Path after $MaxRetries attempts."
   }
 }
+
+function Test-FileAccessibility {
+  param (
+    [string]$FilePath,
+    [int]$MaxRetries = 4,
+    [int]$DelaySeconds = 3
+  )
+
+  $retryCount = 0
+  $success = $false
+
+  while ($retryCount -lt $MaxRetries -and -not $success) {
+    try {
+      $retryCount++
+      # Attempt to open the file for reading
+      $fileStream = [System.IO.File]::Open($FilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+      $fileStream.Close()
+      $success = $true
+      Write-Output "File $FilePath is accessible, on $retryCount attempt. Proceeding with installation."
+    }
+    catch {
+      Write-Output "Attempt $retryCount File is not accessible. Retrying in $DelaySeconds seconds..."
+      Start-Sleep -Seconds $
+    }
+  }
+
+  if (-not $success) {
+    Write-Output "Failed to access $FilePath after $MaxRetries attempts at $DelaySeconds intervals."
+  }
+  return $success
+}
+
 
 $CloudWatchCtlPath = "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1"
 $ExistingConfigPath = "C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\file_default.json"
@@ -65,7 +97,9 @@ if (!(Test-Path $CloudWatchCtlPath)) {
   Write-Output "Installing AmazonCloudWatchAgent"
   $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
   Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
-  msiexec /i $LocalMsiPath /quiet
+  if (Test-FileAccessibility -FilePath $LocalMsiPath) {
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
+  }
   Remove-ItemWithRetry -Path $LocalMsiPath
   $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
 }
@@ -79,7 +113,9 @@ elseif ($UpdateAgent) {
     $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "amazon-cloudwatch-agent.msi"
     Invoke-WebRequest $CloudWatchInstallUrl -OutFile $LocalMsiPath -UseBasicParsing
     Stop-Service AmazonCloudWatchAgent
-    msiexec /i $LocalMsiPath /quiet
+    if (Test-FileAccessibility -FilePath $LocalMsiPath) {
+      Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
+    }
     Remove-ItemWithRetry -Path $LocalMsiPath
     $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
   }
