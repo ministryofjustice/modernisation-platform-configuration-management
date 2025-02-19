@@ -75,7 +75,7 @@ function Test-FileAccessibility {
   }
 
   if (-not $success) {
-    Write-Output "Failed to access $FilePath after $MaxRetries attempts at $DelaySeconds intervals."
+    Write-Output "Failed to access $FilePath after $MaxRetries attempts at $DelaySeconds second intervals."
   }
   return $success
 }
