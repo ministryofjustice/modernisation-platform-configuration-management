@@ -19,3 +19,13 @@ PPBOSYS =
    (SERVICE_NAME = BISYS_TAF)
   )
  )
+
+OASYSREP =
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.hmpps-preproduction.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = OASYSREP_TAF)
+  )
+ )
