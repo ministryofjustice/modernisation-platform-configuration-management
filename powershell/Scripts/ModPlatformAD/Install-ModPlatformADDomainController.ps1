@@ -38,7 +38,7 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
 }
 
 $DFSReplicationStatus = Get-Service "DFS Replication" -ErrorAction SilentlyContinue
-if ($DFSReplicationStatus -eq $null) {
+if ($null -eq $DFSReplicationStatus) {
   $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   $ADSafeModeAdministratorPassword = Get-ModPlatformADSafeModeAdministratorPassword -ModPlatformADConfig $ADConfig -ModPlatformADSecret $ADSecret
   Install-WindowsFeature -Name AD-Domain-Services -IncludeAllSubFeature -IncludeManagementTools
