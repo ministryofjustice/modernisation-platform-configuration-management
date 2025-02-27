@@ -1,0 +1,23 @@
+---
+- name: Stop Agent
+  block:
+    - name: Check status of oem Agent
+      ansible.builtin.shell: |
+        {{ emctl }} status agent | grep -c "^Agent is Running and Ready" | cat
+      register: agent_running
+
+    - name: Stop oem agent
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ emctl }} stop agent
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 20
+      when: agent_running.stdout == "1"
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ agent_env }}"

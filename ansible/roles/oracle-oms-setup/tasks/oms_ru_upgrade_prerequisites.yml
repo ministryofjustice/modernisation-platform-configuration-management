@@ -1,6 +1,6 @@
 ---
 - name: Check status of OMS
   ansible.builtin.shell: |
-    {{ oem_mw_home }}/bin/emctl status oms | grep -c "^Oracle Management Server is Up" | cat
+    {{ emctl_oms }} status oms | grep -c "^Oracle Management Server is Up" | cat
   changed_when: false
   register: oms_running

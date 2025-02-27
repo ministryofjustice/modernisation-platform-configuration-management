@@ -27,17 +27,18 @@
     - oem_agent_install
   when: not oem_agent_software_installed.stat.exists
 
+- import_tasks: oem_agent_ru_upgrade.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oem_agent_install
+    - agent_ru_upgrade
+
 - import_tasks: agent_target_promote.yml
   tags:
     - amibuild
     - ec2provision
     - oem_agent_target_promote
-
-- import_tasks: oem_target_agent_ru_upgrade.yml
-  tags:
-    - amibuild
-    - ec2provision
-    - agent_ru_upgrade
 
 - import_tasks: oem_agent_deinstall.yml
   tags:

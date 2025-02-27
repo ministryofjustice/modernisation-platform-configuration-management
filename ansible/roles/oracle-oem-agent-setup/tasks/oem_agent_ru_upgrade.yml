@@ -1,0 +1,49 @@
+---
+- name: Install Agent RU Patch
+  block:
+    - name: Download agent RU patch
+      import_tasks: download_oem_ru_software.yml
+      tags: download_oem_ru_software
+
+    - name: Stop oem agent
+      import_tasks: stop_agent.yml
+
+    - name: Upgrade OEM agent Agentpatcher
+      import_tasks: upgrade_agentpatcher.yml
+
+    - name: Update Agent OPatch
+      import_tasks: upgrade_opatch.yml
+
+    - name: Apply any Pre-Req Supplemntary Patches
+      include_tasks: apply_supplemental_patches.yml
+      vars:
+        ru_phase: "pre"
+      when: required_patches is defined and required_patches | length > 0
+
+    - name: Apply Agent Patch
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          cd {{ agentpatcher_stage }}/{{ agent_ru_patch_number }}
+          {{ agent_home }}/AgentPatcher/agentpatcher apply -silent 
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 60
+
+    - name: Stop oem agent
+      import_tasks: stop_agent.yml
+
+    - name: Apply any Post-RU Supplemntary Patches
+      include_tasks: apply_supplemental_patches.yml
+      vars:
+        ru_phase: "post"
+      when: required_patches is defined and required_patches | length > 0
+
+    - name: Start oem agent
+      import_tasks: start_agent.yml
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ agent_env }}"
