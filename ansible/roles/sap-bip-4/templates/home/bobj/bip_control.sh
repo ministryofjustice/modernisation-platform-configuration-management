@@ -47,6 +47,9 @@ CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
 STAGE3_WAIT_SECS=600
+CURL_TIMEOUT_AWS_METADATA=2 # seconds
+CURL_TIMEOUT_BIPRWS_LOGON=5 # seconds
+CURL_TIMEOUT_BIPRWS_GET=60 # seconds
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -203,8 +206,8 @@ set_env_variables() {
 
 set_env_instance_id() {
   debug "curl -sS -X PUT http://169.254.169.254/latest/api/token"
-  token=$(curl -sS -m 2 -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 3600")
-  INSTANCE_ID=$(curl -sS -m 2 -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id)
+  token=$(curl -sS -m "$CURL_TIMEOUT_AWS_METADATA" -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 3600")
+  INSTANCE_ID=$(curl -sS -m "$CURL_TIMEOUT_AWS_METADATA" -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id)
 }
 
 set_env_sap_environment() {
@@ -310,7 +313,7 @@ set_env_biprws_logon_token() {
 
   debug "curl https://$ADMIN_URL/biprws/v1/logon/long"
   logon='{"username": "Administrator", "password": "'"$ADMIN_PASSWORD"'", "auth": "secEnterprise"}'
-  token_json=$(curl -Ss -m 5 -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "https://$ADMIN_URL/biprws/v1/logon/long")
+  token_json=$(curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGON" -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "https://$ADMIN_URL/biprws/v1/logon/long")
   if ! jq -e . >/dev/null 2>&1 <<<"$token_json"; then
     error "Logon API returned non-json output, LB might be in maintenance mode"
     return 1
@@ -334,7 +337,7 @@ biprws_get() {
 
   uri="$1"
   debug "curl $uri"
-  curl -Ss -m 5 -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" "$uri"
+  curl -Ss -m "$CURL_TIMEOUT_BIPRWS_GET" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" "$uri"
 }
 
 biprws_get_pages() {
@@ -1026,7 +1029,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step5'"
         do_ccm managedstart "$step5"
       else
-        log "skipping: all processing servers already started"
+        log "skipping: all job servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *4* ]]; then
@@ -1035,7 +1038,7 @@ do_pipeline() {
         log "running:  './bip_control.sh -w ccm managedstart $step4'"
         do_ccm managedstart "$step4"
       else
-        log "skipping: all processing servers already started"
+        log "skipping: all event servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *3* ]]; then
