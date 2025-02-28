@@ -3,12 +3,13 @@
   block:
     - name: Check OMS RU version
       ansible.builtin.shell: |
-        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep -c {{ oms_ru_patch_version }}
+        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep -c {{ oms_ru_patch_version }} | cat
       register: required_version_check
+      changed_when: false
 
     - name: Set fact for required_version_check
       ansible.builtin.set_fact:
-        oms_ru_applied: "{{ required_version_check.rc | int }}"
+        oms_ru_applied: "{{ required_version_check.stdout | int }}"
         
   # block
   become: true

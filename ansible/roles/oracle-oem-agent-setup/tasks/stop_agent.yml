@@ -4,6 +4,7 @@
     - name: Check status of oem Agent
       ansible.builtin.shell: |
         {{ emctl }} status agent | grep -c "^Agent is Running and Ready" | cat
+      changed_when: false
       register: agent_running
 
     - name: Stop oem agent
