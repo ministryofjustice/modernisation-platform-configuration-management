@@ -7,6 +7,18 @@
     state: directory
     recurse: yes
 
+- name: Check if OMS RU upgrade patches exist
+  ansible.builtin.stat:
+    path: "{{ omspatcher_stage }}/{{ item }}"
+  register: patch_files
+  loop:
+    - "{{ oms_opatch_patch }}"
+    - "{{ omspatcher_patch }}"
+    - "{{ oms_ru_patch }}"
+    - "{{ oms_holistic_patch }}"
+  loop_control:
+    label: "{{ item }}"
+
 - name: Download OMS RU upgrade patches
   become_user: oracle
   amazon.aws.aws_s3:
@@ -16,11 +28,16 @@
     mode: get
     permission: "public-read"
     overwrite: latest
+  async: 3600 # 1 hour
+  poll: 60 # every 1 minute
+  when: not patch_files.results[loop.index0].stat.exists
   loop:
     - "{{ oms_opatch_patch }}"
     - "{{ omspatcher_patch }}"
     - "{{ oms_ru_patch }}"
     - "{{ oms_holistic_patch }}"
+  loop_control:
+    label: "{{ item }}"
 
 - name: Unzip OMS RU patches
   ansible.builtin.unarchive:
@@ -29,8 +46,12 @@
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     remote_src: yes
+  async: 3600 # 1 hour
+  poll: 60 # every 1 minute
   loop:
     - "{{ oms_opatch_patch }}"
     - "{{ oms_ru_patch }}"
     - "{{ agent_ru_patch }}"
     - "{{ oms_holistic_patch }}"
+  loop_control:
+    label: "{{ item }}"
