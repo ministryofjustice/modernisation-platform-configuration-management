@@ -53,9 +53,6 @@
 - name: Run Setup for the Central Agent
   import_role:
     name: oracle-oem-agent-setup
-    inventory: "{{ inventory }}"
-    ansible_aws_ssm_bucket_name: "{{ ansible_aws_ssm_bucket_name }}"
-    target: "{{ target }}"
   tags:
     - oracle_oem_patch_upgrade
     - agent_ru_upgrade
