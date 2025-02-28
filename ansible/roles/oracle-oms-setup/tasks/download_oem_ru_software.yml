@@ -7,7 +7,7 @@
       - "{{ oms_ru_patch }}"
       - "{{ oms_holistic_patch }}"
 
-  tasks:
+  block:
     - name: Create directories
       ansible.builtin.file:
         path: "{{ omspatcher_stage }}"
@@ -22,8 +22,13 @@
       register: patch_files
       loop: "{{ files }}"
 
-    - debug:
-        var: patch_files.results
+    - name: Filter missing files
+      set_fact:
+        missing_files: "{{ file_check.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Debug missing files
+      debug:
+        var: "Missing files: {{ missing_files }}"
     
     - name: Download OMS RU upgrade patches if they don't exist
       become_user: oracle
