@@ -6,10 +6,6 @@ dns_zone_internal: nomis-combined-reporting.hmpps-production.modernisation-platf
 dns_search_domains:
   - hmpps-oem.hmpps-production.modernisation-platform.internal
   - azure.hmpp.root
-  - reporting.nomis.service.justice.gov.uk
-timezone: "Europe/London"
-ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
-sap_environment: "{{ ncr_environment }}"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -106,59 +102,6 @@ db_configs:
     tns_name: DRBIPSYS
     service:
       - { name: DRBIPSYS, role: PHYSICAL_STANDBY }
-
-sap_bip_oracle_client_confs:
-  pd:
-    sqlnet_ora_source_filename: sqlnet.ora
-    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pd
-
-sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
-
-sap_bip_db_confs:
-  pd:
-    auditing_db_server: PDBIAUD
-    auditing_db_user: bip_audit_owner # lowercase to match secret name
-    cms_db_server: PDBISYS
-    cms_db_user: bip_system_owner # lowercase to match secret name
-
-sap_bip_db_conf: "{{ sap_bip_db_confs[ncr_environment] }}"
-sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
-sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
-sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
-sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
-
-sap_bip_confs:
-  pd:
-    sap_bip_rar_base: "BIPLATS4301P_1200-70002683"
-    sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
-    web:
-      sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
-      sap_web_disable_cmcapp: "true"
-      sap_web_apps:
-        - BOE
-        - BusinessProcessBI
-        - bipodata
-        - biprws
-        - clientapi
-        - dswsbobje
-        - webi-websetup
-    webadmin:
-      sap_web_java_opts: "-Xms8192m -Xmx8192m -Dbobje.disable_audit_ip_lookup"
-
-sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
-sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
-sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
-sap_web_conf: "{{ sap_bip_conf.web }}"
-sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
-
-ncr_bip_confs:
-  pd:
-    ncr_bip_sso_url: "https://reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
-    ncr_bip_provisioning_database_hostname: "pnomis.production.nomis.service.justice.gov.uk"
-
-ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
-ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
-ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects

@@ -4,22 +4,6 @@ database_standby_unique: DMDNDAS2
 database_standby_sid: DMDNDAS2
 active_data_guard: true
 required_patches:
-  p26749785:
-    patch_files:
-      - target_version: "19.9"
-        filename: p26749785_199000DBRU_Generic.zip
-      - target_version: "19.16"
-        filename: p26749785_1916000DBRU_Generic.zip
-      - target_version: "19.18"
-        filename: p26749785_1918000DBRU_Generic.zip
-      - target_version: "19.20"
-        filename: p26749785_1920000DBRU_Generic.zip
-      - target_version: "19.22"
-        filename: p26749785_1922000DBRU_Generic.zip
-    description: PERF_DIAG NEED TO HAVE MORE CONTROL IN DICTIONARY FOR AUTO_STATS_ADVISOR_TASK
-    grid_patch: false
-    database_patch: true
-    datapatch_required: true
   p36252161:
     patch_files:
       - target_version: "19.22"

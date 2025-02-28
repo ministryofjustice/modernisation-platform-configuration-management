@@ -4,6 +4,7 @@ URL={{ nomis_configs[nomis_environment].url }}
 PORT=443
 MAINTENANCE_PRIORITY=999
 FLAG=$1
+export PATH="$PATH:/usr/local/bin"
 
 set -e
 
