@@ -1,4 +1,8 @@
 ---
+- name: Set verbosity level if not defined
+  set_fact:
+    verbose_level: "-v"
+
 - name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
   ansible.builtin.stat:
     path: "{{ oem_mw_home }}/bin/emctl"
