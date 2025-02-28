@@ -24,7 +24,7 @@
 
     - name: Filter missing files
       set_fact:
-        missing_files: "{{ file_check.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+        missing_files: "{{ patch_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
 
     - name: Debug missing files
       debug:
@@ -41,10 +41,10 @@
         overwrite: latest
       async: 3600 # 1 hour
       poll: 60 # every 1 minute
-      loop: "{{ files }}"
+      loop: "{{ missing_files }}"
       loop_control:
         label: "{{ item }}"
-      when: not patch_files.results[loop.index0].stat.exists
+      when: missing_files | length > 0
 
     - name: Unzip OMS RU patches
       ansible.builtin.unarchive:
