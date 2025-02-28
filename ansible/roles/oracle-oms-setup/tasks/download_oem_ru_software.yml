@@ -11,7 +11,7 @@
   ansible.builtin.stat:
     path: "{{ omspatcher_stage }}/{{ item }}"
   register: patch_files
-  loop:
+  with_items:
     - "{{ oms_opatch_patch }}"
     - "{{ omspatcher_patch }}"
     - "{{ oms_ru_patch }}"
@@ -30,8 +30,8 @@
     overwrite: latest
   async: 3600 # 1 hour
   poll: 60 # every 1 minute
-  when: not patch_files.results[loop.index0].stat.exists
-  loop:
+  when: not item.stat.exists
+  with_items:
     - "{{ oms_opatch_patch }}"
     - "{{ omspatcher_patch }}"
     - "{{ oms_ru_patch }}"
@@ -48,7 +48,7 @@
     remote_src: yes
   async: 3600 # 1 hour
   poll: 60 # every 1 minute
-  loop:
+  with_items:
     - "{{ oms_opatch_patch }}"
     - "{{ oms_ru_patch }}"
     - "{{ agent_ru_patch }}"
