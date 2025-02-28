@@ -1,6 +1,16 @@
 ---
-- name: Check status of OMS
-  ansible.builtin.shell: |
-    {{ emctl_oms }} status oms | grep -c "^Oracle Management Server is Up" | cat
-  changed_when: false
-  register: oms_running
+- name: Check if OMS RU applied
+  block:
+    - name: Check OMS RU version
+      ansible.builtin.shell: |
+        ${ORACLE_HOME}/OPatch/opatch | grep -c {{ oms_ru_patch_version }}
+      register: required_version_check
+
+    - name: Set fact for required_version_check
+      ansible.builtin.set_fact:
+        oms_ru_applied: "{{ required_version_check.rc | int }}"
+        
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ oms_env }}"

@@ -7,7 +7,7 @@
       changed_when: false
       register: oms_running
 
-    - name: Stop OMS Excluding Admin Console
+    - name: Stop OMS
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -62,7 +62,7 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          {{ emctl_oms }} stop oms
+          {{ emctl_oms }} stop oms -all -force
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400

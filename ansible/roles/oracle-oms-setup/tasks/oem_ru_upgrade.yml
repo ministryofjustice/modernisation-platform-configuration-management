@@ -1,38 +1,58 @@
 ---
+# Check if the RU is already applied
 - name: Prerequisites
   include_tasks: oms_ru_upgrade_prerequisites.yml
 
-- name: Download software from s3 bucket
-  include_tasks: download_oem_ru_software.yml
-  tags: download
+- name: Upgrade OMS
+  block:
+    - name: Download software from s3 bucket
+      include_tasks: download_oem_ru_software.yml
+      tags: download
 
-- name: Create OMSPatcher properties file
-  include_tasks: create_omspatcher_property_file.yml
-  tags: oms_property_file
+    - name: Create OMSPatcher properties file
+      include_tasks: create_omspatcher_property_file.yml
+      tags: oms_property_file
 
-- name: Update OMSPatcher
-  include_tasks: oms_upgrade_omspatcher.yml
-  tags: omspatcher_upgrade
+    - name: Update OMSPatcher
+      include_tasks: oms_upgrade_omspatcher.yml
+      tags: omspatcher_upgrade
 
-- name: Update OMS OPatch
-  include_tasks: oms_upgrade_opatch.yml
-  tags: oms_opatch_upgrade
-  
-- name: Apply required patches to OMS
-  include_tasks: apply_oms_patch.yml
-  tags: patch_oms
+    - name: Update OMS OPatch
+      include_tasks: oms_upgrade_opatch.yml
+      tags: oms_opatch_upgrade
+      
+    - name: Start OEM Blackout
+      include_tasks: oem_blackout.yml
+      vars:
+        blackout: "oms_ru_patching"
+        object_type: all
+        action: start
+      tags: blackout
 
-# This will be done through the oracle-oem-agent-setup role so not required here
-#- name: Update AgentPatcher
-#  include_tasks: oms_upgrade_agentpatcher.yml
-#  tags: omspatcher_upgrade
+    - name: Apply required patches to OMS
+      include_tasks: apply_oms_patch.yml
+      tags: patch_oms
 
-# This will be done through the oracle-oem-agent-setup role so not required here
-#- name: Upgrade central agent
-#  include_tasks: apply_agent_patch.yml
-#  tags: upgrade_agent
+    - name: End OEM Blackout
+      include_tasks: oem_blackout.yml
+      vars:
+        blackout: "oms_ru_patching"
+        object_type: all
+        action: stop
+      tags: blackout
 
-- name: Remove files from staging area
-  include_tasks: cleanup.yml
-  tags:
-    - cleanup
+    # This will be done through the oracle-oem-agent-setup role so not required here
+    #- name: Update AgentPatcher
+    #  include_tasks: oms_upgrade_agentpatcher.yml
+    #  tags: omspatcher_upgrade
+
+    # This will be done through the oracle-oem-agent-setup role so not required here
+    #- name: Upgrade central agent
+    #  include_tasks: apply_agent_patch.yml
+    #  tags: upgrade_agent
+
+    - name: Remove files from staging area
+      include_tasks: cleanup.yml
+      tags:
+        - cleanup
+  when: oms_ru_applied == 0

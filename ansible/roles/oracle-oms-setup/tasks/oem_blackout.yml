@@ -1,0 +1,47 @@
+- name: Check if Cloud Control Agent Installed
+  stat:
+    path: "{{ emctl_agent }}"
+  register: agent_emctl
+
+- block:
+    - name: Create blackout name fact if defined
+      set_fact:
+        blackout_name: "{{ blackout }}"
+      when: (blackout is defined) and (blackout|length > 0)
+
+    - name: Create blackout name fact if not defined
+      set_fact:
+        blackout_name: "{{ object_type }}"
+      when: ((blackout is defined) and (blackout|length == 0)) or (blackout is not defined)
+
+    - name: Special case to set fact if object_type parameter is set at node level
+      set_fact:
+        nodelevel: "-nodeLevel"
+      when: object_type == "all"
+
+    - name: Start Blackout {{ blackout_name }}
+      shell: |
+        {{ emctl_agent}} start blackout {{ blackout_name }} {{ nodelevel | default() }}
+      register: blackout_create
+      changed_when: blackout_create.rc == 0
+      failed_when: blackout_create.rc != 0 and (blackout_create.stdout.find("already exists") == -1)
+      when: action == "start"
+
+    - name: Output the status of start blackout
+      debug:
+        msg: "Blackout {{ blackout_name }} already exists"
+      when: action == "start" and (blackout_create.stdout.find("already exists") != -1)
+
+    - name: Find blackout status when action is stop
+      shell: |
+        {{ emctl_agent}} status blackout {{ blackout_name }}
+      register: blackout_status
+      when: action == "stop"
+
+    - name: Stop Blackout {{ blackout_name }}
+      shell: |
+        {{ emctl_agent}} stop blackout {{ blackout_name }}
+      when: (action == "stop") and (blackout_status.stdout.find("No Blackout registered") == -1)
+
+  when:
+    - agent_emctl.stat.exists
