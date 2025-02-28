@@ -1,57 +1,50 @@
 ---
-- name: Create directories
-  ansible.builtin.file:
-    path: "{{ omspatcher_stage }}"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    state: directory
-    recurse: yes
+- name: Check if OMS RU upgrade patches exist and download if not
+  vars:
+    files:
+      - "{{ omspatcher_stage }}/{{ oms_opatch_patch }}"
+      - "{{ omspatcher_stage }}/{{ omspatcher_patch }}"
+      - "{{ omspatcher_stage }}/{{ oms_ru_patch }}"
+      - "{{ omspatcher_stage }}/{{ oms_holistic_patch }}"
 
-- name: Check if OMS RU upgrade patches exist
-  ansible.builtin.stat:
-    path: "{{ omspatcher_stage }}/{{ item }}"
-  register: patch_files
-  with_items:
-    - "{{ oms_opatch_patch }}"
-    - "{{ omspatcher_patch }}"
-    - "{{ oms_ru_patch }}"
-    - "{{ oms_holistic_patch }}"
-  loop_control:
-    label: "{{ item }}"
+  tasks:
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ omspatcher_stage }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
 
-- name: Download OMS RU upgrade patches
-  become_user: oracle
-  amazon.aws.aws_s3:
-    bucket: "{{ artefacts_s3_bucket_name }}"
-    object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
-    dest: "{{ omspatcher_stage }}/{{ item }}"
-    mode: get
-    permission: "public-read"
-    overwrite: latest
-  async: 3600 # 1 hour
-  poll: 60 # every 1 minute
-  when: not item.stat.exists
-  with_items:
-    - "{{ oms_opatch_patch }}"
-    - "{{ omspatcher_patch }}"
-    - "{{ oms_ru_patch }}"
-    - "{{ oms_holistic_patch }}"
-  loop_control:
-    label: "{{ item }}"
+    - name: Check if OMS RU upgrade patches exist
+      ansible.builtin.stat:
+        path: "{{ omspatcher_stage }}/{{ item }}"
+      register: patch_files
+      loop: "{{ files }}"
 
-- name: Unzip OMS RU patches
-  ansible.builtin.unarchive:
-    src: "{{ omspatcher_stage }}/{{ item }}"
-    dest: "{{ omspatcher_stage }}"
-    owner: "{{ oracle_install_user }}"
-    group: "{{ oracle_install_group }}"
-    remote_src: yes
-  async: 3600 # 1 hour
-  poll: 60 # every 1 minute
-  with_items:
-    - "{{ oms_opatch_patch }}"
-    - "{{ oms_ru_patch }}"
-    - "{{ agent_ru_patch }}"
-    - "{{ oms_holistic_patch }}"
-  loop_control:
-    label: "{{ item }}"
+    - name: Download OMS RU upgrade patches if they don't exist
+      become_user: oracle
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "{{ omspatcher_stage }}/{{ item }}"
+        mode: get
+        permission: "public-read"
+        overwrite: latest
+      async: 3600 # 1 hour
+      poll: 60 # every 1 minute
+      loop: "{{ files }}"
+      loop_control:
+        label: "{{ item }}"
+      when: not patch_files.results[loop.index0].stat.exists
+
+    - name: Unzip OMS RU patches
+      ansible.builtin.unarchive:
+        src: "{{ omspatcher_stage }}/{{ item }}"
+        dest: "{{ omspatcher_stage }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+      async: 3600 # 1 hour
+      poll: 60 # every 1 minute
+      loop: "{{ files }}"
