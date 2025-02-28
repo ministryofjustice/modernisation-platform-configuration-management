@@ -3,6 +3,10 @@
 - name: Prerequisites
   include_tasks: oms_ru_upgrade_prerequisites.yml
 
+- name: Debug oms_ru_applied value
+  debug:
+    var: oms_ru_applied
+
 - name: Upgrade OMS
   block:
     - name: Download software from s3 bucket
@@ -55,4 +59,4 @@
       include_tasks: cleanup.yml
       tags:
         - cleanup
-  when: oms_ru_applied == 0
+  when: oms_ru_applied == '0'

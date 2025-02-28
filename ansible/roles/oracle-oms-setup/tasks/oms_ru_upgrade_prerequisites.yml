@@ -9,7 +9,11 @@
 
     - name: Set fact for required_version_check
       ansible.builtin.set_fact:
-        oms_ru_applied: "{{ required_version_check.stdout | int }}"
+        oms_ru_applied: "{{ required_version_check.stdout }}"
+        
+    - name: Debug oms_ru_applied value
+      debug:
+        var: oms_ru_applied
         
   # block
   become: true
