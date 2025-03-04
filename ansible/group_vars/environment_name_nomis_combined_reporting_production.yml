@@ -102,6 +102,24 @@ db_configs:
     tns_name: DRBIPSYS
     service:
       - { name: DRBIPSYS, role: PHYSICAL_STANDBY }
+  DRBIAUD:
+    db_name: BIAUD
+    db_unique_name: DRBIAUD
+    instance_name: DRBIAUD
+    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBIAUD
+    service:
+      - { name: DRBIAUD, role: PHYSICAL_STANDBY }
+  DRBISYS:
+    db_name: BIPSYS
+    db_unique_name: DRBISYS
+    instance_name: DRBISYS
+    host_name: pd-ncr-db-1-b.nomis-combined-reporting.hmpps-production.modernisation-platform.internal
+    port: 1521
+    tns_name: DRBISYS
+    service:
+      - { name: DRBISYS, role: PHYSICAL_STANDBY }
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
