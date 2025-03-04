@@ -56,7 +56,7 @@
       async: 1200
       poll: 0
       when: 
-        - patch_status.results[loop_index].stdout == "0"
+        - (patch_status.results | selectattr('item.key', 'equalto', item.key) | map(attribute='stdout') | first | int) == 0
         - item.value[phase_variable] | default(false)
       loop: "{{ required_patches | dict2items }}"
       loop_control:
