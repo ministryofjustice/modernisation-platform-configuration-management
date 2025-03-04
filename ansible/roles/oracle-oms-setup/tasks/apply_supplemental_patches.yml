@@ -41,6 +41,10 @@
       loop_control:
         label: "{{ item.key }}"
 
+    - name: Debug patch status
+      debug:
+        var: patch_status
+
     # The fuser utility is not installed as a matter of course so we set OPATCH_NO_FUSER to workaround this
     - name: Apply patches if not already applied
       shell: |
@@ -52,19 +56,23 @@
       async: 1200
       poll: 0
       when: 
-        - patch_status.stdout == ""
+        - item.key not in patch_status.results | map(attribute='stdout') | join('')
         - item.value[phase_variable] | default(false)
+      loop: "{{ required_patches | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
 
     - name: Wait for OPatch Install
       async_status:
-        jid: "{{ run_opatch.ansible_job_id }}"
+        jid: "{{ item.ansible_job_id }}"
       register: result
       until: result.finished
       retries: 80
       delay: 30
+      loop: "{{ run_opatch.results }}"
       when:
-        - run_opatch is defined
-        - run_opatch.ansible_job_id is defined
+        - item.value[phase_variable] | default(false)
+        - item.ansible_job_id is defined
 
   # block
   become: true
