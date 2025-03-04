@@ -50,7 +50,32 @@ if (Test-Path -Path $GitRepo) {
    cmd /c "rd $GitRepo /s /q"
 }
 Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
-git clone -c core.longpaths=true "https://github.com/${GitOrg}/${GitRepo}.git"
+
+$attempts = 10
+$attemptCount = 1
+$downloaded = $false
+
+while (-not $downloaded -and $attemptCount -le $attempts) {
+  Write-Output "Attempt $attemptCount of $attempts : Cloning repository..."
+  git -c core.longpaths=true clone --ipv4 --quiet "https://github.com/${GitOrg}/${GitRepo}.git"
+
+  if ($LASTEXITCODE -eq 0) {
+    Write-Output "Repository cloned successfully on attempt $attemptCount"
+    $downloaded = $true
+  }
+  else {
+    Write-Output "Failed to clone repository on attempt $attemptCount. Retrying..."
+    if ($attemptCount -le $attempts) {
+      Write-Output "Waiting 20 seconds before retrying..."
+      Start-Sleep -Seconds 20
+      $attemptCount++
+    }
+    else {
+      Write-Error "Failed to clone repository after $attempts attempts"
+      Exit 1
+    }
+  }
+}
 Set-Location -Path $GitRepo
 if ($GitBranch -ne "main") {
   git checkout "${GitBranch}"
