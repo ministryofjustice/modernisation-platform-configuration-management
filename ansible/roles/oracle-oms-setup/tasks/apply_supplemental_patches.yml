@@ -32,7 +32,7 @@
 
     - name: Check if patches are already applied
       shell: |
-        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }}
+        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }} | wc -l
       register: patch_status
       changed_when: false
       failed_when: false
@@ -56,7 +56,7 @@
       async: 1200
       poll: 0
       when: 
-        - item.key not in patch_status.results | map(attribute='stdout') | join('')
+        - patch_status.results[loop_index].stdout | int == 0
         - item.value[phase_variable] | default(false)
       loop: "{{ required_patches | dict2items }}"
       loop_control:
