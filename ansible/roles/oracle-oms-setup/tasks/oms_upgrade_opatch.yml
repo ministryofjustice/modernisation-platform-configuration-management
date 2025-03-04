@@ -1,5 +1,8 @@
 ---
 - name: Get OPatch Version
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ oms_env }}"
   ansible.builtin.shell: |
     ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
   register: required_version_check
