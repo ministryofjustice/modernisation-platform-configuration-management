@@ -31,8 +31,8 @@
         label: "{{ item.key }}"
 
     - name: Check if patches are already applied
-      command:
-        cmd: "${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }}"
+      shelll: |
+        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }}
       register: patch_status
       changed_when: false
       failed_when: false
