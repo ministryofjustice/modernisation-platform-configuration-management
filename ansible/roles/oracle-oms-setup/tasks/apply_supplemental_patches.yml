@@ -8,25 +8,25 @@
     - name: Download patches
       amazon.aws.aws_s3:
         bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ item.value.patch_files[0].filename }}"
-        dest: "{{ omspatcher_stage }}/{{ item.value.patch_files[0].filename }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item.value.patch_files.filename }}"
+        dest: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
         mode: get
         permission: "public-read"
         overwrite: latest
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
 
-    - name: Extract patches
+    - name: Extract patches 
       ansible.builtin.unarchive:
-        src: "{{ omspatcher_stage }}/{{ item.value.patch_files[0].filename }}"
+        src: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
         dest: "{{ omspatcher_stage }}"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         remote_src: yes
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
 
@@ -37,7 +37,7 @@
       changed_when: false
       failed_when: false
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
 
@@ -51,7 +51,9 @@
       register: run_opatch
       async: 1200
       poll: 0
-      when: patch_status.stdout == ""
+      when: 
+        - patch_status.stdout == ""
+        - item.value[phase_variable] | default(false)
 
     - name: Wait for OPatch Install
       async_status:
@@ -60,6 +62,9 @@
       until: result.finished
       retries: 80
       delay: 30
+      when:
+        - run_opatch is defined
+        - run_opatch.ansible_job_id is defined
 
   # block
   become: true
