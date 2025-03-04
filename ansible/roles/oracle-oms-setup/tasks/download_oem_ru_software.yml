@@ -31,6 +31,7 @@
         msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
     
     - name: Download OMS RU upgrade patches if they don't exist
+      become: true
       become_user: oracle
       amazon.aws.aws_s3:
         bucket: "{{ artefacts_s3_bucket_name }}"
@@ -41,14 +42,15 @@
         overwrite: latest
       async: 3600 # 1 hour
       poll: 60 # every 1 minute
-      loop: "{{ missing_files }}"
+      loop: "{{ lookup('vars', 'missing_files') }}"
       loop_control:
         label: "{{ item }}"
       when: missing_files | length > 0
 
     - name: Unzip OMS RU patches asynchronously
+      become: true
       become_user: oracle
-      ansible.builtin.shell: >
+      shell: >
         if [[ "{{ item }}" =~ \.zip$ ]]; then
           unzip -o "{{ omspatcher_stage }}/{{ item }}" -d "{{ omspatcher_stage }}";
         elif [[ "{{ item }}" =~ \.tar\.gz$ ]]; then
@@ -63,10 +65,13 @@
       when: item is match(".*(\\.zip|\\.tar\\.gz)$")
 
     - name: Check unzip progress
+      become: yes
+      become_user: oracle
       ansible.builtin.async_status:
-        jid: "{{ unzip_task.ansible_job_id }}"
+        jid: "{{ item.ansible_job_id }}"
       register: unzip_result
       until: unzip_result.finished
       retries: 60
       delay: 60
+      loop: "{{ unzip_task.results }}"
       
