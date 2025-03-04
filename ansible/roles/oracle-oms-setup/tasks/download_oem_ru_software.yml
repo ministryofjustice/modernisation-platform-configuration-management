@@ -46,14 +46,27 @@
         label: "{{ item }}"
       when: missing_files | length > 0
 
-    - name: Unzip OMS RU patches
-      ansible.builtin.unarchive:
-        src: "{{ omspatcher_stage }}/{{ item }}"
-        dest: "{{ omspatcher_stage }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        remote_src: yes
-      async: 3600 # 1 hour
-      poll: 60 # every 1 minute
+    - name: Unzip OMS RU patches asynchronously
+      become_user: oracle
+      ansible.builtin.shell: >
+        if [[ "{{ item }}" =~ \.zip$ ]]; then
+          unzip -o "{{ omspatcher_stage }}/{{ item }}" -d "{{ omspatcher_stage }}";
+        elif [[ "{{ item }}" =~ \.tar\.gz$ ]]; then
+          tar -xzf "{{ omspatcher_stage }}/{{ item }}" -C "{{ omspatcher_stage }}";
+        fi
+      args:
+        executable: /bin/bash
+      async: 3600  # Allow up to 1 hour
+      poll: 0  # Run in the background
+      register: unzip_task
       loop: "{{ files }}"
-      when: item is match(".*(\\.zip|\\.tar\\.gz)$")  # Only unzip if file is compressed
+      when: item is match(".*(\\.zip|\\.tar\\.gz)$")
+
+    - name: Check unzip progress
+      ansible.builtin.async_status:
+        jid: "{{ unzip_task.ansible_job_id }}"
+      register: unzip_result
+      until: unzip_result.finished
+      retries: 60
+      delay: 60
+      
