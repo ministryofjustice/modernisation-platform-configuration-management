@@ -28,7 +28,7 @@
 
     - name: Debug missing files
       debug:
-        var: "Missing files: {{ missing_files }}"
+        msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
     
     - name: Download OMS RU upgrade patches if they don't exist
       become_user: oracle

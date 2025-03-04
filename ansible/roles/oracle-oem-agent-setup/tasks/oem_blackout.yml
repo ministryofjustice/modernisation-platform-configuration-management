@@ -43,5 +43,7 @@
         {{ emctl_agent}} stop blackout {{ blackout_name }}
       when: (action == "stop") and (blackout_status.stdout.find("No Blackout registered") == -1)
 
+  # Can only use blackouts if the environment has the Diagnostic Pack
   when:
     - agent_emctl.stat.exists
+    - database_parameters.control_management_pack_access | default('') is search('.*DIAGNOSTIC.*')
