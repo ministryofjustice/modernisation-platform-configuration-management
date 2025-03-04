@@ -52,7 +52,7 @@
       become_user: oracle
       shell: >
         if [[ "{{ item }}" =~ \.zip$ ]]; then
-          unzip -o "{{ omspatcher_stage }}/{{ item }}" -d "{{ omspatcher_stage }} " > /dev/null;
+          unzip -o "{{ omspatcher_stage }}/{{ item }}" -d "{{ omspatcher_stage }}" > /dev/null;
         elif [[ "{{ item }}" =~ \.tar\.gz$ ]]; then
           tar -xzf "{{ omspatcher_stage }}/{{ item }}" -C "{{ omspatcher_stage }}" -- warning=none > /dev/null;
         fi
