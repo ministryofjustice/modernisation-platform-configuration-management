@@ -1,4 +1,9 @@
 ---
+- name: Check if the directory exists
+  ansible.builtin.stat:
+    path: "{{ agentpatcher_stage }}"
+  register: dir_status
+
 - name: Create directories
   ansible.builtin.file:
     path: "{{ agentpatcher_stage }}"
@@ -6,6 +11,7 @@
     group: "{{ oracle_install_group }}"
     state: directory
     recurse: yes
+  when: not dir_status.stat.exists
 
 - name: Download OEM agent RU upgrade patches
   become_user: "{{ oracle_install_user }}"
