@@ -1,13 +1,13 @@
 ---
-- name: Collect file details for cleanup from {{ stage }}
+- name: Collect file details for cleanup from {{ omspatcher_stage }}
   ansible.builtin.find:
-    path: "{{ stage }}"
+    path: "{{ omspatcher_stage }}"
     hidden: True
   register: collected_files
 
-- name: Collect directory details for cleanup from {{ stage }}
+- name: Collect directory details for cleanup from {{ omspatcher_stage }}
   ansible.builtin.find:
-    paths: "{{ stage }}"
+    paths: "{{ omspatcher_stage }}"
     hidden: True
     file_type: directory
   register: collected_directories

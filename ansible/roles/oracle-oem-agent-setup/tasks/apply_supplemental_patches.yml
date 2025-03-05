@@ -4,61 +4,75 @@
     ru_phase: "pre"  # Set to "pre" or "post" when calling the task
     phase_variable: "{{ ru_phase }}_ru_patch"
   block:
+    - name: Debug ru_phase status
+      debug:
+        var: ru_phase
 
     - name: Download patches
       amazon.aws.aws_s3:
         bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ item.value.patch_files[0].filename }}"
-        dest: "{{ agentpatcher_stage }}/{{ item.value.patch_files[0].filename }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item.value.patch_files.filename }}"
+        dest: "{{ agentpatcher_stage }}/{{ item.value.patch_files.filename }}"
         mode: get
         permission: "public-read"
         overwrite: latest
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
 
-    - name: Extract patches
+    - name: Extract patches 
       ansible.builtin.unarchive:
-        src: "{{ agentpatcher_stage }}/{{ item.value.patch_files[0].filename }}"
+        src: "{{ agentpatcher_stage }}/{{ item.value.patch_files.filename }}"
         dest: "{{ agentpatcher_stage }}"
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         remote_src: yes
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
 
     - name: Check if patches are already applied
-      command:
-        cmd: "${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }}"
+      shell: |
+        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }} | wc -l
       register: patch_status
       changed_when: false
       failed_when: false
       loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable]"
+      when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
+
+    - name: Debug patch status
+      debug:
+        var: patch_status
 
     # The fuser utility is not installed as a matter of course so we set OPATCH_NO_FUSER to workaround this
     - name: Apply patches if not already applied
       shell: |
+        export PATH=$PATH:${ORACLE_HOME}/bin 
         export OPATCH_NO_FUSER=true
         cd {{ agentpatcher_stage }}/{{ item.key.split('p')[1] }}
         ${ORACLE_HOME}/OPatch/opatch apply -silent
-      when: patch_status.stdout == ""
-      async: 1200
-      poll: 0
       register: run_opatch
-
-    - name: Wait for OPatch Install
-      async_status:
-        jid: "{{ run_opatch.ansible_job_id }}"
-      register: result
-      until: result.finished
-      retries: 80
-      delay: 30
+      when: 
+        # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
+        - item.value[phase_variable] | default(false)
+        # Check patches where 'skipped' is defined and ensure they were not skipped, then confirm stdout is '0' (patch not applied)
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | selectattr('skipped', 'defined') 
+          | selectattr('skipped', 'equalto', false) 
+          | map(attribute='stdout') | first | default('') | int) == 0
+        # Check patches where 'skipped' is not defined (executed tasks) and confirm stdout is '0' (patch not applied)
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | rejectattr('skipped', 'defined')
+          | map(attribute='stdout') | first | default('') | int) == 0
+      loop: "{{ required_patches | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
 
   # block
   become: true

@@ -40,6 +40,13 @@
     - ec2provision
     - oem_agent_target_promote
 
+- import_tasks: cleanup.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oem_agent_install
+    - agent_ru_upgrade
+
 - import_tasks: oem_agent_deinstall.yml
   tags:
     - never
