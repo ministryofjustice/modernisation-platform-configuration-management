@@ -9,13 +9,7 @@
 
     - name: Stop oem agent
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          {{ emctl }} stop agent
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 20
+        {{ emctl }} stop agent
       when: agent_running.stdout == "1"
 
   # block

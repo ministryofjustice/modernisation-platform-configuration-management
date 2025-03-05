@@ -60,7 +60,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
-      poll: 30
+      poll: 10
       when: sqlplus_version_check.stdout == '0'
 
     - name: Upgrade DB Client Version to 19c on OMS
@@ -102,9 +102,9 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
-      poll: 30
+      poll: 10
 
-    - name: Start OMS Admin Console Only for OMS RU Patch
+    - name: Start OMS Admin Console Only for OMS Holistic Patch
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
@@ -112,7 +112,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
-      poll: 30
+      poll: 10
 
     # Will likely need to deinstall the previous Holistic patch before applying the new one
     # and that functionality is not yet implemented

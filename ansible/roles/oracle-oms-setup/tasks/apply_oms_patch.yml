@@ -9,13 +9,7 @@
 
     - name: Stop OMS
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          {{ emctl_oms }} stop oms -all -force
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 60
+        {{ emctl_oms }} stop oms -all -force
       when: oms_running.stdout == '1'
 
     - name: Apply Pre-req OMS Patches
@@ -36,13 +30,7 @@
 
     - name: Start OMS Admin Console Only for OMS RU Patch
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          {{ emctl_oms }} start oms -admin_only
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 60
+        {{ emctl_oms }} start oms -admin_only
       when: patch_applied == '0'
 
     - name: Apply OMS Patches
@@ -54,7 +42,7 @@
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
-      poll: 60
+      poll: 30
       when: patch_applied == '0'
 
     - name: Apply Post-RU OMS Patches

@@ -16,24 +16,12 @@
     # Stop running services in the ORACLE_HOME that will be patched
     - name: Stop OMS
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          {{ emctl_oms }} stop oms -all
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oms-opatch-upgrade
-      async: 86400
-      poll: 60
+        {{ emctl_oms }} stop oms -all
       when: not ansible_check_mode
 
     - name: Upgrade OPatch
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          ${ORACLE_HOME}/oracle_common/jdk/bin/java -jar {{ omspatcher_stage }}/6880880/opatch_generic.jar -silent oracle_home=${ORACLE_HOME}
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oms-opatch-upgrade
-      async: 86400
-      poll: 60
+        ${ORACLE_HOME}/oracle_common/jdk/bin/java -jar {{ omspatcher_stage }}/6880880/opatch_generic.jar -silent oracle_home=${ORACLE_HOME}
       when: not ansible_check_mode
 
     - name: Get OPatch Version After Upgrade

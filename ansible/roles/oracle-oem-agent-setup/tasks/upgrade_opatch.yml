@@ -3,23 +3,17 @@
   block:
     - name: Get OPatch Version
       ansible.builtin.shell: |
-        ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
+        ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ opatch_version }} | wc -l
       register: required_version_check
 
-    - name: Upgrade OPatch for {{ target }}
+    - name: Upgrade OPatch for OEM Agent
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          ${ORACLE_HOME}/oracle_common/jdk/bin/java -jar {{ agentpatcher_stage }}/6880880/opatch_generic.jar -silent oracle_home=${ORACLE_HOME}
-        }
-        main 2>&1 | logger -p local3.info -t {{ target_log_prefix }}
-      async: 86400
-      poll: 60
+        ${ORACLE_HOME}/oracle_common/jdk/bin/java -jar {{ agentpatcher_stage }}/6880880/opatch_generic.jar -silent oracle_home=${ORACLE_HOME}
       when: not ansible_check_mode and required_version_check.stdout == "0"
 
-    - name: Get {{ target }} OPatch Version After Upgrade
+    - name: Get OPatch Version After Upgrade
       ansible.builtin.shell: |
-        ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
+        ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ opatch_version }} | wc -l
       register: opatch_version_check
 
   become: true

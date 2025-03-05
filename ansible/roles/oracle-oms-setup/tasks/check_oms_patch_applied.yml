@@ -3,7 +3,7 @@
   vars:
     patch_number: ""
   block:
-    - name: Check OMS RU version
+    - name: Check OMS patch version
       ansible.builtin.shell: |
         export ORACLE_HOME={{ oem_mw_home }}
         ${ORACLE_HOME}/OMSPatcher/omspatcher lspatches | grep -c {{ patch_number }} | cat
