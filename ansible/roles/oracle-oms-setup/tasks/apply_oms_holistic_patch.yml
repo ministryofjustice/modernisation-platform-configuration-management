@@ -1,13 +1,19 @@
 ---
+- name: Check OMS sqlplus version
+  ansible.builtin.shell: |
+    ${ORACLE_HOME}/bin/sqlplus -v | grep -c "Release 19" | cat
+  register: sqlplus_version_check
+  changed_when: false
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"
+
 # Upgrade DB Client Version to 19c on OMS (Doc ID 3060775.1)
+# p34761383_122140_Linux - Main upgrade patch
+# p31190532_122140_Generic - fixes issue with wrong pre-req package check when applying patch (Doc ID 3061747.1)
+# p35039230_122140_Linux - fixes issue PATCH 34761383 FAILS DURING UPGRADE DUE TO UPDATED ORACLE_COMMON/JDK/JRE
 - name: Upgrade DB Client Version to 19c on OMS
   block:
-    - name: Check OMS sqlplus version
-      ansible.builtin.shell: |
-        ${ORACLE_HOME}/bin/sqlplus -v | grep -c "Release 19" | cat
-      register: sqlplus_version_check
-      changed_when: false
-
     - name: Download DB Client upgrade patches
       become_user: "{{ oracle_install_user }}"
       amazon.aws.aws_s3:
@@ -20,6 +26,7 @@
       loop:
         - "p34761383_122140_Linux-x86-64.zip"
         - "p35039230_122140_Linux-x86-64.zip"
+        - "p31190532_122140_Generic.zip"
       when: sqlplus_version_check.stdout == '0'
 
     - name: Unzip DB Client upgrade patches
@@ -32,6 +39,7 @@
       loop:
         - "p34761383_122140_Linux-x86-64.zip"
         - "p35039230_122140_Linux-x86-64.zip"
+        - "p31190532_122140_Generic.zip"
       when: sqlplus_version_check.stdout == '0'
 
     - name: Apply one-off patch 35039230
@@ -53,7 +61,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 30
-      when: oms_running.stdout == '1'
+      when: sqlplus_version_check.stdout == '0'
 
     - name: Upgrade DB Client Version to 19c on OMS
       ansible.builtin.shell: |
@@ -62,7 +70,7 @@
           export ORACLE_HOME={{ oms_middleware_home }}
           cd {{ omspatcher_stage }}/34761383
           ./changePerm.sh ${ORACLE_HOME}
-          ./fmw_12.2.1.19.0_dbclient_linux64.bin -invPtrLoc ${ORACLE_HOME}/oraInst.loc -silent ORACLE_HOME=${ORACLE_HOME}
+          ./fmw_12.2.1.19.0_dbclient_linux64.bin -invPtrLoc ${ORACLE_HOME}/oraInst.loc -silent ORACLE_HOME=${ORACLE_HOME} -prereqConfigLoc {{ omspatcher_stage }}/31190532/prereq_metadata/oracle.as.install.ohs.prerequisite/prereq/
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
