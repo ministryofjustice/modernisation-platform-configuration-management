@@ -35,15 +35,9 @@
       changed_when: false
       register: oms_running
 
-    - name: Re-Start OMS After Patching
+    - name: Re-Start OMS After Patching if down
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          {{ emctl_oms }} start oms
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 60
+        {{ emctl_oms }} start oms
       when: oms_running.stdout == '0'
   # block
   become: true
