@@ -12,6 +12,7 @@
         {{ emctl_oms }} stop oms -all -force
       when: oms_running.stdout == '1'
 
+    # Apply any missing pre-req patches irrespective of the RU patch
     - name: Apply Pre-req OMS Patches
       include_tasks: apply_supplemental_patches.yml
       vars:
@@ -45,6 +46,7 @@
       poll: 30
       when: patch_applied == '0'
 
+    # Apply any missing patches irrespective of the RU patch
     - name: Apply Post-RU OMS Patches
       include_tasks: apply_supplemental_patches.yml
       vars:

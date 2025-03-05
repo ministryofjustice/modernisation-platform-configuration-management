@@ -94,6 +94,9 @@
 
 - name: Install OMS Holistic Patch
   block:
+    - name: Download software from s3 bucket
+      include_tasks: download_oem_holistic_software.yml
+
     - name: Stop OMS
       ansible.builtin.shell: |
         set -eo pipefail

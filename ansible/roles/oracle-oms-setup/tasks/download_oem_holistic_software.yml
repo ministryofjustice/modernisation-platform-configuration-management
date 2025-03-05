@@ -1,10 +1,9 @@
 ---
-- name: Check if OMS RU upgrade patches exist and download if not
+# Seperate task to download OMS Holistic upgrade patches as they are so large
+- name: Check if OMS Holistic upgrade patches exist and download if not
   vars:
     files:
-      - "{{ oms_opatch_patch }}"
-      - "{{ omspatcher_patch }}"
-      - "{{ oms_ru_patch }}"
+      - "{{ oms_holistic_patch }}"
 
   block:
     - name: Check if the directory exists
@@ -21,7 +20,7 @@
         recurse: yes
       when: not dir_status.stat.exists
 
-    - name: Check if OMS RU upgrade patches exist
+    - name: Check if OMS upgrade patches exist
       ansible.builtin.stat:
         path: "{{ omspatcher_stage }}/{{ item }}"
       register: patch_files
@@ -35,7 +34,7 @@
       debug:
         msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
     
-    - name: Download OMS RU upgrade patches if they don't exist
+    - name: Download OMS Holistic upgrade patches if they don't exist
       become: true
       become_user: oracle
       amazon.aws.aws_s3:
@@ -52,7 +51,7 @@
         label: "{{ item }}"
       when: missing_files | length > 0
 
-    - name: Unzip OMS RU patches asynchronously
+    - name: Unzip OMS Holistic patches asynchronously
       become: true
       become_user: oracle
       shell: >
