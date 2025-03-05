@@ -56,7 +56,9 @@
       async: 1200
       poll: 0
       when: 
-        - (patch_status.results | selectattr('item.key', 'equalto', item.key) | map(attribute='stdout') | first | int) == 0
+        - (patch_status.results | selectattr('item.key', 'equalto', item.key) 
+          | selectattr('skipped', 'equalto', false) 
+          | map(attribute='stdout') | first | default('') | int) == 0
         - item.value[phase_variable] | default(false)
       loop: "{{ required_patches | dict2items }}"
       loop_control:
@@ -69,10 +71,12 @@
       until: result.finished
       retries: 80
       delay: 30
-      loop: "{{ run_opatch.results }}"
       when:
         - item.value[phase_variable] | default(false)
         - item.ansible_job_id is defined
+      loop: "{{ run_opatch.results | selectattr('skipped', 'equalto', false) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
 
   # block
   become: true
