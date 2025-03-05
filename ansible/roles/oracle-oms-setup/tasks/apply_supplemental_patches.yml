@@ -56,10 +56,19 @@
       async: 1200
       poll: 0
       when: 
-        - (patch_status.results | selectattr('item.key', 'equalto', item.key) 
+        # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
+        - item.value[phase_variable] | default(false)
+        # Check patches where 'skipped' is defined and ensure they were not skipped, then confirm stdout is '0' (patch not applied)
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | selectattr('skipped', 'defined') 
           | selectattr('skipped', 'equalto', false) 
           | map(attribute='stdout') | first | default('') | int) == 0
-        - item.value[phase_variable] | default(false)
+        # Check patches where 'skipped' is not defined (executed tasks) and confirm stdout is '0' (patch not applied)
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | rejectattr('skipped', 'defined')
+          | map(attribute='stdout') | first | default('') | int) == 0
       loop: "{{ required_patches | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
