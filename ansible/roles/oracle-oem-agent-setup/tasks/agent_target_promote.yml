@@ -16,21 +16,13 @@
 
     - name: Get emcli from OMS server
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          cd {{ app_dir }}/emcli
-          wget -P {{ app_dir }}/emcli --quiet --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emclikit-get
+        cd {{ app_dir }}/emcli
+        wget -P {{ app_dir }}/emcli --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
 
     - name: Install emcli
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
+        export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+        ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
 
     # EMCLI Setup script contains a password so ensure it is not readable by other users
     - name: Copy add targets shell script template
@@ -42,20 +34,15 @@
         - emcli_setup.sh
         - add_targets.sh
 
+    # Do this in one step as emcli needs to have a session open
     - name: Setup emcli, discover and promote targets
       ansible.builtin.shell: |
-        set -eo pipefail
         . ~/.bash_profile
-        main() {
-          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
-          echo "running emcli_setup.sh"
-          {{ stage }}/emcli_setup.sh
-          echo "running add_targets.sh"
-          {{ stage }}/add_targets.sh
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-install
-      async: 3600
-      poll: 60
+        export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+        echo "running emcli_setup.sh"
+        {{ stage }}/emcli_setup.sh
+        echo "running add_targets.sh"
+        {{ stage }}/add_targets.sh
 
   always:
     - name: Remove setup scripts from staging area

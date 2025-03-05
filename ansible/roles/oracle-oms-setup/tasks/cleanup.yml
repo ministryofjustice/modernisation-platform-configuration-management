@@ -4,6 +4,7 @@
     path: "{{ omspatcher_stage }}"
     hidden: True
   register: collected_files
+  no_log: true
 
 - name: Collect directory details for cleanup from {{ omspatcher_stage }}
   ansible.builtin.find:
@@ -11,6 +12,7 @@
     hidden: True
     file_type: directory
   register: collected_directories
+  no_log: true
 
 - name: remove collected files and directories
   ansible.builtin.file:
@@ -21,6 +23,7 @@
       collected_files.files
       + collected_directories.files
     }}
+  no_log: true
 
 - name: OMS Cleanup
   block:
