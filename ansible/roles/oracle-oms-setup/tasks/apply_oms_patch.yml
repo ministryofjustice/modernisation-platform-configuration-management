@@ -29,6 +29,13 @@
       debug:
         var: patch_applied
 
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ omspatcher_patch }}"
+      when: patch_applied == '0'
+
     - name: Start OMS Admin Console Only for OMS RU Patch
       ansible.builtin.shell: |
         {{ emctl_oms }} start oms -admin_only

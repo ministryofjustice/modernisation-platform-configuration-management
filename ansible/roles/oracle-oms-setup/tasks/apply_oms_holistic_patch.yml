@@ -13,34 +13,15 @@
 # p31190532_122140_Generic - fixes issue with wrong pre-req package check when applying patch (Doc ID 3061747.1)
 # p35039230_122140_Linux - fixes issue PATCH 34761383 FAILS DURING UPGRADE DUE TO UPDATED ORACLE_COMMON/JDK/JRE
 - name: Upgrade DB Client Version to 19c on OMS
+  when: sqlplus_version_check.stdout == '0'
   block:
-    - name: Download DB Client upgrade patches
-      become_user: "{{ oracle_install_user }}"
-      amazon.aws.aws_s3:
-        bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
-        dest: "{{ omspatcher_stage }}/{{ item }}"
-        mode: get
-        permission: "public-read"
-        overwrite: latest
-      loop:
-        - "p34761383_122140_Linux-x86-64.zip"
-        - "p35039230_122140_Linux-x86-64.zip"
-        - "p31190532_122140_Generic.zip"
-      when: sqlplus_version_check.stdout == '0'
-
-    - name: Unzip DB Client upgrade patches
-      ansible.builtin.unarchive:
-        src: "{{ omspatcher_stage }}/{{ item }}"
-        dest: "{{ omspatcher_stage }}"
-        owner: "{{ oracle_install_user }}"
-        group: "{{ oracle_install_group }}"
-        remote_src: yes
-      loop:
-        - "p34761383_122140_Linux-x86-64.zip"
-        - "p35039230_122140_Linux-x86-64.zip"
-        - "p31190532_122140_Generic.zip"
-      when: sqlplus_version_check.stdout == '0'
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "p34761383_122140_Linux-x86-64.zip"
+          - "p35039230_122140_Linux-x86-64.zip"
+          - "p31190532_122140_Generic.zip"
 
     - name: Apply one-off patch 35039230
       ansible.builtin.shell: |
@@ -50,7 +31,6 @@
           ./changePermJDK.sh {{ oms_middleware_home }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      when: sqlplus_version_check.stdout == '0'
 
     - name: Stop OMS
       ansible.builtin.shell: |
@@ -61,7 +41,6 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 10
-      when: sqlplus_version_check.stdout == '0'
 
     - name: Upgrade DB Client Version to 19c on OMS
       ansible.builtin.shell: |
@@ -75,7 +54,6 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 30
-      when: sqlplus_version_check.stdout == '0'
 
   # block
   become: true
@@ -93,9 +71,13 @@
     var: patch_applied
 
 - name: Install OMS Holistic Patch
+  when: patch_applied == '0'
   block:
     - name: Download software from s3 bucket
-      include_tasks: download_oem_holistic_software.yml
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ oms_holistic_patch }}"
 
     - name: Stop OMS
       ansible.builtin.shell: |
@@ -133,7 +115,6 @@
       poll: 30
 
   # block
-  when: patch_applied == '0'
   become: true
   become_user: oracle
   environment: "{{ oms_env }}"

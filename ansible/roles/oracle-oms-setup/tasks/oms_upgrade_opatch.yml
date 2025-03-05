@@ -13,6 +13,12 @@
 
 - name: Upgrade OPatch
   block:
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ oms_opatch_patch }}"
+
     # Stop running services in the ORACLE_HOME that will be patched
     - name: Stop OMS
       ansible.builtin.shell: |

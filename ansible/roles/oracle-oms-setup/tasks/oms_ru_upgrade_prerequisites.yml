@@ -1,0 +1,14 @@
+---
+- name: Check if the staging directory exists
+  ansible.builtin.stat:
+    path: "{{ omspatcher_stage }}"
+  register: dir_status
+  
+- name: Create staging directories
+  ansible.builtin.file:
+    path: "{{ omspatcher_stage }}"
+    owner: "{{ oracle_install_user }}"
+    group: "{{ oracle_install_group }}"
+    state: directory
+    recurse: yes
+  when: not dir_status.stat.exists

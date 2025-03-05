@@ -12,6 +12,12 @@
 
 - name: Upgrade OMSPatcher
   block:
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ omspatcher_patch }}"
+
     - name: Check omspatcher directory exists
       stat:
         path: "{{ oem_mw_home }}/OMSPatcher"
