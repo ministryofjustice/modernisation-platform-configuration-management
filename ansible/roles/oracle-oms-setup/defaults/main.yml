@@ -70,7 +70,8 @@ omspatcher_version: 13.9.5.24.0
 oms_holistic_patch: oms_holistic_p37562062_135000_Generic.zip
 oms_holistic_patch_number: 37562062
 
-required_patches:
+# Variables for OMS patching - need to prefix with oms_ as the role was picking up the variable from the agent role
+oms_required_patches:
   p35430934:
     # Required to be applied to OMS as pre-reqs for 13.5 RU 19 and above.
     patch_files:

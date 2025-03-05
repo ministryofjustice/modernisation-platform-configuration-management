@@ -1,19 +1,22 @@
 ---
-- name: Check if OMS RU applied
+- name: Check if OMS patch applied using omspatcher
+  vars:
+    patch_number: ""
   block:
     - name: Check OMS RU version
       ansible.builtin.shell: |
-        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep -c {{ oms_ru_patch_version }} | cat
+        export ORACLE_HOME={{ oem_mw_home }}
+        ${ORACLE_HOME}/OMSPatcher/omspatcher lspatches | grep -c {{ patch_number }} | cat
       register: required_version_check
       changed_when: false
 
     - name: Set fact for required_version_check
       ansible.builtin.set_fact:
-        oms_ru_applied: "{{ required_version_check.stdout }}"
+        patch_applied: "{{ required_version_check.stdout }}"
         
-    - name: Debug oms_ru_applied value
+    - name: Debug patch_applied value
       debug:
-        var: oms_ru_applied
+        var: patch_applied
         
   # block
   become: true

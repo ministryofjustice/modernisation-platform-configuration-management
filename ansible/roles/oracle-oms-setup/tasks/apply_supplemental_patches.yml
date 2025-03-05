@@ -4,6 +4,9 @@
     ru_phase: "pre"  # Set to "pre" or "post" when calling the task
     phase_variable: "{{ ru_phase }}_ru_patch"
   block:
+    - name: Debug ru_phase status
+      debug:
+        var: ru_phase
 
     - name: Download patches
       amazon.aws.aws_s3:
@@ -13,7 +16,7 @@
         mode: get
         permission: "public-read"
         overwrite: latest
-      loop: "{{ required_patches | dict2items }}"
+      loop: "{{ oms_required_patches | dict2items }}"
       when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
@@ -25,7 +28,7 @@
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         remote_src: yes
-      loop: "{{ required_patches | dict2items }}"
+      loop: "{{ oms_required_patches | dict2items }}"
       when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
@@ -36,7 +39,7 @@
       register: patch_status
       changed_when: false
       failed_when: false
-      loop: "{{ required_patches | dict2items }}"
+      loop: "{{ oms_required_patches | dict2items }}"
       when: "item.value[phase_variable] | default(false)"
       loop_control:
         label: "{{ item.key }}"
@@ -53,8 +56,6 @@
         cd {{ omspatcher_stage }}/{{ item.key.split('p')[1] }}
         ${ORACLE_HOME}/OPatch/opatch apply -silent
       register: run_opatch
-      async: 1200
-      poll: 0
       when: 
         # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
         - item.value[phase_variable] | default(false)
@@ -69,23 +70,9 @@
           | selectattr('item.key', 'equalto', item.key) 
           | rejectattr('skipped', 'defined')
           | map(attribute='stdout') | first | default('') | int) == 0
-      loop: "{{ required_patches | dict2items }}"
+      loop: "{{ oms_required_patches | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
-
-    - name: Wait for OPatch Install
-      async_status:
-        jid: "{{ item.ansible_job_id }}"
-      register: result
-      until: result.finished
-      retries: 80
-      delay: 30
-      when:
-        - item.value[phase_variable] | default(false)
-        - item.ansible_job_id is defined
-      loop: "{{ run_opatch.results | selectattr('skipped', 'equalto', false) }}"
-      loop_control:
-        label: "{{ item.item.key }}"
 
   # block
   become: true

@@ -1,5 +1,15 @@
 ---
-- name: Install OMS RU Patch
+# Check if the patch is already applied
+- name: Verify OMS Holistic patch is not applied
+  include_tasks: check_oms_patch_applied.yml
+  vars:
+    patch_number: "{{ oms_holistic_patch_number }}"
+
+- name: Debug patch_applied value
+  debug:
+    var: patch_applied
+
+- name: Install OMS Holistic Patch
   block:
     - name: Check status of OMS
       ansible.builtin.shell: |
@@ -18,22 +28,6 @@
       poll: 60
       when: oms_running.stdout == '1'
 
-    - name: Apply Pre-req OMS Patches
-      include_tasks: apply_supplemental_patches.yml
-      vars:
-        ru_phase: "pre"
-      when: oms_required_patches is defined and oms_required_patches | length > 0
-
-    # Check if the RU is already applied
-    - name: Verify OMS RU is not applied
-      include_tasks: check_oms_patch_applied.yml
-      vars:
-        patch_number: "{{ oms_ru_patch_number }}"
-
-    - name: Debug patch_applied value
-      debug:
-        var: patch_applied
-
     - name: Start OMS Admin Console Only for OMS RU Patch
       ansible.builtin.shell: |
         set -eo pipefail
@@ -43,27 +37,24 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 60
-      when: patch_applied == '0'
 
-    - name: Apply OMS Patches
+    # Will likely need to deinstall the previous Holistic patch before applying the new one
+    # and that functionality is not yet implemented
+    - name: Apply Holistic OMS Patch
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          cd {{ omspatcher_stage }}/{{ oms_ru_patch_number }}
-          ${ORACLE_HOME}/OMSPatcher/omspatcher apply -silent -property_file {{ omspatcher_stage }}/oms_property_file
+          export ORACLE_HOME={{ oms_middleware_home }}
+          export PATH=${ORACLE_HOME}/bin:${ORACLE_HOME}/OMSPatcher:${PATH}
+          cd {{ omspatcher_stage }}/{{ oms_holistic_patch_number }}
+          omspatcher apply {{ omspatcher_stage }}/{{ oms_holistic_patch_number }} -spb_patch -property_file {{ omspatcher_stage }}/oms_property_file -silent
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 60
-      when: patch_applied == '0'
-
-    - name: Apply Post-RU OMS Patches
-      include_tasks: apply_supplemental_patches.yml
-      vars:
-        ru_phase: "post"
-      when: oms_required_patches is defined and oms_required_patches | length > 0
 
   # block
+  when: patch_applied == '0'
   become: true
   become_user: oracle
   environment: "{{ oms_env }}"

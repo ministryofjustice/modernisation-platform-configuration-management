@@ -1,12 +1,4 @@
 ---
-# Check if the RU is already applied
-- name: Prerequisites
-  include_tasks: oms_ru_upgrade_prerequisites.yml
-
-- name: Debug oms_ru_applied value
-  debug:
-    var: oms_ru_applied
-
 - name: Upgrade OMS
   block:
     - name: Download software from s3 bucket
@@ -33,8 +25,12 @@
         action: start
       tags: blackout
 
-    - name: Apply required patches to OMS
+    - name: Apply required RU patches to OMS
       include_tasks: apply_oms_patch.yml
+      tags: patch_oms
+
+    - name: Apply required Holistic patches to OMS
+      include_tasks: apply_oms_holistic_patch.yml
       tags: patch_oms
 
     - name: End OEM Blackout
@@ -55,8 +51,7 @@
     #  include_tasks: apply_agent_patch.yml
     #  tags: upgrade_agent
 
-    - name: Remove files from staging area
+    - name: Perform cleanup
       include_tasks: cleanup.yml
       tags:
         - cleanup
-  when: oms_ru_applied == '0'
