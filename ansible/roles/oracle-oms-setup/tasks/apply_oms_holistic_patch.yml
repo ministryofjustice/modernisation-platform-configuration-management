@@ -39,7 +39,7 @@
         set -eo pipefail
         main() {
           cd {{ omspatcher_stage }}/35039230
-          ./changePermJDK.sh {{ oms_mw_home }}
+          ./changePermJDK.sh {{ oms_middleware_home }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       when: sqlplus_version_check.stdout == '0'
@@ -59,7 +59,7 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          export ORACLE_HOME={{ oms_mw_home }}
+          export ORACLE_HOME={{ oms_middleware_home }}
           cd {{ omspatcher_stage }}/34761383
           ./changePerm.sh ${ORACLE_HOME}
           ./fmw_12.2.1.19.0_dbclient_linux64.bin -invPtrLoc ${ORACLE_HOME}/oraInst.loc -silent ORACLE_HOME=${ORACLE_HOME}
