@@ -54,3 +54,6 @@
       include_tasks: cleanup.yml
       tags:
         - cleanup
+
+    - name: Remove Coherence Cache targets from OEM
+      include_tasks: oem_coherence_cache_fix.yml

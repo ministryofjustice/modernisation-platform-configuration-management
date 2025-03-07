@@ -23,6 +23,32 @@
       debug:
         var: patch_status
 
+    - name: Set fact if any patches need to be applied
+      set_fact:
+        patches_to_apply: "{{ patches_to_apply | default([]) + [item.key] }}"
+      loop: "{{ oms_required_patches | dict2items }}"
+      when: 
+        - item.value[phase_variable] | default(false)
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | selectattr('skipped', 'defined') 
+          | selectattr('skipped', 'equalto', false) 
+          | map(attribute='stdout') | first | default('') | int) == 0
+        - (patch_status.results 
+          | selectattr('item.key', 'equalto', item.key) 
+          | rejectattr('skipped', 'defined')
+          | map(attribute='stdout') | first | default('') | int) == 0
+
+    - name: Debug patches to apply
+      debug:
+        var: patches_to_apply
+
+    - name: Stop OMS if a patch needs to be applied
+      ansible.builtin.shell: |
+        {{ emctl_oms }} stop oms -all -force
+      when: patches_to_apply | length > 0
+      run_once: true
+
     - name: Download patches
       amazon.aws.aws_s3:
         bucket: "{{ artefacts_s3_bucket_name }}"
