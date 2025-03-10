@@ -76,7 +76,7 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/root.sh
+          {{ agent_home }}/root.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script
 

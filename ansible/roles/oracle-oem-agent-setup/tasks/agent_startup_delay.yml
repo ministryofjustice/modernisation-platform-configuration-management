@@ -1,7 +1,7 @@
 ---
 - name: Ensure a 2-minute delay is added after 'start)' in agentstup script
   vars:
-    agentstup_file: "{{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/install/unix/scripts/agentstup"
+    agentstup_file: "{{ agent_home }}/install/unix/scripts/agentstup"
   block:
     - name: Check if the agentstup file exists
       stat:

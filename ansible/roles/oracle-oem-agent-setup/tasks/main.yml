@@ -37,16 +37,25 @@
     - ec2provision
     - oem_agent_install
     - agent_ru_upgrade
-    - oracle_oem_patch_upgrade # run when OMS is patched on the OEM host through the oracle-oms-setup role
 
 - import_tasks: agent_target_promote.yml
   tags:
     - amibuild
     - ec2provision
     - oem_agent_target_promote
-  # Added when clause as tags were ignored when run from oracle-oms-setup role
-  #when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_target_promote' in ansible_run_tags"
+  # Added when clause as tags were ignored when this role is called from oracle-oms-setup role 
+  # This task shoudn't be run when run from oracle-oms-setup role
+  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_target_promote' in ansible_run_tags"
 
+- import_tasks: agent_gold_image.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - oem_agent_gold_image
+  # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
+  # This task shoudn't be run when run from oracle-oms-setup role
+  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
+  
 - import_tasks: agent_startup_delay.yml
   tags:
     - amibuild
@@ -54,7 +63,6 @@
     - oem_agent_startup_delay
     - oem_agent_install
     - agent_ru_upgrade
-    - oracle_oem_patch_upgrade # run when OMS is patched on the OEM host through the oracle-oms-setup role
 
 - import_tasks: cleanup.yml
   tags:

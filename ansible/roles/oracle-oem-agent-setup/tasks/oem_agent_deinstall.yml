@@ -13,13 +13,13 @@
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+          export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
           echo "Stop OEM agent"
           {{ oem_agent_base }}/agent_inst/bin/emctl stop agent 
           echo "Delete agent and monitored targets from OMS repository"
           {{ app_dir }}/emcli/emcli  delete_target -name="{{ ansible_fqdn }}:3872"  -type="oracle_emd" -delete_monitored_targets -async
           echo "Deinstall OEM agent"
-          {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/perl/bin/perl {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/sysman/install/AgentDeinstall.pl -agentHome {{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}
+          {{ agent_home }}/perl/bin/perl {{ agent_home }}/sysman/install/AgentDeinstall.pl -agentHome {{ agent_home }}
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-emcli-deinstall
       async: 86400

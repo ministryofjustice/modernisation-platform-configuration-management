@@ -21,7 +21,7 @@
 
     - name: Install emcli
       ansible.builtin.shell: |
-        export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
 
     # EMCLI Setup script contains a password so ensure it is not readable by other users
@@ -38,7 +38,7 @@
     - name: Setup emcli, discover and promote targets
       ansible.builtin.shell: |
         . ~/.bash_profile
-        export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         echo "running emcli_setup.sh"
         {{ stage }}/emcli_setup.sh
         echo "running add_targets.sh"

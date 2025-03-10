@@ -23,3 +23,19 @@
   fail:
     msg: Ensure all required parameters are set
   when: not db_all_variables_set|default(false)
+
+- name: Find the most recent Agent Home directory
+  find:
+    paths: "{{ oem_agent_base }}"
+    patterns: "*/{{ agent_home_dir}}"
+    file_type: directory
+  register: agent_dirs
+  changed_when: false
+
+- name: Set agent_home to the latest modified directory
+  set_fact:
+    agent_home: "{{ agent_dirs.files | sort(attribute='mtime', reverse=True) | map(attribute='path') | first | default(oem_agent_base ~ '/' ~ agent_home_dir) }}"
+
+- name: Debug agent_home path
+  debug:
+    msg: "Using agent_home: {{ agent_home }}"

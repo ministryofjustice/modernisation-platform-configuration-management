@@ -10,7 +10,7 @@ agent_install_response_file: /tmp/ansible-oracle-oem-agent-install.rsp
 artefact_dir: /u02
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
-agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+agent_home_dir: "agent_13.5.0.0.0" # The full path will be set dynamically in get_facts.yml
 agent_instance_home: "{{ oem_agent_base }}/agent_inst"
 agentpatcher_stage: "{{ stage }}/agentpatcher_stage"
 
@@ -20,6 +20,11 @@ agent_ru_patch: agent_p37057643_135000_Generic.zip
 agent_ru_patch_number: 37057643
 opatch_patch: opatch_p28186730_1394218_Generic.zip
 opatch_version: 13.9.4.2.18
+
+# Agent Gold Image related variables
+agent_image_name: agent13.5_gold_image
+agent_image_version_name: gold_image_v1
+agent_gold_image_stage: "{{ stage }}/{{ agent_image_name }}/{{ agent_image_version_name }}"
 
 # Only use emctl for agent from the agent instance home
 emctl: "{{ agent_instance_home }}/bin/emctl"
