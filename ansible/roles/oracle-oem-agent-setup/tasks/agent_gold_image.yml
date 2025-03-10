@@ -16,11 +16,11 @@
       changed_when: false
       no_log: true
 
+    # Can't use env var for the fqdn
     - name: Create Gold Image
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        # Can't use env var for the fqdn
-        emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="delius-core-dev-db-1.hmpps-development.modernisation-platform.internal:3872"
+        emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="{{ ansible_fqdn }}:3872"
       register: create_gold_image_result
 
     - name: Check Gold Image Creation Status
