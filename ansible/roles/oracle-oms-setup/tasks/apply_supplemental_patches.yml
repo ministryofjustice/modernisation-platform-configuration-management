@@ -46,7 +46,7 @@
     - name: Stop OMS if a patch needs to be applied
       ansible.builtin.shell: |
         {{ emctl_oms }} stop oms -all -force
-      when: patches_to_apply | length > 0
+      when: patches_to_apply is defined and patches_to_apply | length > 0
       run_once: true
 
     - name: Download patches
