@@ -30,10 +30,15 @@
         emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="{{ ansible_fqdn }}:3872"
       register: create_gold_image_result
 
+    - name: Extract Operation Name
+      ansible.builtin.shell: |
+        echo "{{ create_gold_image_result.stdout }}" | grep -o 'GOLD_AGENT_IMAGE_CREATE_[0-9_]* | head -n 1'
+      register: operation_name_result
+
     - name: Check Gold Image Creation Status
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_gold_agent_image_activity_status -operation_name={{ (create_gold_image_result.stdout | regex_findall('GOLD_AGENT_IMAGE_CREATE_\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{3}'))[0] }}
+        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }}
       register: gold_image_status_result
       changed_when: false
       until: gold_image_status_result.stdout | regex_search('Create Gold Agent Image\\s+(\\w+)', '\\1') == "PASSED"
@@ -75,14 +80,10 @@
       register: stage_gold_image_result
       when: gold_image_status == "PASSED"
 
-    - name: Debug Stage Gold Agent Image Result
-      debug:
-        var: stage_gold_image_result
-
     - name: Monitor Gold Agent Image Staging
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_gold_agent_image_activity_status -operation_name={{ (stage_gold_image_result.stdout | regex_findall('GOLD_AGENT_IMAGE_STAGE_\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{3}'))[0] }}
+        emcli get_gold_agent_image_activity_status -operation_name=$(echo "{{ stage_gold_image_result.stdout }}" | grep -o 'GOLD_AGENT_IMAGE_STAGE_[0-9_]*' | head -n 1)
       register: stage_gold_image_status_result
       changed_when: false
       until: stage_gold_image_status_result.stdout | regex_search('Stage Gold Agent Image\\s+(\\w+)', '\\1') == "PASSED"
@@ -130,9 +131,15 @@
       when: updateable_agents_result.stdout != ""
 
     - name: Parse Update Agents Operation Name
-      ansible.builtin.set_fact:
-        update_agents_op_name: "{{ (update_agents_result.stdout | regex_findall('Operation Name : (GOLD_AGENT_IMAGE_VALIDATE_\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{3})')))[0] }}"
+      ansible.builtin.shell: |
+        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+        emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
+      register: update_agents_op_name_result
 
+    - name: Set Update Agents Operation Name
+      ansible.builtin.set_fact:
+        update_agents_op_name: "{{ update_agents_op_name_result.stdout }}"
+        
     - name: Monitor Update Agents Operation
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
