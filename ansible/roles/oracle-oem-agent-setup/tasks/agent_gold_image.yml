@@ -14,7 +14,14 @@
         emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
         emcli sync
       changed_when: false
-#      no_log: true
+
+    - name: Delete existing Gold Image
+      ansible.builtin.shell: |
+        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+        emcli delete_gold_agent_image -version_name="{{ agent_image_version_name }}"
+      changed_when: false
+      ignore_errors: yes
+      register: create_gold_image_result
 
     # Can't use env var for the fqdn
     - name: Create Gold Image
