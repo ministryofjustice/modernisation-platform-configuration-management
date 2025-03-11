@@ -12,6 +12,15 @@
         {{ emctl }} start agent
       when: agent_running.stdout != "1"
 
+    - name: Monitor oem agent status
+      ansible.builtin.shell: |
+        {{ emctl }} status agent | grep -c "^Agent is Running and Ready" | cat
+      register: agent_status
+      until: agent_status.stdout == "1"
+      retries: 20
+      delay: 10
+      when: agent_running.stdout != "1"
+
   # block
   become: true
   become_user: "{{ oracle_install_user }}"

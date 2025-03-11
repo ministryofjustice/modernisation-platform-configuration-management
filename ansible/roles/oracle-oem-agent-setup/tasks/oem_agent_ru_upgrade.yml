@@ -28,6 +28,13 @@
         ru_phase: "pre"
       when: required_patches is defined and required_patches | length > 0
 
+    - name: Check if RU patch is already applied
+      shell: |
+        {{ agent_home }}/AgentPatcher/agentpatcher lspatches | grep -c {{ agent_ru_patch_number }} | cat
+      register: patch_status
+      changed_when: false
+      failed_when: false
+
     - name: Apply Agent Patch
       ansible.builtin.shell: |
         set -eo pipefail
@@ -38,6 +45,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
       poll: 60
+      when: patch_status.stdout == "0"
 
     - name: Stop oem agent
       import_tasks: stop_agent.yml
