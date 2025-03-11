@@ -32,7 +32,7 @@
 
     - name: Extract Operation Name
       ansible.builtin.shell: |
-        echo "{{ create_gold_image_result.stdout }}" | grep -o 'GOLD_AGENT_IMAGE_CREATE_[0-9_]* | head -n 1'
+        echo '{{ create_gold_image_result.stdout }}' | grep -o 'GOLD_AGENT_IMAGE_CREATE_[0-9_]*' | head -n 1
       register: operation_name_result
 
     - name: Check Gold Image Creation Status
@@ -80,10 +80,15 @@
       register: stage_gold_image_result
       when: gold_image_status == "PASSED"
 
+    - name: Extract Operation Name
+      ansible.builtin.shell: |
+        echo '{{ stage_gold_image_result.stdout }}' | grep -o 'GOLD_AGENT_IMAGE_STAGE_[0-9_]*' | head -n 1
+      register: operation_name_result
+
     - name: Monitor Gold Agent Image Staging
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_gold_agent_image_activity_status -operation_name=$(echo "{{ stage_gold_image_result.stdout }}" | grep -o 'GOLD_AGENT_IMAGE_STAGE_[0-9_]*' | head -n 1)
+        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }}
       register: stage_gold_image_status_result
       changed_when: false
       until: stage_gold_image_status_result.stdout | regex_search('Stage Gold Agent Image\\s+(\\w+)', '\\1') == "PASSED"
@@ -139,7 +144,7 @@
     - name: Set Update Agents Operation Name
       ansible.builtin.set_fact:
         update_agents_op_name: "{{ update_agents_op_name_result.stdout }}"
-        
+
     - name: Monitor Update Agents Operation
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
