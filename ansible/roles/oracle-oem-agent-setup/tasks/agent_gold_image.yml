@@ -46,8 +46,13 @@
       delay: 20
 
     - name: Parse Gold Image Creation Status
+      ansible.builtin.shell: |
+        echo "{{ gold_image_status_result.stdout }}" | awk -F',' '/Create Gold Agent Image/ {print $2}'
+      register: parsed_gold_image_status
+
+    - name: Set Gold Image Creation Status
       ansible.builtin.set_fact:
-        gold_image_status: "{{ gold_image_status_result.stdout | regex_search('Create Gold Agent Image,(\\w+)', '\\1', default='') }}"
+        gold_image_status: "{{ parsed_gold_image_status.stdout }}"
 
     - name: Fail if Gold Image Creation Failed
       ansible.builtin.fail:
@@ -96,10 +101,14 @@
       retries: 20
       delay: 20
 
-    - name: Parse Gold Agent Image Staging Status
+    - name: Parse Gold Image Creation Status
+      ansible.builtin.shell: |
+        echo "{{ stage_gold_image_status.stdout }}" | awk -F',' '/Stage Gold Agent Image/ {print $2}'
+      register: parsed_gold_image_status
+
+    - name: Set Gold Image Creation Status
       ansible.builtin.set_fact:
-        stage_gold_image_status: "{{ stage_gold_image_status_result.stdout | regex_search('Stage Gold Agent Image,(\\w+)', '\\1', default='') }}"
-      changed_when: false
+        stage_gold_image_status: "{{ parsed_gold_image_status.stdout }}"
 
     - name: Fail if Gold Agent Image Staging Failed
       ansible.builtin.fail:
