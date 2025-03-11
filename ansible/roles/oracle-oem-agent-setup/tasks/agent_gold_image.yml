@@ -38,16 +38,16 @@
     - name: Check Gold Image Creation Status
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }}
+        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }} -format="name:csv"
       register: gold_image_status_result
       changed_when: false
-      until: gold_image_status_result.stdout | regex_search('Create Gold Agent Image\\s+(\\w+)', '\\1') == "PASSED"
-      retries: 20
+      until: gold_image_status_result.stdout is search("PASSED")
+      retries: 15
       delay: 20
 
     - name: Parse Gold Image Creation Status
       ansible.builtin.set_fact:
-        gold_image_status: "{{ gold_image_status_result.stdout | regex_search('Create Gold Agent Image\\s+(\\w+)', '\\1') }}"
+        gold_image_status: "{{ gold_image_status_result.stdout | regex_search('Create Gold Agent Image,(\\w+)', '\\1') }}"
 
     - name: Fail if Gold Image Creation Failed
       ansible.builtin.fail:
@@ -84,6 +84,7 @@
       ansible.builtin.shell: |
         echo '{{ stage_gold_image_result.stdout }}' | grep -o 'GOLD_AGENT_IMAGE_STAGE_[0-9_]*' | head -n 1
       register: operation_name_result
+      changed_when: false
 
     - name: Monitor Gold Agent Image Staging
       ansible.builtin.shell: |
@@ -98,6 +99,7 @@
     - name: Parse Gold Agent Image Staging Status
       ansible.builtin.set_fact:
         stage_gold_image_status: "{{ stage_gold_image_status_result.stdout | regex_search('Stage Gold Agent Image\\s+(\\w+)', '\\1') }}"
+      changed_when: false
 
     - name: Fail if Gold Agent Image Staging Failed
       ansible.builtin.fail:
@@ -140,6 +142,7 @@
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
       register: update_agents_op_name_result
+      changed_when: false
 
     - name: Set Update Agents Operation Name
       ansible.builtin.set_fact:
@@ -160,12 +163,14 @@
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="NotExecuted"
       register: not_executed_agents_result
+      changed_when: false
 
     - name: Check Failed Agents
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Failed"
       register: failed_agents_result
+      changed_when: false
 
     - name: Fail if Any Agents Not Executed or Failed
       ansible.builtin.fail:
