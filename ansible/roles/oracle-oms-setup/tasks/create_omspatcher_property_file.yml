@@ -25,7 +25,7 @@
         - createkeys.sh
         - runCreateKeys.pl
 
-    - name: Update createkeys.sh file to change runCretaeKeys.pl path to "{{ omspatcher_stage }}"
+    - name: Update createkeys.sh file to change runCreateKeys.pl path to "{{ omspatcher_stage }}"
       ansible.builtin.lineinfile:
         path: "{{ omspatcher_stage }}/createkeys.sh"
         regexp: "^status="

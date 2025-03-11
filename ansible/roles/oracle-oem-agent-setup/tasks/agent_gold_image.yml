@@ -14,7 +14,7 @@
         emcli login -username=sysman -password="{{ db_sysman_password }}" -force
         emcli sync
       changed_when: false
-      no_log: true
+#      no_log: true
 
     # Can't use env var for the fqdn
     - name: Create Gold Image
