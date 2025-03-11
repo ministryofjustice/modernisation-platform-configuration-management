@@ -11,7 +11,7 @@
     - name: emcli Login
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli login -username=sysman -password="{{ db_sysman_password }}" -force
+        emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
         emcli sync
       changed_when: false
 #      no_log: true
