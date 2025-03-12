@@ -103,21 +103,21 @@
 
     - name: Parse Gold Image Staging Status
       ansible.builtin.shell: |
-        echo "{{ stage_gold_image_status.stdout }}" | awk -F',' '/Stage Gold Agent Image/ {print $2}'
+        echo "{{ stage_gold_image_status_result.stdout }}" | awk -F',' '/Stage Gold Agent Image/ {print $2}'
       register: parsed_gold_image_status
 
     - name: Set Gold Image Staging Status
       ansible.builtin.set_fact:
-        stage_gold_image_status: "{{ parsed_gold_image_status.stdout }}"
+        stage_gold_image_status_result: "{{ parsed_gold_image_status.stdout }}"
 
     - name: Fail if Gold Agent Image Staging Failed
       ansible.builtin.fail:
-        msg: "Gold Agent Image Staging failed with status: {{ stage_gold_image_status }}"
-      when: stage_gold_image_status != "PASSED"
+        msg: "Gold Agent Image Staging failed with status: {{ stage_gold_image_status_result }}"
+      when: stage_gold_image_status_result != "PASSED"
 
     - name: Debug Gold Agent Image Staging Status
       debug:
-        var: stage_gold_image_status
+        var: stage_gold_image_status_result
 
     - name: Subscribe all eligible agents to the Gold Image
       ansible.builtin.shell: |
