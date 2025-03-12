@@ -3,7 +3,7 @@ $GlobalConfig = @{
     "ConnectionBroker" = "$env:computername.AZURE.NOMS.ROOT"
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.AZURE.NOMS.ROOT"
-    "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
+    "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers" = @("EC2AMAZ-3SQ0F6I.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "Collections" = @{
@@ -22,16 +22,6 @@ $GlobalConfig = @{
         "FilePath" = 'C:\Windows\System32\win32calc.exe'
       }
     }
-  }
-  "test-rds-2-b" = @{
-    "ConnectionBroker" = "$env:computername.AZURE.HMPP.ROOT"
-    "LicensingServer" = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
-    "GatewayServer" = "$env:computername.AZURE.HMPP.ROOT"
-    "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
-    "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
-    "Collections" = @{}
-    "RemoteApps" = @{}
   }
   "pp-rds-1-a" = @{
     "ConnectionBroker" = "$env:computername.AZURE.HMPP.ROOT"
