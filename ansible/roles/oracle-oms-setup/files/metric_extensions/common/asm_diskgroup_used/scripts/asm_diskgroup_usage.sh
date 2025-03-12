@@ -2,6 +2,9 @@
 
 . ~/.bash_profile
 
+export ORAENV_ASK=NO
+export ORACLE_SID=$(ps -ef | grep ora_smon | awk '{print $NF}' | cut -d_ -f3 | head -1)
+. oraenv > /dev/null
 sqlplus -S / as sysdba <<EOSQL
 set heading off
 set echo off
