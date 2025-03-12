@@ -15,13 +15,26 @@
         emcli sync
       changed_when: false
 
-    - name: Delete existing Gold Image
+    - name: Check for existing Gold Image version name with Current status
+      ansible.builtin.shell: |
+        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+        emcli get_gold_agent_image_details -version_name="{{ agent_image_version_name }}" | grep -c "Status         :Current" | cat
+      register: existing_gold_image_result
+      changed_when: false
+
+    - name: Fail if Gold Image version name already exists and is in Current status
+      ansible.builtin.fail:
+        msg: "Gold Image version name {{ agent_image_version_name }} already exists and is in Current status. Update the Gold Image version name to a different value and try again."
+      when: existing_gold_image_result.stdout == "1"
+
+    - name: Delete existing Gold Image version if it's not in Current status
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli delete_gold_agent_image -version_name="{{ agent_image_version_name }}"
       changed_when: false
       ignore_errors: yes
       register: create_gold_image_result
+      when : existing_gold_image_result.stdout == "0"
 
     # Can't use env var for the fqdn
     - name: Create Gold Image
