@@ -139,53 +139,56 @@
       debug:
         var: debug_agents_file_result.stdout
 
-    - name: Update all eligible agents with the Gold Image
-      ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli update_agents -image_name="{{ agent_image_name }}" -input_file="agents_file:/tmp/agents_file.txt"
-      register: update_agents_result
+    - name: Update eligible agents  
+      block:
+        - name: Submit update job
+          ansible.builtin.shell: |
+            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+            emcli update_agents -image_name="{{ agent_image_name }}" -input_file="agents_file:/tmp/agents_file.txt"
+          register: update_agents_result
+
+        - name: Parse Update Agents Operation Name
+          ansible.builtin.shell: |
+            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+            emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
+          register: update_agents_op_name_result
+          changed_when: false
+
+        - name: Set Update Agents Operation Name
+          ansible.builtin.set_fact:
+            update_agents_op_name: "{{ update_agents_op_name_result.stdout | trim }}"
+
+        - name: Monitor Update Agents Operation
+          ansible.builtin.shell: |
+            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Inprogress"
+          register: update_agents_status_result
+          changed_when: false
+          until: update_agents_status_result.stdout.find('No Agent Update Results Found') != -1
+          retries: 60
+          delay: 20
+
+        - name: Check NotExecuted Agents
+          ansible.builtin.shell: |
+            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="NotExecuted"
+          register: not_executed_agents_result
+          changed_when: false
+
+        - name: Check Failed Agents
+          ansible.builtin.shell: |
+            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Failed"
+          register: failed_agents_result
+          changed_when: false
+
+        - name: Fail if Any Agents Not Executed or Failed
+          ansible.builtin.fail:
+            msg: "Some agents did not update successfully. NotExecuted: {{ not_executed_agents_result.stdout }}, Failed: {{ failed_agents_result.stdout }}"
+          when: not_executed_agents_result.stdout != "No Agent Update Results Found" or failed_agents_result.stdout != "No Agent Update Results Found"
+
+        - name: Debug Final Update Agents Status
+          debug:
+            var: update_agents_status_result.stdout
+      # block
       when: updateable_agents_result.stdout != ""
-
-    - name: Parse Update Agents Operation Name
-      ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
-      register: update_agents_op_name_result
-      changed_when: false
-
-    - name: Set Update Agents Operation Name
-      ansible.builtin.set_fact:
-        update_agents_op_name: "{{ update_agents_op_name_result.stdout }}"
-
-    - name: Monitor Update Agents Operation
-      ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Inprogress"
-      register: update_agents_status_result
-      changed_when: false
-      until: update_agents_status_result.stdout.find('No Agent Update Results Found') != -1
-      retries: 60
-      delay: 20
-
-    - name: Check NotExecuted Agents
-      ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="NotExecuted"
-      register: not_executed_agents_result
-      changed_when: false
-
-    - name: Check Failed Agents
-      ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Failed"
-      register: failed_agents_result
-      changed_when: false
-
-    - name: Fail if Any Agents Not Executed or Failed
-      ansible.builtin.fail:
-        msg: "Some agents did not update successfully. NotExecuted: {{ not_executed_agents_result.stdout }}, Failed: {{ failed_agents_result.stdout }}"
-      when: not_executed_agents_result.stdout != "No Agent Update Results Found" or failed_agents_result.stdout != "No Agent Update Results Found"
-
-    - name: Debug Final Update Agents Status
-      debug:
-        var: update_agents_status_result.stdout
