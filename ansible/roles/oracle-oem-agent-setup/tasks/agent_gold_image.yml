@@ -81,7 +81,7 @@
     - name: Stage Gold Agent Image
       ansible.builtin.shell: |
         export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
-        emcli stage_gold_agent_image -version_name="{{ agent_image_version_name s}}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
+        emcli stage_gold_agent_image -version_name="{{ agent_image_version_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
       register: stage_gold_image_result
       when: gold_image_status == "PASSED"
 
@@ -101,12 +101,12 @@
       retries: 20
       delay: 20
 
-    - name: Parse Gold Image Creation Status
+    - name: Parse Gold Image Staging Status
       ansible.builtin.shell: |
         echo "{{ stage_gold_image_status.stdout }}" | awk -F',' '/Stage Gold Agent Image/ {print $2}'
       register: parsed_gold_image_status
 
-    - name: Set Gold Image Creation Status
+    - name: Set Gold Image Staging Status
       ansible.builtin.set_fact:
         stage_gold_image_status: "{{ parsed_gold_image_status.stdout }}"
 
