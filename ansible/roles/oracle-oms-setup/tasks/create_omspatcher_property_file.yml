@@ -1,6 +1,11 @@
 ---
 - name: Create property File
   block:
+    - name: Check if the directory exists
+      ansible.builtin.stat:
+        path: "{{ omspatcher_stage }}"
+      register: dir_status
+
     - name: Create omspatcher staging directory
       ansible.builtin.file:
         path: "{{ omspatcher_stage }}"
@@ -8,6 +13,7 @@
         group: "{{ oracle_install_group }}"
         state: directory
         recurse: yes
+      when: not dir_status.stat.exists
 
     - name: Copy the Create Keys Files
       ansible.builtin.copy:
@@ -19,7 +25,7 @@
         - createkeys.sh
         - runCreateKeys.pl
 
-    - name: Update createkeys.sh file to change runCretaeKeys.pl path to "{{ omspatcher_stage }}"
+    - name: Update createkeys.sh file to change runCreateKeys.pl path to "{{ omspatcher_stage }}"
       ansible.builtin.lineinfile:
         path: "{{ omspatcher_stage }}/createkeys.sh"
         regexp: "^status="

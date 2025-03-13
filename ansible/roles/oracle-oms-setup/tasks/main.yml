@@ -1,4 +1,8 @@
 ---
+- name: Set verbosity level if not defined
+  set_fact:
+    verbose_level: "-v"
+
 - name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
   ansible.builtin.stat:
     path: "{{ oem_mw_home }}/bin/emctl"
@@ -53,6 +57,11 @@
 - name: Run Setup for the Central Agent
   import_role:
     name: oracle-oem-agent-setup
+  tags:
+    - amibuild
+    - ec2provision
+    - oracle_oem_patch_upgrade
+    - agent_ru_upgrade
 
 - import_tasks: create_group.yml
   tags:

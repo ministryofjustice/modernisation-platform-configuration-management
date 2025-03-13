@@ -1,6 +1,6 @@
 # Overview
 
-Use this role to install Oracle Enterprise Manager agent on target servers 
+Use this role to install/update Oracle Enterprise Manager agent on target servers 
 
 # Pre-requisites
  

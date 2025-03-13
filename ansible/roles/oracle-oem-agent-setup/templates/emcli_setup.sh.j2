@@ -1,4 +1,4 @@
 #!/bin/bash
-export JAVA_HOME={{ oem_agent_base }}/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre
+export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
 
 echo "{{ oem_sysman_password }}" | {{ app_dir }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -dir="{{ app_dir }}/emcli/conf" -trustall -noregister

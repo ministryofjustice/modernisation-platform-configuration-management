@@ -1,31 +1,41 @@
 ---
+- name: Check if the directory exists
+  ansible.builtin.stat:
+    path: "{{ agentpatcher_stage }}"
+  register: dir_status
+
 - name: Create directories
   ansible.builtin.file:
-    path: "{{ stage }}"
+    path: "{{ agentpatcher_stage }}"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     state: directory
     recurse: yes
+  when: not dir_status.stat.exists
 
 - name: Download OEM agent RU upgrade patches
   become_user: "{{ oracle_install_user }}"
   amazon.aws.aws_s3:
     bucket: "{{ artefacts_s3_bucket_name }}"
     object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
-    dest: "{{ stage }}/{{ item }}"
+    dest: "{{ agentpatcher_stage }}/{{ item }}"
     mode: get
     permission: "public-read"
     overwrite: latest
   loop:
     - "{{ agent_ru_patch }}"
     - "{{ agentpatcher_patch }}"
+    - "{{ opatch_patch }}"
 
 - name: Unzip OEM agent RU upgrade patches
   ansible.builtin.unarchive:
-    src: "{{ stage }}/{{ item }}"
-    dest: "{{ stage }}"
+    src: "{{ agentpatcher_stage }}/{{ item }}"
+    dest: "{{ agentpatcher_stage }}"
     owner: "{{ oracle_install_user }}"
     group: "{{ oracle_install_group }}"
     remote_src: yes
   loop:
     - "{{ agent_ru_patch }}"
+    - "{{ opatch_patch }}"
+    # No need to unzip agentpatcher patch as it is unzipped as part of the agentpatcher upgrade
+  no_log: true
