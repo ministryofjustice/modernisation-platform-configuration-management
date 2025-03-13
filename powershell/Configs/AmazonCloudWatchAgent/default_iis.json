@@ -1,0 +1,107 @@
+{
+    "agent": {
+      "metrics_collection_interval": 60,
+      "logfile": "c:\\ProgramData\\Amazon\\AmazonCloudWatchAgent\\Logs\\amazon-cloudwatch-agent.log"
+    },
+    "metrics": {
+      "metrics_collected": {
+        "procstat": [
+          {
+            "exe": "amazon-cloudwatch-agent",
+            "measurement": [
+              "memory_rss",
+              "memory_vms",
+              "num_threads"
+            ]
+          }
+        ],
+        "Processor": {
+          "measurement": [
+            {
+              "name": "% Idle Time",
+              "rename": "CPU_IDLE",
+              "unit": "Percent"
+            },
+            {
+              "name": "% Processor Time",
+              "rename": "PROCESSOR_TIME",
+              "unit": "Percent"
+            },
+            "% Interrupt Time",
+            "% User Time"
+          ],
+          "resources": ["*"]
+        },
+        "LogicalDisk": {
+          "measurement": [
+            {
+              "name": "% Free Space",
+              "rename": "DISK_FREE",
+              "unit": "Percent"
+            },
+            {
+              "name": "% Idle Time",
+              "unit": "Percent"
+            },
+            {
+              "name": "% Disk Read Time",
+              "rename": "DISK_READ"
+            },
+            "% Disk Write Time"
+          ],
+          "resources": ["*"]
+        },
+        "Memory": {
+          "metrics_collection_interval": 60,
+          "measurement": ["% Committed Bytes In Use", "Available Bytes", "Cache Faults/sec", "Page Faults/sec", "Pages/sec"]
+        },
+        "System": {
+          "measurement": ["Context Switches/sec", "System Calls/sec", "Processor Queue Length"]
+        }
+      },
+      "append_dimensions": {
+        "ImageId": "${aws:ImageId}",
+        "InstanceId": "${aws:InstanceId}",
+        "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+      },
+      "aggregation_dimensions": [["AutoScalingGroupName"], ["InstanceId"]]
+    },
+    "logs": {
+      "logs_collected": {
+        "files": {
+          "collect_list": [
+            {
+              "file_path": "C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*.log",
+              "log_group_name": "cwagent-windows-iis",
+              "log_stream_name": "{instance_id}"
+            }
+          ]  
+        },
+        "windows_events": {
+          "collect_list": [
+            {
+              "event_name": "System",
+              "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+              "log_group_name": "cwagent-windows-system",
+              "log_stream_name": "{instance_id}",
+              "event_format": "xml"
+            },
+            {
+              "event_name": "Application",
+              "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+              "log_group_name": "cwagent-windows-application",
+              "log_stream_name": "{instance_id}",
+              "event_format": "xml"
+            },
+            {
+              "event_name": "Security",
+              "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+              "log_group_name": "cwagent-windows-security",
+              "log_stream_name": "{instance_id}"
+            }
+          ]
+        }
+      }
+    }
+  }
+  
