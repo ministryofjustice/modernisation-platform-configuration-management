@@ -17,7 +17,8 @@
       tags: oms_opatch_upgrade
       
     - name: Start OEM Blackout
-      include_tasks: oem_blackout.yml
+      import_role:
+        name: oem_blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all
@@ -33,7 +34,8 @@
       tags: patch_oms
 
     - name: End OEM Blackout
-      include_tasks: oem_blackout.yml
+      import_role:
+        name: oem_blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all

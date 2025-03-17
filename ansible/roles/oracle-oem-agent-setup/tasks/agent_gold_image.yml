@@ -7,17 +7,14 @@
     EMCLI_HOME: "{{ app_dir }}/emcli"
     PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
   block:
-    # JAVA_HOME needs to be exported in order to use emcli 
     - name: emcli Login
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
         emcli sync
       changed_when: false
 
     - name: Check for existing Gold Image version name with Current status
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_gold_agent_image_details -version_name="{{ agent_image_version_name }}" | grep -c "Status         :Current" | cat
       register: existing_gold_image_result
       changed_when: false
@@ -29,7 +26,6 @@
 
     - name: Delete existing Gold Image version if it's not in Current status
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli delete_gold_agent_image -version_name="{{ agent_image_version_name }}"
       changed_when: false
       ignore_errors: yes
@@ -39,7 +35,6 @@
     # Can't use env var for the fqdn
     - name: Create Gold Image
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="{{ ansible_fqdn }}:3872"
       register: create_gold_image_result
 
@@ -50,7 +45,6 @@
 
     - name: Check Gold Image Creation Status
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }} -format="name:csv"
       register: gold_image_status_result
       changed_when: false
@@ -79,7 +73,6 @@
     # Promote image before it can be staged
     - name: Promote Gold Agent Image
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli promote_gold_agent_image -version_name="{{ agent_image_version_name }}" -maturity="Current"
       register: promote_gold_image_result
       when: gold_image_status == "PASSED"
@@ -93,7 +86,6 @@
      # The directories will be created if they don't exist.
     - name: Stage Gold Agent Image
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli stage_gold_agent_image -version_name="{{ agent_image_version_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
       register: stage_gold_image_result
       when: gold_image_status == "PASSED"
@@ -106,7 +98,6 @@
 
     - name: Monitor Gold Agent Image Staging
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }} -format="name:csv"
       register: stage_gold_image_status_result
       changed_when: false
@@ -134,13 +125,11 @@
 
     - name: Subscribe all eligible agents to the Gold Image
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli subscribe_agents -image_name="{{ agent_image_name }}"
       register: subscribe_agents_result
 
     - name: Get updateable agents
       ansible.builtin.shell: |
-        export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
         emcli get_updatable_agents -image_name="{{ agent_image_name }}" -output_file="/tmp/agents_file.txt"
       register: updateable_agents_result
 
@@ -156,13 +145,11 @@
       block:
         - name: Submit update job
           ansible.builtin.shell: |
-            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
             emcli update_agents -image_name="{{ agent_image_name }}" -input_file="agents_file:/tmp/agents_file.txt"
           register: update_agents_result
 
         - name: Parse Update Agents Operation Name
           ansible.builtin.shell: |
-            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
             emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
           register: update_agents_op_name_result
           changed_when: false
@@ -173,7 +160,6 @@
 
         - name: Monitor Update Agents Operation
           ansible.builtin.shell: |
-            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
             emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Inprogress"
           register: update_agents_status_result
           changed_when: false
@@ -183,14 +169,12 @@
 
         - name: Check NotExecuted Agents
           ansible.builtin.shell: |
-            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
             emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="NotExecuted"
           register: not_executed_agents_result
           changed_when: false
 
         - name: Check Failed Agents
           ansible.builtin.shell: |
-            export JAVA_HOME="{{ agent_home }}/oracle_common/jdk/jre"
             emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Failed"
           register: failed_agents_result
           changed_when: false

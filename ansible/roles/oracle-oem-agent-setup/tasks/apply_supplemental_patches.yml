@@ -14,14 +14,22 @@
       register: patch_status
       changed_when: false
       failed_when: false
-      loop: "{{ required_patches | dict2items }}"
-      when: "item.value[phase_variable] | default(false)"
+      loop: "{{ required_patches | dict2items | selectattr('value.' + phase_variable, 'defined') | selectattr('value.' + phase_variable, 'true') }}"
       loop_control:
         label: "{{ item.key }}"
 
     - name: Debug patch status
       debug:
         var: patch_status
+
+    - name: Identify patches that need to be applied
+      set_fact:
+        patches_to_apply: "{{ patches_to_apply | default([]) + [item.item.key] }}"
+        patches_to_apply_dict: "{{ patches_to_apply_dict | default({}) | combine({item.item.key: item.item.value}) }}"
+      loop: "{{ patch_status.results }}"
+      when: item.stdout | default('0') | int == 0
+      loop_control:
+        label: "{{ item.item.key }}"
 
     - name: Download patches
       amazon.aws.aws_s3:
@@ -31,21 +39,7 @@
         mode: get
         permission: "public-read"
         overwrite: latest
-      loop: "{{ required_patches | dict2items }}"
-      when: 
-        # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
-        - item.value[phase_variable] | default(false)
-        # Check patches where 'skipped' is defined and ensure they were not skipped, then confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | selectattr('skipped', 'defined') 
-          | selectattr('skipped', 'equalto', false) 
-          | map(attribute='stdout') | first | default('') | int) == 0
-        # Check patches where 'skipped' is not defined (executed tasks) and confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | rejectattr('skipped', 'defined')
-          | map(attribute='stdout') | first | default('') | int) == 0
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
 
@@ -56,21 +50,7 @@
         owner: "{{ oracle_install_user }}"
         group: "{{ oracle_install_group }}"
         remote_src: yes
-      loop: "{{ required_patches | dict2items }}"
-      when: 
-        # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
-        - item.value[phase_variable] | default(false)
-        # Check patches where 'skipped' is defined and ensure they were not skipped, then confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | selectattr('skipped', 'defined') 
-          | selectattr('skipped', 'equalto', false) 
-          | map(attribute='stdout') | first | default('') | int) == 0
-        # Check patches where 'skipped' is not defined (executed tasks) and confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | rejectattr('skipped', 'defined')
-          | map(attribute='stdout') | first | default('') | int) == 0
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
 
@@ -82,21 +62,7 @@
         cd {{ agentpatcher_stage }}/{{ item.key.split('p')[1] }}
         ${ORACLE_HOME}/OPatch/opatch apply -silent
       register: run_opatch
-      when: 
-        # Ensure the patch is relevant to the current phase (e.g., pre- or post-RU)
-        - item.value[phase_variable] | default(false)
-        # Check patches where 'skipped' is defined and ensure they were not skipped, then confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | selectattr('skipped', 'defined') 
-          | selectattr('skipped', 'equalto', false) 
-          | map(attribute='stdout') | first | default('') | int) == 0
-        # Check patches where 'skipped' is not defined (executed tasks) and confirm stdout is '0' (patch not applied)
-        - (patch_status.results 
-          | selectattr('item.key', 'equalto', item.key) 
-          | rejectattr('skipped', 'defined')
-          | map(attribute='stdout') | first | default('') | int) == 0
-      loop: "{{ required_patches | dict2items }}"
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
 

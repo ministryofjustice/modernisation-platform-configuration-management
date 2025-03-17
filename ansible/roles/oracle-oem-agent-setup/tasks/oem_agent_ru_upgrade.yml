@@ -6,12 +6,12 @@
       tags: download_oem_ru_software
 
     - name: Start OEM Blackout
-      include_tasks: oem_blackout.yml
+      import_role:
+        name: oem_blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all
         action: start
-      tags: blackout
 
     - name: Stop oem agent
       import_tasks: stop_agent.yml
@@ -60,12 +60,12 @@
       import_tasks: start_agent.yml
 
     - name: End OEM Blackout
-      include_tasks: oem_blackout.yml
+      import_role:
+        name: oem_blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all
         action: stop
-      tags: blackout
 
   # block
   become: true
