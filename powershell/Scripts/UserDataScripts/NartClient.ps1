@@ -463,8 +463,14 @@ Install-RDSSessionHostRole
 #     Exit $LASTEXITCODE
 # }
 # }}} end of join domain
-$newModulePath = Join-Path $PSScriptRoot "..\..\Modules"
-Add-PermanentPSModulePath -NewPath $newModulePath
+
+# Add modules permanently to PSModulePath
+$ModulesPath = Join-Path $PSScriptRoot "..\..\Modules"
+Add-PermanentPSModulePath -NewPath $ModulePaths
+# Add to system environment (persistent)
+[Environment]::SetEnvironmentVariable("PSModulePath", $env:PSModulePath + ";" + $ModulesPath, "Machine")
+# Also add to current session
+$env:PSModulePath = $env:PSModulePath + ";" + $ModulesPath
 
 Import-Module ModPlatformAD -Force
 
