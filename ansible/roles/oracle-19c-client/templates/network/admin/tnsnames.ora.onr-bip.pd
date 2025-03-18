@@ -6,7 +6,7 @@ PDBOAUD =
   (ADDRESS = (PROTOCOL = TCP)(HOST = pd-oasys-db-a.oasys.hmpps-production.modernisation-platform.internal)(PORT = 1521))
   (CONNECT_DATA =
    (SERVER = DEDICATED)
-   (SERVICE_NAME = BIAUD_TAF)
+   (SERVICE_NAME = BOAUD_TAF)
   )
  )
 
@@ -16,6 +16,16 @@ PDBOSYS =
   (ADDRESS = (PROTOCOL = TCP)(HOST = pd-oasys-db-a.oasys.hmpps-production.modernisation-platform.internal)(PORT = 1521))
   (CONNECT_DATA =
    (SERVER = DEDICATED)
-   (SERVICE_NAME = BISYS_TAF)
+   (SERVICE_NAME = BOSYS_TAF)
+  )
+ )
+
+OASYSREP =
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = OASYSREP_TAF)
   )
  )

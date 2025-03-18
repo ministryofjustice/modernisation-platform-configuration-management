@@ -12,7 +12,7 @@ oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle
 db_env:
   ORACLE_HOME: "{{ database_home }}"
   PATH: "{{ database_home }}/bin:{{ oracle_path }}"
-oracle_ru_patch: JUL2024
+oracle_ru_patch: OCT2024
 
 osbws_additional_configs:
   - name: osbws_prod
@@ -46,9 +46,9 @@ db_configs:
     db_name: PIWFM
     db_unique_name: PIWFM
     instance_name: PIWFM
-    host_name: pd-csr-db-a
+    host_name: pd-csr-db-a.corporate-staff-rostering.hmpps-production.modernisation-platform.internal
     port: 1521
-    tns_name: PPIWFM
+    tns_name: PIWFM
     asm_disk_groups: DATA,FLASH
     service:
       - { name: IWFM_TAF, role: PRIMARY }

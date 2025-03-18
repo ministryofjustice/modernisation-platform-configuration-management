@@ -474,6 +474,19 @@ function Add-MicrosoftOffice {
   choco install -y microsoft-office-deployment
 }
 
+function Add-LibreOffice {
+  [CmdletBinding()]
+  param (
+    [hashtable]$Config
+  )
+
+  $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
+  Write-Output "Install LibreOffice"
+  choco install -y kb2919442 # workaround libreoffice dependency error
+  choco install -y kb2919355
+  choco install -y libreoffice-still
+}
+
 function Remove-StartMenuShutdownOption {
   [CmdletBinding()]
   param (
@@ -561,6 +574,7 @@ $ScriptDir = Get-Location
 $Config = Get-Config
 Add-EC2InstanceToConfig $Config
 Add-Java6 $Config
+Add-Java8 $Config
 Add-JavaDeployment $Config
 Add-Java6NomisWebUtils $Config
 Remove-JavaUpdateCheck $Config
@@ -573,5 +587,6 @@ Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
 Get-PowerShellCommandFromTag -Command Install-WindowsFeature
 Add-MicrosoftOffice $Config
+Add-LibreOffice $Config
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
