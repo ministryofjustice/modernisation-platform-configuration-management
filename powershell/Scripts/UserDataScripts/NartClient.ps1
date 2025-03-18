@@ -14,13 +14,13 @@ $GlobalConfig = @{
         "SQLDeveloperS3Folder"       = "hmpps/sqldeveloper"
     }
     "hmpps-domain-services-development"   = @{
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts"    = @{
         }
     }
     "hmpps-domain-services-test"          = @{
         "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "newClientName"   = "T2-JUMP2022-2"
         "NcrShortcuts"    = @{
         }
@@ -472,11 +472,18 @@ Add-PermanentPSModulePath -NewPath $ModulesPath
 # Also add to current session
 $env:PSModulePath = $env:PSModulePath + ";" + $ModulesPath
 
+# Change name and Join the domain
 . ../ModPlatformAD/Join-ModPlatformAD.ps1
 
 if ($LASTEXITCODE -ne 0) {
    Exit $LASTEXITCODE
 }
+
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+# Move the computer to the correct OU
+Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
