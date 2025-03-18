@@ -472,9 +472,11 @@ Add-PermanentPSModulePath -NewPath $ModulesPath
 # Also add to current session
 $env:PSModulePath = $env:PSModulePath + ";" + $ModulesPath
 
-Import-Module ModPlatformAD -Force
+. ../ModPlatformAD/Join-ModPlatformAD.ps1
 
-Join-ModPlatformAD -NewHostname $Config.newClientName
+if ($LASTEXITCODE -ne 0) {
+   Exit $LASTEXITCODE
+}
 
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
