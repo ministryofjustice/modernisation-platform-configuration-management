@@ -466,7 +466,7 @@ Install-RDSSessionHostRole
 
 # Add modules permanently to PSModulePath
 $ModulesPath = Join-Path $PSScriptRoot "..\..\Modules"
-Add-PermanentPSModulePath -NewPath $ModulePaths
+Add-PermanentPSModulePath -NewPath $ModulesPath
 # Add to system environment (persistent)
 [Environment]::SetEnvironmentVariable("PSModulePath", $env:PSModulePath + ";" + $ModulesPath, "Machine")
 # Also add to current session
