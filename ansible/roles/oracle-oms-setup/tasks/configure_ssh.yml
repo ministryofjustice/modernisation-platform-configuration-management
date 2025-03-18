@@ -48,7 +48,6 @@
   become: true
   become_user: oracle
 
-
 - name: Read Public key
   slurp:
     src: "/home/{{ oracle_install_user }}/.ssh/oem_ssh_key.pub"

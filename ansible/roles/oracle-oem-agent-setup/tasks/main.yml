@@ -2,7 +2,7 @@
 - name: Print active tags before running tasks
   debug:
     var: ansible_run_tags
-    
+
 - name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
   ansible.builtin.stat:
     path: "{{ oem_agent_base }}/agent_inst/bin/emctl"
@@ -43,7 +43,7 @@
     - amibuild
     - ec2provision
     - oem_agent_target_promote
-  # Added when clause as tags were ignored when this role is called from oracle-oms-setup role 
+  # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
   # This task shoudn't be run when run from oracle-oms-setup role
   when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_target_promote' in ansible_run_tags"
 
@@ -55,7 +55,7 @@
   # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
   # This task shoudn't be run when run from oracle-oms-setup role
   when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
-  
+
 - import_tasks: agent_startup_delay.yml
   tags:
     - amibuild

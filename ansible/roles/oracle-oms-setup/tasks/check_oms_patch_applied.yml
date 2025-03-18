@@ -13,11 +13,11 @@
     - name: Set fact for required_version_check
       ansible.builtin.set_fact:
         patch_applied: "{{ required_version_check.stdout }}"
-        
+
     - name: Debug patch_applied value
       debug:
         var: patch_applied
-        
+
   # block
   become: true
   become_user: "{{ oracle_install_user }}"

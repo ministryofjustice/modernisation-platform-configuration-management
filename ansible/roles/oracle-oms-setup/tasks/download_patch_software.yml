@@ -17,7 +17,7 @@
     - name: Debug missing files
       debug:
         msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
-    
+
     - name: Download patches if they don't exist
       become: true
       become_user: oracle
@@ -46,8 +46,8 @@
         fi
       args:
         executable: /bin/bash
-      async: 3600  # Allow up to 1 hour
-      poll: 0  # Run in the background
+      async: 3600 # Allow up to 1 hour
+      poll: 0 # Run in the background
       register: unzip_task
       loop: "{{ files }}"
       when: item is match(".*(\\.zip|\\.tar\\.gz)$")
@@ -62,4 +62,3 @@
       retries: 60
       delay: 10
       loop: "{{ unzip_task.results }}"
-      

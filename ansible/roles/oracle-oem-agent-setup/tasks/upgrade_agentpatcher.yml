@@ -1,7 +1,6 @@
 ---
 - name: Upgrade AgentPatcher
   block:
-
     - name: Get AgentPatcher Version
       ansible.builtin.shell: |
         {{ agent_home }}/AgentPatcher/agentpatcher version | head -1 | cut -d' '  -f3 | grep {{ agentpatcher_version }} | wc -l

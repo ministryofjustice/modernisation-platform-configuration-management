@@ -16,7 +16,7 @@
       include_tasks: apply_supplemental_patches.yml
       vars:
         ru_phase: "pre"
-      when: 
+      when:
         - oms_required_patches is defined and oms_required_patches | length > 0
         - patch_applied == '0'
 

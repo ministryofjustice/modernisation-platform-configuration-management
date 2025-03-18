@@ -1,7 +1,7 @@
 ---
 - name: Apply Supplementary Patches
   vars:
-    ru_phase: "pre"  # Set to "pre" or "post" when calling the task
+    ru_phase: "pre" # Set to "pre" or "post" when calling the task
     phase_variable: "{{ ru_phase }}_ru_patch"
   block:
     - name: Debug ru_phase status
@@ -53,7 +53,7 @@
       loop_control:
         label: "{{ item.key }}"
 
-    - name: Extract patches 
+    - name: Extract patches
       ansible.builtin.unarchive:
         src: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
         dest: "{{ omspatcher_stage }}"

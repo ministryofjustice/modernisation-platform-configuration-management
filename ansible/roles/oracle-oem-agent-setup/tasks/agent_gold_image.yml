@@ -2,7 +2,7 @@
 - name: Agent Gold Image Creation
   become: true
   become_user: "{{ oracle_install_user }}"
-  environment: 
+  environment:
     ORACLE_HOME: "{{ app_dir }}"
     EMCLI_HOME: "{{ app_dir }}/emcli"
     PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
@@ -30,7 +30,7 @@
       changed_when: false
       ignore_errors: yes
       register: create_gold_image_result
-      when : existing_gold_image_result.stdout == "0"
+      when: existing_gold_image_result.stdout == "0"
 
     # Can't use env var for the fqdn
     - name: Create Gold Image
@@ -81,9 +81,8 @@
       debug:
         var: promote_gold_image_result
 
-
-     # Stage the image files on the OMS host to make them accessible for OMS import and deployment.
-     # The directories will be created if they don't exist.
+      # Stage the image files on the OMS host to make them accessible for OMS import and deployment.
+      # The directories will be created if they don't exist.
     - name: Stage Gold Agent Image
       ansible.builtin.shell: |
         emcli stage_gold_agent_image -version_name="{{ agent_image_version_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
@@ -141,7 +140,7 @@
       debug:
         var: debug_agents_file_result.stdout
 
-    - name: Update eligible agents  
+    - name: Update eligible agents
       block:
         - name: Submit update job
           ansible.builtin.shell: |

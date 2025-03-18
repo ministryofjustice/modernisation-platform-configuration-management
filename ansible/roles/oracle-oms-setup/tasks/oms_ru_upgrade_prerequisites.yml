@@ -3,7 +3,7 @@
   ansible.builtin.stat:
     path: "{{ omspatcher_stage }}"
   register: dir_status
-  
+
 - name: Create staging directories
   ansible.builtin.file:
     path: "{{ omspatcher_stage }}"

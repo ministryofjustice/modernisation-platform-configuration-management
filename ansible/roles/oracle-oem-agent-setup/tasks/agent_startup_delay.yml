@@ -21,6 +21,6 @@
         line: "    sleep 120"
         insertafter: "^\\s*start\\)"
         state: present
-      when: 
+      when:
         - agentstup_stat.stat.exists
         - sleep_check.rc != 0
