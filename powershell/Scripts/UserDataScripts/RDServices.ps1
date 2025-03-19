@@ -95,6 +95,7 @@ function Add-PermanentPSModulePath {
       [Parameter(Mandatory = $true)]
       [string]$NewPath
   )
+  # IMPORTANT: This will currently only make these visible when running as ADMINISTRATOR
 
   # Get current Machine PSModulePath from the registry
   $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
