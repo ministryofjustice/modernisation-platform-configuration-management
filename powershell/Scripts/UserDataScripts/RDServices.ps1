@@ -229,7 +229,7 @@ $commands = {
   Add-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServer $Config.GatewayServer -GatewayExternalFqdn $Config.GatewayExternalFqdn
 }
 
-Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $credentials -ArgumentList $Config, $PSScriptRoot
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $credentials -UseSSL -ArgumentList $Config, $PSScriptRoot
 
 # Import-Module ModPlatformRemoteDesktop -Force
 # Install-RDSWindowsFeatures
@@ -243,6 +243,7 @@ Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $crede
 # Add-Collections -ConnectionBroker $Config.ConnectionBroker -Collections $Config.Collections
 # Add-RemoteApps -ConnectionBroker $Config.ConnectionBroker -RemoteApps $Config.RemoteApps
 
+# # Removes servers that are NOT in the $Config block
 # Remove-RDWebAccessServer -ConnectionBroker $Config.ConnectionBroker -WebAccessServerToKeep $Config.WebAccessServer
 # Remove-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServerToKeep $Config.GatewayServer
 # Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
