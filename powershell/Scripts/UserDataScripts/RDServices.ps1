@@ -7,6 +7,8 @@ $GlobalConfig = @{
     "SessionHostServers" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "rdsOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+    "svcRdsSecretsVault" = "/microsoft/AD/azure.noms.root/shared-passwords"
+    "domain" = "AZURE"
     "Collections" = @{
       "Test" = @{
         "SessionHosts" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
@@ -88,6 +90,37 @@ function Get-Config {
     Write-Error "Unexpected Name tag value $NameTag"
   }
   Return $GlobalConfig[$NameTag]
+}
+
+function Get-SecretValue {
+  param (
+      [Parameter(Mandatory)]
+      [string]$SecretId,
+      [Parameter(Mandatory)]
+      [string]$SecretKey
+  )
+
+  try {
+      $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+      if ($null -eq $secretJson -or $secretJson -eq '') {
+          Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+          return $null
+      }
+
+      $secretObject = $secretJson | ConvertFrom-Json
+
+      if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+          Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+          return $null
+      }
+
+      return $secretObject.$SecretKey
+  }
+  catch {
+      Write-Host "An error occurred while retrieving the secret: $_"
+      return $null
+  }
 }
 
 function Add-PermanentPSModulePath {
@@ -174,6 +207,26 @@ $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.rdsOU)
+
+$svc_nart_password = Get-SecretValue -SecretId $($Config.svcRdsSecretsVault) -SecretKey "svc_rds" -ErrorAction SilentlyContinue
+
+$username = "$($Config.domain)\svc_rds"
+$secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -Force
+
+$credentials = New-Object System.Management.Automation.PSCredential($username, $secure_password)
+
+$commands = {
+  param($Config, $localScriptRoot)
+  # import module into context, this may not be needed anymore, test without later
+  $ModulesRepo = Join-Path $localScriptRoot '..\..\Modules'
+  $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+  Import-Module ModPlatformRemoteDesktop -Force
+
+  Install-RDSWindowsFeatures
+
+}
+
+Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $credentials -ArgumentList $Config, $PSScriptRoot
 
 # Import-Module ModPlatformRemoteDesktop -Force
 
