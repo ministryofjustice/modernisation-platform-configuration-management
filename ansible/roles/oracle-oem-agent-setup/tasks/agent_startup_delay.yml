@@ -1,26 +1,50 @@
----
-- name: Ensure a 2-minute delay is added after 'start)' in agentstup script
+- name: Ensure a 2-minute delay is added to agentstup file and its templates
   vars:
     agentstup_file: "{{ agent_home }}/install/unix/scripts/agentstup"
+    agentstup_template1: "{{ agent_home }}/inventory/Templates/install/unix/scripts/agentstup.template"
+    agentstup_template2: "{{ agent_home }}/install/unix/scripts/agentstup.template"
   block:
-    - name: Check if the agentstup file exists
+    - name: Check if files exist
       stat:
-        path: "{{ agentstup_file }}"
-      register: agentstup_stat
+        path: "{{ item }}"
+      register: file_stats
+      loop:
+        - "{{ agentstup_file }}"
+        - "{{ agentstup_template1 }}"
+        - "{{ agentstup_template2 }}"
 
-    - name: Check if 'sleep' is already in the file
-      command: grep -q 'sleep' "{{ agentstup_file }}"
-      register: sleep_check
+    - name: Create dict of file existence status
+      set_fact:
+        file_exists: "{{ file_exists|default({}) | combine({item.item: item.stat.exists}) }}"
+      loop: "{{ file_stats.results }}"
+
+    - name: Check if 'sleep' is already in the files
+      command: grep -q 'sleep' "{{ item }}"
+      register: sleep_checks
       changed_when: false
       failed_when: false
-      when: agentstup_stat.stat.exists
+      when: file_exists[item]
+      loop:
+        - "{{ agentstup_file }}"
+        - "{{ agentstup_template1 }}"
+        - "{{ agentstup_template2 }}"
+
+    - name: Create dict of sleep check results
+      set_fact:
+        sleep_exists: "{{ sleep_exists|default({}) | combine({item.item: (item.rc == 0)}) }}"
+      loop: "{{ sleep_checks.results }}"
+      when: item.skipped is not defined
 
     - name: Add sleep 120 after 'start)' if not already present
       lineinfile:
-        path: "{{ agentstup_file }}"
+        path: "{{ item }}"
         line: "    sleep 120"
         insertafter: "^\\s*start\\)"
         state: present
-      when:
-        - agentstup_stat.stat.exists
-        - sleep_check.rc != 0
+      when: 
+        - file_exists[item] | default(false)
+        - not (sleep_exists[item] | default(false))
+      loop:
+        - "{{ agentstup_file }}"
+        - "{{ agentstup_template1 }}"
+        - "{{ agentstup_template2 }}"

@@ -170,7 +170,7 @@
             emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Inprogress"
           register: update_agents_status_result
           changed_when: false
-          until: update_agents_status_result.stdout.find('No Agent Update Results Found') != -1
+          until: update_agents_status_result.stdout is regex("No Agent Update Results Found")
           retries: 100
           delay: 20
 
