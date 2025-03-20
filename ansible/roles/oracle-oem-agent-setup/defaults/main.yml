@@ -10,11 +10,28 @@ agent_install_response_file: /tmp/ansible-oracle-oem-agent-install.rsp
 artefact_dir: /u02
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
-agent_ru_patch: p35437910_135000_Generic.zip
-agent_ru_patch_number: 35437910
-agentpatcher_patch: p33355570_135000_Generic.zip
-agentpatcher_version: 13.9.5.5.0
-agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+agent_home_dir: "agent_13.5.0.0.0" # The full path will be set dynamically in get_facts.yml
+agent_instance_home: "{{ oem_agent_base }}/agent_inst"
+agentpatcher_stage: "{{ stage }}/agentpatcher_stage"
+
+agentpatcher_patch: agentpatcher_p33355570_135000_Generic.zip
+agentpatcher_version: 13.9.5.10.0
+agent_ru_patch: agent_p37057643_135000_Generic.zip
+agent_ru_patch_number: 37057643
+opatch_patch: opatch_p28186730_1394218_Generic.zip
+opatch_version: 13.9.4.2.18
+
+# Agent Gold Image related variables
+agent_image_name: agent13.5_gold_image
+agent_image_version_name: gold_image_v1
+agent_gold_image_stage: "{{ stage }}/{{ agent_image_name }}/{{ agent_image_version_name }}"
+
+# Only use emctl for agent from the agent instance home
+emctl: "{{ agent_instance_home }}/bin/emctl"
+
+agent_env:
+  ORACLE_HOME: "{{ agent_home }}"
+  PATH: "{{ agent_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
 
 oem_secretsmanager_passwords:
   oem:
@@ -37,3 +54,33 @@ db_monitoring_secret_primary_username: dbsnmp
 db_monitoring_secret_primary_role: normal
 db_monitoring_secret_standby_username: dbsnmp
 db_monitoring_secret_standby_role: normal
+
+required_patches:
+  p37297691:
+    # Required to be applied to Agent home if 13.5 Holistic OMS patch applied.
+    patch_files:
+      filename: agent_p37297691_122140_Linux-x86-64.zip
+    description: "EM 13.5 R25 Post-Holistic patch - OSS 19C BUNDLE PATCH 12.2.1.4.241119"
+    pre_ru_patch: false
+    post_ru_patch: true
+  p34831198:
+    # Recommended agent patch.
+    patch_files:
+      filename: agent_p34831198_135000_Linux-x86-64.zip
+    description: "PERL PATCH FOR EM 13.5 FOR CVE-2022-43680: LIBEXPAT UPDATE TO 2.5.0"
+    pre_ru_patch: false
+    post_ru_patch: true
+  p37453807:
+    # Recommended agent patch.
+    patch_files:
+      filename: agent_p37453807_122140_Generic.zip
+    description: "WLS PATCH SET UPDATE 12.2.1.4.250107"
+    pre_ru_patch: false
+    post_ru_patch: true
+  p36459164:
+    # Recommended agent patch.
+    patch_files:
+      filename: agent_p36459164_135000_Linux-x86-64.zip
+    description: "MERGE REQUEST ON TOP OF 13.5.0.0.0 FOR BUGS 33565758 36015161"
+    pre_ru_patch: false
+    post_ru_patch: true

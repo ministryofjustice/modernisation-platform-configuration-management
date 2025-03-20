@@ -1,16 +1,18 @@
 ---
-- name: Collect file details for cleanup from {{ stage }}
+- name: Collect file details for cleanup from {{ omspatcher_stage }}
   ansible.builtin.find:
-    path: "{{ stage }}"
+    path: "{{ omspatcher_stage }}"
     hidden: True
   register: collected_files
+  no_log: true
 
-- name: Collect directory details for cleanup from {{ stage }}
+- name: Collect directory details for cleanup from {{ omspatcher_stage }}
   ansible.builtin.find:
-    paths: "{{ stage }}"
+    paths: "{{ omspatcher_stage }}"
     hidden: True
     file_type: directory
   register: collected_directories
+  no_log: true
 
 - name: remove collected files and directories
   ansible.builtin.file:
@@ -21,3 +23,26 @@
       collected_files.files
       + collected_directories.files
     }}
+  no_log: true
+
+- name: OMS Cleanup
+  block:
+    - name: Remove OMSPatcher Property File
+      file:
+        path: "{{ omspatcher_stage }}/oms_property_file"
+        state: absent
+
+    - name: Check status of OMS
+      ansible.builtin.shell: |
+        {{ emctl_oms }} status oms | grep -c "^Oracle Management Server is Up" | cat
+      changed_when: false
+      register: oms_running
+
+    - name: Re-Start OMS After Patching if down
+      ansible.builtin.shell: |
+        {{ emctl_oms }} start oms
+      when: oms_running.stdout == '0'
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"

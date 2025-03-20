@@ -1,39 +1,61 @@
 ---
-- name: Prerequisites
-  include_tasks: oms_ru_upgrade_prerequisites.yml
+- name: Upgrade OMS
+  block:
+    - name: Prerequisites
+      include_tasks: oms_ru_upgrade_prerequisites.yml
 
-- name: Download software from s3 bucket
-  include_tasks: download_oem_ru_software.yml
-  tags: download
+    - name: Create OMSPatcher properties file
+      include_tasks: create_omspatcher_property_file.yml
+      tags: oms_property_file
 
-- name: Update OMSPatcher
-  include_tasks: oms_upgrade_omspatcher.yml
-  tags: omspatcher_upgrade
+    - name: Update OMSPatcher
+      include_tasks: oms_upgrade_omspatcher.yml
+      tags: omspatcher_upgrade
 
-- name: Update OPatch
-  include_tasks: oms_upgrade_opatch.yml
-  tags: oms_opatch_upgrade
+    - name: Update OMS OPatch
+      include_tasks: oms_upgrade_opatch.yml
+      tags: oms_opatch_upgrade
 
-- name: Create OMSPatcher properties file
-  include_tasks: create_omspatcher_property_file.yml
-  tags: oms_property_file
+    - name: Start OEM Blackout
+      import_role:
+        name: oem_blackout
+      vars:
+        blackout: "oms_ru_patching"
+        object_type: all
+        action: start
+      tags: blackout
 
-- name: Apply required patches to OMS
-  include_tasks: apply_oms_patch.yml
-  tags: patch_oms
+    - name: Apply required RU patches to OMS
+      include_tasks: apply_oms_patch.yml
+      tags: patch_oms
 
-- name: Update AgentPatcher
-  include_tasks: oms_upgrade_agentpatcher.yml
-  tags: omspatcher_upgrade
+    - name: Apply required Holistic patches to OMS
+      include_tasks: apply_oms_holistic_patch.yml
+      tags: patch_oms
 
-- name: Upgrade central agent
-  include_tasks: apply_agent_patch.yml
-  tags: upgrade_agent
+    - name: End OEM Blackout
+      import_role:
+        name: oem_blackout
+      vars:
+        blackout: "oms_ru_patching"
+        object_type: all
+        action: stop
+      tags: blackout
 
-- name: Remove files from staging area
-  include_tasks: cleanup.yml
-  vars:
-    patch_type: agent
-  tags:
-    - patch_agent
-    - cleanup
+    # This will be done through the oracle-oem-agent-setup role so not required here
+    #- name: Update AgentPatcher
+    #  include_tasks: oms_upgrade_agentpatcher.yml
+    #  tags: omspatcher_upgrade
+
+    # This will be done through the oracle-oem-agent-setup role so not required here
+    #- name: Upgrade central agent
+    #  include_tasks: apply_agent_patch.yml
+    #  tags: upgrade_agent
+
+    - name: Perform cleanup
+      include_tasks: cleanup.yml
+      tags:
+        - cleanup
+
+    - name: Remove Coherence Cache targets from OEM
+      include_tasks: oem_coherence_cache_fix.yml

@@ -1,0 +1,36 @@
+---
+# Coherence was introduced after OEM 13.4 and the Coherence Cache targets will show as Down after updating OEM versions.
+# Coherence is part of the OEM to integrate when needed for JMX monitoring.
+# This task will remove the Coherence Cache targets from being monitored.
+# See "EM 13c: GCDomain Coherence Targets Are Showing Down in the OEM Console (Doc ID 2657900.1)"
+- name: Remove Coherence Cache targets from OEM
+  become: true
+  become_user: oracle
+  block:
+    - name: emcli Login
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_HOME="{{ oem_mw_home }}"
+        export EMCLI_HOME="$ORACLE_HOME/bin"
+        export JAVA_HOME="$ORACLE_HOME/oracle_common/jdk/jre"
+        PATH=$PATH:$JAVA_HOME/bin:$EMCLI_HOME
+        $EMCLI_HOME/emcli login -username=sysman -password="{{ db_sysman_password }}" -force
+      changed_when: false
+      no_log: true
+
+    - name: Remove Coherence targets from the console
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_HOME="{{ oem_mw_home }}"
+        export EMCLI_HOME="$ORACLE_HOME/bin"
+        export JAVA_HOME="$ORACLE_HOME/oracle_common/jdk/jre"
+        PATH=$PATH:$JAVA_HOME/bin:$EMCLI_HOME
+        # Ensure EMCLI is set up after login
+        $EMCLI_HOME/emcli sync
+        # Get the list of Coherence Cache targets
+        COHERENCE_TARGETS=$($EMCLI_HOME/emcli get_targets -target="oracle_coherence_cache" -noheader -format="name:script;column_separator:|" | awk -F '|' '{print $4}')
+        # Delete each Coherence Cache target
+        for TARGET in $COHERENCE_TARGETS; do
+            echo "Deleting target: $TARGET"
+            $EMCLI_HOME/emcli delete_target -name="$TARGET" -type="oracle_coherence_cache" -delete_monitored_targets
+        done

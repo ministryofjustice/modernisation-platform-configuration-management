@@ -1,0 +1,83 @@
+---
+- name: Apply Supplementary Patches
+  vars:
+    ru_phase: "pre" # Set to "pre" or "post" when calling the task
+    phase_variable: "{{ ru_phase }}_ru_patch"
+  block:
+    - name: Debug ru_phase status
+      debug:
+        var: ru_phase
+
+    - name: Check if patches are already applied
+      shell: |
+        ${ORACLE_HOME}/OPatch/opatch lsinventory | grep {{ item.key.split('p')[1] }} | wc -l
+      register: patch_status
+      changed_when: false
+      failed_when: false
+      loop: "{{ oms_required_patches | dict2items | selectattr('value.' + phase_variable, 'defined') | selectattr('value.' + phase_variable, 'true') }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Debug patch status
+      debug:
+        var: patch_status
+
+    - name: Identify patches that need to be applied
+      set_fact:
+        patches_to_apply: "{{ patches_to_apply | default([]) + [item.item.key] }}"
+        patches_to_apply_dict: "{{ patches_to_apply_dict | default({}) | combine({item.item.key: item.item.value}) }}"
+      loop: "{{ patch_status.results }}"
+      when: item.stdout | default('0') | int == 0
+      loop_control:
+        label: "{{ item.item.key }}"
+
+    - name: Debug patches to apply
+      debug:
+        var: patches_to_apply
+
+    - name: Stop OMS if a patch needs to be applied
+      ansible.builtin.shell: |
+        {{ emctl_oms }} stop oms -all -force
+      when: patches_to_apply is defined and patches_to_apply | length > 0
+      run_once: true
+
+    - name: Download patches
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item.value.patch_files.filename }}"
+        dest: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
+        mode: get
+        permission: "public-read"
+        overwrite: latest
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Extract patches
+      ansible.builtin.unarchive:
+        src: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
+        dest: "{{ omspatcher_stage }}"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        remote_src: yes
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      no_log: true
+
+    # The fuser utility is not installed as a matter of course so we set OPATCH_NO_FUSER to workaround this
+    - name: Apply patches if not already applied
+      shell: |
+        export PATH=$PATH:${ORACLE_HOME}/bin 
+        export OPATCH_NO_FUSER=true
+        cd {{ omspatcher_stage }}/{{ item.key.split('p')[1] }}
+        ${ORACLE_HOME}/OPatch/opatch apply -silent
+      register: run_opatch
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ oms_env }}"

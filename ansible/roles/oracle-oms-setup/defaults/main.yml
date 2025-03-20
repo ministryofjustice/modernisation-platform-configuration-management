@@ -8,15 +8,17 @@ oem_domain_hostname: "{{ ansible_facts.hostname }}"
 oem_mw_home: "{{ app_dir }}/mw135"
 oms_middleware_home: "{{ app_dir }}/mw135"
 oem_agent_base: "{{ app_dir }}/oem-agent"
+agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+agent_instance_home: "{{ oem_agent_base }}/agent_inst"
 oem_gc_inst: "{{ app_dir }}/gc_inst135"
 oem_sw_lib: "{{ app_dir }}/swlib"
 em_db_create_file_dest: "+DATA/{{ emrepo_db_name.emrepo_db_name }}/datafile/"
 oracle_install_user: oracle
 oracle_install_group: oinstall
 stage: "{{ artefact_dir }}/stage"
+omspatcher_stage: "{{ stage }}/omspatcher_stage"
 temp: "{{ artefact_dir }}/temp"
 patch: "{{ stage }}/patches"
-psu_patch: p35058172_190000_Linux-x86-64.zip
 oracle_home: "{{ app_dir }}/oracle/product/19c"
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin # this is to avoid having to source oracle environment variables
 oem_install_response_file: oem_install.rsp
@@ -48,25 +50,49 @@ application_groups:
     - iaps
     - hmpps-oem
 
-emctl: "{{ oem_agent_base }}/agent_inst/bin/emctl"
+# Only use emctl for oms from the mw home.
+# Likewise, only use emctl for agent from the agent home
+emctl_oms: "{{ oms_middleware_home }}/bin/emctl"
+emctl_agent: "{{ agent_instance_home }}/bin/emctl"
 
 # For targets without Diagnostics pack the following directory is used to
 # install a shell script which can send notifications for incidents.
 notification_script_directory: /home/oracle/admin/em
 
 # Variables for OMS RU patching
-oms_ru_patch: p35861059_135000_Generic.zip
-oms_ru_patch_number: 35861059
-omspatcher_patch: p19999993_135000_Generic.zip
-oms_opatch_patch: p28186730_1394214_Generic.zip
-oms_opatch_version: 13.9.4.2.14
-omspatcher_version: 13.9.5.17.0
-omspatcher_stage: "{{ stage }}/omspatcher_stage"
-agent_ru_patch: p35861076_135000_Generic.zip
-agent_ru_patch_number: 35861076
-agentpatcher_patch: p33355570_135000_Generic.zip
-agentpatcher_version: 13.9.5.6.0
-agent_home: "{{ oem_agent_base }}/agent_13.5.0.0.0"
+oms_ru_patch: oms_p37057635_135000_Generic.zip
+oms_ru_patch_number: 37057635
+oms_ru_patch_version: 13.5.0.25
+oms_opatch_patch: opatch_p28186730_1394218_Generic.zip
+oms_opatch_version: 13.9.4.2.18
+omspatcher_patch: omspatcher_p19999993_135000_Generic.zip
+omspatcher_version: 13.9.5.24.0
+oms_holistic_patch: oms_holistic_p37562062_135000_Generic.zip
+oms_holistic_patch_number: 37562062
+
+# Variables for OMS patching - need to prefix with oms_ as the role was picking up the variable from the agent role
+oms_required_patches:
+  p35430934:
+    # Required to be applied to OMS as pre-reqs for 13.5 RU 19 and above.
+    patch_files:
+      filename: p35430934_122140_Generic.zip
+    description: "EM 13.5 R25 Pre-req - MERGE REQUEST ON TOP OF FMW 12.2.1.4.0 FOR BUGS 32720458 33607709"
+    pre_ru_patch: true
+    post_ru_patch: false
+  p34153238:
+    # Required to be applied to OMS as pre-reqs for 13.5 RU 19 and above.
+    patch_files:
+      filename: p34153238_122140_Generic.zip
+    description: "EM 13.5 R25 Pre-req - HTTPS PROXY CONFIGURATION IS NOT USED WHEN PROTOCOL IS CONFIGURED TO TCP"
+    pre_ru_patch: true
+    post_ru_patch: false
+  p31657681:
+    # Required to be applied to OMS as pre-reqs for 13.5 RU 19 and above.
+    patch_files:
+      filename: p31657681_191000_Generic.zip
+    description: "EM 13.5 R25 Pre-req - THREADS CONTEND FOR LOCK IN LOADFILEBASEDKEYSTORE WHEN OPENING TLS/SSL ENABLED JDBC CONNECTIONS"
+    pre_ru_patch: true
+    post_ru_patch: false
 
 oms_env:
   ORACLE_HOME: "{{ oem_mw_home }}"

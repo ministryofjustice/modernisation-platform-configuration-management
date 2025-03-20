@@ -1,0 +1,102 @@
+---
+- name: Check OMS sqlplus version
+  ansible.builtin.shell: |
+    ${ORACLE_HOME}/bin/sqlplus -v | grep -c "Release 19" | cat
+  register: sqlplus_version_check
+  changed_when: false
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"
+
+# Upgrade DB Client Version to 19c on OMS (Doc ID 3060775.1)
+# p34761383_122140_Linux - Main upgrade patch
+# p31190532_122140_Generic - fixes issue with wrong pre-req package check when applying patch (Doc ID 3061747.1)
+# p35039230_122140_Linux - fixes issue PATCH 34761383 FAILS DURING UPGRADE DUE TO UPDATED ORACLE_COMMON/JDK/JRE
+- name: Upgrade DB Client Version to 19c on OMS
+  when: sqlplus_version_check.stdout == '0'
+  block:
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "p34761383_122140_Linux-x86-64.zip"
+          - "p35039230_122140_Linux-x86-64.zip"
+          - "p31190532_122140_Generic.zip"
+
+    - name: Stop OMS
+      ansible.builtin.shell: |
+        {{ emctl_oms }} stop oms -all -force
+
+    - name: Apply one-off patch 35039230
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          cd {{ omspatcher_stage }}/35039230
+          ./changePermJDK.sh {{ oms_middleware_home }}
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+
+    - name: Upgrade DB Client Version to 19c on OMS
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oms_middleware_home }}
+          cd {{ omspatcher_stage }}/34761383
+          ./changePerm.sh ${ORACLE_HOME}
+          ./fmw_12.2.1.19.0_dbclient_linux64.bin -invPtrLoc ${ORACLE_HOME}/oraInst.loc -silent ORACLE_HOME=${ORACLE_HOME} -prereqConfigLoc {{ omspatcher_stage }}/31190532/prereq_metadata/oracle.as.install.ohs.prerequisite/prereq/
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 30
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"
+
+# Check if the holistic patch is already applied
+- name: Verify OMS Holistic patch is not applied
+  include_tasks: check_oms_patch_applied.yml
+  vars:
+    patch_number: "{{ oms_holistic_patch_number }}"
+
+- name: Debug patch_applied value
+  debug:
+    var: patch_applied
+
+- name: Install OMS Holistic Patch
+  when: patch_applied == '0'
+  block:
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ oms_holistic_patch }}"
+
+    - name: Stop OMS
+      ansible.builtin.shell: |
+        {{ emctl_oms }} stop oms -all -force
+
+    - name: Start OMS Admin Console Only for OMS Holistic Patch
+      ansible.builtin.shell: |
+        {{ emctl_oms }} start oms -admin_only
+
+    # Will likely need to deinstall the previous Holistic patch before applying the new one
+    # and that functionality is not yet implemented
+    - name: Apply Holistic OMS Patch
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          export ORACLE_HOME={{ oms_middleware_home }}
+          export PATH=${ORACLE_HOME}/bin:${ORACLE_HOME}/OMSPatcher:${PATH}
+          cd {{ omspatcher_stage }}/{{ oms_holistic_patch_number }}
+          omspatcher apply {{ omspatcher_stage }}/{{ oms_holistic_patch_number }} -spb_patch -property_file {{ omspatcher_stage }}/oms_property_file -silent
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
+      async: 86400
+      poll: 30
+
+  # block
+  become: true
+  become_user: oracle
+  environment: "{{ oms_env }}"

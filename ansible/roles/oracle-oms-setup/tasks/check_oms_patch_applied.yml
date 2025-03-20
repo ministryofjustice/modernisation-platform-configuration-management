@@ -1,0 +1,24 @@
+---
+- name: Check if OMS patch applied using omspatcher
+  vars:
+    patch_number: ""
+  block:
+    - name: Check OMS patch version
+      ansible.builtin.shell: |
+        export ORACLE_HOME={{ oem_mw_home }}
+        ${ORACLE_HOME}/OMSPatcher/omspatcher lspatches | grep -c {{ patch_number }} | cat
+      register: required_version_check
+      changed_when: false
+
+    - name: Set fact for required_version_check
+      ansible.builtin.set_fact:
+        patch_applied: "{{ required_version_check.stdout }}"
+
+    - name: Debug patch_applied value
+      debug:
+        var: patch_applied
+
+  # block
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ oms_env }}"

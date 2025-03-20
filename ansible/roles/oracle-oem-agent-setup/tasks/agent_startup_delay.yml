@@ -1,0 +1,26 @@
+---
+- name: Ensure a 2-minute delay is added after 'start)' in agentstup script
+  vars:
+    agentstup_file: "{{ agent_home }}/install/unix/scripts/agentstup"
+  block:
+    - name: Check if the agentstup file exists
+      stat:
+        path: "{{ agentstup_file }}"
+      register: agentstup_stat
+
+    - name: Check if 'sleep' is already in the file
+      command: grep -q 'sleep' "{{ agentstup_file }}"
+      register: sleep_check
+      changed_when: false
+      failed_when: false
+      when: agentstup_stat.stat.exists
+
+    - name: Add sleep 120 after 'start)' if not already present
+      lineinfile:
+        path: "{{ agentstup_file }}"
+        line: "    sleep 120"
+        insertafter: "^\\s*start\\)"
+        state: present
+      when:
+        - agentstup_stat.stat.exists
+        - sleep_check.rc != 0

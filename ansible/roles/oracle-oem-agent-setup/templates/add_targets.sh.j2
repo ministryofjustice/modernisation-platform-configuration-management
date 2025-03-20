@@ -12,7 +12,13 @@ APPLICATION="{{ ec2.tags['application'] }}"
 # For OEM hosts we do not use the FQDN for the targets  
 if [[ "${APPLICATION}" == "hmpps-oem" ]]; then
    HOST_FQDN_NAME=${HOSTNAME}
+   LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
+   # First character must be made uppercase
+   LIFECYCLE_STATUS="${LIFECYCLE_STATUS^}"
+   # Oracle does not support a Preproduction status so use Staging instead
+   [[ "$LIFECYCLE_STATUS" == "Preproduction" ]] && LIFECYCLE_STATUS="Stage"
 fi
+
 if [[ "${APPLICATION}" == "delius" || "${APPLICATION}" == "delius-mis"  ]]; then
    LIFECYCLE_STATUS=$(echo {{ ec2.tags['environment-name'].split('-')[-1] }})
    # First character must be made uppercase
@@ -145,7 +151,7 @@ then
         do
                 echo ${i}
                 DB_HOME=$(grep ${i} /etc/oratab | awk -F: '{ print $2 }')
-                DB_ROLE=$(srvctl config database -d ${i} | awk -F: '/Database role/{print $2}' | xargs)
+                DB_ROLE=$($DB_HOME/bin/srvctl config database -d ${i} | awk -F: '/Database role/{print $2}' | xargs)
                 if [[ "$DB_ROLE" == "PRIMARY" ]]; then
                   MONITORING_USER={{ db_monitoring_secret_primary_username }}
                   MONITORING_ROLE={{ db_monitoring_secret_primary_role }}

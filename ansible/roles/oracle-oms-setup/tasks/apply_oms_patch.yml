@@ -1,60 +1,60 @@
 ---
 - name: Install OMS RU Patch
   block:
-    - name: Check status of OMS
-      ansible.builtin.shell: |
-        export ORACLE_HOME={{ oem_mw_home }}
-        {{ oem_mw_home }}/bin/emctl status oms | grep -c "^Oracle Management Server is Up" | cat
-      changed_when: false
-      register: oms_running
+    # Check if the RU is already applied
+    - name: Verify OMS RU is not applied
+      include_tasks: check_oms_patch_applied.yml
+      vars:
+        patch_number: "{{ oms_ru_patch_number }}"
 
-    - name: Stop OMS Excluding Admin Console
+    - name: Debug patch_applied value
+      debug:
+        var: patch_applied
+
+    # Apply any missing pre-req patches
+    - name: Apply Pre-req OMS Patches
+      include_tasks: apply_supplemental_patches.yml
+      vars:
+        ru_phase: "pre"
+      when:
+        - oms_required_patches is defined and oms_required_patches | length > 0
+        - patch_applied == '0'
+
+    - name: Download software from s3 bucket
+      include_tasks: download_patch_software.yml
+      vars:
+        files:
+          - "{{ oms_ru_patch }}"
+      when: patch_applied == '0'
+
+    - name: Stop OMS
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          export ORACLE_HOME={{ oem_mw_home }}
-          {{ oem_mw_home }}/bin/emctl stop oms
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 60
-      when: oms_running.stdout == '1'
+        {{ emctl_oms }} stop oms -all -force
+      when: patch_applied == '0'
+
+    - name: Start OMS Admin Console Only for OMS RU Patch
+      ansible.builtin.shell: |
+        {{ emctl_oms }} start oms -admin_only
+      when: patch_applied == '0'
 
     - name: Apply OMS Patches
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
-          export ORACLE_HOME={{ oem_mw_home }}
           cd {{ omspatcher_stage }}/{{ oms_ru_patch_number }}
-          {{ oem_mw_home }}/OMSPatcher/omspatcher apply -silent -property_file {{ omspatcher_stage }}/oms_property_file
+          ${ORACLE_HOME}/OMSPatcher/omspatcher apply -silent -property_file {{ omspatcher_stage }}/oms_property_file
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400
-      poll: 60
+      poll: 30
+      when: patch_applied == '0'
 
-    - name: Remove OMSPatcher Property File
-      file:
-        path: "{{ omspatcher_stage }}/oms_property_file"
-        state: absent
-
-    - name: Check status of OMS
-      ansible.builtin.shell: |
-        export ORACLE_HOME={{ oem_mw_home }}
-        {{ oem_mw_home }}/bin/emctl status oms | grep -c "^Oracle Management Server is Up" | cat
-      changed_when: false
-      register: oms_running
-
-    - name: Re-Start OMS After Patching
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          export ORACLE_HOME={{ oem_mw_home }}
-          {{ oem_mw_home }}/bin/emctl start oms
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem
-      async: 86400
-      poll: 60
-      when: oms_running.stdout == '0'
+    # Apply any missing patches irrespective of the RU patch
+    - name: Apply Post-RU OMS Patches
+      include_tasks: apply_supplemental_patches.yml
+      vars:
+        ru_phase: "post"
+      when: oms_required_patches is defined and oms_required_patches | length > 0
 
   # block
   become: true

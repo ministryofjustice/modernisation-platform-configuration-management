@@ -1,0 +1,190 @@
+---
+- name: Agent Gold Image Creation
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment:
+    ORACLE_HOME: "{{ app_dir }}"
+    EMCLI_HOME: "{{ app_dir }}/emcli"
+    PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
+  block:
+    - name: emcli Login
+      ansible.builtin.shell: |
+        emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
+        emcli sync
+      changed_when: false
+
+    - name: Check for existing Gold Image version name with Current status
+      ansible.builtin.shell: |
+        emcli get_gold_agent_image_details -version_name="{{ agent_image_version_name }}" | grep -c "Status         :Current" | cat
+      register: existing_gold_image_result
+      changed_when: false
+
+    - name: Fail if Gold Image version name already exists and is in Current status
+      ansible.builtin.fail:
+        msg: "Gold Image version name {{ agent_image_version_name }} already exists and is in Current status. Update the Gold Image version name to a different value and try again."
+      when: existing_gold_image_result.stdout == "1"
+
+    - name: Delete existing Gold Image version if it's not in Current status
+      ansible.builtin.shell: |
+        emcli delete_gold_agent_image -version_name="{{ agent_image_version_name }}"
+      changed_when: false
+      ignore_errors: yes
+      register: create_gold_image_result
+      when: existing_gold_image_result.stdout == "0"
+
+    # Can't use env var for the fqdn
+    - name: Create Gold Image
+      ansible.builtin.shell: |
+        emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="{{ ansible_fqdn }}:3872"
+      register: create_gold_image_result
+
+    - name: Extract Operation Name
+      ansible.builtin.shell: |
+        echo '{{ create_gold_image_result.stdout }}' | grep -o 'GOLD_AGENT_IMAGE_CREATE_[0-9_]*' | head -n 1
+      register: operation_name_result
+
+    - name: Check Gold Image Creation Status
+      ansible.builtin.shell: |
+        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }} -format="name:csv"
+      register: gold_image_status_result
+      changed_when: false
+      until: gold_image_status_result.stdout is search("PASSED")
+      retries: 15
+      delay: 20
+
+    - name: Parse Gold Image Creation Status
+      ansible.builtin.shell: |
+        echo "{{ gold_image_status_result.stdout }}" | awk -F',' '/Create Gold Agent Image/ {print $2}'
+      register: parsed_gold_image_status
+
+    - name: Set Gold Image Creation Status
+      ansible.builtin.set_fact:
+        gold_image_status: "{{ parsed_gold_image_status.stdout }}"
+
+    - name: Fail if Gold Image Creation Failed
+      ansible.builtin.fail:
+        msg: "Gold Image Creation failed with status: {{ gold_image_status }}"
+      when: gold_image_status != "PASSED"
+
+    - name: Debug Gold Image Creation Status
+      debug:
+        var: gold_image_status
+
+    # Promote image before it can be staged
+    - name: Promote Gold Agent Image
+      ansible.builtin.shell: |
+        emcli promote_gold_agent_image -version_name="{{ agent_image_version_name }}" -maturity="Current"
+      register: promote_gold_image_result
+      when: gold_image_status == "PASSED"
+
+    - name: Debug Promote Gold Agent Image Result
+      debug:
+        var: promote_gold_image_result
+
+      # Stage the image files on the OMS host to make them accessible for OMS import and deployment.
+      # The directories will be created if they don't exist.
+    - name: Stage Gold Agent Image
+      ansible.builtin.shell: |
+        emcli stage_gold_agent_image -version_name="{{ agent_image_version_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
+      register: stage_gold_image_result
+      when: gold_image_status == "PASSED"
+
+    - name: Extract Operation Name
+      ansible.builtin.shell: |
+        echo '{{ stage_gold_image_result.stdout }}' | grep -o 'GOLD_AGENT_IMAGE_STAGE_[0-9_]*' | head -n 1
+      register: operation_name_result
+      changed_when: false
+
+    - name: Monitor Gold Agent Image Staging
+      ansible.builtin.shell: |
+        emcli get_gold_agent_image_activity_status -operation_name={{ operation_name_result.stdout }} -format="name:csv"
+      register: stage_gold_image_status_result
+      changed_when: false
+      until: stage_gold_image_status_result.stdout is search("PASSED")
+      retries: 20
+      delay: 20
+
+    - name: Parse Gold Image Staging Status
+      ansible.builtin.shell: |
+        echo "{{ stage_gold_image_status_result.stdout }}" | awk -F',' '/Stage Gold Agent Image/ {print $2}'
+      register: parsed_gold_image_status
+
+    - name: Set Gold Image Staging Status
+      ansible.builtin.set_fact:
+        stage_gold_image_status_result: "{{ parsed_gold_image_status.stdout }}"
+
+    - name: Fail if Gold Agent Image Staging Failed
+      ansible.builtin.fail:
+        msg: "Gold Agent Image Staging failed with status: {{ stage_gold_image_status_result }}"
+      when: stage_gold_image_status_result != "PASSED"
+
+    - name: Debug Gold Agent Image Staging Status
+      debug:
+        var: stage_gold_image_status_result
+
+    - name: Subscribe all eligible agents to the Gold Image
+      ansible.builtin.shell: |
+        emcli subscribe_agents -image_name="{{ agent_image_name }}"
+      register: subscribe_agents_result
+
+    - name: Get updateable agents
+      ansible.builtin.shell: |
+        emcli get_updatable_agents -image_name="{{ agent_image_name }}" -output_file="/tmp/agents_file.txt"
+      register: updateable_agents_result
+
+    - name: Debug updateable agents file
+      ansible.builtin.shell: cat /tmp/agents_file.txt
+      register: debug_agents_file_result
+
+    - name: Debug updateable agents
+      debug:
+        var: debug_agents_file_result.stdout
+
+    - name: Update eligible agents
+      block:
+        - name: Submit update job
+          ansible.builtin.shell: |
+            emcli update_agents -image_name="{{ agent_image_name }}" -input_file="agents_file:/tmp/agents_file.txt"
+          register: update_agents_result
+
+        - name: Parse Update Agents Operation Name
+          ansible.builtin.shell: |
+            emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
+          register: update_agents_op_name_result
+          changed_when: false
+
+        - name: Set Update Agents Operation Name
+          ansible.builtin.set_fact:
+            update_agents_op_name: "{{ update_agents_op_name_result.stdout | trim }}"
+
+        - name: Monitor Update Agents Operation
+          ansible.builtin.shell: |
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Inprogress"
+          register: update_agents_status_result
+          changed_when: false
+          until: update_agents_status_result.stdout.find('No Agent Update Results Found') != -1
+          retries: 60
+          delay: 20
+
+        - name: Check NotExecuted Agents
+          ansible.builtin.shell: |
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="NotExecuted"
+          register: not_executed_agents_result
+          changed_when: false
+
+        - name: Check Failed Agents
+          ansible.builtin.shell: |
+            emcli get_agent_update_status -op_name="{{ update_agents_op_name }}" -status="Failed"
+          register: failed_agents_result
+          changed_when: false
+
+        - name: Fail if Any Agents Not Executed or Failed
+          ansible.builtin.fail:
+            msg: "Some agents did not update successfully. NotExecuted: {{ not_executed_agents_result.stdout }}, Failed: {{ failed_agents_result.stdout }}"
+          when: not_executed_agents_result.stdout != "No Agent Update Results Found" or failed_agents_result.stdout != "No Agent Update Results Found"
+
+        - name: Debug Final Update Agents Status
+          debug:
+            var: update_agents_status_result.stdout
+      # block
+      when: updateable_agents_result.stdout != ""

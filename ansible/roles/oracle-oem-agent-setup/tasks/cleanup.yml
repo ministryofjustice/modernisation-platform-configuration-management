@@ -1,0 +1,26 @@
+---
+- name: Collect file details for cleanup from {{ agentpatcher_stage }}
+  ansible.builtin.find:
+    path: "{{ agentpatcher_stage }}"
+    hidden: True
+  register: collected_files
+  no_log: true
+
+- name: Collect directory details for cleanup from {{ agentpatcher_stage }}
+  ansible.builtin.find:
+    paths: "{{ agentpatcher_stage }}"
+    hidden: True
+    file_type: directory
+  register: collected_directories
+  no_log: true
+
+- name: remove collected files and directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: >
+    {{
+      collected_files.files
+      + collected_directories.files
+    }}
+  no_log: true

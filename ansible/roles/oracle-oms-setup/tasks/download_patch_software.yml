@@ -1,0 +1,64 @@
+---
+- name: Check if patches exist and download if not
+  vars:
+    files:
+
+  block:
+    - name: Check if patches exist
+      ansible.builtin.stat:
+        path: "{{ omspatcher_stage }}/{{ item }}"
+      register: patch_files
+      loop: "{{ files }}"
+
+    - name: Filter missing files
+      set_fact:
+        missing_files: "{{ patch_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Debug missing files
+      debug:
+        msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
+
+    - name: Download patches if they don't exist
+      become: true
+      become_user: oracle
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "{{ omspatcher_stage }}/{{ item }}"
+        mode: get
+        permission: "public-read"
+        overwrite: latest
+      async: 3600 # 1 hour
+      poll: 30
+      loop: "{{ lookup('vars', 'missing_files') }}"
+      loop_control:
+        label: "{{ item }}"
+      when: missing_files | length > 0
+
+    - name: Unzip patches asynchronously
+      become: true
+      become_user: oracle
+      shell: >
+        if [[ "{{ item }}" =~ \.zip$ ]]; then
+          unzip -o "{{ omspatcher_stage }}/{{ item }}" -d "{{ omspatcher_stage }}" > /dev/null;
+        elif [[ "{{ item }}" =~ \.tar\.gz$ ]]; then
+          tar -xzf "{{ omspatcher_stage }}/{{ item }}" -C "{{ omspatcher_stage }}" -- warning=none > /dev/null;
+        fi
+      args:
+        executable: /bin/bash
+      async: 3600 # Allow up to 1 hour
+      poll: 0 # Run in the background
+      register: unzip_task
+      loop: "{{ files }}"
+      when: item is match(".*(\\.zip|\\.tar\\.gz)$")
+
+    - name: Check unzip progress
+      become: yes
+      become_user: oracle
+      ansible.builtin.async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: unzip_result
+      until: unzip_result.finished
+      retries: 60
+      delay: 10
+      loop: "{{ unzip_task.results }}"
