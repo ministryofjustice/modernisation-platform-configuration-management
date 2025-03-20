@@ -7,6 +7,11 @@
     EMCLI_HOME: "{{ app_dir }}/emcli"
     PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
   block:
+    # First, set a variable that will use the passed parameter if defined, otherwise fall back to the default
+    - name: Set Gold Image Name Variable
+      ansible.builtin.set_fact:
+        active_gold_image_name: "{{ goldimagename | default(agent_image_version_name) }}"
+
     - name: emcli Login
       ansible.builtin.shell: |
         emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
@@ -15,18 +20,18 @@
 
     - name: Check for existing Gold Image version name with Current status
       ansible.builtin.shell: |
-        emcli get_gold_agent_image_details -version_name="{{ agent_image_version_name }}" | grep -c "Status         :Current" | cat
+        emcli get_gold_agent_image_details -version_name="{{ active_gold_image_name }}" | grep -c "Status         :Current" | cat
       register: existing_gold_image_result
       changed_when: false
 
     - name: Fail if Gold Image version name already exists and is in Current status
       ansible.builtin.fail:
-        msg: "Gold Image version name {{ agent_image_version_name }} already exists and is in Current status. Update the Gold Image version name to a different value and try again."
+        msg: "Gold Image version name {{ active_gold_image_name }} already exists and is in Current status. Update the Gold Image version name to a different value and try again."
       when: existing_gold_image_result.stdout == "1"
 
     - name: Delete existing Gold Image version if it's not in Current status
       ansible.builtin.shell: |
-        emcli delete_gold_agent_image -version_name="{{ agent_image_version_name }}"
+        emcli delete_gold_agent_image -version_name="{{ active_gold_image_name }}"
       changed_when: false
       ignore_errors: yes
       register: create_gold_image_result
@@ -38,7 +43,7 @@
     # Can't use env var for the fqdn
     - name: Create Gold Image
       ansible.builtin.shell: |
-        emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ agent_image_version_name }}" -source_agent="{{ ansible_fqdn }}:3872"
+        emcli create_gold_agent_image -image_name="{{ agent_image_name }}" -version_name="{{ active_gold_image_name }}" -source_agent="{{ ansible_fqdn }}:3872"
       register: create_gold_image_result
 
     - name: Extract Operation Name
@@ -76,7 +81,7 @@
     # Promote image before it can be staged
     - name: Promote Gold Agent Image
       ansible.builtin.shell: |
-        emcli promote_gold_agent_image -version_name="{{ agent_image_version_name }}" -maturity="Current"
+        emcli promote_gold_agent_image -version_name="{{ active_gold_image_name }}" -maturity="Current"
       register: promote_gold_image_result
       when: gold_image_status == "PASSED"
 
@@ -88,7 +93,7 @@
       # The directories will be created if they don't exist.
     - name: Stage Gold Agent Image
       ansible.builtin.shell: |
-        emcli stage_gold_agent_image -version_name="{{ agent_image_version_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
+        emcli stage_gold_agent_image -version_name="{{ active_gold_image_name }}" -host_name="{{ OMS_SERVER.split('.')[0] }}" -stage_location="{{ agent_gold_image_stage }}"
       register: stage_gold_image_result
       when: gold_image_status == "PASSED"
 
@@ -152,7 +157,7 @@
 
         - name: Parse Update Agents Operation Name
           ansible.builtin.shell: |
-            emcli get_agent_update_status -version_name="{{ agent_image_version_name }}" | awk '/--------/{getline; print}'
+            emcli get_agent_update_status -version_name="{{ active_gold_image_name }}" | awk '/--------/{getline; print}'
           register: update_agents_op_name_result
           changed_when: false
 
@@ -184,7 +189,7 @@
         - name: Fail if Any Agents Not Executed or Failed
           ansible.builtin.fail:
             msg: "Some agents did not update successfully. NotExecuted: {{ not_executed_agents_result.stdout }}, Failed: {{ failed_agents_result.stdout }}"
-          when: not_executed_agents_result.stdout != "No Agent Update Results Found" or failed_agents_result.stdout != "No Agent Update Results Found"
+          when: not not_executed_agents_result.stdout is regex(".*No Agent Update Results Found.*") or not failed_agents_result.stdout is regex(".*No Agent Update Results Found.*")
 
         - name: Debug Final Update Agents Status
           debug:
