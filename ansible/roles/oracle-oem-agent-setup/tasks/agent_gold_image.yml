@@ -32,6 +32,9 @@
       register: create_gold_image_result
       when: existing_gold_image_result.stdout == "0"
 
+    - name: Ensure oem agent is up and running
+      import_tasks: start_agent.yml
+
     # Can't use env var for the fqdn
     - name: Create Gold Image
       ansible.builtin.shell: |
@@ -49,7 +52,7 @@
       register: gold_image_status_result
       changed_when: false
       until: gold_image_status_result.stdout is search("PASSED")
-      retries: 15
+      retries: 100
       delay: 20
 
     - name: Parse Gold Image Creation Status
@@ -101,7 +104,7 @@
       register: stage_gold_image_status_result
       changed_when: false
       until: stage_gold_image_status_result.stdout is search("PASSED")
-      retries: 20
+      retries: 100
       delay: 20
 
     - name: Parse Gold Image Staging Status
@@ -163,7 +166,7 @@
           register: update_agents_status_result
           changed_when: false
           until: update_agents_status_result.stdout.find('No Agent Update Results Found') != -1
-          retries: 60
+          retries: 100
           delay: 20
 
         - name: Check NotExecuted Agents
