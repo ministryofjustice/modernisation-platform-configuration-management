@@ -310,17 +310,49 @@ function Add-ServerFqdnListToServerList {
     [string[]]$ServerFqdnList
 
   )
+
+  # Variables for starting Server Manager
+  $serverListPath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\ServerManager\ServerList.xml"
+  $serverManagerPath = "$env:SystemRoot\System32\ServerManager.exe"
+  $maxAttempts = 5
+  $attemptCount = 0
+  $fileExists = Test-Path $serverListPath
+
+  while (-not $fileExists -and $attemptCount -lt $maxAttempts) {
+    $attemptCount++
+    Write-Output "Attempt $attemptCount of $maxAttempts to Start Server Manager"
+    Start-Process -FilePath $serverManagerPath -WindowStyle Hidden
+      # Wait for file to be created (up to 30 seconds per attempt)
+      $waitCount = 0
+      while (-not (Test-Path $serverListPath) -and $waitCount -lt 30) {
+        Start-Sleep -Seconds 1
+        $waitCount++
+      }
+      $fileExists = Test-Path $serverListPath
+      if (-not $fileExists) {
+        Write-Output "ServerList.xml not created yet: Retrying"
+      }
+  }
+
+  if (-not $fileExists) {
+    Write-Output "Failed to create ServerList.xml after $maxAttempts attempts"
+    return
+  }
+
   # Stop the ServerManager process
   if (Get-Process ServerManager) {
     Get-Process ServerManager | Stop-Process -Force
   }
   else {
-    Write-Output "ServerManager process not running, just continue"
+    Write-Output "ServerManager process not running"
   }
+  
   # Get the ServerList.xml file
-  $file = Get-Item "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\ServerManager\ServerList.xml"
+  $file = Get-Item $serverListPath
+  
   # Backup the ServerList.xml file
   Copy-Item -Path $file -Destination $file-backup -Force
+  
   # Get the content of the ServerList.xml file in XML format
   $xml = [xml](Get-Content $file)
   # Clone an existing managed server element to a new XML element
@@ -350,7 +382,7 @@ function Add-ServerFqdnListToServerList {
   # Save the new XML content to the ServerList.xml file
   $xml.Save($file.FullName)
   # Start the ServerManager process
-  Start-Process -FilePath $env:SystemRoot\System32\ServerManager.exe -WindowStyle Hidden
+  Start-Process -FilePath $serverManagerPath -WindowStyle Hidden
 }
 
 function Remove-RemoteApps {
