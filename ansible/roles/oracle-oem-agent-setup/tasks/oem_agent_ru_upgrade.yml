@@ -71,3 +71,17 @@
   become: true
   become_user: "{{ oracle_install_user }}"
   environment: "{{ agent_env }}"
+
+- name: Post-update OEM 13.5 agent Root Actions
+  block:
+    - name: Execute root.sh
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ agent_home }}/root.sh
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script
+      when: patch_status.stdout == "0"
+  # block
+  become: true
+  become_user: root
