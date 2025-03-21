@@ -43,9 +43,10 @@
     - amibuild
     - ec2provision
     - oem_agent_target_promote
+    - oem_agent_install
   # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
   # This task shoudn't be run when run from oracle-oms-setup role
-  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_target_promote' in ansible_run_tags"
+  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_target_promote' in ansible_run_tags or 'oem_agent_install' in ansible_run_tags"
 
 # Run prior to gold image so all agents have the fix
 - import_tasks: agent_startup_delay.yml
