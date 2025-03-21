@@ -41,7 +41,7 @@
         line: "    sleep 120"
         insertafter: "^\\s*start\\)"
         state: present
-      when: 
+      when:
         - file_exists[item] | default(false)
         - not (sleep_exists[item] | default(false))
       loop:
