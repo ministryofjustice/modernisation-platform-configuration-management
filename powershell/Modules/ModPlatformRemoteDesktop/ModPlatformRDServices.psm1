@@ -284,6 +284,22 @@ function Add-RemoteApp {
   }
 }
 
+function Add-RemoteApps {
+  <#
+  .SYNOPSIS
+      Add remote apps to the deployment if not already configured, otherwise update the configuration
+  #>
+  [CmdletBinding()]
+  param (
+    [string]$ConnectionBroker,
+    [hashtable]$RemoteApps
+  )
+  
+  foreach ($Alias in $RemoteApps.Keys) {
+    Add-RemoteApp -ConnectionBroker $ConnectionBroker -Alias $Alias -Configuration $RemoteApps[$Alias]
+  }
+}
+
 function Add-ServerFqdnListToServerList {
   <#
 .SYNOPSIS
