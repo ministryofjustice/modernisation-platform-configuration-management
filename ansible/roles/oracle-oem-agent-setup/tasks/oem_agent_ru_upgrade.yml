@@ -35,6 +35,10 @@
       changed_when: false
       failed_when: false
 
+    - name: Set patch_status as a global fact
+      set_fact:
+        global_patch_status: "{{ patch_status }}"
+
     - name: Apply Agent Patch
       ansible.builtin.shell: |
         set -eo pipefail
@@ -81,7 +85,7 @@
           {{ agent_home }}/root.sh
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-root-script
-      when: patch_status.stdout == "0"
+      when: global_patch_status is defined and global_patch_status.stdout == "0"
   # block
   become: true
   become_user: root
