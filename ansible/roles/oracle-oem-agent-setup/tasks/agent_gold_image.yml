@@ -11,17 +11,10 @@
     EMCLI_HOME: "{{ app_dir }}/emcli"
     PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
   block:
-    - name: Debug agent_image_version_name
-      ansible.builtin.debug:
-        var: agent_image_version_name
     # First, set a variable that will use the passed parameter if defined, otherwise fall back to the default
     - name: Set Gold Image Name Variable
       ansible.builtin.set_fact:
         active_gold_image_name: "{{ (goldimagename is defined and goldimagename != '') | ternary(goldimagename, agent_image_version_name) }}"
-
-    - name: Intentionally stop execution for debugging
-      ansible.builtin.fail:
-        msg: "Stopping execution to examine variable values"
 
     - name: emcli Login
       ansible.builtin.shell: |
