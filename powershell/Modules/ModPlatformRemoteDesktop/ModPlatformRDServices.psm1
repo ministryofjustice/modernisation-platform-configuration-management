@@ -1,5 +1,5 @@
 function Install-RDSWindowsFeatures {
-<#
+  <#
 .SYNOPSIS
     Install RDS Windows Features
 #>
@@ -16,7 +16,7 @@ function Install-RDSWindowsFeatures {
 }
 
 function Add-RDSessionDeployment {
-<#
+  <#
 .SYNOPSIS
     Create or Update an RDSession Deployment
 #>
@@ -29,14 +29,15 @@ function Add-RDSessionDeployment {
   if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
     Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
     Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
-  } else {
+  }
+  else {
     Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
     New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
   }
 }
 
 function Add-RDLicensingServer {
-<#
+  <#
 .SYNOPSIS
     Add a new RD Licensing Server to the deployment if it is not already configured
 #>
@@ -58,7 +59,7 @@ function Add-RDLicensingServer {
 }
 
 function Remove-RDLicensingServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RD Licensing Servers from the deployment
 #>
@@ -75,7 +76,7 @@ function Remove-RDLicensingServer {
 }
 
 function Add-RDGatewayServer {
-<#
+  <#
 .SYNOPSIS
     Add or update an RDGatewayServer to the deployment
 #>
@@ -99,7 +100,7 @@ function Add-RDGatewayServer {
 }
 
 function Remove-RDGatewayServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RDGatewayServer from the deployment
 #>
@@ -116,7 +117,7 @@ function Remove-RDGatewayServer {
 }
 
 function Add-RDWebAccessServer {
-<#
+  <#
 .SYNOPSIS
     Add RDWebAccess server to the deployment if it is not already configured
 #>
@@ -133,7 +134,7 @@ function Add-RDWebAccessServer {
 }
 
 function Remove-RDWebAccessServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused RDWebAccess server from the deployment
 #>
@@ -150,7 +151,7 @@ function Remove-RDWebAccessServer {
 }
 
 function Add-SessionHostServer {
-<#
+  <#
 .SYNOPSIS
     Add session host servers to the deployment if not already configured
 #>
@@ -169,7 +170,7 @@ function Add-SessionHostServer {
 }
 
 function Remove-SessionHostServer {
-<#
+  <#
 .SYNOPSIS
     Remove unused session host servers from the deployment
 #>
@@ -186,7 +187,7 @@ function Remove-SessionHostServer {
 }
 
 function Add-Collection {
-<#
+  <#
 .SYNOPSIS
     Add a collection to the deployment if not already configured, otherwise update the configuration
 #>
@@ -199,15 +200,16 @@ function Add-Collection {
 
   $ExistingCollection = Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -eq $CollectionName
   if (-not $ExistingCollection) {
-    # ErrorAction set to Continue as errors are generated re GroupPolicy managed options
+    # ErrorAction set to SilentlyContinue as errors are generated re GroupPolicy managed options and this is the only way to avoid them being seen as errors in the output
     Write-Output "${ConnectionBroker}: ${CollectionName}: Creating RDSessionCollection"
-    New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction Continue
-  } else {
+    New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction SilentlyContinue
+  }
+  else {
     foreach ($SessionHost in $Collection.SessionHosts) {
       $ExistingSessionHost = Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -eq $SessionHost
       if (-not $ExistingSessionHost) {
         Write-Output "${ConnectionBroker}: ${CollectionName}: ${SessionHost}: Adding RDSessionHost"
-        Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction Continue
+        Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue
       }
     }
   }
@@ -217,7 +219,7 @@ function Add-Collection {
 }
 
 function Add-Collections {
-<#
+  <#
 .SYNOPSIS
     Add collections to the deployment if not already configured, otherwise update the configuration
 #>
@@ -233,7 +235,7 @@ function Add-Collections {
 }
 
 function Remove-Collections {
-<#
+  <#
 .SYNOPSIS
     Remove any unused collections from the deployment
 #>
@@ -259,7 +261,7 @@ function Remove-Collections {
 }
 
 function Add-RemoteApp {
-<#
+  <#
 .SYNOPSIS
     Add a remote app to the deployment if not already configured, otherwise update the configuration
 #>
@@ -275,30 +277,68 @@ function Add-RemoteApp {
   if (-not $ExistingApp) {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Creating RDRemoteApp"
     New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
-  } else {
+  }
+  else {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Updating RDRemoteApp"
     Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
   }
 }
 
-function Add-RemoteApps {
-<#
+function Add-ServerFqdnListToServerList {
+  <#
 .SYNOPSIS
-    Add remote apps to the deployment if not already configured, otherwise update the configuration
+    Add a list of servers to the Server Manager Server List
 #>
   [CmdletBinding()]
   param (
-    [string]$ConnectionBroker,
-    [hashtable]$RemoteApps
-  )
+    [string[]]$ServerFqdnList
 
-  foreach ($Alias in $RemoteApps.Keys) {
-    Add-RemoteApp -ConnectionBroker $ConnectionBroker -Alias $Alias -Configuration $RemoteApps[$Alias]
+  )
+  # Stop the ServerManager process
+  if (Get-Process ServerManager) {
+    Get-Process ServerManager | Stop-Process -Force
   }
+  else {
+    Write-Output "ServerManager process not running, just continue"
+  }
+  # Get the ServerList.xml file
+  $file = Get-Item "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\ServerManager\ServerList.xml"
+  # Backup the ServerList.xml file
+  Copy-Item -Path $file -Destination $file-backup -Force
+  # Get the content of the ServerList.xml file in XML format
+  $xml = [xml](Get-Content $file)
+  # Clone an existing managed server element to a new XML element
+  foreach ($server in $ServerFqdnList) {
+    # Check if server already exists in the XML
+    $serverExists = $false
+    foreach ($existingServer in $xml.ServerList.ServerInfo) {
+      if ($existingServer.Name -eq $server) {
+        $serverExists = $true
+        break
+      }
+    }  
+    # Only add the server if it doesn't already exist
+    if (-not $serverExists) {
+      $newserver = @($xml.ServerList.ServerInfo)[0].clone()
+      $newserver.Name = $server
+      $newserver.lastUpdateTime = "01/01/0001 00:00:00"
+      $newserver.status = "2"
+      $xml.ServerList.AppendChild($newserver)
+      Write-Output "Added server $server to XML"
+    }
+    else {
+      Write-Output "Server $server already exists in XML, skipping"
+    }
+
+  }
+  # Save the new XML content to the ServerList.xml file
+  $xml.Save($file.FullName)
+  # Start the ServerManager process
+  Start-Process -FilePath $env:SystemRoot\System32\ServerManager.exe -WindowStyle Hidden
 }
 
 function Remove-RemoteApps {
-<#
+  <#
 .SYNOPSIS
     Remove unused remote apps from the deployment
 #>
@@ -310,7 +350,7 @@ function Remove-RemoteApps {
 
   $AliasesToKeep = $RemoteAppsToKeep.Keys
   Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -notin $AliasesToKeep | ForEach-Object {
-    Write-Output ("${ConnectionBroker}: " + $_.CollectionName +": " + $_.Alias + ": Removing RDRemoteApp")
+    Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": " + $_.Alias + ": Removing RDRemoteApp")
     Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
   }
 }
@@ -331,3 +371,4 @@ Export-ModuleMember -Function Remove-Collections
 Export-ModuleMember -Function Add-RemoteApp
 Export-ModuleMember -Function Add-RemoteApps
 Export-ModuleMember -Function Remove-RemoteApps
+Export-ModuleMember -Function Add-ServerFqdnListToServerList

@@ -248,6 +248,10 @@ $commands = {
   Remove-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServerToKeep $Config.GatewayServer
   Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
   Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
+
+  # # Add servers to the Server List in Server Manager
+  $serverFqdnList = $Config.SessionHostServers += $Config.LicensingServer
+  Add-ServerFqdnListToServerList -ServerFqdnList $serverFqdnList
 }
 
 Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $credentials -ArgumentList $Config, $PSScriptRoot -Authentication CredSSP -Verbose
