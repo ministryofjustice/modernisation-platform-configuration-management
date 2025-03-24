@@ -334,51 +334,93 @@ function Add-ServerFqdnListToServerList {
     # Current time in ISO 8601 format
     $currentTime = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:ss.ffffffzzz")
     
-    # Create XML content without extra whitespace
+    # Create XML content without extra whitespace but with proper closing tag
     $xmlContent = @"
-<?xml version="1.0" encoding="utf-8"?><ServerList xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" localhostName="$fqdn" xmlns="urn:serverpool-schema"><ServerInfo name="$fqdn" status="1" lastUpdateTime="$currentTime" locale="$(Get-Culture)" />
+<?xml version="1.0" encoding="utf-8"?><ServerList xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" localhostName="$fqdn" xmlns="urn:serverpool-schema"><ServerInfo name="$fqdn" status="1" lastUpdateTime="$currentTime" locale="en-US" /></ServerList>
 "@
     
     # Save the XML content to file
     Set-Content -Path $serverListPath -Value $xmlContent
     Write-Output "Created new ServerList.xml with local server $fqdn"
   }
-  
-  # Load the existing XML file
-  $xmlContent = Get-Content -Path $serverListPath -Raw
-  $xmlDoc = New-Object System.Xml.XmlDocument
-  $xmlDoc.LoadXml($xmlContent)
-  
-  # Process each server in the input list
-  foreach ($server in $ServerFqdnList) {
-    # Check if server already exists
-    $exists = $false
-    foreach ($node in $xmlDoc.ServerList.ChildNodes) {
-      if ($node.name -eq $server) {
-        $exists = $true
-        Write-Output "Server $server already exists in ServerList.xml"
-        break
+  else {
+    # Load the existing XML file
+    $xmlContent = Get-Content -Path $serverListPath -Raw -ErrorAction SilentlyContinue
+    if ($xmlContent) {
+      $xmlDoc = New-Object System.Xml.XmlDocument
+      
+      # Test if XML content is valid
+      if ($xmlContent -match "</ServerList>$") {
+        $xmlDoc.LoadXml($xmlContent)
+        
+        # Process each server in the input list
+        foreach ($server in $ServerFqdnList) {
+          # Check if server already exists
+          $exists = $false
+          foreach ($node in $xmlDoc.ServerList.ChildNodes) {
+            if ($node.name -eq $server) {
+              $exists = $true
+              Write-Output "Server $server already exists in ServerList.xml"
+              break
+            }
+          }
+          
+          # Add the server if it doesn't exist
+          if (-not $exists) {
+            $serverElement = $xmlDoc.CreateElement("ServerInfo")
+            $serverElement.SetAttribute("name", $server)
+            $serverElement.SetAttribute("status", "2")
+            $serverElement.SetAttribute("lastUpdateTime", "0001-01-01T00:00:00")
+            $serverElement.SetAttribute("locale", "en-US")
+            $xmlDoc.DocumentElement.AppendChild($serverElement) | Out-Null
+            Write-Output "Added server $server to ServerList.xml"
+          }
+        }
+        
+        # Save the updated XML file without pretty printing
+        $xmlDoc.PreserveWhitespace = $false
+        $xmlWriter = New-Object System.Xml.XmlTextWriter($serverListPath, [System.Xml.Encoding]::UTF8)
+        $xmlWriter.Formatting = [System.Xml.Formatting]::None
+        $xmlDoc.Save($xmlWriter)
+        $xmlWriter.Close()
+      }
+      else {
+        # XML is invalid, recreate the file
+        Write-Warning "ServerList.xml appears to be invalid. Creating a new file."
+        $needNewFile = $true
       }
     }
-    
-    # Add the server if it doesn't exist
-    if (-not $exists) {
-      $serverElement = $xmlDoc.CreateElement("ServerInfo")
-      $serverElement.SetAttribute("name", $server)
-      $serverElement.SetAttribute("status", "2")
-      $serverElement.SetAttribute("lastUpdateTime", "0001-01-01T00:00:00")
-      $serverElement.SetAttribute("locale", "en-US")
-      $xmlDoc.DocumentElement.AppendChild($serverElement) | Out-Null
-      Write-Output "Added server $server to ServerList.xml"
+    else {
+      # File exists but couldn't be read, recreate it
+      Write-Warning "ServerList.xml exists but could not be read. Creating a new file."
+      $needNewFile = $true
     }
   }
   
-  # Save the updated XML file without pretty printing
-  $xmlDoc.PreserveWhitespace = $false
-  $xmlWriter = New-Object System.Xml.XmlTextWriter($serverListPath, [System.Text.Encoding]::UTF8)
-  $xmlWriter.Formatting = [System.Xml.Formatting]::None
-  $xmlDoc.Save($xmlWriter)
-  $xmlWriter.Close()
+  # If we need to create a new file (invalid XML or couldn't read file)
+  if ($needNewFile) {
+    # Get the local computer name
+    $localHostName = [System.Net.Dns]::GetHostName()
+    $fqdn = [System.Net.Dns]::GetHostByName($localHostName).HostName
+    
+    # Current time in ISO 8601 format
+    $currentTime = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:ss.ffffffzzz")
+    
+    # Build XML content with all servers
+    $xmlContent = "<?xml version=""1.0"" encoding=""utf-8""?><ServerList xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" localhostName=""$fqdn"" xmlns=""urn:serverpool-schema""><ServerInfo name=""$fqdn"" status=""1"" lastUpdateTime=""$currentTime"" locale=""en-US"" />"
+    
+    foreach ($server in $ServerFqdnList) {
+      if ($server -ne $fqdn) {
+        $xmlContent += "<ServerInfo name=""$server"" status=""2"" lastUpdateTime=""0001-01-01T00:00:00"" locale=""en-US"" />"
+      }
+    }
+    
+    $xmlContent += "</ServerList>"
+    
+    # Save the XML content to file
+    Set-Content -Path $serverListPath -Value $xmlContent
+    Write-Output "Created new ServerList.xml with specified servers"
+  }
   
   # Restart Server Manager to pick up changes
   if (Get-Process ServerManager -ErrorAction SilentlyContinue) {
