@@ -302,87 +302,99 @@ function Add-RemoteApps {
 
 function Add-ServerFqdnListToServerList {
   <#
-.SYNOPSIS
-    Add a list of servers to the Server Manager Server List
-#>
+  .SYNOPSIS
+      Add a list of servers to the Server Manager Server List
+  .DESCRIPTION
+      Creates or updates the ServerList.xml file used by Server Manager
+  #>
   [CmdletBinding()]
   param (
     [string[]]$ServerFqdnList
-
   )
 
-  # Variables for starting Server Manager
+  # Variables for Server Manager
   $serverListPath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\ServerManager\ServerList.xml"
   $serverManagerPath = "$env:SystemRoot\System32\ServerManager.exe"
-  $maxAttempts = 5
-  $attemptCount = 0
-  $fileExists = Test-Path $serverListPath
-
-  while (-not $fileExists -and $attemptCount -lt $maxAttempts) {
-    $attemptCount++
-    Write-Output "Attempt $attemptCount of $maxAttempts to Start Server Manager"
-    Start-Process -FilePath $serverManagerPath -WindowStyle Hidden
-      # Wait for file to be created (up to 30 seconds per attempt)
-      $waitCount = 0
-      while (-not (Test-Path $serverListPath) -and $waitCount -lt 30) {
-        Start-Sleep -Seconds 1
-        $waitCount++
-      }
-      $fileExists = Test-Path $serverListPath
-      if (-not $fileExists) {
-        Write-Output "ServerList.xml not created yet: Retrying"
-      }
-  }
-
-  if (-not $fileExists) {
-    Write-Output "Failed to create ServerList.xml after $maxAttempts attempts"
-    return
-  }
-
-  # Stop the ServerManager process
-  if (Get-Process ServerManager) {
-    Get-Process ServerManager | Stop-Process -Force
-  }
-  else {
-    Write-Output "ServerManager process not running"
+  
+  # Ensure directory exists
+  $folderPath = Split-Path -Path $serverListPath -Parent
+  if (-not (Test-Path -Path $folderPath)) {
+    Write-Verbose "Creating directory $folderPath"
+    New-Item -Path $folderPath -ItemType Directory -Force | Out-Null
   }
   
-  # Get the ServerList.xml file
-  $file = Get-Item $serverListPath
+  # Check if ServerList.xml exists
+  if (-not (Test-Path -Path $serverListPath)) {
+    Write-Verbose "ServerList.xml does not exist. Creating new file."
+    
+    # Get the local computer name
+    $localHostName = [System.Net.Dns]::GetHostName()
+    $fqdn = [System.Net.Dns]::GetHostByName($localHostName).HostName
+    
+    # Create a new XML document
+    $xmlDoc = New-Object System.Xml.XmlDocument
+    $xmlDeclaration = $xmlDoc.CreateXmlDeclaration("1.0", "utf-8", $null)
+    $xmlDoc.AppendChild($xmlDeclaration) | Out-Null
+    
+    # Create the root element with required attributes
+    $rootElement = $xmlDoc.CreateElement("ServerList")
+    $rootElement.SetAttribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema")
+    $rootElement.SetAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+    $rootElement.SetAttribute("localhostName", $fqdn)
+    $rootElement.SetAttribute("xmlns", "urn:serverpool-schema")
+    $xmlDoc.AppendChild($rootElement) | Out-Null
+    
+    # Add the local server as first entry
+    $serverElement = $xmlDoc.CreateElement("ServerInfo")
+    $serverElement.SetAttribute("name", $fqdn)
+    $serverElement.SetAttribute("status", "1")
+    $serverElement.SetAttribute("lastUpdateTime", "01/01/0001 00:00:00")
+    $serverElement.SetAttribute("locale", (Get-Culture).Name)
+    $rootElement.AppendChild($serverElement) | Out-Null
+    
+    # Save the XML file
+    $xmlDoc.Save($serverListPath)
+    Write-Output "Created new ServerList.xml with local server $fqdn"
+  }
   
-  # Backup the ServerList.xml file
-  Copy-Item -Path $file -Destination $file-backup -Force
+  # Load the existing XML file
+  $xmlDoc = New-Object System.Xml.XmlDocument
+  $xmlDoc.Load($serverListPath)
   
-  # Get the content of the ServerList.xml file in XML format
-  $xml = [xml](Get-Content $file)
-  # Clone an existing managed server element to a new XML element
+  # Process each server in the input list
   foreach ($server in $ServerFqdnList) {
-    # Check if server already exists in the XML
-    $serverExists = $false
-    foreach ($existingServer in $xml.ServerList.ServerInfo) {
-      if ($existingServer.Name -eq $server) {
-        $serverExists = $true
+    # Check if server already exists
+    $exists = $false
+    foreach ($node in $xmlDoc.ServerList.ChildNodes) {
+      if ($node.name -eq $server) {
+        $exists = $true
+        Write-Output "Server $server already exists in ServerList.xml"
         break
       }
-    }  
-    # Only add the server if it doesn't already exist
-    if (-not $serverExists) {
-      $newserver = @($xml.ServerList.ServerInfo)[0].clone()
-      $newserver.Name = $server
-      $newserver.lastUpdateTime = "01/01/0001 00:00:00"
-      $newserver.status = "2"
-      $xml.ServerList.AppendChild($newserver)
-      Write-Output "Added server $server to XML"
     }
-    else {
-      Write-Output "Server $server already exists in XML, skipping"
+    
+    # Add the server if it doesn't exist
+    if (-not $exists) {
+      $serverElement = $xmlDoc.CreateElement("ServerInfo")
+      $serverElement.SetAttribute("name", $server)
+      $serverElement.SetAttribute("status", "1")
+      $serverElement.SetAttribute("lastUpdateTime", "01/01/0001 00:00:00")
+      $serverElement.SetAttribute("locale", (Get-Culture).Name)
+      $xmlDoc.DocumentElement.AppendChild($serverElement) | Out-Null
+      Write-Output "Added server $server to ServerList.xml"
     }
-
   }
-  # Save the new XML content to the ServerList.xml file
-  $xml.Save($file.FullName)
-  # Start the ServerManager process
+  
+  # Save the updated XML file
+  $xmlDoc.Save($serverListPath)
+  
+  # Restart Server Manager to pick up changes
+  if (Get-Process ServerManager -ErrorAction SilentlyContinue) {
+    Get-Process ServerManager | Stop-Process -Force
+  }
   Start-Process -FilePath $serverManagerPath -WindowStyle Hidden
+  
+  Write-Output "Updated ServerList.xml with specified servers"
 }
 
 function Remove-RemoteApps {
