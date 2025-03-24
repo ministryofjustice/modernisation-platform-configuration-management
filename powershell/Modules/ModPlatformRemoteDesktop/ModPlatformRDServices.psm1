@@ -331,35 +331,23 @@ function Add-ServerFqdnListToServerList {
     $localHostName = [System.Net.Dns]::GetHostName()
     $fqdn = [System.Net.Dns]::GetHostByName($localHostName).HostName
     
-    # Create a new XML document
-    $xmlDoc = New-Object System.Xml.XmlDocument
-    $xmlDeclaration = $xmlDoc.CreateXmlDeclaration("1.0", "utf-8", $null)
-    $xmlDoc.AppendChild($xmlDeclaration) | Out-Null
+    # Current time in ISO 8601 format
+    $currentTime = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:ss.ffffffzzz")
     
-    # Create the root element with required attributes
-    $rootElement = $xmlDoc.CreateElement("ServerList")
-    $rootElement.SetAttribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema")
-    $rootElement.SetAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-    $rootElement.SetAttribute("localhostName", $fqdn)
-    $rootElement.SetAttribute("xmlns", "urn:serverpool-schema")
-    $xmlDoc.AppendChild($rootElement) | Out-Null
+    # Create XML content without extra whitespace
+    $xmlContent = @"
+<?xml version="1.0" encoding="utf-8"?><ServerList xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" localhostName="$fqdn" xmlns="urn:serverpool-schema"><ServerInfo name="$fqdn" status="1" lastUpdateTime="$currentTime" locale="$(Get-Culture)" />
+"@
     
-    # Add the local server as first entry
-    $serverElement = $xmlDoc.CreateElement("ServerInfo")
-    $serverElement.SetAttribute("name", $fqdn)
-    $serverElement.SetAttribute("status", "1")
-    $serverElement.SetAttribute("lastUpdateTime", "01/01/0001 00:00:00")
-    $serverElement.SetAttribute("locale", (Get-Culture).Name)
-    $rootElement.AppendChild($serverElement) | Out-Null
-    
-    # Save the XML file
-    $xmlDoc.Save($serverListPath)
+    # Save the XML content to file
+    Set-Content -Path $serverListPath -Value $xmlContent
     Write-Output "Created new ServerList.xml with local server $fqdn"
   }
   
   # Load the existing XML file
+  $xmlContent = Get-Content -Path $serverListPath -Raw
   $xmlDoc = New-Object System.Xml.XmlDocument
-  $xmlDoc.Load($serverListPath)
+  $xmlDoc.LoadXml($xmlContent)
   
   # Process each server in the input list
   foreach ($server in $ServerFqdnList) {
@@ -377,16 +365,20 @@ function Add-ServerFqdnListToServerList {
     if (-not $exists) {
       $serverElement = $xmlDoc.CreateElement("ServerInfo")
       $serverElement.SetAttribute("name", $server)
-      $serverElement.SetAttribute("status", "1")
-      $serverElement.SetAttribute("lastUpdateTime", "01/01/0001 00:00:00")
-      $serverElement.SetAttribute("locale", (Get-Culture).Name)
+      $serverElement.SetAttribute("status", "2")
+      $serverElement.SetAttribute("lastUpdateTime", "0001-01-01T00:00:00")
+      $serverElement.SetAttribute("locale", "en-US")
       $xmlDoc.DocumentElement.AppendChild($serverElement) | Out-Null
       Write-Output "Added server $server to ServerList.xml"
     }
   }
   
-  # Save the updated XML file
-  $xmlDoc.Save($serverListPath)
+  # Save the updated XML file without pretty printing
+  $xmlDoc.PreserveWhitespace = $false
+  $xmlWriter = New-Object System.Xml.XmlTextWriter($serverListPath, [System.Text.Encoding]::UTF8)
+  $xmlWriter.Formatting = [System.Xml.Formatting]::None
+  $xmlDoc.Save($xmlWriter)
+  $xmlWriter.Close()
   
   # Restart Server Manager to pick up changes
   if (Get-Process ServerManager -ErrorAction SilentlyContinue) {

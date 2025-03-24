@@ -3,7 +3,7 @@ $GlobalConfig = @{
     "ConnectionBroker" = "$env:computername.AZURE.NOMS.ROOT"
     "LicensingServer" = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer" = "$env:computername.AZURE.NOMS.ROOT"
-    "GatewayExternalFqdn" = "rdgateway2.test.hmpps-domain.service.justice.gov.uk"
+    "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers" = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
     "WebAccessServer" = "$env:computername.AZURE.NOMS.ROOT"
     "rdsOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
