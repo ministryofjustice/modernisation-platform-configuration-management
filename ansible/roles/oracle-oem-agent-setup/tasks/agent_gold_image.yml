@@ -1,4 +1,8 @@
 ---
+- name: Debug agent_image_version_name prior to block
+  ansible.builtin.debug:
+    var: agent_image_version_name
+
 - name: Agent Gold Image Creation
   become: true
   become_user: "{{ oracle_install_user }}"
@@ -10,7 +14,7 @@
     # First, set a variable that will use the passed parameter if defined, otherwise fall back to the default
     - name: Set Gold Image Name Variable
       ansible.builtin.set_fact:
-        active_gold_image_name: "{{ goldimagename | default(agent_image_version_name) }}"
+        active_gold_image_name: "{{ (goldimagename is defined and goldimagename != '') | ternary(goldimagename, agent_image_version_name) }}"
 
     - name: emcli Login
       ansible.builtin.shell: |
