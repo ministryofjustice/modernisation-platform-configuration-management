@@ -41,10 +41,10 @@ $GlobalConfig = @{
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
     "domain"              = "AZURE"
     "Collections"         = @{
-      "Test" = @{
+      "Jumpserver" = @{
         "SessionHosts"  = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
         "Configuration" = @{
-          "CollectionDescription" = "Test Collection"
+          "CollectionDescription" = "Connect to Jumpserver T2-JUMP2022-2"
           "UserGroup"             = @("Azure\Domain Users")
         }
       }
