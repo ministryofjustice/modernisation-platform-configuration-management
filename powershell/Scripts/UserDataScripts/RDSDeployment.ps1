@@ -30,5 +30,6 @@ Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingSe
 Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 
 # Add servers to the Server List in Server Manager
-$serverFqdnList = $Config.SessionHostServers += $Config.LicensingServer
+$serverFqdnList = @() + $Config.SessionHostServers + $Config.LicensingServer
+Write-Host "Combined ServerFqdnList: $serverFqdnList"
 Add-ServerFqdnListToServerList -ServerFqdnList $serverFqdnList
