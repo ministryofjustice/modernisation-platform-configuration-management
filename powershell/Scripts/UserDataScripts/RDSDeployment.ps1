@@ -23,12 +23,12 @@ Remove-Collections -ConnectionBroker $Config.ConnectionBroker -CollectionsToKeep
 Add-Collections -ConnectionBroker $Config.ConnectionBroker -Collections $Config.Collections -ErrorAction SilentlyContinue
 Add-RemoteApps -ConnectionBroker $Config.ConnectionBroker -RemoteApps $Config.RemoteApps -ErrorAction SilentlyContinue
 
-# # Removes servers that are NOT in the $Config block
+# Removes servers that are NOT in the $Config block
 Remove-RDWebAccessServer -ConnectionBroker $Config.ConnectionBroker -WebAccessServerToKeep $Config.WebAccessServer
 Remove-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServerToKeep $Config.GatewayServer
 Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
 Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
 
-# # Add servers to the Server List in Server Manager
+# Add servers to the Server List in Server Manager
 $serverFqdnList = $Config.SessionHostServers += $Config.LicensingServer
 Add-ServerFqdnListToServerList -ServerFqdnList $serverFqdnList
