@@ -3,25 +3,23 @@
     Configures Remote Desktop Services deployment.
 
 .DESCRIPTION
-    This script automates the setup and configuration of Remote Desktop Services,
-    including connection brokers, gateways, and session hosts with an option to use a different set of credentials that are user supplied.
+    This script automates the setup and configuration of Remote Desktop Services, including connection brokers, gateways, and session hosts.
 
-    There's an option to run the RDS component installation with a different set of credentials but this only happens AFTER other changes have been made, primarily moving the instance to a different OU first, then you're given that option.
+    You can run the script manually but only by running as Admin and logged in as a domain user.
 
 .PARAMETER RunManually
     Use this switch when running the script manually instead of via AWS userdata.
-    Shows important GPO prerequisites and asks for confirmation before proceeding.
+    Shows important prerequisites and asks for confirmation before proceeding.
+
     If this switch isn't select then the svc_rds user is used and this gets the password from Secrets Manager.
 
 .EXAMPLE
     .\RDServices.ps1 -RunManually
 
-    Runs the script, especially the RDS deployment component, using a different set of credentials
-    You'll be asked for the username: supply this in the format of Domain\username
-    Then you'll be asked for password.
+    Runs the script, especially the RDS deployment component, using your domain credentials.
 
 .NOTES
-    Requires administrative privileges.
+    Requires administrative privileges & the machine must already be joined to the domain.
 #>
 [CmdletBinding()]
 param(
@@ -239,6 +237,14 @@ if ($LASTEXITCODE -ne 0) {
   Exit $LASTEXITCODE
 }
 
+# IMPORTANT: Service user, OU and GPO settings for HMPP domain is not yet implemented
+# Exit script if attemptint to run this on HMPP domain
+if ($Config.domain -eq "HMPP") {
+  Write-Error "This RDServices script is not yet implemented for HMPP domain." -Category NotImplemented
+  Write-Error "svc_rds user, OU and GPO settings need to be created for the HMPP domain." -Category NotImplemented
+  Exit 1
+}
+
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
@@ -248,19 +254,13 @@ Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $(
 # Path to the deployment scripts
 $deploymentScriptPath = Join-Path $PSScriptRoot "RDSDeployment.ps1"
 
-# IMPORTANT: Service user, OU and GPO settings for HMPP domain is not yet implemented
-# Exit script if attemptint to run this on HMPP domain
-if ($Config.domain -eq "HMPP") {
-  Write-Error "This RDServices script is not yet implemented for HMPP domain." -Category NotImplemented
-  Write-Error "svc_rds user, OU and GPO settings need to be created for the HMPP domain." -Category NotImplemented
-  Exit 1
-}
-
 # Display a message if running manually
 if ($RunManually) {
   Write-Host "Running in manual mode. Please ensure the following conditions are met:" -ForegroundColor Yellow
   Write-Host " - You are running this script as an Administrator" -ForegroundColor Yellow
   Write-Host " - Your user is Local Administrator on all RDS component servers, inc. all Session Host(s)" -ForegroundColor Yellow
+  Write-Host " - The machine must already be joined to the domain" -ForegroundColor Yellow
+  Write-Host " - You must use your domain account to run this script" -ForegroundColor Yellow
   Write-Host ""
 
   $continue = Read-Host "Continue? (y/n)"
