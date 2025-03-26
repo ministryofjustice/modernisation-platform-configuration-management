@@ -3,7 +3,7 @@
     Configures Remote Desktop Services deployment.
 
 .DESCRIPTION
-    This script automates the setup and configuration of Remote Desktop Services, 
+    This script automates the setup and configuration of Remote Desktop Services,
     including connection brokers, gateways, and session hosts with an option to use a different set of credentials that are user supplied.
 
     There's an option to run the RDS component installation with a different set of credentials but this only happens AFTER other changes have been made, primarily moving the instance to a different OU first, then you're given that option.
@@ -15,7 +15,7 @@
 
 .EXAMPLE
     .\RDServices.ps1 -RunManually
-    
+
     Runs the script, especially the RDS deployment component, using a different set of credentials
     You'll be asked for the username: supply this in the format of Domain\username
     Then you'll be asked for password.
@@ -57,6 +57,9 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
+    "rdsOU"               = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
+    "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    "domain"              = "HMPP"
     "Collections"         = @{
       "CAFM-RDP PreProd" = @{
         "SessionHosts"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT")
@@ -86,6 +89,9 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
+    "rdsOU"               = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
+    "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    "domain"              = "HMPP"
     "Collections"         = @{
       "CAFM-RDP" = @{
         "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
@@ -239,24 +245,33 @@ $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADCo
 # Move the computer to the correct OU
 Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.rdsOU)
 
+# Path to the deployment scripts
+$deploymentScriptPath = Join-Path $PSScriptRoot "RDSDeployment.ps1"
+
+# IMPORTANT: Service user, OU and GPO settings for HMPP domain is not yet implemented
+# Exit script if attemptint to run this on HMPP domain
+if ($Config.domain -eq "HMPP") {
+  Write-Error "This RDServices script is not yet implemented for HMPP domain." -Category NotImplemented
+  Write-Error "svc_rds user, OU and GPO settings need to be created for the HMPP domain." -Category NotImplemented
+  Exit 1
+}
+
 # Display a message if running manually
 if ($RunManually) {
   Write-Host "Running in manual mode. Please ensure the following conditions are met:" -ForegroundColor Yellow
   Write-Host " - You are running this script as an Administrator" -ForegroundColor Yellow
   Write-Host " - Your user is Local Administrator on all RDS component servers, inc. all Session Host(s)" -ForegroundColor Yellow
-  Write-Host " - WinRM Client allows Cred SSP for localhost auth" -ForegroundColor Yellow
-  Write-Host " - WinRM Server allows Cred SSP for localhost auth and unencrypted traffic" -ForegroundColor Yellow
-  Write-Host " - Allow delegating fresh credentials for WSMAN/localhost and WSMAN/*" -ForegroundColor Yellow
-  Write-Host " - Allow delegating fresh credentials with NTLM only server auth for WSMAN/localhost and WSMAN/*" -ForegroundColor Yellow
   Write-Host ""
-  
+
   $continue = Read-Host "Continue? (y/n)"
   if ($continue -notmatch "^[yY]") {
     Write-Host "Exiting script." -ForegroundColor Red
     exit
   }
   else {
-    $credentials = Get-Credential 
+    # Just dot-source and run the script in the current context
+    # This runs with the current user's credentials
+    . $deploymentScriptPath -Config $Config -localScriptRoot $PSScriptRoot
   }
 }
 else {
@@ -266,40 +281,9 @@ else {
   $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -Force
 
   $credentials = New-Object System.Management.Automation.PSCredential($username, $secure_password)
+
+  Invoke-Command -ComputerName localhost -FilePath $deploymentScriptPath -Credential $credentials -ArgumentList $Config, $PSScriptRoot -Authentication CredSSP -Verbose
 }
-
-$commands = {
-  param($Config, $localScriptRoot)
-  # import module into context, this may not be needed anymore, test without later
-  $ModulesRepo = Join-Path $localScriptRoot '..\..\Modules'
-  $env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
-  Import-Module ModPlatformRemoteDesktop -Force
-
-  Install-RDSWindowsFeatures
-
-  # Deploy RDS components
-  Add-RDSessionDeployment -ConnectionBroker $Config.ConnectionBroker -SessionHosts $Config.SessionHostServers -WebAccessServer $Config.WebAccessServer
-  Add-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServer $Config.LicensingServer
-  Add-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServer $Config.GatewayServer -GatewayExternalFqdn $Config.GatewayExternalFqdn
-
-  # A SessionHost can only be part of 1 collection so remove it first
-  Remove-RemoteApps -ConnectionBroker $Config.ConnectionBroker -RemoteAppsToKeep $Config.RemoteApps
-  Remove-Collections -ConnectionBroker $Config.ConnectionBroker -CollectionsToKeep $Config.Collections
-  Add-Collections -ConnectionBroker $Config.ConnectionBroker -Collections $Config.Collections -ErrorAction SilentlyContinue
-  Add-RemoteApps -ConnectionBroker $Config.ConnectionBroker -RemoteApps $Config.RemoteApps -ErrorAction SilentlyContinue
-
-  # # Removes servers that are NOT in the $Config block
-  Remove-RDWebAccessServer -ConnectionBroker $Config.ConnectionBroker -WebAccessServerToKeep $Config.WebAccessServer
-  Remove-RDGatewayServer -ConnectionBroker $Config.ConnectionBroker -GatewayServerToKeep $Config.GatewayServer
-  Remove-RDLicensingServer -ConnectionBroker $Config.ConnectionBroker -LicensingServerToKeep $Config.LicensingServer
-  Remove-SessionHostServer -ConnectionBroker $Config.ConnectionBroker -SessionHostServersToKeep $Config.SessionHostServers
-
-  # # Add servers to the Server List in Server Manager
-  $serverFqdnList = $Config.SessionHostServers += $Config.LicensingServer
-  Add-ServerFqdnListToServerList -ServerFqdnList $serverFqdnList
-}
-
-Invoke-Command -ComputerName localhost -ScriptBlock $commands -Credential $credentials -ArgumentList $Config, $PSScriptRoot -Authentication CredSSP -Verbose
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
 
