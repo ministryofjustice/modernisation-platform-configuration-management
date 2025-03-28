@@ -1,7 +1,7 @@
 $Scripts = @(
   "../ModPlatformAD/Join-ModPlatformAD.ps1",
   "../Oracle/Install-Java6.ps1",
-  "../Oracle/Install-Java8.ps1",  
+  "../Oracle/Install-Java8.ps1",
   "../Oracle/Install-JavaDeployment.ps1",
   "../Oracle/Install-SQLDeveloper.ps1",
   "../Oracle/Remove-JavaUpdateCheck.ps1",
@@ -17,6 +17,7 @@ $Scripts = @(
 )
 
 $ErrorActionPreference = "Stop"
+$ScriptDir = Get-Location
 $OverallExitCode = 0
 foreach ($Script in $Scripts) {
   Write-Output "START $Script"
@@ -27,5 +28,6 @@ foreach ($Script in $Scripts) {
   } else {
     Write-Output "END   $Script"
   }
+  Set-Location $ScriptDir
 }
 Exit $OverallExitCode
