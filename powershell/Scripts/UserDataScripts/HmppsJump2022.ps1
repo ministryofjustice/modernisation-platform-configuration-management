@@ -10,7 +10,6 @@ $Scripts = @(
   "../Microsoft/Add-EdgePopupsAllowedForUrls.ps1",
   "../Microsoft/Add-StartMenuShortcuts.ps1",
   "../Microsoft/Install-ADRemoteTools.ps1",
-  "../Microsoft/Install-MicrosoftOffice.ps1",
   "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
   "../Microsoft/Remove-StartMenuShutdownOption.ps1",
   "../LibreOffice/Install-LibreOffice.ps1",

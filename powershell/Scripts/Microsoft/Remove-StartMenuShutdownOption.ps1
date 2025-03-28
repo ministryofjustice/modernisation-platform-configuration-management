@@ -10,7 +10,7 @@
     Remove-StartMenuShutdownOption.ps1
 #>
 
-$RegPath = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Start\"
+$RegPath = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Start"
 if (Test-Path -Path $RegPath) {
   $ItemProperty = Get-ItemProperty -Path $RegPath -Name HideRestart -ErrorAction SilentlyContinue
   if ($ItemProperty -eq $null -or $ItemProperty.HideRestart -ne 1) {
