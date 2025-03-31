@@ -33,6 +33,7 @@ $Configs = @{
   "hmpps-domain-services-development" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "Prison-Nomis"
       )
     }
     "Add" = @{
@@ -47,76 +48,117 @@ $Configs = @{
   "hmpps-domain-services-test" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "OASys",
+        "OASys-National-Reporting",
+        "OASys National Reporting",
+        "Prison-Nomis",
+        "Prison-Nomis-AB-Testing",
+        "Prison-Nomis AB Testing",
+        "Prison-Nomis-Reporting",
+        "Prison-Nomis Reporting"
       )
     }
     "Add" = @{
       "CommonStartMenu" = @{
         "OASys/T1" = "https://t1-int.oasys.service.justice.gov.uk"
         "OASys/T2" = "https://t2-int.oasys.service.justice.gov.uk"
-        "OASys-National-Reporting/T2-Reporting-CMC"        = "https://t2.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/T2-Reporting-BI"         = "https://t2.test.reporting.oasys.service.justice.gov.uk/BOE/BI"
-        "OASys-National-Reporting/T2-Reporting-AdminTools" = "https://t2.test.reporting.oasys.service.justice.gov.uk/AdminTools"
-        "OASys-National-Reporting/T2-BODS-CMC"             = "https://t2-bods.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/T2-BODS-DataServices"    = "https://t2-bods.test.reporting.oasys.service.justice.gov.uk/DataServices/"
+        "OASys National Reporting/T2 Reporting CMC"        = "https://t2.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/T2 Reporting BI"         = "https://t2.test.reporting.oasys.service.justice.gov.uk/BOE/BI"
+        "OASys National Reporting/T2 Reporting AdminTools" = "https://t2.test.reporting.oasys.service.justice.gov.uk/AdminTools"
+        "OASys National Reporting/T2 BODS CMC"             = "https://t2-bods.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/T2 BODS DataServices"    = "https://t2-bods.test.reporting.oasys.service.justice.gov.uk/DataServices/"
         "Prison-Nomis/T1" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/T2" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/T3" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-Reporting/T1-Reporting-CMC"        = "https://t1.test.reporting.nomis.service.justice.gov.uk/BOE/CMC"
-        "Prison-Nomis-Reporting/T1-Reporting-BI"         = "https://t1.test.reporting.nomis.service.justice.gov.uk/BOE/BI"
-        "Prison-Nomis-Reporting/T1-Reporting-AdminTools" = "https://t1.test.reporting.nomis.service.justice.gov.uk/AdminTools"
+        "Prison-Nomis AB Testing/t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis Reporting/T1 Reporting CMC"        = "https://t1.test.reporting.nomis.service.justice.gov.uk/BOE/CMC"
+        "Prison-Nomis Reporting/T1 Reporting BI"         = "https://t1.test.reporting.nomis.service.justice.gov.uk/BOE/BI"
+        "Prison-Nomis Reporting/T1 Reporting AdminTools" = "https://t1.test.reporting.nomis.service.justice.gov.uk/AdminTools"
       }
     }
   }
   "hmpps-domain-services-preproduction" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "CSR",
+        "OASys",
+        "OASys-National-Reporting",
+        "OASys National Reporting",
+        "Prison-Nomis",
+        "Prison-Nomis-AB-Testing",
+        "Prison-Nomis AB Testing",
+        "Prison-Nomis-Reporting",
+        "Prison-Nomis Reporting"
       )
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "OASys/PREPRODUCTION" = "https://pp-int.oasys.service.justice.gov.uk"
-        "OASys-National-Reporting/PREPRODUCTION-Reporting-CMC"        = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/PREPRODUCTION-Reporting-BI"         = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/BI"
-        "OASys-National-Reporting/PREPRODUCTION-Reporting-AdminTools" = "https://preproduction.reporting.oasys.service.justice.gov.uk/AdminTools"
-        "OASys-National-Reporting/PREPRODUCTION-BODS-CMC"             = "https://pp-bods.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/PREPRODUCTION-BODS-DataServices"    = "https://pp-bods.test.reporting.oasys.service.justice.gov.uk/DataServices/"
+        "CSR/PreProd Region 1/2" = "http://r1.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/PreProd Region 3/4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/PreProd Region 5/6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Training A/B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
+        "OASys/PreProd"          = "https://pp-int.oasys.service.justice.gov.uk"
+        "OASys National Reporting/PreProd Reporting CMC"        = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/PreProd Reporting BI"         = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/BI"
+        "OASys National Reporting/PreProd Reporting AdminTools" = "https://preproduction.reporting.oasys.service.justice.gov.uk/AdminTools"
+        "OASys National Reporting/PreProd BODS CMC"             = "https://pp-bods.test.reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/PreProd BODS DataServices"    = "https://pp-bods.test.reporting.oasys.service.justice.gov.uk/DataServices/"
+        "PlanetFM/PreProd Web Portal"                           = "https://cafmwebx.pp.planetfm.service.justice.gov.uk/PlanetPortal"
+        "PlanetFM/PreProd Remote Desktop"                       = "https://cafmtx.pp.planetfm.service.justice.gov.uk/RDWeb"
         "Prison-Nomis/LSAST"                          = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis/PREPRODUCTION"                  = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-Reporting/PREPRODUCTION-Reporting-CMC"        = "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/BOE/CMC"
-        "Prison-Nomis-Reporting/PREPRODUCTION-Reporting-BI"         = "https://preproduction.reporting.nomis.service.justice.gov.uk/BOE/BI"
-        "Prison-Nomis-Reporting/PREPRODUCTION-Reporting-AdminTools" = "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/AdminTools"
+        "Prison-Nomis/PreProd"                        = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis Reporting/PreProd Reporting CMC"        = "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/BOE/CMC"
+        "Prison-Nomis Reporting/PreProd Reporting BI"         = "https://preproduction.reporting.nomis.service.justice.gov.uk/BOE/BI"
+        "Prison-Nomis Reporting/PreProd Reporting AdminTools" = "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/AdminTools"
       }
     }
   }
   "hmpps-domain-services-production" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "CSR",
+        "OASys",
+        "OASys-National-Reporting",
+        "OASys National Reporting",
+        "Prison-Nomis",
+        "Prison-Nomis-AB-Testing",
+        "Prison-Nomis AB Testing",
+        "Prison-Nomis-Reporting",
+        "Prison-Nomis Reporting"
       )
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "OASys/PRODUCTION" = "https://int.oasys.service.justice.gov.uk"
-        "OASys-National-Reporting/PRODUCTION-Reporting-CMC"        = "https://reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/PRODUCTION-Reporting-BI"         = "https://reporting.oasys.service.justice.gov.uk/BOE/BI"
-        "OASys-National-Reporting/PRODUCTION-Reporting-AdminTools" = "https://reporting.oasys.service.justice.gov.uk/AdminTools"
-        "OASys-National-Reporting/PRODUCTION-BODS-CMC"             = "https://bods.reporting.oasys.service.justice.gov.uk/BOE/CMC"
-        "OASys-National-Reporting/PRODUCTION-BODS-DataServices"    = "https://bods.reporting.oasys.service.justice.gov.uk/DataServices/"
-        "Prison-Nomis/PRODUCTION" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/prod-nomis-web-a" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/prod-nomis-web-b" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-Reporting/PRODUCTION-Reporting-CMC"        = "https://admin.reporting.nomis.service.justice.gov.uk/BOE/CMC"
-        "Prison-Nomis-Reporting/PRODUCTION-Reporting-BI"         = "https://reporting.nomis.service.justice.gov.uk/BOE/BI"
-        "Prison-Nomis-Reporting/PRODUCTION-Reporting-AdminTools" = "https://admin.reporting.nomis.service.justice.gov.uk/AdminTools"
+        "CSR/Prod Region 1/2" = "http://r1.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Region 3/4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Region 5/6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Training A/B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
+        "OASys/Prod"     = "https://int.oasys.service.justice.gov.uk/eor/f?p=100"
+        "OASys/Practice" = "https://practice.int.oasys.service.justice.gov.uk/eor/f?p=100"
+        "OASys/Training" = "https://training.int.oasys.service.justice.gov.uk/eor/f?p=100"
+        "OASys National Reporting/Prod Reporting CMC"        = "https://reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/Prod Reporting BI"         = "https://reporting.oasys.service.justice.gov.uk/BOE/BI"
+        "OASys National Reporting/Prod Reporting AdminTools" = "https://reporting.oasys.service.justice.gov.uk/AdminTools"
+        "OASys National Reporting/Prod BODS CMC"             = "https://bods.reporting.oasys.service.justice.gov.uk/BOE/CMC"
+        "OASys National Reporting/Prod BODS DataServices"    = "https://bods.reporting.oasys.service.justice.gov.uk/DataServices/"
+        "PlanetFM/Prod Web Portal"     = "https://cafmwebx2.planetfm.service.justice.gov.uk/PlanetPortal"
+        "PlanetFM/Prod Remote Desktop" = "https://cafmtx.planetfm.service.justice.gov.uk/RDWeb"
+        "PlanetFM/Training Web Portal" = "https://cafmtrainweb.planetfm.service.justice.gov.uk/PlanetPortal"
+        "Prison-Nomis/Prod" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/prod-nomis-web-a" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/prod-nomis-web-b" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis Reporting/Prod Reporting CMC"        = "https://admin.reporting.nomis.service.justice.gov.uk/BOE/CMC"
+        "Prison-Nomis Reporting/Prod Reporting BI"         = "https://reporting.nomis.service.justice.gov.uk/BOE/BI"
+        "Prison-Nomis Reporting/Prod Reporting AdminTools" = "https://admin.reporting.nomis.service.justice.gov.uk/AdminTools"
       }
     }
   }
@@ -144,12 +186,12 @@ $Configs = @{
         "Prison-Nomis/T1" = "https://c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/T2" = "https://c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/T3" = "https://c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t1-nomis-web-a" = "https://t1-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t1-nomis-web-b" = "https://t1-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t2-nomis-web-a" = "https://t2-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t2-nomis-web-b" = "https://t2-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t3-nomis-web-a" = "https://t3-nomis-web-a.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/t3-nomis-web-b" = "https://t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }
     }
   }
@@ -161,11 +203,11 @@ $Configs = @{
     "Add" = @{
       "CommonStartMenu" = @{
         "Prison-Nomis/LSAST"                          = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis/PREPRODUCTION"                  = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis/PreProd"                        = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }
     }
   }
@@ -176,9 +218,9 @@ $Configs = @{
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "Prison-Nomis/PRODUCTION" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/prod-nomis-web-a" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis-AB-Testing/prod-nomis-web-b" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis/Prod" = "https://c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/prod-nomis-web-a" = "https://prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "Prison-Nomis AB Testing/prod-nomis-web-b" = "https://prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }
     }
   }
