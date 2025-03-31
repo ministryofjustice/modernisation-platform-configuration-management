@@ -257,14 +257,15 @@ if ($Config.Contains("Remove")) {
     $BasePath = [environment]::GetFolderPath($Folder.Key)
     foreach ($ShortcutName in $Folder.Value) {
       $ShortcutPath = Join-Path -Path $BasePath -ChildPath $ShortcutName
-      foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Recurse)) {
-        Write-Output "Removing $Item"
-        Remove-Item $Item -Force | Out-Null
-      }
-      foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Directory)) {
-        Write-Output "Removing $Item"
-        Remove-Item $Item -Force | Out-Null
-      }
+      Remove-Item -Path $ShortcutPath -Force -Recurse | Out-Null
+      #foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Recurse)) {
+      #  Write-Output "Removing $Item"
+      #  Remove-Item $Item -Force -Recurse | Out-Null
+      #}
+      #foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Directory)) {
+      #  Write-Output "Removing $Item"
+      #  Remove-Item $Item -Force -Recurse | Out-Null
+      #}
     }
   }
 }
