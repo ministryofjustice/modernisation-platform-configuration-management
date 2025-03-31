@@ -1,3 +1,14 @@
+<#
+.SYNOPSIS
+    Add all tools required to manage AD remotely
+
+.DESCRIPTION
+    Add Active Directory, DNS and group policy management tools
+
+.EXAMPLE
+    Install-ADRemoteTools.ps1
+#>
+
 $ErrorActionPreference = "Stop"
 Install-WindowsFeature -Name RSAT-AD-PowerShell
 Install-WindowsFeature -Name RSAT-ADDS -IncludeAllSubFeature
