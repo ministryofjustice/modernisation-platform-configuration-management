@@ -98,10 +98,10 @@ $Configs = @{
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "CSR/PreProd Region 1/2" = "http://r1.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/PreProd Region 3/4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/PreProd Region 5/6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/Prod Training A/B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
+        "CSR/PreProd Region 1 2" = "http://r1.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/PreProd Region 3 4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/PreProd Region 5 6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Training A B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
         "OASys/PreProd"          = "https://pp-int.oasys.service.justice.gov.uk"
         "OASys National Reporting/PreProd Reporting CMC"        = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/CMC"
         "OASys National Reporting/PreProd Reporting BI"         = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/BI"
@@ -138,10 +138,10 @@ $Configs = @{
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "CSR/Prod Region 1/2" = "http://r1.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/Prod Region 3/4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/Prod Region 5/6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
-        "CSR/Prod Training A/B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
+        "CSR/Prod Region 1 2" = "http://r1.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Region 3 4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Region 5 6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
+        "CSR/Prod Training A B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
         "OASys/Prod"     = "https://int.oasys.service.justice.gov.uk/eor/f?p=100"
         "OASys/Practice" = "https://practice.int.oasys.service.justice.gov.uk/eor/f?p=100"
         "OASys/Training" = "https://training.int.oasys.service.justice.gov.uk/eor/f?p=100"
