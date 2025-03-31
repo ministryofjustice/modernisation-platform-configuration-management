@@ -260,10 +260,34 @@ foreach ($TrustedDomain in $TrustedDomains) {
 }
 $ItemProperty = Get-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -ErrorAction SilentlyContinue
 while ($ItemProperty -ne $null) {
-  $TrustedDomain = $ItemProperty.$ItemName
+  $TrustedDomain = $ItemProperty.$ItemName -replace '^\*\.', ''
   Write-Output "Removing $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
   Remove-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName | Out-Null
   $ItemName = $ItemName + 1
   $ItemProperty = Get-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -ErrorAction SilentlyContinue
 }
 
+$RegPath = "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings"
+if (!(Test-Path "$RegPath")) {
+  Write-Output "Creating $RegPath"
+  New-Item -Path "$RegPath" -Force | Out-Null
+}
+
+$ItemProperty = Get-ItemProperty -Path "$RegPath" -Name Security_HKLM_only -ErrorAction SilentlyContinue
+if ($ItemProperty -eq $null -or $ItemProperty.Security_HKLM_only -ne 1) {
+  Write-Output "Setting $RegPath\Security_HKLM_only = 1"
+  New-ItemProperty -Path "$RegPath" -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force | Out-Null
+}
+
+$RegPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains"
+foreach ($TrustedDomain in $TrustedDomains) {
+  if (!(Test-Path "$RegPath\$TrustedDomain")) {
+    Write-Output "Creating $RegPath\$TrustedDomain"
+    New-Item -Path "$RegPath\$TrustedDomain" -Force | Out-Null
+  }
+  $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -ErrorAction SilentlyContinue
+  if ($ItemProperty -eq $null -or $ItemProperty.https -ne 2) {
+    Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
+    New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
+  }
+}
