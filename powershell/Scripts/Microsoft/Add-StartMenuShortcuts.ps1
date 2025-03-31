@@ -49,12 +49,9 @@ $Configs = @{
     "Remove" = @{
       "CommonStartMenu" = @(
         "OASys",
-        "OASys-National-Reporting",
         "OASys National Reporting",
         "Prison-Nomis",
-        "Prison-Nomis-AB-Testing",
         "Prison-Nomis AB Testing",
-        "Prison-Nomis-Reporting",
         "Prison-Nomis Reporting"
       )
     }
@@ -87,12 +84,9 @@ $Configs = @{
       "CommonStartMenu" = @(
         "CSR",
         "OASys",
-        "OASys-National-Reporting",
         "OASys National Reporting",
         "Prison-Nomis",
-        "Prison-Nomis-AB-Testing",
         "Prison-Nomis AB Testing",
-        "Prison-Nomis-Reporting",
         "Prison-Nomis Reporting"
       )
     }
@@ -127,12 +121,9 @@ $Configs = @{
       "CommonStartMenu" = @(
         "CSR",
         "OASys",
-        "OASys-National-Reporting",
         "OASys National Reporting",
         "Prison-Nomis",
-        "Prison-Nomis-AB-Testing",
         "Prison-Nomis AB Testing",
-        "Prison-Nomis-Reporting",
         "Prison-Nomis Reporting"
       )
     }
@@ -164,6 +155,7 @@ $Configs = @{
   "nomis-development" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "Prison-Nomis"
       )
     }
     "Add" = @{
@@ -178,6 +170,8 @@ $Configs = @{
   "nomis-test" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "Prison-Nomis",
+        "Prison-Nomis AB Testing"
       )
     }
     "Add" = @{
@@ -197,6 +191,8 @@ $Configs = @{
   "nomis-preproduction" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "Prison-Nomis",
+        "Prison-Nomis AB Testing"
       )
     }
     "Add" = @{
@@ -213,6 +209,8 @@ $Configs = @{
   "nomis-production" = @{
     "Remove" = @{
       "CommonStartMenu" = @(
+        "Prison-Nomis",
+        "Prison-Nomis AB Testing"
       )
     }
     "Add" = @{
