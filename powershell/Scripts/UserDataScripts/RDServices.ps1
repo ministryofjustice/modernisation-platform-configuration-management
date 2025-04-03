@@ -271,7 +271,7 @@ if ($RunManually) {
   else {
     # Just dot-source and run the script in the current context
     # This runs with the current user's credentials
-    . $deploymentScriptPath -Config $Config -localScriptRoot $PSScriptRoot
+    . $deploymentScriptPath -Config $Config
   }
 }
 else {
@@ -282,7 +282,7 @@ else {
 
   $credentials = New-Object System.Management.Automation.PSCredential($username, $secure_password)
 
-  Invoke-Command -ComputerName localhost -FilePath $deploymentScriptPath -Credential $credentials -ArgumentList $Config, $PSScriptRoot -Authentication CredSSP -Verbose
+  Invoke-Command -ComputerName localhost -FilePath $deploymentScriptPath -Credential $credentials -ArgumentList $Config -Authentication CredSSP -Verbose
 }
 
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1

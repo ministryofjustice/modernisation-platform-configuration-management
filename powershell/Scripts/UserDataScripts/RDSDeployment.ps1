@@ -1,13 +1,32 @@
 param(
     [Parameter(Mandatory=$true)]
-    $Config,
-    [Parameter(Mandatory=$true)]
-    $localScriptRoot
+    $Config
 )
 
-# import module into context, this may not be needed anymore, test without later
-$ModulesRepo = Join-Path $localScriptRoot '..\..\Modules'
-$env:PSModulePath = "$ModulesRepo;$env:PSModulePath"
+# Validation and debugging section
+$logFile = "C:\Windows\Temp\RDSDeploymentConfigValidation.txt"
+
+# Start with basic info
+"RDSDeployment.ps1 started at $(Get-Date)" | Out-File -FilePath $logFile
+"PowerShell Version: $($PSVersionTable.PSVersion)" | Out-File -FilePath $logFile -Append
+"Config object type: $($Config.GetType().FullName)" | Out-File -FilePath $logFile -Append
+
+# Log all top-level keys and their types
+"Config keys:" | Out-File -FilePath $logFile -Append
+foreach ($key in $Config.Keys) {
+    $value = $Config[$key]
+    $type = if ($null -eq $value) { "null" } else { $value.GetType().FullName }
+    $valuePreview = if ($value -is [Array]) {
+        "Array with $($value.Count) items: [" + ($value -join ", ") + "]"
+    } elseif ($value -is [Hashtable] -or $value -is [System.Collections.Specialized.OrderedDictionary]) {
+        "Hashtable with $($value.Count) keys: [" + ($value.Keys -join ", ") + "]"
+    } else {
+        $value
+    }
+    
+    "  - $key (Type: $type): $valuePreview" | Out-File -FilePath $logFile -Append
+}
+
 Import-Module ModPlatformRemoteDesktop -Force
 
 Install-RDSWindowsFeatures
