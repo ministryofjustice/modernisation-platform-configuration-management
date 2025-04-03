@@ -334,14 +334,22 @@ function Add-ServerFqdnListToServerList {
     # Current time in ISO 8601 format
     $currentTime = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:ss.ffffffzzz")
     
-    # Create XML content without extra whitespace but with proper closing tag
-    $xmlContent = @"
-<?xml version="1.0" encoding="utf-8"?><ServerList xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" localhostName="$fqdn" xmlns="urn:serverpool-schema"><ServerInfo name="$fqdn" status="1" lastUpdateTime="$currentTime" locale="en-US" /></ServerList>
-"@
+    # Create XML content with all servers
+    $xmlContent = "<?xml version=""1.0"" encoding=""utf-8""?><ServerList xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" localhostName=""$fqdn"" xmlns=""urn:serverpool-schema""><ServerInfo name=""$fqdn"" status=""1"" lastUpdateTime=""$currentTime"" locale=""en-US"" />"
+    
+    # Add all servers from ServerFqdnList
+    foreach ($server in $ServerFqdnList) {
+      if ($server -ne $fqdn) {
+        $xmlContent += "<ServerInfo name=""$server"" status=""2"" lastUpdateTime=""0001-01-01T00:00:00"" locale=""en-US"" />"
+        Write-Output "Added server $server to new ServerList.xml"
+      }
+    }
+    
+    $xmlContent += "</ServerList>"
     
     # Save the XML content to file
     Set-Content -Path $serverListPath -Value $xmlContent
-    Write-Output "Created new ServerList.xml with local server $fqdn"
+    Write-Output "Created new ServerList.xml with local server and all specified servers"
   }
   else {
     # Load the existing XML file
@@ -412,6 +420,7 @@ function Add-ServerFqdnListToServerList {
     foreach ($server in $ServerFqdnList) {
       if ($server -ne $fqdn) {
         $xmlContent += "<ServerInfo name=""$server"" status=""2"" lastUpdateTime=""0001-01-01T00:00:00"" locale=""en-US"" />"
+        Write-Output "Added server $server to rebuilt ServerList.xml"
       }
     }
     
@@ -419,7 +428,7 @@ function Add-ServerFqdnListToServerList {
     
     # Save the XML content to file
     Set-Content -Path $serverListPath -Value $xmlContent
-    Write-Output "Created new ServerList.xml with specified servers"
+    Write-Output "Created new ServerList.xml with all specified servers"
   }
   
   # Restart Server Manager to pick up changes
