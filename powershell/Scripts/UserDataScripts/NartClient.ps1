@@ -1,6 +1,6 @@
 $GlobalConfig = @{
     "all"                                 = @{
-        "WindowsClientS3Bucket"      = "mod-platform-image-artefact-bucket20230203091453221500000001"
+        "S3Bucket"                   = "mod-platform-image-artefact-bucket20230203091453221500000001"
         "WindowsClientS3Folder"      = "hmpps/ncr-packages"
         "Oracle19c64bitClientS3File" = "WINDOWS.X64_193000_client.zip"
         "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
@@ -11,15 +11,17 @@ $GlobalConfig = @{
         # "BIPWindowsClient43" = "BIPLATCLNT4301P_1200-70005711.EXE" # Client tool 4.3 SP 1 Patch 12 as per Azure PDMR2W00014
         # "BIPWindowsClient43" = "BIPLATCLNT4303P_300-70005711.EXE" # Client tool 4.3 SP 3 Patch 3
         # "BIPWindowsClient42" # "5104879_1.ZIP" # Client tool 4.2 SP 9
+        "SQLDeveloperS3Folder"       = "hmpps/sqldeveloper"
     }
     "hmpps-domain-services-development"   = @{
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
         "NcrShortcuts"    = @{
         }
     }
     "hmpps-domain-services-test"          = @{
         "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
+        "newClientName"   = "T2-JUMP2022-2"
         "NcrShortcuts"    = @{
         }
     }
@@ -40,6 +42,32 @@ $GlobalConfig = @{
 # IMPORTANT: This script installs Client Tools 4.3 SP 3 Patch 5 and the Oracle 19c client software.
 
 # }}} functions
+function Add-SQLDeveloper {
+    [CmdletBinding()]
+    param (
+      [hashtable]$Config
+    )
+  
+    if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") {
+      Write-Output "SQL Developer already installed"
+    } else {
+      Write-Output "Add SQL Developer"
+      Set-Location -Path ([System.IO.Path]::GetTempPath())
+      Read-S3Object -BucketName $Config.S3Bucket -Key ($Config.SQLDeveloperS3Folder + "/sqldeveloper-22.2.1.234.1810-x64.zip") -File .\sqldeveloper-22.2.1.234.1810-x64.zip | Out-Null
+  
+      # Extract SQL Developer - there is no installer for this application
+      Expand-Archive -Path .\sqldeveloper-22.2.1.234.1810-x64.zip -DestinationPath "C:\Program Files\Oracle" -Force | Out-Null
+  
+      # Create a desktop shortcut
+      Write-Output " - Creating StartMenu Link"
+      $Shortcut = New-Object -ComObject WScript.Shell
+      $SourcePath = Join-Path -Path ([environment]::GetFolderPath("CommonStartMenu")) -ChildPath "\\SQL Developer.lnk"
+      $ShortcutLink = $Shortcut.CreateShortcut($SourcePath)
+      $ShortcutLink.TargetPath = "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe"
+      $ShortcutLink.Save() | Out-Null
+    }
+  }
+
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
@@ -86,7 +114,7 @@ function Get-Installer {
     )
 
     $s3Params = @{
-        BucketName = $Config.WindowsClientS3Bucket
+        BucketName = $Config.S3Bucket
         Key        = ($Config.WindowsClientS3Folder + "/" + $Key)
         File       = $Destination
         Verbose    = $true
@@ -378,6 +406,31 @@ function Install-RDSSessionHostRole {
         # May need a restart but this is covered when the machine is added to the domain
     }
 }
+
+function Add-PermanentPSModulePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$NewPath
+    )
+  
+    # Get current Machine PSModulePath from the registry
+    $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+    $currentValue = (Get-ItemProperty -Path $regKey -Name PSModulePath).PSModulePath
+  
+    # Check if the path already exists
+    if ($currentValue -split ';' -notcontains $NewPath) {
+        # Add the new path
+        $newValue = $currentValue + ";" + $NewPath
+  
+        # Update the registry
+        Set-ItemProperty -Path $regKey -Name PSModulePath -Value $newValue
+  
+        Write-Host "Added $NewPath to system PSModulePath. Changes will take effect after restart or refreshing environment variables."
+    }
+    else {
+        Write-Host "$NewPath is already in PSModulePath"
+    }
+}
 # }}} end of functions
 
 # {{{ Prep the server for installation
@@ -397,7 +450,6 @@ Set-TimeZone -Name "GMT Standard Time"
 # }}} complete - add prerequisites to server
 
 $Config = Get-Config
-$Tags = Get-InstanceTags
 
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
@@ -405,15 +457,37 @@ $AppDirectory = "C:\App"
 Install-RDSSessionHostRole
 
 # {{{ join domain and rename instance to tag:'Name'
-. ../ModPlatformAD/Join-ModPlatformAD.ps1
-if ($LASTEXITCODE -ne 0) {
-    Exit $LASTEXITCODE
-}
+# . ../ModPlatformAD/Join-ModPlatformAD.ps1
+# if ($LASTEXITCODE -ne 0) {
+#     Exit $LASTEXITCODE
+# }
 # }}} end of join domain
+
+# Add modules permanently to PSModulePath
+$ModulesPath = Join-Path $PSScriptRoot "..\..\Modules"
+Add-PermanentPSModulePath -NewPath $ModulesPath
+# Add to system environment (persistent)
+[Environment]::SetEnvironmentVariable("PSModulePath", $env:PSModulePath + ";" + $ModulesPath, "Machine")
+# Also add to current session
+$env:PSModulePath = $env:PSModulePath + ";" + $ModulesPath
+
+# Change name and Join the domain
+. ../ModPlatformAD/Join-ModPlatformAD.ps1
+
+if ($LASTEXITCODE -ne 0) {
+   Exit $LASTEXITCODE
+}
+
+Import-Module ModPlatformAD -Force
+$ADConfig = Get-ModPlatformADConfig
+$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+# Move the computer to the correct OU
+Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
 
 New-Item -ItemType Directory -Path $WorkingDirectory -Force
 New-Item -ItemType Directory -Path $AppDirectory -Force
 
+Add-SQLDeveloper -Config $Config
 Install-Oracle19cClient -Config $Config
 New-TnsOraFile -Config $Config
 Add-BIPWindowsClient43 -Config $Config
