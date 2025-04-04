@@ -450,7 +450,6 @@ Set-TimeZone -Name "GMT Standard Time"
 # }}} complete - add prerequisites to server
 
 $Config = Get-Config
-# $Tags = Get-InstanceTags # FIXME: remove this?
 
 $WorkingDirectory = "C:\Software"
 $AppDirectory = "C:\App"
