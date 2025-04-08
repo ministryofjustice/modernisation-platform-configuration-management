@@ -11,5 +11,5 @@
 - name: Disable ec2-user password
   ansible.builtin.user:
     name: ec2-user
-    password: '*'
+    password: "*"
   when: getent_passwd["ec2-user"] is defined
