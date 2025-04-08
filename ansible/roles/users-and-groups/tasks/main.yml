@@ -12,6 +12,12 @@
     - ec2patch
     - users-and-groups-ssm-user
 
+- import_tasks: add-ec2-user.yml
+  tags:
+    - ec2provision
+    - ec2patch
+    - users-and-groups-ec2-user
+
 - import_tasks: add-regular.yml
   tags:
     - amibuild
