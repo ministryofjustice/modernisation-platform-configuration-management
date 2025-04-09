@@ -109,3 +109,21 @@ users_and_groups_system:
       - dba
       - wheel
 ```
+
+## Passwords
+
+You can set an auto-generated password from a secret as follows:
+
+```
+users_and_groups_secrets:
+  users:
+    secret: "/users/passwords"
+    users:
+      - salt: auto
+      - sapprogram: auto
+
+users_and_groups_system:
+  - name: sapprogram
+    group: sapprogram
+    password: "{{ secretsmanager_passwords_dict['users'].passwords['sapprogram'] | password_hash('sha512', secretsmanager_passwords_dict['users'].passwords['salt']) }}"
+```

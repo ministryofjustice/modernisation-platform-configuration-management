@@ -1,4 +1,13 @@
 ---
+- import_tasks: get-secrets.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - ec2patch
+    - users-and-groups-get-secrets
+    - users-and-groups-system
+    - users-and-groups-regular
+
 - import_tasks: add-system.yml
   tags:
     - amibuild
