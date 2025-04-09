@@ -13,3 +13,7 @@
   ansible.builtin.set_fact:
     sap_bip_is_app: "{{ sap_bip_ccm_config_check.stat.exists }}"
     sap_bip_is_web: "{{ sap_bip_tomcat_check.stat.exists }}"
+
+- name: Debug installed facts
+  ansible.builtin.debug:
+    msg: "is_app={{ sap_bip_is_app }} is_web={{ sap_bip_is_web }}"
