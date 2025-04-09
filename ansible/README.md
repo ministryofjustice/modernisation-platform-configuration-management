@@ -94,13 +94,26 @@ Open a new terminal window and re-check Step 2.
 
 4. Install requirements
 
+Install python dependencies. Either:
+
 ```
 python3.9 -m pip install -r requirements.txt
+```
+
+or if python installed at a user level:
+
+```
+python3.9 -m pip install -r requirements.txt --user
+```
+
+Install ansible dependencies:
+
+```
 ansible-galaxy role install -r requirements.yml
 ansible-galaxy collection install -r requirements.yml
 ```
 
-If this `ansible-galaxy collection install -r requirements.yml` fails, try:
+If `ansible-galaxy collection install -r requirements.yml` fails, try:
 
 ```
 ansible-galaxy collection install -r requirements.rhel6.yml
