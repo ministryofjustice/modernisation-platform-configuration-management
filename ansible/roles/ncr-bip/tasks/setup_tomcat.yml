@@ -49,15 +49,6 @@
         - ncr_web_server_type == "web"
         - ncr_bip_sso_url is defined
 
-    - name: Copy webapp configuration files
-      ansible.builtin.template:
-        src: "web/{{ item }}"
-        dest: "{{ ncr_bip_installation_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom/biprws.properties
-
     - name: Copy common tomcat root files
       ansible.builtin.template:
         src: "web/{{ item }}"
