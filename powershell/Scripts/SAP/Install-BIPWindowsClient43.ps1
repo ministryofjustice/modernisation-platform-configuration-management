@@ -1,8 +1,4 @@
-function Add-BIPWindowsClient43 {
-    param (
-        [Parameter(Mandatory)]
-        [hashtable]$Config
-    )
+function Install-BIPWindowsClient43 {
 
     # Check if BIP Windows Client 4.3 is already installed
     $installDir = "C:\Program Files (x86)\SAP BusinessObjects"
@@ -134,6 +130,8 @@ function Get-Installer {
 $S3Bucket                   = "mod-platform-image-artefact-bucket20230203091453221500000001"
 $WindowsClientS3Folder      = "hmpps/ncr-packages"
 $BIPWindowsClient43         = "BIPLATCLNT4304P_500-70005711.EXE" # Client tools 4.3 SP 4 Patch 5
+
+Install-BIPWindowsClient43
 
 # NOTE: Just keeping a record of these versions as this info is difficult to find in the SAP download portal
 # $BIPWindowsClient43 = "BIPLATCLNT4303P_500-70005711.EXE" # Client tools 4.3 SP 3 Patch 5

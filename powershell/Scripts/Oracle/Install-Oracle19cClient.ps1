@@ -1,11 +1,7 @@
 function Install-Oracle19cClient {
-    param (
-        [Parameter(Mandatory)]
-        [hashtable]$Config
-    )
 
     # Check if Oracle 19c client is already installed
-    if (Test-Path $Config.ORACLE_19C_HOME) {
+    if (Test-Path $ORACLE_19C_HOME) {
         Write-Host "Oracle 19c client is already installed."
         return
     }
@@ -88,3 +84,5 @@ $WindowsClientS3Folder      = "hmpps/ncr-packages"
 $Oracle19c64bitClientS3File = "WINDOWS.X64_193000_client.zip"
 $ORACLE_19C_HOME            = "C:\app\oracle\product\19.0.0\client_1"
 $ORACLE_BASE                = "C:\app\oracle"
+
+Install-Oracle19cClient
