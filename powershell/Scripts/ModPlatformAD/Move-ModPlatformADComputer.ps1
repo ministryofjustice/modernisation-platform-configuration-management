@@ -93,6 +93,7 @@ $GlobalConfig = @{
     }
 }
 
+$Config = Get-Config
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
