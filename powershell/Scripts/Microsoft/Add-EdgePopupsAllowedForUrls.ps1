@@ -24,7 +24,7 @@ if (!(Test-Path $RegPath)) {
 $ItemName = 1
 foreach ($PopupsAllowedForUrl in $PopupsAllowedForUrls) {
   $ItemProperty = Get-ItemProperty -Path $RegPath -Name $ItemName -ErrorAction SilentlyContinue
-  if ($ItemProperty -eq $null -or $ItemProperty.$ItemName -ne $PopupsAllowedForUrl) {
+  if ($null -eq $ItemProperty -or $ItemProperty.$ItemName -ne $PopupsAllowedForUrl) {
     Write-Output "Setting $RegPath\$ItemName = $PopupsAllowedForUrl"
     New-ItemProperty -Path $RegPath -Name $ItemName -Value $PopupsAllowedForUrl -PropertyType String -Force | Out-Null
   }
@@ -32,7 +32,7 @@ foreach ($PopupsAllowedForUrl in $PopupsAllowedForUrls) {
 }
 
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name $ItemName -ErrorAction SilentlyContinue
-while ($ItemProperty -ne $null) {
+while ($null -ne $ItemProperty) {
   $PopupsAllowedForUrl = $ItemProperty.$ItemName
   Write-Output "Removing $RegPath\$ItemName = $PopupsAllowedForUrl"
   Remove-ItemProperty -Path $RegPath -Name $ItemName | Out-Null
