@@ -21,7 +21,6 @@ $GlobalConfig = @{
     "hmpps-domain-services-test"          = @{
         "tnsorafile"      = "NCR\tnsnames_nart_client.ora"
         "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "newClientName"   = "T2-JUMP2022-2"
         "NcrShortcuts"    = @{
         }
     }
