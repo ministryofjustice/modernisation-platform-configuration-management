@@ -205,11 +205,21 @@ do
       then
          UNEXPIRED_EXCLUDED_HOSTS[${EXCLUDED_HOST}]=
       fi
-   else
+   elif [[ ${EXCLUDE_EXPIRY} -lt ${CURRENT_TIMESTAMP} ]];
+   then
       # If the exclusion expiry date is in the past, this is probably due to whichever Ansible
       # job which set the exclusion having failed before it got round to removing
       # it.  Therefore we can tidy it up now and remove the expired exclusion comment.
+      echo "Removing exclusion for $EXCLUDED_HOST"
       ${EMCLI} set_target_property_value -property_records="${EXCLUDED_HOST}:host:Comment:"
+   else
+      # If the exclusion expiry date is not set leave the exclusion in place.
+      # If the host is not already a key to the array then add it
+      # (avoiding duplicates)
+      if [[ ! -v UNEXPIRED_EXCLUDED_HOSTS[${EXCLUDED_HOST}] ]];
+      then
+         UNEXPIRED_EXCLUDED_HOSTS[${EXCLUDED_HOST}]=
+      fi
    fi
 done <<< "${ALL_EXCLUDED_HOSTS}"
 
