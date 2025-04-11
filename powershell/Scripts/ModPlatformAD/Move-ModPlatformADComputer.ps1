@@ -7,22 +7,30 @@ function Move-ModPlatformADComputer {
 
     $ErrorActionPreference = "Stop"
 
-    # Do nothing if host not part of domain
+    # Check if host is part of domain, exit gracefully if not
     if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
-        return $false
+        Write-Output "Computer is not yet joined to a domain. Will try again later."
+        return $true # Return success to allow script to run again later
     }
 
-    # Get the computer's objectGUID with a 5-minute timeout
-    $timeout = [DateTime]::Now.AddMinutes(5)
+    # Get the computer's objectGUID with a 15-minute timeout
+    $timeout = [DateTime]::Now.AddMinutes(15)
     do {
         $computer = Get-ADComputer -Credential $ModPlatformADCredential -Identity $env:COMPUTERNAME -ErrorAction SilentlyContinue
         if ($computer -and $computer.objectGUID) { break }
-        Start-Sleep -Seconds 5
+        Write-Output "Waiting for computer objectGUID to be available..."
+        Start-Sleep -Seconds 15
     } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
     if (-not ($computer -and $computer.objectGUID)) {
-        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
-        return
+        Write-Error "Failed to retrieve computer objectGUID within 15 minutes."
+        return $false
+    }
+
+    # Check if the computer is already in the correct OU
+    if ($computer.DistinguishedName -like "*$NewOU") {
+        Write-Output "Computer $env:COMPUTERNAME is already in the correct OU: $NewOU"
+        return $true
     }
 
     # Move the computer to the new OU
