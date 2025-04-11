@@ -5,21 +5,24 @@
   register: connection_server_check
 
 - block:
-    - name: Add CURSOR_SHARING parameter to oracle.prm
-      become_user: bobj
-      ansible.builtin.lineinfile:
-        backup: true
-        path: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/dataAccess/connectionServer/oracle/oracle.prm"
-        insertafter: '.*<Parameter Name="CALCULATION_FUNCTION">.*'
-        regexp: '.*<Parameter Name="CURSOR_SHARING">.*'
-        line: '        <Parameter Name="CURSOR_SHARING">EXACT</Parameter>'
+    # CURSOR_SHARING EXACT appears to have been removed from AWS config after initial config
+    # - name: Add CURSOR_SHARING parameter to oracle.prm
+    #   become_user: bobj
+    #   ansible.builtin.lineinfile:
+    #     backup: true
+    #     path: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/dataAccess/connectionServer/oracle/oracle.prm"
+    #     insertafter: '.*<Parameter Name="CALCULATION_FUNCTION">.*'
+    #     regexp: '.*<Parameter Name="CURSOR_SHARING">.*'
+    #     line: '        <Parameter Name="CURSOR_SHARING">EXACT</Parameter>'
 
+    # don't update after initial copy
     - name: Update JDBC oracle.sbo
       ansible.builtin.template:
         src: "app/sap_bobj/enterprise_xi40/dataAccess/connectionServer/jdbc/{{ item }}"
         dest: "{{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/dataAccess/connectionServer/jdbc/{{ item }}"
         owner: bobj
         group: binstall
+        force: false
       loop:
         - oracle.sbo
 
