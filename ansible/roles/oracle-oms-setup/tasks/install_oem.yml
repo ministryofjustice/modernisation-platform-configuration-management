@@ -43,4 +43,3 @@
     semanage fcontext -a -t initrc_exec_t /etc/rc.d/init.d/gcstartup
     restorecon -v /etc/rc.d/init.d/gcstartup
   when: right_context.rc == 1
-
