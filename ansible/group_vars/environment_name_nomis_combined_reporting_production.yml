@@ -150,7 +150,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
   pd:
-    sap_bip_rar_base: "BIPLATS4301P_1200-70002683"
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
@@ -175,7 +175,7 @@ sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
 ncr_bip_confs:
   pd:
     ncr_bip_sso_url: "https://reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
-    ncr_bip_provisioning_database_hostname: "pdnomis.production.nomis.service.justice.gov.uk"
+    ncr_bip_provisioning_database_hostname: "pnomis.production.nomis.service.justice.gov.uk"
 
 ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
