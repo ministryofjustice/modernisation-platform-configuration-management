@@ -3,7 +3,8 @@
 		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
 	</Schedule>
 	<MetricColl NAME="ME$RESTORE_POINT_AGE">
-		<Condition COLUMN_NAME="max_restore_point_age" CRITICAL="21" WARNING="7" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% for %keyValue% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE_WITH_KEY" CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
+		<Condition COLUMN_NAME="ALERT_NONE_PRODUCTION" CRITICAL="21" WARNING="7" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of maximum restore point age is %MAX_RESTORE_POINT_AGE%" CLEAR_MESSAGE="Alert for maximum restore point age is cleared"/>
+		<Condition COLUMN_NAME="ALERT_PRODUCTION" CRITICAL="1" OPERATOR="GE" OCCURRENCES="1" MESSAGE="The value of maximum restore point age is %MAX_RESTORE_POINT_AGE%" CLEAR_MESSAGE="Alert for maximum restore point age is cleared"/>
 	</MetricColl>
 </CollectionItem>
 </TargetCollectionExt>

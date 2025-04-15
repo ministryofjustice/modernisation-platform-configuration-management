@@ -4,19 +4,25 @@
 <Description NLSID="NLS_DESCRIPTION_hostME$RESTORE_POINT_AGE">Maximum Restore Point Age</Description>
 </Display>
 <TableDescriptor>
-<ColumnDescriptor NAME="database" TYPE="STRING" IS_KEY="TRUE">
+<ColumnDescriptor NAME="DATABASE" TYPE="STRING" IS_KEY="TRUE">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEdatabase">Database</Label>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEDATABASE">Database</Label>
 </Display>
 </ColumnDescriptor>
-<ColumnDescriptor NAME="max_restore_point_age" TYPE="NUMBER">
+<ColumnDescriptor NAME="MAX_RESTORE_POINT_AGE" TYPE="NUMBER">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEmax_restore_point_age">Maximum Restore Point Age</Label>
-<Unit NLSID="EM_SYS_STANDARD_TIME_DAYS">DAYS</Unit>
-<UnitCategory>TIME</UnitCategory>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEMAX_RESTORE_POINT_AGE">Maximum Restore Point Age</Label>
 </Display>
-<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
-</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ALERT_NONE_PRODUCTION" TYPE="NUMBER" COMPUTE_EXPR="(DATABASE __beginswith &#39;PRD&#39;) ? 0 : MAX_RESTORE_POINT_AGE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEALERT_NONE_PRODUCTION">Alert None Production</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ALERT_PRODUCTION" TYPE="NUMBER" COMPUTE_EXPR="(DATABASE __beginswith &#39;PRD&#39;) ? MAX_RESTORE_POINT_AGE : 0">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEALERT_PRODUCTION">Alert Production</Label>
+</Display>
 </ColumnDescriptor>
 </TableDescriptor>
 <QueryDescriptor FETCHLET_ID="OSLineToken">
