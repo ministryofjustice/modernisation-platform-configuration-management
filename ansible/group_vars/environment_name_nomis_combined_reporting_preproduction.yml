@@ -10,6 +10,7 @@ dns_search_domains:
   - preproduction.reporting.nomis.service.justice.gov.uk
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 sap_environment: "{{ ncr_environment }}"
+timezone: "Europe/London"
 
 oracle_path: /usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/oracle/.local/bin:/home/oracle/bin
 db_env:
@@ -109,7 +110,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
   ls:
-    sap_bip_rar_base: "BIPLATS4301P_1200-70002683"
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://lsast.reporting.nomis.service.justice.gov.uk/biprws"
     web:
       sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
@@ -124,7 +125,7 @@ sap_bip_confs:
         - dswsbobje
         - webi-websetup
   pp:
-    sap_bip_rar_base: "BIPLATS4301P_1200-70002683"
+    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/biprws"
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"

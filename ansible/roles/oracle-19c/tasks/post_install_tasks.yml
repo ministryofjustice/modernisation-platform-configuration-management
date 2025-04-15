@@ -1,10 +1,4 @@
 ---
-- name: Set SELinux to enforcing mode
-  import_role:
-    name: selinux-config
-  vars:
-    selinux_state: enforcing
-
 - name: Get DATA disk group compatabile.asm value
   ansible.builtin.shell: |
     ORACLE_SID=+ASM
