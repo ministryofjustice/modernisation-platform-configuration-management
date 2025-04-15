@@ -33,6 +33,15 @@ function Move-ModPlatformADComputer {
         return $true
     }
 
+    # Check if the new OU exists
+    $ouExists = Get-ADOrganizationalUnit -Credential $ModPlatformADCredential -Identity $NewOU -ErrorAction SilentlyContinue
+    if (-not $ouExists) {
+        Write-Error "Target OU does not exist: $NewOU"
+        return $false
+    } else {
+        Write-Output "Target OU exists: $NewOU"
+    }
+
     # Move the computer to the new OU
     $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 
@@ -76,32 +85,21 @@ function Get-Config {
     Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
 }
 
-$GlobalConfig = @{
-    "all"                                 = @{
-    }
-    "hmpps-domain-services-development"   = @{
-        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "NcrShortcuts"    = @{
-        }
-    }
-    "hmpps-domain-services-test"          = @{
-        "nartComputersOU" = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
-        "NcrShortcuts"    = @{
-        }
-    }
-    "hmpps-domain-services-preproduction" = @{
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "NcrShortcuts"    = @{
-        }
-    }
-    "hmpps-domain-services-production"    = @{
-        "nartComputersOU" = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
-        "NcrShortcuts"    = @{
-        }
-    }
-}
-
 $Config = Get-Config
+
+# Get the OU to move the instance to without having a hardcoded value
+
+# Get the domain name from the instance itself
+$domain = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+if ($domain) {
+    $domainDC = "," + (($domain.Split(".") | ForEach-Object { "DC=$_"}) -join ',')
+} else {
+    Write-Error "Domain not found"
+    return $false
+}
+# Use the server-type tag as the OU name
+$newOU = "OU=$($Config.'server-type'),OU=MODERNISATION_PLATFORM_SERVERS" + $domainDC
+
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
