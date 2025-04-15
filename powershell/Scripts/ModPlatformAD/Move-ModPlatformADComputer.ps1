@@ -49,7 +49,8 @@ function Move-ModPlatformADComputer {
     gpupdate /force
 }
 
-function Get-Config {
+# NOTE: Only getting the tags here, not the config
+function Get-Tags {
     $tokenParams = @{
         TimeoutSec = 10
         Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 }
@@ -74,18 +75,18 @@ function Get-Config {
     )
 
     $TagsRaw = & aws @awsParams
-
     $Tags = $TagsRaw | ConvertFrom-Json
-    $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
-
-    if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
-        Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
+    
+    # Create a hashtable of instance tags for easier access
+    $tagHash = @{}
+    foreach($tag in $Tags.Tags) {
+        $tagHash[$tag.Key] = $tag.Value
     }
-
-    Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag]
+    
+    return $tagHash
 }
 
-$Config = Get-Config
+$Config = Get-Tags
 
 # Get the OU to move the instance to without having a hardcoded value
 
