@@ -14,9 +14,9 @@
 <Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEMAX_RESTORE_POINT_AGE">Maximum Restore Point Age</Label>
 </Display>
 </ColumnDescriptor>
-<ColumnDescriptor NAME="ALERT_NONE_PRODUCTION" TYPE="NUMBER" COMPUTE_EXPR="(DATABASE __beginswith &#39;PRD&#39;) ? 0 : MAX_RESTORE_POINT_AGE">
+<ColumnDescriptor NAME="ALERT_NON_PRODUCTION" TYPE="NUMBER" COMPUTE_EXPR="(DATABASE __beginswith &#39;PRD&#39;) ? 0 : MAX_RESTORE_POINT_AGE">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEALERT_NONE_PRODUCTION">Alert None Production</Label>
+<Label NLSID="NLS_COLUMN_hostME$RESTORE_POINT_AGEALERT_NON_PRODUCTION">Alert Non Production</Label>
 </Display>
 </ColumnDescriptor>
 <ColumnDescriptor NAME="ALERT_PRODUCTION" TYPE="NUMBER" COMPUTE_EXPR="(DATABASE __beginswith &#39;PRD&#39;) ? MAX_RESTORE_POINT_AGE : 0">
