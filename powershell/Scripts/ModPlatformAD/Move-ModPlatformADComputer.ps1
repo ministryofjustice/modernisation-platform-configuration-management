@@ -105,4 +105,4 @@ Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 # Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.nartComputersOU)
+Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $newOU
