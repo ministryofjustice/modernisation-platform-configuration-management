@@ -1,12 +1,17 @@
 <TargetMetadataExt EXT_NAME="ME$PGA_LIMIT" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$PGA_LIMIT" TYPE="TABLE">
 <Display>
-<Label NLSID="NLS_METRIC_hostME$PGA_LIMIT">PGA_LIMIT</Label>
-<Description NLSID="NLS_DESCRIPTION_hostME$PGA_LIMIT">Percentage of pga_aggregate_limit currently in Use</Description>
+<Label NLSID="NLS_METRIC_hostME$PGA_LIMIT">PGA Limit</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$PGA_LIMIT">Percentage of PGA currently in Use</Description>
 </Display>
 <TableDescriptor>
+<ColumnDescriptor NAME="database" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITdatabase">Database</Label>
+</Display>
+</ColumnDescriptor>
 <ColumnDescriptor NAME="session_pga_memory" TYPE="NUMBER">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITsession_pga_memory">session_pga_memory</Label>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITsession_pga_memory">Current PGA Allocated</Label>
 <Unit NLSID="mext_unit_nlsid_BYTE">BYTE</Unit>
 <UnitCategory>DATA_SIZE</UnitCategory>
 </Display>
@@ -15,7 +20,7 @@
 </ColumnDescriptor>
 <ColumnDescriptor NAME="pga_aggregate_limit" TYPE="NUMBER">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_aggregate_limit">pga_aggregate_limit</Label>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_aggregate_limit">PGA Aggregate Limit/Target</Label>
 <Unit NLSID="mext_unit_nlsid_BYTE">BYTE</Unit>
 <UnitCategory>DATA_SIZE</UnitCategory>
 </Display>
@@ -24,7 +29,7 @@
 </ColumnDescriptor>
 <ColumnDescriptor NAME="pga_limit_in_use" TYPE="NUMBER" COMPUTE_EXPR="(100*session_pga_memory)/pga_aggregate_limit">
 <Display>
-<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_limit_in_use">pga_limit_in_use</Label>
+<Label NLSID="NLS_COLUMN_hostME$PGA_LIMITpga_limit_in_use">PGA In Use (%)</Label>
 <Unit NLSID="mext_unit_nlsid_PERCENTAGE">PERCENTAGE</Unit>
 <UnitCategory>PERCENTAGE</UnitCategory>
 </Display>
@@ -34,7 +39,7 @@
 </TableDescriptor>
 <QueryDescriptor FETCHLET_ID="OSLineToken">
 <Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
-<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/Untitled</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/pga_limit.sh</Property>
 <Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
 <Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
 <Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>

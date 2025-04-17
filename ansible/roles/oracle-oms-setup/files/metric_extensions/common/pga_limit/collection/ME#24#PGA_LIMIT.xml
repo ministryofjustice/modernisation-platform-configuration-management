@@ -3,7 +3,7 @@
 		<IntervalSchedule INTERVAL="10" TIME_UNIT="Min"/>
 	</Schedule>
 	<MetricColl NAME="ME$PGA_LIMIT">
-		<Condition COLUMN_NAME="pga_limit_in_use" CRITICAL="85" WARNING="75" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE" CLEAR_MESSAGE="Alert for %columnName% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE"/>
+		<Condition COLUMN_NAME="pga_limit_in_use" CRITICAL="85" WARNING="75" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% for %keyValue% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE_WITH_KEY" CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
 	</MetricColl>
 </CollectionItem>
 </TargetCollectionExt>
