@@ -6,19 +6,24 @@
 get_password() {
   USERNAME=$1
   if [[ "${ORACLE_SID}" == "EMREP" || "${ORACLE_SID}" == *RCVCAT* ]]; then
-    aws secretsmanager get-secret-value --secret-id "/oracle/database/EMREP/passwords" --region eu-west-2 --query SecretString --output text | jq -r .${USERNAME}
+    aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --region eu-west-2 --query SecretString --output text | jq -r .${USERNAME}
   else
     INSTANCEID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
     APPLICATION=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=application" --query "Tags[].Value" --output text)
     if [[ "${APPLICATION}" == "delius" ]]; then
       DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment" --query "Tags[].Value" --output text)
-      PASSWORD=$(aws secretsmanager get-secret-value --secret-id delius-core-${DELIUS_ENVIRONMENT}-oracle-db-dba-passwords --region eu-west-2 --query SecretString --output text 2>/dev/null | jq -r .${USERNAME})
-      echo "${PASSWORD}"
+      SECRET_ID="delius-core-${DELIUS_ENVIRONMENT}-oracle-db-dba-passwords"
+    elif [ "$APPLICATION" = "delius-mis" ]
+    then
+      DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment" --query "Tags[].Value" --output text)
+      DATABASE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=database" --query 'Tags[].Value' --output text | cut -d'_' -f1)
+      SECRET_ID="delius-mis-${DELIUS_ENVIRONMENT}-oracle-${DATABASE_TYPE}-db-dba-passwords"
     else
       # Try the format used for nomis and oasys
-      PASSWORD=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/$2/passwords" --region eu-west-2 --query SecretString --output text 2>/dev/null | jq -r .${USERNAME})
-      echo "${PASSWORD}"
+      SECRET_ID="/oracle/database/$2/passwords"
     fi
+    PASSWORD=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --region eu-west-2 --query SecretString --output text 2>/dev/null | jq -r .${USERNAME})
+    echo "${PASSWORD}"
   fi
 }
 
@@ -44,6 +49,9 @@ run_sql() {
     return
   fi
 
+  # Exit without failure if the database is mounted and not open (probably a standby database)
+  (srvctl status database -d $ORACLE_SID -v | grep -q Mounted) && exit 0
+
   sqlplus -s "$CONNECTION_STRING" <<EOF
 SET PAGES 0
 SET LINES 40
@@ -64,6 +72,26 @@ EXIT
 EOF
 }
 
+get_connection() {
+  local ORACLE_SID=$1
+  export ORACLE_SID
+  export ORAENV_ASK=NO
+  . oraenv >/dev/null 2>&1
+
+  srvctl config database -d $ORACLE_SID | grep PRIMARY >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    # If not a primary then it must be a standby, so use
+    CONNECTION_STRING="/ as sysdba"
+  else
+    # If a primary then retrieve DBSNMP password
+    DBSNMP_PASSWORD=$(get_password dbsnmp $sid)
+    if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
+      CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
+    else
+      CONNECTION_STRING="/ as sysdba"
+    fi
+  fi
+}
 
 # Main script execution
 sids=$(get_oracle_sids)
@@ -73,13 +101,8 @@ if [ -z "$sids" ]; then
 fi
 
 for sid in $sids; do
-  # Retrieve DBSNMP password
-  DBSNMP_PASSWORD=$(get_password dbsnmp $sid)
-  if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
-    CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
-  else
-    CONNECTION_STRING="/ as sysdba"
-  fi
+  # Get the connection string to use for this database
+  get_connection $sid
 
   sessions=$(run_sql "$sid")
   # Format output with pipe delimiter
