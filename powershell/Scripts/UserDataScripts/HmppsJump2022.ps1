@@ -1,5 +1,8 @@
 $Scripts = @(
-    "../Common/Init-System.ps1",
+    "../Common/Set-LocalFirewallOff.ps1",
+    "../Common/Set-IPv4Preferred.ps1",
+    "../Common/Set-GMTTimezone.ps1",
+    "../Common/Set-PermanendPSModulePath.ps1",
     "../ModPlatformAD/Join-ModPlatformAD.ps1",
     "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
     "../Oracle/Install-Java6.ps1",

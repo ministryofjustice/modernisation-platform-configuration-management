@@ -23,18 +23,6 @@ function Add-PermanentPSModulePath {
     }
 }
 
-# Set the registry key to prefer IPv4 over IPv6
-Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 0x20 -Type DWord
-
-# Output a message to confirm the change
-Write-Host "Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
-
-# Turn off the firewall as this will possibly interfere with Sia Node creation
-Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
-
-# Set local time zone to UK although this should now be set by Group Policy objects
-Set-TimeZone -Name "GMT Standard Time"
-
 # Add modules permanently to PSModulePath
 $ModulesPath = Join-Path $PSScriptRoot "..\..\Modules"
 Add-PermanentPSModulePath -NewPath $ModulesPath
