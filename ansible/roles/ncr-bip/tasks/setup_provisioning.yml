@@ -1,10 +1,25 @@
 ---
 - block:
+    # setup sapprogram via users-and-groups role
+    - name: Check sapprogram user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ item }}"
+      loop:
+        - sapprogram
+
+    - name: Check sapprogram group exists
+      ansible.builtin.getent:
+        database: group
+        key: "{{ item }}"
+      loop:
+        - sapprogram
+
     - name: Create provisioning directories
       ansible.builtin.file:
         path: "{{ item }}"
-        owner: bobj
-        group: binstall
+        owner: sapprogram
+        group: sapprogram
         state: directory
       loop:
         - "{{ ncr_bip_provisioning_directory }}"
@@ -16,8 +31,8 @@
       ansible.builtin.template:
         src: "provisioning/{{ item }}"
         dest: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
+        owner: sapprogram
+        group: sapprogram
         mode: 0600
       loop:
         - conf/dbconnection.properties
@@ -31,8 +46,8 @@
       ansible.builtin.template:
         src: "provisioning/{{ item }}"
         dest: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
+        owner: sapprogram
+        group: sapprogram
         mode: 0755
       loop:
         - scripts/DisplayProvisioningVersion.sh
@@ -41,7 +56,7 @@
         - scripts/provisioning_env.sh
 
     - name: Download provisioning code
-      become_user: bobj
+      become_user: sapprogram
       amazon.aws.aws_s3:
         mode: get
         bucket: "{{ ncr_bip_packages_s3_bucket_name }}"
@@ -55,8 +70,8 @@
       ansible.builtin.unarchive:
         src: "{{ ncr_bip_provisioning_directory }}/{{ item }}"
         dest: "{{ ncr_bip_provisioning_directory }}"
-        owner: bobj
-        group: binstall
+        owner: sapprogram
+        group: sapprogram
         remote_src: true
       loop:
         - "{{ ncr_bip_provisioning_archive }}"

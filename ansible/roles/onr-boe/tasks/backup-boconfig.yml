@@ -1,9 +1,0 @@
----
-- name: make a backup copy of the setup/boconfig.cfg
-  ansible.builtin.copy:
-    src: "{{ boe_install_dir }}/setup/boconfig.cfg"
-    dest: "{{ app_dir }}/boconfig.cfg.bak"
-    owner: "{{ boe_install_user }}"
-    group: "{{ boe_install_group }}"
-    mode: "0755"
-    remote_src: yes

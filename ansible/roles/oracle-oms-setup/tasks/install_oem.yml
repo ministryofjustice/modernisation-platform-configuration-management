@@ -31,3 +31,15 @@
   async: 86400
   poll: 60
   when: not ansible_check_mode
+
+- name: Verify Right Context For Grid Control Startup Script
+  ansible.builtin.shell: matchpathcon -V /etc/rc.d/init.d/gcstartup
+  register: right_context
+  failed_when: right_context.rc > 1
+  changed_when: false
+
+- name: Restore Context And Label For Grid Control Startup Script
+  ansible.builtin.shell: |
+    semanage fcontext -a -t initrc_exec_t /etc/rc.d/init.d/gcstartup
+    restorecon -v /etc/rc.d/init.d/gcstartup
+  when: right_context.rc == 1

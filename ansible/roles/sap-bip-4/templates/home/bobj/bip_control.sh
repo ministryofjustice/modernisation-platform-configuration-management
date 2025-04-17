@@ -783,13 +783,16 @@ do_biprws() {
 }
 
 do_ccm() {
-  set -eo pipefail
-
   set_env_admin_password
 
   if [[ $1 == "server-list" ]]; then
     shift
     output=$(ccm -display)
+    exitcode=$?
+    if [[ $exitcode -ne 0 ]]; then
+      error "ccm -display failed with exitcode $exitcode"
+      return $exitcode
+    fi
     ccm_display_tsv=$(ccm_display_to_tsv "$output")
     output_tsv=$(filter_server_list "$ccm_display_tsv" "$@")
     if [[ $FORMAT == "fqdn" ]]; then
@@ -808,6 +811,11 @@ do_ccm() {
       return 1
     fi
     ccm -display
+    exitcode=$?
+    if [[ $exitcode -ne 0 ]]; then
+      error "ccm -display failed with exitcode $exitcode"
+      return $exitcode
+    fi
   else
     if [[ $FORMAT != "default" ]]; then
       error "$FORMAT format unsupported with ccm commands"
@@ -819,6 +827,11 @@ do_ccm() {
     for fqdn in $fqdns; do
       if ((DRYRUN == 0)); then
         ccm "-$cmd" "$fqdn"
+        exitcode=$?
+        if [[ $exitcode -ne 0 ]]; then
+          error "ccm '-$cmd' '$fqdn' failed with exitcode $exitcode"
+          return $exitcode
+        fi
       else
         log "DRYRUN: ccm -$cmd $fqdn"
       fi

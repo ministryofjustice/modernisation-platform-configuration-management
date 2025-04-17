@@ -179,10 +179,6 @@ WITH parameter_values AS (
                 WHEN a.name IN('db_file_multiblock_read_count', 'shared_pool_reserved_size')
                      AND a.isdefault = 'TRUE' THEN
                     'DEFAULT'
-                WHEN a.name IN('audit_trail')
-                     AND a.database_role = 'PHYSICAL STANDBY'
-                     AND a.open_mode IN ('READ ONLY','READ ONLY WITH APPLY') THEN
-                    'DB'
                 WHEN a.name IN('log_archive_config') -- Make ordering consistent for values in log_archive_config
                  THEN
                     (

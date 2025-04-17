@@ -108,12 +108,3 @@
   tags:
     - ec2provision
     - oracle_db_cleanup
-
-- name: Set selinux to enforcing mode
-  import_role:
-    name: selinux-config
-  vars:
-    selinux_state: enforcing
-  tags:
-    - ec2provision
-    - oracle_db_selinux_enforcing

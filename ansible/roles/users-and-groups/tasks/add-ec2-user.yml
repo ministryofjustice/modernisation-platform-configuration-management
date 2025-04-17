@@ -1,0 +1,15 @@
+---
+# Explicitly disable ec2-user password to avoid account locked issue on some OS
+
+- name: Check if ec2-user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: ec2-user
+  ignore_errors: true
+  failed_when: false
+
+- name: Disable ec2-user password
+  ansible.builtin.user:
+    name: ec2-user
+    password: "*"
+  when: getent_passwd["ec2-user"] is defined

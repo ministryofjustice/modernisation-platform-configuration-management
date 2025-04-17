@@ -1,6 +1,13 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
+users_and_groups_secrets:
+  users:
+    secret: "/sap/bip/{{ sap_environment }}/passwords"
+    users:
+      - salt: auto
+      - sapprogram: auto
+
 users_and_groups_regular:
   - group: studio-webops
   - group: nart
@@ -16,6 +23,10 @@ users_and_groups_system:
     groups:
       - dba
       - sapsys
+      - sapprogram
+  - name: sapprogram
+    group: sapprogram
+    password: "{{ secretsmanager_passwords_dict['users'].passwords['sapprogram'] | password_hash('sha512', secretsmanager_passwords_dict['users'].passwords['salt']) }}"
 
 set_ec2_hostname_mode: "short" # don't rename to tags.Name
 

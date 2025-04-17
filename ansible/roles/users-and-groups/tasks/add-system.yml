@@ -35,6 +35,7 @@
     create_home: "{{ item.create_home | default(true) }}"
     home: "{{ item.home | default('/home/' + item.name) }}"
     system: yes
+    password: "{{ item.password|default(omit) }}"
   loop: "{{ users_and_groups_system | selectattr('name', 'defined') }}"
 
 - name: Touch system users .xAuthority

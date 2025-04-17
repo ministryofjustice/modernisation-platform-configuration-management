@@ -49,15 +49,6 @@
         - ncr_web_server_type == "web"
         - ncr_bip_sso_url is defined
 
-    - name: Copy webapp configuration files
-      ansible.builtin.template:
-        src: "web/{{ item }}"
-        dest: "{{ ncr_bip_installation_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/enterprise_xi40/warfiles/webapps/biprws/WEB-INF/config/custom/biprws.properties
-
     - name: Copy common tomcat root files
       ansible.builtin.template:
         src: "web/{{ item }}"
@@ -98,12 +89,15 @@
         - sap_bobj/tomcat/webapps/ROOT/InfoView.ico
         - sap_bobj/tomcat/webapps/ROOT/tomcat-power.gif
 
+    # These were copied from Azure, but they seem to get overwritten when BIP
+    # is patched. It's not clear what they do so not updating after initial copy
     - name: Copy server specific fioribi files
       ansible.builtin.copy:
         src: "web/{{ item }}"
         dest: "{{ ncr_bip_installation_directory }}/{{ item }}"
         owner: bobj
         group: binstall
+        force: false
       loop:
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Company_logo.png
         - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.FioriBI/web/com/sap/fioribi/css/custom-css/Theme.css
