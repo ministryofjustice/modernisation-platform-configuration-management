@@ -3,6 +3,8 @@ $Scripts = @(
     "../Common/Set-IPv4Preferred.ps1",
     "../Common/Set-GMTTimezone.ps1",
     "../Common/Set-PermanendPSModulePath.ps1",
+    "../Common/Install-Putty.ps1",
+    "../Common/Install-WinSCP.ps1",
     "../ModPlatformAD/Join-ModPlatformAD.ps1",
     "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
     "../Oracle/Install-Java6.ps1",
