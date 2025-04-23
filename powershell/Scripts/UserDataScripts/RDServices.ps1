@@ -237,14 +237,6 @@ if ($LASTEXITCODE -ne 0) {
   Exit $LASTEXITCODE
 }
 
-# IMPORTANT: Service user, OU and GPO settings for HMPP domain is not yet implemented
-# Exit script if attemptint to run this on HMPP domain
-if ($Config.domain -eq "HMPP") {
-  Write-Error "This RDServices script is not yet implemented for HMPP domain." -Category NotImplemented
-  Write-Error "svc_rds user, OU and GPO settings need to be created for the HMPP domain." -Category NotImplemented
-  Exit 1
-}
-
 Import-Module ModPlatformAD -Force
 $ADConfig = Get-ModPlatformADConfig
 $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
