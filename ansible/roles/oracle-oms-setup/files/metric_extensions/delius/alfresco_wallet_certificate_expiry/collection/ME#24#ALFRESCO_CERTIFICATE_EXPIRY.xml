@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$ALFRESCO_CERTIFICATE_EXPIRY" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$ALFRESCO_CERTIFICATE_EXPIRY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Day"/>
+	</Schedule>
+	<MetricColl NAME="ME$ALFRESCO_CERTIFICATE_EXPIRY">
+		<Condition COLUMN_NAME="ALFRESCO_CERTIFICATE_EXPIRY" CRITICAL="7" WARNING="28" OPERATOR="LT" OCCURRENCES="1" MESSAGE="Trusted Certificate in Alfresco wallet will expire in %value% days" CLEAR_MESSAGE="Alert for trusted certificate in Alfresco wallet will expire in %value% days is cleared"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
