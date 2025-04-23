@@ -27,7 +27,7 @@
     system: yes
   when: getent_passwd["ssm-user"] is not defined
 
-- name: Configure ssm-user sudoers if user doesn't already exist
+- name: Configure ssm-user sudoers
   community.general.sudoers:
     name: ssm-agent-users
     state: present
@@ -35,4 +35,3 @@
     nopassword: yes
     runas: ALL
     commands: ALL
-  when: getent_passwd["ssm-user"] is not defined
