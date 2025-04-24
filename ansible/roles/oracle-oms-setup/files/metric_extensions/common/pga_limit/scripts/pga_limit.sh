@@ -57,7 +57,7 @@ SET FEEDBACK OFF
 SET ECHO OFF
 SET HEAD OFF
 SELECT
-    SYS_CONTEXT('USERENV', 'DB_NAME') || '|' ||
+    SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') || '|' ||
     (SELECT value FROM v\$pgastat WHERE name = 'total PGA allocated') || '|' ||
     CASE
         WHEN EXISTS (
