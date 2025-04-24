@@ -1,0 +1,31 @@
+<TargetMetadataExt EXT_NAME="ME$SSL_CERTIFICATE_EXPIRY" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$SSL_CERTIFICATE_EXPIRY" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$SSL_CERTIFICATE_EXPIRY">SSL Certificate Expiry</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$SSL_CERTIFICATE_EXPIRY">Check certificates in SSL wallet expiry date</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="USER_CERTIFICATE_EXPIRY" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$SSL_CERTIFICATE_EXPIRYUSER_CERTIFICATE_EXPIRY">User Certificate Expiry</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ROOT_CERTIFICATE_EXPIRY" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$SSL_CERTIFICATE_EXPIRYROOT_CERTIFICATE_EXPIRY">Root Certificate Expiry</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/ssl_wallet_certificates.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
