@@ -1,4 +1,4 @@
-<TargetMetadataExt EXT_NAME="ME$ALFRESCO_MESSAGE_DELAY" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$ALFRESCO_MESSAGE_DELAY" TYPE="TABLE">
+<TargetMetadataExt EXT_NAME="ME$ALFRESCO_MESSAGE_DELAY" EXT_VERSION="2" TARGET_TYPE="host"><Metric NAME="ME$ALFRESCO_MESSAGE_DELAY" TYPE="TABLE">
 <Display>
 <Label NLSID="NLS_METRIC_hostME$ALFRESCO_MESSAGE_DELAY">Alfresco Message Delay</Label>
 <Description NLSID="NLS_DESCRIPTION_hostME$ALFRESCO_MESSAGE_DELAY">Alert on Messages waiting for too long in the Alfresco Message Queue</Description>
@@ -12,7 +12,7 @@
 <ColumnDescriptor NAME="MAX_AGE_OF_MESSAGE" TYPE="NUMBER">
 <Display>
 <Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYMAX_AGE_OF_MESSAGE">Maximum Age of Message in this State</Label>
-<Unit NLSID="EM_SYS_STANDARD_RATE_MINUTE">MINUTE</Unit>
+<Unit NLSID="mext_unit_nlsid_MINUTE">MINUTE</Unit>
 <UnitCategory>RATE</UnitCategory>
 </Display>
 <CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
@@ -30,7 +30,7 @@
 <ColumnDescriptor NAME="MAX_MINS_OVERDUE_PICKED" TYPE="NUMBER" COMPUTE_EXPR="(PROCESSED_FLAG == 4) ? (MAX_AGE_OF_MESSAGE - 5) : 0">
 <Display>
 <Label NLSID="NLS_COLUMN_hostME$ALFRESCO_MESSAGE_DELAYMAX_MINS_OVERDUE_PICKED">Maximum Delay in Picked Messages</Label>
-<Unit NLSID="EM_SYS_STANDARD_RATE_MINUTE">MINUTE</Unit>
+<Unit NLSID="mext_unit_nlsid_MINUTE">MINUTE</Unit>
 <UnitCategory>RATE</UnitCategory>
 </Display>
 <CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">

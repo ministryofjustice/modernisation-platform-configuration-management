@@ -1,9 +1,9 @@
-<TargetCollectionExt EXT_NAME="ME$BLOCKED_SESSIONS_COUNT" EXT_VERSION="7" TARGET_TYPE="host"><CollectionItem NAME="ME$BLOCKED_SESSIONS_COUNT" UPLOAD="YES">
+<TargetCollectionExt EXT_NAME="ME$BLOCKED_SESSIONS_COUNT" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$BLOCKED_SESSIONS_COUNT" UPLOAD="YES">
 	<Schedule>
 		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
 	</Schedule>
 	<MetricColl NAME="ME$BLOCKED_SESSIONS_COUNT">
-		<Condition COLUMN_NAME="Blocked_Sessions" CRITICAL="0" OPERATOR="GT" OCCURRENCES="2" MESSAGE="Blocking Session Count for SID: %Session_Identifier% Serial#: %Session_Number% is %value%" CLEAR_MESSAGE="Alert for Blocking Session Count for SID: %Session_Identifier% Serial#: %Session_Number% is cleared"/>
+		<Condition COLUMN_NAME="Blocked_Sessions" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The value of %columnName% for %keyValue% is %value%" MESSAGE_NLSID="EMAGENT_DEFAULT_MESSAGE_WITH_KEY" CLEAR_MESSAGE="Alert for %columnName% for %keyValue% is cleared" CLEAR_MESSAGE_NLSID="EMAGENT_DEFAULT_NO_ROW_CLEAR_MESSAGE_WITH_KEY"/>
 	</MetricColl>
 </CollectionItem>
 </TargetCollectionExt>

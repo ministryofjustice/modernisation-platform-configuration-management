@@ -1,9 +1,9 @@
-<TargetCollectionExt EXT_NAME="ME$LONG_RUNNING_SQL" EXT_VERSION="4" TARGET_TYPE="host"><CollectionItem NAME="ME$LONG_RUNNING_SQL" UPLOAD="YES">
+<TargetCollectionExt EXT_NAME="ME$LONG_RUNNING_SQL" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$LONG_RUNNING_SQL" UPLOAD="YES">
 	<Schedule>
 		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
 	</Schedule>
 	<MetricColl NAME="ME$LONG_RUNNING_SQL">
-		<Condition COLUMN_NAME="LONGEST_CURRENTLY_ACTIVE_SQL" CRITICAL="7200" WARNING="3600" OPERATOR="GT" OCCURRENCES="1" MESSAGE="There is SQL still active after %value% seconds." CLEAR_MESSAGE="No long running SQL currently active."/>
+		<Condition COLUMN_NAME="LONGEST_CURRENTLY_ACTIVE_SQL" CRITICAL="7200" WARNING="3600" OPERATOR="GT" OCCURRENCES="1" MESSAGE="There is SQL still active after %value% seconds in %keyValue%." CLEAR_MESSAGE="No long running SQL currently active in %keyValue%."/>
 	</MetricColl>
 </CollectionItem>
 </TargetCollectionExt>

@@ -1,10 +1,6 @@
 #!/bin/bash
-#
-#  Get status code for PRF threads (2=failed)
-#
 
 . ~/.bash_profile
-
 
 # Function to retrieve passwords from AWS Secrets Manager
 get_password() {
@@ -31,44 +27,79 @@ get_password() {
   fi
 }
 
-oratab=/etc/oratab
+# Function to identify all ORACLE_SID values on the host
+get_oracle_sids() {
+  grep -E '^[^+#]' /etc/oratab | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}'
+}
 
-# Only one database should be running on the Delius host
-export ORACLE_SID=$(grep -v '^#' $oratab | grep -v AGENT | grep -v -i listener | grep -v -i asm | cut -d ":" -f1 | awk 'NF' | head -1) 
- 
-ohome=`cat $oratab | grep $ORACLE_SID | grep -v '^#' | grep -v AGENT | grep -v -i listener | grep -v -i asm | cut -d ":" -f2`;
- 
-ORACLE_HOME=${ohome}; export ORACLE_HOME;
- 
-export ORAENV_ASK=NO
-. oraenv > /dev/null
+run_sql() {
+  local ORACLE_SID=$1
+  export ORACLE_SID
+  export ORAENV_ASK=NO
+  . oraenv >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "$ORACLE_SID|"
+    return
+  fi
 
-# Exit without failure if database is not up
-srvctl status database -d $ORACLE_SID >/dev/null || exit 0
+  # Exit without failure if database is not up
+  srvctl status database -d $ORACLE_SID >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "$ORACLE_SID|"
+    return
+  fi
 
-# Exit without failure if database is not up
-if [[ $(srvctl config database -d ${ORACLE_SID} | awk -F: '/Start options/{print $2}' | tr -d ' ') == mount ]];
-then
-    # Ignore this metric on mounted (not open) databases
-    exit 0
-fi
-
-# Retrieve DBSNMP password
-DBSNMP_PASSWORD=$(get_password dbsnmp $ORACLE_SID)
-if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
-  CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
-else
-  CONNECTION_STRING="/ as sysdba"
-fi
-
-$ORACLE_HOME/bin/sqlplus -S "$CONNECTION_STRING" <<EOSQL
+  sqlplus -s "$CONNECTION_STRING" <<EOF
+SET PAGES 0
+SET LINES 40
+SET FEEDBACK OFF
+SET ECHO OFF
 SET ECHO OFF
 SET FEEDBACK OFF
 SET HEAD OFF
 SET PAGES 0
-SELECT component_id||'|'||thread_id||'|'||status
-FROM delius_app_schema.pdt_thread 
-WHERE component_id BETWEEN 500 AND 505
-ORDER BY component_id, thread_id;
+select SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || 
+  NVL(MAX(last_call_et),0) max_last_call_et
+from v\$session
+where type='USER'
+and status='ACTIVE'
+and (action != 'PRF_COLL_JOB' OR action IS NULL)
+and (NOT program LIKE '%rman@%' OR program IS NULL)
+and (NOT program LIKE '%(PR__)' OR program IS NULL)
+;
 EXIT
-EOSQL
+EOF
+}
+
+
+# Main script execution
+sids=$(get_oracle_sids)
+if [ -z "$sids" ]; then
+  # if no sids on this instance just exit
+  exit 0
+fi
+
+for sid in $sids; do
+
+  # Check if srvctl is available
+  if ! command -v srvctl >/dev/null 2>&1; then
+    continue
+  fi
+
+  # If the database is mounted and not open (probably a standby database), use / as sysdba
+  if (srvctl status database -d $ORACLE_SID -v | grep -q Mounted >/dev/null 2>&1) then
+    CONNECTION_STRING="/ as sysdba"
+  else
+    # Use dbsnmp if the database is not a standby
+    DBSNMP_PASSWORD=$(get_password dbsnmp $ORACLE_SID)
+    if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
+      CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
+    else
+      CONNECTION_STRING="/ as sysdba"
+    fi
+  fi
+
+  sessions=$(run_sql "$sid")
+  # Format output with pipe delimiter
+  echo "$sessions"
+done

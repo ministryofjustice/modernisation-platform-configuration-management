@@ -33,7 +33,7 @@ get_oracle_sids() {
   grep -E '^[^+#]' /etc/oratab | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}'
 }
 
-get_blocked_sessions_count() {
+run_sql() {
   local ORACLE_SID=$1
   export ORACLE_SID
   export ORAENV_ASK=NO
@@ -50,49 +50,49 @@ get_blocked_sessions_count() {
     return
   fi
 
-  # Exit without failure if the database is mounted and not open (probably a standby database)
-  (srvctl status database -d $ORACLE_SID -v | grep -q Mounted) && exit 0
-
-
   sqlplus -s "$CONNECTION_STRING" <<EOF
 SET PAGES 0
 SET LINES 40
 SET FEEDBACK OFF
 SET ECHO OFF
-WITH blocking_session AS
-(SELECT s.sid,
-        s.serial#,
-        l.id1,
-        l.id2
- FROM  v\$lock l
- INNER JOIN v\$session s ON l.sid = s.sid
- AND l.block = 1
- AND s.type != 'BACKGROUND'),
- waiting_session AS
-(SELECT s.sid,
-        l.id1,
-        l.id2
- FROM  v\$lock  l
- INNER JOIN v\$session s ON l.sid = s.sid
- AND l.request <> 0
- AND NOT (s.event = 'enq: CI - contention' AND s.p1 LIKE '112%' and s.program like 'rman@%' ) -- Ignore Cross Instance Call Waits for ASM Map Locks during RMAN Backup
- AND s.type != 'BACKGROUND')
-SELECT b.sid||'|'||b.serial#||'|'||count(*)
-FROM blocking_session b,
-     waiting_session w
-WHERE w.id1 = b.id1
-AND w.id2 = b.id2
-AND w.sid <> b.sid
-AND NOT EXISTS (SELECT 1 
-                 FROM   dba_objects o
-                 WHERE  w.id1 = o.object_id 
-                 AND (o.owner,o.object_name) IN (('NDMIS_DATA','AUDITED_INTERACTION'))
-                 )
-GROUP BY b.sid,b.serial#;
+SET HEAD OFF
+SELECT
+    SYS_CONTEXT('USERENV', 'DB_NAME') || '|' ||
+    (SELECT value FROM v\$pgastat WHERE name = 'total PGA allocated') || '|' ||
+    CASE
+        WHEN EXISTS (
+            SELECT 1 FROM v\$parameter
+            WHERE name = 'pga_aggregate_limit' AND value IS NOT NULL
+        )
+        THEN (SELECT value FROM v\$parameter WHERE name = 'pga_aggregate_limit')
+        ELSE (SELECT value FROM v\$parameter WHERE name = 'pga_aggregate_target')
+    END AS result
+FROM dual;
 EXIT
 EOF
 }
 
+get_connection() {
+  local ORACLE_SID=$1
+  export ORACLE_SID
+  export ORAENV_ASK=NO
+  . oraenv >/dev/null 2>&1
+
+  # Test connection with current CONNECTION_STRING
+  srvctl config database -d $ORACLE_SID | grep PRIMARY >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    # If not a primary then it must be a standby, so use
+    CONNECTION_STRING="/ as sysdba"
+  else
+    # If a primary then retrieve DBSNMP password
+    DBSNMP_PASSWORD=$(get_password dbsnmp $sid)
+    if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
+      CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
+    else
+      CONNECTION_STRING="/ as sysdba"
+    fi
+  fi
+}
 
 # Main script execution
 sids=$(get_oracle_sids)
@@ -102,17 +102,11 @@ if [ -z "$sids" ]; then
 fi
 
 for sid in $sids; do
-  # Retrieve DBSNMP password
-  DBSNMP_PASSWORD=$(get_password dbsnmp $sid)
-  if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
-    CONNECTION_STRING="dbsnmp/${DBSNMP_PASSWORD}"
-  else
-    CONNECTION_STRING="/ as sysdba"
-  fi
+  # Get the connection string to use for this database
+  get_connection $sid
 
-  sessions=$(get_blocked_sessions_count "$sid")
+  sessions=$(run_sql "$sid")
   # Format output with pipe delimiter
   echo "$sessions"
 done
-
 
