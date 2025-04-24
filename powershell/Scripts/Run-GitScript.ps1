@@ -49,14 +49,16 @@ if (Test-Path -Path $GitRepo) {
    Write-Output "Removing existing git clone directory"
    cmd /c "rd $GitRepo /s /q"
 }
-Write-Output "git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
+
+Write-Output "git config --global http.sslBackend openssl"
+git config --global http.sslBackend "openssl" # without this, git clone intermittently fails
 
 $attempts = 10
 $attemptCount = 1
 $downloaded = $false
 
 while (-not $downloaded -and $attemptCount -le $attempts) {
-  Write-Output "Attempt $attemptCount of $attempts : Cloning repository..."
+  Write-Output "Attempt $attemptCount of $attempts : git clone https://github.com/${GitOrg}/${GitRepo}.git into $GitCloneDir"
   git -c core.longpaths=true clone --ipv4 --quiet "https://github.com/${GitOrg}/${GitRepo}.git"
 
   if ($LASTEXITCODE -eq 0) {
