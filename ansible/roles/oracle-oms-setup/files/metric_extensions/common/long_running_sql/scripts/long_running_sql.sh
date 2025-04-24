@@ -58,7 +58,7 @@ SET ECHO OFF
 SET FEEDBACK OFF
 SET HEAD OFF
 SET PAGES 0
-select SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || 
+select SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') || '|' || 
   NVL(MAX(last_call_et),0) max_last_call_et
 from v\$session
 where type='USER'

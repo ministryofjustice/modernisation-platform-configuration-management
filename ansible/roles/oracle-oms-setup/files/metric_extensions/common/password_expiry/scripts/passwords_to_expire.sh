@@ -62,7 +62,7 @@ SET FEEDBACK OFF
 SET HEAD OFF
 SET PAGES 0
 COL user FORMAT A40
-SELECT SYS_CONTEXT('USERENV', 'DB_NAME') || '|' || 
+SELECT SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') || '|' || 
   username||'|'||TO_NUMBER(TRUNC(expiry_date)-TRUNC(SYSDATE))
 FROM   dba_users
 WHERE  account_status = 'OPEN'
