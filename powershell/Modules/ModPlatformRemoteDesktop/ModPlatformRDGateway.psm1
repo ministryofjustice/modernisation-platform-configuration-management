@@ -4,7 +4,10 @@ function Add-ModPlatformRDGateway() {
     Enable Remote Desktop Gateway in HTTP/SSL-Bridging Mode
 #>
   [CmdletBinding()]
-  param ()
+  param (
+    [bool]$DisableUDPTransport = $true,
+    [bool]$EnableSSLBridging = $true
+  )
 
   $ErrorActionPreference = "Stop"
 
@@ -13,10 +16,14 @@ function Add-ModPlatformRDGateway() {
 
   Import-Module RemoteDesktopServices
   $config = Get-CimInstance -ClassName Win32_TSGatewayServerSettings -Namespace root\cimv2\terminalservices
-  Write-Output "RDGateway: Disabling udp transport"
-  $CimResult = Invoke-CimMethod -MethodName EnableTransport -Arguments @{TransportType=[uint16]2;enable=$false} -InputObject $config
-  Write-Output "RDGateway: Enabling ssl-bridging"
-  $CimResult = Invoke-CimMethod -MethodName SetSslBridging -Arguments @{SslBridging=[uint32]1} -InputObject $config
+  if ($DisableUDPTransport -eq $true) {
+    Write-Output "RDGateway: Disabling udp transport"
+    $CimResult = Invoke-CimMethod -MethodName EnableTransport -Arguments @{TransportType=[uint16]2;enable=$false} -InputObject $config
+  }
+  if ($EnableSSLBridging -eq $true) {
+    Write-Output "RDGateway: Enabling ssl-bridging"
+    $CimResult = Invoke-CimMethod -MethodName SetSslBridging -Arguments @{SslBridging=[uint32]1} -InputObject $config
+  }
   return $InstallRDGatewayResult
 }
 
