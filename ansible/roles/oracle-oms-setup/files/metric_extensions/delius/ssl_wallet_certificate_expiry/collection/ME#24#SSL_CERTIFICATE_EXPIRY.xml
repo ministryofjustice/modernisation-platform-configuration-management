@@ -1,0 +1,10 @@
+<TargetCollectionExt EXT_NAME="ME$SSL_CERTIFICATE_EXPIRY" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$SSL_CERTIFICATE_EXPIRY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Day"/>
+	</Schedule>
+	<MetricColl NAME="ME$SSL_CERTIFICATE_EXPIRY">
+		<Condition COLUMN_NAME="USER_CERTIFICATE_EXPIRY" CRITICAL="7" WARNING="28" OPERATOR="LT" OCCURRENCES="1" MESSAGE="User Certificate in SSL wallet will expire in %value% days" CLEAR_MESSAGE="Alert for User Certificate in SSL wallet will expire in %value% days is cleared"/>
+		<Condition COLUMN_NAME="ROOT_CERTIFICATE_EXPIRY" CRITICAL="7" WARNING="28" OPERATOR="LT" OCCURRENCES="1" MESSAGE="Root Certificate in SSL wallet will expire in %value% days" CLEAR_MESSAGE="Alert for Root Certificate in SSL wallet will expire in %value% days is cleared"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
