@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<RuleSet xmlns="http://www.oracle.com/EnterpriseManager/Incident/Rules" isEnabled="true" isOOB="false" EMVersion="13.5.0.0.0">
-   <RulesetName>Override Rule Set Name</RulesetName>
-   <RulesetDescription>Rule set to create and manage {{ application }} incidents</RulesetDescription>
+<RuleSet xmlns="http://www.oracle.com/EnterpriseManager/Incident/Rules" isEnabled="true" isGlobalCompressionEnabled="false" isOOB="false" EMVersion="13.5.0.0.0">
+   <RulesetName>Rule set for hmpps-oem</RulesetName>
+   <RulesetDescription>Rule set to create and manage hmpps-oem incidents</RulesetDescription>
    <TargetSelectionType>ALL_TARGETS</TargetSelectionType>
    <SourceSelectionType>TARGET</SourceSelectionType>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Incident creation rule for high-availability events</RuleName>
       <RuleDescription>Rule to create incidents for high-availability events</RuleDescription>
       <EventClass>metric_alert</EventClass>
@@ -51,13 +51,13 @@
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
          <IncidentGroupingMessage>
-            <ClearEventMsg>Metric Alert events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Metric Alert events on target %TARGET_NAME%</ExceptionalEventMsg>
+            <ClearEventMsg>Target Availability events on target %TARGET_NAME% are cleared</ClearEventMsg>
+            <ExceptionalEventMsg>There are %EVENT_COUNT% Target Availability events on target %TARGET_NAME%</ExceptionalEventMsg>
             <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
          </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Create incident for critical metric alerts</RuleName>
       <RuleDescription>Rule to create incidents for critical metric alert events.</RuleDescription>
       <EventClass>metric_alert</EventClass>
@@ -90,7 +90,7 @@
          <DurationUnit>2</DurationUnit>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Data Guard Status</RuleName>
       <RuleDescription>Create incident for all Data Guard Events</RuleDescription>
       <EventClass>metric_alert</EventClass>
@@ -125,14 +125,14 @@
             <AttrValue>3</AttrValue>
          </EventClassSpecificAttribute>
          <EventClassSpecificAttribute>
-            <AttrName>metric_group|metric_alert</AttrName>
-            <OperatorCode>EQUAL</OperatorCode>
-            <AttrValue>dataguard</AttrValue>
-         </EventClassSpecificAttribute>
-         <EventClassSpecificAttribute>
             <AttrName>metric_column|metric_alert</AttrName>
             <OperatorCode>EQUAL</OperatorCode>
             <AttrValue>dg_status</AttrValue>
+         </EventClassSpecificAttribute>
+         <EventClassSpecificAttribute>
+            <AttrName>metric_group|metric_alert</AttrName>
+            <OperatorCode>EQUAL</OperatorCode>
+            <AttrValue>dataguard</AttrValue>
          </EventClassSpecificAttribute>
       </EventClassSpecificAttributeGroup>
       <RuleCondAction>
@@ -158,14 +158,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Metric Alert events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Metric Alert events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Clear metric alert events older than 7 days</RuleName>
       <RuleDescription>Rule to clear metric alert events older than 7 days.</RuleDescription>
       <EventClass>metric_alert</EventClass>
@@ -204,7 +199,7 @@
          </AttributeForCondAction>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Clear blackout infrastructure alerts older than 1 day</RuleName>
       <RuleDescription>Rule to clear blackout infrastructure alerts which are older than 1 day.</RuleDescription>
       <EventClass>blackout_event</EventClass>
@@ -237,7 +232,7 @@
          </AttributeForCondAction>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Create incident for compliance score violations</RuleName>
       <RuleDescription>Rule to create incidents for compliance score violation events.</RuleDescription>
       <EventClass>cs_score</EventClass>
@@ -283,14 +278,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Compliance Standard Score Violation events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Compliance Standard Score Violation events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Create incident for target monitoring disruption</RuleName>
       <RuleDescription>Rule to create incidents for critical target monitoring disruption.</RuleDescription>
       <EventClass>mntr_disruption</EventClass>
@@ -336,14 +326,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Target Monitoring Disruption events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Target Monitoring Disruption events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Create incident for critical Service Level Agreement alerts</RuleName>
       <RuleDescription>Rule to create incidents for critical service level agreement alert events.</RuleDescription>
       <EventClass>sla_alert</EventClass>
@@ -389,14 +374,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Service Level Agreement Alert events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Service Level Agreement Alert events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Create incident for service infrastructure alerts</RuleName>
       <RuleDescription>Rule to create incidents for service infrastructure alert events</RuleDescription>
       <EventClass>svc_infra_alert</EventClass>
@@ -442,14 +422,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Service Infrastructure Alert events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Service Infrastructure Alert events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Incident creation rule for down and agent unreachable availability status for agents and hosts</RuleName>
       <RuleDescription>Rule to create target availability incidents when a agent or host goes into down or agent unreachable state.</RuleDescription>
       <EventClass>target_availability</EventClass>
@@ -516,14 +491,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Target Availability events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Target Availability events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Incident creation rule for a Target Down availability status</RuleName>
       <RuleDescription>Rule to create incident when a target goes down.</RuleDescription>
       <EventClass>target_availability</EventClass>
@@ -569,14 +539,9 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Target Availability events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Target Availability events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="EVENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Incident creation Rule for target error</RuleName>
       <RuleDescription>Rule to create target availability error incidents for all targets.</RuleDescription>
       <EventClass>target_availability</EventClass>
@@ -622,18 +587,14 @@
             <AttrName>target_name</AttrName>
             <AttrValue>GROUP_BY</AttrValue>
          </IncidentGroupingAttribute>
-         <IncidentGroupingMessage>
-            <ClearEventMsg>Target Availability events on target %TARGET_NAME% are cleared</ClearEventMsg>
-            <ExceptionalEventMsg>There are %EVENT_COUNT% Target Availability events on target %TARGET_NAME%</ExceptionalEventMsg>
-            <ExceptionalEventMsgParams>%EVENT_COUNT%;</ExceptionalEventMsgParams>
-         </IncidentGroupingMessage>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="INCIDENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="INCIDENT">
       <RuleName>Notification rule to slack</RuleName>
       <RuleDescription>Rule to notify slack of incidents</RuleDescription>
       <AttributeForRule>
          <AttrValue>MissionCritical</AttrValue>
+         <AttrValue>Production</AttrValue>
          <OperatorCode>IN</OperatorCode>
          <Type>SYSTEM_ATTRIBUTE</Type>
          <AttrName>sys_target_lifecycle_status</AttrName>
@@ -672,11 +633,11 @@
          <DurationUnit>2</DurationUnit>
          <RuleAdvNotification>
             <AppliedTo>INCIDENT</AppliedTo>
-            <DeviceName>Slack Incident:PLSQL</DeviceName>
+            <DeviceName>SLACK_NOTIFICATION:PLSQL</DeviceName>
          </RuleAdvNotification>
       </RuleCondAction>
    </Rule>
-   <Rule isEnabled="true" ruleType="INCIDENT">
+   <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="INCIDENT">
       <RuleName>Send Slack Notification for All Data Guard Incidents</RuleName>
       <RuleDescription>Additional Slack Notification step in addition to all other incidents for the Data Guard Status metric. For Data Guard we want a notification for Warnings in addition to Errors, as these are more operationally significant than warnings for other metrics.</RuleDescription>
       <AttributeForRule>
@@ -691,25 +652,6 @@
          <Type>SYSTEM_ATTRIBUTE</Type>
          <AttrName>sys_creation_rule_guid</AttrName>
       </AttributeForRule>
-      <RuleCondAction>
-         <ActionTypes>ADVANCED_NOTIFICATION</ActionTypes>
-         <IsRepeat>0</IsRepeat>
-         <RepeatFreq>0</RepeatFreq>
-         <RepeatCount>0</RepeatCount>
-         <IsDuration>0</IsDuration>
-         <Duration>0</Duration>
-         <DurationUnit>2</DurationUnit>
-         <RuleAdvNotification>
-            <AppliedTo>INCIDENT</AppliedTo>
-            <DeviceName>Slack Incident:PLSQL</DeviceName>
-         </RuleAdvNotification>
-      </RuleCondAction>
    </Rule>
-   <SourceObjectSpecificAttributeGroup>
-   <SourceObjectSpecificAttribute>
-         <AttrName>sys_target_guid</AttrName>
-         <OperatorCode>IN</OperatorCode>
-         <AttrValue>{{ application }}|composite</AttrValue>
-      </SourceObjectSpecificAttribute>
-   </SourceObjectSpecificAttributeGroup>
 </RuleSet>
+
