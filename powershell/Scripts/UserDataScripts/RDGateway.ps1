@@ -26,7 +26,7 @@ $RAP = @{
 Import-Module ModPlatformRemoteDesktop -Force
 
 $Feature = Get-WindowsFeature -Name RDS-Gateway
-Add-ModPlatformRDGateway
+Add-ModPlatformRDGateway -EnableSSLBridging $false
 Set-ModPlatformRDGatewayCAP @CAP
 Set-ModPlatformRDGatewayRAP @RAP
 
