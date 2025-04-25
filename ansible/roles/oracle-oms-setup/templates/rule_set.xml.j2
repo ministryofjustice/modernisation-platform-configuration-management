@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RuleSet xmlns="http://www.oracle.com/EnterpriseManager/Incident/Rules" isEnabled="true" isGlobalCompressionEnabled="false" isOOB="false" EMVersion="13.5.0.0.0">
-   <RulesetName>Rule set for hmpps-oem</RulesetName>
+   <RulesetName>HMPPS OEM Rule Set</RulesetName>
    <RulesetDescription>Rule set to create and manage hmpps-oem incidents</RulesetDescription>
    <TargetSelectionType>ALL_TARGETS</TargetSelectionType>
    <SourceSelectionType>TARGET</SourceSelectionType>
@@ -642,6 +642,7 @@
       <RuleDescription>Additional Slack Notification step in addition to all other incidents for the Data Guard Status metric. For Data Guard we want a notification for Warnings in addition to Errors, as these are more operationally significant than warnings for other metrics.</RuleDescription>
       <AttributeForRule>
          <AttrValue>MissionCritical</AttrValue>
+         <AttrValue>Production</AttrValue>
          <OperatorCode>IN</OperatorCode>
          <Type>SYSTEM_ATTRIBUTE</Type>
          <AttrName>sys_target_lifecycle_status</AttrName>
