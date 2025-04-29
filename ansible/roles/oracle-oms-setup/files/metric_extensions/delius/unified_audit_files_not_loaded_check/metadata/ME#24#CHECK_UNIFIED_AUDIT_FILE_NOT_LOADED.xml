@@ -1,0 +1,37 @@
+<TargetMetadataExt EXT_NAME="ME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED">Check Unified Audit File Not Loaded </Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED">Check Unified Audit File Not Loaded </Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="DB_UNIQUE_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADEDDB_UNIQUE_NAME">Database Unique Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="MAX_UNIFIED_AUDIT_EVENT_TIMESTAMP" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADEDMAX_UNIFIED_AUDIT_EVENT_TIMESTAMP">Maximum Unified Audit Event Timestamp</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="MAX_UNIFIED_AUDIT_FILE_ACCESS_TIME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADEDMAX_UNIFIED_AUDIT_FILE_ACCESS_TIME">Maximum Access Time For Unified Audit File </Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="CHECK_UNIFIED_AUDIT_FILE_LOADED" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADEDCHECK_UNIFIED_AUDIT_FILE_LOADED">Check Unified Audit File Loaded</Label>
+</Display>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/check_unified_audit_file_not_loaded.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
