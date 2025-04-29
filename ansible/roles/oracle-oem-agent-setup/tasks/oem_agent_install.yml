@@ -108,3 +108,58 @@
   # block
   become: true
   become_user: root
+
+- name: OEM 13.5 emcli setup
+  block:
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ app_dir }}/emcli/conf"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        state: directory
+        recurse: yes
+
+    - name: Remove previous download of emcli to allow download
+      file:
+        path: "{{ app_dir }}/emcli/emclikit.jar"
+        state: absent
+
+    - name: Get emcli from OMS server
+      ansible.builtin.shell: |
+        cd {{ app_dir }}/emcli
+        wget -P {{ app_dir }}/emcli --no-check-certificate https://{{ OMS_SERVER }}:7803/em/public_lib_download/emcli/kit/emclikit.jar
+
+    - name: Install emcli
+      ansible.builtin.shell: |
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
+        ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
+
+    # EMCLI Setup script contains a password so ensure it is not readable by other users
+    - name: Copy setup shell script template
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
+      loop:
+        - emcli_setup.sh
+
+    # Do this in one step as emcli needs to have a session open
+    - name: Setup emcli, discover and promote targets
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
+        echo "running emcli_setup.sh"
+        {{ stage }}/emcli_setup.sh
+
+  always:
+    - name: Remove setup scripts from staging area
+      ansible.builtin.file:
+        path: "{{ stage }}/{{ item }}"
+        state: absent
+      loop:
+        - emcli_setup.sh
+      tags: clean_up
+
+  # block
+  become: true
+  become_user: oracle
