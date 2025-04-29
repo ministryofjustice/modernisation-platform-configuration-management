@@ -1,0 +1,11 @@
+<TargetCollectionExt EXT_NAME="ME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Day"/>
+	</Schedule>
+	<MetricColl NAME="ME$CHECK_UNIFIED_AUDIT_FILE_NOT_LOADED">
+		<Condition COLUMN_NAME="CHECK_UNIFIED_AUDIT_FILE_LOADED" CRITICAL="1" OPERATOR="GE" OCCURRENCES="1" MESSAGE="Latest Unified Audit File @ %MAX_UNIFIED_AUDIT_FILE_ACCESS_TIME% Is Greater Than Maximum Unified Audit File Loaded @
+%MAX_UNIFIED_AUDIT_FILE_ACCESS_TIME% By 1 Or More Days" CLEAR_MESSAGE="Alert for Latest Unified Audit File @ %MAX_UNIFIED_AUDIT_FILE_ACCESS_TIME% Is Greater Than Maximum Unified Audit File Loaded @
+%MAX_UNIFIED_AUDIT_FILE_ACCESS_TIME% By 1 Or More Days"/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
