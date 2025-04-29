@@ -4,7 +4,6 @@
     EMCLI_HOME: "{{ app_dir }}/emcli"
     PATH: "{{ app_dir }}/emcli:{{ agent_home }}/oracle_common/jdk/jre/bin:{{ ansible_env.PATH }}"
   block:
-
     # EMCLI Setup script contains a password so ensure it is not readable by other users
     - name: Copy add targets shell script template
       template:
@@ -69,8 +68,8 @@
         jid: "{{ discovery_async.ansible_job_id }}"
       register: discovery_result
       until: discovery_result.finished
-      retries: 120    # Retry up to 120 times
-      delay: 30       # Wait 30 seconds between retries
+      retries: 120 # Retry up to 120 times
+      delay: 30 # Wait 30 seconds between retries
 
   always:
     - name: Remove setup scripts from staging area
@@ -86,7 +85,7 @@
         path: /tmp/add_targets.log
         state: absent
       tags: clean_up
-      
+
   # block
   become: true
   become_user: oracle
