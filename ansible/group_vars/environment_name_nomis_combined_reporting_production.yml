@@ -181,6 +181,12 @@ ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
 ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
+filesystems_domain_name_fqdn: azure.hmpp.root
+filesystems_domains:
+  azure.hmpp.root:
+    secret_name: /sap/bip/pd/passwords
+    mount_fs_username: svc_fsx_nart
+
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
@@ -189,3 +195,10 @@ bip_filesystems_mount:
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "fs-030a75a6d02aa86ef.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: pd_ncr_sap_share
+  - dir: /NART
+    uid: bobj
+    gid: binstall
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+    src: //fs.azure.hmpp.root/NART$
+    metric_dimension: NART
