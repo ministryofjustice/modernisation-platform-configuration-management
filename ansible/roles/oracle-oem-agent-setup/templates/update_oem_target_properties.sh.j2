@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Usage: DEBUG=1 ./update_oem_target_properties.sh
+
+DEBUG=0
+
+DELIUS_PROD_CONTACT="#delius-aws-oracle-prod-alerts"
+DELIUS_DEV_CONTACT="#delius-aws-oracle-dev-alerts"
+
+NOMIS_PROD_CONTACT="#dba_alerts_prod"
+NOMIS_DEV_CONTACT="#dba_alerts_devtest"
+
+# === Debug Logging ===
+run_cmd() {
+  if [[ "$DEBUG" == "1" ]]; then
+    echo "[DEBUG] $1"
+  else
+    echo "[Running] $1"
+    eval "$1"
+  fi
+}
+
+# === Get list of hosts ===
+echo "Getting list of OEM host targets..."
+hosts=$(emcli get_targets -noheader -format="name:script;column_separator:|" | grep '|host|' | awk -F '|' '{print $4}')
+
+for hostname in $hosts; do
+  echo "Processing host: $hostname"
+
+  # Extract environment from hostname pattern
+  if [[ "$hostname" =~ "preproduction" ]]; then
+    DELIUS_CONTACT=$DELIUS_DEV_CONTACT
+    NOMIS_CONTACT=$NOMIS_DEV_CONTACT
+  elif [[ "$hostname" =~ "production" ]]; then
+    DELIUS_CONTACT=$DELIUS_PROD_CONTACT
+    NOMIS_CONTACT=$NOMIS_PROD_CONTACT
+  else
+    DELIUS_CONTACT=$DELIUS_DEV_CONTACT
+    NOMIS_CONTACT=$NOMIS_DEV_CONTACT
+  fi
+
+
+  # Extract application from hostname pattern and set the values to be used for Contact and Line of Business respectively
+  if [[ "$hostname" =~ "delius-mis" ]]; then
+    CONTACT=$DELIUS_CONTACT
+    APPLICATION="delius-mis"
+  elif [[ "$hostname" =~ "delius" ]]; then
+    CONTACT=$DELIUS_CONTACT
+    APPLICATION="delius"
+  elif [[ "$hostname" =~ "oem" ]]; then
+    CONTACT="#hmpps-oem-alerts"
+    APPLICATION="hmpps-oem"
+  elif [[ "$hostname" =~ "ncr" ]]; then
+    CONTACT=$NOMIS_CONTACT
+    APPLICATION="nomis-combined-reporting"
+  elif [[ "$hostname" =~ "csr" ]]; then
+    CONTACT=$NOMIS_CONTACT
+    APPLICATION="corporate-staff-rostering"
+  elif [[ "$hostname" =~ "nomis" ]]; then
+    CONTACT=$NOMIS_CONTACT
+    APPLICATION="nomis"
+  elif [[ "$hostname" =~ "oasys" ]]; then
+    CONTACT=$NOMIS_CONTACT
+    APPLICATION="oasys"
+  else
+    CONTACT="#hmpps-oem-alerts"
+    APPLICATION="hmpps-oem"
+  fi
+  echo "Updating targets for $hostname with Contact as $CONTACT and Line of Business as $CONTACT"
+
+  # Get all targets associated with this hostname
+  targets=$(emcli list -sql="select target_name, target_type, host_name from mgmt\$target" -noheader -format="name:script;column_separator:|"  | grep "$hostname")
+
+  while IFS='|' read -r target_name target_type host; do
+    echo "Target found: name=$target_name, type=$target_type, host=$host"
+
+    # Special case for Oracle Database targets as they are members of the oracle_dbsys target and properties can be set on the parent target
+    # and propagated to the members.
+    if [[ ${target_type} == "oracle_database" ]]; then
+      run_cmd "emcli set_target_property_value -subseparator=property_records=\"@@\" -property_records=\"${target_name}_sys@@oracle_dbsys@@Line of Business@@${APPLICATION}\" -propagate_to_members"
+      run_cmd "emcli set_target_property_value -subseparator=property_records=\"@@\" -property_records=\"${target_name}_sys@@oracle_dbsys@@Contact@@${CONTACT}\" -propagate_to_members"
+    else
+      run_cmd "emcli set_target_property_value -subseparator=property_records=\"@@\" -property_records=\"${target_name}@@${target_type}@@Line of Business@@${APPLICATION}\""
+      run_cmd "emcli set_target_property_value -subseparator=property_records=\"@@\" -property_records=\"${target_name}@@${target_type}@@Contact@@${CONTACT}\""
+    fi
+
+  done <<< "$targets"
+done
