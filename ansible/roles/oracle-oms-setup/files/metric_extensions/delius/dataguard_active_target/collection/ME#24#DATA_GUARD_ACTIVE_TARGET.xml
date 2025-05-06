@@ -1,9 +1,9 @@
-<TargetCollectionExt EXT_NAME="ME$DATA_GUARD_ACTIVE_TARGET" EXT_VERSION="2" TARGET_TYPE="host"><CollectionItem NAME="ME$DATA_GUARD_ACTIVE_TARGET" UPLOAD="YES">
+<TargetCollectionExt EXT_NAME="ME$DATA_GUARD_ACTIVE_TARGET" EXT_VERSION="3" TARGET_TYPE="host"><CollectionItem NAME="ME$DATA_GUARD_ACTIVE_TARGET" UPLOAD="YES">
 	<Schedule>
 		<IntervalSchedule INTERVAL="15" TIME_UNIT="Min"/>
 	</Schedule>
 	<MetricColl NAME="ME$DATA_GUARD_ACTIVE_TARGET">
-		<Condition COLUMN_NAME="Active_Target_1st_Standby" CRITICAL="YES" WARNING="YES" OPERATOR="NE" OCCURRENCES="1" MESSAGE="The Data Guard Active Target is not the 1st Standby Database" CLEAR_MESSAGE="The Data Guard Active Target is the 1st Standby Database"/>
+		<Condition COLUMN_NAME="Active_Target_1st_Standby" CRITICAL="OK" WARNING="OK" OPERATOR="NE" OCCURRENCES="1" MESSAGE="The Data Guard Active Target is not the 1st Standby Database" CLEAR_MESSAGE="The Data Guard Active Target is the 1st Standby Database"/>
 	</MetricColl>
 </CollectionItem>
 </TargetCollectionExt>
