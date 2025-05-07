@@ -281,6 +281,7 @@ if ($RunManually) {
   }
 }
 else {
+  $Config = Get-Config
   if ($null -eq $Config.svcRdsSecretsVault) {
     Write-Host "No svcRdsSecretsVault found in config. Exiting." -ForegroundColor Red
     exit 1
