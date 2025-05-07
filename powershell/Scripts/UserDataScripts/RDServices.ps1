@@ -35,7 +35,6 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @("T1-JUMP2022-1.AZURE.NOMS.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.NOMS.ROOT"
-    "rdsOU"               = "OU=RDServices,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
     "domain"              = "AZURE"
     "Collections"         = @{
@@ -55,7 +54,6 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT", "PP-JUMP2022-1.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
-    "rdsOU"               = "OU=RDServices,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
     "Collections"         = @{
@@ -94,7 +92,6 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT", "PD-JUMP2022-1.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
-    "rdsOU"               = "OU=RDServices,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
     "Collections"         = @{
@@ -251,11 +248,9 @@ if ($LASTEXITCODE -ne 0) {
   Exit $LASTEXITCODE
 }
 
+# move the RDS server to the RDServices OU
 Import-Module ModPlatformAD -Force
-# $ADConfig = Get-ModPlatformADConfig
-# $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
-# Move the computer to the correct OU
-. ../ModPlatformAD/Move-ModPlatformADComputer.ps1 #-ModPlatformADCredential $ADAdminCredential -NewOU $($Config.rdsOU)
+. ../ModPlatformAD/Move-ModPlatformADComputer.ps1
 
 # Path to the deployment scripts
 $deploymentScriptPath = Join-Path $PSScriptRoot "RDSDeployment.ps1"
