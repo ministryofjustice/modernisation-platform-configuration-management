@@ -276,18 +276,17 @@ if ($RunManually) {
   }
 }
 else {
+  # need to repeat this otherwise config objects are null
   $Config = Get-Config
-  if ($null -eq $Config.svcRdsSecretsVault) {
-    Write-Host "No svcRdsSecretsVault found in config. Exiting." -ForegroundColor Red
-    exit 1
-  }
 
-  $svc_rds_password = Get-SecretValue -SecretId $($Config.svcRdsSecretsVault) -SecretKey "svc_rds" -ErrorAction SilentlyContinue
+  Import-Module ModPlatformAD -Force
+  $ADConfig = Get-ModPlatformADConfig
+  $ADSecret = Get-ModPlatformADSecret $ADConfig
+  $securePassword = ConvertTo-SecureString $ADSecret.svc_rds -AsPlainText -Force
 
   $username = "$($Config.domain)\svc_rds"
-  $secure_password = $svc_rds_password | ConvertTo-SecureString -AsPlainText -Force
 
-  $credentials = New-Object System.Management.Automation.PSCredential($username, $secure_password)
+  $credentials = New-Object System.Management.Automation.PSCredential($username, $securePassword)
 
   Invoke-Command -ComputerName localhost -FilePath $deploymentScriptPath -Credential $credentials -ArgumentList $Config -Authentication CredSSP -Verbose
 }
