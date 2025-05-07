@@ -33,17 +33,17 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.NOMS.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
+    "SessionHostServers"  = @("T1-JUMP2022-1.AZURE.NOMS.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.NOMS.ROOT"
     "rdsOU"               = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
     "domain"              = "AZURE"
     "Collections"         = @{
       "Jumpserver" = @{
-        "SessionHosts"  = @("T2-JUMP2022-2.AZURE.NOMS.ROOT")
+        "SessionHosts"  = @("T1-JUMP2022-1.AZURE.NOMS.ROOT")
         "Configuration" = @{
-          "CollectionDescription" = "Connect to Jumpserver T2-JUMP2022-2"
-          "UserGroup"             = @("Azure\Domain Users")
+          "CollectionDescription" = "Connect to Jumpserver T1-JUMP2022-1"
+          "UserGroup"             = @("Azure\HmppsJump2022")
         }
       }
     }
@@ -53,7 +53,7 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT")
+    "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT", "PP-JUMP2022-1.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
     "rdsOU"               = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
@@ -64,6 +64,13 @@ $GlobalConfig = @{
         "Configuration" = @{
           "CollectionDescription" = "CAFM-RDP PreProd Modernisation Platform"
           "UserGroup"             = @("HMPP\PROD_CAFM_admins")
+        }
+      }
+      "Jumpserver" = @{
+        "SessionHosts"  = @("PP-JUMP2022-1.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "Connect to Jumpserver PP-JUMP2022-1"
+          "UserGroup"             = @("HMPP\HmppsJump2022")
         }
       }
     }
@@ -85,7 +92,7 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
+    "SessionHostServers"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT", "PD-JUMP2022-1.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
     "rdsOU"               = "OU=RDS,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=HMPP,DC=ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
@@ -96,6 +103,13 @@ $GlobalConfig = @{
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
           "UserGroup"             = @("HMPP\PROD_CAFM_admins")
+        }
+      }
+      "Jumpserver" = @{
+        "SessionHosts" = @("PD-JUMP2022-1.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "Connect to Jumpserver PD-JUMP2022-1"
+          "UserGroup"             = @("HMPP\HmppsJump2022")
         }
       }
     }
@@ -267,10 +281,10 @@ if ($RunManually) {
   }
 }
 else {
-  $svc_nart_password = Get-SecretValue -SecretId $($Config.svcRdsSecretsVault) -SecretKey "svc_rds" -ErrorAction SilentlyContinue
+  $svc_rds_password = Get-SecretValue -SecretId $($Config.svcRdsSecretsVault) -SecretKey "svc_rds" -ErrorAction SilentlyContinue
 
   $username = "$($Config.domain)\svc_rds"
-  $secure_password = $svc_nart_password | ConvertTo-SecureString -AsPlainText -Force
+  $secure_password = $svc_rds_password | ConvertTo-SecureString -AsPlainText -Force
 
   $credentials = New-Object System.Management.Automation.PSCredential($username, $secure_password)
 
