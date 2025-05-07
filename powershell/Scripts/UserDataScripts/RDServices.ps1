@@ -252,10 +252,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Import-Module ModPlatformAD -Force
-$ADConfig = Get-ModPlatformADConfig
-$ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
+# $ADConfig = Get-ModPlatformADConfig
+# $ADAdminCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 # Move the computer to the correct OU
-Move-ModPlatformADComputer -ModPlatformADCredential $ADAdminCredential -NewOU $($Config.rdsOU)
+. ../ModPlatformAD/Move-ModPlatformADComputer.ps1 #-ModPlatformADCredential $ADAdminCredential -NewOU $($Config.rdsOU)
 
 # Path to the deployment scripts
 $deploymentScriptPath = Join-Path $PSScriptRoot "RDSDeployment.ps1"
