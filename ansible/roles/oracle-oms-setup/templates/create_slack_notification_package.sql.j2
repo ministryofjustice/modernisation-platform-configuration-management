@@ -1,16 +1,4 @@
-#!/bin/bash
-
-. ~/.bash_profile
-
-export PATH=$PATH:/usr/local/bin
-. oraenv
-
-sqlplus -S /nolog <<EOSQL
-
 WHENEVER SQLERROR EXIT FAILURE;
-
-connect sysman/{{ db_sysman_password }}
-
 CREATE OR REPLACE PACKAGE slack_notification AS
 
   PROCEDURE incident_proc (incident_msg IN gc\$notif_incident_msg);

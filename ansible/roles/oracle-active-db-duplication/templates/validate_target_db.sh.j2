@@ -1,22 +1,27 @@
 #!/bin/bash
+set -euo pipefail
 
 export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
 export PATH=$ORACLE_HOME/bin:$PATH 
-stage={{ stage }}
-db_password=$1 
-target_host=$2
-target_db=$3
 
-echo "SET LINES 1000
-SET PAGES 0
-SET FEEDBACK OFF
-SET HEADING OFF
-WHENEVER SQLERROR EXIT FAILURE 
-SELECT 'LOG_MODE='|| LOG_MODE FROM v\$DATABASE ;
-EXIT" > script.sql 
+target_host=$1
+target_db=$2
 
-LOG_MODE=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @script.sql`
-rm script.sql 
+# Read password securely from stdin
+IFS= read -r -s db_password
+
+# Run sqlplus securely without a separate SQL file
+LOG_MODE=$(sqlplus -s /nolog <<EOF
+	connect sys/$db_password@${target_host}:1521/${target_db} as sysdba
+	SET LINES 1000
+	SET PAGES 0
+	SET FEEDBACK OFF
+	SET HEADING OFF
+	WHENEVER SQLERROR EXIT FAILURE 
+	SELECT 'LOG_MODE='|| LOG_MODE FROM V\$DATABASE ;
+	EXIT
+EOF
+)
 
 if [ `echo $LOG_MODE | awk -F= '{ print $2 }'` == 'NOARCHIVELOG' ]
 then 

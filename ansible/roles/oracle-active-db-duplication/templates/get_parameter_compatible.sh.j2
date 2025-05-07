@@ -1,22 +1,28 @@
 #!/bin/bash
-set -x 
+set -euo pipefail
+
 export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
 export PATH=$ORACLE_HOME/bin:$PATH 
-stage={{ stage }}
-db_password=$1 
-target_host=$2
-target_db=$3
 
-echo "SET LINES 1000
-SET PAGES 0
-SET FEEDBACK OFF
-SET HEADING OFF
-WHENEVER SQLERROR EXIT FAILURE 
-SELECT NAME||'='|| VALUE FROM V\$PARAMETER WHERE NAME='compatible';
-EXIT" > ${stage}/script.sql 
+stage="{{ stage }}"
+target_host=$1
+target_db=$2
 
-PARAMETER=`sqlplus -s sys/${db_password}@${target_host}:1521/${target_db} as sysdba @${stage}/script.sql`
-rm ${stage}/script.sql 
+# Read password securely from stdin
+IFS= read -r -s db_password
+
+# Run sqlplus securely without a separate SQL file
+PARAMETER=$(sqlplus -s /nolog <<EOF
+	connect sys/$db_password@${target_host}:1521/${target_db} as sysdba
+	SET LINES 1000
+	SET PAGES 0
+	SET FEEDBACK OFF
+	SET HEADING OFF
+	WHENEVER SQLERROR EXIT FAILURE 
+	SELECT NAME||'='|| VALUE FROM V\$PARAMETER WHERE NAME='compatible';
+	EXIT
+EOF
+)
 
 if [ `echo $PARAMETER | awk -F= '{ print $1 }'` == 'compatible' ]
 then 

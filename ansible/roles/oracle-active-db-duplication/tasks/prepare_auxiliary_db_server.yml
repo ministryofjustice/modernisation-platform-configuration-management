@@ -28,10 +28,32 @@
       loop:
         - "init.ora"
 
+    # Don't log the command output as it contains sensitive information
     - name: Get compatible from source database
-      ansible.builtin.shell: "{{ stage }}/get_parameter_compatible.sh {{ db_sys_password }} {{ target_host }} {{ target_db }}"
-      register: db_compatible_check
-      failed_when: db_compatible_check.rc == 1
+      ansible.builtin.shell: |
+        echo "{{ db_sys_password }}" | {{ stage }}/get_parameter_compatible.sh {{ target_host }} {{ target_db }} > {{ stage }}/tmp_output_file.out 2>&1
+      no_log: true
+      register: script_result
+      ignore_errors: true  # Let us inspect output even if the command fails
+
+    - name: Read script output
+      ansible.builtin.slurp:
+        src: "{{ stage }}/tmp_output_file.out"
+      register: script_output_raw
+
+    - name: Decode and show script output
+      debug:
+        msg: "{{ script_output_raw.content | b64decode }}"
+
+    - name: Delete temporary output file
+      ansible.builtin.file:
+        path: "{{ stage }}/tmp_output_file.out"
+        state: absent
+
+    - name: Fail task if script errored
+      ansible.builtin.fail:
+        msg: "Secure script failed with return code {{ script_result.rc }}"
+      when: script_result.rc != 0
 
     - name: Setup Listener service
       ansible.builtin.shell: |
@@ -80,6 +102,7 @@
         main 2>&1 | logger -p local3.info -t ansible-oracle-db-password-file
       args:
         creates: "{{ database_home }}/dbs/orapw{{ auxiliary_db.instance_name }}"
+      no_log: true
 
   # block
   become: true

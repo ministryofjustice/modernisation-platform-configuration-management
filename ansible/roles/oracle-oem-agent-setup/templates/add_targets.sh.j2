@@ -134,6 +134,7 @@ then
           # ASM target already exists, so we need to modify it with updated credentials
           run_cmd "./emcli modify_target -name=\"+ASM_${HOST_FQDN_NAME}\" -type=\"osm_instance\" -credentials=\"UserName:${ASM_USERNAME};password:${ASMSNMPPASSWORD};Role:sysdba\""
         fi
+        unset ASMSNMPPASSWORD
         TARGET_FOUND=$(${AGENT_HOME}/bin/emctl config agent listtargets | grep "LISTENER_${HOST_FQDN_NAME}" | grep ", oracle_listener" | cut -d, -f1 | sed 's/^\[//')
         if [[ -z "${TARGET_FOUND}" ]]; then
           echo "emcli add Listener"
@@ -265,6 +266,7 @@ then
             else
                 run_cmd "./emcli modify_target -name=\"${i}\" -type=\"oracle_database\" -credentials=\"UserName:${MONITORING_USER};password:${DBPASSWORD};Role:${MONITORING_ROLE}\""
             fi
+            unset DBPASSWORD
         done
 fi
 
