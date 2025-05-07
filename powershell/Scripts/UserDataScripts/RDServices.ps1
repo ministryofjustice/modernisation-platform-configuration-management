@@ -281,6 +281,11 @@ if ($RunManually) {
   }
 }
 else {
+  if ($null -eq $Config.svcRdsSecretsVault) {
+    Write-Host "No svcRdsSecretsVault found in config. Exiting." -ForegroundColor Red
+    exit 1
+  }
+
   $svc_rds_password = Get-SecretValue -SecretId $($Config.svcRdsSecretsVault) -SecretKey "svc_rds" -ErrorAction SilentlyContinue
 
   $username = "$($Config.domain)\svc_rds"
