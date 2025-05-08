@@ -21,8 +21,11 @@ delius_users:
   dbelton_dba:
   ammacdonald_dba:
 oracle_software:
-  version: "19.25"
-  combo_patch: p36866740_190000_Linux-x86-64.zip
+  version: '19.27'
+  combo_patch: p37591516_190000_Linux-x86-64.zip
+  opatch:
+      version: 12.2.0.1.46
+      filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
 database_locked_statistics:
@@ -61,6 +64,7 @@ host_oem_metrics:
         warning_threshold , 500
         critical_threshold , 1200
         END_RECORD 1
+# Patch 36252161 is included in 19.23 and higher
 required_patches:
   p36252161:
     patch_files:
