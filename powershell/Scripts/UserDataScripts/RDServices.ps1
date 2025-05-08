@@ -38,7 +38,7 @@ $GlobalConfig = @{
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
     "domain"              = "AZURE"
     "Collections"         = @{
-      "Jumpserver" = @{
+      "t1-jump2022-1" = @{
         "SessionHosts"  = @("T1-JUMP2022-1.AZURE.NOMS.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "Connect to Jumpserver T1-JUMP2022-1"
@@ -64,7 +64,7 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\PROD_CAFM_admins")
         }
       }
-      "Jumpserver" = @{
+      "pp-jump2022-1" = @{
         "SessionHosts"  = @("PP-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "Connect to Jumpserver PP-JUMP2022-1"
@@ -102,7 +102,7 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\PROD_CAFM_admins")
         }
       }
-      "Jumpserver" = @{
+      "pd-jump2022-1" = @{
         "SessionHosts" = @("PD-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "Connect to Jumpserver PD-JUMP2022-1"
