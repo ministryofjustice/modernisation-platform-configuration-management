@@ -138,36 +138,6 @@ function Get-Config {
   Return $GlobalConfig[$NameTag]
 }
 
-function Get-SecretValue {
-  param (
-    [Parameter(Mandatory)]
-    [string]$SecretId,
-    [Parameter(Mandatory)]
-    [string]$SecretKey
-  )
-
-  try {
-    $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
-
-    if ($null -eq $secretJson -or $secretJson -eq '') {
-      Write-Host "The SecretId '$SecretId' does not exist or returned no value."
-      return $null
-    }
-
-    $secretObject = $secretJson | ConvertFrom-Json
-
-    if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
-      Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
-      return $null
-    }
-
-    return $secretObject.$SecretKey
-  }
-  catch {
-    Write-Host "An error occurred while retrieving the secret: $_"
-    return $null
-  }
-}
 
 function Add-PermanentPSModulePath {
   param(
