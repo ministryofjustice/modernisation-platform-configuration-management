@@ -78,6 +78,17 @@ do
 done
 }
 
+oem_agent_cleanup() {
+for i in `find ${ORACLE_BASE}/product/oem-agent/agent_inst/sysman -name "log"`
+do
+	echo "Performing housekeeping on " ${i}
+	echo "*********************************************************************"
+#	find ${i} -name "heapDump*.hprof" -mtime +${OEM_RET} -print -exec rm  {} \;
+#	find ${i} -name "emdctlj.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
+#	find ${i} -name "gcagent.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
+done
+}
+
 asm_adump_cleanup() {
 set_ora_env +ASM
 echo "Performing housekeeping on " ${ORACLE_HOME}/rdbms/audit
@@ -115,18 +126,6 @@ done
 echo "INFO: adrci purge finished at `date`"
 }
 
-oem_agent_cleanup() {
-for i in `find ${ORACLE_BASE}/product/oem-agent/agent_inst/sysman -name "log"`
-do
-	echo "Performing housekeeping on " ${i}
-	echo "*********************************************************************"
-	find ${i} -name "heapDump*.hprof" -mtime +${OEM_RET} -print -exec rm  {} \;
-	find ${i} -name "emdctlj.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
-	find ${i} -name "gcagent.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
-done
-}
-
-
 # Main
 ADUMP_RET="UNSPECIFIED"
 while getopts "a:" opt
@@ -150,6 +149,6 @@ OEM_RET="43200" # 30 Days
 db_adrci_cleanup
 db_adump_cleanup
 db_sbtio_cleanup
+oem_agent_cleanup
 asm_adrci_cleanup
 asm_adump_cleanup
-oem_agent_cleanup
