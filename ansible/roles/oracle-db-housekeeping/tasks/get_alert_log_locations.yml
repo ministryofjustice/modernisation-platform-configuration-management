@@ -8,6 +8,7 @@
     srvctl config database
   register: db_list
   changed_when: false
+  become: true
   become_user: oracle
 
 - name: Initialise List of Alert Log File Locations
@@ -35,6 +36,7 @@
     EOF
   with_items: "{{ db_list.stdout_lines }}"
   register: alert_log_location
+  become: true
   become_user: oracle
   changed_when: false
   loop_control:

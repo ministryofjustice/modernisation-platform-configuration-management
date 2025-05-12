@@ -5,6 +5,7 @@
     echo "show home" | adrci | grep "/rdbms/" | head -1 | xargs -I{} echo "set home {}; show control" | adrci | awk 'BEGIN{flag=0;col=1}{if(flag==2){printf("%d\n",$col);flag=0}}/LONGP_POLICY/{for(i=1;i<=NF;i++){if($i=="LONGP_POLICY"){col=i}};flag=1}/^-/{if(flag==1){flag=2}}'
   register: adrci_longp_policy
   changed_when: false
+  become: true
   become_user: oracle
 
 - debug:

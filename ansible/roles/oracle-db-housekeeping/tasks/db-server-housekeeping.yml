@@ -60,13 +60,19 @@
     - /etc/cron.monthly/oracle_listener_xml
     - /etc/cron.monthly/sbtio_log
     - /etc/cron.daily/oracle_audit
+  become: true
+  become_user: root
 
 - name: Install Anacron Configuration for Listener Logs
   template:
     src: oracle_listener.j2
     dest: /etc/logrotate.d/oracle_listener
+  become: true
+  become_user: root
 
 - name: Install Logrotate Configuration for Alert Logs
   template:
     src: oracle_alert.j2
     dest: /etc/logrotate.d/oracle_alert
+  become: true
+  become_user: root
