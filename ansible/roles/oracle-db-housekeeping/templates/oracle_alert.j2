@@ -1,0 +1,11 @@
+{% for item in list_of_alert_log_locations %}
+{{ item }}
+{% endfor %}
+{
+        monthly
+        rotate {{ longp_policy_weeks }}
+        compress
+        copytruncate
+        create 0640 oracle dba
+        notifempty
+}

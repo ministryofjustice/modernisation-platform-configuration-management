@@ -1,0 +1,23 @@
+{% for item in listener_log_location %}
+{{ item }}
+{% endfor %}
+{
+        monthly
+        rotate {{ longp_policy_weeks }}
+        compress
+        copytruncate
+        create 0640 oracle dba
+        notifempty
+}
+
+{% for item in listener_xml_location %}
+{{ item }}
+{% endfor %}
+{
+        monthly
+        rotate {{ longp_policy_weeks }}
+        compress
+        copytruncate
+        create 0640 oracle dba
+        notifempty
+}

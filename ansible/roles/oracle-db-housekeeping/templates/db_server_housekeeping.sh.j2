@@ -4,6 +4,12 @@ export ERROR_STATUS=9
 export THISSCRIPT=$(basename $0)
 export PATH=$PATH:/usr/local/bin
 
+# On lower spec servers with a large audit trail, the resource overhead of running cleanup can be very high.
+# We want to renice the process and change the IO scheduler to idle mode to reduce the impact as this task
+# can be completed wholly in the backround.
+renice +19 -p $$ >/dev/null 2>&1
+ionice -c3 -p $$ >/dev/null 2>&1
+
 usage () {
   echo ""
   echo "Usage:"
@@ -15,7 +21,7 @@ usage () {
 set_ora_env () {
   export ORAENV_ASK=NO
   export ORACLE_SID=$1
-  . oraenv
+  . oraenv $ORACLE_SID >/dev/null 2>&1
   export NLS_DATE_FORMAT=YYMMDDHH24MISS
 }
 
@@ -31,7 +37,7 @@ error () {
 }
 
 db_adrci_cleanup () {
-DB_SID=$(cat /etc/oratab | grep db_1 | head -1| awk -F: '{ print $1 }')
+DB_SID=$(grep -E '^[^+#]' /etc/oratab | head -1 | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}')
 set_ora_env ${DB_SID}
 echo "INFO: DB Home adrci purge started at `date`"
 adrci exec="show homes"|grep -v : | while read file_line
@@ -47,17 +53,39 @@ echo "INFO: purging CDUMP older than 30 days"
 adrci exec="set homepath $file_line;purge -age $CDUMP_RET -type CDUMP"
 echo "INFO: purging HM older than 30 days"
 adrci exec="set homepath $file_line;purge -age $HM_RET -type HM"
+echo "INFO: purging Dumps of in-memory traces older than 30 days"
+adrci exec="set homepath $file_line;purge -age $UTSCDMP_RET -type UTSCDMP"
 done
 echo "INFO: adrci purge finished at `date`"
 }
 
 db_adump_cleanup() {
-for i in `find /u01/app/oracle/admin -name "adump"`
+for i in `find ${ORACLE_BASE}/admin -name "adump"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
 	find ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
 	find ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+done
+}
+
+db_sbtio_cleanup() {
+for i in `find ${ORACLE_BASE}/diag -name "trace"`
+do
+	echo "Performing housekeeping on " ${i}
+	echo "*********************************************************************"
+	find ${i} -name "sbtio_*.log" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+done
+}
+
+oem_agent_cleanup() {
+for i in `find ${ORACLE_BASE}/product/oem-agent/agent_inst/sysman -name "log"`
+do
+	echo "Performing housekeeping on " ${i}
+	echo "*********************************************************************"
+	find ${i} -name "heapDump*.hprof" -mtime +${OEM_RET} -print -exec rm  {} \;
+	find ${i} -name "emdctlj.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
+	find ${i} -name "gcagent.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
 done
 }
 
@@ -84,6 +112,8 @@ echo "INFO: purging CDUMP older than 30 days"
 adrci exec="set homepath $file_line;purge -age $CDUMP_RET -type CDUMP"
 echo "INFO: purging HM older than 30 days"
 adrci exec="set homepath $file_line;purge -age $HM_RET -type HM"
+echo "INFO: purging Dumps of in-memory traces older than 30 days"
+adrci exec="set homepath $file_line;purge -age $UTSCDMP_RET -type UTSCDMP"
 done
 
 echo "INFO: Listener alert and trace file cleanup"
@@ -113,7 +143,12 @@ INCIDENT_RET="43200" # 30 Days
 TRACE_RET="43200" # 30 Days
 CDUMP_RET="43200" # 30 Days
 HM_RET="43200" # 30 Days
+UTSCDMP_RET="43200" # 30 Days
+OEM_RET="43200" # 30 Days
+
 db_adrci_cleanup
 db_adump_cleanup
+db_sbtio_cleanup
+oem_agent_cleanup
 asm_adrci_cleanup
 asm_adump_cleanup
