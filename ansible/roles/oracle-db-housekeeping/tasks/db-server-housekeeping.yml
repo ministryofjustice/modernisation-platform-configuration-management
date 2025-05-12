@@ -12,6 +12,8 @@
     recurse: yes
   loop:
     - /home/oracle/admin/scripts
+  become: yes
+  become_user: oracle
 
 - name: copy scripts
   ansible.builtin.template:
@@ -22,6 +24,8 @@
     mode: "0700"
   loop:
     - "{{ db_housekeeping_script }}"
+  become: yes
+  become_user: oracle
 
 - name: setup oracle housekeeping job
   ansible.builtin.cron:
