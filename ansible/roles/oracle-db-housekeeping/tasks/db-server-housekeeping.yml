@@ -36,6 +36,8 @@
     user: root
     job: "su oracle -c '{{ housekeeping_command }}' 2>&1 | logger -p local3.info -t db_server_housekeeping"
   loop: "{{ housekeeping_cron.db_server_housekeeping | list }}"
+  become: true
+  become_user: root
 
 # Rotate and compress the alert log and listener log files
 - name: Get Log Retention Policy from ADRCI
