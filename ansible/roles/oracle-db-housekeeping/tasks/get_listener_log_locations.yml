@@ -18,4 +18,3 @@
 - name: Set XML Listener Log Location
   set_fact:
     listener_xml_location: "{{ listener_location_var.stdout | regex_replace('alert/log.xml','alert') }}"
-
