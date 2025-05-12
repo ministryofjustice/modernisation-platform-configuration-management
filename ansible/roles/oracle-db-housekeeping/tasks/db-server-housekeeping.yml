@@ -32,3 +32,35 @@
     user: root
     job: "su oracle -c '{{ housekeeping_command }}' 2>&1 | logger -p local3.info -t db_server_housekeeping"
   loop: "{{ housekeeping_cron.db_server_housekeeping | list }}"
+
+# Rotate and compress the alert log and listener log files
+- name: Get Log Retention Policy from ADRCI
+  include_tasks: get_longp_policy.yml
+
+- name: Get Listener Log Locations
+  include_tasks: get_listener_log_locations.yml
+
+- name: Get Alert Log Locations
+  include_tasks: get_alert_log_locations.yml
+
+- name: Deinstall old Anacron Configurations
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/cron.hourly/oracle_listener_xml
+    - /etc/cron.daily/oracle_listener_xml
+    - /etc/cron.weekly/oracle_listener_xml
+    - /etc/cron.monthly/oracle_listener_xml
+    - /etc/cron.monthly/sbtio_log
+    - /etc/cron.daily/oracle_audit
+
+- name: Install Anacron Configuration for Listener Logs
+  template:
+    src: oracle_listener.j2
+    dest: /etc/logrotate.d/oracle_listener
+
+- name: Install Logrotate Configuration for Alert Logs
+  template:
+    src: oracle_alert.j2
+    dest: /etc/logrotate.d/oracle_alert

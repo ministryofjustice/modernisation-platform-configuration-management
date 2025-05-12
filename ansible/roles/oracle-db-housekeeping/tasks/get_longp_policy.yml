@@ -1,0 +1,16 @@
+---
+- name: Get LONGP_POLICY setting from Database Home ADRCI
+  shell: |
+    . ~/.bash_profile
+    echo "show home" | adrci | grep "/rdbms/" | head -1 | xargs -I{} echo "set home {}; show control" | adrci | awk 'BEGIN{flag=0;col=1}{if(flag==2){printf("%d\n",$col);flag=0}}/LONGP_POLICY/{for(i=1;i<=NF;i++){if($i=="LONGP_POLICY"){col=i}};flag=1}/^-/{if(flag==1){flag=2}}'
+  register: adrci_longp_policy
+  changed_when: false
+  become_user: oracle
+
+- debug:
+    msg: "Setting Retention Policy to {{ adrci_longp_policy.stdout }} hours."
+
+- name: Set LONGP_POLICY for All Logs
+  set_fact:
+    longp_policy_weeks: "{{ (adrci_longp_policy.stdout|int / 168) |round(0,'ceil')| int }}"
+    longp_policy_days: "{{ (adrci_longp_policy.stdout|int / 24) |round(0,'ceil')| int }}"

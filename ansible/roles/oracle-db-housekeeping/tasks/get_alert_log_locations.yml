@@ -1,0 +1,49 @@
+---
+- name: Get List of All Databases
+  shell: |
+    export PATH=$PATH:/usr/local/bin; 
+    export ORACLE_SID=+ASM; 
+    export ORAENV_ASK=NO ; 
+    . oraenv >/dev/null; 
+    srvctl config database
+  register: db_list
+  changed_when: false
+  become_user: oracle
+
+- name: Initialise List of Alert Log File Locations
+  set_fact:
+    list_of_alert_log_locations: []
+
+# Create List of Alert Log Locations
+- name: Get Text Alert Log Location
+  shell: |
+    export PATH=$PATH:/usr/local/bin; 
+    export ORACLE_SID={{ sid_item }}; 
+    export ORAENV_ASK=NO ; 
+    . oraenv >/dev/null; 
+    sqlplus -s /  as sysdba <<' EOF'
+    SET LINES 1000
+    SET PAGES 0
+    SET FEEDBACK OFF
+    SET HEADING OFF
+    WHENEVER SQLERROR EXIT FAILURE
+    SELECT     di.value||'/alert_'||i.instance_name||'.log'
+    FROM       v$diag_info di 
+    CROSS JOIN v$instance  i
+    WHERE      di.name = 'Diag Trace';
+    EXIT
+    EOF
+  with_items: "{{ db_list.stdout_lines }}"
+  register: alert_log_location
+  become_user: oracle
+  changed_when: false
+  loop_control:
+    loop_var: sid_item
+
+- name: Populate List of Alert Log Locations
+  set_fact:
+    list_of_alert_log_locations: "{{ list_of_alert_log_locations + [item.stdout] }}"
+  with_items: "{{ alert_log_location.results }}"
+
+- name: Display List of Alert Log Locations
+  debug: var=list_of_alert_log_locations
