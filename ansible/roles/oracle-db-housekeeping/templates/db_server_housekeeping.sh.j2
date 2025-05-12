@@ -37,7 +37,7 @@ error () {
 }
 
 db_adrci_cleanup () {
-DB_SID=$(cat /etc/oratab | grep db_1 | head -1| awk -F: '{ print $1 }')
+DB_SID=$(grep -E '^[^+#]' /etc/oratab | head -1 | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}')
 set_ora_env ${DB_SID}
 echo "INFO: DB Home adrci purge started at `date`"
 adrci exec="show homes"|grep -v : | while read file_line
