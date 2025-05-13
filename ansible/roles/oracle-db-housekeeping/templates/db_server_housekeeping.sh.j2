@@ -74,7 +74,7 @@ for i in `find ${ORACLE_BASE}/diag -name "trace"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
-	find ${i} -name "sbtio_*.log" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find ${i} -name "sbtio_*.log" -mtime +${SBTIO_RET} -print -exec rm  {} \;
 done
 }
 
@@ -138,13 +138,16 @@ done
 [ "${ADUMP_RET}" = "UNSPECIFIED" ] && usage
 cd $(dirname $0)
 
+# Retention periods in minutes for use with adrci
 ALERT_RET="129600" # 90 Days
 INCIDENT_RET="43200" # 30 Days
 TRACE_RET="43200" # 30 Days
 CDUMP_RET="43200" # 30 Days
 HM_RET="43200" # 30 Days
 UTSCDMP_RET="43200" # 30 Days
-OEM_RET="43200" # 30 Days
+# Retention periods in days for use with find command
+OEM_RET="30" # 30 Days
+SBTIO_RET="30" # 30 Days
 
 db_adrci_cleanup
 db_adump_cleanup
