@@ -1,6 +1,4 @@
-{% for item in listener_log_location %}
-{{ item }}
-{% endfor %}
+{{ listener_log_location }}
 {
         monthly
         rotate {{ longp_policy_weeks }}
@@ -10,9 +8,7 @@
         notifempty
 }
 
-{% for item in listener_xml_location %}
-{{ item }}
-{% endfor %}
+{{ listener_xml_location }}
 {
         monthly
         rotate {{ longp_policy_weeks }}
