@@ -8,10 +8,12 @@
   become: true
   become_user: oracle
 
+# default to 1512 hours if no value returned, which is 9 weeks
 - debug:
-    msg: "Setting Retention Policy to {{ adrci_longp_policy.stdout }} hours."
+    msg: "Setting Retention Policy to {{ (adrci_longp_policy.stdout | default(1512, true)) }} hours."
 
 - name: Set LONGP_POLICY for All Logs
   set_fact:
-    longp_policy_weeks: "{{ (adrci_longp_policy.stdout|int / 168) |round(0,'ceil')| int }}"
-    longp_policy_days: "{{ (adrci_longp_policy.stdout|int / 24) |round(0,'ceil')| int }}"
+    longp_policy_weeks: "{{ ((adrci_longp_policy.stdout | default(1512, true)) |int / 168) |round(0,'ceil')| int }}"
+    longp_policy_days: "{{ ((adrci_longp_policy.stdout| default(1512, true)) |int / 24) |round(0,'ceil')| int }}"
+    longp_policy_months: "{{ ((adrci_longp_policy.stdout | default(1512, true)) | int / 720) | round(0, 'ceil') | int }}"
