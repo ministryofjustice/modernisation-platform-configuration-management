@@ -61,7 +61,7 @@ $GlobalConfig = @{
         "SessionHosts"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "CAFM-RDP PreProd Modernisation Platform"
-          "UserGroup"             = @("HMPP\PROD_CAFM_admins", "HMPP\PROD_CAFM_SQL_USERS")
+          "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
         }
       }
       "pp-jump2022-1" = @{
@@ -99,7 +99,7 @@ $GlobalConfig = @{
         "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
-          "UserGroup"             = @("HMPP\PROD_CAFM_admins") # , "HMPP\PROD_CAFM_SQL_USERS") <= possibly add later
+          "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
         }
       }
       "pd-jump2022-1" = @{
