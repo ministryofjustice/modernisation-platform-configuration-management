@@ -29,11 +29,16 @@ required_patches:
         filename: p35413661_1924000DBRU_Linux-x86-64.zip
       - target_version: "19.25"
         filename: p35413661_1925000DBRU_Linux-x86-64.zip
+      - target_version: "19.27"
+        filename: p35413661_1927000DBRU_Linux-x86-64.zip
     description: "ORA-600 [OPTDESC] ASSERT NEED TO BE INTRODUCED EARLIER IN QKNA INSTEAD OF QERIX"
     grid_patch: false
     database_patch: true
 oracle_software:
-  version: "19.25"
-  combo_patch: p36866740_190000_Linux-x86-64.zip
+  version: '19.27'
+  combo_patch: p37591516_190000_Linux-x86-64.zip
+  opatch:
+      version: 12.2.0.1.46
+      filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
 source_db: "DMDMIS"
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
