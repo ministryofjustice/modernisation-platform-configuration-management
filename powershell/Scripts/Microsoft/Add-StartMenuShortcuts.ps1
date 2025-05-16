@@ -41,7 +41,6 @@ $Configs = @{
         "Prison-Nomis/DEV"      = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11G"    = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11R"    = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis/WEB19C-B" = "https://dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }
     }
   }
@@ -163,7 +162,6 @@ $Configs = @{
         "Prison-Nomis/DEV"      = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11G"    = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11R"    = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis/WEB19C-B" = "https://dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }
     }
   }
