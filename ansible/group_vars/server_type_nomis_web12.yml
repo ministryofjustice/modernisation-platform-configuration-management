@@ -57,7 +57,7 @@ packages_yum_install:
   - redhat-lsb-4.1
   - redhat-lsb-core
   - libnsl
-  - xterm  # just for testing X
+  - xterm # just for testing X
 
 disks_mount:
   - ebs_device_name: /dev/sdb
@@ -84,7 +84,7 @@ weblogic_configs:
     weblogic_db_repo_username: "sys"
     weblogic_db_repo_prefix: "nomis13"
     # weblogic_domain_template_filename: "template1.jar"
-    weblogic_domain_template_filename: "template2.jar"  # template1.jar + ReportsServerComponent
+    weblogic_domain_template_filename: "template2.jar" # template1.jar + ReportsServerComponent
 
 weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
 
