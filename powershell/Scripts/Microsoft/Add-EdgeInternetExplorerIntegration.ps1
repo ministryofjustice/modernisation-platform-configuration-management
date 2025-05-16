@@ -35,8 +35,6 @@ $Configs = @{
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "dev-nomis-web19c-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "qa11g-nomis-web12-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
@@ -98,8 +96,6 @@ $Configs = @{
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "dev-nomis-web19c-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "dev-nomis-web19c-b.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "qa11g-nomis-web12-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
