@@ -1,0 +1,20 @@
+---
+- name: Get Text Listener Log Location
+  shell: |
+    export PATH=$PATH:/usr/local/bin; 
+    export ORACLE_SID=+ASM;
+    export ORAENV_ASK=NO ; 
+    . oraenv >/dev/null;      
+    lsnrctl status | grep "Listener Log File"  | awk '{print $NF}'
+  changed_when: false
+  become: true
+  become_user: oracle
+  register: listener_location_var
+
+- name: Set Text Listener Log Location
+  set_fact:
+    listener_log_location: "{{ listener_location_var.stdout | regex_replace('alert/log.xml','trace/listener.log') }}"
+
+- name: Set XML Listener Log Location
+  set_fact:
+    listener_xml_location: "{{ listener_location_var.stdout }}"

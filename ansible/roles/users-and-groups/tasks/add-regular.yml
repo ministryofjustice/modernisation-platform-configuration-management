@@ -109,6 +109,8 @@
 - name: Touch regular users .xAuthority
   ansible.builtin.file:
     path: "/home/{{ item.name }}/.Xauthority"
+    owner: "{{ item.name }}"
+    group: "{{ item.group }}"
     state: touch
     mode: u+rw,g-rwx,o-rwx
     modification_time: preserve

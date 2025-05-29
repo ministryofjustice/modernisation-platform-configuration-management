@@ -21,6 +21,7 @@ ami_roles_list:
   - disks
   - oracle-19c-delius
   - oracle-db-bootstrap
+  - oracle-db-housekeeping
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([])) + (server_type_roles_list | default([])) }}"

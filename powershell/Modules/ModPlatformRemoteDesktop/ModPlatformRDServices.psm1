@@ -387,10 +387,31 @@ function Add-ServerFqdnListToServerList {
         
         # Save the updated XML file without pretty printing
         $xmlDoc.PreserveWhitespace = $false
-        $xmlWriter = New-Object System.Xml.XmlTextWriter($serverListPath, [System.Xml.Encoding]::UTF8)
-        $xmlWriter.Formatting = [System.Xml.Formatting]::None
-        $xmlDoc.Save($xmlWriter)
-        $xmlWriter.Close()
+        
+        # Use direct save first, which is simpler and less error-prone
+        $saveResult = $xmlDoc.Save($serverListPath) 2>&1
+        
+        # If direct save fails, try with XmlTextWriter
+        if ($saveResult -is [System.Management.Automation.ErrorRecord]) {
+          Write-Verbose "Direct XML save failed, trying with XmlTextWriter"
+          # Use System.Text.Encoding (correct namespace) instead of System.Xml.Encoding
+          $xmlWriter = New-Object System.Xml.XmlTextWriter($serverListPath, [System.Text.Encoding]::UTF8) -ErrorAction SilentlyContinue
+          
+          # Only set formatting if the property exists
+          if ($null -ne $xmlWriter -and ($xmlWriter | Get-Member -Name "Formatting" -ErrorAction SilentlyContinue)) {
+            $xmlWriter.Formatting = [System.Xml.Formatting]::None
+          }
+          
+          if ($null -ne $xmlWriter) {
+            $xmlDoc.Save($xmlWriter)
+            $xmlWriter.Close()
+          }
+          else {
+            Write-Warning "Failed to create XmlTextWriter, falling back to string-based XML creation"
+            # Last resort: recreate the XML content manually
+            $needNewFile = $true
+          }
+        }
       }
       else {
         # XML is invalid, recreate the file
