@@ -19,28 +19,28 @@
         owner: oracle
         group: oinstall
 
-    - name: Build temporary script with password and Slack package in a secure way
+    - name: Create a wrapped file to encrypt the Slack Notification Package
       ansible.builtin.shell: |
         set -euo pipefail
         main() {
-          echo "connect sysman/{{ db_sysman_password }}" > {{ stage }}/run_create_slack_pkg.sql
-          cat {{ stage }}/create_slack_notification_package.sql >> {{ stage }}/run_create_slack_pkg.sql
-          echo "exit" >> {{ stage }}/run_create_slack_pkg.sql
-          chmod 600 {{ stage }}/run_create_slack_pkg.sql
+          . ~/.bash_profile
+          . oraenv <<< "${ORACLE_SID}"
+          wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
         }
-        main
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
       args:
         executable: /bin/bash
-      no_log: true
 
-    - name: Create Slack Notification Package
+    - name: Compile Slack Notification Package
       ansible.builtin.shell: |
         set -eo pipefail
         main() {
           . ~/.bash_profile
           . oraenv <<< "${ORACLE_SID}"
-          sqlplus -s /nolog @{{ stage }}/run_create_slack_pkg.sql
-          rm -f {{ stage }}/run_create_slack_pkg.sql
+          sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
       environment:
@@ -73,4 +73,4 @@
         state: absent
       loop:
         - "{{ stage }}/create_slack_notification_package.sql"
-        - "{{ stage }}/run_create_slack_pkg.sql"
+        - "{{ stage }}/create_slack_notification_package.plb"
