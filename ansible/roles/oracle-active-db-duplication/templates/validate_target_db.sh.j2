@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
-export PATH=$ORACLE_HOME/bin:$PATH 
+# Ensure the ORACLE_HOME and PATH are set correctly to use sqlplus
+. oraenv <<< "+ASM" > /dev/null
 
 target_host=$1
 target_db=$2

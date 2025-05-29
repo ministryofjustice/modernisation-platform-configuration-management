@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
-export PATH=$ORACLE_HOME/bin:$PATH 
+# Ensure the ORACLE_HOME and PATH are set correctly to use sqlplus
+. oraenv <<< "+ASM" > /dev/null
 
 stage="{{ stage }}"
 target_host=$1
@@ -13,7 +13,7 @@ IFS= read -r -s db_password
 
 # Run sqlplus securely without a separate SQL file
 PARAMETER=$(sqlplus -s /nolog <<EOF
-	connect sys/$db_password@${target_host}:1521/${target_db} as sysdba
+	connect sys/${db_password}@${target_host}:1521/${target_db} as sysdba
 	SET LINES 1000
 	SET PAGES 0
 	SET FEEDBACK OFF
@@ -26,7 +26,7 @@ EOF
 
 if [ `echo $PARAMETER | awk -F= '{ print $1 }'` == 'compatible' ]
 then 
-	echo $PARAMETER >> "{{ stage }}/init{{auxiliary_db.db_name}}.ora"
+	echo $PARAMETER >> "${stage}/init{{auxiliary_db.db_name}}.ora"
 	exit 0
 elif [ `echo $PARAMETER | grep ORA-01017 | wc -l ` == 1 ]
 then 
