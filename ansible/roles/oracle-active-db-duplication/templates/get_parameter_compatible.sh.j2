@@ -8,8 +8,9 @@ stage="{{ stage }}"
 target_host=$1
 target_db=$2
 
-# Read password securely from stdin
-IFS= read -r -s db_password
+# Read password securely from temp file
+db_password=$(< /tmp/.sys_password)
+rm -f /tmp/.sys_password
 
 # Run sqlplus securely without a separate SQL file
 PARAMETER=$(sqlplus -s /nolog <<EOF
@@ -23,6 +24,8 @@ PARAMETER=$(sqlplus -s /nolog <<EOF
 	EXIT
 EOF
 )
+
+unset db_password
 
 if [ `echo $PARAMETER | awk -F= '{ print $1 }'` == 'compatible' ]
 then 

@@ -7,8 +7,9 @@ set -euo pipefail
 target_host=$1
 target_db=$2
 
-# Read password securely from stdin
-IFS= read -r -s db_password
+# Read password securely from temp file
+db_password=$(< /tmp/.sys_password)
+rm -f /tmp/.sys_password
 
 # Run sqlplus securely without a separate SQL file
 LOG_MODE=$(sqlplus -s /nolog <<EOF
@@ -22,6 +23,8 @@ LOG_MODE=$(sqlplus -s /nolog <<EOF
 	EXIT
 EOF
 )
+
+unset db_password
 
 if [ `echo $LOG_MODE | awk -F= '{ print $2 }'` == 'NOARCHIVELOG' ]
 then 

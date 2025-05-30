@@ -28,13 +28,27 @@
       loop:
         - "init.ora"
 
-    # Don't log the command output as it contains sensitive information
-    - name: Get compatible from source database
-      ansible.builtin.shell: |
-        echo "{{ db_sys_password }}" | {{ stage }}/get_parameter_compatible.sh {{ target_host }} {{ target_db }} > {{ stage }}/tmp_output_file.out 2>&1
-      no_log: true
-      register: script_result
-      ignore_errors: true # Let us inspect output even if the command fails
+    - name: Database login with password cleanup
+      block:
+        - name: Write SYS password to a hidden temp file
+          copy:
+            content: "{{ db_sys_password }}"
+            dest: "/tmp/.sys_password"
+            mode: '0600'
+          no_log: true
+
+        - name: Get compatible from source database
+          ansible.builtin.shell: |
+            {{ stage }}/get_parameter_compatible.sh {{ target_host }} {{ target_db }} > {{ stage }}/tmp_output_file.out 2>&1
+          register: script_result
+          ignore_errors: true # Let us inspect output even if the command fails
+
+      always:
+          - name: Ensure temp password file is deleted (cleanup)
+            file:
+              path: /tmp/.sys_password
+              state: absent
+            ignore_errors: true
 
     - name: Read script output
       ansible.builtin.slurp:
