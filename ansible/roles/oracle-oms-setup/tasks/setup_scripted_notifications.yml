@@ -29,3 +29,9 @@
         name: check_em_incidents
         user: oracle
         job: "/usr/bin/flock --nonblock --conflict-exit-code 0 {{ notification_script_directory }}/lock_file -c {{ notification_script_directory }}/check_em_incident.sh >> {{ notification_script_directory }}/check_em_incident.log 2>&1"
+
+# Execute this outside the block to ensure it runs as root
+- name: Install Logrotate Configuration for the incident log
+  template:
+    src: em_incident_logrotate.j2
+    dest: /etc/logrotate.d/em_incident_log

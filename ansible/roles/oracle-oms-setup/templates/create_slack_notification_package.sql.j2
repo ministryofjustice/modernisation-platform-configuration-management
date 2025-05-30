@@ -1,38 +1,27 @@
-#!/bin/bash
+CREATE OR REPLACE PACKAGE sysman.slack_notification AS
 
-. ~/.bash_profile
-
-export PATH=$PATH:/usr/local/bin
-. oraenv
-
-sqlplus -S /nolog <<EOSQL
-
-WHENEVER SQLERROR EXIT FAILURE;
-
-connect sysman/{{ db_sysman_password }}
-
-CREATE OR REPLACE PACKAGE slack_notification AS
-
-  PROCEDURE incident_proc (incident_msg IN gc\$notif_incident_msg);
-  PROCEDURE event_proc (event_msg IN gc\$notif_event_msg);
+  PROCEDURE incident_proc (incident_msg IN gc$notif_incident_msg);
+  PROCEDURE event_proc (event_msg IN gc$notif_event_msg);
   gc_url            VARCHAR2(2000)  := 'https://slack.com/api/chat.postMessage';
   gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
   gc_wallet         VARCHAR2(1000)  :='file:{{ app_dir }}/wallets/slack_wallet';
 
 END slack_notification;
 /
-create or replace PACKAGE BODY slack_notification AS
+SHOW ERRORS
 
- PROCEDURE incident_proc (incident_msg IN gc\$notif_incident_msg) AS
+create or replace PACKAGE BODY sysman.slack_notification AS
+
+ PROCEDURE incident_proc (incident_msg IN gc$notif_incident_msg) AS
 
    l_http_request   utl_http.req;
    l_http_response  utl_http.resp;
    l_message        VARCHAR2(32767);
    l_text           VARCHAR2(32767);
    l_param          VARCHAR2(32767);
-   l_src_info_array gc\$notif_source_info_array;
-   l_src_info       gc\$notif_source_info;
-   l_categories     gc\$category_string_array;
+   l_src_info_array gc$notif_source_info_array;
+   l_src_info       gc$notif_source_info;
+   l_categories     gc$category_string_array;
    l_target_name    VARCHAR2(256);
    l_target_type    VARCHAR2(256);
    l_target_timezone VARCHAR2(256);
@@ -49,7 +38,7 @@ create or replace PACKAGE BODY slack_notification AS
       highest priority channel to ensure messages are not lost).
     */
    l_slack_channel         VARCHAR2(100);
-   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#shef_dba;
+   l_default_slack_channel CONSTANT VARCHAR2(100) DEFAULT '#shef_dba';
    l_use_default_channel   BOOLEAN DEFAULT FALSE;
    
   BEGIN
@@ -97,7 +86,7 @@ create or replace PACKAGE BODY slack_notification AS
     BEGIN
         SELECT a.property_value
         INTO   l_slack_channel
-        FROM sysman.cm\$em_tprops_ecm_view a
+        FROM sysman.cm$em_tprops_ecm_view a
         WHERE a.property_name = 'orcl_gtp_contact'
         AND   cm_target_name = l_target_name;
     EXCEPTION
@@ -195,18 +184,18 @@ create or replace PACKAGE BODY slack_notification AS
   END incident_proc;
 
 
- PROCEDURE event_proc (event_msg IN gc\$notif_event_msg) AS
+ PROCEDURE event_proc (event_msg IN gc$notif_event_msg) AS
 
    l_http_request   utl_http.req;
    l_http_response  utl_http.resp;
    l_message        VARCHAR2(32767);
    l_text           VARCHAR2(32767);
    l_param          VARCHAR2(32676);
-   l_src_info_array gc\$notif_source_info_array;
-   l_src_info       gc\$notif_source_info;
-   l_categories     gc\$category_string_array;
-   l_category_codes gc\$category_string_array;
-   l_attrs          gc\$notif_event_attr_array;
+   l_src_info_array gc$notif_source_info_array;
+   l_src_info       gc$notif_source_info;
+   l_categories     gc$category_string_array;
+   l_category_codes gc$category_string_array;
+   l_attrs          gc$notif_event_attr_array;
    l_target_name    VARCHAR2(256);
    l_target_type    VARCHAR2(256);
    l_target_timezone VARCHAR2(256);
@@ -285,3 +274,5 @@ create or replace PACKAGE BODY slack_notification AS
 
 END slack_notification;
 /
+SHOW ERRORS
+EXIT;

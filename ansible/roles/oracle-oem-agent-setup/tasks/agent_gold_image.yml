@@ -18,9 +18,10 @@
 
     - name: emcli Login
       ansible.builtin.shell: |
-        emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
+        echo "{{ oem_sysman_password }}" | emcli login -username=sysman -force
         emcli sync
       changed_when: false
+      no_log: true
 
     - name: Check for existing Gold Image version name with Current status
       ansible.builtin.shell: |

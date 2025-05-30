@@ -51,6 +51,7 @@
           export username={{ weblogic_admin_username }}
           export password={{ weblogic_admin_password }}
           {{ omspatcher_stage }}/createkeys.sh -oh {{ oem_mw_home }} -location {{ omspatcher_stage }}
+          unset password
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem
       async: 86400

@@ -30,7 +30,9 @@ function connect_to_emcli
    if [[ "$RM" == "Error: Session expired. Run emcli login to establish a session." ]];
    then
       SYSMAN_PWD=$(aws secretsmanager get-secret-value --secret-id /oracle/database/EMREP/shared-passwords --region ${REGION} --query SecretString --output text | jq -r .sysman)
-      ${EMCLI} login -username=sysman -password=${SYSMAN_PWD}
+      echo "${SYSMAN_PWD}" | ${EMCLI} login -username=sysman
+      # Clear the password from memory immediately
+      unset SYSMAN_PWD
    fi
 }
 
