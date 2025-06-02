@@ -18,7 +18,7 @@
 
     - name: Copy Notification Schedule
       copy:
-        src: monitoring_schedule
+        src: "monitoring_schedule.{{ OMS_SERVER }}"
         dest: "{{ notification_script_directory }}/monitoring_schedule"
         mode: "0600"
 
