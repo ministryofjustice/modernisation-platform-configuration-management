@@ -14,13 +14,7 @@
         - update_oem_target_properties.sh
 
     - name: emcli Login
-      ansible.builtin.shell: |
-        . ~/.bash_profile
-        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
-        echo "{{ oem_sysman_password }}" | emcli login -username=sysman -force
-        emcli sync
-      changed_when: false
-      no_log: true
+      import_tasks: emcli_login.yml
 
     - name: Discover and promote targets
       ansible.builtin.shell: |

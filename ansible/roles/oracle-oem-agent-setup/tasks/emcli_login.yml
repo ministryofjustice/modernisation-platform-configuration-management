@@ -1,0 +1,67 @@
+- name: Set default for emcli if not defined
+  set_fact:
+    emcli: "{{ app_dir }}/emcli"
+  when: emcli is not defined or emcli | length == 0
+
+- name: Set default for oracle_home if not defined
+  set_fact:
+    oracle_home: "{{ app_dir }}"
+  when: oracle_home is not defined or oracle_home | length == 0
+
+- name: Include get_facts to fetch oem_sysman_password if not already set
+  include_tasks: get_facts.yml
+  when: oem_sysman_password is not defined or oem_sysman_password | length == 0
+
+- name: Assert required password variable is defined and non-empty
+  assert:
+    that:
+      - oem_sysman_password is defined
+      - oem_sysman_password | length > 0
+    fail_msg: >
+      The variable oem_sysman_password must be defined and non-empty. Ensure it's passed in, or fetched by get_facts.yml.
+
+- name: EMCLI login with password cleanup
+  block:
+    - name: Write SYSMAN password to a hidden temp file
+      copy:
+        content: "{{ oem_sysman_password }}"
+        dest: "/tmp/.emcli_password"
+        mode: '0600'
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      no_log: true
+
+    - name: Perform EMCLI login if needed
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        EMCLI={{ emcli }}
+        SYSMAN_PASSWORD=$(< /tmp/.emcli_password)
+        rm -f /tmp/.emcli_password
+        $EMCLI sync > /dev/null 2>&1
+        if [[ $? -gt 0 ]]; then
+          echo "$SYSMAN_PASSWORD" | $EMCLI login -username=sysman -force
+          unset SYSMAN_PASSWORD
+          RC=$?
+          if [[ $RC -gt 0 ]]; then
+            exit $RC
+          fi
+          $EMCLI sync
+          echo "Logged in."
+        fi
+      environment:
+        JAVA_HOME: "{{ oracle_home }}/jdk/jre"
+        ORACLE_HOME: "{{ oracle_home }}"
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      register: emcli_login_result
+      failed_when: emcli_login_result.rc != 0
+
+  always:
+    - name: Ensure temp password file is deleted (cleanup)
+      file:
+        path: /tmp/.emcli_password
+        state: absent
+      become: true
+      become_user: "{{ oracle_install_user }}"
+      ignore_errors: true
