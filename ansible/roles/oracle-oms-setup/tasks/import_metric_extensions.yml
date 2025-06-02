@@ -43,14 +43,6 @@
     var: metric_extensions
 
 - block:
-    - name: Copy EMCLI Login Script
-      ansible.builtin.template:
-        src: emcli_login.sh.j2
-        dest: "{{ stage }}/emcli_login.sh"
-        mode: "0700"
-        owner: oracle
-        group: oinstall
-
     - name: Import Extensions
       include_tasks: import_metric_extension.yml
       vars:
@@ -69,11 +61,12 @@
         owner: oracle
         group: oinstall
 
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
     - name: Run SQL to Get Versions of Metrics Extensions
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        . {{ stage }}/emcli_login.sh
         {{ emcli }} execute_sql -sql="FILE" -input_file="FILE:{{ stage }}/metric_extensions_versions.sql" -targets="EMREP:oracle_database"
       register: get_metric_extensions_versions
       changed_when: false
@@ -103,8 +96,6 @@
     # Note: Metric Extensions are available free of charge only for the host target and not for other targets.
     - name: Save Latest Versions of Metric Extensions as Deployable Draft
       shell: |
-        echo "running emcli_login.sh"
-        . {{ stage }}/emcli_login.sh
         {{ emcli }} save_metric_extension_draft -target_type="host" -name="{{ extension | regex_replace('\$','\\$') }}" -version="{{ metric_extensions_versions[extension] }}"
       loop: "{{ metric_extensions_versions.keys() }}"
       loop_control:
@@ -138,12 +129,11 @@
           ====================================================================================
 
   always:
-    - name: Remove EMCLI Login Script
+    - name: Remove Scripts
       file:
         path: "{{ stage }}/{{ file_name }}"
         state: absent
       loop:
-        - emcli_login.sh
         - get_metric_extensions_versions.sql
       loop_control:
         loop_var: file_name

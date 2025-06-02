@@ -1,0 +1,23 @@
+# As this task runs on the OEM server we don't need to store the password in a temporary file - we can use secrets manager directly.
+- name: Secure EMCLI login
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_HOME={{ oem_mw_home }}
+    export JAVA_HOME=$ORACLE_HOME/oracle_common/jdk/jre
+    EMCLI={{ emcli }}
+    SYSMAN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id /oracle/database/EMREP/shared-passwords --region eu-west-2 --query SecretString --output text | jq -r .sysman)
+    $EMCLI sync > /dev/null 2>&1
+    if [[ $? -gt 0 ]]; then
+      echo "$SYSMAN_PASSWORD" | $EMCLI login -username=sysman -force
+      unset SYSMAN_PASSWORD
+      RC=$?
+      if [[ $RC -gt 0 ]]; then
+        exit $RC
+      fi
+      $EMCLI sync
+      echo "Logged in."
+    fi
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  register: emcli_login_result
+  failed_when: emcli_login_result.rc != 0

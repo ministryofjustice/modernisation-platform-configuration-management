@@ -10,26 +10,45 @@
         ORAENV_ASK: "NO"
         ORACLE_SID: "EMREP"
 
-    # Restrict privileges on this script as it contains SYSMAN password
-    # and Slack Token - should only be readable by oracle
+    # Restrict privileges on this script as it contains Slack Token - should only be readable by oracle
     - name: Create Slack Notification Installation Script
       template:
-        src: create_slack_notification_package.sh.j2
-        dest: "{{ stage }}/create_slack_notification_package.sh"
+        src: create_slack_notification_package.sql.j2
+        dest: "{{ stage }}/create_slack_notification_package.sql"
         mode: "0700"
         owner: oracle
         group: oinstall
 
-    - name: Create Slack Notification Package
+    - name: Create a wrapped file to encrypt the Slack Notification Package
       ansible.builtin.shell: |
-        set -eo pipefail
+        set -euo pipefail
         main() {
-          {{ stage }}/create_slack_notification_package.sh
+          . ~/.bash_profile
+          . oraenv <<< "${ORACLE_SID}"
+          wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
         }
         main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "EMREP"
+      args:
+        executable: /bin/bash
+
+    - name: Compile Slack Notification Package
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          . ~/.bash_profile
+          . oraenv <<< "${ORACLE_SID}"
+          sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "EMREP"
+      args:
+        executable: /bin/bash
+      register: slack_pkg_result
 
     - pause:
         seconds: 20
@@ -48,7 +67,10 @@
           ====================================================================================
 
   always:
-    - name: Clean up Installation Script
-      file:
-        path: "{{ stage }}/create_slack_notification_package.sh"
+    - name: Clean up Slack Notification SQL scripts
+      ansible.builtin.file:
+        path: "{{ item }}"
         state: absent
+      loop:
+        - "{{ stage }}/create_slack_notification_package.sql"
+        - "{{ stage }}/create_slack_notification_package.plb"

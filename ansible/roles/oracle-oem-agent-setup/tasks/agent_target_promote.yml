@@ -13,13 +13,13 @@
       loop:
         - add_targets.sh
 
-    # Do this in one step as emcli needs to have a session open
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
     - name: Discover and promote targets
       ansible.builtin.shell: |
         . ~/.bash_profile
         export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
-        emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
-        emcli sync
         echo "running add_targets.sh"
         nohup {{ stage }}/add_targets.sh > /tmp/add_targets.log 2>&1 &
         echo $! > /tmp/add_targets.pid

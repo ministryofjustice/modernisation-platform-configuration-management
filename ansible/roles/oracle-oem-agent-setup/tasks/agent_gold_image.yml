@@ -17,21 +17,90 @@
         active_gold_image_name: "{{ (goldimagename is defined and goldimagename != '') | ternary(goldimagename, agent_image_version_name) }}"
 
     - name: emcli Login
-      ansible.builtin.shell: |
-        emcli login -username=sysman -password="{{ oem_sysman_password }}" -force
-        emcli sync
-      changed_when: false
+      import_tasks: emcli_login.yml
 
-    - name: Check for existing Gold Image version name with Current status
-      ansible.builtin.shell: |
-        emcli get_gold_agent_image_details -version_name="{{ active_gold_image_name }}" | grep -c "Status         :Current" | cat
-      register: existing_gold_image_result
+    - name: Get gold image list in CSV format
+      shell: emcli list_gold_agent_imageversions -image_name="{{ agent_image_name }}" -all -format=name:csv
+      register: gold_image_csv
       changed_when: false
+      failed_when: gold_image_csv.rc != 0 or gold_image_csv.stdout == ""
+
+    - name: Debug command output
+      debug:
+        var: gold_image_csv.stdout_lines
+
+    - name: Set csv_lines
+      set_fact:
+        csv_lines: "{{ gold_image_csv.stdout_lines | default([]) }}"
+
+    - name: Set csv_header
+      set_fact:
+        csv_header: "{{ csv_lines[0].split(',') }}"
+
+    - name: Set raw_csv_data
+      set_fact:
+        raw_csv_data: "{{ csv_lines[1:] }}"
+
+    - name: Filter valid CSV rows only (same number of fields as header)
+      set_fact:
+        csv_data: []
+
+    - name: Append valid rows to csv_data
+      set_fact:
+        csv_data: "{{ csv_data + [item] }}"
+      loop: "{{ raw_csv_data }}"
+      when: item.split(',') | length == csv_header | length
+
+    - name: Replace escaped commas temporarily
+      set_fact:
+        fixed_csv_data: "{{ csv_data | map('replace', '\\\\u002c', '<<COMMA>>') | list }}"
+
+    - name: Split lines and fix embedded commas
+      vars:
+        processed_rows: []
+      set_fact:
+        processed_rows: "{{ processed_rows + [ item.split(',') | map('replace', '<<COMMA>>', ',') | list ] }}"
+      loop: "{{ fixed_csv_data }}"
+
+    - name: Convert rows to dicts by zipping with header
+      vars:
+        gold_image_rows: []
+      set_fact:
+        gold_image_rows: "{{ gold_image_rows + [ dict(csv_header | zip(item)) ] }}"
+      loop: "{{ processed_rows }}"
+
+    - name: Filter to target version
+      set_fact:
+        target_image: "{{ gold_image_rows | selectattr('Version Name', 'equalto', agent_image_version_name) | list | first }}"
+
+    - name: Get highest Gold Image Version among Active versions
+      set_fact:
+        max_active_version: >-
+          {{
+            gold_image_rows
+            | selectattr('Status', 'equalto', 'Active')
+            | map(attribute='Gold Image Version')
+            | map('int')
+            | max
+          }}
+
+    - name: Determine if target image is deletable
+      set_fact:
+        is_deletable: >-
+          {{
+            target_image['Status'] == 'Active'
+            and (target_image['Gold Image Version'] | int) == max_active_version
+          }}
+
+    - name: Show deletion decision
+      debug:
+        msg: >-
+          Version {{ agent_image_version_name }} can{{ '' if is_deletable else 'not' }} be deleted.
 
     - name: Fail if Gold Image version name already exists and is in Current status
       ansible.builtin.fail:
-        msg: "Gold Image version name {{ active_gold_image_name }} already exists and is in Current status. Update the Gold Image version name to a different value and try again."
-      when: existing_gold_image_result.stdout == "1"
+        msg: "Gold Image version name {{ active_gold_image_name }} exists and can't be deleted. Update the Gold Image version name to a different value and try again."
+      when: not is_deletable
 
     - name: Delete existing Gold Image version if it's not in Current status
       ansible.builtin.shell: |
@@ -39,7 +108,7 @@
       changed_when: false
       ignore_errors: yes
       register: create_gold_image_result
-      when: existing_gold_image_result.stdout == "0"
+      when: is_deletable
 
     - name: Ensure oem agent is up and running
       import_tasks: start_agent.yml

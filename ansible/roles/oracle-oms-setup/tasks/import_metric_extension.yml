@@ -32,11 +32,12 @@
         cd {{ stage }}/metric_extension
         zip -r ../{{ metric_extension_name }}.zip *
 
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
     - name: Import Metric Extension
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         {{ emcli }} import_metric_extension -file_name={{ stage }}/{{ metric_extension_name }}.zip
       register: import_metric_extension
 
