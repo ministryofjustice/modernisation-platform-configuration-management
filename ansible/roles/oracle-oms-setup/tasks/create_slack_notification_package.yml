@@ -21,13 +21,10 @@
 
     - name: Create a wrapped file to encrypt the Slack Notification Package
       ansible.builtin.shell: |
-        set -euo pipefail
-        main() {
-          . ~/.bash_profile
-          . oraenv <<< "${ORACLE_SID}"
-          wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+        . ~/.bash_profile
+        export PATH=$PATH:/usr/local/bin
+        . oraenv <<< "${ORACLE_SID}"
+        wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "EMREP"
@@ -36,13 +33,10 @@
 
     - name: Compile Slack Notification Package
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          . ~/.bash_profile
-          . oraenv <<< "${ORACLE_SID}"
-          sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-slack-notification
+        . ~/.bash_profile
+        export PATH=$PATH:/usr/local/bin
+        . oraenv <<< "${ORACLE_SID}"
+        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "EMREP"
