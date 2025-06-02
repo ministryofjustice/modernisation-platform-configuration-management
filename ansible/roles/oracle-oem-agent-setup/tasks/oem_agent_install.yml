@@ -134,31 +134,32 @@
         export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         ${JAVA_HOME}/bin/java -jar {{ app_dir }}/emcli/emclikit.jar -install_dir={{ app_dir }}/emcli
 
-    # EMCLI Setup script contains a password so ensure it is not readable by other users
-    - name: Copy setup shell script template
-      template:
-        src: "{{ item }}.j2"
-        dest: "{{ stage }}/{{ item }}"
-        mode: "0700"
-      loop:
-        - emcli_setup.sh
+    - name: EMCLI setup with password cleanup
+      block:
+        - name: Write SYSMAN password to a hidden temp file
+          copy:
+            content: "{{ oem_sysman_password }}"
+            dest: "/tmp/.emcli_password"
+            mode: '0600'
+          no_log: true
 
-    # Do this in one step as emcli needs to have a session open
-    - name: Setup emcli, discover and promote targets
-      ansible.builtin.shell: |
-        . ~/.bash_profile
-        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
-        echo "running emcli_setup.sh"
-        {{ stage }}/emcli_setup.sh
+        - name: Setup EMCLI
+          ansible.builtin.shell: |
+            . ~/.bash_profile
+            export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
+            SYSMAN_PASSWORD=$(< /tmp/.emcli_password)
+            rm -f /tmp/.emcli_password
+            echo "${SYSMAN_PASSWORD}" | {{ app_dir }}/emcli/emcli setup -url=https://{{ OMS_SERVER }}:7803/em -username="sysman" -dir="{{ app_dir }}/emcli/conf" -trustall -noregister
+            unset SYSMAN_PASSWORD
+          register: emcli_setup_result
+          failed_when: emcli_setup_result.rc != 0
 
-  always:
-    - name: Remove setup scripts from staging area
-      ansible.builtin.file:
-        path: "{{ stage }}/{{ item }}"
-        state: absent
-      loop:
-        - emcli_setup.sh
-      tags: clean_up
+      always:
+        - name: Ensure temp password file is deleted (cleanup)
+          file:
+            path: /tmp/.emcli_password
+            state: absent
+          ignore_errors: true
 
   # block
   become: true
