@@ -17,15 +17,18 @@
     name: secretsmanager-passwords
   vars:
     secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+  no_log: true
 
 - name: secretsmanager passwords
   set_fact:
     asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSYS'] }}"
     asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords['ASMSNMP'] }}"
   when: not ec2.tags['delius-environment'] is defined
+  no_log: true
 
 - name: Set Password Variables (Delius)
   set_fact:
     asmpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_sys_secret_username] }}"
     asmmonitorpassword: "{{ secretsmanager_passwords_dict['asm'].passwords[asm_monitoring_secret_username] }}"
   when: ec2.tags['delius-environment'] is defined
+  no_log: true

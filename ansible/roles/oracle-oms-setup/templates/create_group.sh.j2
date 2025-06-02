@@ -9,7 +9,8 @@
 #  modernisation-platform/environments/<application>.json
 
 . ~/.bash_profile
-export JAVA_HOME=$ORACLE_HOME/jdk/jre
+export ORACLE_HOME={{ oem_mw_home }}
+export JAVA_HOME=$ORACLE_HOME/oracle_common/jdk/jre
 
 if [ $( {{ emcli }} get_groups -noheader -script | cut -f1 | grep -Ec ${APPLICATION} ) -gt 0 ] ; then
    echo "${APPLICATION} group already exists."

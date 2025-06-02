@@ -27,10 +27,12 @@
     name: secretsmanager-passwords
   vars:
     secretsmanager_passwords: "{{ db_secretsmanager_passwords }}"
+  no_log: true
 
 - name: secretsmanager passwords
   set_fact:
     db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
+  no_log: true
 
 - block:
     - name: Get Egress Ip

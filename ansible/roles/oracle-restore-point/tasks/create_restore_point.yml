@@ -1,29 +1,4 @@
 ---
-- name: Set DB facts
-  set_fact:
-    db_sid: "{{ db_configs[ db_name ].instance_name }}"
-    db_passwords_secret: "/oracle/database/{{ db_name }}/passwords"
-
-- name: Get DB secrets {{ db_passwords_secret }}
-  set_fact:
-    db_passwords: "{{ lookup('amazon.aws.aws_secret', db_passwords_secret) }}"
-
-- name: Get DB sys password
-  set_fact:
-    db_sys_password: "{{ db_passwords.sys }}"
-
-- name: Check password is extracted
-  ansible.builtin.set_fact:
-    db_sys_password_set: true
-  when:
-    - db_sys_password |length > 0
-    - db_sid |length > 0
-
-- name: Fail if missing secrets
-  ansible.builtin.fail:
-    msg: Ensure SYS password exists for {{ db_name }} database
-  when: not  db_sys_password_set |default(false)
-
 - name: Copy restore point creation script
   ansible.builtin.template:
     src: "create_restore_point.sql.j2"
@@ -39,7 +14,7 @@
     main() {
       . ~/.bash_profile
       . oraenv <<< {{ db_sid }}
-      sqlplus sys/{{ db_sys_password }}@{{ db_name }} as sysdba @{{ stage }}/create_restore_point.sql
+      sqlplus / as sysdba @{{ stage }}/create_restore_point.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-restore-point
 

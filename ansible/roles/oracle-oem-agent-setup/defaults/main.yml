@@ -29,6 +29,7 @@ agent_gold_image_stage: "{{ stage }}/{{ agent_image_name }}/{{ agent_image_versi
 # Only use emctl for agent from the agent instance home
 emctl: "{{ agent_instance_home }}/bin/emctl"
 
+# agent_home is the full path to the agent home directory, which will be set dynamically in get_facts.yml
 agent_env:
   ORACLE_HOME: "{{ agent_home }}"
   PATH: "{{ agent_home }}/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
