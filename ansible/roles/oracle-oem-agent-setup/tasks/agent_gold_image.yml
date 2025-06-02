@@ -44,7 +44,7 @@
     - name: Filter valid CSV rows only (same number of fields as header)
       set_fact:
         csv_data: []
-        
+
     - name: Append valid rows to csv_data
       set_fact:
         csv_data: "{{ csv_data + [item] }}"

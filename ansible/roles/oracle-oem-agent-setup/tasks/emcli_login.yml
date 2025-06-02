@@ -26,7 +26,7 @@
       copy:
         content: "{{ oem_sysman_password }}"
         dest: "/tmp/.emcli_password"
-        mode: '0600'
+        mode: "0600"
       become: true
       become_user: "{{ oracle_install_user }}"
       no_log: true
