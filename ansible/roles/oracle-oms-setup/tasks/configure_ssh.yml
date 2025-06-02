@@ -61,21 +61,13 @@
 
 - name: Create HostSSHCreds
   block:
-    # EMCLI Login script contains a password so ensure it is not readable by other users
-    - name: Copy EMCLI Login Script
-      ansible.builtin.template:
-        src: emcli_login.sh.j2
-        dest: "{{ stage }}/emcli_login.sh"
-        mode: "0700"
-        owner: oracle
-        group: oinstall
+    - name: emcli Login
+      import_tasks: emcli_login.yml
 
     # If the credential already exists then do not treat that as an error
     - name: Run HostSSHCreds Creation
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         # Get Hostname as it is known to the Central Agent
         HOST_TARGET=$({{ emctl_agent }} config agent listtargets | grep -E "^.*, host]$" | cut -d, -f1 | tr -d ' []')
         echo "Adding OEM_HOST_SSH CREDENTIALS for the ${HOST_TARGET} host"
@@ -98,13 +90,5 @@
     - name: Set Preferred Host Credentials for the OEM Database
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         {{ emcli }} set_preferred_credential -set_name=DBHostCreds -target_name=EMREP -target_type=oracle_database -credential_name=OEM_HOST_SSH
       register: set_preferred_credentials
-
-  always:
-    - name: Remove EMCLI login scripts from Staging Area
-      ansible.builtin.file:
-        path: emcli_login.sh
-        state: absent

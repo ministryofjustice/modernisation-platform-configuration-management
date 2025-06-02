@@ -10,16 +10,16 @@
         owner: oracle
         group: oinstall
       loop:
-        - emcli_login.sh
         - import_incident_rule_set.sh
         - rule_set.xml
+
+    - name: emcli Login
+      import_tasks: emcli_login.yml
 
     # Ignore error re-importing the same rule set more than once
     - name: Run Incident Rule Set Import
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         echo "running import_incident_rule_set.sh"
         {{ stage }}/import_incident_rule_set.sh
       register: run_incident_rule_set_import
@@ -63,6 +63,5 @@
         path: "{{ stage }}/{{ item }}"
         state: absent
       loop:
-        - emcli_login.sh
         - import_incident_rule_set.sh
         - rule_set.xml

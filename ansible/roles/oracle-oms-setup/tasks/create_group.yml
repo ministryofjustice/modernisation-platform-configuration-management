@@ -10,7 +10,6 @@
         owner: oracle
         group: oinstall
       loop:
-        - emcli_login.sh
         - create_group.sh
         - create_superset_group.sh
 
@@ -20,11 +19,12 @@
         echo "Resolve the problem and run setup."
         chown -R oracle:oinstall /u01/app/oracle/product/gc_inst135/em/EMGC_OMS1/sysman/emcli/setup/.emcli
 
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
     - name: Run Dynamic Group Creation Script for Each Application
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         echo "running create_group.sh"
         {{ stage }}/create_group.sh
       register: run_group_creation
@@ -43,8 +43,6 @@
     - name: Create Application Superset Groups
       become_user: oracle
       ansible.builtin.shell: |
-        echo "running emcli_login.sh"
-        {{ stage }}/emcli_login.sh
         echo "running create_superset_group.sh"
         {{ stage }}/create_superset_group.sh
       register: run_supserset_group_creation
@@ -62,6 +60,5 @@
         path: "{{ stage }}/{{ item }}"
         state: absent
       loop:
-        - emcli_login.sh
         - create_group.sh
         - create_superset_group.sh
