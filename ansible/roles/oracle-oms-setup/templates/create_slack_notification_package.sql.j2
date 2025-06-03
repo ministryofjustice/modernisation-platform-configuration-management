@@ -127,7 +127,7 @@ create or replace PACKAGE BODY sysman.slack_notification AS
 
 {% raw %}
     -- Build message with incident notification attributes
-    l_message:='\`\`\`Creation Time: '||to_char(incident_msg.incident_payload.incident_attrs.creation_date,'DD-MON-YY HH24:MI:SS')||chr(10)||
+    l_message:='```Creation Time: '||to_char(incident_msg.incident_payload.incident_attrs.creation_date,'DD-MON-YY HH24:MI:SS')||chr(10)||
                'Local Time: '||to_char(to_timestamp_tz(to_timestamp_tz(to_char(incident_msg.incident_payload.incident_attrs.creation_date,'DD-MON-YYYY HH24:MI:SS')||' UTC','DD-MON-YYYY HH24:MI:SS TZR')) at time zone l_target_timezone,'DD-MON-YYYY HH24:MI:SS TZR')||chr(10)||
                'Message: '||incident_msg.msg_info.message||chr(10)||
                'Target: '||l_target_name||chr(10)||
@@ -136,7 +136,7 @@ create or replace PACKAGE BODY sysman.slack_notification AS
                'Severity: '||incident_msg.incident_payload.incident_attrs.severity||chr(10)||
                'Rule Set: '||incident_msg.msg_info.ruleset_name||chr(10)||
                'Repeat Count: '||incident_msg.msg_info.repeat_count||chr(10)||
-               'Categories: '||l_categories_new||chr(10)||'\`\`\`';
+               'Categories: '||l_categories_new||chr(10)||'```';
 {% endraw %}
 
     IF l_use_default_channel THEN
