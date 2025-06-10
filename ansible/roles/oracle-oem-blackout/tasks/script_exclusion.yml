@@ -74,8 +74,8 @@
           {{ ' until ' + '%Y-%m-%d-%H-%M-%S' | strftime(end_timestamp) }}
           {%- endif %}
 
-    - name: Ensure EMCLI session is ready
-      include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+    - name: emcli Login
+      import_tasks: emcli_login.yml
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
@@ -121,8 +121,8 @@
 - name: Re-Include Hosts in Monitoring After Job Completion
   when: action == 'stop'
   block:
-    - name: Ensure EMCLI session is ready
-      include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+    - name: emcli Login
+      import_tasks: emcli_login.yml
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
