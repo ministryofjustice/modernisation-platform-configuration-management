@@ -1,0 +1,23 @@
+# Some Metrics are not evalated particularly frequently.   This means a metric which may have raised an
+# incident but was suppressed by a scripted exclusion, may still raise an incident after the exclusion
+# has been removed.   Therefore we force re-evaluation of any named metrics to ensure they are
+# in the current state before that exclusion is removed.
+- name: Re-evaluate Host Metric {{ metric_name }}
+  block:
+    - name: Check if Metric Exists
+      shell: |
+        . ~/.bash_profile
+        {{ emctl_agent }} status agent target {{ agent_target }},host
+      register: get_metric_exists
+      changed_when: false
+
+    # Need to escape out dollar signs in the Metric Extension Names
+    - name: Set Metric Exists
+      set_fact:
+        metric_exists: "{{ get_metric_exists.stdout_lines | select('match','^' + ( metric_name | replace('$','\\$') ) + '\\s+.*') | list | length > 0 }}"
+
+    - name: Run Collection for Metric
+      shell: |
+        . ~/.bash_profile
+        {{ emctl_agent }} control agent runCollection {{ agent_target }}:host {{ metric_name | replace('$','\$') }}
+      when: metric_exists | bool

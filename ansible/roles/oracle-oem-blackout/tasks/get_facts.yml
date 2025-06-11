@@ -1,0 +1,23 @@
+---
+- name: Get OEM secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ oem_secretsmanager_passwords }}"
+  no_log: true
+
+- name: Set password facts
+  set_fact:
+    oem_sysman_password: "{{ secretsmanager_passwords_dict['emrep'].passwords['sysman'] }}"
+  no_log: true
+
+- name: Check parameters
+  set_fact:
+    db_all_variables_set: true
+  when:
+    - oem_sysman_password|length > 0
+
+- name: Fail if missing parameters
+  fail:
+    msg: Ensure all required parameters are set
+  when: not db_all_variables_set|default(false)

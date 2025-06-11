@@ -7,7 +7,7 @@
 
     - name: Start OEM Blackout
       import_role:
-        name: oem_blackout
+        name: oracle-oem-blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all
@@ -65,7 +65,7 @@
 
     - name: End OEM Blackout
       import_role:
-        name: oem_blackout
+        name: oracle-oem-blackout
       vars:
         blackout: "oms_ru_patching"
         object_type: all

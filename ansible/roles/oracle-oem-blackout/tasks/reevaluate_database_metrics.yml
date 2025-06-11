@@ -1,0 +1,24 @@
+# Some Metrics are not evalated particularly frequently.   This means a metric which may have raised an
+# incident but was suppressed by a scripted exclusion, may still raise an incident after the exclusion
+# has been removed.   Therefore we force re-evaluation of any named metrics to ensure they are
+# in the current state before that exclusion is removed.
+- name: Re-evaluate Database Metric {{ metric_name }}
+  block:
+    - name: Check if Database Metric Exists
+      shell: |
+        . ~/.bash_profile
+        {{ emctl_agent }} status agent scheduler | grep oracle_database | awk -F: '{printf("%s:%s\n", $(NF-1), $NF)}'
+      register: get_database_metric_exists
+      changed_when: false
+
+    - name: Set Database Metric List
+      set_fact:
+        database_metric_list: "{{ get_database_metric_exists.stdout_lines | select('search', '^.*:' + metric_name + '$') }}"
+
+    - name: Run Collection for Metric
+      shell: |
+        . ~/.bash_profile
+        {{ emctl_agent }} control agent runCollection {{ database_metric_name.split(':')[0] }}:oracle_database {{ metric_name }}
+      loop: "{{ database_metric_list }}"
+      loop_control:
+        loop_var: database_metric_name
