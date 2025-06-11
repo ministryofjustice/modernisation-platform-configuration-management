@@ -1,7 +1,8 @@
 $Scripts = @(
     "../Common/Set-TimezoneGMT.ps1",
     "../SAP/Get-WindowsMISSoftware.ps1",
-    "../Oracle/Install-Oracle19cClient.ps1"
+    "../Oracle/Install-Oracle19cClient.ps1",
+    "../Oracle/Install-SQLDeveloper.ps1"
 )
 
 $ErrorActionPreference = "Stop"
