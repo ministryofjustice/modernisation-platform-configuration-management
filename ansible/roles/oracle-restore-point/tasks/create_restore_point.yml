@@ -13,7 +13,7 @@
     set -eo pipefail
     main() {
       . ~/.bash_profile
-      . oraenv <<< {{ db_sid }}
+      . oraenv <<< {{ db_name }}
       sqlplus / as sysdba @{{ stage }}/create_restore_point.sql
     }
     main 2>&1 | logger -p local3.info -t ansible-oracle-restore-point
