@@ -42,7 +42,7 @@ run_ansible() {
   tags=($(aws ec2 describe-tags --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=Name,os-type,ami,server-type,environment-name,application" --output=text))
   unset IFS
 
-  # clone ansible roles and playbook
+  echo "# Cloning ansible roles from github"
   cd $ansible_dir
   if [[ ! -d $ansible_dir/${ansible_repo} ]]; then
     echo "# Cloning ${ansible_repo} into $ansible_dir using branch=$branch"
@@ -51,12 +51,14 @@ run_ansible() {
     git checkout "$branch"
   else
     cd $ansible_dir/${ansible_repo}
-    git pull
+    git remote prune origin
+    git fetch origin "$branch"
     git checkout "$branch"
+    git merge --ff-only "origin/${branch}"
   fi
   cd $ansible_dir
 
-  # find the group_var yaml files
+  echo "# Finding the group_var yaml files"
   ansible_group_vars=
   aws_environment=
   application=
@@ -72,7 +74,7 @@ run_ansible() {
     elif [[ -e $ansible_dir/${ansible_repo}/${ansible_repo_basedir}/group_vars/$group/ansible.yml ]]; then
       ansible_group_vars="$ansible_group_vars --extra-vars @group_vars/$group/ansible.yml"
     else
-      echo "Could not find group_vars $group yml"
+      echo "ERROR: Could not find group_vars $group yml"
       exit 1
     fi
     if [[ "${tag[1]}" == "environment-name" ]]; then
