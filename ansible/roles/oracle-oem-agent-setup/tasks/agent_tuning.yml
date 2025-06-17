@@ -49,8 +49,8 @@
 - name: Update memory settings in emd.properties
   ansible.builtin.lineinfile:
     path: "{{ oem_agent_base }}/agent_inst/sysman/config/emd.properties"
-    regexp: '^agentJavaDefines='
-    line: 'agentJavaDefines=-Xmx1024M -XX:MaxMetaspaceSize=512M'
+    regexp: "^agentJavaDefines="
+    line: "agentJavaDefines=-Xmx1024M -XX:MaxMetaspaceSize=512M"
     backup: yes
     create: no
 
@@ -60,4 +60,3 @@
 
 - name: Start Agent
   import_tasks: start_agent.yml
-
