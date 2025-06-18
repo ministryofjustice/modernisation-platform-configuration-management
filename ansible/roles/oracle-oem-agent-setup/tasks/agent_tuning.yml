@@ -1,0 +1,62 @@
+---
+# This task applies additional non-default tuning to the agent setup files.
+
+# Add tuning option based on the following:
+#  - EM 12c, 13c: Agent Crashing Because Of Zombie Process, "Bouncing the agent due to zombies" Reported in gcagent.log (Doc ID 1468586.1)
+#  - EM 13c: Agent Tuning Parameters when the Agent is Monitoring Several Targets (Doc ID 2449197.1)
+- name: Ensure required JVM options are present in s_jvm_options.opt
+  vars:
+    agent_jvm_options: "{{ oem_agent_base }}/agent_inst/sysman/config/s_jvm_options.opt"
+    jvm_lines:
+      - "-XX:+UseMembar"
+      - "-Dweblogic.ThreadPoolPercentSocketReaders=80"
+      - "-Dweblogic.ThreadPoolSize=50"
+      - "-XX:ParallelGCThreads=4"
+      - "-XX:-UseLWPSynchronization"
+  block:
+    - name: Check if s_jvm_options.opt exists
+      stat:
+        path: "{{ agent_jvm_options }}"
+      register: jvm_options_file
+
+    - name: Ensure required JVM options are present
+      lineinfile:
+        path: "{{ agent_jvm_options }}"
+        line: "{{ item }}"
+        state: present
+        create: no
+      loop: "{{ jvm_lines }}"
+      when: jvm_options_file.stat.exists
+
+- name: Zombie Fix
+  block:
+    - name: Set Agent Properties
+      ansible.builtin.shell: |
+        {{ emctl }} setproperty agent -allow_new -name _zombieSuspensions -value true
+        {{ emctl }} setproperty agent -allow_new -name _canceledThreadWait -value 300
+        {{ emctl }} setproperty agent -allow_new -name _zombieThreadPercentThreshold -value 0
+        {{ emctl }} setproperty agent -allow_new -name _zombieCreateIncident -value false
+        {{ emctl }} setproperty agent -allow_new -name MaxThreads -value 250
+        {{ emctl }} setproperty agent -allow_new -name MaxInComingConnections -value 150
+      register: set_properties_result
+      changed_when: set_properties_result.rc == 0
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  environment: "{{ agent_env }}"
+
+# Add tuning option based on the following:
+# - EM 13c, 12c Agent: Understanding and Resolving "java.lang.OutOfMemoryError" Issues on Agent (Doc ID 2835678.1)
+- name: Update memory settings in emd.properties
+  ansible.builtin.lineinfile:
+    path: "{{ oem_agent_base }}/agent_inst/sysman/config/emd.properties"
+    regexp: "^agentJavaDefines="
+    line: "agentJavaDefines=-Xmx1024M -XX:MaxMetaspaceSize=512M"
+    backup: yes
+    create: no
+
+# Restart the agent to apply the changes
+- name: Stop Agent
+  import_tasks: stop_agent.yml
+
+- name: Start Agent
+  import_tasks: start_agent.yml
