@@ -283,24 +283,48 @@ set_target_properties oracle_home "${AGENT_ORACLE_HOME_TARGET}" "${APPLICATION}"
 
 # For any remaining targets in OEM which do not have Lifecycle, Contact or Line of Business properties already set, 
 # assign those as internal OEM (as opposed to Application) targets
+
 IFS=$'\n'
-for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separator:|");
-do
-        echo "Checking ${TARGET}"
-        TARGET_TYPE=$(echo "$TARGET" | cut -d"|" -f3)
-        TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
-        EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
-                            -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
-        EXISTING_LINE_OF_BUSINESS=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
-                            -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_line_of_bus'" -script -noheader)
-        EXISTING_LIFECYCLE=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
-                            -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_lifecycle_status'" -script -noheader)
-        if [[ -z ${EXISTING_CONTACT} ]] || [[ -z ${EXISTING_LINE_OF_BUSINESS} ]] || [[ -z ${EXISTING_LIFECYCLE} ]]; then
-           # Group targets do not have properties - exclude group targets
-           if [[ "${TARGET_TYPE}" != "group" ]]; then
-              # For unknown targets we default the Slack channel to one for OEM Alerts
-              set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" "hmpps-oem" "${DEFAULT_SLACK_CHANNEL}"
-          fi
+for TARGET in $(./emcli get_targets -noheader -format="name:script;column_separator:|"); do
+    echo "Checking ${TARGET}"
+    
+    TARGET_TYPE=$(echo "$TARGET" | cut -d"|" -f3)
+    TARGET_NAME=$(echo "$TARGET" | cut -d"|" -f4)
+
+    # Skip if it's a group target
+    [[ "$TARGET_TYPE" == "group" ]] && continue
+
+    EXISTING_CONTACT=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
+                        -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_contact'" -script -noheader)
+    EXISTING_LINE_OF_BUSINESS=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
+                        -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_line_of_bus'" -script -noheader)
+    EXISTING_LIFECYCLE=$(./emcli list -resource="TargetProperties" -search="TARGET_NAME='${TARGET_NAME}'" \
+                        -search="TARGET_TYPE='${TARGET_TYPE}'" -search="PROPERTY_NAME='orcl_gtp_lifecycle_status'" -script -noheader)
+
+    if [[ -z ${EXISTING_CONTACT} || -z ${EXISTING_LINE_OF_BUSINESS} || -z ${EXISTING_LIFECYCLE} ]]; then
+
+        # Extract line of business from FQDN — assume it's the second label in the hostname
+        HOST_SUFFIX=$(echo "$TARGET_NAME" | cut -d'.' -f2)
+        LINE_OF_BUSINESS="${HOST_SUFFIX,,}"  # lowercase, just in case
+
+        # Determine Slack channel
+        if [[ "$TARGET_NAME" == "*oem*" ]]; then
+            SLACK_CHANNEL="${DEFAULT_SLACK_CHANNEL}"
+        elif [[ "$LINE_OF_BUSINESS" == "*delius*" ]]; then
+            if [[ "$LIFECYCLE" == "Production" || "$LIFECYCLE" == "MissionCritical" ]]; then
+                SLACK_CHANNEL="#delius-aws-oracle-prod-alerts"
+            else
+                SLACK_CHANNEL="#delius-aws-oracle-dev-alerts"
+            fi
+        else
+            if [[ "$LIFECYCLE" == "Production" || "$LIFECYCLE" == "MissionCritical" ]]; then
+                SLACK_CHANNEL="#dba_alerts_prod"
+            else
+                SLACK_CHANNEL="#dba_alerts_devtest"
+            fi
         fi
+
+        set_target_properties "${TARGET_TYPE}" "${TARGET_NAME}" "${LINE_OF_BUSINESS}" "${SLACK_CHANNEL}"
+    fi
 done
 unset IFS
