@@ -11,10 +11,12 @@
 # install jq so scripts can easily access passwords
 - name: JQ Installation Block
   block:
-    - name: Get Installed Packages
-      ansible.builtin.yum:
-        list: installed
+    # Check if jq is installed
+    - name: Check if jq is installed
+      ansible.builtin.command: which jq
       register: get_installed
+      ignore_errors: yes
+      changed_when: false
 
     # Normally we would not need to have a when condition with the yum module.
     # However, if we call this role as a non-root user it will fail even if jq
@@ -24,17 +26,19 @@
       ansible.builtin.yum:
         name: "jq"
         state: present
-      when: ( get_installed.results | selectattr('name','equalto','jq') | first | default({}) ) == {}
+      when: get_installed.rc != 0
 
     # jq should now be available regardless of the calling user - fail if not
-    - name: Re-Check Installed Packages
-      ansible.builtin.yum:
-        list: installed
+    - name: Re-check if jq is installed
+      ansible.builtin.command: which jq
       register: recheck_installed
+      ignore_errors: yes
+      changed_when: false
+      when: get_installed.rc != 0
 
     - fail:
         msg: "Could not install jq."
-      when: ( recheck_installed.results | selectattr('name','equalto','jq') | first | default({}) ) == {}
+      when: (recheck_installed.rc | default(0)) != 0 and get_installed.rc != 0
 
 # Using the cli instead of native ansible as we need to assume a role
 # to access secrets in other accounts
