@@ -35,3 +35,4 @@
     - { limit: "soft", type: memlock, value: "{{ system_memory_kb|int }}" }
     - { limit: "hard", type: memlock, value: "{{ system_memory_kb|int }}" }
     - { limit: "soft", type: nproc, value: 16384 }
+    - { limit: "hard", type: nofile, value: 65536 }
