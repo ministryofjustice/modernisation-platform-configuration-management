@@ -34,7 +34,7 @@
       register: recheck_installed
       ignore_errors: yes
       changed_when: false
-      when: get_installed.rc != 0 
+      when: get_installed.rc != 0
 
     - fail:
         msg: "Could not install jq."
