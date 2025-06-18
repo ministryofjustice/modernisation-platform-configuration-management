@@ -68,6 +68,26 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: BIAUD_TAF, role: PRIMARY }
+  PPBISY42:
+    db_name: PPBISY42
+    db_unique_name: PPBISY42
+    instance_name: PPBISY42
+    host_name: pp-oasys-db-a
+    port: 1521
+    tns_name: PPBISY42
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRSYS42_TAF, role: PRIMARY }
+  PPBIAD42:
+    db_name: PPBIAD42
+    db_unique_name: PPBIAD42
+    instance_name: PPBIAD42
+    host_name: pp-oasys-db-a
+    port: 1521
+    tns_name: PPBIAD42
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRAUD42_TAF, role: PRIMARY }
   PPOASYS:
     db_name: OASPROD
     db_unique_name: PPOASYS
@@ -97,6 +117,13 @@ db_configs:
         }
     service:
       - { name: BIPINF_TAF, role: PRIMARY }
+
+nart_business_objects_db_confs:
+  pp-oasys-db-a:
+    audit_db_sid: PPBIAD42
+    system_db_sid: PPBISY42
+    audit_service_name: ONRAUD42_TAF
+    system_service_name: ONRSYS42_TAF      
 
 # Oracle database housekeeping
 audit_db_sid: PPBOAUD
