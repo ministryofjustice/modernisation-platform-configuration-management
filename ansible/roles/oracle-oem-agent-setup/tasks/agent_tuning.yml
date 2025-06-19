@@ -62,9 +62,9 @@
   vars:
     agent_properties_file: "{{ oem_agent_base }}/agent_inst/sysman/config/emd.properties"
     properties_lines:
-      - regexp: '^adrAlertLogAsErrorCodeExcludeRegex='
+      - regexp: "^adrAlertLogAsErrorCodeExcludeRegex="
         line: 'adrAlertLogAsErrorCodeExcludeRegex=.*(BEA-(337|000337|101020|)|DFW-(99997|99998|99999)|ADFC-(00032)|OFM-(99999))\D.*'
-      - regexp: '^adrAlertLogErrorCodeExcludeRegex='
+      - regexp: "^adrAlertLogErrorCodeExcludeRegex="
         line: 'adrAlertLogErrorCodeExcludeRegex=.*(BEA-(337|000337|101020|)|DFW-(99997|99998|99999)|ADFC-(00032)|OFM-(99999))\D.*'
   block:
     - name: Check if emd.properties file exists
