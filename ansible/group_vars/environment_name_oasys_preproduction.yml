@@ -118,18 +118,32 @@ db_configs:
     service:
       - { name: BIPINF_TAF, role: PRIMARY }
 
+# nart-business-objects-db role
+# NOTE: the role cannot be used to create two nart db's on the same host
+#       comments out one definition to avoid this then run the playbook
+#       to create the other db
+#       then uncomment the other definition and run the playbook again if needed     
+
 nart_business_objects_db_confs:
+  # pp-oasys-db-a:
+  #   audit_db_sid: PPBIAD42
+  #   system_db_sid: PPBISY42
+  #   audit_service_name: ONRAUD42_TAF
+  #   system_service_name: ONRSYS42_TAF
   pp-oasys-db-a:
-    audit_db_sid: PPBIAD42
-    system_db_sid: PPBISY42
-    audit_service_name: ONRAUD42_TAF
-    system_service_name: ONRSYS42_TAF
+    audit_db_sid: PPBOAUD
+    system_db_sid: PPBOSYS
+    audit_service_name: BIAUD_TAF
+    system_service_name: BISYS_TAF
+
+ec2_tag_name: "{{ ec2.tags['Name'] }}"
+nart_business_objects_db_conf: "{{ nart_business_objects_db_confs[ec2_tag_name] }}"
+audit_db_sid: "{{ nart_business_objects_db_conf.audit_db_sid }}"
+system_db_sid: "{{ nart_business_objects_db_conf.system_db_sid }}"
+audit_service_name: "{{ nart_business_objects_db_conf.audit_service_name }}"
+system_service_name: "{{ nart_business_objects_db_conf.system_service_name }}"
 
 # Oracle database housekeeping
-audit_db_sid: PPBOAUD
-system_db_sid: PPBOSYS
-audit_service_name: BIAUD_TAF
-system_service_name: BISYS_TAF
 audit_housekeeping_period: 60
 db_housekeeping_script: db_server_housekeeping.sh
 housekeeping_cron:
