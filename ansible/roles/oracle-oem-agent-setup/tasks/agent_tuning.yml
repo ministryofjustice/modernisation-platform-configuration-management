@@ -57,11 +57,38 @@
     create: no
   register: emd_properties_update
 
+# Suppress OEM console related incidents ADFC-00032
+- name: Add properties to suppress OEM console related incidents
+  vars:
+    agent_properties_file: "{{ oem_agent_base }}/agent_inst/sysman/config/emd.properties"
+    properties_lines:
+      - regexp: "^adrAlertLogAsErrorCodeExcludeRegex="
+        line: 'adrAlertLogAsErrorCodeExcludeRegex=.*(BEA-(337|000337|101020|)|DFW-(99997|99998|99999)|ADFC-(00032)|OFM-(99999))\D.*'
+      - regexp: "^adrAlertLogErrorCodeExcludeRegex="
+        line: 'adrAlertLogErrorCodeExcludeRegex=.*(BEA-(337|000337|101020|)|DFW-(99997|99998|99999)|ADFC-(00032)|OFM-(99999))\D.*'
+  block:
+    - name: Check if emd.properties file exists
+      stat:
+        path: "{{ agent_properties_file }}"
+      register: agent_properties
+
+    - name: Ensure required properties are present
+      lineinfile:
+        path: "{{ agent_properties_file }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        create: no
+      loop: "{{ properties_lines }}"
+      register: agent_properties_update
+      # Only run if the emd.properties file exists
+      when: agent_properties.stat.exists
+
 # Restart the agent to apply the changes
 - name: Stop Agent
   import_tasks: stop_agent.yml
-  when: emd_properties_update.changed or jvm_options_update.changed
+  when: emd_properties_update.changed or jvm_options_update.changed or agent_properties_update.changed
 
 - name: Start Agent
   import_tasks: start_agent.yml
-  when: emd_properties_update.changed or jvm_options_update.changed
+  when: emd_properties_update.changed or jvm_options_update.changed or agent_properties_update.changed
