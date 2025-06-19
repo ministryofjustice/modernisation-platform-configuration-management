@@ -72,7 +72,7 @@
         path: "{{ agent_properties_file }}"
       register: agent_properties
 
-    - name: Ensure required JVM options are present
+    - name: Ensure required properties are present
       lineinfile:
         path: "{{ agent_properties_file }}"
         regexp: "{{ item.regexp }}"
