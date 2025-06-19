@@ -26,6 +26,7 @@
         state: present
         create: no
       loop: "{{ jvm_lines }}"
+      register: jvm_options_update
       when: jvm_options_file.stat.exists
 
 - name: Zombie Fix
@@ -40,6 +41,7 @@
         {{ emctl }} setproperty agent -allow_new -name MaxInComingConnections -value 150
       register: set_properties_result
       changed_when: set_properties_result.rc == 0
+      when: jvm_options_update.changed
   become: true
   become_user: "{{ oracle_install_user }}"
   environment: "{{ agent_env }}"
@@ -53,10 +55,13 @@
     line: "agentJavaDefines=-Xmx1024M -XX:MaxMetaspaceSize=512M"
     backup: yes
     create: no
+  register: emd_properties_update
 
 # Restart the agent to apply the changes
 - name: Stop Agent
   import_tasks: stop_agent.yml
+  when: emd_properties_update.changed or jvm_options_update.changed
 
 - name: Start Agent
   import_tasks: start_agent.yml
+  when: emd_properties_update.changed or jvm_options_update.changed
