@@ -45,7 +45,7 @@ function Get-Config {
     }
     else { # used for MISDis, needs retrofitting to NCR and ONR to remove this if else entirely
         Write-Output "Using Server-Type tag to determine config path"
-        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\$serverType\$serverType_config.ps1"
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\$serverType\$($serverType)_config.ps1"
     }
 
     # dot source the config file containing $GlobalConfig
