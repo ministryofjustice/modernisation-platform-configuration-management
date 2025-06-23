@@ -1,8 +1,20 @@
 $Scripts = @(
     "../Common/Set-TimezoneGMT.ps1",
-    "../SAP/Get-WindowsMISSoftware.ps1",
+    # "../SAP/Get-WindowsMISSoftware.ps1", superseded by installer script
     "../Oracle/Install-Oracle19cClient.ps1",
-    "../Oracle/Install-SQLDeveloper.ps1"
+    "../Oracle/Install-SQLDeveloper.ps1",
+    "../MISDis/Move-ComputerDeliusInternalAD.ps1"
+
+    <#
+    Install-Oracle19cClient -Config $Config
+    New-TnsOraFile -Config $Config
+    Test-DbCredentials -Config $Config
+    Install-IPS -Config $Config
+    Install-DataServices -Config $Config
+    Set-LoginText -Config $Config
+    New-SharedDriveShortcut -Config $Config
+    New-ServerRebootSchedule
+    #>
 )
 
 $ErrorActionPreference = "Stop"
