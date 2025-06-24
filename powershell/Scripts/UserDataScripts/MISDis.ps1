@@ -1,19 +1,17 @@
 $Scripts = @(
     "../Common/Set-TimezoneGMT.ps1",
-    # "../SAP/Get-WindowsMISSoftware.ps1", superseded by installer script
+    "../Common/Set-LoginText.ps1",
     "../Oracle/Install-Oracle19cClient.ps1",
+    "../Oracle/Set-TnsOraFileMISDis.ps1",
     "../Oracle/Install-SQLDeveloper.ps1",
-    "../MISDis/Move-ComputerDeliusInternalAD.ps1"
+    "../MISDis/Move-ComputerDeliusInternalAD.ps1",
+    "../Oracle/Test-DbCredentials.ps1" # <- config fix needed
+    # "../Oracle/Install-IPS.ps1", <- config fix needed
+    # "../Oracle/Install-DataServices.ps1", <- config fix needed
 
     <#
-    Install-Oracle19cClient -Config $Config
-    New-TnsOraFile -Config $Config
-    Test-DbCredentials -Config $Config
-    Install-IPS -Config $Config
-    Install-DataServices -Config $Config
-    Set-LoginText -Config $Config
-    New-SharedDriveShortcut -Config $Config
-    New-ServerRebootSchedule
+    New-SharedDriveShortcut -Config $Config <- required?? No
+    New-ServerRebootSchedule -Config $Config <- required?? No - also what is this?
     #>
 )
 
