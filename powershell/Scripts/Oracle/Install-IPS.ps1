@@ -29,6 +29,7 @@ function Get-Config {
 
     $ApplicationTag = ($Tags.Tags | Where-Object { $_.Key -eq "application" }).Value
     
+    # FIXME: This won't work in a sustainable way
     $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
 
     $nameTag = ($Tags.Tags | Where-Object { $_.Key -eq "Name" }).Value
@@ -84,11 +85,11 @@ function Install-IPS {
     Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
     # set Secret Names based on environment
-    $siaNodeName = $($Config.Name).Replace("-", "").ToUpper() # cannot contain hyphens
+    $siaNodeName = $Config.SiaNodeName
     $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
     $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
-    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
-    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
+    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords" # FIXME: check this works/is available format in MISDis environment
+    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords" # FIXME: check this works/is available format in MISDis environment
 
     # Get secret values from relevant db's secrets
     $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
