@@ -9,7 +9,7 @@
     - name: Create SQL spool script to get revoke commands
       copy:
         dest: "{{ sql_tmpfile }}"
-        mode: '0644'
+        mode: "0644"
         content: |
           SET LINESIZE 200
           SET PAGESIZE 0
@@ -68,7 +68,7 @@
     - name: Create SQL spool script to get database pack usage
       copy:
         dest: "{{ sql_tmpfile }}"
-        mode: '0644'
+        mode: "0644"
         content: |
           SET FEEDBACK OFF
           SET ECHO OFF
