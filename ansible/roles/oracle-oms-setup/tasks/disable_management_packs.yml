@@ -1,0 +1,134 @@
+- name: Revoke EM pack licenses via EMCLI
+  become: true
+  become_user: "{{ oracle_install_user }}"
+  vars:
+    sql_tmpfile: /tmp/infile.sql
+    output_file: /tmp/emcli_tmp.txt
+  block:
+    # Enabling or disabling "db_diag" and "db_tuning" for 11g or higher database targets can be done only through UI, so exclude those.
+    - name: Create SQL spool script to get revoke commands
+      copy:
+        dest: "{{ sql_tmpfile }}"
+        mode: '0644'
+        content: |
+          SET LINESIZE 200
+          SET PAGESIZE 0
+          SET FEEDBACK OFF
+          SET HEADING OFF
+          SPOOL {{ output_file }}
+          SELECT
+            '{{ emcli }} revoke_license_no_validation -type="'||target_type||'" -targets="'||target_name||'" -packs="'||pack_name||'"'
+          FROM
+            sysman.mgmt_license_view
+          WHERE
+            NOT (target_type = 'oracle_database' AND pack_name IN ('db_diag', 'db_tuning'))
+          ORDER BY
+            pack_name, target_type, target_name;
+          SPOOL OFF
+          EXIT
+
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
+    - name: Run emcli execute_sql using SQL file
+      shell: |
+        . ~/.bash_profile
+        {{ emcli }} execute_sql \
+          -sql="FILE" \
+          -input_file="FILE:{{ sql_tmpfile }}" \
+          -credential_set_name="DBCredsNormal" \
+          -targets="EMREP:oracle_database;"
+      environment:
+        ORACLE_HOME: "{{ oem_mw_home }}"
+        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+
+    - name: Read revoke commands from spool file
+      shell: grep 'emcli' "{{ output_file }}" || true
+      register: emcli_output
+      changed_when: false
+
+    - name: Execute each emcli revoke command
+      shell: |
+        . ~/.bash_profile
+        {{ item | trim }}
+      loop: "{{ emcli_output.stdout_lines }}"
+      when: emcli_output.stdout_lines is defined and emcli_output.stdout_lines | length > 0
+      environment:
+        ORACLE_HOME: "{{ oem_mw_home }}"
+        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+      register: emcli_revoke_result
+      failed_when: >
+        (emcli_revoke_result.rc != 0 and
+        'Command successfully processed.' not in emcli_revoke_result.stdout)
+
+    - name: Print UI instruction message
+      debug:
+        msg: "Enable/disable 'db_diag' and 'db_tuning' for 11g or higher database targets through the UI."
+
+    - name: Create SQL spool script to get database pack usage
+      copy:
+        dest: "{{ sql_tmpfile }}"
+        mode: '0644'
+        content: |
+          SET FEEDBACK OFF
+          SET ECHO OFF
+          SET LINESIZE 1000
+          SET TRIMSPOOL ON
+          SET TERMOUT OFF
+          SET PAGESIZE 0
+          SET NEWPAGE NONE
+          SET HEAD OFF
+          set markup csv on
+          SPOOL {{ output_file }}
+          select 'Target', 'Hostname','Database Diagnostics Pack','Database Tuning Pack' from dual;
+          select
+              targets.target_name, 
+              targets.host_name, 
+              nvl2(to_char(db_diag_usage.db_diag_usage),'Enabled', nvl2(to_char(db_diag_qualify.db_diag_qualify),'Disabled','N/A')) db_diag,
+              nvl2(to_char(db_tuning_usage.db_tuning_usage),'Enabled', nvl2(to_char(db_tuning_qualify.db_tuning_qualify),'Disabled','N/A')) db_tuning
+          from
+              (select target_name, count(*) db_diag_usage from mgmt_license_view where pack_name='db_diag' group by target_name) db_diag_usage,
+              (select target_type, count(*) db_diag_qualify from mgmt_license_definitions where pack_label='db_diag' group by target_type) db_diag_qualify,
+              (select target_name, count(*) db_tuning_usage from mgmt_license_view where pack_name='db_tuning' group by target_name) db_tuning_usage,
+              (select target_type, count(*) db_tuning_qualify from mgmt_license_definitions where pack_label='db_tuning' group by target_type) db_tuning_qualify,
+              mgmt$target targets
+          where 
+              targets.target_type = 'oracle_database'
+          and
+              targets.target_name=db_diag_usage.target_name(+) and targets.target_type=db_diag_qualify.target_type(+)
+          and
+              targets.target_name=db_tuning_usage.target_name(+) and targets.target_type=db_tuning_qualify.target_type(+)
+          order by 1;
+          SPOOL OFF
+          EXIT
+
+    - name: List database targets with pack usage
+      shell: |
+        . ~/.bash_profile
+        {{ emcli }} execute_sql \
+          -sql="FILE" \
+          -input_file="FILE:{{ sql_tmpfile }}" \
+          -credential_set_name="DBCredsNormal" \
+          -targets="EMREP:oracle_database;"
+      environment:
+        ORACLE_HOME: "{{ oem_mw_home }}"
+        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+
+    - name: Display contents of the output file if it exists
+      shell: cat "{{ output_file }}"
+      register: file_output
+      changed_when: false
+      failed_when: false
+
+    - name: Show file output if available
+      debug:
+        msg: "{{ file_output.stdout_lines }}"
+      when: file_output.stdout_lines is defined and file_output.stdout_lines | length > 0
+
+    - name: Cleanup temp files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ sql_tmpfile }}"
+        - "{{ output_file }}"
