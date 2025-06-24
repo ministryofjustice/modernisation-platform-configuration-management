@@ -41,15 +41,15 @@
   when: not ansible_check_mode
 
 - block:
-  - name: Temporarily set SELinux state to Permissive
-    ansible.builtin.shell: setenforce Permissive
-    when: xsiam_agent_selinux_mode.stdout|lower == "enforcing"
+    - name: Temporarily set SELinux state to Permissive
+      ansible.builtin.shell: setenforce Permissive
+      when: xsiam_agent_selinux_mode.stdout|lower == "enforcing"
 
-  - name: Import xsiam rpm key
-    ansible.builtin.rpm_key:
-      state: present
-      key: "/root/.xsiam-ansible/cortex-xdr-agent.asc"
-    when: not ansible_check_mode
+    - name: Import xsiam rpm key
+      ansible.builtin.rpm_key:
+        state: present
+        key: "/root/.xsiam-ansible/cortex-xdr-agent.asc"
+      when: not ansible_check_mode
 
   always:
     - name: Restore SELinux state to Enforcing
