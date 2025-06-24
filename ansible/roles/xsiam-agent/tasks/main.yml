@@ -1,0 +1,43 @@
+---
+- block:
+    - name: Check installed packages
+      ansible.builtin.package_facts:
+      tags:
+        - amibuild
+        - ec2provision
+        - xsiam-agent-install
+
+    - name: Set cortex agent version if not installed
+      ansible.builtin.set_fact:
+        xsiam_agent_current_version: "not installed"
+      tags:
+        - amibuild
+        - ec2provision
+        - xsiam-agent-install
+      when: ansible_facts.packages['cortex-agent'] is not defined
+
+    - name: Set cortex agent version if installed
+      ansible.builtin.set_fact:
+        xsiam_agent_current_version: "{{ ansible_facts.packages['cortex-agent'][0].version }}"
+      tags:
+        - amibuild
+        - ec2provision
+        - xsiam-agent-install
+      when: ansible_facts.packages['cortex-agent'] is defined
+
+    - name: Debug cortext agent version
+      ansible.builtin.debug:
+        var: xsiam_agent_current_version
+      tags:
+        - amibuild
+        - ec2provision
+        - xsiam-agent-install
+
+    - import_tasks: install.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - xsiam-agent-install
+      when: xsiam_agent_current_version != xsiam_agent_version
+
+  when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version in ['6', '7', '8', '9']

@@ -1,0 +1,88 @@
+---
+- name: Get SELinux state
+  ansible.builtin.shell: getenforce || true
+  changed_when: false
+  check_mode: false
+  register: xsiam_agent_selinux_mode
+
+- name: Install xsiam dependent packages
+  ansible.builtin.yum:
+    name: "{{ xsiam_agent_packages }}"
+    state: present
+
+- name: Create xsiam agent directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "/root/.xsiam-ansible"
+    - "/etc/panw"
+
+- name: Copy xsiam zips from S3
+  amazon.aws.aws_s3:
+    bucket: "{{ xsiam_agent_artefacts_s3_bucket_name }}"
+    object: "{{ xsiam_agent_artefacts_s3_bucket_path }}/{{ item }}"
+    dest: "/root/.xsiam-ansible/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "cortex-xdr-agent.zip"
+    - "{{ xsiam_agent_rpm_tar_gz_filename }}"
+
+- name: Extract xsiam zips
+  ansible.builtin.unarchive:
+    src: "/root/.xsiam-ansible/{{ item }}"
+    dest: "/root/.xsiam-ansible/"
+    remote_src: true
+    keep_newer: true
+  loop:
+    - "cortex-xdr-agent.zip"
+    - "{{ xsiam_agent_rpm_tar_gz_filename }}"
+  when: not ansible_check_mode
+
+- block:
+    - name: Temporarily set SELinux state to Permissive
+      ansible.builtin.shell: setenforce Permissive
+      when: xsiam_agent_selinux_mode.stdout|lower == "enforcing"
+
+    - name: Import xsiam rpm key
+      ansible.builtin.rpm_key:
+        state: present
+        key: "/root/.xsiam-ansible/cortex-xdr-agent.asc"
+      when: not ansible_check_mode
+
+  always:
+    - name: Restore SELinux state to Enforcing
+      ansible.builtin.shell: setenforce Enforcing
+      when: xsiam_agent_selinux_mode.stdout|lower == "enforcing"
+
+- name: Copy xsiam files
+  ansible.builtin.copy:
+    src: "/root/.xsiam-ansible/{{ item }}"
+    dest: "/etc/panw/{{ item }}"
+    remote_src: yes
+  loop:
+    - cortex.conf
+  when: not ansible_check_mode
+
+# RPM must be installed after selinux re-enabled
+- name: Install xsiam agent RPM
+  ansible.builtin.yum:
+    state: latest
+    name: "/root/.xsiam-ansible/{{ item }}"
+  loop:
+    - "{{ xsiam_agent_rpm_filename }}"
+  when: not ansible_check_mode
+
+- name: Check xsiam agent running
+  ansible.builtin.service:
+    name: traps_pmd
+    enabled: true
+    state: started
+
+- name: Delete temporary install files
+  ansible.builtin.file:
+    state: absent
+    path: "{{ item }}"
+  loop:
+    - "/root/.xsiam-ansible"
