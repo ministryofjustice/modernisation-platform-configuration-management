@@ -15,10 +15,9 @@ $GlobalConfig = @{
         "sysDbName"              = "T2BOSYS" # FIXME: incorrect
         "audDbName"              = "T2BOAUD" # FIXME: incorrect
         "tnsorafile"             = "MISDis\tnsnames_T2_BODS.ora" # FIXME: incorrect
-        "cmsPrimaryNode"         = "t2-onr-bods-1" # FIXME: incorrect
-        "cmsSecondaryNode"       = "t2-onr-bods-2" # FIXME: incorrect
-        "serviceUser"            = "SVC_DIS_NDL"
-        "serviceUserPath"        = "OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT" # FIXME: incorrect
+        "cmsPrimaryNode"         = "t2-onr-bods-1" # FIXME: incorrect, also only added once primary is built (I think...)
+        # "cmsSecondaryNode"       = "t2-onr-bods-2" # FIXME: incorrect
+        "serviceUser"            = "SVC_DIS_NDL" # Only used for dataservices install
         "nartComputersOU"        = "OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT" # FIXME: incorrect
         "serviceUserDescription" = "Service User for NDMIS"
         "domain"                 = "AZURE" # FIXME:
