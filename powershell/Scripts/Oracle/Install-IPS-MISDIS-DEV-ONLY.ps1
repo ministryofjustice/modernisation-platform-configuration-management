@@ -332,7 +332,8 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 $Config = Get-Config
 $Config
 
-$bods_ips_system_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipscms" -ErrorAction SilentlyContinue    $bods_ips_audit_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipsaud" -ErrorAction SilentlyContinue
+$bods_ips_system_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipscms" -ErrorAction SilentlyContinue
+$bods_ips_audit_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipsaud" -ErrorAction SilentlyContinue
 $bods_cluster_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
 $ips_product_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
 
