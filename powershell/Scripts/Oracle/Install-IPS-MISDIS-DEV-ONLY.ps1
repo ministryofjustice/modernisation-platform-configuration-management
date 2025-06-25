@@ -304,10 +304,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini", "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini", "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"
@@ -327,5 +327,18 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     }
 }
 
-Install-IPS -Config (Get-Config)
+# Test secrets first
+$Config = Get-Config
+$Config
+
+$bods_ips_system_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipscms" -ErrorAction SilentlyContinue    $bods_ips_audit_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipsaud" -ErrorAction SilentlyContinue
+$bods_cluster_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
+$ips_product_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+
+Write-Output "bods_ips_system_owner: $bods_ips_system_owner"
+Write-Output "bods_ips_audit_owner: $bods_ips_audit_owner"
+Write-Output "bods_cluster_key: $bods_cluster_key"
+Write-Output "ips_product_key: $ips_product_key"
+
+# Install-IPS -Config (Get-Config)
 # Exit with the last exit code from the installer
