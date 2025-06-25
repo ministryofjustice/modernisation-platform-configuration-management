@@ -124,7 +124,7 @@
   register: patches_files_found
   loop: "{{ download_release|default([]) }}"
 
-- name: Set apply fact to releases containing FormFormsSources, Static, Reports files
+- name: Set apply fact to releases containing FormsSources, Static, Reports files
   set_fact:
     apply_release: "{{ apply_release|default([]) + [item.item] }}"
   loop_control:
