@@ -132,6 +132,17 @@
   loop: "{{ patches_files_found.results|default([]) }}"
   when: item.matched > 0
 
+- name: Update /home/oracle/tag_release_detail to record DB only releases
+  become_user: oracle
+  ansible.builtin.lineinfile:
+    path: /home/oracle/tag_release_detail
+    line: "{{ item.item }}"
+    create: yes
+  loop_control:
+    label: "{{ item.item }}"
+  loop: "{{ patches_files_found.results|default([]) }}"
+  when: item.matched == 0
+
 - block:
     - name: Deploy tag release
       become_user: oracle
