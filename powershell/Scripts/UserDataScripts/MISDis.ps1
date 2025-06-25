@@ -5,8 +5,8 @@ $Scripts = @(
     "../Oracle/Set-TnsOraFileMISDis.ps1",
     "../Oracle/Install-SQLDeveloper.ps1",
     "../MISDis/Move-ComputerDeliusInternalAD.ps1",
-    "../Oracle/Test-DbCredentials.ps1" # <- config fix needed
-    # "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1", <- config fix needed
+    # "../Oracle/Test-DbCredentials.ps1", # <- config fix needed
+    "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1" #, <- config fix needed
     # "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1", <- config fix needed
 
     <#
