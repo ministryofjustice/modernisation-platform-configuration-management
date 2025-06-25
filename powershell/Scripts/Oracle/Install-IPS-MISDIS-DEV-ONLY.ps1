@@ -113,6 +113,7 @@ function Install-IPS {
 
     Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
 
+    # TODO: FIXME: executable needs to be un-packed first. Cannot use Expand-Archive as it is an executable, not a zip file!!
     Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
     # set Secret Names based on environment
