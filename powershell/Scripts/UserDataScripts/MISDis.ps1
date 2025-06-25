@@ -1,10 +1,11 @@
 $Scripts = @(
-    "../Common/Set-TimezoneGMT.ps1",
-    "../Common/Set-LoginText.ps1",
-    "../Oracle/Install-Oracle19cClient.ps1",
-    "../Oracle/Set-TnsOraFileMISDis.ps1",
-    "../Oracle/Install-SQLDeveloper.ps1",
-    "../MISDis/Move-ComputerDeliusInternalAD.ps1",
+    "../Common/Set-TimezoneGMT.ps1", # working
+    "../Common/Set-LoginText.ps1", # working
+    "../Oracle/Install-Oracle19cClient.ps1", # working
+    "../Oracle/Set-TnsOraFileMISDis.ps1", # working
+    "../Oracle/Install-SQLDeveloper.ps1", # working
+    "../MISDis/Move-ComputerDeliusInternalAD.ps1", # <- needs investigation, also rename not working/implemented
+    # additionally, why is it trying to rename the instance from EC2AMAZetc. it i-string?
     # "../Oracle/Test-DbCredentials.ps1", # <- config fix needed
     "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1" #, <- config fix needed
     # "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1", <- config fix needed
