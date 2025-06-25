@@ -30,7 +30,7 @@ function Get-Config {
     $ApplicationTag = ($Tags.Tags | Where-Object { $_.Key -eq "application" }).Value
     
     # FIXME: This won't work in a sustainable way
-    $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "oasys-national-reporting-environment" }).Value
+    $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "delius-mis-environment" }).Value
 
     $nameTag = ($Tags.Tags | Where-Object { $_.Key -eq "Name" }).Value
 
@@ -66,6 +66,37 @@ function Get-Config {
     Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag] + $additionalConfig
 }
 
+function Get-SecretValue {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId,
+        [Parameter(Mandatory)]
+        [string]$SecretKey
+    )
+
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        $secretObject = $secretJson | ConvertFrom-Json
+
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
+
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
+
 function Install-IPS {
     param (
         [Parameter(Mandatory)]
@@ -85,24 +116,31 @@ function Install-IPS {
     Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
     # set Secret Names based on environment
-    $siaNodeName = $Config.SiaNodeName
-    $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
-    $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
-    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords" # FIXME: check this works/is available format in MISDis environment
-    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords" # FIXME: check this works/is available format in MISDis environment
+    # $siaNodeName = $Config.SiaNodeName # FIXME: hard-coded in
+    # $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords" # FIXME: secret buckets hardcoded below
+    # $bodsConfigName = "/sap/bods/$($Config.dbenv)/config" # FIXME: secret buckets hardcoded below
+    # $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords" # FIXME: check this works/is available format in MISDis environment - it's not...
+    # $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords" # FIXME: check this works/is available format in MISDis environment - it's not...
 
     # Get secret values from relevant db's secrets
-    $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
-    $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
+    # $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretName -SecretKey "bods_ips_system_owner" -ErrorAction SilentlyContinue
+    $bods_ips_system_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipscms" -ErrorAction SilentlyContinue
+    # $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretName -SecretKey "bods_ips_audit_owner" -ErrorAction SilentlyContinue
+    $bods_ips_audit_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipsaud" -ErrorAction SilentlyContinue
 
     # /sap/bods/$dbenv/passwords values
-    $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
-    $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
+    # NOT USED IN THIS INSTALL - replaced with bods_cluster_key
+    # $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+    # NOT USED IN THIS INSTALL
+    # $bods_subversion_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_subversion_password" -ErrorAction SilentlyContinue
 
-    # /sap/bods/$dbenv/config values
-    $bods_cluster_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "bods_cluster_key" -ErrorAction SilentlyContinue
-    $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
-    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
+    # /sap/bods/$dbenv/config values - hardcoded for expediency - will need refactoring later
+    $bods_cluster_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
+
+    # $ips_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+    $ips_product_key = Get-SecretValue -SecretId 'NDMIS_DFI_SERVICEACCOUNTS_DEV' -SecretKey "ips_product_key" -ErrorAction SilentlyContinue
+    # HARDCODED for expediency, will need refactoring later # FIXME:
+    # $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     # Create response file for IPS silent install
     $ipsResponseFilePrimary = @"
@@ -113,37 +151,29 @@ choosesmdintegration=nointegrate
 ### CMS cluster key
 clusterkey=$bods_cluster_key
 ### CMS administrator password
-# cmspassword=**** bods_admin_password value in silent install params
+# cmspassword=**** bods_admin_password value in silent install params, replaced with $bods_cluster_key value
 ### CMS connection port
 cmsport=6400
 ### Existing auditing DB password
 # existingauditingdbpassword=**** bods_ips_audit_owner value in silent install params
 ### Existing auditing DB server
-existingauditingdbserver=$($Config.audDbName)
+existingauditingdbserver=DMDDSD # FIXME: needs pulling from a config file
 ### Existing auditing DB user name
-existingauditingdbuser=bods_ips_audit_owner
+existingauditingdbuser=dfi_mod_ipsaud # FIXME: needs pulling from a config file
 ### Existing CMS DB password
 # existingcmsdbpassword=**** bods_ips_system_owner value in silent install params
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset <<<<<<-- check this
 existingcmsdbreset=1
 ### Existing CMS DB server
-existingcmsdbserver=$($Config.sysDbName)
+existingcmsdbserver=DMDDSD # FIXME: needs pulling from a config file
 ### Existing CMS DB user name
-existingcmsdbuser=bods_ips_system_owner
+existingcmsdbuser=dfi_mod_ipscms # FIXME: needs pulling from a config file
 ### Installation Directory
-installdir=E:\SAP BusinessObjects\
+installdir=D:\SAP BusinessObjects\
 ### Choose install type: default, custom, webtier
-installtype=custom
-### LCM server name
-lcmname=LCM_repository
-### LCM password
-# lcmpassword=**** bods_subversion_password value in silent install params
-### LCM port
-lcmport=3690
-### LCM user name
-lcmusername=LCM
-### Choose install mode: new, expand where new == first instance of the installation
-neworexpandinstall=new
+installtype=default
+### Install new or use existing LCM: new or existing
+neworexistinglcm=existing
 ### Product Keycode
 productkey=$ips_product_key
 ### Language Packs Selected to Install
@@ -151,11 +181,11 @@ selectedlanguagepacks=en
 ### Setup UI Language
 setupuilanguage=en
 ### SIA node name
-sianame=$siaNodeName
+sianame=NDLMODDFI101
 ### SIA connector port
 siaport=6410
 ### Tomcat connection port
-tomcatconnectionport=28080
+tomcatconnectionport=8080
 ### Tomcat redirect port
 tomcatredirectport=8443
 ### Tomcat shutdown port
@@ -164,12 +194,17 @@ tomcatshutdownport=8005
 usingauditdbtype=oracle
 ### CMS Database Type
 usingcmsdbtype=oracle
+### Web Application Server type: tomcat, manual or wacs
+webappservertype=tomcat
 ### Features to install
-features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,Subversion,UpgradeManager,AdminTools
+features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,AdminTools,DataAccess.SAP,DataAccess.Peoplesoft,DataAccess.JDEdwards,DataAccess.Siebel,DataAccess.OracleEBS,DataAccess
 "@
 
-    $remoteSiaName = $cms_primary_node_hostname.Replace("-", "").ToUpper()
+    # FIXME: this isn't going to work anymore
+    # $remoteSiaName = $cms_primary_node_hostname.Replace("-", "").ToUpper()
+    $remoteSiaName = "NDLMODDFI101" # FIXME: this is hardcoded for expediency, needs refactoring later
 
+    # FIXME: this is NOT WORKING - needs fixing for 4.3 version of expanded node
     # Create response file for IPS expanded install
     $ipsResponseFileSecondary = @"
 ### Choose to integrate Introscope Enterprise Manager: integrate or nointegrate
@@ -187,21 +222,13 @@ enableservers=0
 ### Existing CMS DB reset flag: 0 or 1
 existingcmsdbreset=0
 ### Existing CMS DB server
-existingcmsdbserver=$($Config.sysDbName)
+existingcmsdbserver=DMDDSD # FIXME: needs pulling from a config file
 ### Existing CMS DB user name
-existingcmsdbuser=bods_ips_system_owner
+existingcmsdbuser=dfi_mod_ipscms
 ### Installation Directory
-installdir=E:\SAP BusinessObjects\
+installdir=D:\SAP BusinessObjects\
 ### Choose install type: default, custom, webtier
-installtype=custom
-### LCM server name
-lcmname=LCM_repository
-### LCM password
-# lcmpassword=**** bods_subversion_password value in silent install params
-### LCM port
-lcmport=3690
-### LCM user name
-lcmusername=LCM
+installtype=default
 ### Choose install mode: new, expand
 neworexpandinstall=expand
 ### Product Keycode
@@ -277,10 +304,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r `"$ipsInstallIni`"", "cmspassword=$bods_admin_password", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini", "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r `"$ipsInstallIni`"", "remotecmsadminpassword=$bods_admin_password", "existingcmsdbpassword=$bods_ips_system_owner", "lcmpassword=$bods_subversion_password" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', "-r $WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini", "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"

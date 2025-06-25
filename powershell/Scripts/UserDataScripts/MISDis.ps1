@@ -6,11 +6,11 @@ $Scripts = @(
     "../Oracle/Install-SQLDeveloper.ps1",
     "../MISDis/Move-ComputerDeliusInternalAD.ps1",
     "../Oracle/Test-DbCredentials.ps1" # <- config fix needed
-    # "../Oracle/Install-IPS.ps1", <- config fix needed
-    # "../Oracle/Install-DataServices.ps1", <- config fix needed
+    # "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1", <- config fix needed
+    # "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1", <- config fix needed
 
     <#
-    New-SharedDriveShortcut -Config $Config <- required?? No
+    New-SharedDriveShortcut -Config $Config <- required?? Possibly - TBD
     New-ServerRebootSchedule -Config $Config <- required?? No - also what is this?
     #>
 )
