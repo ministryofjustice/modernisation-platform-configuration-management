@@ -45,7 +45,7 @@
     path: /home/oracle/tag_release_detail
     line: "{{ item }}"
     create: yes
-  check_mode: false
+  check_mode: true
   register: tag_release_detail
   loop: "{{ nomis_releases | unique }}"
 
