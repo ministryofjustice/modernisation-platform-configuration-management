@@ -45,7 +45,7 @@
     path: /home/oracle/tag_release_detail
     line: "{{ item }}"
     create: yes
-  check_mode: false
+  check_mode: true
   register: tag_release_detail
   loop: "{{ nomis_releases | unique }}"
 
@@ -124,13 +124,24 @@
   register: patches_files_found
   loop: "{{ download_release|default([]) }}"
 
-- name: Set apply fact to releases containing FormFormsSources, Static, Reports files
+- name: Set apply fact to releases containing FormsSources, Static, Reports files
   set_fact:
     apply_release: "{{ apply_release|default([]) + [item.item] }}"
   loop_control:
     label: "{{ item.item }}"
   loop: "{{ patches_files_found.results|default([]) }}"
   when: item.matched > 0
+
+- name: Update /home/oracle/tag_release_detail to record DB only releases
+  become_user: oracle
+  ansible.builtin.lineinfile:
+    path: /home/oracle/tag_release_detail
+    line: "{{ item.item }}"
+    create: yes
+  loop_control:
+    label: "{{ item.item }}"
+  loop: "{{ patches_files_found.results|default([]) }}"
+  when: item.matched == 0
 
 - block:
     - name: Deploy tag release
