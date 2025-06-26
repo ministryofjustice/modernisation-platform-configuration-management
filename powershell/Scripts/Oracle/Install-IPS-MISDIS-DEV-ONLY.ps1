@@ -29,8 +29,8 @@ function Get-Config {
 
     $ApplicationTag = ($Tags.Tags | Where-Object { $_.Key -eq "application" }).Value
     
-    # FIXME: This won't work in a sustainable way
-    $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "delius-mis-environment" }).Value
+    # FIXME: This won't work in a sustainable way - no longer used
+    # $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "delius-mis-environment" }).Value
 
     $nameTag = ($Tags.Tags | Where-Object { $_.Key -eq "Name" }).Value
 
@@ -58,7 +58,7 @@ function Get-Config {
 
     $additionalConfig = @{
         application = $ApplicationTag
-        dbenv       = $dbenvTag
+        # dbenv       = $dbenvTag
         Name        = $nameTag
         domainName  = $domainName
     }
@@ -305,10 +305,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
-            $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"
@@ -342,5 +342,5 @@ Write-Output "bods_ips_audit_owner: $bods_ips_audit_owner"
 Write-Output "bods_cluster_key: $bods_cluster_key"
 Write-Output "ips_product_key: $ips_product_key"
 
-# Install-IPS -Config (Get-Config)
+Install-IPS -Config (Get-Config)
 # Exit with the last exit code from the installer
