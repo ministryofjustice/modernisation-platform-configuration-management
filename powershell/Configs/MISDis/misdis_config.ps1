@@ -12,20 +12,8 @@ $GlobalConfig = @{
     "delius-mis-development" = @{
         "sysDbName"              = "DMDDSD"
         "audDbName"              = "DMDDSD"
-        "cmsPrimaryNode"         = "delius-mis-dev-dis-1"
-        # "cmsSecondaryNode"       = "???" # FIXME: incorrect
+        "cmsPrimaryNode"         = "delius-mis-dev-dfi-1"
         "serviceUser"            = "SVC_DIS_NDL" # Only used for dataservices install
-        # FIXME: we need $Config.domain like Azure for ini file(s) 
-        # FIXME: we need $Config.domainName like azure.noms.root for ini file(s)
-        "keyMapping" = @{
-            "bods_ips_system_owner" = ""
-            "bods_ips_audit_owner"  = ""
-            "bods_admin_password"   = ""
-            "bods_subversion_password" = ""
-            "bods_cluster_key" = ""
-            "ips_product_key" = "" 
-            "cms_primary_node_hostname" = ""
-        }
     }
     "delius-mis-preproduction" = @{
     }
