@@ -1,3 +1,21 @@
+function Clear-PendingFileRenameOperations {
+    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+    $regKey = "PendingFileRenameOperations"
+
+    if (Get-ItemProperty -Path $regPath -Name $regKey -ErrorAction SilentlyContinue) {
+        try {
+            Remove-ItemProperty -Path $regPath -Name $regKey -Force -ErrorAction Stop
+            Write-Host "Successfully removed $regKey from the registry."
+        }
+        catch {
+            Write-Warning "Failed to remove $regKey. Error: $_"
+        }
+    }
+    else {
+        Write-Host "$regKey does not exist in the registry. No action needed."
+    }
+}
+
 function Get-Config {
     $tokenParams = @{
         TimeoutSec = 10
@@ -45,7 +63,7 @@ function Get-Config {
         $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\ncr_config.ps1"
     }
     else { # used for MISDis, needs retrofitting to NCR and ONR to remove this if else entirely
-        Write-Output "Using Server-Type tag to determine config path"
+        Write-Host "Using Server-Type tag to determine config path"
         $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\$serverType\$($serverType)_config.ps1"
     }
 
@@ -63,7 +81,31 @@ function Get-Config {
         domainName  = $domainName
     }
 
-    Return $GlobalConfig.all + $GlobalConfig[$EnvironmentNameTag] + $additionalConfig
+    # Merge all config hashtables into one
+    $mergedConfig = @{}
+    $GlobalConfig.all.GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    $GlobalConfig[$EnvironmentNameTag].GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    $additionalConfig.GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    return $mergedConfig
+}
+
+function Get-Installer {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Key,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $s3Params = @{
+        BucketName = $Config.WindowsClientS3Bucket
+        Key        = ($Config.WindowsClientS3Folder + "/" + $Key)
+        File       = $Destination
+        Verbose    = $true
+    }
+
+    Read-S3Object @s3Params
 }
 
 function Get-SecretValue {
@@ -106,15 +148,24 @@ function Install-IPS {
     # easier to fix here rather than do command substitution inside the install params
     $WorkingDirectory = $Config.WorkingDirectory
 
-    if (Test-Path "$WorkingDirectory\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0") {
+    if (Test-Path "$WorkingDirectory\BusinessObjects\SAP BusinessObjects Enterprise XI 4.0") {
         Write-Output "IPS is already installed"
         return
     }
 
     Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
 
+    choco install winrar -y
+
+    $winrarPath = "C:\Program Files\WinRAR"
+    $env:Path += ";$winrarPath"
+
+    unrar x -o+ -y ( ".\" + $Config.IPSS3File) ".\IPS"
+
+
+
     # TODO: FIXME: executable needs to be un-packed first. Cannot use Expand-Archive as it is an executable, not a zip file!!
-    Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
+    # Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
 
     # set Secret Names based on environment
     # $siaNodeName = $Config.SiaNodeName # FIXME: hard-coded in
@@ -170,7 +221,7 @@ existingcmsdbserver=DMDDSD # FIXME: needs pulling from a config file
 ### Existing CMS DB user name
 existingcmsdbuser=dfi_mod_ipscms # FIXME: needs pulling from a config file
 ### Installation Directory
-installdir=D:\SAP BusinessObjects\
+installdir=D:\BusinessObjects\
 ### Choose install type: default, custom, webtier
 installtype=default
 ### Install new or use existing LCM: new or existing
@@ -263,7 +314,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 "@
 
 
-    $ipsInstallIni = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\ips_install.ini"
+    $ipsInstallIni = "$WorkingDirectory\IPS\ips_install.ini"
 
     if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
         $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
@@ -278,7 +329,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 
     Clear-PendingFileRenameOperations
 
-    $setupExe = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe"
+    $setupExe = "$WorkingDirectory\IPS\setup.exe"
 
     if (-NOT(Test-Path $setupExe)) {
         Write-Host "IPS setup.exe not found at $($setupExe)"
@@ -290,7 +341,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
         exit 1
     }
 
-    $logFile = "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\install_ips_sp.log"
+    $logFile = "$WorkingDirectory\IPS\install_ips_sp.log"
     New-Item -Type File -Path $logFile -Force | Out-Null
 
     # add Oracle client path to the powershell session
@@ -305,10 +356,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
-            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
-            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\DATA_UNITS\IPS_win\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\DATA_UNITS\IPS_win\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"
