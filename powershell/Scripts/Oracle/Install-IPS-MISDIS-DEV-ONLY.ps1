@@ -314,7 +314,13 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 "@
 
 
+
     $ipsInstallIni = "$WorkingDirectory\IPS\ips_install.ini"
+
+    # putting in temporarily to fix 'path does not exist' issue
+    if (-NOT(Test-Path $ipsInstallIni)) {
+        New-Item -Type File -Path $ipsInstallIni -Force | Out-Null
+    }
 
     if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
         $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
