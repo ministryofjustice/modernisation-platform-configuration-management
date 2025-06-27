@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RuleSet xmlns="http://www.oracle.com/EnterpriseManager/Incident/Rules" isEnabled="true" isGlobalCompressionEnabled="false" isOOB="false" EMVersion="13.5.0.0.0">
    <RulesetName>HMPPS OEM Rule Set</RulesetName>
-   <RulesetDescription>Rule set to create and manage hmpps-oem incidents</RulesetDescription>
+   <RulesetDescription>Rule set to create and manage {{ application }} incidents</RulesetDescription>
    <TargetSelectionType>ALL_TARGETS</TargetSelectionType>
    <SourceSelectionType>TARGET</SourceSelectionType>
    <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
@@ -593,13 +593,6 @@
       <RuleName>Notification rule to slack</RuleName>
       <RuleDescription>Rule to notify slack of incidents</RuleDescription>
       <AttributeForRule>
-         <AttrValue>MissionCritical</AttrValue>
-         <AttrValue>Production</AttrValue>
-         <OperatorCode>IN</OperatorCode>
-         <Type>SYSTEM_ATTRIBUTE</Type>
-         <AttrName>sys_target_lifecycle_status</AttrName>
-      </AttributeForRule>
-      <AttributeForRule>
          <AttrValue>Incident creation rule for high-availability events</AttrValue>
          <AttrValue>Create incident for critical metric alerts</AttrValue>
          <AttrValue>Clear metric alert events older than 7 days</AttrValue>
@@ -641,18 +634,24 @@
       <RuleName>Send Slack Notification for All Data Guard Incidents</RuleName>
       <RuleDescription>Additional Slack Notification step in addition to all other incidents for the Data Guard Status metric. For Data Guard we want a notification for Warnings in addition to Errors, as these are more operationally significant than warnings for other metrics.</RuleDescription>
       <AttributeForRule>
-         <AttrValue>MissionCritical</AttrValue>
-         <AttrValue>Production</AttrValue>
-         <OperatorCode>IN</OperatorCode>
-         <Type>SYSTEM_ATTRIBUTE</Type>
-         <AttrName>sys_target_lifecycle_status</AttrName>
-      </AttributeForRule>
-      <AttributeForRule>
          <AttrValue>Data Guard Status</AttrValue>
          <OperatorCode>IN</OperatorCode>
          <Type>SYSTEM_ATTRIBUTE</Type>
          <AttrName>sys_creation_rule_guid</AttrName>
       </AttributeForRule>
+      <RuleCondAction>
+         <ActionTypes>ADVANCED_NOTIFICATION</ActionTypes>
+         <IsRepeat>0</IsRepeat>
+         <RepeatFreq>0</RepeatFreq>
+         <RepeatCount>0</RepeatCount>
+         <IsDuration>0</IsDuration>
+         <Duration>0</Duration>
+         <DurationUnit>2</DurationUnit>
+         <RuleAdvNotification>
+            <AppliedTo>INCIDENT</AppliedTo>
+            <DeviceName>SLACK_NOTIFICATION:PLSQL</DeviceName>
+         </RuleAdvNotification>
+      </RuleCondAction>
    </Rule>
 </RuleSet>
 
