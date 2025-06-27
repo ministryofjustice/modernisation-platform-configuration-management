@@ -89,3 +89,9 @@
   # block
   become: true
   become_user: oracle
+
+# Ensure all management packs are revoked
+- name: Revoke Management Packs
+  include_role:
+    name: oracle-oms-setup
+    tasks_from: disable_management_packs
