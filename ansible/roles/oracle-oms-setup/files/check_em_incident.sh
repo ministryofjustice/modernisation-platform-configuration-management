@@ -485,6 +485,36 @@ while read line; do
      echo "Incident List: ${INCIDENT_LIST}"
      EMOJI_ICON=$(echo $line | awk -F\| '{print $3}')
      HOSTNAME=$(echo $line | awk -F\| '{print $4}' )
+     # Check if HOSTNAME is a host with a Diagnostics Pack enabled.
+     # If so, skip this incident as it is will be sent by OEM itself
+     # and we do not want to send a duplicate alert.
+     HAS_DIAG_PACK=$( \
+     sqlplus -s /nolog <<EOSQL
+SET HEADING OFF
+SET FEEDBACK OFF
+SET ECHO OFF
+SET PAGES 0
+SET LINES 1000
+CONNECT / AS SYSDBA
+SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END
+FROM (
+   SELECT 1
+   FROM sysman.mgmt\$target db
+   JOIN sysman.mgmt\$target os ON db.host_name = os.target_name
+   JOIN sysman.mgmt_license_view lic ON db.target_name = lic.target_name
+   WHERE db.target_type = 'oracle_database'
+      AND lic.pack_name = 'db_diag'
+      AND os.target_type = 'host'
+      AND os.target_name = '${HOSTNAME}'
+   FETCH FIRST 1 ROWS ONLY
+);
+EXIT
+EOSQL
+)
+     if [[ "$HAS_DIAG_PACK" == "Y" ]]; then
+        echo "Host ${HOSTNAME} has a database with Diagnostics Pack enabled. Skipping incident ${INCIDENT_NUM}."
+        continue
+     fi
      IN_BLACKOUT=$(echo $line | awk -F\| '{print $5}' )
      MONITORING=$(echo $line | awk -F\| '{print $6}' )
      SUPPRESSED=$(echo $line | awk -F\| '{print $7}' )

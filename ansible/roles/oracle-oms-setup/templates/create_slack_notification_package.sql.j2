@@ -67,6 +67,23 @@ create or replace PACKAGE BODY sysman.slack_notification AS
           l_target_type := l_src_info_array(i).target.target_type;
           l_target_timezone := l_src_info_array(i).target.target_timezone;
           l_hostname := l_src_info_array(i).target.host_name;
+          -- Check if host has any DBs with Diagnostics Pack enabled, which allows notifications.
+          DECLARE
+            l_diag_enabled NUMBER;
+          BEGIN
+            SELECT COUNT(*) INTO l_diag_enabled
+            FROM sysman.mgmt$target db
+            JOIN sysman.mgmt$target os ON db.host_name = os.target_name
+            JOIN sysman.mgmt_license_view lic ON db.target_name = lic.target_name
+            WHERE db.target_type = 'oracle_database'
+              AND lic.pack_name = 'db_diag'
+              AND os.target_type = 'host'
+              AND os.target_name = l_hostname;
+            -- no pack found, so no notification
+            IF l_diag_enabled = 0 THEN
+              RETURN;
+            END IF;
+          END;
         END IF;
       END LOOP;
     END IF;
@@ -215,6 +232,25 @@ create or replace PACKAGE BODY sysman.slack_notification AS
         l_categories_new := (l_categories_new|| c || ' - ' || l_categories(c)||',');
       END LOOP;
     END IF;
+
+    l_hostname := event_msg.event_payload.target.host_name;
+    -- Check if host has any DBs with Diagnostics Pack enabled, which allows notifications.
+    DECLARE
+      l_diag_enabled NUMBER;
+    BEGIN
+      SELECT COUNT(*) INTO l_diag_enabled
+      FROM sysman.mgmt$target db
+      JOIN sysman.mgmt$target os ON db.host_name = os.target_name
+      JOIN sysman.mgmt_license_view lic ON db.target_name = lic.target_name
+      WHERE db.target_type = 'oracle_database'
+        AND lic.pack_name = 'db_diag'
+        AND os.target_type = 'host'
+        AND os.target_name = l_hostname;
+      -- no pack found, so no notification
+      IF l_diag_enabled = 0 THEN
+        RETURN;
+      END IF;
+    END;
 
     -- Build message with event notification attributes
 
