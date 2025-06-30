@@ -96,6 +96,19 @@ $Configs = @{
     "azure.hmpp.root",
     "nomis.hmpps-production.modernisation-platform.internal"
   )
+  "core-shared-services-production-hmpp" = @(
+    "us-east-1.ec2-utilities.amazonaws.com",
+    "eu-west-2.compute.internal",
+    "eu-west-2.ec2-utilities.amazonaws.com",
+    "azure.hmpp.root",
+    "hmpps-oem.hmpps-production.modernisation-platform.internal",
+    "nomis.hmpps-production.modernisation-platform.internal",
+    "nomis-combined-reporting.hmpps-production.modernisation-platform.internal",
+    "nomis-data-hub.hmpps-production.modernisation-platform.internal",
+    "oasys.hmpps-production.modernisation-platform.internal",
+    "oasys-national-reporting.hmpps-production.modernisation-platform.internal",
+    "infra.int"
+  )
 }
 
 function Get-ConfigNameByEnvironmentNameTag {
