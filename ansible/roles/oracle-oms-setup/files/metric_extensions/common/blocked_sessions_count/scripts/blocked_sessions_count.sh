@@ -79,7 +79,7 @@ waiting_session AS (
     AND NOT (s.event = 'enq: CI - contention' AND s.p1 LIKE '112%' and s.program like 'rman@%')
     AND s.type != 'BACKGROUND'
 )
-SELECT SYS_CONTEXT('USERENV','DB_NAME') || '|' || b.sid || '|' || b.serial# || '|' || COUNT(*) AS blocker_info
+SELECT SYS_CONTEXT('USERENV','DB_UNIQUE_NAME') || '|' || b.sid || '|' || b.serial# || '|' || COUNT(*) AS blocker_info
 FROM   blocking_session b,
        waiting_session w
 WHERE  w.id1 = b.id1
@@ -91,7 +91,7 @@ WHERE  w.id1 = b.id1
          WHERE  w.id1 = o.object_id 
          AND    (o.owner, o.object_name) IN (('NDMIS_DATA','AUDITED_INTERACTION'))
        )
-GROUP BY SYS_CONTEXT('USERENV','DB_NAME'), b.sid, b.serial#;
+GROUP BY SYS_CONTEXT('USERENV','DB_UNIQUE_NAME'), b.sid, b.serial#;
 EXIT
 EOF
 }
