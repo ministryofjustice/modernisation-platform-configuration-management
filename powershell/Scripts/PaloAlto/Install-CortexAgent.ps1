@@ -16,12 +16,12 @@ $ConfigByEnvironmentNameTag = @{
   "nomis-preproduction" = @{
     "CortexAgentS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "CortexAgentS3Folder" = "hmpps/XSIAM/Agents/nomis"
-    "CortexAgentMsi"      = "xsiam_LIVE_win_8_8_0_10622_x64.msi"
+    "CortexAgentMsi"      = "nomis_windows_8_8_0_10622_x64.msi"
   }
   "nomis-production" = @{
     "CortexAgentS3Bucket" = "mod-platform-image-artefact-bucket20230203091453221500000001"
     "CortexAgentS3Folder" = "hmpps/XSIAM/Agents/nomis"
-    "CortexAgentMsi"      = "xsiam_LIVE_win_8_8_0_10622_x64.msi"
+    "CortexAgentMsi"      = "nomis_windows_8_8_0_10622_x64.msi"
   }
 }
 
