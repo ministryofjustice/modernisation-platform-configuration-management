@@ -16,8 +16,11 @@ server_type_roles_list:
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
   - autoscale-group-hooks-state
+  - xsiam-agent
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+xsiam_agent_state: "{{ xsiam_agent_web_state }}" # set in environment group_vars
 
 collectd_monitored_services_servertype:
   - metric_name: service_status_os

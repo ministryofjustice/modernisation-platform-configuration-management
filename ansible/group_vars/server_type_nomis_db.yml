@@ -21,9 +21,12 @@ server_type_roles_list:
   - collectd-textfile-monitoring
   - oracle-tns-entries
   - nomis-misload
+  - xsiam-agent
 
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
+
+xsiam_agent_state: "{{ xsiam_agent_db_state }}" # set in environment group_vars
 
 # Oracle common variables
 oracle_install_user: oracle

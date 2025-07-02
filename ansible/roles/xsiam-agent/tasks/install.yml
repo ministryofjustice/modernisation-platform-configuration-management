@@ -18,7 +18,17 @@
     - "/root/.xsiam-ansible"
     - "/etc/panw"
 
-- name: Copy xsiam zips from S3
+- name: Copy xsiam rpm key from S3
+  amazon.aws.aws_s3:
+    bucket: "{{ xsiam_agent_artefacts_s3_bucket_name }}"
+    object: "{{ xsiam_agent_rpmkey_s3_bucket_path }}/{{ item }}"
+    dest: "/root/.xsiam-ansible/{{ item }}"
+    mode: get
+    overwrite: latest
+  loop:
+    - "cortex-xdr-agent.zip"
+
+- name: Copy xsiam agent zips from S3
   amazon.aws.aws_s3:
     bucket: "{{ xsiam_agent_artefacts_s3_bucket_name }}"
     object: "{{ xsiam_agent_artefacts_s3_bucket_path }}/{{ item }}"
@@ -26,7 +36,6 @@
     mode: get
     overwrite: latest
   loop:
-    - "cortex-xdr-agent.zip"
     - "{{ xsiam_agent_rpm_tar_gz_filename }}"
 
 - name: Extract xsiam zips
@@ -79,6 +88,7 @@
     name: traps_pmd
     enabled: true
     state: started
+  when: not ansible_check_mode
 
 - name: Delete temporary install files
   ansible.builtin.file:
