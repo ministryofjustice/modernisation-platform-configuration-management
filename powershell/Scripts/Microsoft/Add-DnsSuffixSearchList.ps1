@@ -111,13 +111,13 @@ function Get-ConfigNameByTags {
   $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
   $Tags = "$TagsRaw" | ConvertFrom-Json
   $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
-  $DomaintNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+  $DomainNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
   $ServerTypeTag = ($Tags.Tags | Where-Object { $_.Key -eq "server-type" }).Value
 
   if ($Configs.Contains($EnvironmentNameTag)) {
     Return $EnvironmentNameTag
   }
-  elseif ($DomaintNameTag -eq 'azure.hmpp.root' -and $ServerTypeTag -eq 'DomainController' -and $EnvironmentNameTag -eq 'core-shared-services-production') {
+  elseif ($DomainNameTag -eq 'azure.hmpp.root' -and $ServerTypeTag -eq 'DomainController' -and $EnvironmentNameTag -eq 'core-shared-services-production') {
     Return "$EnvironmentNameTag-hmpp-dc"
   }
   else {
