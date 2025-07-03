@@ -587,3 +587,4 @@ Add-MicrosoftOffice $Config
 Add-LibreOffice $Config
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+. ../PaloAlto/Install-CortexAgent.ps1
