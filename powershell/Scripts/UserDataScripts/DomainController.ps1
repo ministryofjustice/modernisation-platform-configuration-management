@@ -3,7 +3,7 @@
 
 . ../Common/Set-TimezoneGMT.ps1
 . ../Microsoft/Remove-EdgeFirstRunExperience.ps1
-. ../Microsoft/Add-DnsSuffixSearchList.ps1 -ConfigName core-shared-services-production-hmpp
+. ../Microsoft/Add-DnsSuffixSearchList.ps1
 
 . ../ModPlatformAD/Install-ModPlatformADDomainController.ps1
 if ($LASTEXITCODE -ne 0) {
