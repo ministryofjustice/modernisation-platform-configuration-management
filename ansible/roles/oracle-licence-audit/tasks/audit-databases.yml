@@ -59,7 +59,7 @@
         aws ec2 describe-instances \
           --instance-ids {{ instance_id }} \
           --query "Reservations[].Instances[].CpuOptions" \
-          --region {{ region }} --output json > {{ audit_dir }}/{{ inventory_hostname }}-vpus.txt
+          --region {{ region }} --output json > {{ audit_dir }}/{{ inventory_hostname }}-vcpus.txt
 
 - name: Database auditing
   block:
