@@ -9,24 +9,22 @@
 
     - import_tasks: audit-databases.yml
       tags:
-        - audit
+        - collection
         - databases
 
     - import_tasks: audit-weblogic.yml
       tags:
-        - audit
+        - collection
         - weblogic
       run_once: yes
 
     - import_tasks: audit-summary.yml
       tags:
-        - audit
         - summary
       run_once: yes
 
     - import_tasks: audit-upload.yml
       tags:
-        - audit
-        - upload
+        - summary
       run_once: yes
 
