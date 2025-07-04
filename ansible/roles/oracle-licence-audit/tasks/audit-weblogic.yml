@@ -99,7 +99,7 @@
   become: no
   lineinfile:
     path: "{{ weblogic_output }}"
-    line: "Vcpu Total: {{ total_vpcu }}"
+    line: "Vcpu Total: {{ total_vpcu | default(0) | int }}"
 
 - name: Upload weblogic output file to S3
   delegate_to: localhost
