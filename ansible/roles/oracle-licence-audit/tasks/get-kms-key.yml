@@ -1,0 +1,7 @@
+- name: Find General KMS Key Arn From S3 Backup Bucket
+  shell: aws s3api get-bucket-encryption --bucket {{ db_backup_s3_bucket_name }} --output text --query 'ServerSideEncryptionConfiguration.Rules[].ApplyServerSideEncryptionByDefault.KMSMasterKeyID'
+  register: getkmskeyarn
+
+- name: Set Fact For the KMS Key Option
+  set_fact:
+    general_kms_key_option: "--sse aws:kms --sse-kms-key-id {{ getkmskeyarn.stdout }}"

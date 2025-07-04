@@ -1,0 +1,127 @@
+- name: Create cpu summary
+  delegate_to: localhost
+  become: no
+  block:
+    - name: Download all vcpus.txt files from S3
+      shell: |
+        export PATH=$PATH:/usr/local/bin
+        aws s3 cp s3://{{ dependencies_bucket.name }}/{{ audit_output }}/ {{ audit_dir }} \
+          --recursive \
+          --exclude "*" \
+          --include "*-vcpus.txt"
+      environment:
+        AWS_REGION: "{{ aws_region | default('eu-west-2') }}"
+
+    - name: Find all vpus.txt files
+      find:
+        paths: "{{ audit_dir }}"
+        patterns: "*-vpus.txt"
+      register: vpus_files
+
+    - name: Read each vpus.txt file
+      slurp:
+        src: "{{ item.path }}"
+      loop: "{{ vpus_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      register: vpus_contents
+
+    - name: Initialise vpus_summary
+      set_fact:
+        vpus_summary: []
+
+    - name: Process CPU options and calculate Oracle licenses
+      vars:
+        vpus_data: "{{ item.content | b64decode | from_json }}"
+        file_name: "{{ item.invocation.module_args.src | basename }}"
+        host: "{{ file_name | regex_replace('-vpus.txt$', '') }}"
+      set_fact:
+        vpus_summary: "{{ vpus_summary + [{
+          'hostname': host,
+          'core_count': vpus_data[0].CoreCount,
+          'threads_per_core': vpus_data[0].ThreadsPerCore,
+          'hyperthreading': vpus_data[0].ThreadsPerCore > 1,
+          'vcpus': vpus_data[0].CoreCount * vpus_data[0].ThreadsPerCore,
+          'oracle_licenses': (vpus_data[0].CoreCount if vpus_data[0].ThreadsPerCore == 1 else (vpus_data[0].CoreCount * vpus_data[0].ThreadsPerCore) // 2)
+        }] }}"
+      loop: "{{ vpus_contents.results }}"
+      loop_control:
+        label: "{{ item.invocation.module_args.src | basename }}"
+
+    - name: Write Oracle license summary to CSV
+      copy:
+        dest: "{{ audit_dir }}/oracle_vcpus_summary.csv"
+        content: |
+          hostname,core_count,threads_per_core,hyperthreading,vcpus,oracle_licenses
+          {% for entry in vpus_summary %}
+          {{ entry.hostname }},{{ entry.core_count }},{{ entry.threads_per_core }},{{ entry.hyperthreading }},{{ entry.vcpus }},{{ entry.oracle_licenses }}
+          {% endfor %}
+
+    - name: Upload oracle_vcpus_summary.csv to S3
+      shell: |
+        aws s3 cp {{ audit_dir }}/oracle_vcpus_summary.csv \
+          s3://{{ dependencies_bucket.name }}/{{ audit_output }}/oracle_vcpus_summary.csv \
+          --acl bucket-owner-full-control \
+          {{ general_kms_key_option | default('') }}
+
+- name: Create database features summary
+  delegate_to: localhost
+  become: no
+  block:
+    - name: Download all options_packs_usage_summary.txt files from S3
+      shell: |
+        export PATH=$PATH:/usr/local/bin
+        aws s3 cp s3://{{ dependencies_bucket.name }}/{{ audit_output }}/ {{ audit_dir }} \
+          --recursive \
+          --exclude "*" \
+          --include "*options_packs_usage_summary.txt"
+      environment:
+        AWS_REGION: "{{ aws_region | default('eu-west-2') }}"
+
+    - name: Find all downloaded summary files
+      find:
+        paths: "{{ audit_dir }}"
+        patterns: "options_packs_usage_summary.txt"
+        recurse: yes
+      register: summary_files
+
+    - name: Check if any summary files were found
+      fail:
+        msg: "No options_packs_usage_summary.txt files found in {{ audit_dir }}"
+      when: summary_files.matched == 0
+
+    - name: Initialise combined summary file
+      copy:
+        dest: "{{ audit_dir }}/oracle_options_summary.txt"
+        content: ""
+        force: yes
+
+    - name: Initialise combined summary file
+      copy:
+        dest: "{{ audit_dir }}/oracle_options_summary.txt"
+        content: ""
+        force: yes
+
+    - name: Append each options summary to combined file
+      shell: |
+        host_db=$(basename "$(dirname {{ item.path }})")
+        hostname=${host_db%_*}
+        dbname=${host_db##*_}
+        {
+          echo "Hostname: $hostname"
+          echo "Database: $dbname"
+          cat "{{ item.path }}"
+          echo "--------------------------------------------------------------------------------"
+        } >> "{{ audit_dir }}/oracle_options_summary.txt"
+      args:
+        executable: /bin/bash
+      loop: "{{ summary_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Upload oracle_options_summary.txt to S3
+      shell: |
+        aws s3 cp {{ audit_dir }}/oracle_options_summary.txt \
+          s3://{{ dependencies_bucket.name }}/{{ audit_output }}/oracle_options_summary.txt \
+          --acl bucket-owner-full-control \
+          {{ general_kms_key_option | default('') }}
