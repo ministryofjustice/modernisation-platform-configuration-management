@@ -1,0 +1,21 @@
+- name: Download output directory from S3
+  delegate_to: localhost
+  become: no
+  shell: aws s3 cp s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/{{ ansible_date_time.date }}/ --recursive
+
+- name: Compress audit directory
+  delegate_to: localhost
+  become: no
+  archive:
+    path: "{{ audit_dir }}/{{ ansible_date_time.date }}/*"
+    dest: "{{ audit_dir }}/{{ ansible_date_time.date }}/{{ audit_zip_file }}"
+    format: zip
+
+- name: Upload to s3 bucket the zip file
+  delegate_to: localhost
+  become: no
+  shell: aws s3 cp {{ audit_dir }}/{{ ansible_date_time.date }}/{{ audit_zip_file }} s3://{{ bucket_name }}/{{ audit_output }}/{{ audit_zip_file }} --acl bucket-owner-full-control {{ general_kms_key_option }}
+
+- name: INFORMATION
+  debug:
+    msg: "Please check s3 bucket {{ bucket_name }}/{{ audit_output }}/{{ audit_zip_file }} containing output files!"

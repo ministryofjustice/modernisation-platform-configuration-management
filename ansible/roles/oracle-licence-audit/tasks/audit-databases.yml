@@ -1,0 +1,89 @@
+- name: Set up audit directory
+  block:
+    - name: Create work directory on remote host
+      file:
+        path: "{{ audit_dir }}"
+        state: directory
+        owner: oracle
+        mode: "777"
+
+    - name: Download utility shell scripts to {{ audit_dir }}
+      copy:
+        src: "{{ item }}"
+        dest: "{{ audit_dir }}/{{ item }}"
+        mode: "0755"
+      loop:
+        - cpuq.sh
+
+    - name: Download utility SQL scripts to {{ audit_dir }}
+      copy:
+        src: "{{ item }}"
+        dest: "{{ audit_dir }}/{{ item }}"
+        mode: "0644"
+        owner: oracle
+      loop:
+        - options_packs_usage_statistics.sql
+        - options_packs_usage_summary.sql
+
+- name: CPU auditing
+  block:
+    - name: Check if cpuq.sh script exists
+      stat:
+        path: "{{ audit_dir }}/cpuq.sh"
+      register: cpuq_stat
+
+    - name: Execute cpu script
+      shell: |
+        cd {{ audit_dir }}
+        echo 'y' | ./cpuq.sh {{ audit_dir }} > /dev/null 2>&1
+      register: cpuout
+
+    - name: Fetch cpu output files
+      fetch:
+        src: "{{ audit_dir }}/{{ inventory_hostname }}-ct_cpuq.txt"
+        dest: "{{ audit_dir }}/"
+        flat: yes
+
+    - name: Get instance ID using instance metadata (on remote EC2)
+      shell: curl -s http://169.254.169.254/latest/meta-data/instance-id
+      register: ec2_instance_id
+
+    - name: Set instance ID fact for later use
+      set_fact:
+        instance_id: "{{ ec2_instance_id.stdout }}"
+
+    - name: Get CPU options from AWS CLI (CoreCount and ThreadsPerCore)
+      delegate_to: localhost
+      become: no
+      shell: |
+        aws ec2 describe-instances \
+          --instance-ids {{ instance_id }} \
+          --query "Reservations[].Instances[].CpuOptions" \
+          --region {{ region }} --output json > {{ audit_dir }}/{{ inventory_hostname }}-vcpus.txt
+
+- name: Database auditing
+  block:
+    - name: Get instance name running
+      shell: ps -ef | grep ora_smon | grep -v grep | cut -d'_' -f3
+      register: db_instances
+
+    - name: Audit each Oracle DB instance
+      include_tasks: audit-instance.yml
+      loop: "{{ db_instances.stdout_lines }}"
+      loop_control:
+        loop_var: db_name
+      when: db_instances.stdout_lines | length > 0
+
+- name: Upload audit output to S3 from Controller
+  delegate_to: localhost
+  become: no
+  shell: |
+    export PATH=$PATH:/usr/local/bin
+    ls -l {{ audit_dir }}
+    aws s3 cp {{ audit_dir }} s3://{{ bucket_name }}/{{ audit_output }} --recursive --acl bucket-owner-full-control --exclude "*.sql" --include "*-db-*" {{ general_kms_key_option }}
+  register: upload_audit_output
+
+- name: Show output of audit upload
+  when: upload_audit_output is defined
+  debug:
+    msg: "Audit upload output is {{ upload_audit_output.stdout }}"

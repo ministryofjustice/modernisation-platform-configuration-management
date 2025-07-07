@@ -1,0 +1,78 @@
+# tasks/audit-instance.yml
+- name: Set fact for SQL output folder
+  set_fact:
+    sql_output_dir: "{{ audit_dir }}/{{ inventory_hostname }}_{{ db_name }}"
+
+- name: Create per-DB work directory
+  file:
+    path: "{{ sql_output_dir }}"
+    state: directory
+    owner: oracle
+    mode: "0755"
+
+- name: Look up ORACLE_HOME for {{ db_name }} from /etc/oratab
+  shell: |
+    grep -E "^{{ db_name }}:" /etc/oratab | awk -F: '{print $2}'
+  register: oracle_home_lookup
+  changed_when: false
+
+- name: Fail if ORACLE_HOME not found
+  fail:
+    msg: "Could not find ORACLE_HOME for {{ db_name }} in /etc/oratab"
+  when: oracle_home_lookup.stdout == ""
+
+- name: Execute Oracle ReviewLite23.3.sql with explicit ORACLE_HOME
+  shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ db_name }}
+    export ORACLE_HOME={{ oracle_home_lookup.stdout }}
+    export PATH=$ORACLE_HOME/bin:$PATH
+    cd {{ audit_dir }}
+    sqlplus -s / as sysdba << EOF
+      @ReviewLite23.3.sql
+      exit
+    EOF
+  become: yes
+  become_method: sudo
+  become_user: oracle
+  register: sqlout
+
+- name: Execute other Oracle scripts
+  shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ db_name }}
+    export ORACLE_HOME={{ oracle_home_lookup.stdout }}
+    export PATH=$ORACLE_HOME/bin:$PATH
+    cd {{ sql_output_dir }}
+    sqlplus -s / as sysdba << EOF
+      @../options_packs_usage_statistics.sql
+      @../options_packs_usage_summary.sql
+      exit
+    EOF
+  become: yes
+  become_method: sudo
+  become_user: oracle
+  register: sqlout
+
+- name: Create database directory on controller
+  delegate_to: localhost
+  become: no
+  file:
+    path: "{{ sql_output_dir }}"
+    state: directory
+
+- name: Find database output files
+  find:
+    path: "{{ sql_output_dir }}"
+    recurse: yes
+    patterns:
+      - "*.csv"
+      - "*.txt"
+  register: database_output_files
+
+- name: Fetch database output files
+  fetch:
+    src: "{{ item.path }}"
+    dest: "{{ sql_output_dir }}/"
+    flat: yes
+  with_items: "{{ database_output_files.files }}"
