@@ -81,6 +81,8 @@ col CON_ID  NOPRINT
 
 spool options_packs_usage_summary.txt
 
+select distinct NAME as PARAMETER, VALUE from GV$PARAMETER where lower(NAME) in ('control_management_pack_access', 'enable_ddl_logging') order by 1;
+
 with
 MAP as (
 -- mapping between features tracked by DBA_FUS and their corresponding database products (options or packs)
