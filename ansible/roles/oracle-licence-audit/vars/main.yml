@@ -5,3 +5,4 @@ weblogic_output: "{{ audit_dir }}/{{ weblogic_file }}"
 # Use folder in yyyy-mm format for audit output as the audit collection could be run multiple times in a month
 audit_output: "dependencies/oracle/utils/audit/{{ ansible_date_time.year }}-{{ '%02d' | format(ansible_date_time.month | int) }}"
 region: "{{ aws_region | default('eu-west-2') }}"
+bucket_name: "{{ dependencies_bucket.name | default('mod-platform-image-artefact-bucket20230203091453221500000001') }}"

@@ -5,7 +5,7 @@
     - name: Fetch all vCPU and options summary files from S3
       shell: |
         export PATH=$PATH:/usr/local/bin
-        aws s3 sync s3://{{ dependencies_bucket.name }}/{{ audit_output }}/ {{ audit_dir }}/ \
+        aws s3 sync s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/ \
           --exclude "*" \
           --include "*-vcpus.txt" \
           --include "*options_packs_usage_summary.txt"
@@ -61,6 +61,6 @@
     - name: Upload combined summary back to S3
       shell: |
         aws s3 cp {{ audit_dir }}/oracle_full_summary.txt \
-          s3://{{ dependencies_bucket.name }}/{{ audit_output }}/oracle_full_summary.txt \
+          s3://{{ bucket_name }}/{{ audit_output }}/oracle_full_summary.txt \
           --acl bucket-owner-full-control \
           {{ general_kms_key_option | default('') }}

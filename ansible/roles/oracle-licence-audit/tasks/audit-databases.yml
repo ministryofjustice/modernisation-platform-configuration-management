@@ -80,7 +80,7 @@
   shell: |
     export PATH=$PATH:/usr/local/bin
     ls -l {{ audit_dir }}
-    aws s3 cp {{ audit_dir }} s3://{{ dependencies_bucket.name }}/{{ audit_output }} --recursive --acl bucket-owner-full-control --exclude "*.sql" --include "*-db-*" {{ general_kms_key_option }}
+    aws s3 cp {{ audit_dir }} s3://{{ bucket_name }}/{{ audit_output }} --recursive --acl bucket-owner-full-control --exclude "*.sql" --include "*-db-*" {{ general_kms_key_option }}
   register: upload_audit_output
 
 - name: Show output of audit upload
