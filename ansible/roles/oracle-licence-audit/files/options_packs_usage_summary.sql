@@ -216,6 +216,7 @@ select
     AUX_COUNT       ,
     FEATURE_INFO
 from &&DFUS.FEATURE_USAGE_STATISTICS xy
+where xy.VERSION = '&&VERSION'
 ),
 PFUS as (
 -- Product-Feature Usage Statitsics = DBA_FUS entries mapped to their corresponding database products
