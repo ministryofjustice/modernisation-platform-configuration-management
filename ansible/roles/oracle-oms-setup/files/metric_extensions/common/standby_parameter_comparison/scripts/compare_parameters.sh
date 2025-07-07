@@ -17,22 +17,28 @@ fi
 
 function get_password()
 {
-USERNAME=$1
-if [[ "${ORACLE_SID}" == "EMREP" ]];
-then
-   aws secretsmanager get-secret-value --secret-id "/oracle/database/EMREP/passwords" --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
-else
-   INSTANCEID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
-   APPLICATION=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=application"  --query "Tags[].Value" --output text)
-   DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment"  --query "Tags[].Value" --output text)
-   if [[ "${APPLICATION}" == "delius" ]];
-   then
-      aws secretsmanager get-secret-value --secret-id delius-core-${DELIUS_ENVIRONMENT}-oracle-db-dba-passwords --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
-   else
-   APPLICATION_SUBTYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=database"  --query "Tags[].Value" --output text | cut -d'_' -f1)
-   aws secretsmanager get-secret-value --secret-id ${APPLICATION}-${DELIUS_ENVIRONMENT}-oracle-${APPLICATION_SUBTYPE}-db-dba-passwords --region eu-west-2 --query SecretString --output text| jq -r .${USERNAME}
-   fi
-fi
+  USERNAME=$1
+  if [[ "${ORACLE_SID}" == "EMREP" || "${ORACLE_SID}" == *RCVCAT* ]]; then
+    aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --region eu-west-2 --query SecretString --output text | jq -r .${USERNAME}
+  else
+    INSTANCEID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+    APPLICATION=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=application" --query "Tags[].Value" --output text)
+    if [[ "${APPLICATION}" == "delius" ]]; then
+      DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment" --query "Tags[].Value" --output text)
+      SECRET_ID="delius-core-${DELIUS_ENVIRONMENT}-oracle-db-dba-passwords"
+    elif [ "$APPLICATION" = "delius-mis" ]
+    then
+      DELIUS_ENVIRONMENT=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=delius-environment" --query "Tags[].Value" --output text)
+      DATABASE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCEID}" "Name=key,Values=database" --query 'Tags[].Value' --output text | cut -d'_' -f1)
+      SECRET_ID="delius-mis-${DELIUS_ENVIRONMENT}-oracle-${DATABASE_TYPE}-db-dba-passwords"
+    else
+      # Try the format used for nomis and oasys
+      SECRET_ID="/oracle/database/$2/passwords"
+    fi
+    #echo "Using secret ${SECRET_ID} to retrieve password for ${USERNAME}"
+    PASSWORD=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID} --region eu-west-2 --query SecretString --output text 2>/dev/null | jq -r .${USERNAME})
+    echo "${PASSWORD}"
+  fi
 }
 
 function get_jdbc()
@@ -262,30 +268,62 @@ WITH parameter_values AS (
 SELECT
      instance_name||'|'||
      name||'|'||
-     primary_value||'|'||
-     standby_value
+     SUBSTR(primary_value,0,20)||'|'|| -- OEM Console can't handle more than 20 characters
+     SUBSTR(standby_value,0,20)
 FROM
     parameter_comparison e
 WHERE
     e.parameter_match != 'Y'
 AND
-    e.name != '_bug32914795_bct_last_dba_buffer_size'; -- See MOS Note 3049433.1
+    e.name != '_bug32914795_bct_last_dba_buffer_size' -- See MOS Note 3049433.1
+AND
+    e.name NOT LIKE '_dbmsum%'; -- exclude due to xml formatting issues
 
 
 EXIT
 EOSQL
 }
 
-DBSNMP_PASSWORD=$(get_password dbsnmp)
-SYS_PASSWORD=$(get_password sys)
+# Function to identify all ORACLE_SID values on the host
+get_oracle_sids() {
+  grep -E '^[^+#]' /etc/oratab | awk -F: 'NF && $1 ~ /^[^ ]/ {print $1}'
+}
 
-# We check that the ORACLE_SID is the primary database as we only want to run this check against the primary
-PRIMARY_SID=$(echo -e "show configuration;" | dgmgrl / | grep "Primary database" |  cut -d'-' -f1 | sed 's/ //g' | tr '[:upper:]' '[:lower:]')
-
-if [[ "${ORACLE_SID,,}" == "${PRIMARY_SID}" ]];
-then
-   for DB in $(echo -e "show configuration;" | dgmgrl / | grep "standby database" | cut -d'-' -f1)
-   do
-      report_differences ${ORACLE_SID} ${DB^^}
-   done
+# Main script execution
+sids=$(get_oracle_sids)
+if [ -z "$sids" ]; then
+  # if no sids on this instance just exit
+#  echo "No ORACLE_SID values found in /etc/oratab. Exiting."
+  exit 0
 fi
+
+for sid in $sids; do
+    # Get the connection string to use for this database
+    #echo "Checking parameters for database: ${sid}"
+    export ORACLE_SID=$sid
+    export ORAENV_ASK=NO
+    . oraenv >/dev/null 2>&1
+    # We check that the ORACLE_SID is the primary database as we only want to run this check against the primary
+    PRIMARY_SID=$(echo -e "show configuration;" | dgmgrl / | grep "Primary database" |  cut -d'-' -f1 | sed 's/ //g' | tr '[:upper:]' '[:lower:]')
+
+    if [[ "${ORACLE_SID,,}" == "${PRIMARY_SID}" ]];
+    then
+        DBSNMP_PASSWORD=$(get_password dbsnmp)
+        if [[ -z "${DBSNMP_PASSWORD}" ]]; then
+            echo "DBSNMP password not found for ${ORACLE_SID}. Exiting."
+            exit 1
+        fi
+        SYS_PASSWORD=$(get_password sys)
+        if [[ -z "${SYS_PASSWORD}" ]]; then
+            echo "SYS password not found for ${ORACLE_SID}. Exiting."
+            exit 1
+        fi
+
+        for DB in $(echo -e "show configuration;" | dgmgrl / | grep "standby database" | cut -d'-' -f1)
+        do
+            report_differences ${ORACLE_SID} ${DB^^}
+        done
+    #else
+        #echo "Skipping ${ORACLE_SID} as it is not the primary database."
+    fi
+done
