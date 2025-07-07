@@ -10,12 +10,23 @@
     owner: oracle
     mode: "0755"
 
-- name: Execute Oracle ReviewLite23.3.sql
+- name: Look up ORACLE_HOME for {{ db_name }} from /etc/oratab
+  shell: |
+    grep -E "^{{ db_name }}:" /etc/oratab | awk -F: '{print $2}'
+  register: oracle_home_lookup
+  changed_when: false
+
+- name: Fail if ORACLE_HOME not found
+  fail:
+    msg: "Could not find ORACLE_HOME for {{ db_name }} in /etc/oratab"
+  when: oracle_home_lookup.stdout == ""
+
+- name: Execute Oracle ReviewLite23.3.sql with explicit ORACLE_HOME
   shell: |
     . ~/.bash_profile
     export ORACLE_SID={{ db_name }}
-    export ORAENV_ASK=NO
-    . oraenv <<< "{{ db_name }}"
+    export ORACLE_HOME={{ oracle_home_lookup.stdout }}
+    export PATH=$ORACLE_HOME/bin:$PATH
     cd {{ audit_dir }}
     sqlplus -s / as sysdba << EOF
       @ReviewLite23.3.sql
@@ -30,8 +41,8 @@
   shell: |
     . ~/.bash_profile
     export ORACLE_SID={{ db_name }}
-    export ORAENV_ASK=NO
-    . oraenv <<< "{{ db_name }}"
+    export ORACLE_HOME={{ oracle_home_lookup.stdout }}
+    export PATH=$ORACLE_HOME/bin:$PATH
     cd {{ sql_output_dir }}
     sqlplus -s / as sysdba << EOF
       @../options_packs_usage_statistics.sql

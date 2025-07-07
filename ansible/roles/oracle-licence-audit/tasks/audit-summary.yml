@@ -9,8 +9,6 @@
           --exclude "*" \
           --include "*-vcpus.txt" \
           --include "*options_packs_usage_summary.txt"
-      environment:
-        AWS_REGION: "{{ aws_region | default('eu-west-2') }}"
 
     - name: Initialize combined text summary
       copy:
@@ -66,5 +64,3 @@
           s3://{{ dependencies_bucket.name }}/{{ audit_output }}/oracle_full_summary.txt \
           --acl bucket-owner-full-control \
           {{ general_kms_key_option | default('') }}
-      environment:
-        AWS_REGION: "{{ aws_region | default('eu-west-2') }}"
