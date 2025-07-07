@@ -1,7 +1,41 @@
-- name: Find General KMS Key Arn From S3 Backup Bucket
-  shell: aws s3api get-bucket-encryption --bucket {{ db_backup_s3_bucket_name }} --output text --query 'ServerSideEncryptionConfiguration.Rules[].ApplyServerSideEncryptionByDefault.KMSMasterKeyID'
-  register: getkmskeyarn
+- name: Attempt remote KMS key lookup (ignore failures)
+  shell: |
+    aws s3api get-bucket-encryption \
+      --bucket {{ db_backup_s3_bucket_name }} \
+      --output text \
+      --query 'ServerSideEncryptionConfiguration.Rules[].ApplyServerSideEncryptionByDefault.KMSMasterKeyID'
+  register: kms_remote
+  ignore_errors: true
+  changed_when: false
 
-- name: Set Fact For the KMS Key Option
+- name: Fallback to localhost if remote lookup failed
+  shell: |
+    aws s3api get-bucket-encryption \
+      --bucket {{ db_backup_s3_bucket_name }} \
+      --output text \
+      --query 'ServerSideEncryptionConfiguration.Rules[].ApplyServerSideEncryptionByDefault.KMSMasterKeyID'
+  delegate_to: localhost
+  become: no
+  register: kms_fallback
+  when: kms_remote is failed or kms_remote.rc != 0 or kms_remote.stdout == ""
+  ignore_errors: true
+  changed_when: false
+
+- name: Consolidate KMS lookup result
   set_fact:
-    general_kms_key_option: "--sse aws:kms --sse-kms-key-id {{ getkmskeyarn.stdout }}"
+    kms_lookup: >-
+      {{
+        (kms_remote.stdout if (kms_remote is succeeded and kms_remote.stdout|length>0)
+          else (kms_fallback.stdout if (kms_fallback is defined and kms_fallback.stdout|length>0)
+            else ''))
+      }}
+
+- name: Fail if we still don’t have a KMS Key ARN
+  fail:
+    msg: >-
+      Could not determine KMS Key ARN for bucket {{ db_backup_s3_bucket_name }}.
+  when: kms_lookup == ""
+
+- name: Set general_kms_key_option
+  set_fact:
+    general_kms_key_option: "--sse aws:kms --sse-kms-key-id {{ kms_lookup }}"
