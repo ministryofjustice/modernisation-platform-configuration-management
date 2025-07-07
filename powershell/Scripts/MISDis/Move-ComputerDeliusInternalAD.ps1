@@ -43,6 +43,8 @@ function Move-ComputerDeliusInternalAD {
     $OUTarget = (Get-Tags).'server-type'
     $NewOU = "OU=$OUTarget,OU=Computers,OU=delius-mis-dev,DC=delius-mis-dev,DC=internal"
 
+    Write-Host "Moving computer to OU: $NewOU"
+
     # Do nothing if host not part of domain
     if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
         return $false
