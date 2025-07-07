@@ -40,7 +40,7 @@ function Move-ComputerDeliusInternalAD {
 
     $ErrorActionPreference = "Stop"
 
-    $OUTarget = (Get-Tags).'server-type'
+    $OUTarget = (Get-Tags)['server-type']
     $NewOU = "OU=$OUTarget,OU=Computers,OU=delius-mis-dev,DC=delius-mis-dev,DC=internal"
 
     Write-Host "Moving computer to OU: $NewOU"
