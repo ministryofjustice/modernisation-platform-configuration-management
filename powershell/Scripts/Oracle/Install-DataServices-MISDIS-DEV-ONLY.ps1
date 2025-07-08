@@ -121,7 +121,8 @@ NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "IPS_Administrator_LCMS_Administrator"
     # config values from /sap/bods/$dbenv/config
     $data_services_product_key = Get-SecretValue -SecretId "
 NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
-    $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
+    # FIXME: only used if we're deploying a secondary node. Needs adding later.
+    #$cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
@@ -199,8 +200,10 @@ dscmsenablessl=0
 
 ### #property.CMSServerPort.description#
 dscmsport=6400
+
 ### #property.CMSServerName.description#
-dscmssystem=$cms_primary_node_hostname.$($Config.domainName)
+dscmssystem=$cms_primary_node_hostname.$($Config.domainName) # FIXME: value required if secondary node used
+
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
@@ -227,8 +230,10 @@ dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 installdir=$($Config.LINK_DIR)
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
+
 ### #property.MasterCmsName.description#
-mastercmsname=$cms_primary_node_hostname.$($Config.domainName)
+mastercmsname=$cms_primary_node_hostname.$($Config.domainName) # FIXME: value required if secondary node used
+
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
