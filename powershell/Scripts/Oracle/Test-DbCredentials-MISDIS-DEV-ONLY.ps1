@@ -197,4 +197,4 @@ function Test-DbCredentials {
 }
 
 # Reason for doing this is because the installer will silently fail if the database credentials are not correct.
-Test-DbCredentials
+Test-DbCredentials -Config (Get-Config)
