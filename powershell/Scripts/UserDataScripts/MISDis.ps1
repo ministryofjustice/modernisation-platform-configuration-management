@@ -4,9 +4,9 @@ $Scripts = @(
     "../Oracle/Install-Oracle19cClient.ps1", # working
     "../Oracle/Set-TnsOraFileMISDis.ps1", # working
     "../Oracle/Install-SQLDeveloper.ps1", # working
-    "../MISDis/Move-ComputerDeliusInternalAD.ps1" # needs testing
-    # "../Oracle/Test-DbCredentials.ps1", # <- config fix needed
-    # "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1" #, <- config fix needed
+    "../MISDis/Move-ComputerDeliusInternalAD.ps1" # working
+    "../Oracle/Test-DbCredentials-MISDIS-DEV-ONLY.ps1", # <- config fix needed
+    "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1" #, <- config fix needed
     # "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1", <- config fix needed
 
     <#
