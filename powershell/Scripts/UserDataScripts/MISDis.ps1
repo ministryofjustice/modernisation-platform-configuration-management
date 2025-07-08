@@ -5,10 +5,9 @@ $Scripts = @(
     "../Oracle/Set-TnsOraFileMISDis.ps1", # working
     "../Oracle/Install-SQLDeveloper.ps1", # working
     "../MISDis/Move-ComputerDeliusInternalAD.ps1" # working
-    "../Oracle/Test-DbCredentials-MISDIS-DEV-ONLY.ps1", # <- config fix needed
-    "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1" #, <- config fix needed
-    # "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1", <- config fix needed
-
+    "../Oracle/Test-DbCredentials-MISDIS-DEV-ONLY.ps1", # <- testing
+    "../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1", #, <- testing
+    "../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1" # <- testing
     <#
     New-SharedDriveShortcut -Config $Config <- required?? Possibly - TBD
     New-ServerRebootSchedule -Config $Config <- required?? No - also what is this?
