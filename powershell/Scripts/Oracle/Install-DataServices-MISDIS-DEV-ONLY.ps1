@@ -1,3 +1,76 @@
+function Get-Config {
+    $tokenParams = @{
+        TimeoutSec = 10
+        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 }
+        Method     = 'PUT'
+        Uri        = 'http://169.254.169.254/latest/api/token'
+    }
+    $Token = Invoke-RestMethod @tokenParams
+
+    $instanceIdParams = @{
+        TimeoutSec = 10
+        Headers    = @{"X-aws-ec2-metadata-token" = $Token }
+        Method     = 'GET'
+        Uri        = 'http://169.254.169.254/latest/meta-data/instance-id'
+    }
+    $InstanceId = Invoke-RestMethod @instanceIdParams
+
+    $awsParams = @(
+        'ec2',
+        'describe-tags',
+        '--filters',
+        "Name=resource-id,Values=$InstanceId"
+    )
+
+    $TagsRaw = & aws @awsParams
+
+    $Tags = $TagsRaw | ConvertFrom-Json
+    $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
+
+    $ApplicationTag = ($Tags.Tags | Where-Object { $_.Key -eq "application" }).Value
+    
+    # FIXME: This won't work in a sustainable way - no longer used
+    # $dbenvTag = ($Tags.Tags | Where-Object { $_.Key -eq "delius-mis-environment" }).Value
+
+    $nameTag = ($Tags.Tags | Where-Object { $_.Key -eq "Name" }).Value
+
+    $domainName = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
+
+    $serverType = ($Tags.Tags | Where-Object { $_.Key -eq "server-type" }).Value
+
+    if ($ApplicationTag -eq "oasys-national-reporting") {
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\ONR\onr_config.ps1"
+    }
+    elseif ($ApplicationTag -eq "nomis-combined-reporting") {
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\ncr_config.ps1"
+    }
+    else { # used for MISDis, needs retrofitting to NCR and ONR to remove this if else entirely
+        Write-Host "Using Server-Type tag to determine config path"
+        $configPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\Configs\$serverType\$($serverType)_config.ps1"
+    }
+
+    # dot source the config file containing $GlobalConfig
+    . $configPath
+
+    if (-not $GlobalConfig.Contains($EnvironmentNameTag)) {
+        Write-Error "Unexpected environment-name tag value $EnvironmentNameTag"
+    }
+
+    $additionalConfig = @{
+        application = $ApplicationTag
+        # dbenv       = $dbenvTag
+        Name        = $nameTag
+        domainName  = $domainName
+    }
+
+    # Merge all config hashtables into one
+    $mergedConfig = @{}
+    $GlobalConfig.all.GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    $GlobalConfig[$EnvironmentNameTag].GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    $additionalConfig.GetEnumerator() | ForEach-Object { $mergedConfig[$_.Key] = $_.Value }
+    return $mergedConfig
+}
+
 function Install-DataServices {
     param (
         [Parameter(Mandatory)]
@@ -17,50 +90,62 @@ function Install-DataServices {
     if ($($Config.application) -eq "nomis-combined-reporting") {
         Expand-Archive -Path (".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
         $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)\DataServices\setup.exe"
-    }
-    else {
+    } elseif ($($Config.application) -eq "delius-mis") {
+        $winrarPath = "C:\Program Files\WinRAR"
+        $env:Path += ";$winrarPath"
+
+        unrar x -o+ -y ( ".\" + $Config.DataServicesS3File) ".\DataServices"
+        $dataServicesInstallerFilePath = "$WorkingDirectory\($Config.DataServicesS3File)\DataServices\setup.exe"
+    } else {
         $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
     }
 
     [Environment]::SetEnvironmentVariable("LINK_DIR", $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
 
-    if (-NOT(Test-Path "F:\BODS_COMMON_DIR")) {
-        Write-Output "Creating F:\BODS_COMMON_DIR"
-        New-Item -ItemType Directory -Path "F:\BODS_COMMON_DIR"
+    if (-NOT(Test-Path $($Config.dscommondir))) {
+        Write-Output "Creating $($Config.dscommondir)"
+        New-Item -ItemType Directory -Path $($Config.dscommondir)
     }
-    [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", "F:\BODS_COMMON_DIR", [System.EnvironmentVariableTarget]::Machine)
+    [Environment]::SetEnvironmentVariable("DS_COMMON_DIR", $($Config.dscommondir), [System.EnvironmentVariableTarget]::Machine)
 
     # set Secret Names based on environment
-    $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
-    $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
+    # $bodsSecretName = "/sap/bods/$($Config.dbenv)/passwords"
+    # $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
 
     # passwords from /sap/bods/$dbenv/passwords
-    $service_user_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "svc_nart" -ErrorAction SilentlyContinue
-    $bods_admin_password = Get-SecretValue -SecretId $bodsSecretName -SecretKey "bods_admin_password" -ErrorAction SilentlyContinue
+    $service_user_password = Get-SecretValue -SecretId "
+NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey $($Config.serviceUser) -ErrorAction SilentlyContinue
+    $bods_admin_password = Get-SecretValue -SecretId "
+NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
 
     # config values from /sap/bods/$dbenv/config
-    $data_services_product_key = Get-SecretValue -SecretId $bodsConfigName -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+    $data_services_product_key = Get-SecretValue -SecretId "
+NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
     $cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
     $dataServicesResponsePrimary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
+
 ### CMS administrator password
 # cmspassword=**** bods_admin_password in silent install params
+
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
+
 ### CMS administrator password
 # dscmspassword=**** bods_admin_password value in silent install params
+
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=$($env:COMPUTERNAME)
+dscmssystem=$($env:COMPUTERNAME):6400
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
-dscommondir=F:\BODS_COMMON_DIR\
+dscommondir=$($Config.dscommondir)
 ### #property.DSConfigCMSSelection.description#
 dsconfigcmsselection=install
 ### #property.DSConfigMergeSelection.description#
@@ -76,9 +161,11 @@ dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### #property.DSLoginInfoThisPassword.description#
+
 # dslogininfothispassword=**** service_user_password value in silent install params
+
 ### Installation folder for SAP products
-installdir=E:\SAP BusinessObjects\
+installdir=$($Config.LINK_DIR)
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
@@ -96,16 +183,20 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
     $dataServicesResponseSecondary = @"
 ### #property.CMSAUTHENTICATION.description#
 cmsauthentication=secEnterprise
+
 ### CMS administrator password
 # cmspassword=**** bods_admin_password value in silent install params
+
 ### #property.CMSUSERNAME.description#
 cmsusername=Administrator
 ### #property.CMSAuthMode.description#
 dscmsauth=secEnterprise
 ### #property.CMSEnabledSSL.description#
 dscmsenablessl=0
+
 ### CMS administrator password
 # dscmspassword=**** bods_admin_password value in silent install params
+
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
@@ -113,7 +204,7 @@ dscmssystem=$cms_primary_node_hostname.$($Config.domainName)
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
-dscommondir=F:\BODS_COMMON_DIR\
+dscommondir=$($Config.dscommondir)
 ### #property.DSConfigCMSSelection.description#
 dsconfigcmsselection=install
 ### #property.DSConfigMergeSelection.description#
@@ -126,12 +217,14 @@ dsinstalltypeselection=Custom
 dslocalcms=false
 ### #property.DSLoginInfoAccountSelection.description#
 dslogininfoaccountselection=this
+
 ### #property.DSLoginInfoThisPassword.description#
 # dslogininfothispassword=**** service_user_password value in silent install params
+
 ### #property.DSLoginInfoThisUser.description#
 dslogininfothisuser=$($Config.Domain)\$($Config.serviceUser)
 ### Installation folder for SAP products
-installdir=E:\SAP BusinessObjects\
+installdir=$($Config.LINK_DIR)
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
@@ -166,8 +259,8 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
         NoNewWindow  = $true
     }
 
-    # Install Data Services
-    Start-Process @dataServicesInstallParams
+    # Install Data Services FIXME: comment back in
+    # Start-Process @dataServicesInstallParams
 
     # }}} End install Data Services
 
@@ -194,5 +287,6 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
         Write-Output "JDBC driver not found at $jdbcDriverPath"
         exit 1
     }
-
 }
+
+Install-DataServices
