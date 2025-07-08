@@ -9,6 +9,7 @@ $GlobalConfig = @{
         "BIP_INSTALL_DIR"            = "D:\BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
         "AppDirectory"               = "D:\App"
         "dscommondir"                = "D:\DSCommon"
+        "ORACLE_19C_HOME"            = "D:\app\oracle\product\19.0.0\client_1"
     }
     "delius-mis-development" = @{
         "sysDbName"              = "DMDDSD"
@@ -16,6 +17,7 @@ $GlobalConfig = @{
         "cmsPrimaryNode"         = "ndmis-dev-dfi-1"
         "serviceUser"            = "SVC_DIS_NDL" # Only used for dataservices install
         "Domain"                 = "delius-mis-dev"
+        "cmsSecondaryNode"       = "ndmis-dev-dfi-2" # PLACEHOLDER, change as needed
     }
     "delius-mis-preproduction" = @{
     }
