@@ -102,6 +102,51 @@ function Get-SecretValue {
     }
 }
 
+function Test-DatabaseConnection {
+    param (
+        [Parameter(Mandatory = $true)]
+        [String]$typePath,
+        [Parameter(Mandatory = $true)]
+        [String]$tnsName,
+        [Parameter(Mandatory = $true)]
+        [String]$username,
+        [Parameter(Mandatory = $true)]
+        [System.Security.SecureString]$securePassword
+    )
+
+    Add-Type -Path $typePath
+
+    # Convert SecureString to plain text safely
+    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+    $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+
+    # Create connection string
+    $connectionString = "User Id=$username;Password=$plainPassword;Data Source=$tnsName"
+    $connection = New-Object Oracle.DataAccess.Client.OracleConnection($connectionString)
+
+    try {
+        # Test connection
+        $connection.Open()
+        Write-Host "Connection successful!"
+        return 0
+    }
+    catch {
+        Write-Host "Connection failed: $($_.Exception.Message)"
+        return 1
+    }
+    finally {
+        if ($connection -and $connection.State -eq 'Open') {
+            $connection.Close()
+        }
+        # Clear sensitive data
+        if ($BSTR) {
+            [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+        }
+        $plainPassword = $null
+        $connectionString = $null
+    }
+}
+
 function Test-DbCredentials {
     [CmdletBinding()]
     param (
