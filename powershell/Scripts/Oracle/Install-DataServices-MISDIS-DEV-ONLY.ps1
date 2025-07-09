@@ -274,16 +274,28 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
 
     $dsInstallIni = "$WorkingDirectory\ds_install.ini"
 
-    if ($($Config.Name) -eq $Config.cmsPrimaryNode) {
+    # if ($($Config.Name) -eq $Config.cmsPrimaryNode) {
+    #     $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    # }
+    # elseif ($($Config.Name) -eq $Config.cmsSecondaryNode) {
+    #     $dataServicesResponseSecondary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
+    # }
+    # else {
+    #     Write-Output "Unknown node type, cannot create response file"
+    #     exit 1
+    # }
+
+    # hardcode this for now: needs FIXME: later
+    if ($($Config.Name -replace 'delius-mis','ndmis') -eq $Config.cmsPrimaryNode) {
         $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
     }
-    elseif ($($Config.Name) -eq $Config.cmsSecondaryNode) {
+    elseif ($($Config.Name -replace 'delius-mis','ndmis') -eq $Config.cmsSecondaryNode) {
         $dataServicesResponseSecondary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii
     }
     else {
         Write-Output "Unknown node type, cannot create response file"
         exit 1
-    }
+    } 
 
     $dataServicesInstallParams = @{
         FilePath     = $dataServicesInstallerFilePath
