@@ -155,14 +155,9 @@ function Install-IPS {
 
     Get-Installer -Key $Config.IPSS3File -Destination "$WorkingDirectory\$($Config.IPSS3File)"
 
-    choco install winrar -y
-
-    $winrarPath = "C:\Program Files\WinRAR"
-    $env:Path += ";$winrarPath"
+    # NOTE: unrar is used to extract the IPS installer, rather than have to manage the self extracting archive process. This is installed via AutoEC2LaunchV2 automation script in the modernisation-platform-environments repo
 
     unrar x -o+ -y "$WorkingDirectory\$($Config.IPSS3File)" "$WorkingDirectory\IPS"
-
-
 
     # TODO: FIXME: executable needs to be un-packed first. Cannot use Expand-Archive as it is an executable, not a zip file!!
     # Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
