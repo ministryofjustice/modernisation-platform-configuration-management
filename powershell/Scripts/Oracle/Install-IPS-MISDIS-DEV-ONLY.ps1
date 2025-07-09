@@ -153,14 +153,14 @@ function Install-IPS {
         return
     }
 
-    Get-Installer -Key $Config.IPSS3File -Destination (".\" + $Config.IPSS3File)
+    Get-Installer -Key $Config.IPSS3File -Destination "$WorkingDirectory\$($Config.IPSS3File)"
 
     choco install winrar -y
 
     $winrarPath = "C:\Program Files\WinRAR"
     $env:Path += ";$winrarPath"
 
-    unrar x -o+ -y ( ".\" + $Config.IPSS3File) ".\IPS"
+    unrar x -o+ -y "$WorkingDirectory\$($Config.IPSS3File)" "$WorkingDirectory\IPS"
 
 
 
