@@ -85,17 +85,17 @@ function Install-DataServices {
     # easier to fix here rather than do command substitution inside the install params
     $WorkingDirectory = $Config.WorkingDirectory
 
-    Get-Installer -Key $Config.DataServicesS3File -Destination (".\" + $Config.DataServicesS3File)
+    Get-Installer -Key $Config.DataServicesS3File -Destination "$WorkingDirectory\$($Config.DataServicesS3File)"
 
     if ($($Config.application) -eq "nomis-combined-reporting") {
-        Expand-Archive -Path (".\" + $Config.DataServicesS3File) -Destination ".\DataServices"
-        $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)\DataServices\setup.exe"
+        Expand-Archive -Path "$WorkingDirectory\$($Config.DataServicesS3File)" -Destination "$WorkingDirectory\DataServices"
+        $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
     } elseif ($($Config.application) -eq "delius-mis") {
         $winrarPath = "C:\Program Files\WinRAR"
         $env:Path += ";$winrarPath"
 
-        unrar x -o+ -y ( ".\" + $Config.DataServicesS3File) ".\DataServices"
-        $dataServicesInstallerFilePath = "$WorkingDirectory\($Config.DataServicesS3File)\DataServices\setup.exe"
+        unrar x -o+ -y "$WorkingDirectory\$($Config.DataServicesS3File)" "$WorkingDirectory\DataServices"
+        $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
     } else {
         $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
     }
@@ -294,4 +294,4 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
     }
 }
 
-Install-DataServices
+Install-DataServices -Config (Get-Config)
