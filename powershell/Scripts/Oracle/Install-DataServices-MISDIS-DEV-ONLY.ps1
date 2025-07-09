@@ -144,14 +144,11 @@ function Install-DataServices {
     # $bodsConfigName = "/sap/bods/$($Config.dbenv)/config"
 
     # passwords from /sap/bods/$dbenv/passwords
-    $service_user_password = Get-SecretValue -SecretId "
-NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey $($Config.serviceUser) -ErrorAction SilentlyContinue
-    $bods_admin_password = Get-SecretValue -SecretId "
-NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
+    $service_user_password = Get-SecretValue -SecretId "NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey $($Config.serviceUser) -ErrorAction SilentlyContinue
+    $bods_admin_password = Get-SecretValue -SecretId "NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "IPS_Administrator_LCMS_Administrator" -ErrorAction SilentlyContinue
 
     # config values from /sap/bods/$dbenv/config
-    $data_services_product_key = Get-SecretValue -SecretId "
-NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
+    $data_services_product_key = Get-SecretValue -SecretId "NDMIS_DFI_SERVICEACCOUNTS_DEV" -SecretKey "data_services_product_key" -ErrorAction SilentlyContinue
     # FIXME: only used if we're deploying a secondary node. Needs adding later.
     #$cms_primary_node_hostname = Get-SecretValue -SecretId $bodsConfigName -SecretKey "cms_primary_node_hostname" -ErrorAction SilentlyContinue
 
