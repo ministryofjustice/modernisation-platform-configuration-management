@@ -118,14 +118,24 @@ function Install-DataServices {
 
     Get-Installer -Key $Config.DataServicesS3File -Destination "$WorkingDirectory\$($Config.DataServicesS3File)"
 
+    if (-not (Test-Path "$WorkingDirectory\DataServices")) {
+        Write-Output "Creating DataServices directory at $WorkingDirectory\DataServices"
+        New-Item -ItemType Directory -Path "$WorkingDirectory\DataServices"
+    }
+
     if ($($Config.application) -eq "nomis-combined-reporting") {
         Expand-Archive -Path "$WorkingDirectory\$($Config.DataServicesS3File)" -Destination "$WorkingDirectory\DataServices"
         $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
     } elseif ($($Config.application) -eq "delius-mis") {
         # For Delius MIS, we need to unrar the file instead of expanding it. This should already be installed via the AutoEC2LaunchV2 script.
 
-        unrar x -o+ -y "$WorkingDirectory\$($Config.DataServicesS3File)" "$WorkingDirectory\DataServices"
+        unrar x -y "$WorkingDirectory\$($Config.DataServicesS3File)" "$WorkingDirectory\DataServices"
         $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
+
+        if (-not (Test-Path $dataServicesInstallerFilePath)) {
+            Write-Output "Data Services installer not found at $dataServicesInstallerFilePath"
+            # exit 1
+        }
     } else {
         $dataServicesInstallerFilePath = "$WorkingDirectory\$($Config.DataServicesS3File)"
     }
@@ -271,7 +281,7 @@ selectedlanguagepacks=en
 features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataServicesDesigner,DataServicesClient,DataServicesManagementConsole,DataServicesEIMServices,DataServicesMessageClient,DataServicesDataDirect,DataServicesDocumentation
 "@
 
-    $dsInstallIni = "$WorkingDirectory\ds_install.ini"
+    $dsInstallIni = "$WorkingDirectory\DataServices\ds_install.ini"
 
     # if ($($Config.Name) -eq $Config.cmsPrimaryNode) {
     #     $dataServicesResponsePrimary | Out-File -FilePath $dsInstallIni -Force -Encoding ascii

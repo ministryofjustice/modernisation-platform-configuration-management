@@ -153,11 +153,16 @@ function Install-IPS {
         return
     }
 
+    if (-not (Test-Path "$WorkingDirectory\IPS")) {
+        Write-Output "Creating IPS directory at $WorkingDirectory\IPS"
+        New-Item -Path "$WorkingDirectory\IPS" -ItemType Directory -Force
+    }
+
     Get-Installer -Key $Config.IPSS3File -Destination "$WorkingDirectory\$($Config.IPSS3File)"
 
     # NOTE: unrar is used to extract the IPS installer, rather than have to manage the self extracting archive process. This is installed via AutoEC2LaunchV2 automation script in the modernisation-platform-environments repo
 
-    unrar x -o+ -y "$WorkingDirectory\$($Config.IPSS3File)" "$WorkingDirectory\IPS"
+    unrar x -y "$WorkingDirectory\$($Config.IPSS3File)" "$WorkingDirectory\IPS"
 
     # TODO: FIXME: executable needs to be un-packed first. Cannot use Expand-Archive as it is an executable, not a zip file!!
     # Expand-Archive ( ".\" + $Config.IPSS3File) -Destination ".\IPS"
@@ -311,11 +316,6 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
 
 
     $ipsInstallIni = "$WorkingDirectory\IPS\ips_install.ini"
-
-    # putting in temporarily to fix 'path does not exist' issue
-    if (-NOT(Test-Path $ipsInstallIni)) {
-        New-Item -Type File -Path $ipsInstallIni -Force | Out-Null
-    }
 
     # if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
     #     $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
