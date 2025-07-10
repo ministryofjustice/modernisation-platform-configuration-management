@@ -171,12 +171,12 @@ function Test-DbCredentials {
     $dbConfigs = @(
         @{
             Name     = "$($Config.sysDbName)"
-            Username = "bods_ips_system_owner"
+            Username = "dfi_mod_ipscms" # FIXME: this also needs to be a var later when refactored
             Password = $bods_ips_system_owner
         },
         @{
             Name     = "$($Config.audDbName)"
-            Username = "bods_ips_audit_owner"
+            Username = "dfi_mod_ipsaud" # FIXME: this also needs to be a var later when refactored
             Password = $bods_ips_audit_owner
         }
     )
