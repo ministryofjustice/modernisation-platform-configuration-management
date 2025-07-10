@@ -74,9 +74,26 @@ function Move-ComputerDeliusInternalAD {
         return
     }
 
-    # Move the computer to the new OU
-    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $Credential
-    Write-Host "Computer moved to new OU"
+    # Move the computer to the new OU with retry logic
+    $moveTimeout = [DateTime]::Now.AddMinutes(5)
+    $moveSuccess = $false
+    
+    do {
+        try {
+            $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $Credential -ErrorAction Stop
+            Write-Host "Computer moved to new OU"
+            $moveSuccess = $true
+            break
+        }
+        catch {
+            Write-Verbose "Move-ADObject failed: $_"
+            if ([DateTime]::Now -ge $moveTimeout) {
+                Write-Error "Failed to move computer to new OU within 5 minutes."
+                return
+            }
+        }
+        Start-Sleep -Seconds 10
+    } until ($moveSuccess -or ([DateTime]::Now -ge $moveTimeout))
 
     # force group policy update
     gpupdate /force
