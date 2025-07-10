@@ -9,7 +9,7 @@ $GlobalConfig = @{
         "BIP_INSTALL_DIR"            = "D:\BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
         "AppDirectory"               = "D:\App"
         "dscommondir"                = "D:\DSCommon"
-        "ORACLE_19C_HOME"            = "D:\app\oracle\product\19.0.0\client_1"
+        "ORACLE_19C_HOME"            = "C:\app\oracle\product\19.0.0\client_1"
     }
     "delius-mis-development" = @{
         "sysDbName"              = "DMDDSD"
