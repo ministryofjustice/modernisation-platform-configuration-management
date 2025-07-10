@@ -75,13 +75,16 @@
         loop_var: db_name
       when: db_instances.stdout_lines | length > 0
 
-- name: Upload audit output to S3 from Controller
+- name: Upload only this hosts audit results to S3
   delegate_to: localhost
   become: no
   shell: |
-    export PATH=$PATH:/usr/local/bin
-    ls -l {{ audit_dir }}
-    aws s3 cp {{ audit_dir }} s3://{{ bucket_name }}/{{ audit_output }} --recursive --acl bucket-owner-full-control --exclude "*.sql" --include "*-db-*" {{ general_kms_key_option }}
+    aws s3 cp --recursive "{{ audit_dir }}/" \
+      "s3://{{ bucket_name }}/{{ audit_output }}/" \
+      --exclude "*" \
+      --include "{{ inventory_hostname }}*" \
+      --acl bucket-owner-full-control \
+      {{ general_kms_key_option | default('') }}
   register: upload_audit_output
 
 - name: Show output of audit upload

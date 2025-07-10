@@ -1,3 +1,17 @@
+- name: Ensure audit_dir is gone (so we can start from scratch)
+  delegate_to: localhost
+  become: no
+  file:
+    path: "{{ audit_dir }}"
+    state: absent
+
+- name: Recreate audit_dir
+  delegate_to: localhost
+  become: no
+  file:
+    path: "{{ audit_dir }}"
+    state: directory
+
 - name: Download output directory from S3
   delegate_to: localhost
   become: no

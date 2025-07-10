@@ -2,6 +2,16 @@
   delegate_to: localhost
   become: no
   block:
+    - name: Ensure audit_dir is gone (so we can start from scratch)
+      file:
+        path: "{{ audit_dir }}"
+        state: absent
+
+    - name: Recreate audit_dir
+      file:
+        path: "{{ audit_dir }}"
+        state: directory
+
     - name: Fetch all vCPU and options summary files from S3
       shell: |
         export PATH=$PATH:/usr/local/bin
