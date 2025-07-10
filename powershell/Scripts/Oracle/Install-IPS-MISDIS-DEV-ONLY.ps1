@@ -317,10 +317,21 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
         New-Item -Type File -Path $ipsInstallIni -Force | Out-Null
     }
 
-    if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
+    # if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
+    #     $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+    # }
+    # elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
+    #     $ipsResponseFileSecondary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
+    # }
+    # else {
+    #     Write-Output "Unknown node type, cannot create response file"
+    #     exit 1
+    # }
+
+    if ($($Config.Name -replace 'delius-mis','ndmis') -eq $Config.cmsPrimaryNode) {
         $ipsResponseFilePrimary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
     }
-    elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
+    elseif ($($Config.Name -replace 'delius-mis','ndmis') -eq $Config.cmsSecondaryNode) {
         $ipsResponseFileSecondary | Out-File -FilePath "$ipsInstallIni" -Force -Encoding ascii
     }
     else {
