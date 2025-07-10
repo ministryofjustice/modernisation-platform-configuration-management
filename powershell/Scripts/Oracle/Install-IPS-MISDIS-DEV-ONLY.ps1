@@ -368,10 +368,10 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     try {
         "Starting IPS installer at $(Get-Date)" | Out-File -FilePath $logFile -Append
         if ($($Config.Name) -eq $($Config.cmsPrimaryNode)) {
-            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         elseif ($($Config.Name) -eq $($Config.cmsSecondaryNode)) {
-            # $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
+            $process = Start-Process -FilePath "$WorkingDirectory\IPS\setup.exe" -ArgumentList '/wait', '-r D:\Software\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner" -Wait -NoNewWindow -Verbose -PassThru
         }
         else {
             Write-Output "Unknown node type, cannot start installer"

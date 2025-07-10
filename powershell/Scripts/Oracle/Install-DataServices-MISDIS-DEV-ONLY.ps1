@@ -313,8 +313,8 @@ features=DataServicesJobServer,DataServicesAccessServer,DataServicesServer,DataS
         NoNewWindow  = $true
     }
 
-    # Install Data Services FIXME: comment back in
-    # Start-Process @dataServicesInstallParams
+    # Install Data Services
+    Start-Process @dataServicesInstallParams
 
     # }}} End install Data Services
 
