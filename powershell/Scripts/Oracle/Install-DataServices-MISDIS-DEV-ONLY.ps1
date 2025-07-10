@@ -129,7 +129,7 @@ function Install-DataServices {
     } elseif ($($Config.application) -eq "delius-mis") {
         # For Delius MIS, we need to unrar the file instead of expanding it. This should already be installed via the AutoEC2LaunchV2 script.
 
-        unrar x -y "$WorkingDirectory\$($Config.DataServicesS3File)" "$WorkingDirectory\DataServices"
+        unrar x -r -o+ -y "$WorkingDirectory\$($Config.DataServicesS3File)" "$WorkingDirectory\DataServices"
         $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
 
         if (-not (Test-Path $dataServicesInstallerFilePath)) {
