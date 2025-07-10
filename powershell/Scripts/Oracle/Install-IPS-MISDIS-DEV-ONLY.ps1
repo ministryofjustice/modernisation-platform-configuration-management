@@ -357,7 +357,7 @@ features=JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.A
     New-Item -Type File -Path $logFile -Force | Out-Null
 
     # add Oracle client path to the powershell session
-    $env:Path += ";E:\app\oracle\product\19.0.0\client_1\bin"
+    $env:Path += ";C:\app\oracle\product\19.0.0\client_1\bin"
 
     $env:Path -split ";" | ForEach-Object {
         Write-Host $_
