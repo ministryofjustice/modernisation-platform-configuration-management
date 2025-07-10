@@ -159,8 +159,8 @@ function Test-DbCredentials {
     $typePath = "C:\app\oracle\product\19.0.0\client_1\ODP.NET\bin\4\Oracle.DataAccess.dll"
 
     # Not used because referencing SecretId directly FIXME: needs changing later
-    $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
-    $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
+    # $sysDbSecretName = "/oracle/database/$($Config.sysDbName)/passwords"
+    # $audDbSecretName = "/oracle/database/$($Config.audDbName)/passwords"
 
     # Get secret values, silently continue if they don't exist
     $bods_ips_system_owner = Get-SecretValue -SecretId "delius-mis-dev-oracle-dsd-db-application-passwords" -SecretKey "dfi_mod_ipscms" -ErrorAction SilentlyContinue
