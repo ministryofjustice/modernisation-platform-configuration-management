@@ -15,7 +15,11 @@
 - name: Download output directory from S3
   delegate_to: localhost
   become: no
-  shell: aws s3 cp s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/{{ ansible_date_time.date }}/ --recursive
+  shell: |
+    export PATH=$PATH:/usr/local/bin
+    aws s3 cp s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/{{ ansible_date_time.date }}/ \
+      --recursive \
+      --exclude "*.zip"
 
 - name: Compress audit directory
   delegate_to: localhost
