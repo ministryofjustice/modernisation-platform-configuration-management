@@ -1,0 +1,29 @@
+- name: Oracle Audit Databases
+  become: yes
+  become_user: root
+  become_method: sudo
+  block:
+    - import_tasks: get-kms-key.yml
+      tags:
+        - always
+
+    - import_tasks: audit-databases.yml
+      tags:
+        - collection
+        - databases
+
+    - import_tasks: audit-weblogic.yml
+      tags:
+        - collection
+        - weblogic
+      run_once: yes
+
+    - import_tasks: audit-summary.yml
+      tags:
+        - summary
+      run_once: yes
+
+    - import_tasks: audit-upload.yml
+      tags:
+        - summary
+      run_once: yes

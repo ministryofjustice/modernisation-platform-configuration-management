@@ -1,3 +1,10 @@
+# Install the Cloudwatch Agent with out baseline config
+. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
+
+. ../Common/Set-TimezoneGMT.ps1
+. ../Microsoft/Remove-EdgeFirstRunExperience.ps1
+. ../Microsoft/Add-DnsSuffixSearchList.ps1
+
 . ../ModPlatformAD/Install-ModPlatformADDomainController.ps1
 if ($LASTEXITCODE -ne 0) {
    Exit $LASTEXITCODE
@@ -14,6 +21,3 @@ $parameters = @{
     "name" = "AwsVssComponents"
 }
 Send-SSMCommand -InstanceId $instanceId -DocumentName $documentName -Parameters $parameters
-
-# Install the Cloudwatch Agent with out baseline config
-. ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1

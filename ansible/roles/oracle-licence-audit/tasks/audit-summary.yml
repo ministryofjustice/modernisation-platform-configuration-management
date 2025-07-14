@@ -1,0 +1,76 @@
+- name: Create cpu summary
+  delegate_to: localhost
+  become: no
+  block:
+    - name: Ensure audit_dir is gone (so we can start from scratch)
+      file:
+        path: "{{ audit_dir }}"
+        state: absent
+
+    - name: Recreate audit_dir
+      file:
+        path: "{{ audit_dir }}"
+        state: directory
+
+    - name: Fetch all vCPU and options summary files from S3
+      shell: |
+        export PATH=$PATH:/usr/local/bin
+        aws s3 sync s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/ \
+          --exclude "*" \
+          --include "*-vcpus.txt" \
+          --include "*options_packs_usage_summary.txt"
+
+    - name: Initialize combined text summary
+      copy:
+        dest: "{{ audit_dir }}/oracle_full_summary.txt"
+        content: ""
+        force: yes
+
+    - name: Build oracle_full_summary.txt (with license counts)
+      shell: |
+        summary="{{ audit_dir }}/oracle_full_summary.txt"
+        > "$summary"
+
+        # Loop over each host’s vCPU file
+        find "{{ audit_dir }}" -type f -name "*-vcpus.txt" | sort | while read -r vfile; do
+          host=$(basename "$vfile" -vcpus.txt)
+
+          echo "Hostname: $host"              >> "$summary"
+          echo "vCPU Info:"                   >> "$summary"
+          cat "$vfile"                        >> "$summary"
+          echo ""                             >> "$summary"
+
+          # Parse CoreCount and ThreadsPerCore
+          core=$(grep -m1 '"CoreCount"' "$vfile" | cut -d: -f2 | tr -d ' ,')
+          threads=$(grep -m1 '"ThreadsPerCore"' "$vfile" | cut -d: -f2 | tr -d ' ,')
+          vcpus=$(( core * threads ))
+          if [ "$threads" -eq 1 ]; then
+            licenses=$core
+          else
+            licenses=$(( vcpus / 2 ))
+          fi
+
+          echo "Total vCPUs: $vcpus"           >> "$summary"
+          echo "Oracle Licenses: $licenses"    >> "$summary"
+          echo ""                              >> "$summary"
+
+          # Now for each DB options-summary under that host
+          find "{{ audit_dir }}" -type f -path "*/${host}_*/options_packs_usage_summary.txt" | sort | while read -r opt; do
+            dbname=$(basename "$(dirname "$opt")" | sed -e "s/^${host}_//")
+            echo "Database: $dbname"           >> "$summary"
+            cat "$opt"                         >> "$summary"
+            echo ""                            >> "$summary"
+          done
+
+          echo "--------------------------------------------------------------------------------" >> "$summary"
+          echo "" >> "$summary"
+        done
+      args:
+        executable: /bin/bash
+
+    - name: Upload combined summary back to S3
+      shell: |
+        aws s3 cp {{ audit_dir }}/oracle_full_summary.txt \
+          s3://{{ bucket_name }}/{{ audit_output }}/oracle_full_summary.txt \
+          --acl bucket-owner-full-control \
+          {{ general_kms_key_option | default('') }}
