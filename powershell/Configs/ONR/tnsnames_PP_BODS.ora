@@ -34,7 +34,7 @@ MISTRANS2 =
     (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.oasys.service.justice.gov.uk)(PORT = 1521))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
-      (SERVICE_NAME = MISTRANS2_TAF)
+      (SERVICE_NAME = MISTRANS_TAF)
     )
   )
 
@@ -85,5 +85,93 @@ OASYS =
     (CONNECT_DATA =
       (SERVER = DEDICATED)
       (SERVICE_NAME = OASYS_TAF)
+    )
+  )
+
+ONRBODS4 =
+  (DESCRIPTION =
+    (ENABLE=broken)(CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.oasys.hmpps-preproduction.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ONRBODS4_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+OASYSREP2 =
+  (DESCRIPTION =
+    (ENABLE=broken)(CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+
+CNOMPP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = ppor-a.preproduction.nomis.service.justice.gov.uk)(PORT = 1521))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = ppor-b.preproduction.nomis.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OR_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+MISPP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = ppmis-a.preproduction.nomis.service.justice.gov.uk)(PORT = 1521))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = ppmis-b.preproduction.nomis.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = MIS_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+MISTRANS2BCK =
+  (DESCRIPTION =
+    (ENABLE=BROKEN) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = MISTRANS2_TAF)
+    )
+  )
+
+OASYSREP2BCK =
+  (DESCRIPTION =
+    (ENABLE=broken)(CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.pp.onr.hmpps-preproduction.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP2_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
     )
   )
