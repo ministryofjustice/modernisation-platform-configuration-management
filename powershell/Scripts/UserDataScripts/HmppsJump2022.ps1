@@ -2,7 +2,6 @@ $Scripts = @(
     "../Common/Set-LocalFirewallOff.ps1",
     "../Common/Set-IPv4Preferred.ps1",
     "../Common/Set-TimezoneGMT.ps1",
-    "../Common/Set-PermanentPSModulePath.ps1",
     "../Common/Install-Putty.ps1",
     "../Common/Install-WinSCP.ps1",
     "../Common/Get-PGPInstaller.ps1",
