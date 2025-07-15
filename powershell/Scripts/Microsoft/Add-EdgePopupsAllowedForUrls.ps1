@@ -17,16 +17,24 @@ $PopupsAllowedForUrls = @(
 $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\PopupsAllowedForUrls"
 
 if (!(Test-Path $RegPath)) {
-  Write-Output "Creating $RegPath"
-  New-Item -Path $RegPath -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Creating $RegPath"
+  } else {
+    Write-Output "Creating $RegPath"
+    New-Item -Path $RegPath -Force | Out-Null
+  }
 }
 
 $ItemName = 1
 foreach ($PopupsAllowedForUrl in $PopupsAllowedForUrls) {
   $ItemProperty = Get-ItemProperty -Path $RegPath -Name $ItemName -ErrorAction SilentlyContinue
   if ($null -eq $ItemProperty -or $ItemProperty.$ItemName -ne $PopupsAllowedForUrl) {
-    Write-Output "Setting $RegPath\$ItemName = $PopupsAllowedForUrl"
-    New-ItemProperty -Path $RegPath -Name $ItemName -Value $PopupsAllowedForUrl -PropertyType String -Force | Out-Null
+    if ($env:DRYRUN -eq "true") {
+      Write-Output "DRYRUN: Setting $RegPath\$ItemName = $PopupsAllowedForUrl"
+    } else {
+      Write-Output "Setting $RegPath\$ItemName = $PopupsAllowedForUrl"
+      New-ItemProperty -Path $RegPath -Name $ItemName -Value $PopupsAllowedForUrl -PropertyType String -Force | Out-Null
+    }
   }
   $ItemName = $ItemName + 1
 }
@@ -34,8 +42,12 @@ foreach ($PopupsAllowedForUrl in $PopupsAllowedForUrls) {
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name $ItemName -ErrorAction SilentlyContinue
 while ($null -ne $ItemProperty) {
   $PopupsAllowedForUrl = $ItemProperty.$ItemName
-  Write-Output "Removing $RegPath\$ItemName = $PopupsAllowedForUrl"
-  Remove-ItemProperty -Path $RegPath -Name $ItemName | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Removing $RegPath\$ItemName = $PopupsAllowedForUrl"
+  } else {
+    Write-Output "Removing $RegPath\$ItemName = $PopupsAllowedForUrl"
+    Remove-ItemProperty -Path $RegPath -Name $ItemName | Out-Null
+  }
   $ItemName = $ItemName + 1
   $ItemProperty = Get-ItemProperty -Path $RegPath -Name $ItemName -ErrorAction SilentlyContinue
 }

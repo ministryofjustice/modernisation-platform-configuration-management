@@ -140,11 +140,20 @@ $ExistingSuffixSearchList = (Get-DnsClientGlobalSetting).SuffixSearchList
 $Missing = $TargetSuffixSearchList | Where-Object { $ExistingSuffixSearchList -NotContains $_ }
 $Surplus = $ExistingSuffixSearchList | Where-Object { $TargetSuffixSearchList -NotContains $_ }
 if ($Missing -or $Surplus) {
-  if ($Missing) {
-    Write-Output "Updating DNS SuffixSearchList - adding $Missing"
+  if ($env:DRYRUN -eq "true") {
+    if ($Missing) {
+      Write-Output "DRYRUN: Updating DNS SuffixSearchList - adding $Missing"
+    }
+    if ($Surplus) {
+      Write-Output "DRYRUN: Updating DNS SuffixSearchList - removing $Surplus"
+    }
+  } else {
+    if ($Missing) {
+      Write-Output "Updating DNS SuffixSearchList - adding $Missing"
+    }
+    if ($Surplus) {
+      Write-Output "Updating DNS SuffixSearchList - removing $Surplus"
+    }
+    Set-DnsClientGlobalSetting -SuffixSearchList $TargetSuffixSearchList | Out-Null
   }
-  if ($Surplus) {
-    Write-Output "Updating DNS SuffixSearchList - removing $Surplus"
-  }
-  Set-DnsClientGlobalSetting -SuffixSearchList $TargetSuffixSearchList | Out-Null
 }

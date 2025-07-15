@@ -224,66 +224,107 @@ $SitesXmlDoc.Save($CompatibilityModeSiteListFilePath) | Out-Null
 
 $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
 if (!(Test-Path $RegPath)) {
-  Write-Output "Creating $RegPath"
-  New-Item -Path $RegPath -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Creating $RegPath"
+  } else {
+    Write-Output "Creating $RegPath"
+    New-Item -Path $RegPath -Force | Out-Null
+  }
 }
 
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -ErrorAction SilentlyContinue
 if ($null -eq $ItemProperty -or $ItemProperty.InternetExplorerIntegrationLevel -ne 1) {
-  Write-Output "Setting $RegPath\InternetExplorerIntegrationLevel = IEMode"
-  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Setting $RegPath\InternetExplorerIntegrationLevel = IEMode"
+  } else {
+    Write-Output "Setting $RegPath\InternetExplorerIntegrationLevel = IEMode"
+    New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force | Out-Null
+  }
 }
 
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -ErrorAction SilentlyContinue
 if ($null -eq $ItemProperty -or $ItemProperty.InternetExplorerIntegrationSiteList -ne $CompatibilityModeSiteListFilePath) {
-  Write-Output "Setting $RegPath\InternetExplorerIntegrationSiteList = $CompatibilityModeSiteListFilePath"
-  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -Value $CompatibilityModeSiteListFilePath -PropertyType String -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Setting $RegPath\InternetExplorerIntegrationSiteList = $CompatibilityModeSiteListFilePath"
+  } else {
+    Write-Output "Setting $RegPath\InternetExplorerIntegrationSiteList = $CompatibilityModeSiteListFilePath"
+    New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -Value $CompatibilityModeSiteListFilePath -PropertyType String -Force | Out-Null
+  }
 }
 
 if (!(Test-Path $RegPath\EnhanceSecurityModeBypassListDomains)) {
-  Write-Output "Creating $RegPath\EnhanceSecurityModeBypassListDomains"
-  New-Item -Path $RegPath\EnhanceSecurityModeBypassListDomains -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Creating $RegPath\EnhanceSecurityModeBypassListDomains"
+  } else {
+    Write-Output "Creating $RegPath\EnhanceSecurityModeBypassListDomains"
+    New-Item -Path $RegPath\EnhanceSecurityModeBypassListDomains -Force | Out-Null
+  }
 }
 
 $ItemName = 1
 foreach ($TrustedDomain in $TrustedDomains) {
   $ItemProperty = Get-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -ErrorAction SilentlyContinue
   if ($null -eq $ItemProperty -or $ItemProperty.$ItemName -ne $TrustedDomain) {
-    Write-Output "Setting $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
-    New-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -Value $TrustedDomain -PropertyType String -Force | Out-Null
+    if ($env:DRYRUN -eq "true") {
+      Write-Output "DRYRUN: Setting $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
+    }
+    else {
+      Write-Output "Setting $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
+      New-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -Value $TrustedDomain -PropertyType String -Force | Out-Null
+    }
   }
   $ItemName = $ItemName + 1
 }
 $ItemProperty = Get-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -ErrorAction SilentlyContinue
 while ($null -ne $ItemProperty) {
   $TrustedDomain = $ItemProperty.$ItemName -replace '^\*\.', ''
-  Write-Output "Removing $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
-  Remove-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Removing $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
+  } else {
+    Write-Output "Removing $RegPath\EnhanceSecurityModeBypassListDomains\$ItemName = $TrustedDomain"
+    Remove-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName | Out-Null
+  }
   $ItemName = $ItemName + 1
   $ItemProperty = Get-ItemProperty -Path "$RegPath\EnhanceSecurityModeBypassListDomains" -Name $ItemName -ErrorAction SilentlyContinue
 }
 
 $RegPath = "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings"
 if (!(Test-Path "$RegPath")) {
-  Write-Output "Creating $RegPath"
-  New-Item -Path "$RegPath" -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Creating $RegPath"
+  } else {
+    Write-Output "Creating $RegPath"
+    New-Item -Path "$RegPath" -Force | Out-Null
+  }
 }
 
 $ItemProperty = Get-ItemProperty -Path "$RegPath" -Name Security_HKLM_only -ErrorAction SilentlyContinue
 if ($null -eq $ItemProperty -or $ItemProperty.Security_HKLM_only -ne 1) {
-  Write-Output "Setting $RegPath\Security_HKLM_only = 1"
-  New-ItemProperty -Path "$RegPath" -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force | Out-Null
+  if ($env:DRYRUN -eq "true") {
+    Write-Output "DRYRUN: Setting $RegPath\Security_HKLM_only = 1"
+  } else {
+    Write-Output "Setting $RegPath\Security_HKLM_only = 1"
+    New-ItemProperty -Path "$RegPath" -Name Security_HKLM_only -Value 1 -PropertyType DWORD -Force | Out-Null
+  }
 }
 
 $RegPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains"
 foreach ($TrustedDomain in $TrustedDomains) {
   if (!(Test-Path "$RegPath\$TrustedDomain")) {
-    Write-Output "Creating $RegPath\$TrustedDomain"
-    New-Item -Path "$RegPath\$TrustedDomain" -Force | Out-Null
+    if ($env:DRYRUN -eq "true") {
+      Write-Output "DRYRUN: Creating $RegPath\$TrustedDomain"
+    } else {
+      Write-Output "Creating $RegPath\$TrustedDomain"
+      New-Item -Path "$RegPath\$TrustedDomain" -Force | Out-Null
+    }
   }
   $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -ErrorAction SilentlyContinue
   if ($null -eq $ItemProperty -or $ItemProperty.https -ne 2) {
-    Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
-    New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
+    if ($env:DRYRUN -eq "true") {
+      Write-Output "DRYRUN: Setting $RegPath\$TrustedDomain\https = 2"
+    } else {
+      Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
+      New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
+    }
   }
 }

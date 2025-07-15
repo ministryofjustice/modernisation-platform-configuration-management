@@ -252,15 +252,13 @@ if ($Config.Contains("Remove")) {
     $BasePath = [environment]::GetFolderPath($Folder.Key)
     foreach ($ShortcutName in $Folder.Value) {
       $ShortcutPath = Join-Path -Path $BasePath -ChildPath $ShortcutName
-      Remove-Item -Path $ShortcutPath -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
-      #foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Recurse)) {
-      #  Write-Output "Removing $Item"
-      #  Remove-Item $Item -Force -Recurse | Out-Null
-      #}
-      #foreach ($Item in (Get-ChildItem "${ShortcutPath}*" -Directory)) {
-      #  Write-Output "Removing $Item"
-      #  Remove-Item $Item -Force -Recurse | Out-Null
-      #}
+      if ($env:DRYRUN -eq "true") {
+        if (Test-Path -Path $ShortcutPath) {
+          Write-Output "DRYRUN: Removing $ShortcutName"
+        }
+      } else {
+        Remove-Item -Path $ShortcutPath -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
+      }
     }
   }
 }
@@ -274,13 +272,21 @@ if ($Config.Contains("Add")) {
       $ShortcutPath = Join-Path -Path $BasePath -ChildPath ($ShortcutName + ".url")
       $ShortcutDir = Split-Path -Path $ShortcutPath -Parent
       if (!(Test-Path -Path $ShortcutDir)) {
-        Write-Output "Creating $ShortcutDir"
-        New-Item -Path $ShortcutDir -ItemType Directory -Force | Out-Null
+        if ($env:DRYRUN -eq "true") {
+          Write-Output "DRYRUN: Creating $ShortcutDir"
+        } else {
+          Write-Output "Creating $ShortcutDir"
+          New-Item -Path $ShortcutDir -ItemType Directory -Force | Out-Null
+        }
       }
-      Write-Output "Setting $ShortcutPath = $ShortcutUrl"
-      $Shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
-      $Shortcut.TargetPath = $ShortcutUrl
-      $Shortcut.Save()
+      if ($env:DRYRUN -eq "true") {
+        Write-Output "DRYRUN: Setting $ShortcutPath = $ShortcutUrl"
+      } else {
+        Write-Output "Setting $ShortcutPath = $ShortcutUrl"
+        $Shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
+        $Shortcut.TargetPath = $ShortcutUrl
+        $Shortcut.Save()
+      }
     }
   }
 }
