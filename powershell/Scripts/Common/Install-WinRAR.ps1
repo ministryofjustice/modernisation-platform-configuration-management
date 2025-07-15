@@ -21,7 +21,10 @@ function Install-Package {
         Write-Output "$Package already installed"
         $version = (Get-ChocolateyPackage -Name $Package).version
         Write-Output "$Package version $version installed"
+    } elseif ($env:DRYRUN -eq "true") {
+        Write-Output "DRYRUN: Installing $Package"
     } else {
+        Write-Output "Installing $Package"
         choco install $Package -y
     }
 }

@@ -14,6 +14,8 @@ $InstallerPath = $SoftwareFolderPath + "\" + $File
 
 if (Test-Path $InstallerPath) {
     Write-Output "Symantec PGP 10.3.2 already downloaded"
+} elseif ($env:DRYRUN -eq "true") {
+    Write-Host "DRYRUN: Downloading Symantec PGP 10.3.2"
 } else {
     New-Item -Type Directory -Path $SoftwareFolderPath -Force | Out-Null
     Write-Output "Downloading Symantec PGP 10.3.2"
