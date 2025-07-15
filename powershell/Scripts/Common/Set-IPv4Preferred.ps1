@@ -6,9 +6,11 @@ $desiredValue = 0x20
 # Check if property exists and get current value
 if (Test-Path $registryPath) {
     $property = Get-ItemProperty -Path $registryPath -Name $propertyName -ErrorAction SilentlyContinue
-    
+
     if ($property -and $property.$propertyName -eq $desiredValue) {
         Write-Host "Registry already configured to prefer IPv4 over IPv6."
+    } elseif ($env:DRYRUN -eq "true") {
+        Write-Host "DRYRUN: Registry updated to prefer IPv4 over IPv6. A system restart is required for changes to take effect."
     } else {
         # Set the property to prefer IPv4 over IPv6
         Set-ItemProperty -Path $registryPath -Name $propertyName -Value $desiredValue -Type DWord

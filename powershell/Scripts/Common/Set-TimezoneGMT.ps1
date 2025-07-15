@@ -4,6 +4,8 @@ $currentTimeZone = (Get-TimeZone).Id
 
 if ($currentTimeZone -eq $desiredTimeZone) {
     Write-Host "Time zone is already set to $desiredTimeZone."
+} elseif ($env:DRYRUN -eq "true") {
+    Write-Host "DRYRUN: Time zone has been set to $desiredTimeZone."
 } else {
     Set-TimeZone -Name $desiredTimeZone
     Write-Host "Time zone has been set to $desiredTimeZone."
