@@ -13,9 +13,13 @@ $SoftwareFolderPath = "C:\Software\PGPInstaller"
 $InstallerPath = $SoftwareFolderPath + "\" + $File
 
 if (Test-Path $InstallerPath) {
-    Write-Output "Symantec PGP 10.3.2 already downloaded"
+    Write-Verbose "Symantec PGP 10.3.2 already downloaded"
 } else {
     New-Item -Type Directory -Path $SoftwareFolderPath -Force | Out-Null
     Write-Output "Downloading Symantec PGP 10.3.2"
-    Read-S3Object -BucketName $S3Bucket -Key "$S3Folder/$File" -File "$InstallerPath" | Out-Null
+    if ($WhatIfPreference) {
+        Write-Output "What-If: Read-S3Object -BucketName $S3Bucket -Key $S3Folder/$File -File $InstallerPath"
+    } else {
+        Read-S3Object -BucketName $S3Bucket -Key "$S3Folder/$File" -File "$InstallerPath" | Out-Null
+    }
 }
