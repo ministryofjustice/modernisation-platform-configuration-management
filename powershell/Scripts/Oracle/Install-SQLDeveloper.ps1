@@ -12,6 +12,8 @@ $SQLDeveloperZip      = "sqldeveloper-22.2.1.234.1810-x64.zip"
 
 if (Test-Path "C:\Program Files\Oracle\sqldeveloper\sqldeveloper.exe") {
   Write-Output "SQL Developer already installed"
+} elseif ($env:DRYRUN -eq "true") {
+  Write-Output "DRYRUN: Installing SQL Developer"
 } else {
   Write-Output "Installing SQL Developer"
   Set-Location -Path ([System.IO.Path]::GetTempPath())

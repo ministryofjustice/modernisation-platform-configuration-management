@@ -37,6 +37,10 @@ if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCrede
 }
 $DnsSettings = Get-DnsClientGlobalSetting
 if (-not ($DnsSettings.SuffixSearchList -contains $ADConfig.DomainNameFQDN)) {
-  Write-Output ("Adding " + $ADConfig.DomainNameFQDN + " to DNS Suffix Search List")
-  Set-DnsClientGlobalSetting -SuffixSearchList ($DnsSettings.SuffixSearchList + $ADConfig.DomainNameFQDN)
+  if ($env:DRYRUN -eq "true") {
+    Write-Output ("DRYRUN: Adding " + $ADConfig.DomainNameFQDN + " to DNS Suffix Search List")
+  } else {
+    Write-Output ("Adding " + $ADConfig.DomainNameFQDN + " to DNS Suffix Search List")
+    Set-DnsClientGlobalSetting -SuffixSearchList ($DnsSettings.SuffixSearchList + $ADConfig.DomainNameFQDN)
+  }
 }

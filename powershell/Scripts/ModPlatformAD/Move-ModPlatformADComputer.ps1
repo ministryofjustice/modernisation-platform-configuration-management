@@ -42,11 +42,16 @@ function Move-ModPlatformADComputer {
         Write-Output "Target OU exists: $NewOU"
     }
 
-    # Move the computer to the new OU
-    $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
+    if ($env:DRYRUN -eq "true") {
+        Write-Output "DRYRUN: Moving Computer to Target OU and running GPUpdate"
+    } else {
+        # Move the computer to the new OU
+        Write-Output "Moving Computer to Target OU and running GPUpdate"
+        $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 
-    # force group policy update
-    gpupdate /force
+        # force group policy update
+        gpupdate /force
+    }
 }
 
 # NOTE: Only getting the tags here, not the config

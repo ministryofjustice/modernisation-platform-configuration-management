@@ -14,6 +14,8 @@ $JavaInstallDir    = "C:\Program Files (x86)\Java\jre1.8.0_351"
 
 if (Test-Path $JavaInstallDir) {
   Write-Output "JRE already installed in $JavaInstallDir"
+} elseif ($env:DRYRUN -eq "true") {
+  Write-Output "DRYRUN: Installing JRE in $JavaInstallDir"
 } else {
   $TempPath = [System.IO.Path]::GetTempPath()
   Write-Output "Installing JRE in $JavaInstallDir"
