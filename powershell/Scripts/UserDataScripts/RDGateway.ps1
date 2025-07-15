@@ -6,7 +6,7 @@ $Scripts = @(
     "../Microsoft/Add-DnsSuffixSearchList.ps1",
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
-    @("../ModPlatformRemoteDesktop/Add-ModPlatformRDGateway.ps1", @{EnableSSLBridging = $false}),
+    "../ModPlatformRemoteDesktop/Add-ModPlatformRDGateway.ps1",
     "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
     "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
 )
