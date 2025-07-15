@@ -28,13 +28,16 @@ function New-ModPlatformADGroup {
         [Parameter(Mandatory=$true)]
         [System.Management.Automation.PSCredential]$ModPlatformADCredential
     )
-    Write-Debug "Creating Group: $Group"
-    Write-Debug "Creating Path: $Path"
 
     $groupExists = Get-ADGroup -Filter "Name -eq '$Group'" -Credential $ModPlatformADCredential -ErrorAction SilentlyContinue
     # Create the Group in AD
     if (-NOT($groupExists)) {
-        New-ADGroup -Name $Group -Path $Path -Description $Description -Credential $ModPlatformADCredential -GroupScope "Global" -GroupCategory "Security"
+        if ($env:DRYRUN -eq "true") {
+          Write-Host "DRYRUN: Creating New Group $Group at Path $Path"
+        } else {
+          Write-Host "Creating New Group $Group at Path $Path"
+          New-ADGroup -Name $Group -Path $Path -Description $Description -Credential $ModPlatformADCredential -GroupScope "Global" -GroupCategory "Security"
+        }
     } else {
         Write-Host "Group: $Group already exists"
     }

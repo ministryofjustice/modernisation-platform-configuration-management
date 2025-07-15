@@ -47,6 +47,10 @@ function Rename-ModPlatformADComputer {
     $NewHostname = $InstanceId
   }
   if ($NewHostname -ne $env:COMPUTERNAME) {
+    if ($env:DRYRUN -eq "true") {
+      Write-Host "DRYRUN: Renaming EC2 instance to $NewHostname and then rebooting"
+      Return $null
+    }
     if (-not $ModPlatformADCredential) {
       Rename-Computer -NewName $NewHostname -Force
     } else {
@@ -107,9 +111,12 @@ function Add-ModPlatformADComputer {
   }
 
   # Join the domain
-
-  Write-Host "INFO: Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
-  Add-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
+  if ($env:DRYRUN -eq "true") {
+    Write-Host "DRYRUN: Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
+  } else {
+    Write-Host "INFO: Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
+    Add-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
+  }
   Return $true
 }
 
@@ -153,8 +160,12 @@ function Remove-ModPlatformADComputer {
 
   # Join the domain
   $DomainNameFQDN = (Get-WmiObject -Class Win32_ComputerSystem).Domain
-  Write-Host "INFO: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
-  Remove-Computer -Credential $ModPlatformADCredential -Verbose -Force
+  if ($env:DRYRUN -eq "true") {
+    Write-Host "DRYRUN: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
+  else {
+    Write-Host "INFO: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
+    Remove-Computer -Credential $ModPlatformADCredential -Verbose -Force
+  }
   Return $true
 }
 
