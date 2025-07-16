@@ -1,1 +1,1 @@
-. ./Install-Choco-Package.ps1 winscp
+. ../Common/Install-Choco-Package.ps1 winscp
