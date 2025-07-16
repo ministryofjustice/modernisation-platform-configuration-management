@@ -29,7 +29,7 @@ function Move-ModPlatformADComputer {
 
     # Check if the computer is already in the correct OU
     if ($computer.DistinguishedName -like "*$NewOU") {
-        Write-Output "Computer $env:COMPUTERNAME is already in the correct OU: $NewOU"
+        Write-Verbose "Computer $env:COMPUTERNAME is already in the correct OU: $NewOU"
         return $true
     }
 
@@ -39,7 +39,7 @@ function Move-ModPlatformADComputer {
         Write-Error "Target OU does not exist: $NewOU"
         return $false
     } else {
-        Write-Output "Target OU exists: $NewOU"
+        Write-Verbose "Target OU exists: $NewOU"
     }
 
     # Move the computer to the new OU
