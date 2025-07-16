@@ -46,7 +46,12 @@ function Move-ModPlatformADComputer {
     $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $ModPlatformADCredential
 
     # force group policy update
-    gpupdate /force
+    Write-Output "Updating group policies"
+    if ($WhatIfPreference) {
+        gpupdate /whatif
+    } else {
+        gpupdate /force
+    }
 }
 
 # NOTE: Only getting the tags here, not the config
