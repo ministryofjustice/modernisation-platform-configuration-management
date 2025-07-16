@@ -16,21 +16,21 @@ function Install-Oracle19cClient {
 
     if (-not (Test-Path $WorkingDirectory)) {
         Write-Output " - Creating directory: $WorkingDirectory"
-        New-Item -ItemType Directory -Path $WorkingDirectory -Force
+        New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
     }
 
     if (-not (Test-Path $AppDirectory)) {
         Write-Output " - Creating directory:$AppDirectory"
-        New-Item -ItemType Directory -Path $AppDirectory -Force
+        New-Item -ItemType Directory -Path $AppDirectory -Force | Out-Null
     }
 
     Set-Location -Path $WorkingDirectory
 
     # Prepare installer
-    Get-Installer -Key $Oracle19c64bitClientS3File -Destination (".\" + $Oracle19c64bitClientS3File)
+    Get-Installer -Key $Oracle19c64bitClientS3File -Destination (".\" + $Oracle19c64bitClientS3File) | Out-Null
 
     Write-Output " - Extracting Archive to .\OracleClient"
-    Expand-Archive (".\" + $Oracle19c64bitClientS3File) -Destination ".\OracleClient"
+    Expand-Archive (".\" + $Oracle19c64bitClientS3File) -Destination ".\OracleClient" | Out-Null
 
     # Create response file for silent install
     $oracleClientResponseFileContent = @"
@@ -90,7 +90,7 @@ function Get-Installer {
     }
 
     Write-Output " - Retrieving installer from S3: $S3Bucket/$WindowsClientS3Folder/$Key"
-    Read-S3Object @s3Params
+    Read-S3Object @s3Params | Out-Null
 }
 
 $S3Bucket                   = "mod-platform-image-artefact-bucket20230203091453221500000001"
