@@ -20,7 +20,7 @@ function Install-Oracle19cClient {
     }
 
     if (-not (Test-Path $AppDirectory)) {
-        Write-Output " - Creating directory:$AppDirectory"
+        Write-Output " - Creating directory: $AppDirectory"
         New-Item -ItemType Directory -Path $AppDirectory -Force | Out-Null
     }
 
