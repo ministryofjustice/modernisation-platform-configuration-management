@@ -48,7 +48,7 @@ function Move-ModPlatformADComputer {
     # force group policy update
     Write-Output "Updating group policies"
     if ($WhatIfPreference) {
-        gpupdate /whatif
+        Write-Output "What-If: gpupdate /force"
     } else {
         gpupdate /force
     }
