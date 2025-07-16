@@ -18,6 +18,9 @@ $tempZip = "${archiveDir}\${timestamp}.ziptmp"
 $logFile =  "${directory}\process_csvs_log.txt"
 $retention = $timestampDate.AddMonths(-1).ToString("yyyyMMddHHmmss")
 $emailMessageFile = "${directory}\email_message.txt"
+$emailSecretId = '/prisoner-retail/notify_emails'
+$awsRegion = 'eu-west-2'
+$savedEmailsFile = "${directory}\emails.ps1"
 
 $allFiles = Get-ChildItem -Path $directory -File -Recurse | Where-Object {
     $_.DirectoryName -ne (Get-Item $directory).FullName
@@ -70,6 +73,7 @@ function Main {
     Delete-OldFiles -directory $archiveDir -extension ".7z"
     Delete-OldFiles -directory $outputDir  -prefix "PR" -extension ".txt"
 
+    Get-Emails
     Send-Email
 
     Write-Log "$PSCommandPath ran successfully"
@@ -349,7 +353,32 @@ function Delete-OldFiles {
     }
 }
 
+function Get-Emails {
+    try {
+        $secretText = aws secretsmanager get-secret-value `
+            --secret-id $emailSecretId `
+            --region $awsRegion `
+            --query 'SecretString' `
+            --output text
+
+        if ($secretText -match "\.gov\.uk") {
+            $emailVars = $secretText | ConvertFrom-Json
+            $emailFrom = $emailVars.from 
+            $emailTo = $emailVars.to 
+            "`$from = '$emailFrom'
+`$to = '$emailTo'" | Out-File -FilePath $savedEmailsFile -Encoding UTF8 -Force
+        }
+        else {
+            Write-Log "Email secret does not contain 'gov.uk'. Output was not saved."
+        }
+    }
+    catch {
+        Write-Log "Exception occurred while retrieving the email secret: $_"
+    }
+}
+
 function Send-Email {
+    . $savedEmailsFile
     "Hi All
 This is what's been removed from Prison Retail's Folders on this run
 If no lines are below, nothing has been deleted
@@ -359,7 +388,7 @@ If no lines are below, nothing has been deleted
 Glenn Bot
 " | Add-Content -Path $emailMessageFile
 
-    # Send-MailMessage -from ... -to ... -subject ‘Prison Retail Removed Files Last Run’ -Body Get-Content -Path $emailMessageFile -SmtpServer ‘smtp.hmpps-domain.service.justice.gov.uk’
+    # Send-MailMessage -from '$from' -to $to -subject ‘Prison Retail Removed Files Last Run’ -Body Get-Content -Path $emailMessageFile -SmtpServer ‘smtp.hmpps-domain.service.justice.gov.uk’
 
 }
 
