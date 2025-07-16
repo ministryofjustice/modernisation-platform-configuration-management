@@ -3,8 +3,8 @@ $desiredTimeZone = "GMT Standard Time"
 $currentTimeZone = (Get-TimeZone).Id
 
 if ($currentTimeZone -eq $desiredTimeZone) {
-    Write-Host "Time zone is already set to $desiredTimeZone."
+    Write-Verbose "TimeZone is already set to $desiredTimeZone"
 } else {
+    Write-Output "Setting TimeZone to $desiredTimeZone"
     Set-TimeZone -Name $desiredTimeZone
-    Write-Host "Time zone has been set to $desiredTimeZone."
 }
