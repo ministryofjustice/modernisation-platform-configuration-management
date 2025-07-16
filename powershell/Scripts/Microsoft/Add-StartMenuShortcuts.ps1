@@ -278,9 +278,9 @@ if ($Config.Contains("Add")) {
         New-Item -Path $ShortcutDir -ItemType Directory -Force | Out-Null
       }
       if ($WhatIfPreference) {
-        Write-Output "What-If: Setting $ShortcutPath = $ShortcutUrl"
+        Write-Output "What-If: Creating/Updating Shortcut $ShortcutPath = $ShortcutUrl"
       } else {
-        Write-Output "Setting $ShortcutPath = $ShortcutUrl"
+        Write-Output "Creating/Updating Shortcut $ShortcutPath = $ShortcutUrl"
         $Shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
         $Shortcut.TargetPath = $ShortcutUrl
         $Shortcut.Save()
