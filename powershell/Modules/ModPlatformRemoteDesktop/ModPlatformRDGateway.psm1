@@ -14,7 +14,7 @@ function Add-ModPlatformRDGateway() {
   Write-Output "RDGateway: Installing feature if not already installed"
   $InstallRDGatewayResult = Install-WindowsFeature -Name RDS-Gateway -IncludeAllSubFeature  -IncludeManagementTools
 
-  if ($WhatIfPreference -and -Not (Get-Module -ListAvailable -Name RemoteDesktopServices)) {    
+  if ($WhatIfPreference -and -Not (Get-Module -ListAvailable -Name RemoteDesktopServices)) {
     Write-Output "What-If: Updating RDGateway settings"
   } else {
     Import-Module RemoteDesktopServices
@@ -66,12 +66,24 @@ function Set-ModPlatformRDGatewayCAP() {
       New-Item "RDS:\GatewayServer\CAP\${Name}\UserGroups" -Name $UserGroups | out-null
     }
   }
-  Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\Status" -Value $Status | out-null
+  if ($WhatIfPreference) {
+    Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\Status -Value $Status"
+  } else {
+    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\Status" -Value $Status | out-null
+  }
   if ($IdleTimeout) {
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\IdleTimeout" -Value $IdleTimeout | out-null
+    if ($WhatIfPreference) {
+      Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\IdleTimeout -Value $IdleTimeout"
+    } else {
+      Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\IdleTimeout" -Value $IdleTimeout | out-null
+    }
   }
   if ($SessionTimeout -or $SessionTimeoutAction) {
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\SessionTimeout" -Value $SessionTimeout -SessionTimeoutAction $SessionTimeoutAction | out-null
+    if ($WhatIfPreference) {
+      Write-Output "What-If: Set-Item -Path RDS:\GatewayServer\CAP\${Name}\SessionTimeout -Value $SessionTimeout -SessionTimeoutAction $SessionTimeoutAction"
+    } else {
+      Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\SessionTimeout" -Value $SessionTimeout -SessionTimeoutAction $SessionTimeoutAction | out-null
+    }
   }
 }
 
