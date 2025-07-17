@@ -14,7 +14,7 @@ function Add-ModPlatformRDGateway() {
   Write-Output "RDGateway: Installing feature if not already installed"
   $InstallRDGatewayResult = Install-WindowsFeature -Name RDS-Gateway -IncludeAllSubFeature  -IncludeManagementTools
 
-  if ($WhatIfPreference -and -Not Get-Module -ListAvailable -Name RemoteDesktopServices) {
+  if ($WhatIfPreference -and -Not (Get-Module -ListAvailable -Name RemoteDesktopServices)) {
     Write-Output "What-If: Updating RDGateway settings"
   } else {
     Import-Module RemoteDesktopServices
