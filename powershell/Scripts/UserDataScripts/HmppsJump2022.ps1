@@ -6,7 +6,7 @@ $Scripts = @(
     "../Common/Install-WinSCP.ps1",
     "../Common/Get-PGPInstaller.ps1",
     "../ModPlatformAD/Join-ModPlatformAD.ps1",
-    "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
+    #"../ModPlatformAD/Move-ModPlatformADComputer.ps1",
     "../Oracle/Install-Java6.ps1",
     "../Oracle/Install-Java8.ps1",
     "../Oracle/Install-JavaDeployment.ps1",
