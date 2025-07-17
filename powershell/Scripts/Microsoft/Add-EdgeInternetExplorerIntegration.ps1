@@ -231,13 +231,21 @@ if (!(Test-Path $RegPath)) {
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -ErrorAction SilentlyContinue
 if ($null -eq $ItemProperty -or $ItemProperty.InternetExplorerIntegrationLevel -ne 1) {
   Write-Output "Setting $RegPath\InternetExplorerIntegrationLevel = IEMode"
-  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force | Out-Null
+  if ($WhatIfPreference) {
+    Write-Output "What-If: New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force"
+  } else {
+    New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationLevel -Value 1 -PropertyType DWORD -Force | Out-Null
+  }
 }
 
 $ItemProperty = Get-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -ErrorAction SilentlyContinue
 if ($null -eq $ItemProperty -or $ItemProperty.InternetExplorerIntegrationSiteList -ne $CompatibilityModeSiteListFilePath) {
   Write-Output "Setting $RegPath\InternetExplorerIntegrationSiteList = $CompatibilityModeSiteListFilePath"
-  New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -Value $CompatibilityModeSiteListFilePath -PropertyType String -Force | Out-Null
+  if ($WhatIfPreference) {
+    Write-Output "New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -Value $CompatibilityModeSiteListFilePath -PropertyType String -Force"
+  } else {
+    New-ItemProperty -Path $RegPath -Name InternetExplorerIntegrationSiteList -Value $CompatibilityModeSiteListFilePath -PropertyType String -Force | Out-Null
+  }
 }
 
 if (!(Test-Path $RegPath\EnhanceSecurityModeBypassListDomains)) {
