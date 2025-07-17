@@ -122,6 +122,7 @@ if ($InstallAmazonCloudWatchAgent) {
 }
 
 # Use SSM parameter if configured, otherwise fall back and use file from repo
+# NOTE: this assumes relevant AWS powershell modules are installed. This may fail on older OS
 $CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True)
 if ($CustomConfig.Parameters) {
   $ExistingConfigPath = "C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\ssm_cloud-watch-config-windows"
