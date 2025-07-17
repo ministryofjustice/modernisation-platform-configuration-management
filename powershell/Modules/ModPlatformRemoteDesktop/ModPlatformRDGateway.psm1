@@ -57,7 +57,7 @@ function Set-ModPlatformRDGatewayCAP() {
   } else {
     Write-Output "RDGateway: Updating ${Name} CAP"
     if ($WhatIfPreference) {
-      Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\AuthMethod -Value $AuthMethod"
+      Write-Output "What-If: Set-Item -Path RDS:\GatewayServer\CAP\${Name}\AuthMethod -Value $AuthMethod"
     } else {
       Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\AuthMethod" -Value $AuthMethod | out-null
     }
@@ -67,13 +67,13 @@ function Set-ModPlatformRDGatewayCAP() {
     }
   }
   if ($WhatIfPreference) {
-    Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\Status -Value $Status"
+    Write-Output "What-If: Set-Item -Path RDS:\GatewayServer\CAP\${Name}\Status -Value $Status"
   } else {
     Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\Status" -Value $Status | out-null
   }
   if ($IdleTimeout) {
     if ($WhatIfPreference) {
-      Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\IdleTimeout -Value $IdleTimeout"
+      Write-Output "What-If: Set-Item -Path RDS:\GatewayServer\CAP\${Name}\IdleTimeout -Value $IdleTimeout"
     } else {
       Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\IdleTimeout" -Value $IdleTimeout | out-null
     }
@@ -101,13 +101,21 @@ function Set-ModPlatformRDGatewayRAP() {
 
   if (-not (Test-Path -Path "RDS:\GatewayServer\RAP\${Name}")) {
     Write-Output "RDGateway: Creating ${Name} RAP"
-    New-Item -Path "RDS:\GatewayServer\RAP" -Name $Name -ComputerGroupType $ComputerGroupType -UserGroups $UserGroups | out-null
+    if ($WhatIfPreference) {
+      Write-Output "What-If: New-Item -Path RDS:\GatewayServer\RAP -Name $Name -ComputerGroupType $ComputerGroupType -UserGroups $UserGroups"
+    } else {
+      New-Item -Path "RDS:\GatewayServer\RAP" -Name $Name -ComputerGroupType $ComputerGroupType -UserGroups $UserGroups | out-null
+    }
   } else {
     Write-Output "RDGateway: Updating ${Name} RAP"
     Set-Item -Path "RDS:\GatewayServer\RAP\${Name}\ComputerGroupType" -Value $ComputerGroupType | out-null
     if (-not (Test-Path -Path "RDS:\GatewayServer\RAP\${Name}\UserGroups\${UserGroups}")) {
       Write-Output "RDGateway: Adding new UserGroups ${UserGroups} to ${Name} RAP"
-      New-Item "RDS:\GatewayServer\RAP\${Name}\UserGroups" -Name $UserGroups | out-null
+      if ($WhatIfPreference) {
+        Write-Output "What-If: New-Item RDS:\GatewayServer\RAP\${Name}\UserGroups -Name $UserGroups"
+      } else {
+        New-Item "RDS:\GatewayServer\RAP\${Name}\UserGroups" -Name $UserGroups | out-null
+      }
     }
   }
 }
