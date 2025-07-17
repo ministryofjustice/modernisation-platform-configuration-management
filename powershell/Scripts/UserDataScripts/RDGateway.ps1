@@ -1,7 +1,7 @@
 $Scripts = @(
     "../Common/Set-LocalFirewallOff.ps1",
     "../Common/Set-IPv4Preferred.ps1",
-    "../Common/Set-GMTTimezone.ps1",
+    "../Common/Set-TimezoneGMT.ps1",
     @("../ModPlatformAD/Join-ModPlatformAD.ps1", @{NewHostname = "keep-existing"}),
     "../Microsoft/Add-DnsSuffixSearchList.ps1",
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
