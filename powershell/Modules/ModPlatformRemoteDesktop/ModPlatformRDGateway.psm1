@@ -14,7 +14,7 @@ function Add-ModPlatformRDGateway() {
   Write-Output "RDGateway: Installing feature if not already installed"
   $InstallRDGatewayResult = Install-WindowsFeature -Name RDS-Gateway -IncludeAllSubFeature  -IncludeManagementTools
 
-  if ($WhatIfPreference -and -Not (Get-Module -ListAvailable -Name RemoteDesktopServices)) {
+  if ($WhatIfPreference -and -Not (Get-Module -ListAvailable -Name RemoteDesktopServices)) {    
     Write-Output "What-If: Updating RDGateway settings"
   } else {
     Import-Module RemoteDesktopServices
@@ -49,10 +49,18 @@ function Set-ModPlatformRDGatewayCAP() {
 
   if (-not (Test-Path -Path "RDS:\GatewayServer\CAP\${Name}")) {
     Write-Output "RDGateway: Creating ${Name} CAP"
-    New-Item -Path "RDS:\GatewayServer\CAP" -Name $Name -AuthMethod $AuthMethod -UserGroups $UserGroups | out-null
+    if ($WhatIfPreference) {
+      Write-Output "What-If: New-Item -Path RDS:\GatewayServer\CAP -Name $Name -AuthMethod $AuthMethod -UserGroups $UserGroups"
+    } else {
+      New-Item -Path "RDS:\GatewayServer\CAP" -Name $Name -AuthMethod $AuthMethod -UserGroups $UserGroups | out-null
+    }
   } else {
     Write-Output "RDGateway: Updating ${Name} CAP"
-    Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\AuthMethod" -Value $AuthMethod | out-null
+    if ($WhatIfPreference) {
+      Write-Output "Set-Item -Path RDS:\GatewayServer\CAP\${Name}\AuthMethod -Value $AuthMethod"
+    } else {
+      Set-Item -Path "RDS:\GatewayServer\CAP\${Name}\AuthMethod" -Value $AuthMethod | out-null
+    }
     if (-not (Test-Path -Path "RDS:\GatewayServer\CAP\${Name}\UserGroups\${UserGroups}")) {
       Write-Output "RDGateway: Adding new UserGroups ${UserGroups} to ${Name} CAP"
       New-Item "RDS:\GatewayServer\CAP\${Name}\UserGroups" -Name $UserGroups | out-null
