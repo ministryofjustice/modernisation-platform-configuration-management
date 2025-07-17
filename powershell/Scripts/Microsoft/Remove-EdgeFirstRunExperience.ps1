@@ -13,9 +13,12 @@ if (!(Test-Path $RegPath)) {
   New-Item -Path $RegPath -Force | Out-Null
 }
 
-$ItemProperty = Get-ItemProperty -Path $RegPath -Name HideFirstRunExperience -ErrorAction SilentlyContinue
+# Check path incase $WhatIfPreference has been set
+if (Test-Path $RegPath) {
+  $ItemProperty = Get-ItemProperty -Path $RegPath -Name HideFirstRunExperience -ErrorAction SilentlyContinue
 
-if (($null -eq $ItemProperty) -or ($ItemProperty.HideFirstRunExperience -ne 1)) {
-  Write-Output "Setting $RegPath\HideFirstRunExperience = 1"
-  New-ItemProperty -Path $RegPath -Name HideFirstRunExperience -Value 1 -PropertyType DWORD -Force | Out-Null
+  if (($null -eq $ItemProperty) -or ($ItemProperty.HideFirstRunExperience -ne 1)) {
+    Write-Output "Setting $RegPath\HideFirstRunExperience = 1"
+    New-ItemProperty -Path $RegPath -Name HideFirstRunExperience -Value 1 -PropertyType DWORD -Force | Out-Null
+  }
 }
