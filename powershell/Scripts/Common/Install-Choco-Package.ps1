@@ -19,7 +19,7 @@ if (Get-Module -Name chocolatey) {
     Import-Module -Name chocolatey -Force
 } else {
     Write-Output "Chocolatey PowerShell module not installed, installing and importing"
-    Install-Module -Name chocolatey -Force
+    Install-Module -Name chocolatey -Force -WhatIf $false
     Import-Module -Name chocolatey -Force
 }
 
