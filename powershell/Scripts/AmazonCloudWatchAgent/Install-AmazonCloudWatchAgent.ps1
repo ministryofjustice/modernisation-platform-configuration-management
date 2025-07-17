@@ -116,7 +116,7 @@ if ($InstallAmazonCloudWatchAgent) {
     if ($accessResult) {
       Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
     }
-    Remove-ItemWithRetry -Path $LocalMsiPath | Out-Null
+    Remove-ItemWithRetry -Path $LocalMsiPath
     $CloudWatchInstallEtag | Out-File $CloudWatchInstallEtagPath
   }
 }
