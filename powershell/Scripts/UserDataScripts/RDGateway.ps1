@@ -18,7 +18,7 @@ foreach ($Script in $Scripts) {
   if ($Script -is [array]) {
     $ScriptCmd = $Script[0]
     $ScriptArg = $Script[1]
-    Write-Output "START $ScriptCmd @ScriptArg"
+    Write-Output ("START $ScriptCmd " + ($ScriptArg | ConvertTo-Json -Compress))
     . $ScriptCmd @ScriptArg
   } else {
     $ScriptCmd = $Script
