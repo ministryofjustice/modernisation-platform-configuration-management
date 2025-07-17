@@ -11,7 +11,7 @@
 #>
 
 $GlobalConfig = @{
-  "test-rds-2-b" = @{
+  "test-rds-1-a" = @{
     "ConnectionBroker"    = "$env:computername.AZURE.NOMS.ROOT"
     "LicensingServer"     = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.NOMS.ROOT"
