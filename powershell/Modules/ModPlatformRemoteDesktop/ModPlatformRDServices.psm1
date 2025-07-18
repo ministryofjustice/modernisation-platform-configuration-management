@@ -51,6 +51,7 @@ function Add-RDLicensingServer {
     [string]$LicensingServer
   )
 
+  Write-Output "Get-RDServer $ConnectionBroker"
   if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -EQ $LicensingServer)) {
     Write-Output "${LicensingServer}: Adding RDS-LICENSING Server"
     if ($WhatIfPreference) {
@@ -60,6 +61,7 @@ function Add-RDLicensingServer {
     }
   }
 
+  Write-Output "Get-RDLicenseConfiguration $ConnectionBroker"
   if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
     Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
     if ($WhatIfPreference) {
