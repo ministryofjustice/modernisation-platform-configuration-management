@@ -8,7 +8,8 @@ $Scripts = @(
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
     "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
-    # "../ModPlatformRemoteDesktop/Add-ModPlatformRDServices.ps1", # Run this manually
+    # "../ModPlatformRemoteDesktop/Add-ModPlatformRDServices.ps1", # Run this manually as a domain user
+    # "../ModPlatformRemoteDesktop/Set-RDWebPasswordReset.ps1",    # Run this manually as a domain user
 )
 
 $ErrorActionPreference = "Stop"
