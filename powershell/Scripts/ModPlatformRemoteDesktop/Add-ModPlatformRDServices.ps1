@@ -41,7 +41,7 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT", "PP-JUMP2022-1.AZURE.HMPP.ROOT")
+    "SessionHostServers"  = @("PP-CAFM-A-11-A.AZURE.HMPP.ROOT", "PP-CAFM-A-20-A.AZURE.HMPP.ROOT", "PP-JUMP2022-1.AZURE.HMPP.ROOT")
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
@@ -58,6 +58,13 @@ $GlobalConfig = @{
         "Configuration" = @{
           "CollectionDescription" = "Connect to Jumpserver PP-JUMP2022-1"
           "UserGroup"             = @("HMPP\HmppsJump2022")
+        }
+      }
+      "CAFM-RDP PreProd 2019" = @{
+        "SessionHosts"  = @("PP-CAFM-A-20-A.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "Connect to 2019 CAFM servers"
+          "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS", "HMPP\drobinson2")
         }
       }
     }
