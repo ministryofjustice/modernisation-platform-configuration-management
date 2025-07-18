@@ -172,3 +172,4 @@ if ($CustomConfig.Parameters) {
     }
   }
 }
+Start-Service AmazonCloudWatchAgent

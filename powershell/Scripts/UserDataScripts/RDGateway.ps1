@@ -1,7 +1,7 @@
 $Scripts = @(
     "../Common/Set-LocalFirewallOff.ps1",
     "../Common/Set-IPv4Preferred.ps1",
-    "../Common/Set-GMTTimezone.ps1",
+    "../Common/Set-TimezoneGMT.ps1",
     @("../ModPlatformAD/Join-ModPlatformAD.ps1", @{NewHostname = "keep-existing"}),
     "../Microsoft/Add-DnsSuffixSearchList.ps1",
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
@@ -18,7 +18,7 @@ foreach ($Script in $Scripts) {
   if ($Script -is [array]) {
     $ScriptCmd = $Script[0]
     $ScriptArg = $Script[1]
-    Write-Output "START $ScriptCmd @ScriptArg"
+    Write-Output ("START $ScriptCmd " + ($ScriptArg | ConvertTo-Json -Compress))
     . $ScriptCmd @ScriptArg
   } else {
     $ScriptCmd = $Script
