@@ -77,7 +77,7 @@ function Add-RDLicensingServer {
       }
     }
 
-    Write-Ouptut "$WhatIfPreference: Get-RDLicenseConfiguration $ConnectionBroker"
+    Write-Ouptut "${WhatIfPreference}: Get-RDLicenseConfiguration $ConnectionBroker"
     if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
       Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
       if ($TmpWhatIfPreference) {
