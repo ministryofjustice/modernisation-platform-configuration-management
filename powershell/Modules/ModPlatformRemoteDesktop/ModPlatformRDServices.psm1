@@ -10,7 +10,7 @@ function Install-RDSWindowsFeatures {
   $Features | ForEach-Object {
     if (-not (Get-WindowsFeature -Name $_).Installed) {
       Write-Output "Installing $_ Feature"
-      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
+      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools | Out-Null
     }
   }
 }
@@ -26,18 +26,30 @@ function Add-RDSessionDeployment {
     [string[]]$SessionHostServers,
     [string]$WebAccessServer
   )
-  if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
-    Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
-    Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
-  }
-  else {
-    Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer"
-    } else {
-      New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
+
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
+      Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
+      Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
     }
+    else {
+      Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer"
+      } else {
+        New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
+      }
+    }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-RDLicensingServer {
@@ -51,25 +63,34 @@ function Add-RDLicensingServer {
     [string]$LicensingServer
   )
 
-  Write-Output "Get-RDServer $ConnectionBroker"
-  if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -EQ $LicensingServer)) {
-    Write-Output "${LicensingServer}: Adding RDS-LICENSING Server"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING"
-    } else {
-      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -EQ $LicensingServer)) {
+      Write-Output "${LicensingServer}: Adding RDS-LICENSING Server"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING"
+      } else {
+        Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING
+      }
     }
+
+    if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
+      Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force"
+      } else {
+        Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
+      }
+    }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
 
-  Write-Output "Get-RDLicenseConfiguration $ConnectionBroker"
-  if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
-    Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force"
-    } else {
-      Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
-    }
-  }
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Remove-RDLicensingServer {
@@ -83,14 +104,25 @@ function Remove-RDLicensingServer {
     [string]$LicensingServerToKeep
   )
 
-  Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -NE $LicensingServerToKeep | ForEach-Object {
-    Write-Output ($_.Server + ": Removing RDS-LICENSING Server")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-LICENSING -Force")
-    } else {
-      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-LICENSING -Force
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -NE $LicensingServerToKeep | ForEach-Object {
+      Write-Output ($_.Server + ": Removing RDS-LICENSING Server")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-LICENSING -Force")
+      } else {
+        Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-LICENSING -Force
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-RDGatewayServer {
@@ -105,24 +137,35 @@ function Add-RDGatewayServer {
     [string]$GatewayExternalFqdn
   )
 
-  if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -EQ $GatewayServer)) {
-    Write-Output "${GatewayServer}: Adding RDS-GATEWAY Server"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn"
-    } else {
-      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -EQ $GatewayServer)) {
+      Write-Output "${GatewayServer}: Adding RDS-GATEWAY Server"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn"
+      } else {
+        Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn
+      }
     }
+
+    $GatewayConfig = Get-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker
+    if ($GatewayConfig.GatewayExternalFQDN -ne $GatewayExternalFqdn) {
+      Write-Output "${GatewayServer}: Updating FQDN: ${GatewayExternalFqdn}"
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode " + $GatewayConfig.GatewayMode + " -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod " + $GatewayConfig.LogonMethod + " -UseCachedCredentials " + $GatewayConfig.UseCachedCredentials + " -BypassLocal " + $GatewayConfig.BypassLocal + " -Force")
+      } else {
+        Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode $GatewayConfig.GatewayMode -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod $GatewayConfig.LogonMethod -UseCachedCredentials $GatewayConfig.UseCachedCredentials -BypassLocal $GatewayConfig.BypassLocal -Force
+      }
+    }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
 
-  $GatewayConfig = Get-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker
-  if ($GatewayConfig.GatewayExternalFQDN -ne $GatewayExternalFqdn) {
-    Write-Output "${GatewayServer}: Updating FQDN: ${GatewayExternalFqdn}"
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode " + $GatewayConfig.GatewayMode + " -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod " + $GatewayConfig.LogonMethod + " -UseCachedCredentials " + $GatewayConfig.UseCachedCredentials + " -BypassLocal " + $GatewayConfig.BypassLocal + " -Force")
-    } else {
-      Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode $GatewayConfig.GatewayMode -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod $GatewayConfig.LogonMethod -UseCachedCredentials $GatewayConfig.UseCachedCredentials -BypassLocal $GatewayConfig.BypassLocal -Force
-    }
-  }
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Remove-RDGatewayServer {
@@ -136,14 +179,25 @@ function Remove-RDGatewayServer {
     [string]$GatewayServerToKeep
   )
 
-  Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -NE $GatewayServerToKeep | ForEach-Object {
-    Write-Output ($_.Server + ": Removing RDS-GATEWAY Server")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-GATEWAY -Force")
-    } else {
-      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-GATEWAY -Force
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -NE $GatewayServerToKeep | ForEach-Object {
+      Write-Output ($_.Server + ": Removing RDS-GATEWAY Server")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-GATEWAY -Force")
+      } else {
+        Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-GATEWAY -Force
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-RDWebAccessServer {
@@ -157,14 +211,25 @@ function Add-RDWebAccessServer {
     [string]$WebAccessServer
   )
 
-  if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -EQ $WebAccessServer)) {
-    Write-Output "${WebAccessServer}: Adding RDS-WEB-ACCESS Server"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS"
-    } else {
-      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -EQ $WebAccessServer)) {
+      Write-Output "${WebAccessServer}: Adding RDS-WEB-ACCESS Server"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS"
+      } else {
+        Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Remove-RDWebAccessServer {
@@ -178,15 +243,25 @@ function Remove-RDWebAccessServer {
     [string]$WebAccessServerToKeep
   )
 
-  Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -NE $WebAccessServerToKeep | ForEach-Object {
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
 
-    Write-Output ($_.Server + ": Removing RDS-WEB-ACCESS Server")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-WEB-ACCESS -Force")
-    } else {
-      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-WEB-ACCESS -Force
+  try {
+    Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -NE $WebAccessServerToKeep | ForEach-Object {
+      Write-Output ($_.Server + ": Removing RDS-WEB-ACCESS Server")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-WEB-ACCESS -Force")
+      } else {
+        Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-WEB-ACCESS -Force
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-SessionHostServer {
@@ -200,16 +275,27 @@ function Add-SessionHostServer {
     [string[]]$SessionHostServers
   )
 
-  foreach ($SessionHost in $SessionHostServers) {
-    if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -EQ $SessionHost)) {
-      Write-Output "${SessionHost}: Adding RDS-RD-SERVER Server"
-      if ($WhatIfPreference) {
-        Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER"
-      } else {
-        Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    foreach ($SessionHost in $SessionHostServers) {
+      if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -EQ $SessionHost)) {
+        Write-Output "${SessionHost}: Adding RDS-RD-SERVER Server"
+        if ($TmpWhatIfPreference) {
+          Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER"
+        } else {
+          Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER
+        }
       }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Remove-SessionHostServer {
@@ -223,14 +309,25 @@ function Remove-SessionHostServer {
     [string[]]$SessionHostServersToKeep
   )
 
-  Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -notin $SessionHostServersToKeep | ForEach-Object {
-    Write-Output ($_.Server + ": Removing RDS-RD-SERVER Server")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-RD-SERVER -Force")
-    } else {
-      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-RD-SERVER -Force
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -notin $SessionHostServersToKeep | ForEach-Object {
+      Write-Output ($_.Server + ": Removing RDS-RD-SERVER Server")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-RD-SERVER -Force")
+      } else {
+        Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-RD-SERVER -Force
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-Collection {
@@ -245,36 +342,47 @@ function Add-Collection {
     [hashtable[]]$Collection
   )
 
-  $ExistingCollection = Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -eq $CollectionName
-  if (-not $ExistingCollection) {
-    # ErrorAction set to SilentlyContinue as errors are generated re GroupPolicy managed options and this is the only way to avoid them being seen as errors in the output
-    Write-Output "${ConnectionBroker}: ${CollectionName}: Creating RDSessionCollection"
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost " + $Collection.SessionHosts + " -ErrorAction SilentlyContinue")
-    } else {
-      New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction SilentlyContinue
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    $ExistingCollection = Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -eq $CollectionName
+    if (-not $ExistingCollection) {
+      # ErrorAction set to SilentlyContinue as errors are generated re GroupPolicy managed options and this is the only way to avoid them being seen as errors in the output
+      Write-Output "${ConnectionBroker}: ${CollectionName}: Creating RDSessionCollection"
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost " + $Collection.SessionHosts + " -ErrorAction SilentlyContinue")
+      } else {
+        New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction SilentlyContinue
+      }
     }
-  }
-  else {
-    foreach ($SessionHost in $Collection.SessionHosts) {
-      $ExistingSessionHost = Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -eq $SessionHost
-      if (-not $ExistingSessionHost) {
-        Write-Output "${ConnectionBroker}: ${CollectionName}: ${SessionHost}: Adding RDSessionHost"
-        if ($WhatIfPreference) {
-          Write-Output "What-If: Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue"
-        } else {
-          Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue
+    else {
+      foreach ($SessionHost in $Collection.SessionHosts) {
+        $ExistingSessionHost = Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -eq $SessionHost
+        if (-not $ExistingSessionHost) {
+          Write-Output "${ConnectionBroker}: ${CollectionName}: ${SessionHost}: Adding RDSessionHost"
+          if ($TmpWhatIfPreference) {
+            Write-Output "What-If: Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue"
+          } else {
+            Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue
+          }
         }
       }
     }
+    Write-Output "${ConnectionBroker}: ${CollectionName}: Updating RDSessionCollection Configuration"
+    $Configuration = $Collection.Configuration
+    if ($TmpWhatIfPreference) {
+      Write-Output ("What-If: Set-RDSessionCollectionConfiguration " + ($Configuration | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName")
+    } else {
+      Set-RDSessionCollectionConfiguration @Configuration -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName
+    }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
-  Write-Output "${ConnectionBroker}: ${CollectionName}: Updating RDSessionCollection Configuration"
-  $Configuration = $Collection.Configuration
-  if ($WhatIfPreference) {
-    Write-Output ("What-If: Set-RDSessionCollectionConfiguration " + ($Configuration | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName")
-  } else {
-    Set-RDSessionCollectionConfiguration @Configuration -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName
-  }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-Collections {
@@ -304,27 +412,38 @@ function Remove-Collections {
     [hashtable]$CollectionsToKeep
   )
 
-  $CollectionNamesToKeep = $CollectionsToKeep.Keys
-  Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -notin $CollectionNamesToKeep | ForEach-Object {
-    Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": Removing RDSessionCollection")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Force")
-    } else {
-      Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Force
-    }
-  }
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
 
-  foreach ($CollectionName in $CollectionsToKeep.Keys) {
-    $Collection = $CollectionsToKeep[$CollectionName]
-    Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -ErrorAction SilentlyContinue | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
-      Write-Output ("${ConnectionBroker}: ${CollectionName}: " + $_.SessionHost + ": Removing RDSessionHost from RDSessionCollection")
-      if ($WhatIfPreference) {
-        Write-Output ("What-If: Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost " + $_.SessionHost + " -Force")
+  try {
+    $CollectionNamesToKeep = $CollectionsToKeep.Keys
+    Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -notin $CollectionNamesToKeep | ForEach-Object {
+      Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": Removing RDSessionCollection")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Force")
       } else {
-        Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost $_.SessionHost -Force
+        Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Force
       }
     }
+
+    foreach ($CollectionName in $CollectionsToKeep.Keys) {
+      $Collection = $CollectionsToKeep[$CollectionName]
+      Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -ErrorAction SilentlyContinue | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
+        Write-Output ("${ConnectionBroker}: ${CollectionName}: " + $_.SessionHost + ": Removing RDSessionHost from RDSessionCollection")
+        if ($TmpWhatIfPreference) {
+          Write-Output ("What-If: Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost " + $_.SessionHost + " -Force")
+        } else {
+          Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost $_.SessionHost -Force
+        }
+      }
+    }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-RemoteApp {
@@ -339,24 +458,35 @@ function Add-RemoteApp {
     [hashtable]$Configuration
   )
 
-  $CollectionName = $Configuration.CollectionName
-  $ExistingApp = Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -eq $Alias
-  if (-not $ExistingApp) {
-    Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Creating RDRemoteApp"
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: New-RDRemoteApp " + ($Configuration  | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -Alias $Alias")
-    } else {
-      New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    $CollectionName = $Configuration.CollectionName
+    $ExistingApp = Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -eq $Alias
+    if (-not $ExistingApp) {
+      Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Creating RDRemoteApp"
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: New-RDRemoteApp " + ($Configuration  | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -Alias $Alias")
+      } else {
+        New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+      }
     }
-  }
-  else {
-    Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Updating RDRemoteApp"
-    if ($WhatIfPreference) {
-      Write-Output "What-If: Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias"
-    } else {
-      Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+    else {
+      Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Updating RDRemoteApp"
+      if ($TmpWhatIfPreference) {
+        Write-Output "What-If: Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias"
+      } else {
+        Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 function Add-RemoteApps {
@@ -382,6 +512,7 @@ function Add-ServerFqdnListToServerList {
   .DESCRIPTION
       Creates or updates the ServerList.xml file used by Server Manager
   #>
+  # FIXME: move this somewhere else and add support WhatIf
   [CmdletBinding()]
   param (
     [string[]]$ServerFqdnList
@@ -547,15 +678,26 @@ function Remove-RemoteApps {
     [hashtable]$RemoteAppsToKeep
   )
 
-  $AliasesToKeep = $RemoteAppsToKeep.Keys
-  Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -notin $AliasesToKeep | ForEach-Object {
-    Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": " + $_.Alias + ": Removing RDRemoteApp")
-    if ($WhatIfPreference) {
-      Write-Output ("What-If: Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Alias " + $_.Alias + " -Force")
-    } else {
-      Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
+  # The Get-RD commands don't work well with WhatIfPreference set
+  $TmpWhatIfPreference = $WhatIfPreference
+  $WhatIfPreference = $false
+
+  try {
+    $AliasesToKeep = $RemoteAppsToKeep.Keys
+    Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -notin $AliasesToKeep | ForEach-Object {
+      Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": " + $_.Alias + ": Removing RDRemoteApp")
+      if ($TmpWhatIfPreference) {
+        Write-Output ("What-If: Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Alias " + $_.Alias + " -Force")
+      } else {
+        Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
+      }
     }
+  } catch {
+    $WhatIfPreference = $TmpWhatIfPreference
+    throw $_
   }
+
+  $WhatIfPreference = $TmpWhatIfPreference
 }
 
 Export-ModuleMember -Function Install-RDSWindowsFeatures
