@@ -29,8 +29,13 @@ function Add-RDSessionDeployment {
   )
 
   if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
-    Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
-    Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
+    if ($WhatIf.IsPresent) {
+      Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer -WhatIf
+      Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers -WhatIf
+    } else {
+      Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
+      Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
+    }
   }
   else {
     Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
