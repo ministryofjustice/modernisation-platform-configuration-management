@@ -333,7 +333,7 @@ function Append-OutputLines {
 }
 
 function Archive-OutputFiles {
-    E:\Application\7-Zip\7z a -mx7 -tzip $tempZip $outputFile > $null
+     \\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputFile > $null
     Rename-Item -Path $tempZip -NewName "$timestamp.7z"
 }
 
