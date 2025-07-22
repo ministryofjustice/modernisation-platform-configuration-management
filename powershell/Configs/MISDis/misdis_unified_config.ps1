@@ -64,7 +64,74 @@ $ApplicationConfig = @{
     }
     
     'delius-mis-preproduction' = @{
-        # Add preproduction-specific overrides here
+        # Legacy config for backward compatibility - defaults to stage cluster
+        'DatabaseConfig' = @{
+            'sysDbName' = 'DMPDSD'
+            'audDbName' = 'DMPDSD'
+            'sysDbUser' = 'dfi_mod_ipscms'
+            'audDbUser' = 'dfi_mod_ipsaud'
+        }
+        
+        'NodeConfig'     = @{
+            'cmsPrimaryNode'   = 'delius-mis-stage-dfi-1'
+            'cmsSecondaryNode' = 'delius-mis-stage-dfi-2'
+        }
+        
+        'ServiceConfig'  = @{
+            'serviceUser' = 'SVC_DIS_NDL'
+            'domain'      = 'delius-mis-preprod'
+        }
+        
+        'SiaNodeName'    = 'NDLMODSTG101'
+    }
+    
+    # Cluster-specific configurations (keyed by primary node name)
+    'delius-mis-stage-dfi-1'   = @{
+        'EnvironmentName' = 'delius-mis-preproduction'
+        'ClusterName'     = 'stage'
+        
+        'DatabaseConfig'  = @{
+            'sysDbName' = 'DMPDSD'
+            'audDbName' = 'DMPDSD'
+            'sysDbUser' = 'dfi_mod_ipscms'
+            'audDbUser' = 'dfi_mod_ipsaud'
+        }
+        
+        'NodeConfig'      = @{
+            'cmsPrimaryNode'   = 'ndmis-stage-dfi-1'
+            'cmsSecondaryNode' = 'ndmis-stage-dfi-2'
+        }
+        
+        'ServiceConfig'   = @{
+            'serviceUser' = 'SVC_DIS_NDL'
+            'domain'      = 'delius-mis-preprod'
+        }
+        
+        'SiaNodeName'     = 'NDLMODSTG101'
+    }
+    
+    'delius-mis-pp-dfi-1'      = @{
+        'EnvironmentName' = 'delius-mis-preproduction'
+        'ClusterName'     = 'pp'
+        
+        'DatabaseConfig'  = @{
+            'sysDbName' = 'DMPPSD'  # Different database for PP cluster
+            'audDbName' = 'DMPPSD'
+            'sysDbUser' = 'dfi_mod_ipscms'
+            'audDbUser' = 'dfi_mod_ipsaud'
+        }
+        
+        'NodeConfig'      = @{
+            'cmsPrimaryNode'   = 'ndmis-pp-dfi-1'
+            'cmsSecondaryNode' = 'ndmis-pp-dfi-2'
+        }
+        
+        'ServiceConfig'   = @{
+            'serviceUser' = 'SVC_DIS_NDL'
+            'domain'      = 'delius-mis-preprod'
+        }
+        
+        'SiaNodeName'     = 'NDLMODPP101'
     }
     
     'delius-mis-production'    = @{

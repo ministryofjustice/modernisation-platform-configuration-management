@@ -47,6 +47,7 @@ $ApplicationConfig = @{
     }
     
     'oasys-national-reporting-test'          = @{
+        # Legacy config for backward compatibility - defaults to first cluster
         'DatabaseConfig' = @{
             'sysDbName' = 'T2BOSYS'
             'audDbName' = 'T2BOAUD'
@@ -65,6 +66,57 @@ $ApplicationConfig = @{
         
         'TnsConfig'      = @{
             'tnsOraFile' = 'ONR\tnsnames_T2_BODS.ora'
+        }
+    }
+    
+    # Cluster-specific configurations (keyed by primary node name)
+    't2-onr-bods-1'                          = @{
+        'EnvironmentName' = 'oasys-national-reporting-test'
+        'ClusterName'     = 'cluster1'
+        
+        'DatabaseConfig'  = @{
+            'sysDbName' = 'T2BOSYS'
+            'audDbName' = 'T2BOAUD'
+        }
+        
+        'NodeConfig'      = @{
+            'cmsPrimaryNode'   = 't2-onr-bods-1'
+            'cmsSecondaryNode' = 't2-onr-bods-2'
+            'nartComputersOU'  = 'OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT'
+        }
+        
+        'ServiceConfig'   = @{
+            'serviceUserPath' = 'OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT'
+            'domain'          = 'AZURE'
+        }
+        
+        'TnsConfig'       = @{
+            'tnsOraFile' = 'ONR\tnsnames_T2_BODS.ora'
+        }
+    }
+    
+    't2-onr-bods-3'                          = @{
+        'EnvironmentName' = 'oasys-national-reporting-test'
+        'ClusterName'     = 'cluster2'
+        
+        'DatabaseConfig'  = @{
+            'sysDbName' = 'T2BOSYS2'  # Different database for second cluster
+            'audDbName' = 'T2BOAUD2'
+        }
+        
+        'NodeConfig'      = @{
+            'cmsPrimaryNode'   = 't2-onr-bods-3'
+            'cmsSecondaryNode' = 't2-onr-bods-4'
+            'nartComputersOU'  = 'OU=Nart,OU=MODERNISATION_PLATFORM_SERVERS,DC=AZURE,DC=NOMS,DC=ROOT'
+        }
+        
+        'ServiceConfig'   = @{
+            'serviceUserPath' = 'OU=Service,OU=Users,OU=NOMS RBAC,DC=AZURE,DC=NOMS,DC=ROOT'
+            'domain'          = 'AZURE'
+        }
+        
+        'TnsConfig'       = @{
+            'tnsOraFile' = 'ONR\tnsnames_T2_CLUSTER2_BODS.ora'
         }
     }
     
