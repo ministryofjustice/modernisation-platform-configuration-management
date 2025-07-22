@@ -30,17 +30,85 @@ function Get-UnifiedConfig {
 
     . $configPath
 
-    # Get base config and environment-specific overrides
+    # Get base config
     $baseConfig = $UnifiedConfigTemplate.all
-    $envConfig = if ($ApplicationConfig.ContainsKey($EnvironmentName)) {
-        $ApplicationConfig[$EnvironmentName]
+    
+    # Determine which cluster this machine belongs to by finding the configuration
+    # where this machine's name matches either the primary or secondary node
+    $clusterConfig = $null
+    $configKey = $null
+    $detectedRole = 'unknown'
+    $machineName = $AdditionalTags.Name
+    
+    # Normalize machine name for MISDis if needed
+    $normalizedMachineName = if ($Application -eq 'delius-mis') {
+        $machineName -replace 'delius-mis', 'ndmis'
+    } else {
+        $machineName
     }
-    else {
-        @{}
+    
+    Write-Verbose "Looking for configuration for machine: $machineName (normalized: $normalizedMachineName)"
+    
+    # Search through all configurations to find which cluster this machine belongs to
+    foreach ($configName in $ApplicationConfig.Keys) {
+        if ($configName -eq 'all') { continue }
+        
+        $config = $ApplicationConfig[$configName]
+        if ($config.ContainsKey('NodeConfig')) {
+            $primaryNode = $config.NodeConfig.cmsPrimaryNode
+            $secondaryNode = $config.NodeConfig.cmsSecondaryNode
+            
+            # Check if this machine matches the primary or secondary node
+            $isMatch = $false
+            if ($machineName -eq $primaryNode) {
+                $isMatch = $true
+                $detectedRole = 'primary'
+            } elseif ($normalizedMachineName -eq $primaryNode) {
+                $isMatch = $true
+                $detectedRole = 'primary'
+            } elseif ($machineName -eq $secondaryNode) {
+                $isMatch = $true
+                $detectedRole = 'secondary'
+            } elseif ($normalizedMachineName -eq $secondaryNode) {
+                $isMatch = $true
+                $detectedRole = 'secondary'
+            }
+            
+            if ($isMatch) {
+                $clusterConfig = $config
+                $configKey = $configName
+                Write-Verbose "Found matching cluster configuration: $configKey (role: $detectedRole)"
+                break
+            }
+        }
     }
-
+    
+    # If no specific cluster found, try to use base environment config
+    if ($null -eq $clusterConfig) {
+        if ($ApplicationConfig.ContainsKey($EnvironmentName)) {
+            $clusterConfig = $ApplicationConfig[$EnvironmentName]
+            $configKey = $EnvironmentName
+            Write-Verbose "Using base environment config: $configKey"
+            
+            # Try to determine role from base config
+            if ($clusterConfig.ContainsKey('NodeConfig')) {
+                $primaryNode = $clusterConfig.NodeConfig.cmsPrimaryNode
+                $secondaryNode = $clusterConfig.NodeConfig.cmsSecondaryNode
+                
+                if ($machineName -eq $primaryNode -or $normalizedMachineName -eq $primaryNode) {
+                    $detectedRole = 'primary'
+                } elseif ($machineName -eq $secondaryNode -or $normalizedMachineName -eq $secondaryNode) {
+                    $detectedRole = 'secondary'
+                }
+            }
+        } else {
+            Write-Warning "No configuration found for machine '$machineName' in environment '$EnvironmentName'"
+            $clusterConfig = @{}
+        }
+    }
+    
     # Merge configurations
-    $mergedConfig = Merge-ConfigWithTemplate -Template @{'all' = $baseConfig } -EnvironmentConfig @{'all' = $envConfig }
+    $mergedConfig = Merge-ConfigWithTemplate -Template @{'all' = $baseConfig } -EnvironmentConfig @{'all' = $clusterConfig }
     $finalConfig = $mergedConfig.all
 
     # Add application-specific overrides
@@ -53,6 +121,11 @@ function Get-UnifiedConfig {
     foreach ($key in $AdditionalTags.Keys) {
         $finalConfig[$key] = $AdditionalTags[$key]
     }
+    
+    # Add computed fields
+    $finalConfig['ConfigKey'] = $configKey
+    $finalConfig['DetectedRole'] = $detectedRole
+    $finalConfig['NormalizedMachineName'] = $normalizedMachineName
 
     return $finalConfig
 }

@@ -126,19 +126,42 @@ function Install-IPS {
         }
     }
 
-    # Determine node type
-    # Handle MISDis naming convention where EC2 Name tag uses 'delius-mis' but config uses 'ndmis'
-    $normalizedNodeName = if ($Config.application -eq 'delius-mis') {
-        $Config.Name -replace 'delius-mis', 'ndmis'
+    # Determine node type using enhanced cluster detection
+    # The unified config system now automatically detects which cluster this machine belongs to
+    # and returns the role (primary/secondary) in DetectedRole
+    
+    $nodeType = if ($Config.ContainsKey('DetectedRole') -and $Config.DetectedRole -ne 'unknown') {
+        $Config.DetectedRole
     }
     else {
-        $Config.Name
+        # Fallback to legacy detection if needed
+        $normalizedNodeName = if ($Config.application -eq 'delius-mis') {
+            $Config.Name -replace 'delius-mis', 'ndmis'
+        }
+        else {
+            $Config.Name
+        }
+        
+        if ($normalizedNodeName -eq $Config.NodeConfig.cmsPrimaryNode -or $Config.Name -eq $Config.NodeConfig.cmsPrimaryNode) {
+            'primary'
+        }
+        else {
+            'secondary'
+        }
     }
     
-    $nodeType = if ($normalizedNodeName -eq $Config.NodeConfig.cmsPrimaryNode) { 'primary' } else { 'secondary' }
     Write-Host "Node type determined: $nodeType" -ForegroundColor Cyan
-    Write-Host "Current node (normalized): $normalizedNodeName" -ForegroundColor Gray
-    Write-Host "Primary node: $($Config.NodeConfig.cmsPrimaryNode)" -ForegroundColor Gray
+    Write-Host "Current machine: $($Config.Name)" -ForegroundColor Gray
+    if ($Config.ContainsKey('NormalizedMachineName')) {
+        Write-Host "Normalized name: $($Config.NormalizedMachineName)" -ForegroundColor Gray
+    }
+    Write-Host "Primary node from config: $($Config.NodeConfig.cmsPrimaryNode)" -ForegroundColor Gray
+    if ($Config.ContainsKey('ConfigKey')) {
+        Write-Host "Using configuration: $($Config.ConfigKey)" -ForegroundColor Gray
+    }
+    if ($Config.ContainsKey('ClusterName')) {
+        Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
+    }
 
     # Generate response file using unified system
     $templateName = if ($nodeType -eq 'primary') { 'IPS_Primary_Template.ini' } else { 'IPS_Secondary_Template.ini' }
