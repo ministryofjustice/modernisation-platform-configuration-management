@@ -18,6 +18,9 @@ $tempZip = "${archiveDir}\${timestamp}.ziptmp"
 $logFile =  "${directory}\process_csvs_log.txt"
 $retention = $timestampDate.AddMonths(-1).ToString("yyyyMMddHHmmss")
 $emailMessageFile = "${directory}\email_message.txt"
+$emailSecretId = '/prisoner-retail/notify_emails'
+$awsRegion = 'eu-west-2'
+$savedEmailsFile = "${directory}\emails.ps1"
 
 
 $allFiles = Get-ChildItem -Path $directory -File -Recurse | Where-Object {
@@ -351,6 +354,30 @@ function Delete-OldFiles {
             Write-Log "Deleting $($_.FullName)"
             Delete-Files $_.FullName
         }
+    }
+}
+
+function Get-Emails {
+    try {
+        $secretText = aws secretsmanager get-secret-value `
+            --secret-id $emailSecretId `
+            --region $awsRegion `
+            --query 'SecretString' `
+            --output text
+
+        if ($secretText -match "\.gov\.uk") {
+            $emailVars = $secretText | ConvertFrom-Json
+            $emailFrom = $emailVars.from 
+            $emailTo = $emailVars.to 
+            "`$from = '$emailFrom'
+`$to = '$emailTo'" | Out-File -FilePath $savedEmailsFile -Encoding UTF8 -Force
+        }
+        else {
+            Write-Log "Email secret does not contain 'gov.uk'. Output was not saved."
+        }
+    }
+    catch {
+        Write-Log "Exception occurred while retrieving the email secret: $_"
     }
 }
 
