@@ -382,6 +382,7 @@ function Get-Emails {
 }
 
 function Send-Email {
+    . $savedEmailsFile
     "Hi All
 
 This is what's been removed from Prison Retail's Folders on this run
