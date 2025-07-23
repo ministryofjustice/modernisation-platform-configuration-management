@@ -392,7 +392,7 @@ If no lines are below, nothing has been deleted
 Glenn Bot
 " | Add-Content -Path $emailMessageFile
     
-    # Send-MailMessage -from ‘Glenn.barber@justice.gov.uk’ -to “<glenn.barber@digital.justice.gov.uk>“, “<glenn.barber@justice.gov.uk>“, “<andrew.barke@justice.gov.uk>” -subject ‘Prison Retail Removed Files Last Run’ -Body Get-Content -Path $emailMessageFile -SmtpServer ‘smtp.hmpps-domain.service.justice.gov.uk’
+    # Send-MailMessage -from '$from' -to $to -subject ‘Prison Retail Removed Files Last Run’ -Body Get-Content -Path $emailMessageFile -SmtpServer ‘smtp.hmpps-domain.service.justice.gov.uk’
 
 }
 
