@@ -10,8 +10,8 @@
 $directory = '\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data'
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
-$outputDir = "${directory}\Extracts\Outgoing"
-$outputFile = "${outputDir}\PR${timestamp}.txt" # "E:\PrisonerRetail\Data\Extracts\Outgoing\PR${timestamp}.txt"
+$outputDir = "${directory}\Extracts\Outgoing_Archive"
+$outputFile = "${outputDir}\PR${timestamp}.txt" # "E:\PrisonerRetail\Data\Extracts\Outgoing_Archive\PR${timestamp}.txt"
 $archiveDir = "${directory}\Archive" # "E:\PrisonerRetail\Data\Archive\${timestamp}.7z"
 $finalZip = "${archiveDir}\${timestamp}.7z"
 $tempZip = "${archiveDir}\${timestamp}.ziptmp"
@@ -21,6 +21,7 @@ $emailMessageFile = "${directory}\email_message.txt"
 $emailSecretId = '/prisoner-retail/notify_emails'
 $awsRegion = 'eu-west-2'
 $savedEmailsFile = "${directory}\emails.ps1"
+
 
 $allFiles = Get-ChildItem -Path $directory -File -Recurse | Where-Object {
     $_.DirectoryName -ne (Get-Item $directory).FullName
@@ -45,14 +46,15 @@ $expectedFields = 7
 . "${directory}\establishments.ps1"
 
 function Main {
+    Write-Log "$PSCommandPath started..."
     Refresh-WorkingDirectory
-
+    
     [array]$outputLines = @()
 
     foreach ($file in $csvFiles) {
         [string]$filePath = $file.FullName
         [string]$processedFilePath = "$filePath.processed"
-
+        
         [array]$dataLines = Get-DataLines $filePath
         $dataLines = Remove-StartingCommmas $dataLines
         [array]$dataArray = Create-DataArray $dataLines
@@ -62,7 +64,7 @@ function Main {
         $fileIsValid = Check-FileIsValid $dataArray $file
         if (-not $fileIsValid) { continue }
         [array]$processedLines = Append-Fields $dataArray $file
-
+        
         $processedLines | Set-Content $processedFilePath
 
         Append-OutputLines $dataArray $file
@@ -73,7 +75,6 @@ function Main {
     Delete-OldFiles -directory $archiveDir -extension ".7z"
     Delete-OldFiles -directory $outputDir  -prefix "PR" -extension ".txt"
 
-    Get-Emails
     Send-Email
 
     Write-Log "$PSCommandPath ran successfully"
@@ -100,8 +101,8 @@ function Delete-Files {
             $file = $file.FullName
         }
         if ($file -notin $noRecordList -and $file -notlike "*.processed") {
-            $fileName = Split-Path $file -Leaf 
-             $parentFolder = Split-Path $file -Parent
+            $fileName = Split-Path $file -Leaf
+            $parentFolder = Split-Path $file -Parent
             $folderName = Split-Path $parentFolder -Leaf
             Add-Content -Path $deletedFilesList -Value "$folderName\$fileName"
         }
@@ -150,8 +151,8 @@ function Get-DataLines {
 function Remove-StartingCommmas {
     param (
         [Parameter(Position = 0)][array]$lines
-    ) 
-     [array]$cleanLines = @()
+    )
+    [array]$cleanLines = @()
     foreach ($line in $lines) {
         if ($line.StartsWith(",")) {
             $line = $line.Substring(1)
@@ -173,16 +174,16 @@ function Create-DataArray {
             # Replace commas within quotes with a special marker
             $withinQuotes = $false
             $newline = ""
-
+            
             for ($i = 0; $i -lt $line.Length; $i++) {
-                $char = $line[$i] 
-
+                $char = $line[$i]
+                
                 if ($char -eq '"') {
                     $withinQuotes = -not $withinQuotes
                     $newline += $char
-                } elseif ($char -eq ',' -and $withinQuotes) { 
+                } elseif ($char -eq ',' -and $withinQuotes) {
                     $newline += "¬~¬"
-                 } else {
+                } else {
                     $newline += $char
                 }
             }
@@ -190,7 +191,7 @@ function Create-DataArray {
         }
         $lineArray = $line -split ','
         $dataArray += ,$lineArray
-
+        
     }
     ,$dataArray
 }
@@ -210,7 +211,7 @@ function Check-Early {
         return $false
     }
     # check number of fields
-
+    
     foreach ($row in $dataArray) {
         if ($row.Count -ne $expectedFields) {
             Write-Log "Invalid row in file '$($file.FullName)': Expected $expectedFields fields but found $($row.Count). This file will be skipped."
@@ -220,9 +221,9 @@ function Check-Early {
         }
     }
     return $true
-} 
+}
 
- function Clean-Formatting {
+function Clean-Formatting {
     param (
         [Parameter(Position = 0)][array]$dataArray
     )
@@ -235,16 +236,16 @@ function Check-Early {
             }
             if ($row[$i].EndsWith('"')) {
                 $row[$i] = $row[$i].Substring(0, $row[$i].Length - 1)
-            } 
-            $row[$i] = $row[$i] -replace "¬~¬" , "," 
+            }
+            $row[$i] = $row[$i] -replace "¬~¬", ","
         }
         # Just have numbers and . in Balance
         $row[5] = $row[5] -replace "[£,]", ""
-        if ($row[5] -eq "-") { 
-             $row[5] = "0"
-        } 
+        if ($row[5] -eq "-") {
+            $row[5] = "0"
+        }
         # Remove non-numeric first character (like £)
-         if (-not [char]::IsDigit($row[5][0])) {
+        if (-not [char]::IsDigit($row[5][0])) {
             $row[5] = $row[5].Substring(1)
         }
     }
@@ -282,7 +283,7 @@ function Check-FileIsValid {
                 return $false
             }
         }
-
+        
         if (-not ($parsedDate.Year -ge 2000 -and $parsedDate.Month -ge 1 -and $parsedDate.Month -le 12 -and $parsedDate.Day -ge 1 -and $parsedDate.Day -le 31)) {
             Write-Log "Invalid date in file '$($file.FullName)': Expected date format dd/mm/yyyy with dd=[0-31], mm=[0-12], yyyy=[2000+], found '$($row[6])'. This file will be skipped."
             Add-Content -Path $failedFilesList -Value $file.FullName
@@ -333,8 +334,11 @@ function Append-OutputLines {
 }
 
 function Archive-OutputFiles {
-     \\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputFile > $null
-    Rename-Item -Path $tempZip -NewName "$timestamp.7z"
+    #\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputFile > $null
+    #Rename-Item -Path $tempZip -NewName "$timestamp.7z"
+    if (Test-Path $outputFile) {
+        Compress-Archive -Path $outputFile -DestinationPath "$archiveDir\$($timestampDate.Day)\.zip" -Update
+    }
 }
 
 # assumes dates are 14 chars 
@@ -380,6 +384,7 @@ function Get-Emails {
 function Send-Email {
     . $savedEmailsFile
     "Hi All
+
 This is what's been removed from Prison Retail's Folders on this run
 If no lines are below, nothing has been deleted
 " | Out-File $emailMessageFile
@@ -387,7 +392,7 @@ If no lines are below, nothing has been deleted
     "
 Glenn Bot
 " | Add-Content -Path $emailMessageFile
-
+    
     # Send-MailMessage -from '$from' -to $to -subject ‘Prison Retail Removed Files Last Run’ -Body Get-Content -Path $emailMessageFile -SmtpServer ‘smtp.hmpps-domain.service.justice.gov.uk’
 
 }
@@ -397,4 +402,4 @@ try {
 } catch {
     Write-Log "An error occurred: $_"
     exit 1
-} 
+}
