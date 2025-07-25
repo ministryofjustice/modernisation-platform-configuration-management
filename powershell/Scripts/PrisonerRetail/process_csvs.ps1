@@ -24,10 +24,7 @@ $emailSecretId = '/prisoner-retail/notify_emails'
 $awsRegion = 'eu-west-2'
 $savedEmailsFile = "${directory}\emails.ps1"
 
-
-$allFiles = Get-ChildItem -Path $directory -File -Recurse | Where-Object {
-    $_.DirectoryName -ne (Get-Item $directory).FullName
-}
+$allFiles = Get-ChildItem -Path $incomingDir -File -Recurse
 $csvFiles = $allFiles | Where-Object {
     $_.Name.EndsWith(".csv")
 }
