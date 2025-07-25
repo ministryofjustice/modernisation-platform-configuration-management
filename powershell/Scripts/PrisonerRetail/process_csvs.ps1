@@ -133,7 +133,7 @@ function Refresh-WorkingDirectory {
         }
     }
 
-    # cleanup old logs
+    # cleanup old logss
     Get-ChildItem -Path $directory -Filter "process_csvs_log_20*" |
         Where-Object { $_.LastWriteTime -lt $logRetentionDate } |
         ForEach-Object {
