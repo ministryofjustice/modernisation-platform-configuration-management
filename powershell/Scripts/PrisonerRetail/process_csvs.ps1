@@ -11,11 +11,12 @@ $directory = '\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data'
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
 $outputDir = "${directory}\Extracts\Outgoing_Archive"
-$outputFile = "${outputDir}\PR${timestamp}.txt" # "E:\PrisonerRetail\Data\Extracts\Outgoing_Archive\PR${timestamp}.txt"
-$archiveDir = "${directory}\Archive" # "E:\PrisonerRetail\Data\Archive\${timestamp}.7z"
+$outputFile = "${outputDir}\PR${timestamp}.txt"
+$archiveDir = "${directory}\Archive"
 $finalZip = "${archiveDir}\${timestamp}.7z"
 $tempZip = "${archiveDir}\${timestamp}.ziptmp"
 $logFile =  "${directory}\process_csvs_log.txt"
+$logRetentionDate = $timestampDate.AddMonths(-6)
 $retention = $timestampDate.AddMonths(-1).ToString("yyyyMMddHHmmss")
 $emailMessageFile = "${directory}\email_message.txt"
 $emailSecretId = '/prisoner-retail/notify_emails'
@@ -75,6 +76,7 @@ function Main {
     Delete-OldFiles -directory $archiveDir -extension ".7z"
     Delete-OldFiles -directory $outputDir  -prefix "PR" -extension ".txt"
 
+    Get-Emails
     Send-Email
 
     Write-Log "$PSCommandPath ran successfully"
@@ -120,6 +122,24 @@ function Refresh-WorkingDirectory {
     Write-ExtraFiles
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
     New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
+    # rotate log file
+    if (Test-Path $logFile) {
+        $logFileMonth = (Get-Item $logFile).CreationTime.Month
+        if ($logFileMonth -ne $timestampDate.Month) {
+            $previousMonth = $timestampDate.AddMonths(-1)
+            $oldLogName = "$($directory)\process_csvs_log_$($previousMonth.Year)_$($previousMonth.Month).txt"
+            Rename-Item -Path $logFile -NewName $oldLogName
+            New-Item -Path $logFile -ItemType File -Force | Out-Null
+        }
+    }
+
+    # cleanup old logss
+    Get-ChildItem -Path $directory -Filter "process_csvs_log_20*" |
+        Where-Object { $_.LastWriteTime -lt $logRetentionDate } |
+        ForEach-Object {
+            Remove-Item $_.FullName -Force
+            Write-Log "Deleted old log: $($_.Name)"
+        }
 }
 
 function Write-ExtraFiles {
