@@ -24,10 +24,18 @@ function Set-WinRMListener {
 
   if (Invoke-Expression "winrm get $WinRmArg1") {
     Write-Output "Update winrm https listener"
-    Invoke-Expression "winrm set $WinRmArg1 $WinRmArg2"
+    if ($WhatIfPreference) {
+      Write-Output "What-If: winrm set $WinRmArg1 $WinRmArg2"
+    } else {
+      Invoke-Expression "winrm set $WinRmArg1 $WinRmArg2"
+    }
   } else {
     Write-Output "Create winrm https listener"
-    Invoke-Expression "winrm create $WinRmArg1 $WinRmArg2"
+    if ($WhatIfPreference) {
+      Write-Output "What-If: winrm create $WinRmArg1 $WinRmArg2"
+    } else {
+      Invoke-Expression "winrm create $WinRmArg1 $WinRmArg2"
+    }
   }
 }
 
@@ -58,5 +66,9 @@ if ($WinRMCert) {
   Write-Output ("Creating Self-Signed Cert " + $env:computername)
   $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
 }
+$Thumbprint = "MissingCert"
+if ($WinRMCert) {
+  $Thumbprint = $WinRMCert.Thumbprint
+}
 
-Set-WinRMListener -Hostname "$env:computername" -Thumbprint $WinRMCert.Thumbprint
+Set-WinRMListener -Hostname "$env:computername" -Thumbprint $Thumbprint

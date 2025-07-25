@@ -10,7 +10,7 @@ function Install-RDSWindowsFeatures {
   $Features | ForEach-Object {
     if (-not (Get-WindowsFeature -Name $_).Installed) {
       Write-Output "Installing $_ Feature"
-      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools
+      Install-WindowsFeature -Name $_ -IncludeAllSubFeature -IncludeManagementTools | Out-Null
     }
   }
 }
@@ -24,15 +24,26 @@ function Add-RDSessionDeployment {
   param (
     [string]$ConnectionBroker,
     [string[]]$SessionHostServers,
-    [string]$WebAccessServer
+    [string]$WebAccessServer,
+    [switch]$WhatIf
   )
+
   if (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-CONNECTION-BROKER -ErrorAction SilentlyContinue) {
-    Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
-    Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
+    if ($WhatIf.IsPresent) {
+      Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer -WhatIf
+      Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers -WhatIf
+    } else {
+      Add-RDWebAccessServer -ConnectionBroker $ConnectionBroker -WebAccessServer $WebAccessServer
+      Add-SessionHostServer -ConnectionBroker $ConnectionBroker -SessionHostServers $SessionHostServers
+    }
   }
   else {
     Write-Output "${ConnectionBroker}: Creating new RDSession Deployment"
-    New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer"
+    } else {
+      New-RDSessionDeployment -ConnectionBroker $ConnectionBroker -SessionHost $SessionHostServers -WebAccessServer $WebAccessServer
+    }
   }
 }
 
@@ -44,17 +55,26 @@ function Add-RDLicensingServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string]$LicensingServer
+    [string]$LicensingServer,
+    [switch]$WhatIf
   )
 
   if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -EQ $LicensingServer)) {
     Write-Output "${LicensingServer}: Adding RDS-LICENSING Server"
-    Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING"
+    } else {
+      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $LicensingServer -Role RDS-LICENSING
+    }
   }
 
   if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
     Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
-    Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force"
+    } else {
+      Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
+    }
   }
 }
 
@@ -66,12 +86,17 @@ function Remove-RDLicensingServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string]$LicensingServerToKeep
+    [string]$LicensingServerToKeep,
+    [switch]$WhatIf
   )
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-LICENSING | Where-Object -Property Server -NE $LicensingServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-LICENSING Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-LICENSING -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-LICENSING -Force")
+    } else {
+      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-LICENSING -Force
+    }
   }
 }
 
@@ -84,18 +109,27 @@ function Add-RDGatewayServer {
   param (
     [string]$ConnectionBroker,
     [string]$GatewayServer,
-    [string]$GatewayExternalFqdn
+    [string]$GatewayExternalFqdn,
+    [switch]$WhatIf
   )
 
   if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -EQ $GatewayServer)) {
     Write-Output "${GatewayServer}: Adding RDS-GATEWAY Server"
-    Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn"
+    } else {
+      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $GatewayServer -Role RDS-GATEWAY -GatewayExternalFqdn $GatewayExternalFqdn
+    }
   }
 
   $GatewayConfig = Get-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker
   if ($GatewayConfig.GatewayExternalFQDN -ne $GatewayExternalFqdn) {
     Write-Output "${GatewayServer}: Updating FQDN: ${GatewayExternalFqdn}"
-    Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode $GatewayConfig.GatewayMode -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod $GatewayConfig.LogonMethod -UseCachedCredentials $GatewayConfig.UseCachedCredentials -BypassLocal $GatewayConfig.BypassLocal -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode " + $GatewayConfig.GatewayMode + " -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod " + $GatewayConfig.LogonMethod + " -UseCachedCredentials " + $GatewayConfig.UseCachedCredentials + " -BypassLocal " + $GatewayConfig.BypassLocal + " -Force")
+    } else {
+      Set-RDDeploymentGatewayConfiguration -ConnectionBroker $ConnectionBroker -GatewayMode $GatewayConfig.GatewayMode -GatewayExternalFqdn $GatewayExternalFqdn -LogonMethod $GatewayConfig.LogonMethod -UseCachedCredentials $GatewayConfig.UseCachedCredentials -BypassLocal $GatewayConfig.BypassLocal -Force
+    }
   }
 }
 
@@ -107,12 +141,17 @@ function Remove-RDGatewayServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string]$GatewayServerToKeep
+    [string]$GatewayServerToKeep,
+    [switch]$WhatIf
   )
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-GATEWAY | Where-Object -Property Server -NE $GatewayServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-GATEWAY Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-GATEWAY -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-GATEWAY -Force")
+    } else {
+      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-GATEWAY -Force
+    }
   }
 }
 
@@ -124,12 +163,17 @@ function Add-RDWebAccessServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string]$WebAccessServer
+    [string]$WebAccessServer,
+    [switch]$WhatIf
   )
 
   if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -EQ $WebAccessServer)) {
     Write-Output "${WebAccessServer}: Adding RDS-WEB-ACCESS Server"
-    Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS"
+    } else {
+      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $WebAccessServer -Role RDS-WEB-ACCESS
+    }
   }
 }
 
@@ -141,12 +185,17 @@ function Remove-RDWebAccessServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string]$WebAccessServerToKeep
+    [string]$WebAccessServerToKeep,
+    [switch]$WhatIf
   )
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-WEB-ACCESS | Where-Object -Property Server -NE $WebAccessServerToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-WEB-ACCESS Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-WEB-ACCESS -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-WEB-ACCESS -Force")
+    } else {
+      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-WEB-ACCESS -Force
+    }
   }
 }
 
@@ -158,13 +207,18 @@ function Add-SessionHostServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string[]]$SessionHostServers
+    [string[]]$SessionHostServers,
+    [switch]$WhatIf
   )
 
   foreach ($SessionHost in $SessionHostServers) {
     if (-not (Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -EQ $SessionHost)) {
       Write-Output "${SessionHost}: Adding RDS-RD-SERVER Server"
-      Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER
+      if ($WhatIf.IsPresent) {
+        Write-Output "What-If: Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER"
+      } else {
+        Add-RDServer -ConnectionBroker $ConnectionBroker -Server $SessionHost -Role RDS-RD-SERVER
+      }
     }
   }
 }
@@ -177,12 +231,17 @@ function Remove-SessionHostServer {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [string[]]$SessionHostServersToKeep
+    [string[]]$SessionHostServersToKeep,
+    [switch]$WhatIf
   )
 
   Get-RDServer -ConnectionBroker $ConnectionBroker -Role RDS-RD-SERVER | Where-Object -Property Server -notin $SessionHostServersToKeep | ForEach-Object {
     Write-Output ($_.Server + ": Removing RDS-RD-SERVER Server")
-    Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-RD-SERVER -Force
+    if ($WhatIf.IsPresent) {    
+      Write-Output ("What-If: Remove-RDServer -ConnectionBroker $ConnectionBroker -Server " + $_.Server + " -Role RDS-RD-SERVER -Force")
+    } else {
+      Remove-RDServer -ConnectionBroker $ConnectionBroker -Server $_.Server -Role RDS-RD-SERVER -Force
+    }
   }
 }
 
@@ -195,27 +254,40 @@ function Add-Collection {
   param (
     [string]$ConnectionBroker,
     [string]$CollectionName,
-    [hashtable[]]$Collection
+    [hashtable[]]$Collection,
+    [switch]$WhatIf
   )
 
   $ExistingCollection = Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -eq $CollectionName
   if (-not $ExistingCollection) {
     # ErrorAction set to SilentlyContinue as errors are generated re GroupPolicy managed options and this is the only way to avoid them being seen as errors in the output
     Write-Output "${ConnectionBroker}: ${CollectionName}: Creating RDSessionCollection"
-    New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction SilentlyContinue
+    if ($WhatIf.IsPresent) {    
+      Write-Output ("What-If: New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost " + $Collection.SessionHosts + " -ErrorAction SilentlyContinue")
+    } else {
+      New-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $Collection.SessionHosts -ErrorAction SilentlyContinue
+    }
   }
   else {
     foreach ($SessionHost in $Collection.SessionHosts) {
       $ExistingSessionHost = Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName | Where-Object -Property SessionHost -eq $SessionHost
       if (-not $ExistingSessionHost) {
         Write-Output "${ConnectionBroker}: ${CollectionName}: ${SessionHost}: Adding RDSessionHost"
-        Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue
+        if ($WhatIf.IsPresent) {
+          Write-Output "What-If: Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue"
+        } else {
+          Add-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -SessionHost $SessionHost -ErrorAction SilentlyContinue
+        }
       }
     }
   }
   Write-Output "${ConnectionBroker}: ${CollectionName}: Updating RDSessionCollection Configuration"
   $Configuration = $Collection.Configuration
-  Set-RDSessionCollectionConfiguration @Configuration -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName
+  if ($WhatIf.IsPresent) {
+    Write-Output ("What-If: Set-RDSessionCollectionConfiguration " + ($Configuration | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName")
+  } else {
+    Set-RDSessionCollectionConfiguration @Configuration -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName
+  }
 }
 
 function Add-Collections {
@@ -226,11 +298,16 @@ function Add-Collections {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [hashtable]$Collections
+    [hashtable]$Collections,
+    [switch]$WhatIf
   )
 
   foreach ($CollectionName in $Collections.Keys) {
-    Add-Collection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -Collection $Collections[$CollectionName]
+    if ($WhatIf.IsPresent) {  
+      Add-Collection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -Collection $Collections[$CollectionName] -WhatIf
+    } else {
+      Add-Collection -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -Collection $Collections[$CollectionName]
+    }
   }
 }
 
@@ -242,20 +319,29 @@ function Remove-Collections {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [hashtable]$CollectionsToKeep
+    [hashtable]$CollectionsToKeep,
+    [switch]$WhatIf
   )
 
   $CollectionNamesToKeep = $CollectionsToKeep.Keys
   Get-RDSessionCollection -ConnectionBroker $ConnectionBroker | Where-Object -Property CollectionName -notin $CollectionNamesToKeep | ForEach-Object {
     Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": Removing RDSessionCollection")
-    Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Force")
+    } else {
+      Remove-RDSessionCollection -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Force
+    }
   }
 
-  foreach ($CollectionName in $CollectionsToKeep.Keys) {
-    $Collection = $CollectionsToKeep[$CollectionName]
-    Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -ErrorAction SilentlyContinue | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
+    foreach ($CollectionName in $CollectionsToKeep.Keys) {
+      $Collection = $CollectionsToKeep[$CollectionName]
+      Get-RDSessionHost -ConnectionBroker $ConnectionBroker -CollectionName $CollectionName -ErrorAction SilentlyContinue | Where-Object -Property SessionHost -notin $Collection.SessionHosts | ForEach-Object {
       Write-Output ("${ConnectionBroker}: ${CollectionName}: " + $_.SessionHost + ": Removing RDSessionHost from RDSessionCollection")
-      Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost $_.SessionHost -Force
+      if ($WhatIf.IsPresent) {
+        Write-Output ("What-If: Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost " + $_.SessionHost + " -Force")
+      } else {
+        Remove-RDSessionHost -ConnectionBroker $ConnectionBroker -SessionHost $_.SessionHost -Force
+      }
     }
   }
 }
@@ -269,18 +355,27 @@ function Add-RemoteApp {
   param (
     [string]$ConnectionBroker,
     [string]$Alias,
-    [hashtable]$Configuration
+    [hashtable]$Configuration,
+    [switch]$WhatIf
   )
 
   $CollectionName = $Configuration.CollectionName
   $ExistingApp = Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -eq $Alias
   if (-not $ExistingApp) {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Creating RDRemoteApp"
-    New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: New-RDRemoteApp " + ($Configuration  | ConvertTo-Json -Compress) + " -ConnectionBroker $ConnectionBroker -Alias $Alias")
+    } else {
+      New-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+    }
   }
   else {
     Write-Output "${ConnectionBroker}: ${CollectionName}: ${Alias}: Updating RDRemoteApp"
-    Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+    if ($WhatIf.IsPresent) {
+      Write-Output "What-If: Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias"
+    } else {
+      Set-RDRemoteApp @Configuration -ConnectionBroker $ConnectionBroker -Alias $Alias
+    }
   }
 }
 
@@ -292,11 +387,16 @@ function Add-RemoteApps {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [hashtable]$RemoteApps
+    [hashtable]$RemoteApps,
+    [switch]$WhatIf
   )
   
   foreach ($Alias in $RemoteApps.Keys) {
-    Add-RemoteApp -ConnectionBroker $ConnectionBroker -Alias $Alias -Configuration $RemoteApps[$Alias]
+    if ($WhatIf.IsPresent) {
+      Add-RemoteApp -ConnectionBroker $ConnectionBroker -Alias $Alias -Configuration $RemoteApps[$Alias] -WhatIf
+    } else {
+      Add-RemoteApp -ConnectionBroker $ConnectionBroker -Alias $Alias -Configuration $RemoteApps[$Alias]
+    }
   }
 }
 
@@ -307,6 +407,7 @@ function Add-ServerFqdnListToServerList {
   .DESCRIPTION
       Creates or updates the ServerList.xml file used by Server Manager
   #>
+  # FIXME: move this somewhere else and add support WhatIf
   [CmdletBinding()]
   param (
     [string[]]$ServerFqdnList
@@ -469,13 +570,18 @@ function Remove-RemoteApps {
   [CmdletBinding()]
   param (
     [string]$ConnectionBroker,
-    [hashtable]$RemoteAppsToKeep
+    [hashtable]$RemoteAppsToKeep,
+    [switch]$WhatIf
   )
 
   $AliasesToKeep = $RemoteAppsToKeep.Keys
   Get-RDRemoteApp -ConnectionBroker $ConnectionBroker | Where-Object -Property Alias -notin $AliasesToKeep | ForEach-Object {
     Write-Output ("${ConnectionBroker}: " + $_.CollectionName + ": " + $_.Alias + ": Removing RDRemoteApp")
-    Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
+    if ($WhatIf.IsPresent) {
+      Write-Output ("What-If: Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName " + $_.CollectionName + " -Alias " + $_.Alias + " -Force")
+    } else {
+      Remove-RDRemoteApp -ConnectionBroker $ConnectionBroker -CollectionName $_.CollectionName -Alias $_.Alias -Force
+    }
   }
 }
 
