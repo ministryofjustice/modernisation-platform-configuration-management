@@ -8,6 +8,7 @@
 # 6: Date - formatted as dd/mm/20yy
 
 $directory = '\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data'
+$incomingDir = "${directory}\Incoming"
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
 $outputDir = "${directory}\Extracts\Outgoing_Archive"
@@ -23,10 +24,7 @@ $emailSecretId = '/prisoner-retail/notify_emails'
 $awsRegion = 'eu-west-2'
 $savedEmailsFile = "${directory}\emails.ps1"
 
-
-$allFiles = Get-ChildItem -Path $directory -File -Recurse | Where-Object {
-    $_.DirectoryName -ne (Get-Item $directory).FullName
-}
+$allFiles = Get-ChildItem -Path $incomingDir -File -Recurse
 $csvFiles = $allFiles | Where-Object {
     $_.Name.EndsWith(".csv")
 }
