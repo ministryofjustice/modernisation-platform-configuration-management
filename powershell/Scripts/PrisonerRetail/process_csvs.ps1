@@ -8,6 +8,7 @@
 # 6: Date - formatted as dd/mm/20yy
 
 $directory = '\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data'
+$incomingDir = "${directory}\Incoming"
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
 $outputDir = "${directory}\Extracts\Outgoing_Archive"
