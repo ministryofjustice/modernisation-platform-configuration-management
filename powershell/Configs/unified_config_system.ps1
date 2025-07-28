@@ -43,7 +43,8 @@ function Get-UnifiedConfig {
     # Normalize machine name for MISDis if needed
     $normalizedMachineName = if ($Application -eq 'delius-mis') {
         $machineName -replace 'delius-mis', 'ndmis'
-    } else {
+    }
+    else {
         $machineName
     }
     
@@ -63,13 +64,16 @@ function Get-UnifiedConfig {
             if ($machineName -eq $primaryNode) {
                 $isMatch = $true
                 $detectedRole = 'primary'
-            } elseif ($normalizedMachineName -eq $primaryNode) {
+            }
+            elseif ($normalizedMachineName -eq $primaryNode) {
                 $isMatch = $true
                 $detectedRole = 'primary'
-            } elseif ($machineName -eq $secondaryNode) {
+            }
+            elseif ($machineName -eq $secondaryNode) {
                 $isMatch = $true
                 $detectedRole = 'secondary'
-            } elseif ($normalizedMachineName -eq $secondaryNode) {
+            }
+            elseif ($normalizedMachineName -eq $secondaryNode) {
                 $isMatch = $true
                 $detectedRole = 'secondary'
             }
@@ -97,11 +101,13 @@ function Get-UnifiedConfig {
                 
                 if ($machineName -eq $primaryNode -or $normalizedMachineName -eq $primaryNode) {
                     $detectedRole = 'primary'
-                } elseif ($machineName -eq $secondaryNode -or $normalizedMachineName -eq $secondaryNode) {
+                }
+                elseif ($machineName -eq $secondaryNode -or $normalizedMachineName -eq $secondaryNode) {
                     $detectedRole = 'secondary'
                 }
             }
-        } else {
+        }
+        else {
             Write-Warning "No configuration found for machine '$machineName' in environment '$EnvironmentName'"
             $clusterConfig = @{}
         }
@@ -126,6 +132,19 @@ function Get-UnifiedConfig {
     $finalConfig['ConfigKey'] = $configKey
     $finalConfig['DetectedRole'] = $detectedRole
     $finalConfig['NormalizedMachineName'] = $normalizedMachineName
+    
+    # Add environment name - use EnvironmentName from cluster config if available, otherwise use the passed EnvironmentName
+    if ($clusterConfig -and $clusterConfig.ContainsKey('EnvironmentName')) {
+        $finalConfig['environment'] = $clusterConfig.EnvironmentName
+    }
+    else {
+        $finalConfig['environment'] = $EnvironmentName
+    }
+    
+    # Add cluster name if available
+    if ($clusterConfig -and $clusterConfig.ContainsKey('ClusterName')) {
+        $finalConfig['ClusterName'] = $clusterConfig.ClusterName
+    }
 
     return $finalConfig
 }
@@ -162,6 +181,8 @@ function Get-SecretValueUnified {
         'misdis' {
             switch ($SecretType) {
                 'service_accounts' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }
+                'bods_passwords' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }  # BODS admin passwords are in DB secrets
+                'bods_config' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }  # Product keys are in service accounts
                 'sys_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
                 'aud_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
                 default { throw "Unknown secret type for MISDis: $SecretType" }
