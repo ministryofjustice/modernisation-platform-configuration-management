@@ -1,4 +1,5 @@
 $Scripts = @(
+    '../MISDis/Move-ComputerDeliusInternalAD.ps1',
     '../Common/Test-InstallationEscalation.ps1'
 )
 
