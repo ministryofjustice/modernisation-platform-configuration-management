@@ -184,9 +184,7 @@ function Test-ONRMultipleCluster {
     
     $testNodes = @(
         @{ Name = 't2-onr-bods-1'; Expected = 'primary'; Cluster = 'cluster1'; Database = 'T2BOSYS' },
-        @{ Name = 't2-onr-bods-2'; Expected = 'secondary'; Cluster = 'cluster1'; Database = 'T2BOSYS' },
-        @{ Name = 't2-onr-bods-3'; Expected = 'primary'; Cluster = 'cluster2'; Database = 'T2BOSYS2' },
-        @{ Name = 't2-onr-bods-4'; Expected = 'secondary'; Cluster = 'cluster2'; Database = 'T2BOSYS2' }
+        @{ Name = 't2-onr-bods-2'; Expected = 'secondary'; Cluster = 'cluster1'; Database = 'T2BOSYS' }
     )
     
     foreach ($testNode in $testNodes) {

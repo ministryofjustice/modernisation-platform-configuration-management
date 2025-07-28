@@ -42,25 +42,27 @@ $ApplicationConfig = @{
     }
     
     'delius-mis-development'   = @{
-        'DatabaseConfig' = @{
+        'EnvironmentName' = 'delius-mis-development'
+        
+        'DatabaseConfig'  = @{
             'sysDbName' = 'DMDDSD'
             'audDbName' = 'DMDDSD'
             'sysDbUser' = 'dfi_mod_ipscms'
             'audDbUser' = 'dfi_mod_ipsaud'
         }
         
-        'NodeConfig'     = @{
+        'NodeConfig'      = @{
             'cmsPrimaryNode'   = 'ndmis-dev-dfi-1'
             'cmsSecondaryNode' = 'ndmis-dev-dfi-2'
         }
         
-        'ServiceConfig'  = @{
+        'ServiceConfig'   = @{
             'serviceUser' = 'SVC_DIS_NDL'
             'domain'      = 'delius-mis-dev'
         }
         
         # MISDis-specific settings for development
-        'SiaNodeName'    = 'NDLMODDFI101'
+        'SiaNodeName'     = 'NDLMODDFI101'
     }
     
     'delius-mis-preproduction' = @{
