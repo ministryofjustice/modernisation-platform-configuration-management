@@ -6,7 +6,7 @@ function Get-Installer {
         [string]$Destination
     )
 
-    Invoke-WebRequest -Uri $Url -Destination $Destination
+    Invoke-WebRequest -Uri $Url -OutFile $Destination
 
 }
 
@@ -36,7 +36,9 @@ Write-Output "EnableLUA value: $EnableLUAValue - should be 1"
 # Verify settings
 Get-ItemProperty -Path $uacPath | Select-Object ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, EnableLUA
 
-Get-Installer -Url 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' -Destination "$env:Temp\vscode_installer.exe"
+$Destination = "$env:Temp\vscode_installer.exe"
+
+Get-Installer -Url 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' -Destination $Destination
 
 $unattendedArgs = '/VERYSILENT /NORESTART /MERGETASKS=!runcode'
 
