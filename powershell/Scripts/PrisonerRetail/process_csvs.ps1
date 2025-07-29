@@ -421,6 +421,3 @@ try {
     Write-Log "An error occurred: $_"
     exit 1
 }
-
-
-
