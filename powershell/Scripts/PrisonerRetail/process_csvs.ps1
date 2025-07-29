@@ -258,7 +258,7 @@ function Clean-Formatting {
             $row[$i] = $row[$i] -replace "¬~¬", ","
         }
         # Just have numbers and . in Balance
-        $row[5] = $row[5] -replace "[£,]", ""
+        $row[5] = $row[5] -replace "[£, ]", ""
         if ($row[5] -eq "-") {
             $row[5] = "0"
         }
