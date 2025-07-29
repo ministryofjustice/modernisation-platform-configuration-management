@@ -33,8 +33,13 @@ $enableLUAValue = (Get-ItemProperty -Path $uacPath -Name 'EnableLUA').EnableLUA
 
 Write-Output "EnableLUA value: $EnableLUAValue - should be 1"
 
+# Check EnableInstallerDetection
+$EnableInstallerDetectionValue = (Get-ItemProperty -Path $uacPath -Name 'EnableInstallerDetection').EnableInstallerDetection
+
+Write-Output "EnableInstallerDetection Value: $EnableInstallerDetectionValue - should be 0"
+
 # Verify settings
-Get-ItemProperty -Path $uacPath | Select-Object ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, EnableLUA
+Get-ItemProperty -Path $uacPath | Select-Object ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, EnableLUA, EnableInstallerDetection
 
 $Destination = "$env:Temp\vscode_installer.exe"
 

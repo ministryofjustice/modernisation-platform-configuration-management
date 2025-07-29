@@ -1,8 +1,13 @@
-# NOTE: Only getting the tags here, not the config
+# NOTE: Param added to allow moving computer to a different OU for testing
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$ServerTypeOverride
+)
+
 function Get-Tags {
     $tokenParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token-ttl-seconds" = 3600 }
+        Headers    = @{'X-aws-ec2-metadata-token-ttl-seconds' = 3600 }
         Method     = 'PUT'
         Uri        = 'http://169.254.169.254/latest/api/token'
     }
@@ -10,7 +15,7 @@ function Get-Tags {
 
     $instanceIdParams = @{
         TimeoutSec = 10
-        Headers    = @{"X-aws-ec2-metadata-token" = $Token }
+        Headers    = @{'X-aws-ec2-metadata-token' = $Token }
         Method     = 'GET'
         Uri        = 'http://169.254.169.254/latest/meta-data/instance-id'
     }
@@ -28,7 +33,7 @@ function Get-Tags {
     
     # Create a hashtable of instance tags for easier access
     $tagHash = @{}
-    foreach($tag in $Tags.Tags) {
+    foreach ($tag in $Tags.Tags) {
         $tagHash[$tag.Key] = $tag.Value
     }
     
@@ -38,9 +43,18 @@ function Get-Tags {
 
 function Move-ComputerDeliusInternalAD {
 
-    $ErrorActionPreference = "Stop"
+    $ErrorActionPreference = 'Stop'
 
-    $OUTarget = (Get-Tags)['server-type']
+    # Use the override parameter if provided, otherwise get from tags
+    if ($ServerTypeOverride) {
+        $OUTarget = $ServerTypeOverride
+        Write-Host "Using server-type override: $OUTarget"
+    }
+    else {
+        $OUTarget = (Get-Tags)['server-type']
+        Write-Host "Using server-type from tags: $OUTarget"
+    }
+    
     $NewOU = "OU=$OUTarget,OU=Computers,OU=delius-mis-dev,DC=delius-mis-dev,DC=internal"
 
     Write-Host "Moving computer to OU: $NewOU"
@@ -53,7 +67,7 @@ function Move-ComputerDeliusInternalAD {
     # Create credential object for AD operations
     $password = Get-SecretString -SecretId 'delius-mis-dev-ad-admin-password'
     $secureString = ConvertTo-SecureString -AsPlainText -Force -String $password
-    $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "Admin",$secureString
+    $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList 'Admin', $secureString
 
     # Get the computer's objectGUID with a 5-minute timeout
     $timeout = [DateTime]::Now.AddMinutes(5)
@@ -70,7 +84,7 @@ function Move-ComputerDeliusInternalAD {
     } until (($computer -and $computer.objectGUID) -or ([DateTime]::Now -ge $timeout))
 
     if (-not ($computer -and $computer.objectGUID)) {
-        Write-Error "Failed to retrieve computer objectGUID within 5 minutes."
+        Write-Error 'Failed to retrieve computer objectGUID within 5 minutes.'
         return
     }
 
@@ -81,14 +95,14 @@ function Move-ComputerDeliusInternalAD {
     do {
         try {
             $computer.objectGUID | Move-ADObject -TargetPath $NewOU -Credential $Credential -ErrorAction Stop
-            Write-Host "Computer moved to new OU"
+            Write-Host 'Computer moved to new OU'
             $moveSuccess = $true
             break
         }
         catch {
             Write-Verbose "Move-ADObject failed: $_"
             if ([DateTime]::Now -ge $moveTimeout) {
-                Write-Error "Failed to move computer to new OU within 5 minutes."
+                Write-Error 'Failed to move computer to new OU within 5 minutes.'
                 return
             }
         }
