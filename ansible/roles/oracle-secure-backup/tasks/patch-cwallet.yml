@@ -1,0 +1,62 @@
+---
+- name: Create install files directories
+  ansible.builtin.file:
+    owner: oracle
+    group: oinstall
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  check_mode: no
+  loop:
+    - "{{ osw_stage_dir }}"
+
+- name: Copy cwallet.sso
+  copy:
+    src: cwallet.sso
+    dest: "{{ osw_stage_dir }}/cwallet.sso"
+    mode: 0600
+    owner: oracle
+    group: oinstall
+  check_mode: no
+  register: osbws_cwallet
+
+- name: Find all cwallet.sso files using shell
+  ansible.builtin.shell: |
+    find {{ cwallet_search_path }} -type f -path "*/osbws*wallet/cwallet.sso" | grep -v '\.bak'
+  args:
+      executable: /bin/bash
+  register: found_wallets
+  changed_when: false
+  check_mode: no
+
+- name: Set list of found backup files
+  ansible.builtin.set_fact:
+    wallet_backup_files: "{{ found_wallets.stdout_lines }}"
+  check_mode: no
+
+- name: Gather date/time facts
+  ansible.builtin.setup:
+    filter: ansible_date_time
+  check_mode: no
+
+- name: Backup all found cwallet.sso files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ item }}.{{ ansible_date_time.date }}"
+    remote_src: yes
+    mode: 0600
+    owner: oracle
+    group: oinstall
+  loop: "{{ wallet_backup_files }}"
+  when: wallet_backup_files | length > 0
+
+- name: Copy cwallet.sso file into place
+  ansible.builtin.copy:
+    src: "{{ osw_stage_dir }}/cwallet.sso"
+    dest: "{{ item }}"
+    remote_src: yes
+    mode: 0600
+    owner: oracle
+    group: oinstall
+  loop: "{{ wallet_backup_files }}"
+  when: wallet_backup_files | length > 0
