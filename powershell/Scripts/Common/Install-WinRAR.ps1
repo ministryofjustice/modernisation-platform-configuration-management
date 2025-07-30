@@ -1,1 +1,1 @@
-. ./Install-Choco-Package.ps1 winrar
+. ../Common/Install-Choco-Package.ps1 winrar

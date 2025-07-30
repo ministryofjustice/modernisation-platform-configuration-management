@@ -17,3 +17,9 @@
   loop_control:
     loop_var: osbws_config
   loop: "{{ osbws_configs + osbws_additional_configs }}"
+
+- import_tasks: patch-cwallet.yml
+  tags:
+    - osw-patch-cwallet
+    - ec2provision
+    - osw-install-software

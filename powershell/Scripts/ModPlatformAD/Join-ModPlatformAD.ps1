@@ -29,7 +29,6 @@ $ADConfig = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
 $ADCredential = Get-ModPlatformADJoinCredential -ModPlatformADConfig $ADConfig
 $Renamed = Rename-ModPlatformADComputer -NewHostname $NewHostname -ModPlatformADCredential $ADCredential
 if ($Renamed) {
-  Write-Output "Renamed computer to ${Renamed}"
   Exit 3010 # triggers reboot if running from SSM Doc
 }
 if (Add-ModPlatformADComputer -ModPlatformADConfig $ADConfig -ModPlatformADCredential $ADCredential) {

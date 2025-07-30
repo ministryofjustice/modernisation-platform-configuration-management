@@ -54,7 +54,12 @@ if (-not $ConfigByEnvironmentNameTag.Contains($ConfigName)) {
   Set-Location -Path ([System.IO.Path]::GetTempPath())
   $LocalMsiPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath $CortexAgentMsi
   Write-Output "Downloading Cortex Agent: $CortexAgentS3Bucket $CortexAgentS3Folder $CortexAgentMsi"
-  Read-S3Object -BucketName $CortexAgentS3Bucket -Key "$CortexAgentS3Folder/$CortexAgentMsi" -File ".\$CortexAgentMsi" | Out-Null
-  Write-Output "Installing CortexAgent"
-  Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
+  if ($WhatIfPreference) {
+    Write-Output "What-If: Read-S3Object -BucketName $CortexAgentS3Bucket -Key $CortexAgentS3Folder/$CortexAgentMsi -File .\$CortexAgentMsi"
+    Write-Output "What-If: Start-Process -FilePath msiexec.exe -ArgumentList /i $LocalMsiPath /quiet /norestart -Wait"
+  } else {
+    Read-S3Object -BucketName $CortexAgentS3Bucket -Key "$CortexAgentS3Folder/$CortexAgentMsi" -File ".\$CortexAgentMsi" | Out-Null
+    Write-Output "Installing CortexAgent"
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$LocalMsiPath`" /quiet /norestart" -Wait
+  }
 }

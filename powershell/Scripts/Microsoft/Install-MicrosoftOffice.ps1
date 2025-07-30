@@ -1,2 +1,2 @@
 $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
-choco install -y microsoft-office-deployment
+. ../Common/Install-Choco-Package.ps1 microsoft-office-deployment

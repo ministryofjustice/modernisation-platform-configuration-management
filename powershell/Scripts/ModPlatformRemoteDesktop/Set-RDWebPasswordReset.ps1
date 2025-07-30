@@ -15,14 +15,18 @@ function Set-RDWebPasswordChangeEnabled {
     $WebConfig = Get-Content -Path $WebConfigPath
 
     if ($WebConfig -match '("PasswordChangeEnabled".*value=)"true"') {
-      Write-Output "PasswordChangeEnabled already set to true in $WebConfigPath"
+      Write-Verbose "PasswordChangeEnabled already set to true in $WebConfigPath"
     } elseif ($WebConfig -match '("PasswordChangeEnabled".*value=)"false"') {
       Write-Output "Setting PasswordChangeEnabled=true in $WebConfigPath and restarting Site"
       $WebConfig -replace '("PasswordChangeEnabled".*value=)"false"', '$1"true"' | Set-Content -Path $WebConfigPath
       Import-Module IISAdministration
       $site = Get-IISSite "Default Web Site"
-      $site.Stop()
-      $site.Start()
+      if ($WhatIfPreference) {
+        Write-Output "What-If: Restarting IIS Default Web Site"
+      } else {
+        $site.Stop()
+        $site.Start()
+      }
     } else {
       Write-Error "Cannot find PasswordChangeEnabled option in $WebConfigPath"
     }
@@ -39,7 +43,7 @@ function Set-RDWebPasswordChangeLoginLink {
     $LoginAspxWhitespace = '            '
     $LoginAspxAdd='<tr><td align="right">Click <a href="password.aspx">here</a> to reset your password.</td></tr>'
     if ($LoginAspx -match $LoginAspxAdd) {
-      Write-Output "Password link already added to $LoginAspxPath"
+      Write-Verbose "Password link already added to $LoginAspxPath"
     } elseif ($LoginAspx -match $LoginAspxMatch) {
       Write-Output "Adding password link to $LoginAspxPath"
       $LoginAspx -replace $LoginAspxMatch, ('$1'+$LoginAspxWhitespace+$LoginAspxAdd) | Set-Content -Path $LoginAspxPath

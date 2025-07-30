@@ -5,6 +5,7 @@ $Scripts = @(
   '../Oracle/Set-TnsOraFileMISDis.ps1',
   '../Oracle/Install-SQLDeveloper.ps1',
   '../MISDis/Move-ComputerDeliusInternalAD.ps1',
+  '../Common/Test-InstallationEscalation.ps1',
   '../Oracle/Test-DbCredentials-MISDIS-DEV-ONLY.ps1',
   '../Oracle/Install-IPS-MISDIS-DEV-ONLY.ps1', # <- fix as part of TM-1414
   '../Oracle/Install-DataServices-MISDIS-DEV-ONLY.ps1' # <- fix as part of TM-1414
