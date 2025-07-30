@@ -60,13 +60,6 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\HmppsJump2022")
         }
       }
-      "CAFM-RDP PreProd 2019" = @{
-        "SessionHosts"  = @("PP-CAFM-A-20-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "Connect to 2019 CAFM servers"
-          "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS", "HMPP\drobinson2")
-        }
-      }
     }
     "RemoteApps"          = @{
       "calc"             = @{
