@@ -53,13 +53,6 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
         }
       }
-      "CAFM-RDP PreProd 2022" = @{
-        "SessionHosts"  = @("PP-CAFM-A-20-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "CAFM-RDP PreProd 2022 Modernisation Platform"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\drobinson2", "HMPP\drobinson3", "HMPP\DQS06X")
-        }
-      }
       "pp-jump2022-1" = @{
         "SessionHosts"  = @("PP-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
@@ -73,20 +66,11 @@ $GlobalConfig = @{
         "CollectionName" = "CAFM-RDP PreProd"
         "DisplayName"    = "Calculator"
         "FilePath"       = 'C:\Windows\system32\calc.exe'
+        #"FilePath"       = 'C:\Windows\system32\win32calc.exe'
       }
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP PreProd"
         "DisplayName"    = "Qube Planet"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "calc2022"             = @{
-        "CollectionName" = "CAFM-RDP PreProd 2022"
-        "DisplayName"    = "Calculator 2022"
-        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
-      }
-      "PlanetEnterprise2022" = @{
-        "CollectionName" = "CAFM-RDP PreProd 2022"
-        "DisplayName"    = "Qube Planet 2022"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
     }
