@@ -1,50 +1,59 @@
 # Script to test whether Group Policy UAC changes will actually allow installation of software that needs Admin/escalation
 
-function Get-Installer {
-    param(
-        [string]$Url,
-        [string]$Destination
-    )
-
-    Invoke-WebRequest -Uri $Url -OutFile $Destination
-
-}
-
+# We're not explicitly failing on this, it's just useful debug
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')
-
 Write-Output "Running as Administrator: $isAdmin"
 
 # Complete UAC configuration for automation
 $uacPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
 
-# Check disable prompting for administrators (critical)
-$consentPromptBehaviorAdminValue = (Get-ItemProperty -Path $uacPath -Name 'ConsentPromptBehaviorAdmin').ConsentPromptBehaviorAdmin
+function Test-UACSettings {
+    param(
+        [Parameter(Mandatory = $true)]
+        [PSObject[]]$Settings,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$RegistryPath
+    )
+    
+    foreach ($setting in $Settings) {
+        $actualValue = (Get-ItemProperty -Path $RegistryPath -Name $setting.Name).$($setting.Name)
+        
+        if ($actualValue -eq $setting.ExpectedValue) {
+            Write-Output "$($setting.Name) value correct: $actualValue"
+        }
+        else {
+            Write-Output "$($setting.Name): $actualValue ERROR, should be $($setting.ExpectedValue)"
+            Write-Output "Change GPO: $($setting.GPOSetting)"
+            exit 1
+        }
+    }
+}
 
-Write-Output "ConsentPromptBehaviourAdmin: $consentPromptBehaviorAdminValue - should be 0"
+# Define UAC settings to test
+$uacSettings = @(
+    [PSCustomObject]@{
+        Name          = 'ConsentPromptBehaviorAdmin'
+        ExpectedValue = 0
+        GPOSetting    = 'User Account Control: Behavior of the elevation prompt for administrators in Admin Approval Mode -> Elevate without prompting'
+    },
+    [PSCustomObject]@{
+        Name          = 'PromptOnSecureDesktop'
+        ExpectedValue = 0
+        GPOSetting    = 'User Account Control: Switch to the secure desktop when prompting for elevation -> Disabled'
+    },
+    [PSCustomObject]@{
+        Name          = 'EnableLUA'
+        ExpectedValue = 1
+        GPOSetting    = 'User Account Control: Run all administrators in Admin Approval Mode -> Enabled'
+    },
+    [PSCustomObject]@{
+        Name          = 'EnableInstallerDetection'
+        ExpectedValue = 0
+        GPOSetting    = 'User Account Control: Detect application installations and prompt for elevation -> Disabled'
+    }
+)
 
+# Test all UAC settings
+Test-UACSettings -Settings $uacSettings -RegistryPath $uacPath
 
-# Check disable secure desktop (critical for automation)
-$promptOnSecureDesktopValue = (Get-ItemProperty -Path $uacPath -Name 'PromptOnSecureDesktop').PromptOnSecureDesktop
-
-Write-Output "PromptOnSecureDesktop: $PromptOnSecureDesktopValue - should be 0"
-
-# Check UAC enabled (recommended)
-$enableLUAValue = (Get-ItemProperty -Path $uacPath -Name 'EnableLUA').EnableLUA
-
-Write-Output "EnableLUA value: $EnableLUAValue - should be 1"
-
-# Check EnableInstallerDetection
-$EnableInstallerDetectionValue = (Get-ItemProperty -Path $uacPath -Name 'EnableInstallerDetection').EnableInstallerDetection
-
-Write-Output "EnableInstallerDetection Value: $EnableInstallerDetectionValue - should be 0"
-
-# Verify settings
-Get-ItemProperty -Path $uacPath | Select-Object ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, EnableLUA, EnableInstallerDetection
-
-$Destination = "$env:Temp\vscode_installer.exe"
-
-Get-Installer -Url 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64' -Destination $Destination
-
-$unattendedArgs = '/VERYSILENT /NORESTART /MERGETASKS=!runcode'
-
-Start-Process -FilePath $Destination -ArgumentList $unattendedArgs -Wait -PassThru
