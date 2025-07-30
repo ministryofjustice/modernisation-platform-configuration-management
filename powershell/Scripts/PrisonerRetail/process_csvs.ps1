@@ -13,6 +13,7 @@ $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
 $outputDir = "${directory}\Extracts\Outgoing_Archive"
 $outputFile = "${outputDir}\PR${timestamp}.txt"
+$outputFileTemp = "${outputDir}\PR${timestamp}_temp.txt"
 $archiveDir = "${directory}\Archive"
 $finalZip = "${archiveDir}\${timestamp}.7z"
 $tempZip = "${archiveDir}\${timestamp}.ziptmp"
@@ -70,6 +71,7 @@ function Main {
 
         Delete-Files $file
     }
+    Sort-Output
     Archive-OutputFiles
     Delete-OldFiles -directory $archiveDir -extension ".7z"
     Delete-OldFiles -directory $outputDir  -prefix "PR" -extension ".txt"
@@ -92,7 +94,7 @@ function Delete-Files {
     param (
         [Parameter(Position = 0)]$files
     )
-    $noRecordList = @( $extraFilesList, $failedFilesList )
+    $noRecordList = @( $extraFilesList, $failedFilesList, $outputFileTemp )
     if ($file -is [string]) { 
         $file = @($file)
     }  
@@ -347,7 +349,18 @@ function Append-OutputLines {
         $date       = $row[6] 
 
         [String]$line = "$surname $initials,$nomsNumber,$establishmentShort,$establishmentLong,$location,$balance"
-        Add-Content -Path $outputFile -Value $line
+        Add-Content -Path $outputFileTemp -Value $line
+    }
+}
+
+function Sort-Output {
+    if (Test-Path $outputFileTemp) {
+        $sorted = Import-Csv $outputFileTemp -Header name,nomsNumber,Col3,Col4,Col5,Col6 | 
+            Sort-Object name, nomsNumber |
+            ForEach-Object { "$($_.name),$($_.nomsNumber),$($_.Col3),$($_.Col4),$($_.Col5),$($_.Col6)" } |
+            Set-Content $outputFile
+
+        Delete-Files $outputFileTemp
     }
 }
 
