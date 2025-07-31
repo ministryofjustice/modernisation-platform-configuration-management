@@ -65,8 +65,7 @@ $GlobalConfig = @{
       "calc"             = @{
         "CollectionName" = "CAFM-RDP PreProd"
         "DisplayName"    = "Calculator"
-        "FilePath"       = 'C:\Windows\system32\calc.exe'
-        #"FilePath"       = 'C:\Windows\system32\win32calc.exe'
+        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
       }
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP PreProd"
