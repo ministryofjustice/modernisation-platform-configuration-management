@@ -79,7 +79,13 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT", "PD-JUMP2022-1.AZURE.HMPP.ROOT")
+    "SessionHostServers"  = @(
+      "PD-CAFM-A-12-B.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-13-A.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-14-B.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-15-A.AZURE.HMPP.ROOT",
+      "PD-JUMP2022-1.AZURE.HMPP.ROOT"
+    )
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
@@ -89,6 +95,20 @@ $GlobalConfig = @{
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
+        }
+      }
+      "CAFM-RDP-14" = @{
+        "SessionHosts"  = @("PD-CAFM-A-14-B.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 14"
+          "UserGroup"             = @("HMPP\drobinson")
+        }
+      }
+      "CAFM-RDP-15" = @{
+        "SessionHosts"  = @("PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 15"
+          "UserGroup"             = @("HMPP\drobinson")
         }
       }
       "pd-jump2022-1" = @{
@@ -108,6 +128,16 @@ $GlobalConfig = @{
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Qube Planet"
+        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
+      }
+      "PlanetEnterprise14" = @{
+        "CollectionName" = "CAFM-RDP-14"
+        "DisplayName"    = "Qube Planet A-14 Test"
+        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
+      }
+      "PlanetEnterprise15" = @{
+        "CollectionName" = "CAFM-RDP-15"
+        "DisplayName"    = "Qube Planet A-15 Test"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
     }
