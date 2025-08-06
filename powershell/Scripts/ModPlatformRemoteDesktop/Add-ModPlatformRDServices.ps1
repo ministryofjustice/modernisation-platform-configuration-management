@@ -91,13 +91,6 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
         }
       }
-      "CAFM-RDP-2022" = @{
-        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 2022"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
-        }
-      }
       "pd-jump2022-1" = @{
         "SessionHosts" = @("PD-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
@@ -115,11 +108,6 @@ $GlobalConfig = @{
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Qube Planet"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "PlanetEnterprise2022" = @{
-        "CollectionName" = "CAFM-RDP-2022"
-        "DisplayName"    = "Qube Planet 2022 Test"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
     }
