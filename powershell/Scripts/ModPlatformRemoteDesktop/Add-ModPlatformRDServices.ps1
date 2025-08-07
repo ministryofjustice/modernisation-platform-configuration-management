@@ -102,21 +102,21 @@ $GlobalConfig = @{
         "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 11"
-          "UserGroup"             = @("HMPP\drobinson")
+          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "CAFM-RDP-14" = @{
         "SessionHosts"  = @("PD-CAFM-A-14-B.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 14"
-          "UserGroup"             = @("HMPP\drobinson")
+          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "CAFM-RDP-15" = @{
         "SessionHosts"  = @("PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 15"
-          "UserGroup"             = @("HMPP\drobinson")
+          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "pd-jump2022-1" = @{
@@ -136,6 +136,11 @@ $GlobalConfig = @{
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Qube Planet"
+        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
+      }
+      "PlanetEnterprise11" = @{
+        "CollectionName" = "CAFM-RDP-11"
+        "DisplayName"    = "Qube Planet A-11 Test"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
       "PlanetEnterprise14" = @{
