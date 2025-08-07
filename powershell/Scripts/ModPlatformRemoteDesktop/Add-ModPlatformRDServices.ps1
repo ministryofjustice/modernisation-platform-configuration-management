@@ -80,6 +80,7 @@ $GlobalConfig = @{
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @(
+      "PD-CAFM-A-11-A.AZURE.HMPP.ROOT",
       "PD-CAFM-A-12-B.AZURE.HMPP.ROOT",
       "PD-CAFM-A-13-A.AZURE.HMPP.ROOT",
       "PD-CAFM-A-14-B.AZURE.HMPP.ROOT",
@@ -95,6 +96,13 @@ $GlobalConfig = @{
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
+        }
+      }
+      "CAFM-RDP-11" = @{
+        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 11"
+          "UserGroup"             = @("HMPP\drobinson")
         }
       }
       "CAFM-RDP-14" = @{
