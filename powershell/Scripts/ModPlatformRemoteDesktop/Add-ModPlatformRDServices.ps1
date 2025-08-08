@@ -79,13 +79,20 @@ $GlobalConfig = @{
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
     "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT", "PD-JUMP2022-1.AZURE.HMPP.ROOT")
+    "SessionHostServers"  = @(
+      "PD-CAFM-A-11-A.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-12-B.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-13-A.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-14-B.AZURE.HMPP.ROOT",
+      "PD-CAFM-A-15-A.AZURE.HMPP.ROOT",
+      "PD-JUMP2022-1.AZURE.HMPP.ROOT"
+    )
     "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
     "Collections"         = @{
       "CAFM-RDP" = @{
-        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-12-B.AZURE.HMPP.ROOT", "PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
+        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-14-B.AZURE.HMPP.ROOT", "PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
@@ -103,7 +110,7 @@ $GlobalConfig = @{
       "calc"             = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Calculator"
-        "FilePath"       = 'C:\Windows\system32\calc.exe'
+        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
       }
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
