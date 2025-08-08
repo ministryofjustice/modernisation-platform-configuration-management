@@ -91,13 +91,13 @@ $GlobalConfig = @{
     "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
     "domain"              = "HMPP"
     "Collections"         = @{
-      "CAFM-RDP" = @{
-        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-14-B.AZURE.HMPP.ROOT", "PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
-          "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
-        }
-      }
+      #"CAFM-RDP" = @{
+      #  "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-14-B.AZURE.HMPP.ROOT", "PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
+      #  "Configuration" = @{
+      #    "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
+      #    "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
+      #  }
+      #}
       "pd-jump2022-1" = @{
         "SessionHosts" = @("PD-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
@@ -106,18 +106,18 @@ $GlobalConfig = @{
         }
       }
     }
-    "RemoteApps"          = @{
-      "calc"             = @{
-        "CollectionName" = "CAFM-RDP"
-        "DisplayName"    = "Calculator"
-        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
-      }
-      "PlanetEnterprise" = @{
-        "CollectionName" = "CAFM-RDP"
-        "DisplayName"    = "Qube Planet"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-    }
+    #"RemoteApps"          = @{
+    #  "calc"             = @{
+    #    "CollectionName" = "CAFM-RDP"
+    #    "DisplayName"    = "Calculator"
+    #    "FilePath"       = 'C:\Windows\system32\win32calc.exe'
+    #  }
+    #  "PlanetEnterprise" = @{
+    #    "CollectionName" = "CAFM-RDP"
+    #    "DisplayName"    = "Qube Planet"
+    #    "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
+    #  }
+    #}
   }
 }
 
