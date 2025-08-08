@@ -98,27 +98,6 @@ $GlobalConfig = @{
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
         }
       }
-      "CAFM-RDP-11" = @{
-        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 11"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
-        }
-      }
-      "CAFM-RDP-14" = @{
-        "SessionHosts"  = @("PD-CAFM-A-14-B.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 14"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
-        }
-      }
-      "CAFM-RDP-15" = @{
-        "SessionHosts"  = @("PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PlanetFM RemoteDesktop App Collection 15"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
-        }
-      }
       "pd-jump2022-1" = @{
         "SessionHosts" = @("PD-JUMP2022-1.AZURE.HMPP.ROOT")
         "Configuration" = @{
@@ -136,21 +115,6 @@ $GlobalConfig = @{
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Qube Planet"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "PlanetEnterprise11" = @{
-        "CollectionName" = "CAFM-RDP-11"
-        "DisplayName"    = "Qube Planet A-11 Test"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "PlanetEnterprise14" = @{
-        "CollectionName" = "CAFM-RDP-14"
-        "DisplayName"    = "Qube Planet A-14 Test"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "PlanetEnterprise15" = @{
-        "CollectionName" = "CAFM-RDP-15"
-        "DisplayName"    = "Qube Planet A-15 Test"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
     }
