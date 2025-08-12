@@ -259,7 +259,6 @@ function Check-Early {
         if ($row.Count -ne $expectedFields) {
             Write-Log "Invalid row in file '$($file.FullName)': Expected $expectedFields fields but found $($row.Count). This file will be skipped."
             Add-Content -Path $failedFilesList -Value $file.FullName
-            exit
             return $false
         }
     }
