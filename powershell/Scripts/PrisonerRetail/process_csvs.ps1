@@ -216,12 +216,35 @@ function Create-DataArray {
     ,$dataArray
 }
 
+function Get-Establishment {
+    param (
+        [Parameter(Mandatory = $true)]$file
+    )
+    
+    $path = if ($file -is [System.IO.FileInfo]) {
+        $file.FullName
+    } else {
+        $file
+    }
+
+    $path_bits = $path -split '[\\/]'
+    for ($i = 0; $i -lt $path_bits.Length - 1; $i++) {
+        if ($path_bits[$i] -eq 'Data' -and $path_bits[$i + 1] -eq 'Incoming') {
+            if ($i + 2 -lt $path_bits.Length) {
+                return $path_bits[$i + 2]  # folder after data/incoming
+            }
+        }
+    }
+
+    return $null
+}
+
 function Check-Early {
     param (
         [Parameter(Position = 0)][array]$dataArray,
         [Parameter(Position = 1)]$file
     )
-    [String]$establishmentShort = $file.Directory.Name
+    [String]$establishmentShort = Get-Establishment $file
     [String]$establishmentLong = $establishments[$establishmentShort]
 
     # check we have the establishment name
@@ -236,7 +259,6 @@ function Check-Early {
         if ($row.Count -ne $expectedFields) {
             Write-Log "Invalid row in file '$($file.FullName)': Expected $expectedFields fields but found $($row.Count). This file will be skipped."
             Add-Content -Path $failedFilesList -Value $file.FullName
-            exit
             return $false
         }
     }
@@ -319,7 +341,7 @@ function Append-Fields {
         [Parameter(Position = 1)]$file
     )
     $fileTime = $file.LastWriteTime
-    [string]$establishment = $file.Directory.Name
+    [string]$establishment = Get-Establishment $file
     [array]$outputArray = @()
     foreach ($row in $dataArray) {
         # Join fields and add timestamp and establishment
@@ -336,7 +358,7 @@ function Append-OutputLines {
         [Parameter(Position = 0)][array]$dataArray,
         [Parameter(Position = 1)]$file
     )
-    [String]$establishmentShort = $file.Directory.Name
+    [String]$establishmentShort = Get-Establishment $file
     [String]$establishmentLong = $establishments[$establishmentShort]
 
     foreach ($row in $dataArray) {    
