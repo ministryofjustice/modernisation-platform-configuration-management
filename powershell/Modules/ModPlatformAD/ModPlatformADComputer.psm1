@@ -52,9 +52,10 @@ function Rename-ModPlatformADComputer {
     } else {
       Rename-Computer -NewName $NewHostname -DomainCredential $ModPlatformADCredential -Force
     }
-    Write-Host "INFO: Renaming EC2 instance to $NewHostname and then rebooting"
+    Write-Output "Renaming EC2 instance to $NewHostname and then rebooting"
     Return $NewHostname
   } else {
+    Write-Verbose "EC2 instance already named correctly"
     Return $null
   }
 }
@@ -96,19 +97,19 @@ function Add-ModPlatformADComputer {
   if ((Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
     $ExistingDomain = (Get-WmiObject -Class Win32_ComputerSystem).Domain
     if ($ExistingDomain -eq $DomainNameFQDN) {
+      Write-Verbose "Computer $env:COMPUTERNAME is already joined to domain ${DomainNameFQDN}"
       Return $false
     }
   }
 
   # Install powershell features if missing
   if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Write-Output "Installing RSAT-AD-PowerShell feature"
     Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
   }
 
   # Join the domain
-
-  Write-Host "INFO: Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
+  Write-Output "Joining $env:COMPUTERNAME to ${DomainNameFQDN} domain"
   Add-Computer -DomainName $DomainNameFQDN -Credential $ModPlatformADCredential -Verbose -Force
   Return $true
 }
@@ -142,18 +143,19 @@ function Remove-ModPlatformADComputer {
 
   # Do nothing if host not part of domain
   if (-not (Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain) {
+    Write-Verbose "Computer $env:COMPUTERNAME is already removed from domain"
     Return $false
   }
 
   # Install powershell features if missing
   if (-not (Get-Module -ListAvailable -Name "ActiveDirectory")) {
-    Write-Host "INFO: Installing RSAT-AD-PowerShell feature"
+    Write-Output "Installing RSAT-AD-PowerShell feature"
     Install-WindowsFeature -Name "RSAT-AD-PowerShell" -IncludeAllSubFeature
   }
 
   # Join the domain
   $DomainNameFQDN = (Get-WmiObject -Class Win32_ComputerSystem).Domain
-  Write-Host "INFO: Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
+  Write-Output "Removing $env:COMPUTERNAME from ${DomainNameFQDN} domain"
   Remove-Computer -Credential $ModPlatformADCredential -Verbose -Force
   Return $true
 }

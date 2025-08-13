@@ -2,26 +2,35 @@ function Install-Oracle19cClient {
 
     # Check if Oracle 19c client is already installed
     if (Test-Path $ORACLE_19C_HOME) {
-        Write-Host "Oracle 19c client is already installed."
+        Write-Verbose "Oracle 19c client is already installed."
+        return
+    } elseif ($WhatIfPreference) {
+        Write-Output "What-If: Installing Oracle 19c client"
         return
     }
+
+    Write-Output "Installing Oracle 19c client"
 
     $WorkingDirectory = "C:\Software"
     $AppDirectory = "C:\App"
 
     if (-not (Test-Path $WorkingDirectory)) {
-        New-Item -ItemType Directory -Path $WorkingDirectory -Force
+        Write-Output " - Creating directory: $WorkingDirectory"
+        New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
     }
 
     if (-not (Test-Path $AppDirectory)) {
-        New-Item -ItemType Directory -Path $AppDirectory -Force
+        Write-Output " - Creating directory: $AppDirectory"
+        New-Item -ItemType Directory -Path $AppDirectory -Force | Out-Null
     }
 
     Set-Location -Path $WorkingDirectory
 
     # Prepare installer
-    Get-Installer -Key $Oracle19c64bitClientS3File -Destination (".\" + $Oracle19c64bitClientS3File)
-    Expand-Archive (".\" + $Oracle19c64bitClientS3File) -Destination ".\OracleClient"
+    Get-Installer -Key $Oracle19c64bitClientS3File -Destination (".\" + $Oracle19c64bitClientS3File) | Out-Null
+
+    Write-Output " - Extracting Archive to .\OracleClient"
+    Expand-Archive (".\" + $Oracle19c64bitClientS3File) -Destination ".\OracleClient" | Out-Null
 
     # Create response file for silent install
     $oracleClientResponseFileContent = @"
@@ -32,6 +41,7 @@ oracle.install.IsBuiltInAccount=true
 oracle.install.client.installType=Administrator
 "@
 
+    Write-Output " - Creating ResponseFile client_install.rsp"
     $oracleClientResponseFileContent | Out-File -FilePath "$WorkingDirectory\OracleClient\client\client_install.rsp" -Force -Encoding ascii
 
     # Install Oracle 19c client
@@ -43,6 +53,7 @@ oracle.install.client.installType=Administrator
         NoNewWindow      = $true
     }
 
+    Write-Output " - Starting silent install: setup.exe"
     Start-Process @OracleClientInstallParams
 
     # Install Oracle configuration tools
@@ -54,9 +65,11 @@ oracle.install.client.installType=Administrator
         NoNewWindow      = $true
     }
 
+    Write-Output " - Starting silent install: setup.exe -executeConfigTools"
     Start-Process @oracleConfigToolsParams
 
     # Set environment variable
+    Write-Output " - Setting ORACLE_HOME environment variable $ORACLE_19C_HOME"
     [Environment]::SetEnvironmentVariable("ORACLE_HOME", $ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
 }
 
@@ -76,7 +89,8 @@ function Get-Installer {
         Verbose    = $true
     }
 
-    Read-S3Object @s3Params
+    Write-Output " - Retrieving installer from S3: $S3Bucket/$WindowsClientS3Folder/$Key"
+    Read-S3Object @s3Params | Out-Null
 }
 
 $S3Bucket                   = "mod-platform-image-artefact-bucket20230203091453221500000001"

@@ -1,1 +1,1 @@
-. ./Install-Choco-Package.ps1 putty
+. ../Common/Install-Choco-Package.ps1 putty
