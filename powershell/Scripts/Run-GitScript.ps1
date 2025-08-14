@@ -95,10 +95,11 @@ if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
 if ($Script) {
-  $RelativeScriptDir = Split-Path -Parent $Script
-  $ScriptFilename = Split-Path -Leaf $Script
-  Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
   if ($Username) {
+    if ($ScriptArgs) {
+      Write-Error "Cannot run script under a username using the -ScriptArgs parameter, use -ScriptArgsList instead"
+      Exit 1
+    }
     Import-Module ModPlatformAD -Force
     $ADConfig = Get-ModPlatformADConfig
     $ADSecret = Get-ModPlatformADSecret $ADConfig
@@ -108,20 +109,15 @@ if ($Script) {
     }
     $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
     $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
-
-    if ($ScriptArgs) {
-      Write-Error "Cannot run script under a username using the -ScriptArgs parameter, use -ScriptArgsList instead"
-      Exit 1
-    }
-    if ($ScriptArgsList) {
-      Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs
-    } else {
-      Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials
-    }
+    $ArgumentList = @($Script,$ScriptArgs,$ScriptArgsList,$GitBranch)
+    Invoke-Command -ComputerName localhost -FilePath $PSCommandPath -Credential $Credentials -ArgumentList $ArgumentList
     $ScriptExitCode = $LASTEXITCODE
     Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode as user $Username"
     Exit $ScriptExitCode
   } else {
+    $RelativeScriptDir = Split-Path -Parent $Script
+    $ScriptFilename = Split-Path -Leaf $Script
+    Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
     if ($ScriptArgs) {
       if ($ScriptArgsList) {
         Write-Error "Both -ScriptArgs and -ScriptArgsList set, only use one of them"
