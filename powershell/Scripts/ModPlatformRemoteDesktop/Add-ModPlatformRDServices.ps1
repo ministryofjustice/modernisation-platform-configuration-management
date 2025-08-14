@@ -135,9 +135,7 @@ function Get-Config {
 }
 
 $Config = Get-Config
-Get-Location
-dir ../../Modules/ModPlatformRemoteDesktop
-Import-Module ../../Modules/ModPlatformRemoteDesktop -Force
+Import-Module ModPlatformRemoteDesktop -Force
 
 # Install all RDS features
 Install-RDSWindowsFeatures
