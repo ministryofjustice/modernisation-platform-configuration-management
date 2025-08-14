@@ -12,6 +12,9 @@
 .PARAMETER ScriptArgs
     Optionally provide arguments to the script in hashtable format
 
+.PARAMETER ScriptArgsList
+    Optionally provide arguments to the script in list format
+
 .PARAMETER GitBranch
     Git branch to checkout, e.g. main
 
@@ -19,7 +22,7 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .PARAMETER Username
-    Optionally specify a username to run the script under
+    Optionally specify a username to run the script under. Only parameters passed in via ScriptArgList will work
 
 .EXAMPLE
     Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN" = "azure.noms.root"}
@@ -28,6 +31,7 @@
 param (
   [string]$Script,
   [hashtable]$ScriptArgs,
+  [string[]]$ScriptArgsList,
   [string]$GitBranch = "main",
   [string]$GitCloneDir,
   [string]$Username
@@ -105,12 +109,30 @@ if ($Script) {
     $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
     $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
 
-    Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs
+    if ($ScriptArgs) {
+      Write-Error "Cannot run script under a username using the -ScriptArgs parameter, use -ScriptArgsList instead"
+      Exit 1
+    }
+    if ($ScriptArgsList) {
+      Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs
+    } else {
+      Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials
+    }
     $ScriptExitCode = $LASTEXITCODE
     Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode as user $Username"
     Exit $ScriptExitCode
   } else {
-    . ./$ScriptFilename @ScriptArgs
+    if ($ScriptArgs) {
+      if ($ScriptArgsList) {
+        Write-Error "Both -ScriptArgs and -ScriptArgsList set, only use one of them"
+        Exit 1
+      }
+      . ./$ScriptFilename @ScriptArgs
+    } elseif ($ScriptArgsList) {
+      . ./$ScriptFilename @ScriptArgsList
+    } else {
+      . ./$ScriptFilename
+    }
     $ScriptExitCode = $LASTEXITCODE
     Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
     Exit $ScriptExitCode
