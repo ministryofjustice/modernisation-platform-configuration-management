@@ -18,6 +18,9 @@
 .PARAMETER GitCloneDir
     Optionally specify location to clone repo, otherwise temp dir is used
 
+.PARAMETER Username
+    Optionally specify a username to run the script under
+
 .EXAMPLE
     Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN" = "azure.noms.root"}
 #>
@@ -26,7 +29,8 @@ param (
   [string]$Script,
   [hashtable]$ScriptArgs,
   [string]$GitBranch = "main",
-  [string]$GitCloneDir
+  [string]$GitCloneDir,
+  [string]$Username
 )
 
 $ErrorActionPreference = "Stop"
@@ -90,10 +94,27 @@ if ($Script) {
   $RelativeScriptDir = Split-Path -Parent $Script
   $ScriptFilename = Split-Path -Leaf $Script
   Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
-  . ./$ScriptFilename @ScriptArgs
-  $ScriptExitCode = $LASTEXITCODE
-  Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
-  Exit $ScriptExitCode
+  if ($Username) {
+    Import-Module ModPlatformAD -Force
+    $ADConfig = Get-ModPlatformADConfig
+    $ADSecret = Get-ModPlatformADSecret $ADConfig
+    if (-not (Get-Member -inputobject $ADSecret -name $Username -Membertype Properties)) {
+      Write-Error ("Cannot find username '$Username' in secret " + $ModPlatformADConfig.SecretName)
+      Exit 1
+    }
+    $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
+    $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
+
+    Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs -Authentication CredSSP
+    $ScriptExitCode = $LASTEXITCODE
+    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
+    Exit $ScriptExitCode
+  } else {
+    . ./$ScriptFilename @ScriptArgs
+    $ScriptExitCode = $LASTEXITCODE
+    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
+    Exit $ScriptExitCode
+  }
 } else {
   Set-Location -Path (Join-Path "powershell" "Scripts")
 }
