@@ -55,7 +55,10 @@ function New-WinRMCert {
   New-SelfSignedCertificate -CertStoreLocation cert:\LocalMachine\My -DnsName $Hostnames -NotAfter (get-date).AddYears(5) -Provider "Microsoft RSA SChannel Cryptographic Provider" -KeyLength 2048
 }
 
-$WinRMCert = Get-WinRMCert -Hostname $env:computername
+$Thumbprint = "MissingCert"
+$Hostname   = "$env:computername"
+$WinRMCert  = Get-WinRMCert -Hostname $env:computername
+
 if ($WinRMCert) {
   $WinRMCertExpiryDays = ($WinRMCert.NotAfter - (Get-Date)).Days
   if ($WinRMCertExpiryDays -lt 30) {
@@ -66,9 +69,19 @@ if ($WinRMCert) {
   Write-Output ("Creating Self-Signed Cert " + $env:computername)
   $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
 }
-$Thumbprint = "MissingCert"
+
+# extract hostname from cert to ensure it matches
 if ($WinRMCert) {
   $Thumbprint = $WinRMCert.Thumbprint
+  if ($WinRMCert.Subject -match 'CN=(?<RegexTest>.*?),.*') {
+    if ($matches['RegexTest'] -like '*"*') {
+      $Hostname = ($Element.Certificate.Subject -split 'CN="(.+?)"')[1]
+    } else {
+      $Hostnamne = $matches['RegexTest']
+    }
+  } elseif ($WinRMCert.Subject -match '(?<=CN=).*') {
+    $Hostname = $matches[0]
+  }
 }
 
-Set-WinRMListener -Hostname "$env:computername" -Thumbprint $Thumbprint
+Set-WinRMListener -Hostname $Hostname -Thumbprint $Thumbprint
