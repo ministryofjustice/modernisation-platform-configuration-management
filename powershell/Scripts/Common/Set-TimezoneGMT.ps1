@@ -8,3 +8,4 @@ if ($currentTimeZone -eq $desiredTimeZone) {
     Write-Output "Setting TimeZone to $desiredTimeZone"
     Set-TimeZone -Name $desiredTimeZone
 }
+Exit 1
