@@ -110,9 +110,8 @@ if ($Script) {
     $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
     $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
     $ArgumentList = @($Script,$ScriptArgs,$ScriptArgsList,$GitBranch)
-    Invoke-Command -ComputerName localhost -FilePath $PSCommandPath -Credential $Credentials -ArgumentList $ArgumentList
-    $ScriptExitCode = $LASTEXITCODE
-    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode as user $Username"
+    $ScriptExitCode = Invoke-Command -ComputerName localhost -FilePath $PSCommandPath -Credential $Credentials -ArgumentList $ArgumentList
+    Write-Output "Script $PSCommandPath completed with ExitCode $ScriptExitCode as user $Username"
     Exit $ScriptExitCode
   } else {
     $RelativeScriptDir = Split-Path -Parent $Script
