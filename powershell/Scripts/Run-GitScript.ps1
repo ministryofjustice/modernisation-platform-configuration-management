@@ -105,9 +105,9 @@ if ($Script) {
     $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
     $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
 
-    Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs -Authentication CredSSP
+    Invoke-Command -ComputerName localhost -FilePath $ScriptFilename -Credential $Credentials -ArgumentList $ScriptArgs
     $ScriptExitCode = $LASTEXITCODE
-    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
+    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode as user $Username"
     Exit $ScriptExitCode
   } else {
     . ./$ScriptFilename @ScriptArgs
