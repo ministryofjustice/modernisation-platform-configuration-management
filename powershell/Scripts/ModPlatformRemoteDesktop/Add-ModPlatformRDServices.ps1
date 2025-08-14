@@ -135,13 +135,7 @@ function Get-Config {
 }
 
 $Config = Get-Config
-
-# add ../../Modules to ModulePath
-$ModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent (Get-Location))) "Modules"
-if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
-  $env:PSModulePath = "${ModulePath};${env:PSModulePath}"
-}
-Import-Module ModPlatformRemoteDesktop -Force
+Import-Module ../../Modules/ModPlatformRemoteDesktop -Force
 
 # Install all RDS features
 Install-RDSWindowsFeatures
