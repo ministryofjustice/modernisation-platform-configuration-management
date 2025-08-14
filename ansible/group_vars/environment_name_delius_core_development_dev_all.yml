@@ -138,3 +138,10 @@ all_oem_metrics:
         critical_threshold , 95
         occurrences , 4
         END_RECORD 2
+        START_RECORD 3
+        metric , ME$AWSDMS_APPLY_EXCEPTIONS
+        column , ERRORS_IN_PREVIOUS_24_HOURS
+        key_columns , ;
+        warning_threshold , 1000
+        critical_threshold , 2000
+        END_RECORD 3
