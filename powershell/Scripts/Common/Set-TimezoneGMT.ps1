@@ -1,9 +1,3 @@
-param (
-  [string]$arg1,
-  [string]$arg2
-)
-
-Write-Output "TEST $arg1 $arg2"
 # Set local time zone to UK although this should now be set by Group Policy objects
 $desiredTimeZone = "GMT Standard Time"
 $currentTimeZone = (Get-TimeZone).Id
@@ -14,4 +8,3 @@ if ($currentTimeZone -eq $desiredTimeZone) {
     Write-Output "Setting TimeZone to $desiredTimeZone"
     Set-TimeZone -Name $desiredTimeZone
 }
-Exit 1
