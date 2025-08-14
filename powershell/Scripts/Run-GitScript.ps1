@@ -111,9 +111,14 @@ if ($Script) {
     $Credentials = New-Object System.Management.Automation.PSCredential(($Config.domain+"\"+$Username), $SecurePassword)
     $ArgumentList = @($Script,$ScriptArgs,$ScriptArgsList,$GitBranch)
     Write-Output "DEBUG1"
-    $ScriptExitCode = Invoke-Command -ComputerName localhost -FilePath $PSCommandPath -Credential $Credentials -ArgumentList $ArgumentList
-    Write-Output "DEBUG2"
-    $ScriptExitCode
+    $ScriptOutput = Invoke-Command -ComputerName localhost -FilePath $PSCommandPath -Credential $Credentials -ArgumentList $ArgumentList
+    $ScriptOutput
+    if ($ScriptOutput.Split('\n')[-1] -match 'completed with ExitCode (\d+)') {
+      $ScriptExitCode = $Matches[1]
+    } else {
+      Write-Error "Could not extract ExitCode from script output"
+      $ScriptExitCode = 1
+    }
     Write-Output "Script $PSCommandPath completed with ExitCode $ScriptExitCode as user $Username"
     Exit $ScriptExitCode
   } else {
