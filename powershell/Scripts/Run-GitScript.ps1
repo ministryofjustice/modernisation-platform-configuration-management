@@ -22,7 +22,8 @@
     Optionally specify location to clone repo, otherwise temp dir is used
 
 .PARAMETER Username
-    Optionally specify a username to run the script under. Only parameters passed in via ScriptArgList will work
+    Optionally specify a username to run the script under. Only parameters passed in via ScriptArgList will work.
+    Use tag.username to extract the username from a tag of your choosing, e.g. username
 
 .EXAMPLE
     Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN" = "azure.noms.root"}
@@ -100,6 +101,21 @@ if ($Script) {
       Write-Error "Cannot run script under a username using the -ScriptArgs parameter, use -ScriptArgsList instead"
       Exit 1
     }
+    if ($Username.StartsWith("tag.")) {
+      $TagValue = $Username.Split(".")[-1]
+      $ErrorActionPreference = "Stop"
+      $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+      $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+      $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+      $Tags = "$TagsRaw" | ConvertFrom-Json
+      $Username = ($Tags.Tags | Where-Object  {$_.Key -eq $TagValue}).Value
+      if (-Not $Username) {
+        Write-Error("Cannot extract username from tag $TagValue")
+        Exit 1
+      }
+      Write-Output("Using username $Username from tag $TagValue")
+    }
+
     Import-Module ModPlatformAD -Force
     $ADConfig = Get-ModPlatformADConfig
     $ADSecret = Get-ModPlatformADSecret $ADConfig
