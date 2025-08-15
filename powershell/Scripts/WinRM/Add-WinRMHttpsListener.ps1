@@ -60,9 +60,21 @@ $Hostname   = "$env:computername"
 $WinRMCert  = Get-WinRMCert -Hostname $env:computername
 
 if ($WinRMCert) {
+  if ($WinRMCert.Subject -match 'CN=(?<RegexTest>.*?),.*') {
+    if ($matches['RegexTest'] -like '*"*') {
+      $Hostname = ($Element.Certificate.Subject -split 'CN="(.+?)"')[1]
+    } else {
+      $Hostname = $matches['RegexTest']
+    }
+  } elseif ($WinRMCert.Subject -match '(?<=CN=).*') {
+    $Hostname = $matches[0]
+  }
   $WinRMCertExpiryDays = ($WinRMCert.NotAfter - (Get-Date)).Days
   if ($WinRMCertExpiryDays -lt 30) {
     Write-Output ("Renewing Self-Signed Cert " + $env:computername + " expiring in $WinRMCertExpiryDays days")
+    $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
+  } elseif ($Hostname -ne $env:computername) {
+    Write-Output ("Replacing Self-Signed Cert " + $env:computername + " with CN $Hostname")
     $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
   }
 } else {
@@ -70,18 +82,8 @@ if ($WinRMCert) {
   $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
 }
 
-# extract hostname from cert to ensure it matches
 if ($WinRMCert) {
   $Thumbprint = $WinRMCert.Thumbprint
-  if ($WinRMCert.Subject -match 'CN=(?<RegexTest>.*?),.*') {
-    if ($matches['RegexTest'] -like '*"*') {
-      $Hostname = ($Element.Certificate.Subject -split 'CN="(.+?)"')[1]
-    } else {
-      $Hostnamne = $matches['RegexTest']
-    }
-  } elseif ($WinRMCert.Subject -match '(?<=CN=).*') {
-    $Hostname = $matches[0]
-  }
 }
 
 Set-WinRMListener -Hostname $Hostname -Thumbprint $Thumbprint
