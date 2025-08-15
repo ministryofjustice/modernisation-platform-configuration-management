@@ -55,6 +55,25 @@ $GlobalConfig = @{
       }
     }
   }
+  "test-rds-2-b" = @{
+    "ConnectionBroker"    = "$env:computername.AZURE.NOMS.ROOT"
+    "LicensingServer"     = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
+    "GatewayServer"       = "$env:computername.AZURE.NOMS.ROOT"
+    "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
+    "SessionHostServers"  = @("T1-JUMP2022-2.AZURE.NOMS.ROOT")
+    "WebAccessServer"     = "$env:computername.AZURE.NOMS.ROOT"
+    "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
+    "domain"              = "AZURE"
+    "Collections"         = @{
+      "t1-jump2022-2" = @{
+        "SessionHosts"  = @("T1-JUMP2022-2.AZURE.NOMS.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "Connect to Jumpserver T1-JUMP2022-2"
+          "UserGroup"             = @("Azure\drobinson")
+        }
+      }
+    }
+  }
   "pp-rds-1-a"   = @{
     "ConnectionBroker"    = "$env:computername.AZURE.HMPP.ROOT"
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
