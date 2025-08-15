@@ -68,6 +68,15 @@ oracle_ru_patch: JUL2024
 # This should not be reported. See:
 #    SR 3-35688785101 : CRS-10134: Unsupported configuration detected for real-time scheduling requirements.
 # It is expected that this will be fixed in the 19.23 RU.  Revise afterwards.
+#
+# For EM$AWSDMS_APPLY_EXCEPTIONS we expect this to be a very high number in Development
+# We get one error each time an update is made to a user in Test which does not exist
+# in Dev, which is quite common since these databases do not originate from the same
+# synthetic data.   Therefore we set the threshold in the 1000s to avoid getting
+# spurious alerts about this.  (Alternatively we could undeploy this metric in Dev,
+# but adjusting the threshold allows it to be used consistently with other environments).
+# Note that we must not have a "key columns" definition for this metric (even a null one)
+# as it does not have key columns.
 all_oem_metrics:
   oracle_database:
     all:
@@ -138,3 +147,9 @@ all_oem_metrics:
         critical_threshold , 95
         occurrences , 4
         END_RECORD 2
+        START_RECORD 3
+        metric , ME$AWSDMS_APPLY_EXCEPTIONS
+        column , ERRORS_IN_PREVIOUS_24_HOURS
+        warning_threshold , 2000
+        critical_threshold , 5000
+        END_RECORD 3
