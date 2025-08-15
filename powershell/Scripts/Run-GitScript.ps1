@@ -126,8 +126,8 @@ if ($Script) {
     $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
     $Credentials = New-Object System.Management.Automation.PSCredential(($ADConfig.DomainNameNetbios+"\"+$Username), $SecurePassword)
     $ArgumentList = @($Script,$ScriptArgs,$ScriptArgsList,$GitBranch)
-    Write-Output ("Invoke-Command -FilePath $PSCommandPath -ArgumentList $ArgumentList -Authentication Credssp -ComputerName $env:computername."+$ADConfig.DomainNameNetbios)
-    $ScriptOutput = Invoke-Command -ComputerName ($env:computername+"."+$ADConfig.DomainNameNetbios) -FilePath $PSCommandPath -Authentication Credssp -Credential $Credentials -ArgumentList $ArgumentList
+    Write-Output ("Invoke-Command -FilePath $PSCommandPath -ArgumentList $ArgumentList -Authentication Credssp -ComputerName $env:computername."+$ADConfig.DomainNameFQDN)
+    $ScriptOutput = Invoke-Command -ComputerName ($env:computername+"."+$ADConfig.DomainNameFQDN) -FilePath $PSCommandPath -Authentication Credssp -Credential $Credentials -ArgumentList $ArgumentList
     $ScriptOutput
     if ($ScriptOutput.Split('\n')[-1] -match 'completed with ExitCode (\d+)') {
       $ScriptExitCode = $Matches[1]
