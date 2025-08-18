@@ -80,8 +80,11 @@ function Set-WinRMCertAndListener {
   Set-WinRMListener -Hostname $Hostname -Thumbprint $Thumbprint
 }
 
-# systeminfo is more reliable for getting domain name than $env
-$DomainName = (systeminfo | Select-String -Pattern 'Domain:[ ]+([\w\.]+)') -match 'Domain:[ ]+([\w\.]+)'
+$DomainName = $env:userdnsdomain
+# use systeminfo to get domain name when running as local user
+if (systeminfo | Select-String -Pattern 'Domain:[ ]+([\w\.]+)') -match 'Domain:[ ]+([\w\.]+)') {
+  $DomainName = $Matches[1]
+}
 if ($DomainName) {
   Set-WinRMCertAndListener "$env:computername.$DomainName"
 } else {
