@@ -55,25 +55,6 @@ $GlobalConfig = @{
       }
     }
   }
-  "test-rds-2-b" = @{
-    "ConnectionBroker"    = "$env:computername.AZURE.NOMS.ROOT"
-    "LicensingServer"     = "AD-AZURE-RDLIC.AZURE.NOMS.ROOT"
-    "GatewayServer"       = "$env:computername.AZURE.NOMS.ROOT"
-    "GatewayExternalFqdn" = "rdgateway1.test.hmpps-domain.service.justice.gov.uk"
-    "SessionHostServers"  = @("T1-JUMP2022-2.AZURE.NOMS.ROOT")
-    "WebAccessServer"     = "$env:computername.AZURE.NOMS.ROOT"
-    "svcRdsSecretsVault"  = "/microsoft/AD/azure.noms.root/shared-passwords"
-    "domain"              = "AZURE"
-    "Collections"         = @{
-      "t1-jump2022-2" = @{
-        "SessionHosts"  = @("T1-JUMP2022-2.AZURE.NOMS.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "Connect to Jumpserver T1-JUMP2022-2"
-          "UserGroup"             = @("Azure\drobinson")
-        }
-      }
-    }
-  }
   "pp-rds-1-a"   = @{
     "ConnectionBroker"    = "$env:computername.AZURE.HMPP.ROOT"
     "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
@@ -109,6 +90,25 @@ $GlobalConfig = @{
         "CollectionName" = "CAFM-RDP PreProd"
         "DisplayName"    = "Qube Planet"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
+      }
+    }
+  }
+  "pp-rds-2-a"   = @{
+    "ConnectionBroker"    = "$env:computername.AZURE.HMPP.ROOT"
+    "LicensingServer"     = "AD-HMPP-RDLIC.AZURE.HMPP.ROOT"
+    "GatewayServer"       = "$env:computername.AZURE.HMPP.ROOT"
+    "GatewayExternalFqdn" = "rdgateway1.preproduction.hmpps-domain.service.justice.gov.uk"
+    "SessionHostServers"  = @("PP-JUMP2022-2.AZURE.HMPP.ROOT")
+    "WebAccessServer"     = "$env:computername.AZURE.HMPP.ROOT"
+    "svcRdsSecretsVault"  = "/microsoft/AD/azure.hmpp.root/shared-passwords"
+    "domain"              = "HMPP"
+    "Collections"         = @{
+      "pp-jump2022-2" = @{
+        "SessionHosts"  = @("PP-JUMP2022-1.AZURE.HMPP.ROOT")
+        "Configuration" = @{
+          "CollectionDescription" = "Connect to Jumpserver PP-JUMP2022-2"
+          "UserGroup"             = @("HMPP\drobinson")
+        }
       }
     }
   }
