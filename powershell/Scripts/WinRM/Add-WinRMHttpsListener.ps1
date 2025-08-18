@@ -44,7 +44,7 @@ function Get-WinRMCert {
   param (
     [string]$Hostname
   )
-  Get-ChildItem -Path 'Cert:\LocalMachine\My' | Where-Object -Property 'Subject' -match $Hostname | Sort-Object NotAfter | Select-Object -Last 1
+  Get-ChildItem -Path 'Cert:\LocalMachine\My' | Where-Object -Property 'Subject' -Like "CN*=*$Hostname" | Sort-Object NotAfter | Select-Object -Last 1
 }
 
 function New-WinRMCert {
@@ -55,35 +55,35 @@ function New-WinRMCert {
   New-SelfSignedCertificate -CertStoreLocation cert:\LocalMachine\My -DnsName $Hostnames -NotAfter (get-date).AddYears(5) -Provider "Microsoft RSA SChannel Cryptographic Provider" -KeyLength 2048
 }
 
-$Thumbprint = "MissingCert"
-$Hostname   = "$env:computername"
-$WinRMCert  = Get-WinRMCert -Hostname $env:computername
+function Set-WinRMCertAndListener {
+  [CmdletBinding()]
+  param (
+    [string]$Hostname
+  )
 
-if ($WinRMCert) {
-  if ($WinRMCert.Subject -match 'CN=(?<RegexTest>.*?),.*') {
-    if ($matches['RegexTest'] -like '*"*') {
-      $Hostname = ($Element.Certificate.Subject -split 'CN="(.+?)"')[1]
-    } else {
-      $Hostname = $matches['RegexTest']
+  $Thumbprint = "MissingCert"
+  $WinRMCert  = Get-WinRMCert -Hostname $Hostname
+
+  if ($WinRMCert) {
+    $WinRMCertExpiryDays = ($WinRMCert.NotAfter - (Get-Date)).Days
+    if ($WinRMCertExpiryDays -lt 30) {
+      Write-Output ("Renewing Self-Signed Cert " + $env:computername + " expiring in $WinRMCertExpiryDays days")
+      $WinRMCert = New-WinRMCert -Hostnames ("$Hostname")
     }
-  } elseif ($WinRMCert.Subject -match '(?<=CN=).*') {
-    $Hostname = $matches[0]
+  } else {
+    Write-Output ("Creating Self-Signed Cert " + $env:computername)
+    $WinRMCert = New-WinRMCert -Hostnames ("$Hostname")
   }
-  $WinRMCertExpiryDays = ($WinRMCert.NotAfter - (Get-Date)).Days
-  if ($WinRMCertExpiryDays -lt 30) {
-    Write-Output ("Renewing Self-Signed Cert " + $env:computername + " expiring in $WinRMCertExpiryDays days")
-    $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
-  } elseif ($Hostname -ne $env:computername) {
-    Write-Output ("Replacing Self-Signed Cert " + $env:computername + " with CN $Hostname")
-    $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
+  if ($WinRMCert) {
+    $Thumbprint = $WinRMCert.Thumbprint
   }
+  Set-WinRMListener -Hostname $Hostname -Thumbprint $Thumbprint
+}
+
+# systeminfo is more reliable for getting domain name than $env
+$DomainName = (systeminfo | Select-String -Pattern 'Domain:[ ]+([\w\.]+)') -match 'Domain:[ ]+([\w\.]+)'
+if ($DomainName) {
+  Set-WinRMCertAndListener "$env:computername.$DomainName"
 } else {
-  Write-Output ("Creating Self-Signed Cert " + $env:computername)
-  $WinRMCert = New-WinRMCert -Hostnames ("$env:computername", "$env:computername.$env:userdnsdomain", "localhost")
+  Set-WinRMCertAndListener $env:computername
 }
-
-if ($WinRMCert) {
-  $Thumbprint = $WinRMCert.Thumbprint
-}
-
-Set-WinRMListener -Hostname $Hostname -Thumbprint $Thumbprint
