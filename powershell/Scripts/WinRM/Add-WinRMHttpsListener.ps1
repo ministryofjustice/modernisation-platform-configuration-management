@@ -82,7 +82,7 @@ function Set-WinRMCertAndListener {
 
 $DomainName = $env:userdnsdomain
 # use systeminfo to get domain name when running as local user
-if (systeminfo | Select-String -Pattern 'Domain:[ ]+([\w\.]+)') -match 'Domain:[ ]+([\w\.]+)') {
+if ((systeminfo | Select-String -Pattern 'Domain:[ ]+([\w\.]+)') -match 'Domain:[ ]+([\w\.]+)') {
   $DomainName = $Matches[1]
 }
 if ($DomainName) {
