@@ -12,11 +12,18 @@
 .PARAMETER ScriptArgs
     Optionally provide arguments to the script in hashtable format
 
+.PARAMETER ScriptArgsList
+    Optionally provide arguments to the script in list format
+
 .PARAMETER GitBranch
     Git branch to checkout, e.g. main
 
 .PARAMETER GitCloneDir
     Optionally specify location to clone repo, otherwise temp dir is used
+
+.PARAMETER Username
+    Optionally specify a username to run the script under. Only parameters passed in via ScriptArgList will work.
+    Use tag.username to extract the username from a tag of your choosing, e.g. username
 
 .EXAMPLE
     Run-GitScript.ps1 -Script "ModPlatformAD/Join-ModPlatformAD" -ScriptArgs @{"DomainNameFQDN" = "azure.noms.root"}
@@ -25,8 +32,10 @@
 param (
   [string]$Script,
   [hashtable]$ScriptArgs,
+  [string[]]$ScriptArgsList,
   [string]$GitBranch = "main",
-  [string]$GitCloneDir
+  [string]$GitCloneDir,
+  [string]$Username
 )
 
 $ErrorActionPreference = "Stop"
@@ -87,13 +96,67 @@ if (-not $env:PSModulePath.Split(";").Contains($ModulePath)) {
   $env:PSModulePath = "${env:PSModulePath};${ModulePath}"
 }
 if ($Script) {
-  $RelativeScriptDir = Split-Path -Parent $Script
-  $ScriptFilename = Split-Path -Leaf $Script
-  Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
-  . ./$ScriptFilename @ScriptArgs
-  $ScriptExitCode = $LASTEXITCODE
-  Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
-  Exit $ScriptExitCode
+  if ($Username) {
+    if ($ScriptArgs) {
+      Write-Error "Cannot run script under a username using the -ScriptArgs parameter, use -ScriptArgsList instead"
+      Exit 1
+    }
+    if ($Username.StartsWith("tag.")) {
+      $TagValue = $Username.Split(".")[-1]
+      $ErrorActionPreference = "Stop"
+      $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+      $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+      $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+      $Tags = "$TagsRaw" | ConvertFrom-Json
+      $Username = ($Tags.Tags | Where-Object  {$_.Key -eq $TagValue}).Value
+      if (-Not $Username) {
+        Write-Error("Cannot extract username from tag $TagValue")
+        Exit 1
+      }
+      Write-Output("Using username $Username from tag $TagValue")
+    }
+
+    Import-Module ModPlatformAD -Force
+    $ADConfig = Get-ModPlatformADConfig
+    $ADSecret = Get-ModPlatformADSecret $ADConfig
+    if (-not (Get-Member -inputobject $ADSecret -name $Username -Membertype Properties)) {
+      Write-Error ("Cannot find username '$Username' in secret " + $ModPlatformADConfig.SecretName)
+      Exit 1
+    }
+    $SecurePassword = ConvertTo-SecureString $ADSecret.$Username -AsPlainText -Force
+    $Credentials = New-Object System.Management.Automation.PSCredential(($ADConfig.DomainNameNetbios+"\"+$Username), $SecurePassword)
+    $ArgumentList = @($Script,$ScriptArgs,$ScriptArgsList,$GitBranch)
+    Write-Output ("Invoke-Command -FilePath $PSCommandPath -Authentication Credssp -ComputerName $env:computername"+"."+$ADConfig.DomainNameFQDN)
+    $ScriptOutput = Invoke-Command -ComputerName ($env:computername+"."+$ADConfig.DomainNameFQDN) -FilePath $PSCommandPath -Authentication Credssp -Credential $Credentials -ArgumentList $ArgumentList
+    Write-Output "Script Output: "
+    $ScriptOutput
+    if (($ScriptOutput | Select-String -Pattern 'completed with ExitCode (\d+)') -match 'completed with ExitCode (\d+)') {
+      $ScriptExitCode = $Matches[1]
+    } else {
+      Write-Error "Could not extract ExitCode from script output"
+      $ScriptExitCode = 1
+    }
+    Write-Output "Script $PSCommandPath completed with ExitCode $ScriptExitCode as user $Username"
+    Exit $ScriptExitCode
+  } else {
+    $RelativeScriptDir = Split-Path -Parent $Script
+    $ScriptFilename = Split-Path -Leaf $Script
+    Set-Location -Path (Join-Path (Join-Path "powershell" "Scripts") $RelativeScriptDir)
+    if ($ScriptArgs) {
+      if ($ScriptArgsList) {
+        Write-Error "Both -ScriptArgs and -ScriptArgsList set, only use one of them"
+        Exit 1
+      }
+      . ./$ScriptFilename @ScriptArgs
+    } elseif ($ScriptArgsList) {
+      . ./$ScriptFilename @ScriptArgsList
+    } else {
+      . ./$ScriptFilename
+    }
+    $ScriptExitCode = $LASTEXITCODE
+    Write-Output "Script $ScriptFilename completed with ExitCode $ScriptExitCode"
+    Exit $ScriptExitCode
+  }
 } else {
   Set-Location -Path (Join-Path "powershell" "Scripts")
 }

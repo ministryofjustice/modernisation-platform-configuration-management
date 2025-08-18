@@ -1,13 +1,6 @@
 $Scripts = @(
-    "../Common/Set-LocalFirewallOff.ps1",
-    "../Common/Set-IPv4Preferred.ps1",
-    "../Common/Set-TimezoneGMT.ps1",
-    "../ModPlatformAD/Join-ModPlatformAD.ps1",
-    "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
-    "../Microsoft/Add-DnsSuffixSearchList.ps1",
-    "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
-    "../Microsoft/Remove-StartMenuShutdownOption.ps1",
-    "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
+    "../ModPlatformRemoteDesktop/Add-ModPlatformRDServices.ps1",
+    "../ModPlatformRemoteDesktop/Set-RDWebPasswordReset.ps1"
 )
 
 $ErrorActionPreference = "Stop"
