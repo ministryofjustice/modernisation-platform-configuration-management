@@ -23,14 +23,14 @@ function Set-WinRMListener {
   $WinRmArg2 = "'" + '@{Hostname="' + $Hostname + '"; CertificateThumbprint="' + $Thumbprint + '"}' + "'"
 
   if (Invoke-Expression "winrm get $WinRmArg1") {
-    Write-Output "Update winrm https listener"
+    Write-Output "Update winrm https listener $Hostname $Thumbprint"
     if ($WhatIfPreference) {
       Write-Output "What-If: winrm set $WinRmArg1 $WinRmArg2"
     } else {
       Invoke-Expression "winrm set $WinRmArg1 $WinRmArg2"
     }
   } else {
-    Write-Output "Create winrm https listener"
+    Write-Output "Create winrm https listener $Hostname $Thumbprint"
     if ($WhatIfPreference) {
       Write-Output "What-If: winrm create $WinRmArg1 $WinRmArg2"
     } else {
@@ -67,11 +67,11 @@ function Set-WinRMCertAndListener {
   if ($WinRMCert) {
     $WinRMCertExpiryDays = ($WinRMCert.NotAfter - (Get-Date)).Days
     if ($WinRMCertExpiryDays -lt 30) {
-      Write-Output ("Renewing Self-Signed Cert " + $env:computername + " expiring in $WinRMCertExpiryDays days")
+      Write-Output "Renewing Self-Signed Cert $Hostname expiring in $WinRMCertExpiryDays days"
       $WinRMCert = New-WinRMCert -Hostnames ("$Hostname")
     }
   } else {
-    Write-Output ("Creating Self-Signed Cert " + $env:computername)
+    Write-Output "Creating Self-Signed Cert $Hostname"
     $WinRMCert = New-WinRMCert -Hostnames ("$Hostname")
   }
   if ($WinRMCert) {
