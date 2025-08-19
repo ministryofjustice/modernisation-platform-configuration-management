@@ -153,3 +153,9 @@ all_oem_metrics:
         warning_threshold , 2000
         critical_threshold , 5000
         END_RECORD 3
+        START_RECORD 4
+        metric , ME$AWSDMS_APPLY_EXCEPTIONS
+        column , TOTAL_ERRORS
+        warning_threshold , 100000
+        critical_threshold , 500000
+        END_RECORD 4
