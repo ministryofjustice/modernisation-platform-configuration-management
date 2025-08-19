@@ -122,14 +122,19 @@ if ($InstallAmazonCloudWatchAgent) {
 }
 
 # Use SSM parameter if configured, otherwise fall back and use file from repo
-# NOTE: this assumes relevant AWS powershell modules are installed. This may fail on older OS
-$CustomConfig = (Get-SSMParameterValue -Names "cloud-watch-config-windows" -WithDecryption $True)
-if ($CustomConfig.Parameters) {
+# Use AWS CLI to avoid powershell compatibility versions between different OS
+$CustomConfig = $null
+try {
+  $CustomConfig = aws ssm get-parameter --name cloud-watch-config-windows --with-decryption --query Parameter.Value --output text
+} catch {
+  Write-Output "Failed to retrieve cloud-watch-config-windows ssm-parameter, using config from git repo"
+}
+if ($CustomConfig) {
   $ExistingConfigPath = "C:\ProgramData\Amazon\AmazonCloudWatchAgent\Configs\ssm_cloud-watch-config-windows"
   $ConfigPath = Split-Path $ExistingConfigPath
   $VersionMarker = "$ConfigPath\version.txt"
   $CurrentVersion = "NONE"
-  $NewVersion = $CustomConfig.Parameters[0].Version
+  $NewVersion = aws ssm get-parameter --name cloud-watch-config-windows --with-decryption --query Parameter.Version --output text
   if (Test-Path -Path $VersionMarker) {
     $CurrentVersion = Get-Content -Path $VersionMarker
   }
