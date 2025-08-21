@@ -377,9 +377,9 @@ function Append-OutputLines {
 
 function Sort-Output {
     if (Test-Path $outputFileTemp) {
-        $sorted = Import-Csv $outputFileTemp -Header name,nomsNumber,Col3,Col4,Col5,Col6 | 
-            Sort-Object name, nomsNumber |
-            ForEach-Object { "$($_.name),$($_.nomsNumber),$($_.Col3),$($_.Col4),$($_.Col5),$($_.Col6)" } |
+        $sorted = Import-Csv $outputFileTemp -Header name,nomsNumber,estabShort,estabLong,loc,bal | 
+            Sort-Object estabShort, name |
+            ForEach-Object { "$($_.name),$($_.nomsNumber),$($_.estabShort),$($_.estabLong),$($_.loc),$($_.bal)" } |
             Set-Content $outputFile
 
         Delete-Files $outputFileTemp
