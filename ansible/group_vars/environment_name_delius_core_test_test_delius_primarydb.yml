@@ -73,13 +73,13 @@ host_oem_metrics:
         warning_threshold , 81
         critical_threshold , 90
         END_RECORD 1
-        START_RECORD 1
+        START_RECORD 2
         metric , dbjob_status
-        column , dbjob_status:failed
+        column , dbjob_status_failed
         key_columns , ;
         warning_threshold , 0
         critical_threshold , 0
-        END_RECORD 1
+        END_RECORD 2
   oracle_listener:
     all:
       input_file: |
