@@ -12,7 +12,8 @@ $incomingDir = "${directory}\Incoming"
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
 $outputDir = "${directory}\Extracts\Outgoing_Archive"
-$outputFile = "${outputDir}\PR${timestamp}.txt"
+$outputFile = "${directory}\Extracts\Outgoing\PR${timestamp}.txt"
+$outputArchiveFile = "${outputDir}\PR${timestamp}.txt"
 $outputFileTemp = "${outputDir}\PR${timestamp}_temp.txt"
 $archiveDir = "${directory}\Archive"
 $finalZip = "${archiveDir}\${timestamp}.7z"
@@ -24,6 +25,7 @@ $emailMessageFile = "${directory}\email_message.txt"
 $emailSecretId = '/prisoner-retail/notify_emails'
 $awsRegion = 'eu-west-2'
 $savedEmailsFile = "${directory}\emails.ps1"
+$establishmentLastUpdatedFile = "${directory}\establishment_last_updated.csv"
 
 $allFiles = Get-ChildItem -Path $incomingDir -File -Recurse
 $csvFiles = $allFiles | Where-Object {
@@ -68,16 +70,18 @@ function Main {
         $processedLines | Set-Content $processedFilePath
 
         Append-OutputLines $dataArray $file
+        Append-EstablishmentLastUpdated $file
 
         Delete-Files $file
     }
     Sort-Output
+    Sort-EstablishmentLastUpdated
     Archive-OutputFiles
     Delete-OldFiles -directory $archiveDir -extension ".7z"
     Delete-OldFiles -directory $outputDir  -prefix "PR" -extension ".txt"
 
     Get-Emails
-    Send-Email
+    # Send-Email # this is for glennbot to do
 
     Write-Log "$PSCommandPath ran successfully"
 }
@@ -133,13 +137,17 @@ function Refresh-WorkingDirectory {
         }
     }
 
-    # cleanup old logss
+    # cleanup old logs
     Get-ChildItem -Path $directory -Filter "process_csvs_log_20*" |
         Where-Object { $_.LastWriteTime -lt $logRetentionDate } |
         ForEach-Object {
             Remove-Item $_.FullName -Force
             Write-Log "Deleted old log: $($_.Name)"
         }
+    
+    if (-not (Test-Path $establishmentLastUpdatedFile)) {
+        "Establishment,Date" | Out-File -FilePath $establishmentLastUpdatedFile -Encoding utf8
+    }
 }
 
 function Write-ExtraFiles {
@@ -220,13 +228,11 @@ function Get-Establishment {
     param (
         [Parameter(Mandatory = $true)]$file
     )
-    
     $path = if ($file -is [System.IO.FileInfo]) {
         $file.FullName
     } else {
         $file
     }
-
     $path_bits = $path -split '[\\/]'
     for ($i = 0; $i -lt $path_bits.Length - 1; $i++) {
         if ($path_bits[$i] -eq 'Data' -and $path_bits[$i + 1] -eq 'Incoming') {
@@ -235,7 +241,6 @@ function Get-Establishment {
             }
         }
     }
-
     return $null
 }
 
@@ -375,22 +380,55 @@ function Append-OutputLines {
     }
 }
 
+function Append-EstablishmentLastUpdated {
+    param (
+        [Parameter(Position = 0)]$file
+    )
+    $fileTime = $file.LastWriteTime
+    $fileDate = $fileTime.ToString("dd/MM/yyyy")
+    [string]$establishmentShort = Get-Establishment $file
+    Add-Content -Path $establishmentLastUpdatedFile -Value "${establishmentShort},${fileDate}"
+}
+
+function Sort-EstablishmentLastUpdated {
+    $establishmentLastUpdated = Import-Csv $establishmentLastUpdatedFile
+
+    # Convert Date strings to DateTime
+    foreach ($row in $establishmentLastUpdated) {
+        $row.Date = [datetime]::ParseExact($row.Date, "dd/MM/yyyy", $null)
+    }
+
+    # Group by establishment, keep the newest date
+    $latest = $establishmentLastUpdated |
+        Group-Object Establishment |
+        ForEach-Object {
+            $_.Group | Sort-Object Date -Descending | Select-Object -First 1
+        }
+
+    # Sort by Establishment and export back
+    $latest |
+        Sort-Object Establishment |
+        Select-Object Establishment, @{Name='Date';Expression={ $_.Date.ToString("dd/MM/yyyy") }} |
+        Export-Csv $establishmentLastUpdatedFile -NoTypeInformation
+}
+
 function Sort-Output {
     if (Test-Path $outputFileTemp) {
         $sorted = Import-Csv $outputFileTemp -Header name,nomsNumber,estabShort,estabLong,loc,bal | 
             Sort-Object estabShort, name |
             ForEach-Object { "$($_.name),$($_.nomsNumber),$($_.estabShort),$($_.estabLong),$($_.loc),$($_.bal)" } |
             Set-Content $outputFile
+            # Set-Content $outputArchiveFile # let glennbot do this
 
         Delete-Files $outputFileTemp
     }
 }
 
 function Archive-OutputFiles {
-    #\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputFile > $null
+    #\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputArchiveFile > $null
     #Rename-Item -Path $tempZip -NewName "$timestamp.7z"
     if (Test-Path $outputFile) {
-        Compress-Archive -Path $outputFile -DestinationPath "$archiveDir\$($timestampDate.Day)\.zip" -Update
+        Compress-Archive -Path $outputFile -DestinationPath "$archiveDir\$($timestampDate.ToString("dd"))\.zip" -Update
     }
 }
 
