@@ -32,3 +32,14 @@
   loop:
     - jdk-7u80-linux-x64.tar.gz
     - osbws_installer.zip
+
+# Amazon Root CA certificate needs to be added to the OSBWS wallet in order to avoid SSL errors disrupting the backups
+- name: Copy Amazon root CA certificate
+  copy:
+    src: "AmazonRootCA1.pem"
+    dest: "{{ osw_stage_dir }}/AmazonRootCA1.pem"
+    mode: 0600
+    owner: oracle
+    group: oinstall
+  check_mode: no
+  register: osbws_certificates
