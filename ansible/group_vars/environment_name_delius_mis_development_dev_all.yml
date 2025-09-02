@@ -69,6 +69,8 @@ all_oem_metrics:
       schedule:
         db_alertlog_coll_12:
           collectionStatus: enabled
+        db_jobs_status_related:
+          collectionStatus: enabled
       input_file: |
         START_RECORD 1
         metric , db_alert_log
@@ -77,6 +79,13 @@ all_oem_metrics:
         warning_threshold , " "
         critical_threshold ,ORA-0*[0-9]{1,6}
         END_RECORD 1
+        START_RECORD 2
+        metric , db_dbms_scheduler_jobs
+        column , failure_count
+        key_columns , ;
+        warning_threshold , " "
+        critical_threshold , 0
+        END_RECORD 2
       custom_properties:
         alert_log_filter_expression: '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process\sJ\d+.*ORA-1013$|.*Patch*.*ORA-00600*'
   has:
