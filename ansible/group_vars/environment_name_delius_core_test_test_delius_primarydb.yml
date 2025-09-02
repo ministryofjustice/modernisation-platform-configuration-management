@@ -53,6 +53,9 @@ database_locked_statistics:
     table_names:
       - DOC_MIGRATION_QUEUE_TAB: ALL
 fsfo_mode: disabled
+# For Delius databases *only*, allow the DELIUS_APP_SCHEMA.PRF_COLL_JOB to run for up to the
+# period described in the ND_PARAMETERS table:  PRF_MT_MASTER_ITERATIONS * PRF_MT_MASTER_INTERVAL 
+# (convert from seconds to minutes to set the thresholds)
 host_oem_metrics:
   oracle_database:
     all:
@@ -73,6 +76,13 @@ host_oem_metrics:
         warning_threshold , 81
         critical_threshold , 90
         END_RECORD 1
+        START_RECORD 2
+        metric , db_dbms_scheduler_jobs
+        column , elapse_run_time
+        key_columns , DELIUS_APP_SCHEMA;PRF_COLL_JOB;
+        warning_threshold , 240
+        critical_threshold , 250
+        END_RECORD 2
   oracle_listener:
     all:
       input_file: |

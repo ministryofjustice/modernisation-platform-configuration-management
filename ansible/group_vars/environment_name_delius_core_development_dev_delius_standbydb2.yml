@@ -3,6 +3,24 @@
 database_standby_unique: DMDNDAS2
 database_standby_sid: DMDNDAS2
 active_data_guard: true
+# We ignore the MOUNTED state for Standby Databases - this is not an error
+host_oem_metrics:
+  oracle_database:
+    DMDNDAS1:
+      input_file: |
+        START_RECORD 1
+        metric , Response
+        column , State
+        warning_threshold ,THRESHOLD_UNSET
+        critical_threshold ,DOWN|UNKNOWN.*
+        END_RECORD 1
+        START_RECORD 2
+        metric , db_dbms_scheduler_jobs
+        column , elapse_run_time
+        key_columns , DELIUS_APP_SCHEMA;PRF_COLL_JOB;
+        warning_threshold , 240
+        critical_threshold , 250
+        END_RECORD 2
 required_patches:
   p36252161:
     patch_files:
