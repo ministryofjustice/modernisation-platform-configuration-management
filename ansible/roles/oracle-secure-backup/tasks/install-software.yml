@@ -14,7 +14,6 @@
 # 9. Checks AWS S3 permissions required for backup and restore operations.
 # -----------------------------------------------------------------------------
 ---
-
 - name: Fail if variables not defined
   fail:
     msg: "Please run get-ec2-facts role to collect facts, and ensure osbws_config.s3_bucket_name is defined"
@@ -106,6 +105,8 @@
       when: not osbws_lib_zip.stat.exists
       
     - name: Unzip OSBWS Library bundled with software
+      become: true
+      become_user: oracle
       unarchive:
         src: "{{ database_home }}/lib/osbws_linux64.zip"
         dest: "{{ database_home }}/lib"
