@@ -27,6 +27,7 @@ server_type_roles_list:
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
+amazon_cloudwatch_agent_config_name: oracle-db.json.j2
 xsiam_agent_state: "{{ xsiam_agent_db_state }}" # set in environment group_vars
 
 # Oracle common variables

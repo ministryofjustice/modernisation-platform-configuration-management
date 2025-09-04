@@ -69,6 +69,8 @@ server_type_roles_list:
 # the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
+amazon_cloudwatch_agent_config_name: oracle-db.json.j2
+
 # Oracle common variables
 oracle_install_user: oracle
 oracle_install_group: oinstall
