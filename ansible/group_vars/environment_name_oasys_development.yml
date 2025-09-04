@@ -8,3 +8,11 @@ dns_search_domains:
 s3_bucket: devtest-oasys-20230411143832198800000001
 
 db_backup_s3_bucket_name: devtest-oasys-db-backup-bucket-20230721145548176300000001
+
+# xsiam-agent: OASys cortex XDR agent has oasys tag baked in
+xsiam_agent_artefacts_s3_bucket_path: hmpps/XSIAM/Agents/oasys
+xsiam_agent_version: 8.9.0.136780
+xsiam_agent_rpm_tar_gz_filename: "oasys_linux_{{ xsiam_agent_version | replace('.','_') }}_rpm.tar.gz"
+xsiam_agent_bip_state: absent
+xsiam_agent_db_state: absent
+xsiam_agent_web_state: absent

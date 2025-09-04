@@ -23,6 +23,7 @@ roles_list:
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
   - collectd-metrics
+  - xsiam-agent
 
 users_and_groups_system:
   - name: oracle
@@ -57,3 +58,5 @@ collectd_monitored_metrics_additional:
   - metric_name: inode_used_percent
     metric_dimension: inode_used_percent_max
     shell_cmd: "df --output=ipcent | tail -n+2 | sed 's/%//' | sort -n | tail -n1 | xargs"
+
+xsiam_agent_state: "{{ xsiam_agent_bip_state }}" # set in environment group_vars
