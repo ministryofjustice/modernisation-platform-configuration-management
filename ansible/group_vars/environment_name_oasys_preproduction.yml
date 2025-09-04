@@ -153,3 +153,11 @@ housekeeping_cron:
       minute: "30"
       hour: "08"
       # job: command generated in
+
+# xsiam-agent: OASys cortex XDR agent has oasys tag baked in
+xsiam_agent_artefacts_s3_bucket_path: hmpps/XSIAM/Agents/oasys
+xsiam_agent_version: 8.9.0.136780
+xsiam_agent_rpm_tar_gz_filename: "oasys_linux_{{ xsiam_agent_version | replace('.','_') }}_rpm.tar.gz"
+xsiam_agent_bip_state: present
+xsiam_agent_db_state: present
+xsiam_agent_web_state: present

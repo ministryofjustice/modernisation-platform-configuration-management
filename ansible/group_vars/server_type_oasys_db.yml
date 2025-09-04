@@ -46,6 +46,7 @@ roles_list:
   - collectd-oracle-db-connected
   - collectd-textfile-monitoring
   - collectd-metrics
+  - xsiam-agent
 
 packages_yum_install:
   - zip-3.0-23.el8
@@ -387,3 +388,5 @@ tns_entries:
       host_list:
         - prod-oem-a.hmpps-oem.hmpps-production.modernisation-platform.internal
       service_name: RCV_TAF
+
+xsiam_agent_state: "{{ xsiam_agent_db_state }}" # set in environment group_vars

@@ -13,7 +13,6 @@ roles_list:
   - time
   - message-of-the-day
   - amazon-ssm-agent
-  #- amazon-cloudwatch-agent
   - amazon-cli
   - ansible-script
   - epel
@@ -25,6 +24,7 @@ roles_list:
   - amazon-cloudwatch-agent-collectd
   - collectd-metrics
   - collectd-service-metrics
+  - xsiam-agent
 
 users_and_groups_system:
   - name: oracle
@@ -80,3 +80,5 @@ collectd_monitored_metrics_additional:
     shell_cmd: "grep $(date -u +'%d/%b/%Y:%H:%M' -d '1 min ago') {{ tomcat_logs_dir }}/localhost_access_log.$(date +'%Y-%m-%d').txt | awk '{print $(NF-1)}' | grep ^4.. | wc -l"
 
 collectd_script_user: oracle
+
+xsiam_agent_state: "{{ xsiam_agent_web_state }}" # set in environment group_vars
