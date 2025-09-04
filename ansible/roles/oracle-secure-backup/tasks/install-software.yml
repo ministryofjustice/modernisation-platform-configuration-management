@@ -1,8 +1,45 @@
+# -----------------------------------------------------------------------------
+# This Ansible task file installs and configures Oracle Secure Backup Web Service (OSBWS)
+# for Oracle databases. It performs the following key steps:
+#
+# 1. Validates that required variables are defined, failing early if not.
+# 2. Determines the Oracle Home directory, either from a provided variable or by parsing /etc/oratab.
+# 3. Prepares necessary installation files (argument file and install script) using templates.
+# 4. Checks for the presence and freshness of the OSBWS library file, comparing it to the Oracle server library.
+# 5. Runs the OSBWS installation script if needed (e.g., files changed, library missing or outdated).
+# 6. Handles installation failures by attempting to extract the OSBWS library from a bundled zip file,
+#    and retries the installation.
+# 7. Updates OSBWS configuration files with the correct S3 bucket and chunk size.
+# 8. Optionally runs a backup test (sbttest) to verify installation.
+# 9. Checks AWS S3 permissions required for backup and restore operations.
+# -----------------------------------------------------------------------------
 ---
 - name: Fail if variables not defined
   fail:
     msg: "Please run get-ec2-facts role to collect facts, and ensure osbws_config.s3_bucket_name is defined"
   when: ansible_ec2_iam_instance_profile_role is not defined or osbws_config.s3_bucket_name is not defined
+
+- name: Get Oracle Home if not defined
+  when: database_home is not defined
+  block:
+    - name: Get Oracle Home from /etc/oratab (first DB home)
+      shell: |
+        awk -F: '!/^#/ && $2 ~ /oracle/ { print $2; exit }' /etc/oratab
+      register: oracle_home_result
+      changed_when: false
+    
+    - name: Define Oracle Home
+      set_fact:
+        database_home: "{{ oracle_home_result.stdout | trim }}"
+
+    - name: Fail if Oracle Home not defined
+      fail:
+        msg: "Failed to get Oracle Home"
+      when: (database_home | trim | length) == 0
+      
+- name: Define libDir_cmd to try external library download
+  set_fact:
+    libDir_cmd: "-libDir {{ database_home }}/lib"
 
 - name: Configure osbws_argfile
   ansible.builtin.template:
@@ -42,10 +79,64 @@
   become_user: oracle
   shell: |
     {{ osw_stage_dir }}/{{ osbws_config.name }}_install.sh
+  register: osbws_install_result
   when: osbws_argfile.changed
     or osbws_install_script.changed
     or (not osbws_lib_file.stat.exists)
     or (osbws_lib_file.stat.exists and (osbws_lib_file.stat.mtime < server_lib_file.stat.mtime))
+
+- name: Handle failed install
+  when: osbws_install_result.stderr | length > 0
+  block:
+    - name: Print osbws_install_result.stderr
+      debug:
+        var: osbws_install_result.stderr
+
+    - name: Check for {{ database_home }}/lib/osbws_linux64.zip
+      stat:
+        path: "{{ database_home }}/lib/osbws_linux64.zip"
+      register: osbws_lib_zip
+
+    # Starting with Oracle Database 19c Release Update version 27 (19.27), the backup module library files
+    # are available in the Oracle home directory after you install the Oracle Database.
+    - name: Fail if osbws_linux64.zip not found
+      fail:
+        msg: "Failed to find osbws_linux64.zip"
+      when: not osbws_lib_zip.stat.exists
+      
+    - name: Unzip OSBWS Library bundled with software
+      become: true
+      become_user: oracle
+      unarchive:
+        src: "{{ database_home }}/lib/osbws_linux64.zip"
+        dest: "{{ database_home }}/lib"
+        remote_src: true
+      when: osbws_lib_zip.stat.exists
+
+    - name: Remove libDir_cmd to avoid external library download
+      set_fact:
+        libDir_cmd: ""
+
+    - name: Configure osbws_argfile
+      ansible.builtin.template:
+        src: osbws_argfile
+        dest: "{{ osw_stage_dir }}/{{ osbws_config.name }}_argfile"
+        mode: 0644
+        owner: oracle
+        group: oinstall
+      register: osbws_argfile
+
+    - name: Run install script
+      become: true
+      become_user: oracle
+      shell: |
+        {{ osw_stage_dir }}/{{ osbws_config.name }}_install.sh
+      register: osbws_install_result
+
+    - name: Handle failed install
+      fail:
+        msg: "Failed to install OSBWS: {{ osbws_install_result.stderr }}"
+      when: osbws_install_result.stderr | length > 0
 
 - name: Update osbws config
   become: true

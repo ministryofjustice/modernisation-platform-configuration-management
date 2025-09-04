@@ -11,4 +11,8 @@ osbws_configs:
 
 osbws_additional_configs: []
 
-cwallet_search_path: /u01/app/oracle/product
+# Delius instances have the osbws_wallet in $ORACLE_BASE/wallets
+# Prison instances have the osbws_wallet in $ORACLE_HOME/dbs
+# This search path will cater for both locations.
+cwallet_search_path: /u01/app/oracle
+

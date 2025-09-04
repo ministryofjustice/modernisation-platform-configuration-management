@@ -1,5 +1,4 @@
--walletDir {{ database_home }}/dbs/{{ osbws_config.name }}_wallet
--libDir {{ database_home }}/lib
+-walletDir {{ database_home }}/dbs/{{ osbws_config.name }}_wallet {{ libDir_cmd }}
 -location {{ ansible_ec2_placement_region }}
 -awsEndPoint s3-{{ ansible_ec2_placement_region }}.amazonaws.com
 -configFile {{ database_home }}/dbs/{{ osbws_config.name }}.ora
