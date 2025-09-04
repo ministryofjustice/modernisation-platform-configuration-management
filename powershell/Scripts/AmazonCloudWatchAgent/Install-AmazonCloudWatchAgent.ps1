@@ -168,7 +168,7 @@ if ($CustomConfig) {
     } catch {
       Write-Output "Failed to Get-FileHash, updating anyway"
       $CurrentVersion = "NONE"
-      $NewVersion = "CannotDetermineUnderWhatIf"
+      $NewVersion = "CannotDetermineHash"
     }
   }
   if ($CurrentVersion -eq $NewVersion) {
