@@ -160,9 +160,15 @@ if ($CustomConfig) {
   if ($WhatIfPreference) {
     $NewVersion = "CannotDetermineUnderWhatIf"
   } else {
-    $NewVersion = (Get-FileHash $NewConfigPath).Hash
-    if (Test-Path $ExistingConfigPath) {
-      $CurrentVersion = (Get-FileHash $ExistingConfigPath).Hash
+    try {
+      $NewVersion = (Get-FileHash $NewConfigPath).Hash
+      if (Test-Path $ExistingConfigPath) {
+        $CurrentVersion = (Get-FileHash $ExistingConfigPath).Hash
+      }
+    } catch {
+      Write-Output "Failed to Get-FileHash, updating anyway"
+      $CurrentVersion = "NONE"
+      $NewVersion = "CannotDetermineHash"
     }
   }
   if ($CurrentVersion -eq $NewVersion) {
