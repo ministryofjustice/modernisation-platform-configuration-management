@@ -19,3 +19,6 @@ oracle_software:
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
 source_db: "DMDDSD"
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-dsd-db-backups"
+database_parameters:
+  sga_max_size: 1488M
+  sga_target: 1488M
