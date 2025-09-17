@@ -43,6 +43,7 @@ roles_list:
   - collectd-oracle-db-connected
   - collectd-textfile-monitoring
   - collectd-metrics
+  - xsiam-agent
 
 packages_yum_install:
   - zip
@@ -287,3 +288,6 @@ db_configs:
 
 audit_service_name: BOAUD_TAF
 system_service_name: BOSYS_TAF
+
+amazon_cloudwatch_agent_config_name: oracle-db.json.j2
+xsiam_agent_state: "{{ xsiam_agent_db_state }}" # set in environment group_vars
