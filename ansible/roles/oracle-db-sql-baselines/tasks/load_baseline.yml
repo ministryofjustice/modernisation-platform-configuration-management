@@ -1,0 +1,44 @@
+- block:
+
+    - name: Create a temporary file on the remote host
+      tempfile:
+        state: file
+        suffix: ".json"
+      register: temp_file
+
+    - name: Copy baseline data to the temporary file on the remote host
+      copy:
+        src: "{{ filename }}"
+        dest: "{{ temp_file.path }}"
+        mode: '0644'
+
+    - name: Import Baseline
+      become_user: oracle
+      become: true
+      block:
+
+        - name: Create Directory for BFile
+          script: create_baseline_directory.sh $(dirname {{ temp_file.path }})
+
+        - name: Create View of Baseline Data
+          script: create_baseline_view.sh {{ temp_file.path | basename }}
+
+        - name: Import Baseline
+          script: import_baseline.sh
+
+  # always:
+
+  #   - name: Remove temporary file
+  #     file:
+  #       path: "{{ temp_file.path }}"
+  #       state: absent
+  #     when: temp_file.path is defined 
+
+  #   - name: Remove external table
+  #     script: drop_baseline_view.sh
+
+  #   - name: Remove Baseline Directory
+  #     script: drop_baseline_directory.sh
+
+  become_user: oracle 
+  become: true

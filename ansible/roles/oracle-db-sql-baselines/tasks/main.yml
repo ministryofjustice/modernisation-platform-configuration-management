@@ -1,0 +1,31 @@
+# The expected format for baseline definitions is the Baseline name
+# with the suffix .json appended
+- name: Get Expected Baseline Definition Filenames
+  set_fact:
+     sql_plan_baseline_definition_files: "{{ sql_plan_baselines | default([]) | unique | map('regex_replace','^(.*)$', '\\1.json') | list }}"
+
+- name: Find all SQL Baseline definitions
+  find:
+    paths: "{{ role_path }}/files/baselines"
+    file_type: file
+    patterns: "{{ sql_plan_baseline_definition_files }}"
+  register: found_files
+  become: false
+  delegate_to: localhost
+  run_once: true
+
+- name: Load the Baseline into the Database
+  include_tasks: load_baseline.yml
+  loop: "{{ found_files.files }}"
+  loop_control:
+    loop_var: file_item
+  vars:
+    filename: "{{ file_item.path }}"
+
+# We only use SQL Plan Baselines to fix known good plans so we do not want any plans evolved
+- name: Disable Baseline Evolution
+  script: disable_baseline_evolution.sh
+  register: disable_baseline_evolution
+  changed_when:  disable_baseline_evolution.stdout is search('.*AUTO_SPM_EVOLVE_TASK has been disabled.*')
+  become_user: oracle
+  become: true
