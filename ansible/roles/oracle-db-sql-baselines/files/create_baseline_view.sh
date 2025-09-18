@@ -23,14 +23,16 @@
 #     (Take care if the OTHER_XML column is over 4000 characters; you
 #      may need to export this separately using JSON_OBECT(... AS CLOB))
 
-. ~/.bash_profile
-
 BASELINE_FILE_NAME=$1
+
+. ~/.bash_profile
+export PATH=$PATH:/usr/local/bin
+. oraenv <<< ${TARGET_DB_NAME}
 
 sqlplus -s / as sysdba<<EOSQL
 -- Create baseline view
 WHENEVER SQLERROR EXIT FAILURE
-CREATE OR REPLACE VIEW delius_user_support.sql_plan_baseline_data
+CREATE OR REPLACE VIEW ${DBA_OPS_SCHEMA}.sql_plan_baseline_data
 AS
 SELECT *
 FROM JSON_TABLE (

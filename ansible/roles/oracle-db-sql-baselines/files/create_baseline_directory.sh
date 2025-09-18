@@ -1,8 +1,9 @@
 #!/bin/bash
-
 JSON_DIR_PATH=$1
 
 . ~/.bash_profile
+export PATH=$PATH:/usr/local/bin
+. oraenv <<< ${TARGET_DB_NAME}
 
 # SQL to create directory and external table
 sqlplus -s / as sysdba<<EOF

@@ -1,6 +1,8 @@
 #!/bin/bash
 
 . ~/.bash_profile
+export PATH=$PATH:/usr/local/bin
+. oraenv <<< ${TARGET_DB_NAME}
 
 sqlplus -s / as sysdba <<EOF
 SET HEADING OFF

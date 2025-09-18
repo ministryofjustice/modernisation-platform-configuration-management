@@ -19,26 +19,38 @@
 
         - name: Create Directory for BFile
           script: create_baseline_directory.sh $(dirname {{ temp_file.path }})
+          environment:
+             TARGET_DB_NAME: "{{ target_db_name }}"
 
         - name: Create View of Baseline Data
           script: create_baseline_view.sh {{ temp_file.path | basename }}
+          environment:
+             TARGET_DB_NAME: "{{ target_db_name }}"
+             DBA_OPS_SCHEMA: "{{ dba_ops_schema | default('SYSTEM') }}"
 
         - name: Import Baseline
           script: import_baseline.sh
+          environment:
+             TARGET_DB_NAME: "{{ target_db_name }}"
+             DBA_OPS_SCHEMA: "{{ dba_ops_schema | default('SYSTEM') }}"
+  always:
 
-  # always:
+    - name: Remove temporary file
+      file:
+        path: "{{ temp_file.path }}"
+        state: absent
+      when: temp_file.path is defined 
 
-  #   - name: Remove temporary file
-  #     file:
-  #       path: "{{ temp_file.path }}"
-  #       state: absent
-  #     when: temp_file.path is defined 
+    - name: Remove Baseline View
+      script: drop_baseline_view.sh
+      environment:
+          TARGET_DB_NAME: "{{ target_db_name }}"
+          DBA_OPS_SCHEMA: "{{ dba_ops_schema | default('SYSTEM') }}"
 
-  #   - name: Remove external table
-  #     script: drop_baseline_view.sh
-
-  #   - name: Remove Baseline Directory
-  #     script: drop_baseline_directory.sh
+    - name: Remove Baseline Directory
+      script: drop_baseline_directory.sh
+      environment:
+          TARGET_DB_NAME: "{{ target_db_name }}"
 
   become_user: oracle 
   become: true
