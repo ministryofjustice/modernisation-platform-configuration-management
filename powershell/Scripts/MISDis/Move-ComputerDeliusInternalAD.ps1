@@ -4,6 +4,28 @@ param(
     [string]$ServerTypeOverride
 )
 
+function Get-SecretString {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId
+    )
+
+    try {
+        $secret = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secret -or $secret -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        return $secret
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
+
 function Get-Tags {
     $tokenParams = @{
         TimeoutSec = 10
@@ -42,6 +64,10 @@ function Get-Tags {
 
 
 function Move-ComputerDeliusInternalAD {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$ServerTypeOverride
+    )
 
     $ErrorActionPreference = 'Stop'
 
@@ -68,6 +94,9 @@ function Move-ComputerDeliusInternalAD {
     $password = Get-SecretString -SecretId 'delius-mis-dev-ad-admin-password'
     $secureString = ConvertTo-SecureString -AsPlainText -Force -String $password
     $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList 'Admin', $secureString
+
+    # Initialize the target OU (create if it doesn't exist) before attempting to move the computer
+    Initialize-ServerTypeOU -OUTarget $OUTarget -Credential $credential
 
     # Get the computer's objectGUID with a 5-minute timeout
     $timeout = [DateTime]::Now.AddMinutes(5)
@@ -113,26 +142,26 @@ function Move-ComputerDeliusInternalAD {
     gpupdate /force
 }
 
-function Get-SecretString {
-    param (
+function Initialize-ServerTypeOU {
+    param(
         [Parameter(Mandatory)]
-        [string]$SecretId
+        [string]$OUTarget,
+        
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCredential]$Credential
     )
 
+    $ouDistinguishedName = "OU=$OUTarget,OU=Computers,OU=delius-mis-dev,DC=delius-mis-dev,DC=internal"
+    # Initialize server-type OU for computers (create if it doesn't exist)
     try {
-        $secret = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
-
-        if ($null -eq $secret -or $secret -eq '') {
-            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
-            return $null
-        }
-
-        return $secret
+        Get-ADOrganizationalUnit -Identity $ouDistinguishedName -Credential $Credential | Out-Null
+        Write-Host "Server-type OU '$ouDistinguishedName' already initialized"
     }
-    catch {
-        Write-Host "An error occurred while retrieving the secret: $_"
-        return $null
+    catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+        Write-Host "Initializing new server-type OU: $ouDistinguishedName"
+        New-ADOrganizationalUnit -Name $OUTarget -Path 'OU=Computers,OU=delius-mis-dev,DC=delius-mis-dev,DC=internal' -Description "OU for $OUTarget server-types" -Credential $Credential
     }
 }
 
-Move-ComputerDeliusInternalAD
+
+Move-ComputerDeliusInternalAD -ServerTypeOverride $ServerTypeOverride 
