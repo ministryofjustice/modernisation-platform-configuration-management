@@ -19,6 +19,7 @@ $Scripts = @(
     "../Microsoft/Install-ADRemoteTools.ps1",
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
+    "../Mozilla/Install-Firefox.ps1",
     "../LibreOffice/Install-LibreOffice.ps1",
     "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
     "../Oracle/Install-Oracle19cClient.ps1",
