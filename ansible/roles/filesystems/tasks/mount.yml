@@ -30,7 +30,7 @@
 
 - name: Setup monitoring keepalive cron
   ansible.builtin.cron:
-    name: "cleanup tmp for weblogic"
+    name: "filesystem monitoring {{ item.metric_dimension }}"
     user: root
     minute: "*/5"
     job: "/usr/local/bin/filesystem_keepalive.sh '{{ item.src }}' '{{ item.metric_dimension }}' 2>&1 | logger -p local3.info -t filesystem_keepalive.sh"
