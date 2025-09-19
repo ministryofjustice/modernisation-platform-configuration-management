@@ -57,6 +57,7 @@ server_type_roles_list:
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
+  - collectd-textfile-monitoring
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -116,3 +117,11 @@ timezone: "Europe/London"
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_responsefile: response.app.ini
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: service_sapbobj
+    shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
