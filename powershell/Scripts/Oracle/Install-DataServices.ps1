@@ -228,14 +228,14 @@ function Install-DataServices {
         }
 
         # Install Data Services
-        $process = Start-Process @dataServicesInstallParams
+        # $process = Start-Process @dataServicesInstallParams
         
-        $installProcessId = $process.Id
-        $exitCode = $process.ExitCode
+        # $installProcessId = $process.Id
+        # $exitCode = $process.ExitCode
         
-        "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
-        "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
-        "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
+        # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
+        # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
 
         if ($exitCode -eq 0) {
             Write-Host 'Data Services installation completed successfully!' -ForegroundColor Green
