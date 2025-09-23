@@ -102,7 +102,7 @@ all_oem_metrics:
         critical_threshold , 0
         END_RECORD 2
       custom_properties:
-        alert_log_filter_expression: '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process\sJ\d+.*ORA-1013$'
+        alert_log_filter_expression: '.*ORA-0*(54|235|1142|1146|609|12537|31934|16037)\D.*|.*ORA-609$|.*process\sJ\d+.*ORA-1013$|.*Dumping\scurrent\spatch\sinformation.*'
   has:
     all:
       schedule:
