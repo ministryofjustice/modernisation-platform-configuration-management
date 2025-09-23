@@ -2,11 +2,11 @@
 # Action - start a program
 #   C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
 # with args
-#   -ExecutionPolicy Bypass -File "\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data\copy_incoming.ps1"
+#   -ExecutionPolicy Bypass -File "\\fsprisonretail.azure.hmpp.root\PrisonerRetail$\Data\copy_incoming.ps1"
 
 $sourcePath = "E:\PrisonerRetail\Data\Incoming"
-$destinationPath = "\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data\Incoming" # "Z:\Data\Incoming"
-$LogFile =  "\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data\copy_incoming_log.txt" # "Z:\Data\copy_incoming_log.txt"
+$destinationPath = "\\fsprisonretail.azure.hmpp.root\PrisonerRetail$\Data\Incoming" # "Z:\Data\Incoming"
+$LogFile =  "\\fsprisonretail.azure.hmpp.root\PrisonerRetail$\Data\copy_incoming_log.txt" # "Z:\Data\copy_incoming_log.txt"
 $scriptFrequencySeconds = 10
 
 # Create FileSystemWatcher

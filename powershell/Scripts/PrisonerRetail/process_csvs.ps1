@@ -7,7 +7,7 @@
 # 5: Balance
 # 6: Date - formatted as dd/mm/20yy
 
-$directory = '\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\Data'
+$directory = '\\fsprisonretail.azure.hmpp.root\PrisonerRetail$\Data'
 $incomingDir = "${directory}\Incoming"
 $timestampDate = Get-Date
 $timestamp = $timestampDate.ToString("yyyyMMddHHmmss")
@@ -425,7 +425,7 @@ function Sort-Output {
 }
 
 function Archive-OutputFiles {
-    #\\amznfsxhu7je3ss.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputArchiveFile > $null
+    #\\fsprisonretail.azure.hmpp.root\PrisonerRetail$\7-Zip\7z a -mx7 -tzip $tempZip $outputArchiveFile > $null
     #Rename-Item -Path $tempZip -NewName "$timestamp.7z"
     if (Test-Path $outputFile) {
         Compress-Archive -Path $outputFile -DestinationPath "$archiveDir\$($timestampDate.ToString("dd"))\.zip" -Update
