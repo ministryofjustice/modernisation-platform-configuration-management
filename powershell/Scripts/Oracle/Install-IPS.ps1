@@ -220,14 +220,14 @@ function Install-IPS {
 
         Write-Host "Launching installer with $($installArgs.Count) arguments..." -ForegroundColor Cyan
         
-        $process = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -NoNewWindow -Verbose -PassThru
+        # $process = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -NoNewWindow -Verbose -PassThru
         
-        $installProcessId = $process.Id
-        $exitCode = $process.ExitCode
+        # $installProcessId = $process.Id
+        # $exitCode = $process.ExitCode
         
-        "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
-        "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
-        "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
+        # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
+        # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
         
         if ($exitCode -eq 0) {
             Write-Host 'IPS installation completed successfully!' -ForegroundColor Green
