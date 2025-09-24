@@ -92,9 +92,6 @@
   environment:
       TARGET_DB_NAME: "{{ target_db_name }}"
 
-- debug:
-      var: get_baselines
-
 # Identify any SQL Baselines which are in the database but are not defined within the
 # configuration for the environment.  If nothing is found then we sometimes get
 # the BECOME-SUCCESS token which Ansible is meant to strip out (but for some reason 
@@ -102,9 +99,6 @@
 - name: Find Extraneous SQL Baselines
   set_fact:
       sql_plan_baselines_extraneous: "{{ get_baselines.stdout_lines | map('regex_replace','^BECOME-SUCCESS-[a-z0-9]+\\s*', '') | reject('equalto', '') | list | difference(sql_plan_baselines_to_add) }}"
-
-- debug:
-      var: sql_plan_baselines_extraneous
 
 - name: Remove Extraneous Baselines
   script: |
