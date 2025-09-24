@@ -98,7 +98,7 @@
   set_fact:
       sql_plan_baselines_extraneous: "{{ get_baselines.stdout_lines | reject('equalto', '') | list | difference(sql_plan_baselines_to_add) }}"
 
-- name: Remove Extraneouse Baselines
+- name: Remove Extraneous Baselines
   script: |
          drop_baseline.sh {{ sql_handle }}
   become_user: oracle
@@ -108,3 +108,4 @@
   loop: "{{ sql_plan_baselines_extraneous }}"
   loop_control:
      loop_var: sql_handle
+  when: sql_plan_baselines_extraneous != []
