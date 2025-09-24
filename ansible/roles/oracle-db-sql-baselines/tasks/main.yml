@@ -45,7 +45,7 @@
 
 - name: Handle Special Case of RMAN Database Name
   set_fact:
-     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name='RCVCAT') else target_db_name }}"
+     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name=='RCVCAT') else target_db_name }}"
 
 - name: Get Expected Baseline File Names (append .json to the name)
   set_fact:
