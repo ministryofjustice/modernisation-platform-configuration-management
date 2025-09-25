@@ -108,6 +108,12 @@ collectd_endpoint_monitoring:
   - metric_dimension: reporting.nomis.az.justice.gov.uk # AZURE
     url: https://reporting.nomis.az.justice.gov.uk/keepalive.htm
     time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
+  - metric_dimension: reporting.nomis.service.justice.gov.uk # AWS
+    url: https://reporting.nomis.service.justice.gov.uk/keepalive.htm
+    time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
+  - metric_dimension: admin.reporting.nomis.service.justice.gov.uk # AWS
+    url: https://admin.reporting.nomis.service.justice.gov.uk/keepalive.htm
+    time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
 
   # oasys
   - metric_dimension: oasys.service.justice.gov.uk

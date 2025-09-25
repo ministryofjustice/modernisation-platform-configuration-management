@@ -101,6 +101,14 @@ disks_mount:
 
 timezone: "Europe/London"
 
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: service_sapbobj
+    shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
+
 sap_bip_responsefile: response.webadmin.ini
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
