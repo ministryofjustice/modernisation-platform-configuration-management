@@ -6,7 +6,7 @@
 param()  
 
 $ApplicationConfig = @{ 
-    'all'                      = @{
+    'all'                    = @{
         # Override base template for MISDis-specific paths
         'WindowsClientS3Folder' = 'hmpps/mis'
         'IPSS3File'             = 'IPS4304P_900-70002778.EXE'
@@ -40,9 +40,11 @@ $ApplicationConfig = @{
         # MISDis-specific features (different from ONR/NCR)
         'IPSFeatures'           = 'JavaWebApps1,CMC.Monitoring,LCM,IntegratedTomcat,CMC.AccessLevels,CMC.Applications,CMC.Audit,CMC.Authentication,CMC.Calendars,CMC.Categories,CMC.CryptographicKey,CMC.Events,CMC.Folders,CMC.Inboxes,CMC.Licenses,CMC.PersonalCategories,CMC.PersonalFolders,CMC.Servers,CMC.Sessions,CMC.Settings,CMC.TemporaryStorage,CMC.UsersAndGroups,CMC.QueryResults,CMC.InstanceManager,CMS,FRS,PlatformServers.AdaptiveProcessingServer,PlatformServers.AdaptiveJobServer,ClientAuditingProxyProcessingService,LCMProcessingServices,MonitoringProcessingService,SecurityTokenService,DestinationSchedulingService,ProgramSchedulingService,AdminTools,DataAccess.SAP,DataAccess.Peoplesoft,DataAccess.JDEdwards,DataAccess.Siebel,DataAccess.OracleEBS,DataAccess'
     }
-    
-    'delius-mis-development'   = @{
+
+    # Cluster-specific configurations (keyed by primary node name)
+    'ndmis-dev-dfi-1'        = @{
         'EnvironmentName' = 'delius-mis-development'
+        'ClusterName'     = 'dfi'
         
         'DatabaseConfig'  = @{
             'sysDbName' = 'DMDDSD'
@@ -57,38 +59,77 @@ $ApplicationConfig = @{
         }
         
         'ServiceConfig'   = @{
+            'serviceUser' = 'SVC_DFI_NDL'
+            'domain'      = 'delius-mis-dev'
+        }
+        
+        # Explicit secret configuration for DFI cluster
+        'SecretConfig'    = @{
+            'secretIds'  = @{
+                'serviceAccounts' = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'bodsPasswords'   = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'bodsConfig'      = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'sysDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+                'audDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            }
+            'secretKeys' = @{
+                'bodsAdminPassword'      = 'DFI_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'          = 'ips_product_key'
+                'dataServicesProductKey' = 'data_services_product_key'
+                'serviceUserPassword'    = 'SVC_DFI_NDL'
+                'sysDbUserPassword'      = 'dfi_mod_ipscms'
+                'audDbUserPassword'      = 'dfi_mod_ipsaud'
+            }
+        }
+        
+        'SiaNodeName'     = 'NDLMODDFI101'
+    }
+    
+    'ndmis-dev-dis-1'        = @{
+        'EnvironmentName' = 'delius-mis-development'
+        'ClusterName'     = 'dis'
+        
+        'DatabaseConfig'  = @{
+            'sysDbName' = 'DMDDXB'  # Different database for DIS
+            'audDbName' = 'DMDDXB'
+            'sysDbUser' = 'ipscms'  # Different user for DIS
+            'audDbUser' = 'ipsaud'
+        }
+        
+        'NodeConfig'      = @{
+            'cmsPrimaryNode'   = 'ndmis-dev-dis-1'
+            'cmsSecondaryNode' = 'ndmis-dev-dis-2'
+        }
+        
+        'ServiceConfig'   = @{
             'serviceUser' = 'SVC_DIS_NDL'
             'domain'      = 'delius-mis-dev'
         }
         
-        # MISDis-specific settings for development
-        'SiaNodeName'     = 'NDLMODDFI101'
+        # Explicit secret configuration for DIS cluster
+        'SecretConfig'    = @{
+            'secretIds'  = @{
+                'serviceAccounts' = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'bodsPasswords'   = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'bodsConfig'      = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+                'sysDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+                'audDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            }
+            'secretKeys' = @{
+                'bodsAdminPassword'      = 'DIS_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'          = 'ips_product_key'
+                'dataServicesProductKey' = 'data_services_product_key'
+                'serviceUserPassword'    = 'SVC_DIS_NDL'
+                'sysDbUserPassword'      = 'ipscms'
+                'audDbUserPassword'      = 'ipsaud'
+            }
+        }
+        
+        'SiaNodeName'     = 'NDLMODDIS101'  # Different SIA node name for DIS
     }
-    
-    'delius-mis-preproduction' = @{
-        # Legacy config for backward compatibility - defaults to stage cluster
-        'DatabaseConfig' = @{
-            'sysDbName' = 'DMPDSD'
-            'audDbName' = 'DMPDSD'
-            'sysDbUser' = 'dfi_mod_ipscms'
-            'audDbUser' = 'dfi_mod_ipsaud'
-        }
-        
-        'NodeConfig'     = @{
-            'cmsPrimaryNode'   = 'delius-mis-stage-dfi-1'
-            'cmsSecondaryNode' = 'delius-mis-stage-dfi-2'
-        }
-        
-        'ServiceConfig'  = @{
-            'serviceUser' = 'SVC_DIS_NDL'
-            'domain'      = 'delius-mis-preprod'
-        }
-        
-        'SiaNodeName'    = 'NDLMODSTG101'
-    }
-    
-    # Cluster-specific configurations (keyed by primary node name)
-    'delius-mis-stage-dfi-1'   = @{
+
+    # EXAMPLE CONFIG ONLY - NEEDS CHANGING
+    'delius-mis-stage-dfi-1' = @{
         'EnvironmentName' = 'delius-mis-preproduction'
         'ClusterName'     = 'stage'
         
@@ -109,10 +150,31 @@ $ApplicationConfig = @{
             'domain'      = 'delius-mis-preprod'
         }
         
+        # Explicit secret configuration for Stage cluster
+        'SecretConfig'    = @{
+            'secretIds'  = @{
+                'serviceAccounts' = 'NDMIS_DFI_SERVICEACCOUNTS_STAGE'
+                'bodsPasswords'   = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+                'bodsConfig'      = 'NDMIS_DFI_SERVICEACCOUNTS_STAGE'
+                'sysDbSecrets'    = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+                'audDbSecrets'    = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+            }
+            'secretKeys' = @{
+                'bodsAdminPassword'      = 'DFI_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'          = 'ips_product_key'
+                'dataServicesProductKey' = 'data_services_product_key'
+                'bodsSubversionPassword' = 'bods_subversion_password'
+                'serviceUserPassword'    = 'SVC_DFI_NDL'
+                'sysDbUserPassword'      = 'dfi_mod_ipscms'
+                'audDbUserPassword'      = 'dfi_mod_ipsaud'
+            }
+        }
+        
         'SiaNodeName'     = 'NDLMODSTG101'
     }
     
-    'delius-mis-pp-dfi-1'      = @{
+    # EXAMPLE CONFIG ONLY - NEEDS CHANGING
+    'delius-mis-pp-dfi-1'    = @{
         'EnvironmentName' = 'delius-mis-preproduction'
         'ClusterName'     = 'pp'
         
@@ -133,10 +195,30 @@ $ApplicationConfig = @{
             'domain'      = 'delius-mis-preprod'
         }
         
+        # Explicit secret configuration for PP cluster
+        'SecretConfig'    = @{
+            'secretIds'  = @{
+                'serviceAccounts' = 'NDMIS_DFI_SERVICEACCOUNTS_PREPROD'
+                'bodsPasswords'   = 'delius-mis-preprod-oracle-psd-db-application-passwords'
+                'bodsConfig'      = 'NDMIS_DFI_SERVICEACCOUNTS_PREPROD'
+                'sysDbSecrets'    = 'delius-mis-preprod-oracle-psd-db-application-passwords'
+                'audDbSecrets'    = 'delius-mis-preprod-oracle-psd-db-application-passwords'
+            }
+            'secretKeys' = @{
+                'bodsAdminPassword'      = 'DFI_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'          = 'ips_product_key'
+                'dataServicesProductKey' = 'data_services_product_key'
+                'bodsSubversionPassword' = 'bods_subversion_password'
+                'serviceUserPassword'    = 'SVC_DFI_NDL'
+                'sysDbUserPassword'      = 'dfi_mod_ipscms'
+                'audDbUserPassword'      = 'dfi_mod_ipsaud'
+            }
+        }
+        
         'SiaNodeName'     = 'NDLMODPP101'
     }
     
-    'delius-mis-production'    = @{
+    'delius-mis-production'  = @{
         # Add production-specific overrides here
     }
 }
