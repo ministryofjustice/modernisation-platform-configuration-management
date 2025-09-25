@@ -108,6 +108,9 @@ collectd_monitored_services_servertype:
   - metric_name: service_status_app
     metric_dimension: service_sapbobj
     shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
+  - metric_name: service_status_app
+    metric_dimension: http_biprws
+    shell_cmd: "curl -Ssf -m 5 http://localhost:7777/biprws"
 
 sap_bip_responsefile: response.web.ini
 
