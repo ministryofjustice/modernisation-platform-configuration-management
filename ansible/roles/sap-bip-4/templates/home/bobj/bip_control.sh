@@ -341,6 +341,14 @@ set_env_biprws_logon_token() {
   BIPRWS_LOGON_TOKEN="\"$logon_token\""
 }
 
+biprws_logoff() {
+  if [[ -n $BIPRWS_LOGON_TOKEN ]]; then
+    debug "curl https://$ADMIN_URL/biprws/v1/logoff"
+    curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "https://$ADMIN_URL/biprws/v1/logoff"
+    BIPRWS_LOGON_TOKEN=
+  fi
+}
+
 biprws_get() {
   local uri
 
@@ -763,8 +771,10 @@ do_biprws() {
   if [[ $1 == "server-list" ]]; then
     shift
     if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
+      biprws_logoff
       return 1
     fi
+    biprws_logoff
     if [[ $FORMAT == "json" ]]; then
       if (( $# != 0 )); then
         error "Cannot use json format with server-list filter"
