@@ -38,6 +38,7 @@
 
 DRYRUN=0
 VERBOSE=0
+BIPRWS_LOGON_TOKEN=
 LBS=
 FORMAT=default
 LOGPREFIX=
@@ -46,10 +47,16 @@ AWS_ENVIRONMENT="{{ aws_environment }}"
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
+DIFF_START_STATUS_ONLY=0
+DIFF_USE_COMM=0
 STAGE3_WAIT_SECS=600
 CURL_TIMEOUT_AWS_METADATA=2 # seconds
 CURL_TIMEOUT_BIPRWS_LOGON=5 # seconds
+CURL_TIMEOUT_BIPRWS_LOGOFF=10 # seconds
 CURL_TIMEOUT_BIPRWS_GET=60 # seconds
+
+# Always logout of biprws on exit
+trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "https://$ADMIN_URL/biprws/v1/logoff"' EXIT
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -107,12 +114,14 @@ usage() {
   echo "Usage $0: <opts> <cmd>
 
 Where <opts>:
+  -a                        For diff option, only check the entries in <a> match <b>
   -d                        Enable dryrun for maintenance mode commands
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
   -l public|private|admin   Select LB endpoint(s)
   -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
+  -s                        For diff option, only compare start/stop status
   -w                        Wait for CCM command
 
 Where <cmd>:
@@ -938,12 +947,26 @@ do_diff() {
     cmd2=$3
     shift 3
 
-    a=$(get_server_list "$cmd1" "$@" | cut -f1,2,3)
-    b=$(get_server_list "$cmd2" "$@" | cut -f1,2,3)
+    if (( DIFF_START_STATUS_ONLY == 0 )); then
+      a=$(get_server_list "$cmd1" "$@" | cut -f1,2,3)
+      b=$(get_server_list "$cmd2" "$@" | cut -f1,2,3)
+    else
+      a=$(get_server_list "$cmd1" "$@" | cut -f1,2)
+      b=$(get_server_list "$cmd2" "$@" | cut -f1,2)
+    fi
 
     debug "A: $a"
     debug "B: $b"
-    diff <(echo "$a") <(echo "$b")
+    if (( DIFF_USE_COMM == 0 )); then
+      diff <(echo "$a") <(echo "$b")
+    else
+      # for checking if all expected servers are running, i.e. not a full diff
+      DIFF=$(comm -23 <(echo "$a" | sort) <(echo "$b" | sort))
+      echo "$DIFF"
+      if [[ -n $DIFF ]]; then
+        return 1
+      fi
+    fi
   else
     usage
     return 1
@@ -1402,10 +1425,13 @@ do_lb() {
 
 main() {
   set -eo pipefail
-  while getopts "3:df:l:p:vw" opt; do
+  while getopts "3:adf:l:p:svw" opt; do
       case $opt in
           3)
               STAGE3_WAIT_SECS=${OPTARG}
+              ;;
+          a)
+              DIFF_USE_COMM=1
               ;;
           d)
               DRYRUN=1
@@ -1418,6 +1444,9 @@ main() {
               ;;
           p)
               LOGPREFIX=${OPTARG}
+              ;;
+          s)
+              DIFF_START_STATUS_ONLY=1
               ;;
           v)
               VERBOSE=1
