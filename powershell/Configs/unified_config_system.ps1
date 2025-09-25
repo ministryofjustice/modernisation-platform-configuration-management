@@ -119,8 +119,14 @@ function Get-UnifiedConfig {
 
     # Add application-specific overrides
     if ($ApplicationConfig.ContainsKey('all')) {
-        $finalConfig = Merge-ConfigWithTemplate -Template @{'all' = $finalConfig } -EnvironmentConfig @{'all' = $ApplicationConfig.all }
-        $finalConfig = $finalConfig.all
+        $mergedConfig = Merge-ConfigWithTemplate -Template @{'all' = $finalConfig } -EnvironmentConfig @{'all' = $ApplicationConfig.all }
+        $finalConfig = $mergedConfig.all
+    }
+
+    # Apply cluster-specific config last to ensure it takes precedence
+    if ($clusterConfig -and $clusterConfig.Count -gt 0) {
+        $mergedConfig = Merge-ConfigWithTemplate -Template @{'all' = $finalConfig } -EnvironmentConfig @{'all' = $clusterConfig }
+        $finalConfig = $mergedConfig.all
     }
 
     # Add additional tags
@@ -168,27 +174,44 @@ function Get-SecretValueUnified {
         return "TEST_VALUE_$($SecretType)_$($SecretKey)"
     }
 
-    $secretId = switch ($Config.SecretConfig.secretPattern) {
-        'standard' {
-            switch ($SecretType) {
-                'bods_passwords' { $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv }
-                'bods_config' { $Config.SecretConfig.secretMappings.bodsConfigName -replace '\{dbenv\}', $Config.dbenv }
-                'sys_db' { $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName }
-                'aud_db' { $Config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $Config.DatabaseConfig.audDbName }
-                default { throw "Unknown secret type: $SecretType" }
-            }
+    # Use explicit secret configuration if available (new approach)
+    if ($Config.ContainsKey('SecretConfig') -and $Config.SecretConfig.ContainsKey('secretIds')) {
+        $secretId = switch ($SecretType) {
+            'service_accounts' { $Config.SecretConfig.secretIds.serviceAccounts }
+            'bods_passwords' { $Config.SecretConfig.secretIds.bodsPasswords }
+            'bods_config' { $Config.SecretConfig.secretIds.bodsConfig }
+            'sys_db' { $Config.SecretConfig.secretIds.sysDbSecrets }
+            'aud_db' { $Config.SecretConfig.secretIds.audDbSecrets }
+            default { throw "Unknown secret type: $SecretType" }
         }
-        'misdis' {
-            switch ($SecretType) {
-                'service_accounts' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }
-                'bods_passwords' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }  # BODS admin passwords are in DB secrets
-                'bods_config' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }  # Product keys are in service accounts
-                'sys_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
-                'aud_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
-                default { throw "Unknown secret type for MISDis: $SecretType" }
+    }
+    # Fallback to legacy pattern-based approach
+    elseif ($Config.ContainsKey('SecretConfig') -and $Config.SecretConfig.ContainsKey('secretPattern')) {
+        $secretId = switch ($Config.SecretConfig.secretPattern) {
+            'standard' {
+                switch ($SecretType) {
+                    'bods_passwords' { $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv }
+                    'bods_config' { $Config.SecretConfig.secretMappings.bodsConfigName -replace '\{dbenv\}', $Config.dbenv }
+                    'sys_db' { $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName }
+                    'aud_db' { $Config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $Config.DatabaseConfig.audDbName }
+                    default { throw "Unknown secret type: $SecretType" }
+                }
             }
+            'misdis' {
+                switch ($SecretType) {
+                    'service_accounts' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }
+                    'bods_passwords' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
+                    'bods_config' { 'NDMIS_DFI_SERVICEACCOUNTS_DEV' }
+                    'sys_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
+                    'aud_db' { 'delius-mis-dev-oracle-dsd-db-application-passwords' }
+                    default { throw "Unknown secret type for MISDis: $SecretType" }
+                }
+            }
+            default { throw "Unknown secret pattern: $($Config.SecretConfig.secretPattern)" }
         }
-        default { throw "Unknown secret pattern: $($Config.SecretConfig.secretPattern)" }
+    }
+    else {
+        throw "No secret configuration found in config"
     }
 
     try {
@@ -264,7 +287,7 @@ function New-ResponseFileFromTemplate {
     $variableMappings = switch -Wildcard ($actualTemplateName) {
         '*IPS_Primary_Template*.ini' {
             @{
-                'CLUSTER_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode
+                'CLUSTER_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode
                 'AUD_DB_NAME'            = $Config.DatabaseConfig.audDbName
                 'AUD_DB_USER'            = $Config.DatabaseConfig.audDbUser
                 'SYS_DB_NAME'            = $Config.DatabaseConfig.sysDbName
@@ -281,7 +304,7 @@ function New-ResponseFileFromTemplate {
                 'LCM_NAME'               = if ($Config.ContainsKey('LCMName')) { $Config.LCMName } else { 'LCM_repository' }
                 'LCM_PORT'               = if ($Config.ContainsKey('LCMPort')) { $Config.LCMPort } else { '3690' }
                 'LCM_USERNAME'           = if ($Config.ContainsKey('LCMUsername')) { $Config.LCMUsername } else { 'LCM' }
-                'PRODUCT_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey 'ips_product_key' -TestMode:$TestMode
+                'PRODUCT_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey ($Config.SecretConfig.secretKeys.ipsProductKey) -TestMode:$TestMode
                 'SIA_NODE_NAME'          = if ($Config.ContainsKey('SiaNodeName')) { 
                     $Config.SiaNodeName 
                 }
@@ -313,7 +336,7 @@ function New-ResponseFileFromTemplate {
         }
         '*IPS_Secondary_Template*.ini' {
             @{
-                'CLUSTER_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode
+                'CLUSTER_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode
                 'SYS_DB_NAME'            = $Config.DatabaseConfig.sysDbName
                 'SYS_DB_USER'            = $Config.DatabaseConfig.sysDbUser
                 'INSTALL_DIR'            = if ($bodsVersion -eq '43') { 
@@ -325,7 +348,7 @@ function New-ResponseFileFromTemplate {
                 'INSTALL_TYPE'           = if ($Config.ContainsKey('IPSInstallType')) { $Config.IPSInstallType } else { 
                     if ($bodsVersion -eq '43') { 'default' } else { 'custom' }
                 }
-                'PRODUCT_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey 'ips_product_key' -TestMode:$TestMode
+                'PRODUCT_KEY'            = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey ($Config.SecretConfig.secretKeys.ipsProductKey) -TestMode:$TestMode
                 'REMOTE_CMS_NAME'        = "$($Config.NodeConfig.cmsPrimaryNode).$($Config.domainName)"
                 'SIA_NODE_NAME'          = if ($Config.ContainsKey('SiaNodeName')) { 
                     $Config.SiaNodeName 
@@ -371,7 +394,7 @@ function New-ResponseFileFromTemplate {
                 else {
                     "$($env:COMPUTERNAME)"
                 }
-                'PRODUCT_KEY'         = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey 'data_services_product_key' -TestMode:$TestMode
+                'PRODUCT_KEY'         = Get-SecretValueUnified -Config $Config -SecretType 'bods_config' -SecretKey ($Config.SecretConfig.secretKeys.dataServicesProductKey) -TestMode:$TestMode
                 'FEATURES'            = if ($Config.ContainsKey('DataServicesFeatures')) { 
                     $Config.DataServicesFeatures 
                 }
@@ -397,26 +420,26 @@ function New-ResponseFileFromTemplate {
     $commandLineArgs = switch -Wildcard ($actualTemplateName) {
         '*IPS_Primary_Template*.ini' {
             $commandArgs = @(
-                "cmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode)",
-                "existingauditingdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'aud_db' -SecretKey $Config.DatabaseConfig.audDbUser -TestMode:$TestMode)",
-                "existingcmsdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'sys_db' -SecretKey $Config.DatabaseConfig.sysDbUser -TestMode:$TestMode)"
+                "cmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode)",
+                "existingauditingdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'aud_db' -SecretKey ($Config.SecretConfig.secretKeys.audDbUserPassword) -TestMode:$TestMode)",
+                "existingcmsdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'sys_db' -SecretKey ($Config.SecretConfig.secretKeys.sysDbUserPassword) -TestMode:$TestMode)"
             )
-            if ($Config.ContainsKey('LCMUsername')) {
-                $commandArgs += "lcmpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_subversion_password' -TestMode:$TestMode)"
+            if ($Config.ContainsKey('LCMUsername') -and $Config.SecretConfig.secretKeys.ContainsKey('bodsSubversionPassword')) {
+                $commandArgs += "lcmpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsSubversionPassword) -TestMode:$TestMode)"
             }
             $commandArgs
         }
         '*IPS_Secondary_Template*.ini' {
             @(
-                "remotecmsadminpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode)",
-                "existingcmsdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'sys_db' -SecretKey $Config.DatabaseConfig.sysDbUser -TestMode:$TestMode)"
+                "remotecmsadminpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode)",
+                "existingcmsdbpassword=$(Get-SecretValueUnified -Config $Config -SecretType 'sys_db' -SecretKey ($Config.SecretConfig.secretKeys.sysDbUserPassword) -TestMode:$TestMode)"
             )
         }
         '*DataServices_*_Template*.ini' {
             @(
-                "cmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode)",
-                "dscmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey 'bods_admin_password' -TestMode:$TestMode)",
-                "dslogininfothispassword=$(Get-SecretValueUnified -Config $Config -SecretType 'service_accounts' -SecretKey $Config.ServiceConfig.serviceUser -TestMode:$TestMode)"
+                "cmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode)",
+                "dscmspassword=$(Get-SecretValueUnified -Config $Config -SecretType 'bods_passwords' -SecretKey ($Config.SecretConfig.secretKeys.bodsAdminPassword) -TestMode:$TestMode)",
+                "dslogininfothispassword=$(Get-SecretValueUnified -Config $Config -SecretType 'service_accounts' -SecretKey ($Config.SecretConfig.secretKeys.serviceUserPassword) -TestMode:$TestMode)"
             )
         }
         default { @() }

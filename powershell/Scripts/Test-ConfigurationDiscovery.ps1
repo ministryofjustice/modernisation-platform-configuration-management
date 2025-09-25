@@ -269,13 +269,48 @@ function Test-ConfigurationDiscovery {
         if ($TestSecrets) {
             Write-Host '4. Secret Configuration Testing...' -ForegroundColor Cyan
             
-            $secretTests = @(
-                @{ Type = 'bods_passwords'; Key = 'dfi_mod_ipscms'; Description = 'BODS Admin Password (CMS User)' },
-                @{ Type = 'bods_passwords'; Key = 'dfi_mod_ipsaud'; Description = 'BODS Service Password (AUD User)' },
-                @{ Type = 'bods_config'; Key = 'ips_product_key'; Description = 'IPS Product Key' },
-                @{ Type = 'bods_config'; Key = 'data_services_product_key'; Description = 'DataServices Product Key' },
-                @{ Type = 'service_accounts'; Key = $config.ServiceConfig.serviceUser; Description = 'Service Account' }
-            )
+            # Build secret tests dynamically from the configuration's secret keys
+            $secretTests = @()
+            
+            if ($config.ContainsKey('SecretConfig') -and $config.SecretConfig.ContainsKey('secretKeys')) {
+                # Use explicit secret keys from configuration - only test keys that actually exist
+                $secretKeys = $config.SecretConfig.secretKeys
+                
+                $secretTests = @()
+                
+                # Only add tests for keys that are actually defined in the configuration
+                if ($secretKeys.ContainsKey('bodsAdminPassword')) {
+                    $secretTests += @{ Type = 'bods_passwords'; Key = $secretKeys.bodsAdminPassword; Description = 'BODS Admin Password' }
+                }
+                if ($secretKeys.ContainsKey('bodsSubversionPassword')) {
+                    $secretTests += @{ Type = 'bods_passwords'; Key = $secretKeys.bodsSubversionPassword; Description = 'BODS Subversion Password' }
+                }
+                if ($secretKeys.ContainsKey('ipsProductKey')) {
+                    $secretTests += @{ Type = 'bods_config'; Key = $secretKeys.ipsProductKey; Description = 'IPS Product Key' }
+                }
+                if ($secretKeys.ContainsKey('dataServicesProductKey')) {
+                    $secretTests += @{ Type = 'bods_config'; Key = $secretKeys.dataServicesProductKey; Description = 'DataServices Product Key' }
+                }
+                if ($secretKeys.ContainsKey('serviceUserPassword')) {
+                    $secretTests += @{ Type = 'service_accounts'; Key = $secretKeys.serviceUserPassword; Description = 'Service Account Password' }
+                }
+                if ($secretKeys.ContainsKey('sysDbUserPassword')) {
+                    $secretTests += @{ Type = 'sys_db'; Key = $secretKeys.sysDbUserPassword; Description = 'System Database User Password' }
+                }
+                if ($secretKeys.ContainsKey('audDbUserPassword')) {
+                    $secretTests += @{ Type = 'aud_db'; Key = $secretKeys.audDbUserPassword; Description = 'Audit Database User Password' }
+                }
+            }
+            else {
+                # Fallback to legacy hardcoded keys for backward compatibility
+                Write-Host '   ⚠️ Using fallback secret keys (legacy configuration detected)' -ForegroundColor Yellow
+                $secretTests = @(
+                    @{ Type = 'bods_passwords'; Key = 'bods_admin_password'; Description = 'BODS Admin Password (Legacy)' },
+                    @{ Type = 'bods_config'; Key = 'ips_product_key'; Description = 'IPS Product Key (Legacy)' },
+                    @{ Type = 'bods_config'; Key = 'data_services_product_key'; Description = 'DataServices Product Key (Legacy)' },
+                    @{ Type = 'service_accounts'; Key = $config.ServiceConfig.serviceUser; Description = 'Service Account (Legacy)' }
+                )
+            }
             
             $secretResults = @()
             foreach ($test in $secretTests) {
@@ -287,15 +322,30 @@ function Test-ConfigurationDiscovery {
                     else {
                         Get-SecretValueUnified -Config $config -SecretType $test.Type -SecretKey $test.Key -TestMode
                     }
-                    $secretResults += @{
-                        Description = $test.Description
-                        Type        = $test.Type
-                        Key         = $test.Key
-                        Status      = 'SUCCESS'
-                        Value       = if ($secretValue.Length -gt 10) { "$($secretValue.Substring(0,10))..." } else { $secretValue }
-                        Error       = $null
+                    
+                    # Check if secret was actually retrieved
+                    if ($null -eq $secretValue -or $secretValue -eq '') {
+                        $secretResults += @{
+                            Description = $test.Description
+                            Type        = $test.Type
+                            Key         = $test.Key
+                            Status      = 'FAILED'
+                            Value       = $null
+                            Error       = 'Secret not found or returned empty value'
+                        }
+                        Write-Host "   ❌ $($test.Description): Secret not found or empty" -ForegroundColor Red
                     }
-                    Write-Host "   ✅ $($test.Description): Retrieved successfully" -ForegroundColor Green
+                    else {
+                        $secretResults += @{
+                            Description = $test.Description
+                            Type        = $test.Type
+                            Key         = $test.Key
+                            Status      = 'SUCCESS'
+                            Value       = if ($secretValue.Length -gt 10) { "$($secretValue.Substring(0,10))..." } else { $secretValue }
+                            Error       = $null
+                        }
+                        Write-Host "   ✅ $($test.Description): Retrieved successfully" -ForegroundColor Green
+                    }
                 }
                 catch {
                     $secretResults += @{
