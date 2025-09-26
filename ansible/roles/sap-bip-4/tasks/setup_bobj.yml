@@ -19,17 +19,6 @@
     - home/bobj/archive_logs.sh
     - home/bobj/sap_restart.sh
 
-- name: Copy bobj cmc scripts
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "/{{ item }}"
-    owner: bobj
-    group: binstall
-    mode: 0755
-  loop:
-    - home/bobj/bip_control.sh
-  when: sap_bip_is_cms
-
 - name: Copy bobj biprws helper scripts
   ansible.builtin.template:
     src: "{{ item }}"

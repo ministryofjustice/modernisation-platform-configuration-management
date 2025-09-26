@@ -38,6 +38,7 @@
 
 DRYRUN=0
 VERBOSE=0
+BIPRWS_LOGON_TOKEN=
 LBS=
 FORMAT=default
 LOGPREFIX=
@@ -46,10 +47,16 @@ AWS_ENVIRONMENT="{{ aws_environment }}"
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
+DIFF_START_STATUS_ONLY=0
+DIFF_USE_COMM=0
 STAGE3_WAIT_SECS=600
 CURL_TIMEOUT_AWS_METADATA=2 # seconds
 CURL_TIMEOUT_BIPRWS_LOGON=5 # seconds
+CURL_TIMEOUT_BIPRWS_LOGOFF=10 # seconds
 CURL_TIMEOUT_BIPRWS_GET=60 # seconds
+
+# Always logout of biprws on exit
+trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS_URL/v1/logoff"' EXIT
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -107,12 +114,14 @@ usage() {
   echo "Usage $0: <opts> <cmd>
 
 Where <opts>:
+  -a                        For diff option, only check the entries in <a> match <b>
   -d                        Enable dryrun for maintenance mode commands
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
   -l public|private|admin   Select LB endpoint(s)
   -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
+  -s                        For diff option, only compare start/stop status
   -w                        Wait for CCM command
 
 Where <cmd>:
@@ -202,6 +211,11 @@ set_env_variables() {
       LBS="private public"
     fi
   fi
+{% if sap_web_biprws_localhost_url is defined %}
+  BIPRWS_URL="{{ sap_web_biprws_localhost_url }}"
+{% else %}
+  BIPRWS_URL="https://$ADMIN_URL/biprws"
+{% endif %}
 }
 
 set_env_instance_id() {
@@ -311,9 +325,9 @@ set_env_biprws_logon_token() {
   local error_code
   local message
 
-  debug "curl https://$ADMIN_URL/biprws/v1/logon/long"
+  debug "curl $BIPRWS_URL/v1/logon/long"
   logon='{"username": "Administrator", "password": "'"$ADMIN_PASSWORD"'", "auth": "secEnterprise"}'
-  token_json=$(curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGON" -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "https://$ADMIN_URL/biprws/v1/logon/long")
+  token_json=$(curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGON" -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "$BIPRWS_URL/v1/logon/long")
   if ! jq -e . >/dev/null 2>&1 <<<"$token_json"; then
     error "Logon API returned non-json output, LB might be in maintenance mode"
     return 1
@@ -330,6 +344,14 @@ set_env_biprws_logon_token() {
     return 1
   fi
   BIPRWS_LOGON_TOKEN="\"$logon_token\""
+}
+
+biprws_logoff() {
+  if [[ -n $BIPRWS_LOGON_TOKEN ]]; then
+    debug "curl $BIPRWS_URL/v1/logoff"
+    curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS_URL/v1/logoff"
+    BIPRWS_LOGON_TOKEN=
+  fi
 }
 
 biprws_get() {
@@ -360,8 +382,13 @@ biprws_get_pages() {
       error "API returned error: $error_code: $message"
       return 1
     fi
-    nexturi=$(jq -r .next.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
-    lasturi=$(jq -r .last.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+    if [[ "$BIPRWS_URL" =~ https ]]; then
+      nexturi=$(jq -r .next.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+      lasturi=$(jq -r .last.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+    else
+      nexturi=$(jq -r .next.__deferred.uri <<< "$json")
+      lasturi=$(jq -r .last.__deferred.uri <<< "$json")
+    fi
     jq '.entries[]' <<< "$json"
     if [[ "$uri" == "$lasturi" || "$nexturi" == "null" ]]; then
       break
@@ -753,9 +780,11 @@ do_biprws() {
 
   if [[ $1 == "server-list" ]]; then
     shift
-    if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
+    if ! pages_json=$(biprws_get_pages "$BIPRWS_URL/bionbi/server/list"); then
+      biprws_logoff
       return 1
     fi
+    biprws_logoff
     if [[ $FORMAT == "json" ]]; then
       if (( $# != 0 )); then
         error "Cannot use json format with server-list filter"
@@ -938,12 +967,26 @@ do_diff() {
     cmd2=$3
     shift 3
 
-    a=$(get_server_list "$cmd1" "$@" | cut -f1,2,3)
-    b=$(get_server_list "$cmd2" "$@" | cut -f1,2,3)
+    if (( DIFF_START_STATUS_ONLY == 0 )); then
+      a=$(get_server_list "$cmd1" "$@" | cut -f1,2,3)
+      b=$(get_server_list "$cmd2" "$@" | cut -f1,2,3)
+    else
+      a=$(get_server_list "$cmd1" "$@" | cut -f1,2)
+      b=$(get_server_list "$cmd2" "$@" | cut -f1,2)
+    fi
 
     debug "A: $a"
     debug "B: $b"
-    diff <(echo "$a") <(echo "$b")
+    if (( DIFF_USE_COMM == 0 )); then
+      diff <(echo "$a") <(echo "$b")
+    else
+      # for checking if all expected servers are running, i.e. not a full diff
+      DIFF=$(comm -23 <(echo "$a" | sort) <(echo "$b" | sort) | cut -f1)
+      if [[ -n $DIFF ]]; then
+        echo Following BIP servers not Running: $DIFF
+        return 1
+      fi
+    fi
   else
     usage
     return 1
@@ -1402,10 +1445,13 @@ do_lb() {
 
 main() {
   set -eo pipefail
-  while getopts "3:df:l:p:vw" opt; do
+  while getopts "3:adf:l:p:svw" opt; do
       case $opt in
           3)
               STAGE3_WAIT_SECS=${OPTARG}
+              ;;
+          a)
+              DIFF_USE_COMM=1
               ;;
           d)
               DRYRUN=1
@@ -1418,6 +1464,9 @@ main() {
               ;;
           p)
               LOGPREFIX=${OPTARG}
+              ;;
+          s)
+              DIFF_START_STATUS_ONLY=1
               ;;
           v)
               VERBOSE=1

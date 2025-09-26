@@ -1,0 +1,12 @@
+---
+- name: Copy bip control script
+  ansible.builtin.template:
+    src: "home/bobj/bip_control.sh"
+    dest: "/{{ item }}"
+    owner: bobj
+    group: binstall
+    mode: 0755
+  loop:
+    - /home/bobj/bip_control.sh
+    - /usr/local/bin/bip_control.sh
+  when: sap_bip_copy_bip_control_script
