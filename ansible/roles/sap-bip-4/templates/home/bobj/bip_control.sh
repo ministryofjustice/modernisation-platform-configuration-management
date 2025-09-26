@@ -971,9 +971,9 @@ do_diff() {
       diff <(echo "$a") <(echo "$b")
     else
       # for checking if all expected servers are running, i.e. not a full diff
-      DIFF=$(comm -23 <(echo "$a" | sort) <(echo "$b" | sort))
-      echo "$DIFF"
+      DIFF=$(comm -23 <(echo "$a" | sort) <(echo "$b" | sort) | cut -f1)
       if [[ -n $DIFF ]]; then
+        echo Following BIP servers not Running: $DIFF
         return 1
       fi
     fi
