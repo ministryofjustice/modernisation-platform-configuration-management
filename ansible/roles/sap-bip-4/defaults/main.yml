@@ -16,6 +16,7 @@ sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
 # define environment specific settings in group_vars
 #sap_environment:  # t1, t2 etc
+sap_bip_copy_bip_control_script: false
 sap_bip_is_cms: false
 sap_bip_is_new_install: false # gets set to true if secret set to 'newinstall'
 #sap_bip_auditing_db_server:
@@ -65,7 +66,6 @@ sap_bip_secretsmanager_passwords:
     users:
       - Administrator: auto
 
-sap_web_server_type: web # set to webadmin if dedicated to admin
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
 sap_web_context_cachemaxsize: 500000

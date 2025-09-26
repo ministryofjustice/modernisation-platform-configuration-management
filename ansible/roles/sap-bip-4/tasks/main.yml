@@ -67,6 +67,13 @@
         - ec2provision
         - sap_bip_install_systemd_service
 
+    - import_tasks: install_bip_control_script.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - sap_bip_install_control_script
+
     - import_tasks: update_secrets.yml
       tags:
         - ec2provision
