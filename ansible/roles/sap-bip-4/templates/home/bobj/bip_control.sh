@@ -56,7 +56,7 @@ CURL_TIMEOUT_BIPRWS_LOGOFF=10 # seconds
 CURL_TIMEOUT_BIPRWS_GET=60 # seconds
 
 # Always logout of biprws on exit
-trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "https://$ADMIN_URL/biprws/v1/logoff"' EXIT
+trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS_URL/v1/logoff"' EXIT
 
 APP_SERVERS="AdaptiveJobServer,Running,Enabled
 AdaptiveProcessingServer,Stopped,Disabled
@@ -211,6 +211,11 @@ set_env_variables() {
       LBS="private public"
     fi
   fi
+{% if sap_web_biprws_localhost_url is defined %}
+  BIPRWS_URL="{{ sap_web_biprws_localhost_url }}"
+{% else %}
+  BIPRWS_URL="https://$ADMIN_URL/biprws"
+{% endif %}
 }
 
 set_env_instance_id() {
@@ -320,9 +325,9 @@ set_env_biprws_logon_token() {
   local error_code
   local message
 
-  debug "curl https://$ADMIN_URL/biprws/v1/logon/long"
+  debug "curl $BIPRWS_URL/v1/logon/long"
   logon='{"username": "Administrator", "password": "'"$ADMIN_PASSWORD"'", "auth": "secEnterprise"}'
-  token_json=$(curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGON" -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "https://$ADMIN_URL/biprws/v1/logon/long")
+  token_json=$(curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGON" -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "$BIPRWS_URL/v1/logon/long")
   if ! jq -e . >/dev/null 2>&1 <<<"$token_json"; then
     error "Logon API returned non-json output, LB might be in maintenance mode"
     return 1
@@ -343,8 +348,8 @@ set_env_biprws_logon_token() {
 
 biprws_logoff() {
   if [[ -n $BIPRWS_LOGON_TOKEN ]]; then
-    debug "curl https://$ADMIN_URL/biprws/v1/logoff"
-    curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "https://$ADMIN_URL/biprws/v1/logoff"
+    debug "curl $BIPRWS_URL/v1/logoff"
+    curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS_URL/v1/logoff"
     BIPRWS_LOGON_TOKEN=
   fi
 }
@@ -377,8 +382,13 @@ biprws_get_pages() {
       error "API returned error: $error_code: $message"
       return 1
     fi
-    nexturi=$(jq -r .next.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
-    lasturi=$(jq -r .last.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+    if [[ "$BIPRWS_URL" =~ https ]]; then
+      nexturi=$(jq -r .next.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+      lasturi=$(jq -r .last.__deferred.uri <<< "$json" | sed "s/http:/https:/g")
+    else
+      nexturi=$(jq -r .next.__deferred.uri <<< "$json")
+      lasturi=$(jq -r .last.__deferred.uri <<< "$json")
+    fi
     jq '.entries[]' <<< "$json"
     if [[ "$uri" == "$lasturi" || "$nexturi" == "null" ]]; then
       break
@@ -770,7 +780,7 @@ do_biprws() {
 
   if [[ $1 == "server-list" ]]; then
     shift
-    if ! pages_json=$(biprws_get_pages "https://$ADMIN_URL/biprws/bionbi/server/list"); then
+    if ! pages_json=$(biprws_get_pages "$BIPRWS_URL/bionbi/server/list"); then
       biprws_logoff
       return 1
     fi

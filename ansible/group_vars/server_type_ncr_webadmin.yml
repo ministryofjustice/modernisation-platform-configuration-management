@@ -110,10 +110,11 @@ collectd_monitored_services_servertype:
     shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
   - metric_name: service_status_app
     metric_dimension: expected_biprws_serverlist
-    shell_cmd: "/usr/local/bin/bip_control.sh -as diff server-list exp biprws +Running 2>&1 | logger -p local3.info -t collectd_service_metrics_bip"
+    shell_cmd: "/usr/local/bin/bip_control.sh -as diff server-list exp biprws Running 2>&1 | logger -p local3.info -t collectd_service_metrics_bip"
 
 sap_bip_responsefile: response.webadmin.ini
 sap_bip_copy_bip_control_script: true
+sap_web_biprws_localhost_url: http://localhost:7010/biprws
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
 sap_web_java_opts: "{{ sap_web_conf.sap_web_java_opts }}"
