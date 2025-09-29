@@ -75,16 +75,13 @@
        sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database) }}"
 
 - name: Tabulate Baseline Statistics
-  set_fact:
-      tabulate_baseline_statistics:
-       - "Number of SQL Plan Baselines configured:        {{ sql_plan_baselines_to_add | length }}"
-       - "Number of SQL Plan Baselines already installed: {{ sql_plan_baselines_already_exist | length }}"
-       - "Number of new SQL Plan Baselines to add:        {{ sql_plan_baselines_new | length }}"
-       - "Number of Unconfigured Baselines to remove:     {{ sql_plan_baselines_extraneous | length }}"
-
-- name: Report Baseline Statistics
-  debug:
-      msg: "{{ tabulate_baseline_statistics | to_nice_yaml(indent=2, explicit_start=False, explicit_end=False) | indent(2) }}"
+  pause:
+      seconds: 1
+      prompt: |
+       Number of SQL Plan Baselines configured:        {{ sql_plan_baselines_to_add | length }}
+       Number of SQL Plan Baselines already installed: {{ sql_plan_baselines_already_exist | length }}
+       Number of new SQL Plan Baselines to add:        {{ sql_plan_baselines_new | length }}
+       Number of Unconfigured Baselines to remove:     {{ sql_plan_baselines_extraneous | length }}
 
 - name: Import SQL Baseline Definition files
   when: 
