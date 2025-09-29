@@ -64,9 +64,12 @@
 # If nothing is found then we sometimes get
 # the BECOME-SUCCESS token which Ansible is meant to strip out (but for some reason 
 # doesn't) so we filter than out explicitly.
-- name: Get Baseline Statistics
+- name: List SQL Baselines from Database
   set_fact:
        sql_plan_baselines_in_database:   "{{ get_baselines.stdout_lines | map('regex_replace','^BECOME-SUCCESS-[a-z0-9]+\\s*', '') | reject('equalto', '') | list }}"
+
+- name: Get Baseline Statistics
+  set_fact:
        sql_plan_baselines_extraneous:    "{{ sql_plan_baselines_in_database | difference(sql_plan_baselines_to_add) }}"
        sql_plan_baselines_already_exist: "{{ sql_plan_baselines_in_database | intersect(sql_plan_baselines_to_add) }}"
        sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database)} }"
