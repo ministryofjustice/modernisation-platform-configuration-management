@@ -1,0 +1,21 @@
+- name: Get Database Name (Delius)
+  set_fact:
+     target_db_name: "{{ database_primary_sid }}"
+  when: target_db_name is not defined
+
+- name: Handle Special Case of RMAN Database Name
+  set_fact:
+     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name=='RCVCAT') else (target_db_name) }}"
+
+- name: Get Database Name
+  script: get_name.sh
+  register: get_name
+  changed_when: false
+  become_user: oracle
+  become: true
+  environment:
+      TARGET_DB_NAME: "{{ target_db_name }}"
+
+- name: Show Database Name
+  debug:
+     var: get_name

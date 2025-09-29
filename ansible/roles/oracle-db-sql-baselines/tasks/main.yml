@@ -1,0 +1,132 @@
+# For Delius environments we only expect one database per host.
+#
+# The list of SQL baselines to be installed is defined at the top level within a primary database group,
+# and therefore no target_db_name is required:
+# 
+# sql_plan_baselines:
+#     - Baseline #1
+#     - Baseline #2
+#     ...
+#     - Baseline #n
+#
+# For non-Delius environments there may be multiple databases per host.
+#
+# The list of SQL baselines to be installed is defined within the db_configs:
+#
+# db_configs:
+#     <TARGET_DB_NAME_1>:
+#       sql_plan_baselines:
+#         - Baseline #1
+#         - Baseline #2
+#         ...
+#         - Baseline #n
+#     <TARGET_DB_NAME_2>:
+#       sql_plan_baselines:
+#         - Baseline #3
+#         - Baseline #4
+#         ...
+#         - Baseline #m   
+#
+
+# The expected format for baseline definitions is the Baseline name
+# with the suffix .json appended
+- name: Get Expected Baseline Names (non-Delius)
+  set_fact:
+     sql_plan_baselines_to_add: "{{ db_configs[target_db_name]['sql_plan_baselines'] | default([]) | unique }}"
+  when: target_db_name is defined
+
+# If it is a Delius database then the target_db_name will not be initially defined;
+# set it to the Primary Database SID
+- name: Get Expected Baseline Names (Delius)
+  set_fact:
+     sql_plan_baselines_to_add: "{{ sql_plan_baselines | default([]) | unique }}"
+     target_db_name: "{{ database_primary_sid }}"
+  when: target_db_name is not defined
+
+- name: Handle Special Case of RMAN Database Name
+  set_fact:
+     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name=='RCVCAT') else target_db_name }}"
+
+- name: Get Expected Baseline File Names (append .json to the name)
+  set_fact:
+     sql_plan_baseline_definition_files: "{{ sql_plan_baselines_to_add | map('regex_replace','^(.*)$', '\\1.json') | list }}"
+
+- name: Find SQL Baselines in Database
+  script: get_baselines.sh
+  register: get_baselines
+  changed_when: false
+  become_user: oracle
+  become: true
+  environment:
+      TARGET_DB_NAME: "{{ target_db_name }}"
+
+# Identify any SQL Baselines which are already the database.
+# If nothing is found then we sometimes get
+# the BECOME-SUCCESS token which Ansible is meant to strip out (but for some reason 
+# doesn't) so we filter than out explicitly.
+- name: List SQL Baselines from Database
+  set_fact:
+       sql_plan_baselines_in_database:   "{{ get_baselines.stdout_lines | map('regex_replace','^BECOME-SUCCESS-[a-z0-9]+\\s*', '') | reject('equalto', '') | list }}"
+
+- name: Get Baseline Statistics
+  set_fact:
+       sql_plan_baselines_extraneous:    "{{ sql_plan_baselines_in_database | difference(sql_plan_baselines_to_add) }}"
+       sql_plan_baselines_already_exist: "{{ sql_plan_baselines_in_database | intersect(sql_plan_baselines_to_add) }}"
+       sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database) }}"
+
+- name: Tabulate Baseline Statistics
+  debug:
+      msg: "{{ item }}"
+  loop: 
+      - Number of SQL Plan Baselines configured        {{ sql_plan_baselines_to_add | length }}
+      - Number of SQL Plan Baselines already installed {{ sql_plan_baselines_already_exist | length }}
+      - Number of new SQL Plan Baselines to add        {{ sql_plan_baselines_new | length }}
+      - Number of Unconfigured Baselines to remove     {{ sql_plan_baselines_extraneous | length }}
+
+- name: Import SQL Baseline Definition files
+  when: 
+     - sql_plan_baseline_definition_files != []
+     - not (dry_run | default(true))
+  block:
+
+    - name: Find all SQL Baseline definitions
+      find:
+        paths: "{{ role_path }}/files/baselines"
+        file_type: file
+        patterns: "{{ sql_plan_baseline_definition_files }}"
+      register: found_files
+      become: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Load the Baseline into the Database
+      include_tasks: load_baseline.yml
+      loop: "{{ found_files.files }}"
+      loop_control:
+        loop_var: file_item
+      vars:
+        filename: "{{ file_item.path }}"
+
+    # We only use SQL Plan Baselines to fix known good plans so we do not want any plans evolved
+    - name: Disable Baseline Evolution
+      script: disable_baseline_evolution.sh
+      register: disable_baseline_evolution
+      changed_when:  disable_baseline_evolution.stdout is search('.*AUTO_SPM_EVOLVE_TASK has been disabled.*')
+      become_user: oracle
+      become: true
+      environment:
+          TARGET_DB_NAME: "{{ target_db_name }}"
+
+- name: Remove Extraneous Baselines
+  script: |
+         drop_baseline.sh {{ sql_handle }}
+  become_user: oracle
+  become: true
+  environment:
+      TARGET_DB_NAME: "{{ target_db_name }}"
+  loop: "{{ sql_plan_baselines_extraneous }}"
+  loop_control:
+     loop_var: sql_handle
+  when: 
+     - sql_plan_baselines_extraneous != []
+     - not (dry_run | default(true))
