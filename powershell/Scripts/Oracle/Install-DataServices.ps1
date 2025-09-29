@@ -2,6 +2,7 @@
 # This script installs SAP Data Services using the unified config and response file templates
 
 # Import required modules and functions
+Import-Module AWSPowerShell -Force
 . (Join-Path $PSScriptRoot '..\..\Configs\unified_config_system.ps1')
 
 function Get-Config {
