@@ -164,7 +164,7 @@ sap_bip_confs:
         - dswsbobje
         - webi-websetup
     webadmin:
-      sap_web_java_opts: "-Xms8192m -Xmx8192m -Dbobje.disable_audit_ip_lookup"
+      sap_web_java_opts: "-Xms8192m -Xmx8192m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
@@ -195,6 +195,15 @@ bip_filesystems_mount:
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "fs-030a75a6d02aa86ef.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: pd_ncr_sap_share
+  - dir: /NART
+    uid: bobj
+    gid: binstall
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+    src: //fslinux.azure.hmpp.root/NART$
+    metric_dimension: NART
+
+webadmin_filesystems_mount:
   - dir: /NART
     uid: bobj
     gid: binstall

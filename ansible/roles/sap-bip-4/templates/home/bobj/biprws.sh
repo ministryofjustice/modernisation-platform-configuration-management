@@ -7,6 +7,10 @@ BIPRWS='{{ sap_bip_rws_url }}'
 AUTH=secEnterprise
 USERNAME=Administrator
 DEBUG=${DEBUG:-0}
+BIPRWS_LOGON_TOKEN=
+
+# Always logout of biprws on exit
+trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m 5 -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS/v1/logoff"' EXIT
 
 usage() {
   echo "Usage: $0 <query>"
@@ -22,6 +26,15 @@ login() {
   [[ $DEBUG != 0 ]] && echo "logon: $logon" >&2
   token=$(curl -Ss -H "Content-Type: application/json" -H "Accept: application/json" --data "$logon" "$BIPRWS/v1/logon/long")
   jq -r ".logontoken" <<< "$token"
+}
+
+logoff() {
+  local token
+  token="$1"
+  uri="$BIPRWS/v1/logoff"
+
+  [[ $DEBUG != 0 ]] && echo "logoff: v1/logoff" >&2
+  curl -Ss -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $token" --data "" "$uri"
 }
 
 cms_query() {
@@ -99,6 +112,9 @@ fi
 query="$1"
 uri="$BIPRWS/v1/cmsquery"
 token="\"$(login)\""
+BIPRWS_LOGON_TOKEN="$token"
 [[ $DEBUG != 0 ]] && echo "token: $token" >&2
 
 join_cms_queries "$token" "$query" "$uri" | jq -s
+logoff "$token"
+BIPRWS_LOGON_TOKEN=

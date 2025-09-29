@@ -110,14 +110,15 @@ collectd_monitored_services_servertype:
     shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
   - metric_name: service_status_app
     metric_dimension: http_biprws
-    shell_cmd: "curl -Ssf -m 5 http://localhost:7777/biprws"
+    shell_cmd: "curl -Ssf -m 5 http://localhost:{{ sap_web_server_port }}/biprws"
 
 sap_bip_responsefile: response.web.ini
 
+sap_web_server_port: 7777
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "{{ sap_web_conf.sap_web_disable_cmcapp }}"
 sap_web_java_opts: "{{  sap_web_conf.sap_web_java_opts }}"
-sap_web_server_7777_maxthreads: 1000
+sap_web_server_connector_maxthreads: 1000
 sap_web_apps: "{{ sap_web_conf.sap_web_apps }}"
 
 sap_web_bilogon_app_name: Prison-NOMIS Reporting

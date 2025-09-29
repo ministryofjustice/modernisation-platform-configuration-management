@@ -22,13 +22,13 @@
         line: '        <Resources cachingAllowed="true" cacheMaxSize="{{ sap_web_context_cachemaxsize }}" />'
       when: sap_web_context_cachemaxsize is defined
 
-    - name: Update connector port 7777 in server.xml
+    - name: Update connector port settings in server.xml
       become_user: bobj
       ansible.builtin.lineinfile:
         path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/server.xml"
-        regexp: 'Connector port="7777"'
-        line: '<Connector port="7777" protocol="HTTP/1.1" connectionTimeout="20000" relaxedQueryChars="[,]" redirectPort="8443" compression="on" URIEncoding="UTF-8" compressionMinSize="2048" noCompressionUserAgents="gozilla, traviata" compressibleMimeType="application/vnd.sap.cvom+vbo,text/html,text/xml,text/plain,text/css,text/javascript,text/json,application/javascript,application/json" minSpareThreads="{{ sap_web_server_7777_minsparethreads }}" maxThreads="{{ sap_web_server_7777_maxthreads }}" maxHttpHeaderSize="65536" />'
-      when: sap_web_server_7777_maxthreads is defined
+        regexp: 'Connector port="{{ sap_web_server_port }}"'
+        line: '<Connector port="{{ sap_web_server_port }}" protocol="HTTP/1.1" connectionTimeout="20000" relaxedQueryChars="[,]" redirectPort="8443" compression="on" URIEncoding="UTF-8" compressionMinSize="2048" noCompressionUserAgents="gozilla, traviata" compressibleMimeType="application/vnd.sap.cvom+vbo,text/html,text/xml,text/plain,text/css,text/javascript,text/json,application/javascript,application/json" minSpareThreads="{{ sap_web_server_connector_minsparethreads }}" maxThreads="{{ sap_web_server_connector_maxthreads }}" maxHttpHeaderSize="65536" />'
+      when: sap_web_server_connector_maxthreads is defined
 
     - name: Enable access logs
       become_user: bobj
