@@ -38,6 +38,7 @@ server_type_roles_list:
   - epel
   - disks
   - selinux-config
+  - filesystems
   - sap-bip-4
   - ncr-bip
   - collectd
@@ -100,6 +101,7 @@ disks_mount:
     fstype: swap
 
 timezone: "Europe/London"
+filesystems_mount: "{{ webadmin_filesystems_mount|default([]) }}"
 
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
@@ -114,10 +116,12 @@ collectd_monitored_services_servertype:
 
 sap_bip_responsefile: response.webadmin.ini
 sap_bip_copy_bip_control_script: true
-sap_web_biprws_localhost_url: http://localhost:7010/biprws
+sap_web_server_port: 7010
+sap_web_biprws_localhost_url: "http://localhost:{{ sap_web_server_port }}/biprws"
 sap_web_disable_infoview: "false"
 sap_web_disable_cmcapp: "false"
-sap_web_java_opts: "{{ sap_web_conf.sap_web_java_opts }}"
+sap_web_java_opts: "{{ sap_webadmin_conf.sap_web_java_opts }}"
+sap_web_server_connector_maxthreads: 1000
 sap_web_apps:
   - AdminTools
   - BOE
