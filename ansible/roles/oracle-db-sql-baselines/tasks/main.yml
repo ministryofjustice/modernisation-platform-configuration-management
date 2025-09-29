@@ -76,12 +76,12 @@
 
 - name: Report Baseline Statistics
   debug:
-     msg: {{ item }}
+     msg: "{{ item }}"
   loop:
-       - Number of SQL Plan Baselines configured:        {{ sql_plan_baselines_to_add | length }}
-       - Number of SQL Plan Baselines already installed: {{ sql_plan_baselines_already_exist | length }}
-       - Number of new SQL Plan Baselines to add:        {{ sql_plan_baselines_new | length }}
-       - Number of Unconfigured Baselines to remove:     {{ sql_plan_baselines_extraneous | length }}
+       - "Number of SQL Plan Baselines configured:        {{ sql_plan_baselines_to_add | length }}"
+       - "Number of SQL Plan Baselines already installed: {{ sql_plan_baselines_already_exist | length }}"
+       - "Number of new SQL Plan Baselines to add:        {{ sql_plan_baselines_new | length }}"
+       - "Number of Unconfigured Baselines to remove:     {{ sql_plan_baselines_extraneous | length }}"
 
 - name: Import SQL Baseline Definition files
   when: 
