@@ -28,13 +28,6 @@
 #         - Baseline #m   
 #
 
-- debug:
-    var: dry_run
-
-- debug:
-     msg: "This is a dry run"
-  when: (dry_run | default(true))
-
 # The expected format for baseline definitions is the Baseline name
 # with the suffix .json appended
 - name: Get Expected Baseline Names (non-Delius)
