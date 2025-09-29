@@ -37,7 +37,7 @@
 - hosts: "{{ target | default('all') }}"
   tasks:
     - name: Fail if unsupported ansible version
-      fail:
+      ansible.builtin.fail:
         msg: "RHEL6 only works with ansible versions up to 2.12"
       when:
         - ansible_version.full >= "2.13.0"
@@ -46,26 +46,53 @@
       tags: always
 
     - name: Set roles_defined fact
-      set_fact:
+      ansible.builtin.set_fact:
         # These are roles_list defined in inventory. Default is empty list.
         roles_defined: "{{ roles_list | default([]) }}"
       tags: always
 
-    # The actual roles to run is intersection of requested role arg and roles_defined.
-    # Special value "all" in role parameter means to run all defined roles.
-    - name: Set roles_to_run fact
-      set_fact:
-        roles_to_run: |
-          {% if force_role is defined %}
-          {{ force_role.split(",") | map("trim") }}
-          {% elif role is not defined or role == "all" %}
-          {# all defined roles #}
-          {{ roles_defined }}
-          {% elif role is defined and not role == "" %}
-          {{ role.split(",") | map("trim") | intersect(roles_defined) }}
-          {% else %}
-          []
-          {% endif %}
+    - name: Set roles_to_run fact for -e force_role
+      ansible.builtin.set_fact:
+        roles_to_run: "{{ force_role.split(',') | map('trim') }}"
+      when: force_role is defined
+      tags: always
+
+    - name: Set roles_to_run fact for -e role
+      ansible.builtin.set_fact:
+        roles_to_run: "{{ role.split(',') | map('trim') | intersect(roles_defined) }}"
+      when:
+        - force_role is not defined
+        - role is defined and role != "all"
+      tags: always
+
+    - name: Set roles_to_run fact default
+      ansible.builtin.set_fact:
+        roles_to_run: "{{ roles_defined }}"
+      when:
+        - force_role is not defined
+        - role is not defined or role == "all"
+      tags: always
+
+    - name: Debug roles_to_run fact
+      ansible.builtin.debug:
+        var: roles_to_run
+      when:
+        - roles_to_run|length>0
+      tags: always
+
+    - name: Debug roles_defined fact
+      ansible.builtin.debug:
+        var: roles_defined
+      when:
+        - roles_to_run|length == 0
+      tags: always
+
+    - name: Fail if no role not found
+      ansible.builtin.fail:
+        msg: "role {{ role }} not found, see above debug"
+      when:
+        - role is defined
+        - roles_to_run|length == 0
       tags: always
 
     - name: Execute roles
