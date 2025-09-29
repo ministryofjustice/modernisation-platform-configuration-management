@@ -51,8 +51,38 @@
   set_fact:
      sql_plan_baseline_definition_files: "{{ sql_plan_baselines_to_add | map('regex_replace','^(.*)$', '\\1.json') | list }}"
 
+- name: Find SQL Baselines in Database
+  script: get_baselines.sh
+  register: get_baselines
+  changed_when: false
+  become_user: oracle
+  become: true
+  environment:
+      TARGET_DB_NAME: "{{ target_db_name }}"
+
+# Identify any SQL Baselines which are already the database.
+# If nothing is found then we sometimes get
+# the BECOME-SUCCESS token which Ansible is meant to strip out (but for some reason 
+# doesn't) so we filter than out explicitly.
+- name: Get Baseline Statistics
+  set_fact:
+       sql_plan_baselines_in_database:   "{{ get_baselines.stdout_lines | map('regex_replace','^BECOME-SUCCESS-[a-z0-9]+\\s*', '') | reject('equalto', '') | list }}"
+       sql_plan_baselines_extraneous:    "{{ sql_plan_baselines_in_database | difference(sql_plan_baselines_to_add) }}"
+       sql_plan_baselines_already_exist: "{{ sql_plan_baselines_in_database | intersect(sql_plan_baselines_to_add) }}"
+       sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database)} }"
+
+- name: Report Baseline Statistics
+  debug:
+     msg: |
+          Number of SQL Plan Baselines configured:        {{ sql_plan_baselines_to_add | length }}
+          Number of SQL Plan Baselines already installed: {{ sql_plan_baselines_already_exist | length }}
+          Number of new SQL Plan Baselines to add:        {{ sql_plan_baselines_new | length }}
+          Number of Unconfigured Baselines to remove:     {{ sql_plan_baselines_extraneous | length }}
+
 - name: Import SQL Baseline Definition files
-  when: sql_plan_baseline_definition_files != []
+  when: 
+     - sql_plan_baseline_definition_files != []
+     - not(dry_run | default(true))
   block:
 
     - name: Find all SQL Baseline definitions
@@ -83,23 +113,6 @@
       environment:
           TARGET_DB_NAME: "{{ target_db_name }}"
 
-- name: Find SQL Baselines in Database
-  script: get_baselines.sh
-  register: get_baselines
-  changed_when: false
-  become_user: oracle
-  become: true
-  environment:
-      TARGET_DB_NAME: "{{ target_db_name }}"
-
-# Identify any SQL Baselines which are in the database but are not defined within the
-# configuration for the environment.  If nothing is found then we sometimes get
-# the BECOME-SUCCESS token which Ansible is meant to strip out (but for some reason 
-# doesn't) so we filter than out explicitly.
-- name: Find Extraneous SQL Baselines
-  set_fact:
-      sql_plan_baselines_extraneous: "{{ get_baselines.stdout_lines | map('regex_replace','^BECOME-SUCCESS-[a-z0-9]+\\s*', '') | reject('equalto', '') | list | difference(sql_plan_baselines_to_add) }}"
-
 - name: Remove Extraneous Baselines
   script: |
          drop_baseline.sh {{ sql_handle }}
@@ -110,4 +123,6 @@
   loop: "{{ sql_plan_baselines_extraneous }}"
   loop_control:
      loop_var: sql_handle
-  when: sql_plan_baselines_extraneous != []
+  when: 
+     - sql_plan_baselines_extraneous != []
+     - not(dry_run | default(true))
