@@ -84,7 +84,7 @@
 
 - name: Report Baseline Statistics
   debug:
-      msg: "{{ tabulate_baseline_statistics | join('\n') }}"
+      msg: "{{ tabulate_baseline_statistics | to_nice_yaml(indent=2, explicit_start=False, explicit_end=False) | indent(2) }}"
 
 - name: Import SQL Baseline Definition files
   when: 
