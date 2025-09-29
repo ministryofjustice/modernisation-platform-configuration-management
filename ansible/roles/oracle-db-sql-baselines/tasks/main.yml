@@ -72,7 +72,7 @@
   set_fact:
        sql_plan_baselines_extraneous:    "{{ sql_plan_baselines_in_database | difference(sql_plan_baselines_to_add) }}"
        sql_plan_baselines_already_exist: "{{ sql_plan_baselines_in_database | intersect(sql_plan_baselines_to_add) }}"
-       sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database)} }"
+       sql_plan_baselines_new:           "{{ sql_plan_baselines_to_add | difference(sql_plan_baselines_in_database) }}"
 
 - name: Report Baseline Statistics
   debug:
