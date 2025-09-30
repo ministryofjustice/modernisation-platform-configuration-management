@@ -6,6 +6,7 @@ $Scripts = @(
   '../Oracle/Install-SQLDeveloper.ps1',
   '../MISDis/Move-ComputerDeliusInternalAD.ps1',
   '../Common/Test-InstallationEscalation.ps1',
+  '../Common/Install-WinRAR.ps1',
   '../Oracle/Test-DbCredentials.ps1',
   '../Oracle/Install-IPS.ps1',
   '../Oracle/Install-DataServices.ps1' 

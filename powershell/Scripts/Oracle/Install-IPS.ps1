@@ -119,6 +119,14 @@ function Install-IPS {
     Write-Host '=== Starting IPS Installation with Unified Config System ===' -ForegroundColor Green
 
     $WorkingDirectory = $Config.WorkingDirectory
+    
+    # Create working directory if it doesn't exist
+    if (-not(Test-Path $WorkingDirectory)) {
+        Write-Host "Creating working directory: $WorkingDirectory" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
+        Write-Host "Working directory created successfully" -ForegroundColor Green
+    }
+    
     Set-Location -Path $WorkingDirectory
 
     # Check if already installed
@@ -136,22 +144,63 @@ function Install-IPS {
     Get-Installer -Key $Config.IPSS3File -Destination ('.\' + $Config.IPSS3File) -Config $Config
     Write-Host "Download completed: $($Config.IPSS3File)" -ForegroundColor Green
     
+    # Create IPS extraction directory
+    $extractionDir = '.\IPS'
+    if (-not(Test-Path $extractionDir)) {
+        Write-Host "Creating extraction directory: $extractionDir" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $extractionDir -Force | Out-Null
+    }
+
     # Handle different extraction methods based on file type
     Write-Host 'Extracting installer...' -ForegroundColor Cyan
     if ($Config.IPSS3File -match '\.ZIP$') {
-        Expand-Archive ('.\' + $Config.IPSS3File) -Destination '.\IPS'
+        Write-Host 'Extracting ZIP archive...' -ForegroundColor Yellow
+        Expand-Archive ('.\' + $Config.IPSS3File) -Destination $extractionDir
     }
     else {
         # For .EXE files that need unrar (MISDis case)
+        Write-Host 'Checking for unrar command...' -ForegroundColor Yellow
         if (Get-Command unrar -ErrorAction SilentlyContinue) {
-            Write-Host 'Using unrar to extract .EXE file' -ForegroundColor Yellow
-            unrar x -r -o+ -y ('.\' + $Config.IPSS3File) '.\IPS'
+            Write-Host 'Using unrar to extract .EXE file' -ForegroundColor Green
+            $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.IPSS3File) $extractionDir
+            Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
         }
         else {
-            Write-Warning 'unrar not available for extracting .EXE file. Attempting self-extraction...'
-            Start-Process -FilePath ('.\' + $Config.IPSS3File) -ArgumentList '-s', '-x', '.\IPS' -Wait -NoNewWindow
+            Write-Host 'unrar not available. Installing unrar...' -ForegroundColor Yellow
+            
+            # Try to install unrar using chocolatey if available
+            if (Get-Command choco -ErrorAction SilentlyContinue) {
+                Write-Host 'Installing unrar via chocolatey...' -ForegroundColor Cyan
+                try {
+                    & choco install unrar -y
+                    Write-Host 'unrar installed successfully via chocolatey' -ForegroundColor Green
+                    
+                    # Try extraction again
+                    if (Get-Command unrar -ErrorAction SilentlyContinue) {
+                        Write-Host 'Using newly installed unrar to extract .EXE file' -ForegroundColor Green
+                        $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.IPSS3File) $extractionDir
+                        Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
+                    } else {
+                        Write-Error 'unrar still not available after installation'
+                        $global:LASTEXITCODE = 1
+                        throw 'unrar installation failed'
+                    }
+                } catch {
+                    Write-Error "Failed to install unrar via chocolatey: $_"
+                    $global:LASTEXITCODE = 1
+                    throw $_
+                }
+            }
+            else {
+                Write-Error 'Neither unrar nor chocolatey are available. Cannot extract .EXE file.'
+                Write-Error 'Please install unrar or chocolatey first.'
+                $global:LASTEXITCODE = 1
+                throw 'Unable to extract installer - missing unrar and chocolatey'
+            }
         }
     }
+    
+    Write-Host 'Extraction completed' -ForegroundColor Green
 
     # Determine node type using enhanced cluster detection
     # The unified config system now automatically detects which cluster this machine belongs to
@@ -217,7 +266,10 @@ function Install-IPS {
     }
     catch {
         Write-Error "Failed to generate response file: $_"
-        return
+        Write-Error "Template: $templateName"
+        Write-Error "Output path: .\IPS\ips_install.ini"
+        $global:LASTEXITCODE = 1
+        throw $_
     }
 
     # Clear pending file operations
@@ -225,10 +277,21 @@ function Install-IPS {
 
     # Verify setup.exe exists
     $setupExe = '.\IPS\setup.exe'
+    Write-Host "Checking for setup.exe at: $setupExe" -ForegroundColor Yellow
     if (-not(Test-Path $setupExe)) {
         Write-Error "IPS setup.exe not found at $($setupExe)"
-        return
+        Write-Host "Contents of IPS directory:" -ForegroundColor Yellow
+        if (Test-Path '.\IPS') {
+            Get-ChildItem '.\IPS' -Recurse | ForEach-Object {
+                Write-Host "  $($_.FullName)" -ForegroundColor Gray
+            }
+        } else {
+            Write-Host "  IPS directory does not exist" -ForegroundColor Red
+        }
+        $global:LASTEXITCODE = 1
+        throw 'IPS setup.exe not found after extraction'
     }
+    Write-Host "Found setup.exe successfully" -ForegroundColor Green
 
     # Create log file
     $logFile = '.\IPS\install_ips_unified.log'
@@ -324,6 +387,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     catch {
         Write-Error "Failed to execute Install-IPS: $_"
         Write-Error "Stack Trace: $($_.ScriptStackTrace)"
+        $global:LASTEXITCODE = 1
         exit 1
     }
 }

@@ -270,6 +270,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     catch {
         Write-Error "Failed to execute Test-DbCredentials: $_"
         Write-Error "Stack Trace: $($_.ScriptStackTrace)"
+        $global:LASTEXITCODE = 1
         exit 1
     }
 }

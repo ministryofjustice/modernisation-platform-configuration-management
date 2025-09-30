@@ -110,6 +110,14 @@ function Install-DataServices {
     Write-Host 'Data Services not found - proceeding with installation' -ForegroundColor Green
 
     $WorkingDirectory = $Config.WorkingDirectory
+    
+    # Create working directory if it doesn't exist
+    if (-not(Test-Path $WorkingDirectory)) {
+        Write-Host "Creating working directory: $WorkingDirectory" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
+        Write-Host "Working directory created successfully" -ForegroundColor Green
+    }
+    
     Set-Location -Path $WorkingDirectory
 
     # Download installer
@@ -118,24 +126,62 @@ function Install-DataServices {
     Get-Installer -Key $Config.DataServicesS3File -Destination ('.\' + $Config.DataServicesS3File) -Config $Config
     Write-Host "Download completed: $($Config.DataServicesS3File)" -ForegroundColor Green
 
+    # Create DataServices extraction directory
+    $extractionDir = '.\DataServices'
+    if (-not(Test-Path $extractionDir)) {
+        Write-Host "Creating extraction directory: $extractionDir" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $extractionDir -Force | Out-Null
+    }
+
     # Handle different extraction/execution methods based on file type and application
     Write-Host 'Preparing installer...' -ForegroundColor Cyan
     if ($Config.DataServicesS3File -match '\.ZIP$') {
         Write-Host 'Extracting ZIP archive...' -ForegroundColor Yellow
-        Expand-Archive -Path ('.\' + $Config.DataServicesS3File) -Destination '.\DataServices'
+        Expand-Archive -Path ('.\' + $Config.DataServicesS3File) -Destination $extractionDir
         $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
     }
     elseif ($Config.DataServicesS3File -match '\.EXE$') {
         if ($Config.application -eq 'delius-mis') {
             # For Delius MIS, extract with unrar
             Write-Host 'Extracting .EXE with unrar for MISDis...' -ForegroundColor Yellow
+            Write-Host 'Checking for unrar command...' -ForegroundColor Yellow
             if (Get-Command unrar -ErrorAction SilentlyContinue) {
-                unrar x -r -o+ -y ('.\' + $Config.DataServicesS3File) '.\DataServices'
+                Write-Host 'Using unrar to extract .EXE file' -ForegroundColor Green
+                $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.DataServicesS3File) $extractionDir
+                Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
                 $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
             }
             else {
-                Write-Warning 'unrar not available. Please install unrar first.'
-                return
+                Write-Host 'unrar not available. Installing unrar...' -ForegroundColor Yellow
+                
+                # Try to install unrar using chocolatey if available
+                if (Get-Command choco -ErrorAction SilentlyContinue) {
+                    Write-Host 'Installing unrar via chocolatey...' -ForegroundColor Cyan
+                    try {
+                        & choco install unrar -y
+                        Write-Host 'unrar installed successfully via chocolatey' -ForegroundColor Green
+                        
+                        # Try extraction again
+                        if (Get-Command unrar -ErrorAction SilentlyContinue) {
+                            Write-Host 'Using newly installed unrar to extract .EXE file' -ForegroundColor Green
+                            $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.DataServicesS3File) $extractionDir
+                            Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
+                            $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
+                        } else {
+                            Write-Error 'unrar still not available after installation'
+                            return
+                        }
+                    } catch {
+                        Write-Error "Failed to install unrar via chocolatey: $_"
+                        return
+                    }
+                }
+                else {
+                    Write-Error 'Neither unrar nor chocolatey are available. Cannot extract .EXE file.'
+                    Write-Error 'Please install unrar or chocolatey first.'
+                    $global:LASTEXITCODE = 1
+                    throw 'Unable to extract installer - missing unrar and chocolatey'
+                }
             }
         }
         else {
@@ -148,12 +194,25 @@ function Install-DataServices {
         Write-Error "Unknown Data Services file format: $($Config.DataServicesS3File)"
         return
     }
+    
+    Write-Host 'Installer preparation completed' -ForegroundColor Green
 
     # Verify installer exists
+    Write-Host "Checking for installer at: $dataServicesInstallerFilePath" -ForegroundColor Yellow
     if (-not(Test-Path $dataServicesInstallerFilePath)) {
         Write-Error "Data Services installer not found at $dataServicesInstallerFilePath"
-        return
+        Write-Host "Contents of DataServices directory:" -ForegroundColor Yellow
+        if (Test-Path '.\DataServices') {
+            Get-ChildItem '.\DataServices' -Recurse | ForEach-Object {
+                Write-Host "  $($_.FullName)" -ForegroundColor Gray
+            }
+        } else {
+            Write-Host "  DataServices directory does not exist" -ForegroundColor Red
+        }
+        $global:LASTEXITCODE = 1
+        throw 'Data Services installer not found after extraction'
     }
+    Write-Host "Found installer successfully" -ForegroundColor Green
 
     # Set environment variables
     Write-Host 'Setting environment variables...' -ForegroundColor Cyan
@@ -229,7 +288,10 @@ function Install-DataServices {
     }
     catch {
         Write-Error "Failed to generate response file: $_"
-        return
+        Write-Error "Template: $templateName"
+        Write-Error "Output path: .\ds_install.ini"
+        $global:LASTEXITCODE = 1
+        throw $_
     }
 
     # Create log file
@@ -364,6 +426,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     catch {
         Write-Error "Failed to execute Install-DataServices: $_"
         Write-Error "Stack Trace: $($_.ScriptStackTrace)"
+        $global:LASTEXITCODE = 1
         exit 1
     }
 }
