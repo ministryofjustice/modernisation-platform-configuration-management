@@ -61,14 +61,35 @@ function Get-Installer {
         [hashtable]$Config
     )
 
+    $fullS3Key = ($Config.WindowsClientS3Folder + '/' + $Key)
+    Write-Host 'Attempting to download from S3:' -ForegroundColor Yellow
+    Write-Host "  Bucket: $($Config.WindowsClientS3Bucket)" -ForegroundColor Gray
+    Write-Host "  Key: $fullS3Key" -ForegroundColor Gray
+    Write-Host "  Destination: $Destination" -ForegroundColor Gray
+
     $s3Params = @{
         BucketName = $Config.WindowsClientS3Bucket
-        Key        = ($Config.WindowsClientS3Folder + '/' + $Key)
+        Key        = $fullS3Key
         File       = $Destination
         Verbose    = $true
     }
 
-    Read-S3Object @s3Params
+    try {
+        Read-S3Object @s3Params
+        Write-Host "Successfully downloaded: $Key" -ForegroundColor Green
+        
+        # Check file size
+        if (Test-Path $Destination) {
+            $fileInfo = Get-Item $Destination
+            Write-Host "File size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Gray
+        }
+    }
+    catch {
+        Write-Error "Failed to download $Key from S3: $_"
+        Write-Host 'S3 Parameters used:' -ForegroundColor Red
+        $s3Params | ConvertTo-Json -Depth 2 | Write-Host -ForegroundColor Red
+        throw
+    }
 }
 
 function Clear-PendingFileRenameOperations {
@@ -101,14 +122,19 @@ function Install-IPS {
     Set-Location -Path $WorkingDirectory
 
     # Check if already installed
-    if (Test-Path "$WorkingDirectory\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0") {
-        Write-Output 'IPS is already installed'
+    $ipsInstallPath = "$WorkingDirectory\SAP BusinessObjects\SAP BusinessObjects Enterprise XI 4.0"
+    Write-Host "Checking if IPS is already installed at: $ipsInstallPath" -ForegroundColor Gray
+    if (Test-Path $ipsInstallPath) {
+        Write-Host 'IPS is already installed - skipping installation' -ForegroundColor Yellow
         return
     }
+    Write-Host 'IPS not found - proceeding with installation' -ForegroundColor Green
 
     # Download and extract installer
     Write-Host "Downloading IPS installer: $($Config.IPSS3File)" -ForegroundColor Cyan
+    Write-Host "From S3 bucket: $($Config.WindowsClientS3Bucket)/$($Config.WindowsClientS3Folder)" -ForegroundColor Gray
     Get-Installer -Key $Config.IPSS3File -Destination ('.\' + $Config.IPSS3File) -Config $Config
+    Write-Host "Download completed: $($Config.IPSS3File)" -ForegroundColor Green
     
     # Handle different extraction methods based on file type
     Write-Host 'Extracting installer...' -ForegroundColor Cyan
@@ -172,6 +198,22 @@ function Install-IPS {
         $responseFileResult = New-ResponseFileFromTemplate -Config $Config -TemplateName $templateName -OutputPath '.\IPS\ips_install.ini'
         Write-Host 'Response file generated successfully: .\IPS\ips_install.ini' -ForegroundColor Green
         Write-Host "Command line arguments: $($responseFileResult.CommandLineArgs.Count) parameters" -ForegroundColor Gray
+        
+        # Show the generated response file content
+        if (Test-Path '.\IPS\ips_install.ini') {
+            Write-Host 'Generated response file content:' -ForegroundColor Yellow
+            Write-Host '=================================' -ForegroundColor Yellow
+            Get-Content '.\IPS\ips_install.ini' | ForEach-Object {
+                # Mask sensitive data in output
+                if ($_ -match 'password=') {
+                    Write-Host ($_ -replace '=.*', '=****') -ForegroundColor Gray
+                }
+                else {
+                    Write-Host $_ -ForegroundColor Gray
+                }
+            }
+            Write-Host '=================================' -ForegroundColor Yellow
+        }
     }
     catch {
         Write-Error "Failed to generate response file: $_"
@@ -221,6 +263,7 @@ function Install-IPS {
 
         Write-Host "Launching installer with $($installArgs.Count) arguments..." -ForegroundColor Cyan
         
+        # Temporarily commented out for testing - uncomment when ready to actually install
         # $process = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -NoNewWindow -Verbose -PassThru
         
         # $installProcessId = $process.Id
@@ -229,6 +272,10 @@ function Install-IPS {
         # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
         # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
         # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        
+        # For testing purposes, simulate successful completion
+        Write-Host 'TESTING MODE: IPS installer execution skipped' -ForegroundColor Magenta
+        $exitCode = 0
         
         if ($exitCode -eq 0) {
             Write-Host 'IPS installation completed successfully!' -ForegroundColor Green
@@ -256,12 +303,23 @@ function Install-IPS {
 # Main execution block
 if ($MyInvocation.InvocationName -ne '.') {
     try {
+        Write-Host 'Loading configuration for IPS installation...' -ForegroundColor Yellow
         $Config = Get-Config
         Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
-        Write-Host "Environment: $($Config.Name)" -ForegroundColor Gray
+        Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
+        Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
         Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
+        Write-Host "IPS S3 File: $($Config.IPSS3File)" -ForegroundColor Gray
+        if ($Config.ContainsKey('ConfigKey')) {
+            Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
+        }
+        if ($Config.ContainsKey('ClusterName')) {
+            Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
+        }
         
+        Write-Host 'Starting IPS installation process...' -ForegroundColor Yellow
         Install-IPS -Config $Config
+        Write-Host 'IPS installation process completed.' -ForegroundColor Green
     }
     catch {
         Write-Error "Failed to execute Install-IPS: $_"

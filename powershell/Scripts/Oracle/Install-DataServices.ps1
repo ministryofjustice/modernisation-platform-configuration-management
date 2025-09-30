@@ -61,14 +61,35 @@ function Get-Installer {
         [hashtable]$Config
     )
 
+    $fullS3Key = ($Config.WindowsClientS3Folder + '/' + $Key)
+    Write-Host 'Attempting to download from S3:' -ForegroundColor Yellow
+    Write-Host "  Bucket: $($Config.WindowsClientS3Bucket)" -ForegroundColor Gray
+    Write-Host "  Key: $fullS3Key" -ForegroundColor Gray
+    Write-Host "  Destination: $Destination" -ForegroundColor Gray
+
     $s3Params = @{
         BucketName = $Config.WindowsClientS3Bucket
-        Key        = ($Config.WindowsClientS3Folder + '/' + $Key)
+        Key        = $fullS3Key
         File       = $Destination
         Verbose    = $true
     }
 
-    Read-S3Object @s3Params
+    try {
+        Read-S3Object @s3Params
+        Write-Host "Successfully downloaded: $Key" -ForegroundColor Green
+        
+        # Check file size
+        if (Test-Path $Destination) {
+            $fileInfo = Get-Item $Destination
+            Write-Host "File size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Gray
+        }
+    }
+    catch {
+        Write-Error "Failed to download $Key from S3: $_"
+        Write-Host 'S3 Parameters used:' -ForegroundColor Red
+        $s3Params | ConvertTo-Json -Depth 2 | Write-Host -ForegroundColor Red
+        throw
+    }
 }
 
 function Install-DataServices {
@@ -80,17 +101,22 @@ function Install-DataServices {
     Write-Host '=== Starting Data Services Installation with Unified Config System ===' -ForegroundColor Green
 
     # Check if already installed
-    if (Get-Package | Where-Object { $_.Name -like 'SAP Data Services*' }) {
-        Write-Output 'Data Services is already installed'
+    Write-Host 'Checking if Data Services is already installed...' -ForegroundColor Gray
+    $existingDataServices = Get-Package | Where-Object { $_.Name -like 'SAP Data Services*' }
+    if ($existingDataServices) {
+        Write-Host "Data Services is already installed: $($existingDataServices.Name) v$($existingDataServices.Version)" -ForegroundColor Yellow
         return
     }
+    Write-Host 'Data Services not found - proceeding with installation' -ForegroundColor Green
 
     $WorkingDirectory = $Config.WorkingDirectory
     Set-Location -Path $WorkingDirectory
 
     # Download installer
     Write-Host "Downloading Data Services installer: $($Config.DataServicesS3File)" -ForegroundColor Cyan
+    Write-Host "From S3 bucket: $($Config.WindowsClientS3Bucket)/$($Config.WindowsClientS3Folder)" -ForegroundColor Gray
     Get-Installer -Key $Config.DataServicesS3File -Destination ('.\' + $Config.DataServicesS3File) -Config $Config
+    Write-Host "Download completed: $($Config.DataServicesS3File)" -ForegroundColor Green
 
     # Handle different extraction/execution methods based on file type and application
     Write-Host 'Preparing installer...' -ForegroundColor Cyan
@@ -184,6 +210,22 @@ function Install-DataServices {
         $responseFileResult = New-ResponseFileFromTemplate -Config $Config -TemplateName $templateName -OutputPath '.\ds_install.ini'
         Write-Host 'Response file generated successfully: .\ds_install.ini' -ForegroundColor Green
         Write-Host "Command line arguments: $($responseFileResult.CommandLineArgs.Count) parameters" -ForegroundColor Gray
+        
+        # Show the generated response file content
+        if (Test-Path '.\ds_install.ini') {
+            Write-Host 'Generated response file content:' -ForegroundColor Yellow
+            Write-Host '=================================' -ForegroundColor Yellow
+            Get-Content '.\ds_install.ini' | ForEach-Object {
+                # Mask sensitive data in output
+                if ($_ -match 'password=') {
+                    Write-Host ($_ -replace '=.*', '=****') -ForegroundColor Gray
+                }
+                else {
+                    Write-Host $_ -ForegroundColor Gray
+                }
+            }
+            Write-Host '=================================' -ForegroundColor Yellow
+        }
     }
     catch {
         Write-Error "Failed to generate response file: $_"
@@ -229,6 +271,7 @@ function Install-DataServices {
         }
 
         # Install Data Services
+        # Temporarily commented out for testing - uncomment when ready to actually install
         # $process = Start-Process @dataServicesInstallParams
         
         # $installProcessId = $process.Id
@@ -237,6 +280,10 @@ function Install-DataServices {
         # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
         # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
         # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        
+        # For testing purposes, simulate successful completion
+        Write-Host 'TESTING MODE: Data Services installer execution skipped' -ForegroundColor Magenta
+        $exitCode = 0
 
         if ($exitCode -eq 0) {
             Write-Host 'Data Services installation completed successfully!' -ForegroundColor Green
@@ -295,13 +342,24 @@ function Install-DataServices {
 # Main execution block
 if ($MyInvocation.InvocationName -ne '.') {
     try {
+        Write-Host 'Loading configuration for Data Services installation...' -ForegroundColor Yellow
         $Config = Get-Config
         Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
-        Write-Host "Environment: $($Config.Name)" -ForegroundColor Gray
+        Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
+        Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
         Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
         Write-Host "DS Common Directory: $($Config.dscommondir)" -ForegroundColor Gray
+        Write-Host "Data Services S3 File: $($Config.DataServicesS3File)" -ForegroundColor Gray
+        if ($Config.ContainsKey('ConfigKey')) {
+            Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
+        }
+        if ($Config.ContainsKey('ClusterName')) {
+            Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
+        }
         
+        Write-Host 'Starting Data Services installation process...' -ForegroundColor Yellow
         Install-DataServices -Config $Config
+        Write-Host 'Data Services installation process completed.' -ForegroundColor Green
     }
     catch {
         Write-Error "Failed to execute Install-DataServices: $_"

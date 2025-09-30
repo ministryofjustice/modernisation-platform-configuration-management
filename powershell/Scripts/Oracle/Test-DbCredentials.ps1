@@ -110,41 +110,69 @@ function Test-DbCredentials {
     if ($Config.ContainsKey('ClusterName')) {
         Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Cyan
     }
+    
+    Write-Host "Oracle Home: $($Config.ORACLE_19C_HOME)" -ForegroundColor Gray
 
     # Check database credentials BEFORE installer runs
     $typePath = "$($Config.ORACLE_19C_HOME)\ODP.NET\bin\4\Oracle.DataAccess.dll"
+
+    Write-Host 'Checking Oracle client installation...' -ForegroundColor Yellow
+    Write-Host "Oracle Home: $($Config.ORACLE_19C_HOME)" -ForegroundColor Gray
+    Write-Host "Expected DLL path: $typePath" -ForegroundColor Gray
 
     # Verify Oracle client DLL exists
     if (-not (Test-Path $typePath)) {
         Write-Error "Oracle Data Access DLL not found at: $typePath"
         Write-Error "Please ensure Oracle Client is installed at: $($Config.ORACLE_19C_HOME)"
+        
+        # Check if Oracle home directory exists
+        if (Test-Path $Config.ORACLE_19C_HOME) {
+            Write-Host 'Oracle home directory exists, checking contents...' -ForegroundColor Yellow
+            $oracleContents = Get-ChildItem $Config.ORACLE_19C_HOME -ErrorAction SilentlyContinue
+            Write-Host "Oracle home contains: $($oracleContents.Name -join ', ')" -ForegroundColor Gray
+        }
+        else {
+            Write-Error "Oracle home directory does not exist: $($Config.ORACLE_19C_HOME)"
+        }
         return 1
     }
 
-    Write-Host "Using Oracle client DLL: $typePath" -ForegroundColor Gray
+    Write-Host "Oracle client DLL found successfully: $typePath" -ForegroundColor Green
 
     # Get database credentials using unified system
     try {
         Write-Host 'Retrieving database credentials from unified config...' -ForegroundColor Yellow
+        Write-Host "System DB User: $($Config.DatabaseConfig.sysDbUser)" -ForegroundColor Gray
+        Write-Host "System DB Name: $($Config.DatabaseConfig.sysDbName)" -ForegroundColor Gray
+        Write-Host "Audit DB User: $($Config.DatabaseConfig.audDbUser)" -ForegroundColor Gray
+        Write-Host "Audit DB Name: $($Config.DatabaseConfig.audDbName)" -ForegroundColor Gray
         
         # Get system database password
+        Write-Host "Retrieving password for system DB user: $($Config.DatabaseConfig.sysDbUser)" -ForegroundColor Yellow
         $sysDbPassword = Get-SecretValueUnified -Config $Config -SecretType 'sys_db' -SecretKey $Config.DatabaseConfig.sysDbUser -TestMode:$TestMode
         if (-not $sysDbPassword) {
             Write-Error "Failed to retrieve system database password for user: $($Config.DatabaseConfig.sysDbUser)"
             return 1
         }
+        Write-Host 'Successfully retrieved system DB password' -ForegroundColor Green
 
         # Get audit database password
+        Write-Host "Retrieving password for audit DB user: $($Config.DatabaseConfig.audDbUser)" -ForegroundColor Yellow
         $audDbPassword = Get-SecretValueUnified -Config $Config -SecretType 'aud_db' -SecretKey $Config.DatabaseConfig.audDbUser -TestMode:$TestMode
         if (-not $audDbPassword) {
             Write-Error "Failed to retrieve audit database password for user: $($Config.DatabaseConfig.audDbUser)"
             return 1
         }
+        Write-Host 'Successfully retrieved audit DB password' -ForegroundColor Green
 
-        Write-Host 'Successfully retrieved credentials from secrets manager' -ForegroundColor Green
+        Write-Host 'Successfully retrieved all credentials from secrets manager' -ForegroundColor Green
     }
     catch {
         Write-Error "Failed to retrieve database credentials: $_"
+        Write-Error "Exception details: $($_.Exception.Message)"
+        if ($_.Exception.InnerException) {
+            Write-Error "Inner exception: $($_.Exception.InnerException.Message)"
+        }
         return 1
     }
 
@@ -214,12 +242,21 @@ if ($MyInvocation.InvocationName -ne '.') {
     try {
         Write-Host '=== Database Credentials Test - Unified Config System ===' -ForegroundColor Magenta
         
+        Write-Host 'Loading configuration...' -ForegroundColor Yellow
         $Config = Get-Config
         Write-Host 'Configuration loaded successfully' -ForegroundColor Green
         Write-Host "Application: $($Config.application)" -ForegroundColor Gray
         Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
+        Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
+        if ($Config.ContainsKey('ConfigKey')) {
+            Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
+        }
+        if ($Config.ContainsKey('ClusterName')) {
+            Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
+        }
         
         # Test database credentials
+        Write-Host 'Starting database credentials test...' -ForegroundColor Yellow
         $exitCode = Test-DbCredentials -Config $Config
         
         if ($exitCode -eq 0) {
