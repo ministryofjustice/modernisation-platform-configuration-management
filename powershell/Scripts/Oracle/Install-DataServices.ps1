@@ -115,7 +115,7 @@ function Install-DataServices {
     if (-not(Test-Path $WorkingDirectory)) {
         Write-Host "Creating working directory: $WorkingDirectory" -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
-        Write-Host "Working directory created successfully" -ForegroundColor Green
+        Write-Host 'Working directory created successfully' -ForegroundColor Green
     }
     
     Set-Location -Path $WorkingDirectory
@@ -167,11 +167,13 @@ function Install-DataServices {
                             $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.DataServicesS3File) $extractionDir
                             Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
                             $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
-                        } else {
+                        }
+                        else {
                             Write-Error 'unrar still not available after installation'
                             return
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Error "Failed to install unrar via chocolatey: $_"
                         return
                     }
@@ -201,18 +203,19 @@ function Install-DataServices {
     Write-Host "Checking for installer at: $dataServicesInstallerFilePath" -ForegroundColor Yellow
     if (-not(Test-Path $dataServicesInstallerFilePath)) {
         Write-Error "Data Services installer not found at $dataServicesInstallerFilePath"
-        Write-Host "Contents of DataServices directory:" -ForegroundColor Yellow
+        Write-Host 'Contents of DataServices directory:' -ForegroundColor Yellow
         if (Test-Path '.\DataServices') {
             Get-ChildItem '.\DataServices' -Recurse | ForEach-Object {
                 Write-Host "  $($_.FullName)" -ForegroundColor Gray
             }
-        } else {
-            Write-Host "  DataServices directory does not exist" -ForegroundColor Red
+        }
+        else {
+            Write-Host '  DataServices directory does not exist' -ForegroundColor Red
         }
         $global:LASTEXITCODE = 1
         throw 'Data Services installer not found after extraction'
     }
-    Write-Host "Found installer successfully" -ForegroundColor Green
+    Write-Host 'Found installer successfully' -ForegroundColor Green
 
     # Set environment variables
     Write-Host 'Setting environment variables...' -ForegroundColor Cyan
@@ -289,7 +292,7 @@ function Install-DataServices {
     catch {
         Write-Error "Failed to generate response file: $_"
         Write-Error "Template: $templateName"
-        Write-Error "Output path: .\ds_install.ini"
+        Write-Error 'Output path: .\ds_install.ini'
         $global:LASTEXITCODE = 1
         throw $_
     }
@@ -402,31 +405,37 @@ function Install-DataServices {
 }
 
 # Main execution block
-if ($MyInvocation.InvocationName -ne '.') {
-    try {
-        Write-Host 'Loading configuration for Data Services installation...' -ForegroundColor Yellow
-        $Config = Get-Config
-        Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
-        Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
-        Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
-        Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
-        Write-Host "DS Common Directory: $($Config.dscommondir)" -ForegroundColor Gray
-        Write-Host "Data Services S3 File: $($Config.DataServicesS3File)" -ForegroundColor Gray
-        if ($Config.ContainsKey('ConfigKey')) {
-            Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
-        }
-        if ($Config.ContainsKey('ClusterName')) {
-            Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
-        }
-        
-        Write-Host 'Starting Data Services installation process...' -ForegroundColor Yellow
-        Install-DataServices -Config $Config
-        Write-Host 'Data Services installation process completed.' -ForegroundColor Green
+try {
+    Write-Host 'Loading configuration for Data Services installation...' -ForegroundColor Yellow
+    $Config = Get-Config
+    Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
+    Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
+    Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
+    Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
+    Write-Host "DS Common Directory: $($Config.dscommondir)" -ForegroundColor Gray
+    Write-Host "Data Services S3 File: $($Config.DataServicesS3File)" -ForegroundColor Gray
+    if ($Config.ContainsKey('ConfigKey')) {
+        Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
     }
-    catch {
-        Write-Error "Failed to execute Install-DataServices: $_"
-        Write-Error "Stack Trace: $($_.ScriptStackTrace)"
-        $global:LASTEXITCODE = 1
-        exit 1
+    if ($Config.ContainsKey('ClusterName')) {
+        Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
     }
+    
+    Write-Host 'Starting Data Services installation process...' -ForegroundColor Yellow
+    Install-DataServices -Config $Config
+    Write-Host 'Data Services installation process completed.' -ForegroundColor Green
+    $global:LASTEXITCODE = 0
+}
+catch {
+    $errorMessage = "Failed to execute Install-DataServices: $($_.Exception.Message)"
+    Write-Error $errorMessage -ErrorAction Continue
+    if ($_.ScriptStackTrace) {
+        Write-Host 'Stack Trace:' -ForegroundColor Red
+        $_.ScriptStackTrace.Split([Environment]::NewLine) | ForEach-Object {
+            if ($_ -ne '') {
+                Write-Host "  $_" -ForegroundColor DarkRed
+            }
+        }
+    }
+    $global:LASTEXITCODE = 1
 }

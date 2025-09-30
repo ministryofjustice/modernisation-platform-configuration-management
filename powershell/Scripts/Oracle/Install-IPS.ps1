@@ -124,7 +124,7 @@ function Install-IPS {
     if (-not(Test-Path $WorkingDirectory)) {
         Write-Host "Creating working directory: $WorkingDirectory" -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $WorkingDirectory -Force | Out-Null
-        Write-Host "Working directory created successfully" -ForegroundColor Green
+        Write-Host 'Working directory created successfully' -ForegroundColor Green
     }
     
     Set-Location -Path $WorkingDirectory
@@ -172,7 +172,7 @@ function Install-IPS {
             if (Get-Command choco -ErrorAction SilentlyContinue) {
                 Write-Host 'Installing unrar via chocolatey...' -ForegroundColor Cyan
                 try {
-                    & choco install unrar -y
+                    & choco install winrar -y
                     Write-Host 'unrar installed successfully via chocolatey' -ForegroundColor Green
                     
                     # Try extraction again
@@ -180,12 +180,14 @@ function Install-IPS {
                         Write-Host 'Using newly installed unrar to extract .EXE file' -ForegroundColor Green
                         $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.IPSS3File) $extractionDir
                         Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
-                    } else {
+                    }
+                    else {
                         Write-Error 'unrar still not available after installation'
                         $global:LASTEXITCODE = 1
                         throw 'unrar installation failed'
                     }
-                } catch {
+                }
+                catch {
                     Write-Error "Failed to install unrar via chocolatey: $_"
                     $global:LASTEXITCODE = 1
                     throw $_
@@ -267,7 +269,7 @@ function Install-IPS {
     catch {
         Write-Error "Failed to generate response file: $_"
         Write-Error "Template: $templateName"
-        Write-Error "Output path: .\IPS\ips_install.ini"
+        Write-Error 'Output path: .\IPS\ips_install.ini'
         $global:LASTEXITCODE = 1
         throw $_
     }
@@ -280,18 +282,19 @@ function Install-IPS {
     Write-Host "Checking for setup.exe at: $setupExe" -ForegroundColor Yellow
     if (-not(Test-Path $setupExe)) {
         Write-Error "IPS setup.exe not found at $($setupExe)"
-        Write-Host "Contents of IPS directory:" -ForegroundColor Yellow
+        Write-Host 'Contents of IPS directory:' -ForegroundColor Yellow
         if (Test-Path '.\IPS') {
             Get-ChildItem '.\IPS' -Recurse | ForEach-Object {
                 Write-Host "  $($_.FullName)" -ForegroundColor Gray
             }
-        } else {
-            Write-Host "  IPS directory does not exist" -ForegroundColor Red
+        }
+        else {
+            Write-Host '  IPS directory does not exist' -ForegroundColor Red
         }
         $global:LASTEXITCODE = 1
         throw 'IPS setup.exe not found after extraction'
     }
-    Write-Host "Found setup.exe successfully" -ForegroundColor Green
+    Write-Host 'Found setup.exe successfully' -ForegroundColor Green
 
     # Create log file
     $logFile = '.\IPS\install_ips_unified.log'
@@ -351,43 +354,51 @@ function Install-IPS {
     catch {
         $exception = $_.Exception
         $errorMsg = "Failed to start installer at $(Get-Date): $($exception.Message)"
-        Write-Error $errorMsg
+        Write-Error $errorMsg -ErrorAction Continue
         
         $errorMsg | Out-File -FilePath $logFile -Append
         if ($exception.InnerException) {
             "Inner Exception: $($exception.InnerException.Message)" | Out-File -FilePath $logFile -Append
         }
         "Stack Trace: $($_.ScriptStackTrace)" | Out-File -FilePath $logFile -Append
+        $global:LASTEXITCODE = 1
+        return
     }
     
     Write-Host "IPS installation process completed. Check log file: $logFile" -ForegroundColor Yellow
 }
 
 # Main execution block
-if ($MyInvocation.InvocationName -ne '.') {
-    try {
-        Write-Host 'Loading configuration for IPS installation...' -ForegroundColor Yellow
-        $Config = Get-Config
-        Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
-        Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
-        Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
-        Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
-        Write-Host "IPS S3 File: $($Config.IPSS3File)" -ForegroundColor Gray
-        if ($Config.ContainsKey('ConfigKey')) {
-            Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
-        }
-        if ($Config.ContainsKey('ClusterName')) {
-            Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
-        }
-        
-        Write-Host 'Starting IPS installation process...' -ForegroundColor Yellow
-        Install-IPS -Config $Config
-        Write-Host 'IPS installation process completed.' -ForegroundColor Green
+try {
+    Write-Host 'Loading configuration for IPS installation...' -ForegroundColor Yellow
+    $Config = Get-Config
+    Write-Host "Configuration loaded for: $($Config.application)" -ForegroundColor Green
+    Write-Host "Environment: $($Config.EnvironmentName)" -ForegroundColor Gray
+    Write-Host "Machine Name: $($Config.Name)" -ForegroundColor Gray
+    Write-Host "Working Directory: $($Config.WorkingDirectory)" -ForegroundColor Gray
+    Write-Host "IPS S3 File: $($Config.IPSS3File)" -ForegroundColor Gray
+    if ($Config.ContainsKey('ConfigKey')) {
+        Write-Host "Config Key: $($Config.ConfigKey)" -ForegroundColor Gray
     }
-    catch {
-        Write-Error "Failed to execute Install-IPS: $_"
-        Write-Error "Stack Trace: $($_.ScriptStackTrace)"
-        $global:LASTEXITCODE = 1
-        exit 1
+    if ($Config.ContainsKey('ClusterName')) {
+        Write-Host "Cluster: $($Config.ClusterName)" -ForegroundColor Gray
     }
+    
+    Write-Host 'Starting IPS installation process...' -ForegroundColor Yellow
+    Install-IPS -Config $Config
+    Write-Host 'IPS installation process completed.' -ForegroundColor Green
+    $global:LASTEXITCODE = 0
+}
+catch {
+    $errorMessage = "Failed to execute Install-IPS: $($_.Exception.Message)"
+    Write-Error $errorMessage -ErrorAction Continue
+    if ($_.ScriptStackTrace) {
+        Write-Host 'Stack Trace:' -ForegroundColor Red
+        $_.ScriptStackTrace.Split([Environment]::NewLine) | ForEach-Object {
+            if ($_ -ne '') {
+                Write-Host "  $_" -ForegroundColor DarkRed
+            }
+        }
+    }
+    $global:LASTEXITCODE = 1
 }
