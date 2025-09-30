@@ -81,8 +81,6 @@ $GlobalConfig = @{
     "GatewayExternalFqdn" = "rdgateway1.hmpps-domain.service.justice.gov.uk"
     "SessionHostServers"  = @(
       "PD-CAFM-A-11-A.AZURE.HMPP.ROOT",
-      "PD-CAFM-A-12-B.AZURE.HMPP.ROOT",
-      "PD-CAFM-A-13-A.AZURE.HMPP.ROOT",
       "PD-CAFM-A-14-B.AZURE.HMPP.ROOT",
       "PD-CAFM-A-15-A.AZURE.HMPP.ROOT",
       "PD-JUMP2022-1.AZURE.HMPP.ROOT"
