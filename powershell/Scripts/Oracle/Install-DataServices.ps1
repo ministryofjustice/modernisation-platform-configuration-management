@@ -314,10 +314,25 @@ function Install-DataServices {
         "Installer Path: $dataServicesInstallerFilePath" | Out-File -FilePath $logFile -Append
         '' | Out-File -FilePath $logFile -Append
 
-        # Get required password values from secrets
+        # Get required password values from secrets using existing configuration structure
         Write-Host 'Retrieving password values from secrets...' -ForegroundColor Cyan
-        $bods_admin_password = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey 'IPS_Administrator_LCMS_Administrator'
-        $service_user_password = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey $Config.serviceUser
+        
+        # Determine secret ID and key based on configuration structure
+        if ($Config.SecretConfig.ContainsKey('secretIds') -and $Config.SecretConfig.ContainsKey('secretKeys')) {
+            # MISDis-style explicit configuration
+            $bodsSecretId = $Config.SecretConfig.secretIds.serviceAccounts
+            $bodsAdminPasswordKey = $Config.SecretConfig.secretKeys.bodsAdminPassword
+            $serviceUserPasswordKey = $Config.SecretConfig.secretKeys.serviceUserPassword
+        }
+        else {
+            # NCR/ONR-style pattern-based configuration
+            $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
+            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key name
+            $serviceUserPasswordKey = $Config.ServiceConfig.serviceUser  # Use service user name as key
+        }
+        
+        $bods_admin_password = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
+        $service_user_password = Get-SecretValue -SecretId $bodsSecretId -SecretKey $serviceUserPasswordKey
         
         # Build installer arguments with password values
         $installArgs = @('-q', '-r', '.\ds_install.ini', "cmspassword=$bods_admin_password", "dscmspassword=$bods_admin_password", "dslogininfothispassword=$service_user_password") + $responseFileResult.CommandLineArgs

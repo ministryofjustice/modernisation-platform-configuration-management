@@ -23,7 +23,13 @@ $ApplicationConfig = @{
         
         # NCR uses standard secret pattern (not misdis)
         'SecretConfig'          = @{
-            'secretPattern' = 'standard'
+            'secretPattern'  = 'standard'
+            'secretMappings' = @{
+                'bodsSecretName'  = '/sap/bods/{dbenv}/passwords'
+                'bodsConfigName'  = '/sap/bods/{dbenv}/config'
+                'sysDbSecretName' = '/oracle/database/{sysDbName}/passwords'
+                'audDbSecretName' = '/oracle/database/{audDbName}/passwords'
+            }
         }
         
         # NCR-specific database users (same as ONR)

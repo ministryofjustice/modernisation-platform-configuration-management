@@ -315,21 +315,42 @@ function Install-IPS {
         "Template Used: $templateName" | Out-File -FilePath $logFile -Append
         '' | Out-File -FilePath $logFile -Append
         
-        # Get required password values from secrets
+        # Get required password values from secrets using existing configuration structure
         Write-Host 'Retrieving password values from secrets...' -ForegroundColor Cyan
+        
+        # Determine secret ID and key based on configuration structure
+        if ($Config.SecretConfig.ContainsKey('secretIds') -and $Config.SecretConfig.ContainsKey('secretKeys')) {
+            # MISDis-style explicit configuration
+            $bodsSecretId = $Config.SecretConfig.secretIds.serviceAccounts
+            $bodsAdminPasswordKey = $Config.SecretConfig.secretKeys.bodsAdminPassword
+            $sysDbSecretId = $Config.SecretConfig.secretIds.sysDbSecrets
+            $audDbSecretId = $Config.SecretConfig.secretIds.audDbSecrets
+            $sysDbPasswordKey = $Config.SecretConfig.secretKeys.sysDbUserPassword
+            $audDbPasswordKey = $Config.SecretConfig.secretKeys.audDbUserPassword
+        }
+        else {
+            # NCR/ONR-style pattern-based configuration - use Get-SecretValueUnified function from unified config system
+            $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
+            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key name
+            $sysDbSecretId = $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName
+            $audDbSecretId = $Config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $Config.DatabaseConfig.audDbName
+            $sysDbPasswordKey = $Config.DatabaseConfig.sysDbUser
+            $audDbPasswordKey = $Config.DatabaseConfig.audDbUser
+        }
+        
         if ($nodeType -eq 'primary') {
             # Primary node needs CMS, auditing, and CMS DB passwords
-            $bods_cluster_key = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey "IPS_Administrator_LCMS_Administrator"
-            $bods_ips_audit_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsAuditOwnerKey
-            $bods_ips_system_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsCmsOwnerKey
+            $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
+            $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretId -SecretKey $audDbPasswordKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for primary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
         }
         else {
             # Secondary node needs remote CMS admin and CMS DB passwords
-            $bods_cluster_key = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey "IPS_Administrator_LCMS_Administrator"
-            $bods_ips_system_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsCmsOwnerKey
+            $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for secondary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
