@@ -92,6 +92,37 @@ function Get-Installer {
     }
 }
 
+function Get-SecretValue {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId,
+        [Parameter(Mandatory)]
+        [string]$SecretKey
+    )
+
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        $secretObject = $secretJson | ConvertFrom-Json
+
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
+
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
+
 function Install-DataServices {
     param (
         [Parameter(Mandatory)]
@@ -283,8 +314,13 @@ function Install-DataServices {
         "Installer Path: $dataServicesInstallerFilePath" | Out-File -FilePath $logFile -Append
         '' | Out-File -FilePath $logFile -Append
 
-        # Build installer arguments
-        $installArgs = @('-q', '-r', '.\ds_install.ini') + $responseFileResult.CommandLineArgs
+        # Get required password values from secrets
+        Write-Host 'Retrieving password values from secrets...' -ForegroundColor Cyan
+        $bods_admin_password = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey 'IPS_Administrator_LCMS_Administrator'
+        $service_user_password = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey $Config.serviceUser
+        
+        # Build installer arguments with password values
+        $installArgs = @('-q', '-r', '.\ds_install.ini', "cmspassword=$bods_admin_password", "dscmspassword=$bods_admin_password", "dslogininfothispassword=$service_user_password") + $responseFileResult.CommandLineArgs
         
         'Installer Arguments (sensitive data masked):' | Out-File -FilePath $logFile -Append
         $installArgs | ForEach-Object { 
@@ -308,19 +344,18 @@ function Install-DataServices {
         }
 
         # Install Data Services
-        # Temporarily commented out for testing - uncomment when ready to actually install
-        # $process = Start-Process @dataServicesInstallParams
+        $process = Start-Process @dataServicesInstallParams
         
-        # $installProcessId = $process.Id
-        # $exitCode = $process.ExitCode
+        $installProcessId = $process.Id
+        $exitCode = $process.ExitCode
         
-        # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
-        # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
-        # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
+        "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
+        "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
         
         # For testing purposes, simulate successful completion
-        Write-Host 'TESTING MODE: Data Services installer execution skipped' -ForegroundColor Magenta
-        $exitCode = 0
+        # Write-Host 'TESTING MODE: Data Services installer execution skipped' -ForegroundColor Magenta
+        # $exitCode = 0
 
         if ($exitCode -eq 0) {
             Write-Host 'Data Services installation completed successfully!' -ForegroundColor Green

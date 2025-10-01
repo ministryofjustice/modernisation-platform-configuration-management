@@ -92,6 +92,37 @@ function Get-Installer {
     }
 }
 
+function Get-SecretValue {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId,
+        [Parameter(Mandatory)]
+        [string]$SecretKey
+    )
+
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Host "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        $secretObject = $secretJson | ConvertFrom-Json
+
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Host "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
+
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Host "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
+
 function Clear-PendingFileRenameOperations {
     $regPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'
     $regKey = 'PendingFileRenameOperations'
@@ -284,8 +315,25 @@ function Install-IPS {
         "Template Used: $templateName" | Out-File -FilePath $logFile -Append
         '' | Out-File -FilePath $logFile -Append
         
-        # Build installer arguments
-        $installArgs = @('/wait', '-r .\IPS\ips_install.ini') + $responseFileResult.CommandLineArgs
+        # Get required password values from secrets
+        Write-Host 'Retrieving password values from secrets...' -ForegroundColor Cyan
+        if ($nodeType -eq 'primary') {
+            # Primary node needs CMS, auditing, and CMS DB passwords
+            $bods_cluster_key = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey "IPS_Administrator_LCMS_Administrator"
+            $bods_ips_audit_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsAuditOwnerKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsCmsOwnerKey
+            
+            # Build installer arguments for primary node
+            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
+        }
+        else {
+            # Secondary node needs remote CMS admin and CMS DB passwords
+            $bods_cluster_key = Get-SecretValue -SecretId $Config.SecretsConfig.bodsServiceAccountsSecretId -SecretKey "IPS_Administrator_LCMS_Administrator"
+            $bods_ips_system_owner = Get-SecretValue -SecretId $Config.SecretsConfig.dsdDbPasswordsSecretId -SecretKey $Config.SecretsConfig.ipsCmsOwnerKey
+            
+            # Build installer arguments for secondary node
+            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
+        }
         
         'Installer Arguments (sensitive data masked):' | Out-File -FilePath $logFile -Append
         $installArgs | ForEach-Object { 
@@ -300,19 +348,18 @@ function Install-IPS {
 
         Write-Host "Launching installer with $($installArgs.Count) arguments..." -ForegroundColor Cyan
         
-        # Temporarily commented out for testing - uncomment when ready to actually install
-        # $process = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -NoNewWindow -Verbose -PassThru
+        $process = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -NoNewWindow -Verbose -PassThru
         
-        # $installProcessId = $process.Id
-        # $exitCode = $process.ExitCode
+        $installProcessId = $process.Id
+        $exitCode = $process.ExitCode
         
-        # "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
-        # "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
-        # "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+        "Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
+        "Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
+        "Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
         
         # For testing purposes, simulate successful completion
-        Write-Host 'TESTING MODE: IPS installer execution skipped' -ForegroundColor Magenta
-        $exitCode = 0
+        # Write-Host 'TESTING MODE: IPS installer execution skipped' -ForegroundColor Magenta
+        # $exitCode = 0
         
         if ($exitCode -eq 0) {
             Write-Host 'IPS installation completed successfully!' -ForegroundColor Green
