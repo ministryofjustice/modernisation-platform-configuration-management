@@ -152,38 +152,10 @@ function Install-DataServices {
                 $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
             }
             else {
-                Write-Host 'unrar not available. Installing unrar...' -ForegroundColor Yellow
-                
-                # Try to install unrar using chocolatey if available
-                if (Get-Command choco -ErrorAction SilentlyContinue) {
-                    Write-Host 'Installing unrar via chocolatey...' -ForegroundColor Cyan
-                    try {
-                        & choco install unrar -y
-                        Write-Host 'unrar installed successfully via chocolatey' -ForegroundColor Green
-                        
-                        # Try extraction again
-                        if (Get-Command unrar -ErrorAction SilentlyContinue) {
-                            Write-Host 'Using newly installed unrar to extract .EXE file' -ForegroundColor Green
-                            $unrarResult = & unrar x -r -o+ -y ('.\' + $Config.DataServicesS3File) $extractionDir
-                            Write-Host "unrar completed with result: $unrarResult" -ForegroundColor Gray
-                            $dataServicesInstallerFilePath = "$WorkingDirectory\DataServices\setup.exe"
-                        }
-                        else {
-                            Write-Error 'unrar still not available after installation'
-                            return
-                        }
-                    }
-                    catch {
-                        Write-Error "Failed to install unrar via chocolatey: $_"
-                        return
-                    }
-                }
-                else {
-                    Write-Error 'Neither unrar nor chocolatey are available. Cannot extract .EXE file.'
-                    Write-Error 'Please install unrar or chocolatey first.'
-                    $global:LASTEXITCODE = 1
-                    throw 'Unable to extract installer - missing unrar and chocolatey'
-                }
+                Write-Error 'unrar command not found on PATH. WinRAR should have been installed by Install-WinRAR.ps1 script.'
+                Write-Error 'Please ensure Install-WinRAR.ps1 ran successfully before this script.'
+                $global:LASTEXITCODE = 1
+                throw 'unrar command not available - WinRAR installation required'
             }
         }
         else {
