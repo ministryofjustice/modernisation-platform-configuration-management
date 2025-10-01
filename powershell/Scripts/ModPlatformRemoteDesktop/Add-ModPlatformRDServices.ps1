@@ -102,14 +102,14 @@ $GlobalConfig = @{
         "SessionHosts"  = @("PD-CAFM-A-12-B.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PD-CAFM-A-13-A test"
-          "UserGroup"             = @("HMPP\drobinson")
+          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "CAFM-RDP-A-13" = @{
         "SessionHosts"  = @("PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
         "Configuration" = @{
           "CollectionDescription" = "PD-CAFM-A-13-A test"
-          "UserGroup"             = @("HMPP\drobinson")
+          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "pd-jump2022-1" = @{
