@@ -24,10 +24,48 @@ param (
     [switch]$UseRealSecrets,
     
     [Parameter()]
+    [switch]$TestMode,
+    
+    [Parameter()]
+    [string]$DbEnv,
+    
+    [Parameter()]
     [string]$OutputDirectory = './ConfigDiscovery'
 )
 
 . (Join-Path $PSScriptRoot '..\Configs\unified_config_system.ps1')
+
+# Import the same Get-SecretValue function that the installer scripts use
+function Get-SecretValue {
+    param (
+        [Parameter(Mandatory)]
+        [string]$SecretId,
+        [Parameter(Mandatory)]
+        [string]$SecretKey
+    )
+
+    try {
+        $secretJson = aws secretsmanager get-secret-value --secret-id $SecretId --query SecretString --output text
+
+        if ($null -eq $secretJson -or $secretJson -eq '') {
+            Write-Warning "The SecretId '$SecretId' does not exist or returned no value."
+            return $null
+        }
+
+        $secretObject = $secretJson | ConvertFrom-Json
+
+        if (-not $secretObject.PSObject.Properties.Name -contains $SecretKey) {
+            Write-Warning "The SecretKey '$SecretKey' does not exist in the secret."
+            return $null
+        }
+
+        return $secretObject.$SecretKey
+    }
+    catch {
+        Write-Warning "An error occurred while retrieving the secret: $_"
+        return $null
+    }
+}
 
 function Test-ConfigurationDiscovery {
     param(
@@ -51,6 +89,12 @@ function Test-ConfigurationDiscovery {
         
         [Parameter()]
         [switch]$UseRealSecrets,
+        
+        [Parameter()]
+        [switch]$TestMode,
+        
+        [Parameter()]
+        [string]$DbEnv,
         
         [Parameter()]
         [string]$OutputDirectory = './ConfigDiscovery'
@@ -100,6 +144,55 @@ function Test-ConfigurationDiscovery {
         
         $config = Get-UnifiedConfig -EnvironmentName $Environment -Application $Application -AdditionalTags $additionalTags
         Write-Host '   ✓ Configuration loaded successfully' -ForegroundColor Green
+        
+        # Step 1.5: Determine or set dbenv for NCR/ONR environments
+        if ($Application -eq 'nomis-combined-reporting' -or $Application -eq 'oasys-national-reporting') {
+            if ($DbEnv) {
+                # Use provided DbEnv parameter (allows full flexibility)
+                $config.dbenv = $DbEnv
+                Write-Host "   ✓ Using provided dbenv: $DbEnv" -ForegroundColor Green
+            }
+            elseif ([string]::IsNullOrEmpty($config.dbenv)) {
+                # Auto-determine dbenv based on environment using standard naming conventions
+                # Use more specific regex to avoid 'preproduction' matching 'production'
+                $inferredDbEnv = switch -Regex ($Environment) {
+                    'preproduction' { 'pp' }      # Check preproduction FIRST before production
+                    '^.*-production$' { 'pd' }    # Only match if it ends with -production (not preproduction)
+                    'development' { 'dev' }
+                    'test' { 
+                        # Test environments are complex - could be t1, t2, etc.
+                        # Extract the specific test environment from node name if possible
+                        if ($NodeName -match 't(\d+)-') {
+                            "t$($matches[1])"  # e.g., t2-onr-bods-1 -> t2
+                        }
+                        else {
+                            Write-Warning "Test environment detected but cannot determine specific test instance (t1, t2, etc.)"
+                            Write-Warning "Please use -DbEnv parameter to specify (e.g., -DbEnv 't1' or -DbEnv 't2')"
+                            'test-unknown'
+                        }
+                    }
+                    default { 
+                        Write-Warning "Cannot auto-determine dbenv for environment: $Environment"
+                        Write-Warning "Please use -DbEnv parameter to specify the correct value"
+                        'unknown'
+                    }
+                }
+                $config.dbenv = $inferredDbEnv
+                
+                if ($inferredDbEnv -notlike '*unknown*') {
+                    Write-Host "   ✓ Auto-determined dbenv: $inferredDbEnv" -ForegroundColor Yellow
+                    Write-Host "     (Standard naming: dev/pp/pd/t1/t2/etc.)" -ForegroundColor Gray
+                }
+                else {
+                    Write-Host "   ⚠️ Could not determine dbenv: $inferredDbEnv" -ForegroundColor Yellow
+                    Write-Host "     Use -DbEnv parameter to specify correct value" -ForegroundColor Gray
+                }
+                Write-Host "     (You can always override with -DbEnv parameter)" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "   ✓ Using existing dbenv from config: $($config.dbenv)" -ForegroundColor Green
+            }
+        }
 
         # Step 2: Analyze Configuration Structure
         Write-Host "`n2. Configuration Analysis..." -ForegroundColor Cyan
@@ -265,103 +358,356 @@ function Test-ConfigurationDiscovery {
             }
         }
 
-        # Step 4: Secret Testing (if requested)
+        # Step 4: Secret Testing (if requested) - Mimic Install-IPS and Install-DataServices logic
         if ($TestSecrets) {
-            Write-Host '4. Secret Configuration Testing...' -ForegroundColor Cyan
+            Write-Host '4. Secret Configuration Testing (Mimicking Installer Scripts)...' -ForegroundColor Cyan
             
-            # Build secret tests dynamically from the configuration's secret keys
-            $secretTests = @()
-            
-            if ($config.ContainsKey('SecretConfig') -and $config.SecretConfig.ContainsKey('secretKeys')) {
-                # Use explicit secret keys from configuration - only test keys that actually exist
-                $secretKeys = $config.SecretConfig.secretKeys
-                
-                $secretTests = @()
-                
-                # Only add tests for keys that are actually defined in the configuration
-                if ($secretKeys.ContainsKey('bodsAdminPassword')) {
-                    $secretTests += @{ Type = 'bods_passwords'; Key = $secretKeys.bodsAdminPassword; Description = 'BODS Admin Password' }
-                }
-                if ($secretKeys.ContainsKey('bodsSubversionPassword')) {
-                    $secretTests += @{ Type = 'bods_passwords'; Key = $secretKeys.bodsSubversionPassword; Description = 'BODS Subversion Password' }
-                }
-                if ($secretKeys.ContainsKey('ipsProductKey')) {
-                    $secretTests += @{ Type = 'bods_config'; Key = $secretKeys.ipsProductKey; Description = 'IPS Product Key' }
-                }
-                if ($secretKeys.ContainsKey('dataServicesProductKey')) {
-                    $secretTests += @{ Type = 'bods_config'; Key = $secretKeys.dataServicesProductKey; Description = 'DataServices Product Key' }
-                }
-                if ($secretKeys.ContainsKey('serviceUserPassword')) {
-                    $secretTests += @{ Type = 'service_accounts'; Key = $secretKeys.serviceUserPassword; Description = 'Service Account Password' }
-                }
-                if ($secretKeys.ContainsKey('sysDbUserPassword')) {
-                    $secretTests += @{ Type = 'sys_db'; Key = $secretKeys.sysDbUserPassword; Description = 'System Database User Password' }
-                }
-                if ($secretKeys.ContainsKey('audDbUserPassword')) {
-                    $secretTests += @{ Type = 'aud_db'; Key = $secretKeys.audDbUserPassword; Description = 'Audit Database User Password' }
-                }
-            }
-            else {
-                # Fallback to legacy hardcoded keys for backward compatibility
-                Write-Host '   ⚠️ Using fallback secret keys (legacy configuration detected)' -ForegroundColor Yellow
-                $secretTests = @(
-                    @{ Type = 'bods_passwords'; Key = 'bods_admin_password'; Description = 'BODS Admin Password (Legacy)' },
-                    @{ Type = 'bods_config'; Key = 'ips_product_key'; Description = 'IPS Product Key (Legacy)' },
-                    @{ Type = 'bods_config'; Key = 'data_services_product_key'; Description = 'DataServices Product Key (Legacy)' },
-                    @{ Type = 'service_accounts'; Key = $config.ServiceConfig.serviceUser; Description = 'Service Account (Legacy)' }
-                )
-            }
+            # Use the EXACT same logic as Install-IPS.ps1 and Install-DataServices.ps1
+            Write-Host '   Testing secrets using installer script logic...' -ForegroundColor Yellow
             
             $secretResults = @()
-            foreach ($test in $secretTests) {
-                try {
-                    # Use TestMode unless UseRealSecrets is specified
-                    $secretValue = if ($UseRealSecrets) {
-                        Get-SecretValueUnified -Config $config -SecretType $test.Type -SecretKey $test.Key
-                    }
-                    else {
-                        Get-SecretValueUnified -Config $config -SecretType $test.Type -SecretKey $test.Key -TestMode
+            
+            try {
+                # Determine secret ID and keys based on configuration structure (same as installer scripts)
+                if ($config.SecretConfig.ContainsKey('secretIds') -and $config.SecretConfig.ContainsKey('secretKeys')) {
+                    # MISDis-style explicit configuration
+                    Write-Host '   Using MISDis-style explicit secret configuration' -ForegroundColor Cyan
+                    $bodsSecretId = $config.SecretConfig.secretIds.serviceAccounts
+                    $bodsAdminPasswordKey = $config.SecretConfig.secretKeys.bodsAdminPassword
+                    $serviceUserPasswordKey = $config.SecretConfig.secretKeys.serviceUserPassword
+                    $sysDbSecretId = $config.SecretConfig.secretIds.sysDbSecrets
+                    $audDbSecretId = $config.SecretConfig.secretIds.audDbSecrets
+                    $sysDbPasswordKey = $config.SecretConfig.secretKeys.sysDbUserPassword
+                    $audDbPasswordKey = $config.SecretConfig.secretKeys.audDbUserPassword
+                    
+                    Write-Host "   BODS Secret ID: $bodsSecretId" -ForegroundColor Gray
+                    Write-Host "   BODS Admin Key: $bodsAdminPasswordKey" -ForegroundColor Gray
+                    Write-Host "   Service User Key: $serviceUserPasswordKey" -ForegroundColor Gray
+                    Write-Host "   System DB Secret ID: $sysDbSecretId" -ForegroundColor Gray
+                    Write-Host "   System DB Key: $sysDbPasswordKey" -ForegroundColor Gray
+                    Write-Host "   Audit DB Secret ID: $audDbSecretId" -ForegroundColor Gray
+                    Write-Host "   Audit DB Key: $audDbPasswordKey" -ForegroundColor Gray
+                }
+                else {
+                    # NCR/ONR-style pattern-based configuration with sensible defaults
+                    Write-Host '   Using NCR/ONR-style pattern-based secret configuration' -ForegroundColor Cyan
+                    $bodsSecretId = $config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $config.dbenv
+                    $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key name
+                    
+                    # For NCR/ONR, use standard service user key pattern or derive from config
+                    if ($config.SecretConfig.ContainsKey('secretKeys') -and $config.SecretConfig.secretKeys.ContainsKey('serviceUserPassword')) {
+                        $serviceUserPasswordKey = $config.SecretConfig.secretKeys.serviceUserPassword
+                    } else {
+                        $serviceUserPasswordKey = 'svc_nart'  # Standard fallback for NCR/ONR
                     }
                     
-                    # Check if secret was actually retrieved
-                    if ($null -eq $secretValue -or $secretValue -eq '') {
+                    # Handle database configuration
+                    if ([string]::IsNullOrEmpty($config.DatabaseConfig.sysDbName) -or [string]::IsNullOrEmpty($config.DatabaseConfig.audDbName)) {
+                        Write-Host "   ⚠️ Database names not configured - skipping database secret tests" -ForegroundColor Yellow
+                        Write-Host "     sysDbName: '$($config.DatabaseConfig.sysDbName)'" -ForegroundColor Gray
+                        Write-Host "     audDbName: '$($config.DatabaseConfig.audDbName)'" -ForegroundColor Gray
+                        Write-Host "     Database secrets will need to be configured in the config files" -ForegroundColor Gray
+                        $sysDbSecretId = 'NOT_CONFIGURED'
+                        $audDbSecretId = 'NOT_CONFIGURED'
+                        $sysDbPasswordKey = 'NOT_CONFIGURED'
+                        $audDbPasswordKey = 'NOT_CONFIGURED'
+                    }
+                    else {
+                        $sysDbSecretId = $config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $config.DatabaseConfig.sysDbName
+                        $audDbSecretId = $config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $config.DatabaseConfig.audDbName
+                        
+                        # Use explicit secret keys if defined, otherwise use standard IPS key names
+                        if ($config.SecretConfig.ContainsKey('secretKeys') -and $config.SecretConfig.secretKeys.ContainsKey('sysDbUserPassword')) {
+                            $sysDbPasswordKey = $config.SecretConfig.secretKeys.sysDbUserPassword
+                        } else {
+                            $sysDbPasswordKey = 'bods_ips_system_owner'  # Standard IPS system DB key
+                        }
+                        
+                        if ($config.SecretConfig.ContainsKey('secretKeys') -and $config.SecretConfig.secretKeys.ContainsKey('audDbUserPassword')) {
+                            $audDbPasswordKey = $config.SecretConfig.secretKeys.audDbUserPassword
+                        } else {
+                            $audDbPasswordKey = 'bods_ips_audit_owner'  # Standard IPS audit DB key
+                        }
+                    }
+                    
+                    Write-Host "   BODS Secret ID (pattern): $bodsSecretId" -ForegroundColor Gray
+                    Write-Host "   BODS Admin Key (standard): $bodsAdminPasswordKey" -ForegroundColor Gray
+                    Write-Host "   Service User Key: $serviceUserPasswordKey" -ForegroundColor Gray
+                    Write-Host "   System DB Secret ID (pattern): $sysDbSecretId" -ForegroundColor Gray
+                    Write-Host "   System DB Key: $sysDbPasswordKey" -ForegroundColor Gray
+                    Write-Host "   Audit DB Secret ID (pattern): $audDbSecretId" -ForegroundColor Gray
+                    Write-Host "   Audit DB Key: $audDbPasswordKey" -ForegroundColor Gray
+                }
+                
+                # Test the exact secrets that Install-IPS.ps1 needs
+                Write-Host "`n   Testing Install-IPS.ps1 secrets:" -ForegroundColor Cyan
+                
+                # Test BODS Admin Password (needed for both primary and secondary IPS)
+                try {
+                    $bods_cluster_key = if ($UseRealSecrets -and -not $TestMode) {
+                        Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
+                    }
+                    else {
+                        "TEST_VALUE_$bodsAdminPasswordKey"
+                    }
+                    
+                    if ($null -eq $bods_cluster_key -or $bods_cluster_key -eq '') {
                         $secretResults += @{
-                            Description = $test.Description
-                            Type        = $test.Type
-                            Key         = $test.Key
+                            Script      = 'Install-IPS.ps1'
+                            Description = 'BODS Cluster Key (IPS Admin Password)'
+                            SecretId    = $bodsSecretId
+                            SecretKey   = $bodsAdminPasswordKey
                             Status      = 'FAILED'
                             Value       = $null
                             Error       = 'Secret not found or returned empty value'
                         }
-                        Write-Host "   ❌ $($test.Description): Secret not found or empty" -ForegroundColor Red
+                        Write-Host '   ❌ BODS Cluster Key: Secret not found or empty' -ForegroundColor Red
                     }
                     else {
                         $secretResults += @{
-                            Description = $test.Description
-                            Type        = $test.Type
-                            Key         = $test.Key
+                            Script      = 'Install-IPS.ps1'
+                            Description = 'BODS Cluster Key (IPS Admin Password)'
+                            SecretId    = $bodsSecretId
+                            SecretKey   = $bodsAdminPasswordKey
                             Status      = 'SUCCESS'
-                            Value       = if ($secretValue.Length -gt 10) { "$($secretValue.Substring(0,10))..." } else { $secretValue }
+                            Value       = if ($bods_cluster_key.Length -gt 10) { "$($bods_cluster_key.Substring(0,10))..." } else { $bods_cluster_key }
                             Error       = $null
                         }
-                        Write-Host "   ✅ $($test.Description): Retrieved successfully" -ForegroundColor Green
+                        Write-Host '   ✅ BODS Cluster Key: Retrieved successfully' -ForegroundColor Green
                     }
                 }
                 catch {
                     $secretResults += @{
-                        Description = $test.Description
-                        Type        = $test.Type
-                        Key         = $test.Key
+                        Script      = 'Install-IPS.ps1'
+                        Description = 'BODS Cluster Key (IPS Admin Password)'
+                        SecretId    = $bodsSecretId
+                        SecretKey   = $bodsAdminPasswordKey
                         Status      = 'ERROR'
                         Value       = $null
                         Error       = $_.Exception.Message
                     }
-                    Write-Host "   ❌ $($test.Description): $($_.Exception.Message)" -ForegroundColor Red
+                    Write-Host "   ❌ BODS Cluster Key: $($_.Exception.Message)" -ForegroundColor Red
+                }
+                
+                # Test System DB Password (needed for IPS primary and secondary)
+                if ($sysDbSecretId -eq 'NOT_CONFIGURED') {
+                    $secretResults += @{
+                        Script = 'Install-IPS.ps1'
+                        Description = 'System DB User Password'
+                        SecretId = 'NOT_CONFIGURED'
+                        SecretKey = 'NOT_CONFIGURED'
+                        Status = 'SKIPPED'
+                        Value = $null
+                        Error = 'Database configuration missing - sysDbName not configured'
+                    }
+                    Write-Host "   ⚠️ System DB Password: Skipped (database not configured)" -ForegroundColor Yellow
+                }
+                else {
+                    try {
+                        $bods_ips_system_owner = if ($UseRealSecrets -and -not $TestMode) {
+                            Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
+                        }
+                        else {
+                            "TEST_VALUE_$sysDbPasswordKey"
+                        }
+                    
+                    if ($null -eq $bods_ips_system_owner -or $bods_ips_system_owner -eq '') {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1'
+                            Description = 'System DB User Password'
+                            SecretId    = $sysDbSecretId
+                            SecretKey   = $sysDbPasswordKey
+                            Status      = 'FAILED'
+                            Value       = $null
+                            Error       = 'Secret not found or returned empty value'
+                        }
+                        Write-Host '   ❌ System DB Password: Secret not found or empty' -ForegroundColor Red
+                    }
+                    else {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1'
+                            Description = 'System DB User Password'
+                            SecretId    = $sysDbSecretId
+                            SecretKey   = $sysDbPasswordKey
+                            Status      = 'SUCCESS'
+                            Value       = if ($bods_ips_system_owner.Length -gt 10) { "$($bods_ips_system_owner.Substring(0,10))..." } else { $bods_ips_system_owner }
+                            Error       = $null
+                        }
+                        Write-Host '   ✅ System DB Password: Retrieved successfully' -ForegroundColor Green
+                    }
+                    }
+                    catch {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1'
+                            Description = 'System DB User Password'
+                            SecretId    = $sysDbSecretId
+                            SecretKey   = $sysDbPasswordKey
+                            Status      = 'ERROR'
+                            Value       = $null
+                            Error       = $_.Exception.Message
+                        }
+                        Write-Host "   ❌ System DB Password: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                }
+                
+                # Test Audit DB Password (needed for IPS primary only)
+                if ($audDbSecretId -eq 'NOT_CONFIGURED') {
+                    $secretResults += @{
+                        Script = 'Install-IPS.ps1 (Primary only)'
+                        Description = 'Audit DB User Password'
+                        SecretId = 'NOT_CONFIGURED'
+                        SecretKey = 'NOT_CONFIGURED'
+                        Status = 'SKIPPED'
+                        Value = $null
+                        Error = 'Database configuration missing - audDbName not configured'
+                    }
+                    Write-Host "   ⚠️ Audit DB Password: Skipped (database not configured)" -ForegroundColor Yellow
+                }
+                else {
+                    try {
+                        $bods_ips_audit_owner = if ($UseRealSecrets -and -not $TestMode) {
+                            Get-SecretValue -SecretId $audDbSecretId -SecretKey $audDbPasswordKey
+                        }
+                        else {
+                        "TEST_VALUE_$audDbPasswordKey"
+                    }
+                    
+                    if ($null -eq $bods_ips_audit_owner -or $bods_ips_audit_owner -eq '') {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1 (Primary only)'
+                            Description = 'Audit DB User Password'
+                            SecretId    = $audDbSecretId
+                            SecretKey   = $audDbPasswordKey
+                            Status      = 'FAILED'
+                            Value       = $null
+                            Error       = 'Secret not found or returned empty value'
+                        }
+                        Write-Host '   ❌ Audit DB Password: Secret not found or empty' -ForegroundColor Red
+                    }
+                    else {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1 (Primary only)'
+                            Description = 'Audit DB User Password'
+                            SecretId    = $audDbSecretId
+                            SecretKey   = $audDbPasswordKey
+                            Status      = 'SUCCESS'
+                            Value       = if ($bods_ips_audit_owner.Length -gt 10) { "$($bods_ips_audit_owner.Substring(0,10))..." } else { $bods_ips_audit_owner }
+                            Error       = $null
+                        }
+                        Write-Host '   ✅ Audit DB Password: Retrieved successfully' -ForegroundColor Green
+                    }
+                    }
+                    catch {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1 (Primary only)'
+                            Description = 'Audit DB User Password'
+                            SecretId    = $audDbSecretId
+                            SecretKey   = $audDbPasswordKey
+                            Status      = 'ERROR'
+                            Value       = $null
+                            Error       = $_.Exception.Message
+                        }
+                        Write-Host "   ❌ Audit DB Password: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                }
+                
+                # Test the exact secrets that Install-DataServices.ps1 needs
+                Write-Host "`n   Testing Install-DataServices.ps1 secrets:" -ForegroundColor Cyan
+                
+                # Test BODS Admin Password (same as IPS)
+                $secretResults += @{
+                    Script      = 'Install-DataServices.ps1'
+                    Description = 'BODS Admin Password (same as IPS)'
+                    SecretId    = $bodsSecretId
+                    SecretKey   = $bodsAdminPasswordKey
+                    Status      = $secretResults | Where-Object { $_.Description -eq 'BODS Cluster Key (IPS Admin Password)' } | Select-Object -ExpandProperty Status
+                    Value       = $secretResults | Where-Object { $_.Description -eq 'BODS Cluster Key (IPS Admin Password)' } | Select-Object -ExpandProperty Value
+                    Error       = $secretResults | Where-Object { $_.Description -eq 'BODS Cluster Key (IPS Admin Password)' } | Select-Object -ExpandProperty Error
+                }
+                Write-Host '   ℹ️ BODS Admin Password: Same as IPS cluster key (already tested)' -ForegroundColor Cyan
+                
+                # Test Service User Password
+                try {
+                    $service_user_password = if ($UseRealSecrets -and -not $TestMode) {
+                        Get-SecretValue -SecretId $bodsSecretId -SecretKey $serviceUserPasswordKey
+                    }
+                    else {
+                        "TEST_VALUE_$serviceUserPasswordKey"
+                    }
+                    
+                    if ($null -eq $service_user_password -or $service_user_password -eq '') {
+                        $secretResults += @{
+                            Script      = 'Install-DataServices.ps1'
+                            Description = 'Service User Password'
+                            SecretId    = $bodsSecretId
+                            SecretKey   = $serviceUserPasswordKey
+                            Status      = 'FAILED'
+                            Value       = $null
+                            Error       = 'Secret not found or returned empty value'
+                        }
+                        Write-Host '   ❌ Service User Password: Secret not found or empty' -ForegroundColor Red
+                    }
+                    else {
+                        $secretResults += @{
+                            Script      = 'Install-DataServices.ps1'
+                            Description = 'Service User Password'
+                            SecretId    = $bodsSecretId
+                            SecretKey   = $serviceUserPasswordKey
+                            Status      = 'SUCCESS'
+                            Value       = if ($service_user_password.Length -gt 10) { "$($service_user_password.Substring(0,10))..." } else { $service_user_password }
+                            Error       = $null
+                        }
+                        Write-Host '   ✅ Service User Password: Retrieved successfully' -ForegroundColor Green
+                    }
+                }
+                catch {
+                    $secretResults += @{
+                        Script      = 'Install-DataServices.ps1'
+                        Description = 'Service User Password'
+                        SecretId    = $bodsSecretId
+                        SecretKey   = $serviceUserPasswordKey
+                        Status      = 'ERROR'
+                        Value       = $null
+                        Error       = $_.Exception.Message
+                    }
+                    Write-Host "   ❌ Service User Password: $($_.Exception.Message)" -ForegroundColor Red
+                }
+                
+            }
+            catch {
+                Write-Host "   ❌ Failed to test secrets: $($_.Exception.Message)" -ForegroundColor Red
+                $secretResults += @{
+                    Script      = 'Secret Testing Framework'
+                    Description = 'General Error'
+                    SecretId    = 'N/A'
+                    SecretKey   = 'N/A'
+                    Status      = 'ERROR'
+                    Value       = $null
+                    Error       = $_.Exception.Message
                 }
             }
             
+            # Summary
+            $successCount = ($secretResults | Where-Object { $_.Status -eq 'SUCCESS' }).Count
+            $failedCount = ($secretResults | Where-Object { $_.Status -eq 'FAILED' }).Count
+            $errorCount = ($secretResults | Where-Object { $_.Status -eq 'ERROR' }).Count
+            $skippedCount = ($secretResults | Where-Object { $_.Status -eq 'SKIPPED' }).Count
+            
+            Write-Host "`n   Secret Test Summary:" -ForegroundColor Yellow
+            Write-Host "   ✅ Success: $successCount" -ForegroundColor Green
+            Write-Host "   ❌ Failed: $failedCount" -ForegroundColor Red
+            Write-Host "   ⚠️ Errors: $errorCount" -ForegroundColor Yellow
+            Write-Host "   ⏭️ Skipped: $skippedCount" -ForegroundColor Cyan
+            
+            if ($failedCount -gt 0 -or $errorCount -gt 0) {
+                Write-Host "`n   ⚠️ WARNING: Some secrets failed. The installer scripts may fail!" -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "`n   ✅ All secrets retrieved successfully. Installers should work!" -ForegroundColor Green
+            }
+            
             # Save secret test results
-            $secretOutputFile = Join-Path $OutputDirectory "secret-test-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+            $secretOutputFile = Join-Path $OutputDirectory "installer-secret-test-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
             $secretResults | ConvertTo-Json -Depth 5 | Out-File $secretOutputFile
             Write-Host "   Secret test results saved to: $secretOutputFile" -ForegroundColor Gray
         }
@@ -494,7 +840,7 @@ function Compare-NodeConfigurations {
     foreach ($nodeName in $NodeNames) {
         Write-Host "Loading configuration for $nodeName..." -ForegroundColor Yellow
         try {
-            $result = Test-ConfigurationDiscovery -Application $Application -Environment $Environment -NodeName $nodeName -ValidateOnly -UseRealSecrets:$UseRealSecrets -OutputDirectory $OutputDirectory
+            $result = Test-ConfigurationDiscovery -Application $Application -Environment $Environment -NodeName $nodeName -ValidateOnly -UseRealSecrets:$UseRealSecrets -TestMode:$TestMode -DbEnv $DbEnv -OutputDirectory $OutputDirectory
             $nodeConfigs[$nodeName] = $result.Config
             $nodeResults[$nodeName] = $result
             Write-Host '  ✅ Loaded successfully' -ForegroundColor Green
@@ -611,7 +957,7 @@ function Compare-NodeConfigurations {
 if ($MyInvocation.InvocationName -ne '.') {
     # If script is run directly (not dot-sourced)
     if ($Application -or $EnvironmentName -or $NodeName) {
-        Test-ConfigurationDiscovery -Application $Application -Environment $EnvironmentName -NodeName $NodeName -TestSecrets:$TestSecrets -ShowAllConfig:$ShowAllConfig -ValidateOnly:$ValidateOnly -UseRealSecrets:$UseRealSecrets -OutputDirectory $OutputDirectory
+        Test-ConfigurationDiscovery -Application $Application -Environment $EnvironmentName -NodeName $NodeName -TestSecrets:$TestSecrets -ShowAllConfig:$ShowAllConfig -ValidateOnly:$ValidateOnly -UseRealSecrets:$UseRealSecrets -TestMode:$TestMode -DbEnv $DbEnv -OutputDirectory $OutputDirectory
     }
     else {
         # Show usage examples
@@ -619,8 +965,26 @@ if ($MyInvocation.InvocationName -ne '.') {
         Write-Host 'This script discovers and validates actual configuration values without hardcoded assumptions.' -ForegroundColor Yellow
         Write-Host ''
         Write-Host 'Usage examples:' -ForegroundColor Yellow
-        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'delius-mis' -EnvironmentName 'delius-mis-development' -NodeName 'delius-mis-dev-dfi-1' -ShowAllConfig" -ForegroundColor Gray
-        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'oasys-national-reporting' -EnvironmentName 'oasys-national-reporting-test' -NodeName 't2-onr-bods-1' -TestSecrets" -ForegroundColor Gray
+        Write-Host '  # Test configuration for MISDis DFI cluster with real secrets:' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'delius-mis' -EnvironmentName 'delius-mis-development' -NodeName 'ndmis-dev-dfi-1' -TestSecrets -UseRealSecrets" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Test configuration for MISDis DIS cluster with real secrets:' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'delius-mis' -EnvironmentName 'delius-mis-development' -NodeName 'ndmis-dev-dis-1' -TestSecrets -UseRealSecrets" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Test configuration for NCR preproduction (auto-determines dbenv as ''pp''):' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'nomis-combined-reporting' -EnvironmentName 'nomis-combined-reporting-preproduction' -NodeName 'pp-ncr-bods-2' -TestSecrets -UseRealSecrets" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Test configuration for ONR test T2 environment (auto-detects as ''t2'' from node name):' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'oasys-national-reporting' -EnvironmentName 'oasys-national-reporting-test' -NodeName 't2-onr-bods-1' -TestSecrets -UseRealSecrets" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Test configuration for ONR test T1 environment (explicit override):' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'oasys-national-reporting' -EnvironmentName 'oasys-national-reporting-test' -NodeName 't1-onr-bods-1' -TestSecrets -UseRealSecrets -DbEnv 't1'" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Test configuration with custom dbenv (full flexibility):' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'nomis-combined-reporting' -EnvironmentName 'nomis-combined-reporting-production' -NodeName 'pd-ncr-bods-1' -TestSecrets -UseRealSecrets -DbEnv 'custom-env'" -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  # Show complete configuration without secret testing:' -ForegroundColor Gray
+        Write-Host "  ./Test-ConfigurationDiscovery.ps1 -Application 'delius-mis' -EnvironmentName 'delius-mis-development' -NodeName 'ndmis-dev-dfi-1' -ShowAllConfig" -ForegroundColor Gray
         Write-Host ''
         Write-Host 'Interactive mode (prompts for parameters):' -ForegroundColor Yellow
         Write-Host '  ./Test-ConfigurationDiscovery.ps1' -ForegroundColor Gray

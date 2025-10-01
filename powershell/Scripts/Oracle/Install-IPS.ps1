@@ -329,20 +329,34 @@ function Install-IPS {
             $audDbPasswordKey = $Config.SecretConfig.secretKeys.audDbUserPassword
         }
         else {
-            # NCR/ONR-style pattern-based configuration - use Get-SecretValueUnified function from unified config system
+            # NCR/ONR-style pattern-based configuration with sensible defaults
+            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key
             $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
-            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key name
-            $sysDbSecretId = $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName
-            $audDbSecretId = $Config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $Config.DatabaseConfig.audDbName
-            $sysDbPasswordKey = $Config.DatabaseConfig.sysDbUser
-            $audDbPasswordKey = $Config.DatabaseConfig.audDbUser
+            $databasePasswordsSecretId = $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName
+            
+            # Use sensible defaults for database password keys
+            if ($Config.SecretConfig.ContainsKey('secretKeys')) {
+                $ipsAuditOwnerKey = if ($Config.SecretConfig.secretKeys.ContainsKey('ipsAuditOwnerPassword')) { 
+                    $Config.SecretConfig.secretKeys.ipsAuditOwnerPassword 
+                } else { 
+                    'bods_ips_audit_owner'  # Standard IPS audit DB key
+                }
+                $ipsCmsOwnerKey = if ($Config.SecretConfig.secretKeys.ContainsKey('ipsCmsOwnerPassword')) { 
+                    $Config.SecretConfig.secretKeys.ipsCmsOwnerPassword 
+                } else { 
+                    'bods_ips_system_owner'  # Standard IPS system DB key
+                }
+            } else {
+                $ipsAuditOwnerKey = 'bods_ips_audit_owner'  # Standard IPS audit DB key
+                $ipsCmsOwnerKey = 'bods_ips_system_owner'   # Standard IPS system DB key
+            }
         }
         
         if ($nodeType -eq 'primary') {
             # Primary node needs CMS, auditing, and CMS DB passwords
             $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
-            $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretId -SecretKey $audDbPasswordKey
-            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
+            $bods_ips_audit_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsAuditOwnerKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsCmsOwnerKey
             
             # Build installer arguments for primary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
@@ -350,7 +364,7 @@ function Install-IPS {
         else {
             # Secondary node needs remote CMS admin and CMS DB passwords
             $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
-            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsCmsOwnerKey
             
             # Build installer arguments for secondary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs

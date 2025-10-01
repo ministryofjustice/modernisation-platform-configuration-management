@@ -325,10 +325,16 @@ function Install-DataServices {
             $serviceUserPasswordKey = $Config.SecretConfig.secretKeys.serviceUserPassword
         }
         else {
-            # NCR/ONR-style pattern-based configuration
+            # NCR/ONR-style pattern-based configuration with sensible defaults
+            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key
             $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
-            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key name
-            $serviceUserPasswordKey = $Config.ServiceConfig.serviceUser  # Use service user name as key
+            
+            # Use sensible default for service user password key
+            if ($Config.SecretConfig.ContainsKey('secretKeys') -and $Config.SecretConfig.secretKeys.ContainsKey('serviceUserPassword')) {
+                $serviceUserPasswordKey = $Config.SecretConfig.secretKeys.serviceUserPassword
+            } else {
+                $serviceUserPasswordKey = 'svc_nart'  # Standard fallback for NCR/ONR
+            }
         }
         
         $bods_admin_password = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
