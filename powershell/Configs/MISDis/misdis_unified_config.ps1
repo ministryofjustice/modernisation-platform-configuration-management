@@ -73,12 +73,13 @@ $ApplicationConfig = @{
                 'audDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
             }
             'secretKeys' = @{
-                'bodsAdminPassword'      = 'DFI_IPS_Administrator_LCMS_Administrator'
-                'ipsProductKey'          = 'ips_product_key'
-                'dataServicesProductKey' = 'data_services_product_key'
-                'serviceUserPassword'    = 'SVC_DFI_NDL'
-                'sysDbUserPassword'      = 'dfi_mod_ipscms'
-                'audDbUserPassword'      = 'dfi_mod_ipsaud'
+                'bodsAdminPassword'         = 'DFI_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'             = 'ips_product_key'
+                'dataServicesProductKey'    = 'data_services_product_key'
+                'serviceUserPassword'       = 'SVC_DFI_NDL'
+                'sysDbUserPassword'         = 'dfi_mod_ipscms'
+                'audDbUserPassword'         = 'dfi_mod_ipsaud'
+                'sqlAnywhereAdminPassword'  = 'sql_anywhere_admin_password'  # Required for 4.3 installer validation
             }
         }
         
@@ -116,12 +117,13 @@ $ApplicationConfig = @{
                 'audDbSecrets'    = 'delius-mis-dev-oracle-dsd-db-application-passwords'
             }
             'secretKeys' = @{
-                'bodsAdminPassword'      = 'DIS_IPS_Administrator_LCMS_Administrator'
-                'ipsProductKey'          = 'ips_product_key'
-                'dataServicesProductKey' = 'data_services_product_key'
-                'serviceUserPassword'    = 'SVC_DIS_NDL'
-                'sysDbUserPassword'      = 'ipscms'
-                'audDbUserPassword'      = 'ipsaud'
+                'bodsAdminPassword'         = 'DIS_IPS_Administrator_LCMS_Administrator'
+                'ipsProductKey'             = 'ips_product_key'
+                'dataServicesProductKey'    = 'data_services_product_key'
+                'serviceUserPassword'       = 'SVC_DIS_NDL'
+                'sysDbUserPassword'         = 'ipscms'
+                'audDbUserPassword'         = 'ipsaud'
+                'sqlAnywhereAdminPassword'  = 'sql_anywhere_admin_password'  # Required for 4.3 installer validation
             }
         }
         

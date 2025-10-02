@@ -611,6 +611,77 @@ function Test-ConfigurationDiscovery {
                     }
                 }
                 
+                # Test SQL Anywhere Admin Password (needed for MISDis 4.3 installations only)
+                if ($config.application -eq 'delius-mis') {
+                    Write-Host "`n   Testing SQL Anywhere password (MISDis 4.3 only):" -ForegroundColor Cyan
+                    
+                    # Check if sqlAnywhereAdminPassword key exists in config
+                    if ($config.SecretConfig.ContainsKey('secretKeys') -and $config.SecretConfig.secretKeys.ContainsKey('sqlAnywhereAdminPassword')) {
+                        $sqlAnywherePasswordKey = $config.SecretConfig.secretKeys.sqlAnywhereAdminPassword
+                        
+                        try {
+                            $sqlAnywherePassword = if ($UseRealSecrets -and -not $TestMode) {
+                                Get-SecretValue -SecretId $bodsSecretId -SecretKey $sqlAnywherePasswordKey
+                            }
+                            else {
+                                "TEST_VALUE_$sqlAnywherePasswordKey"
+                            }
+                            
+                            if ($null -eq $sqlAnywherePassword -or $sqlAnywherePassword -eq '') {
+                                $secretResults += @{
+                                    Script      = 'Install-IPS.ps1 (MISDis 4.3 only)'
+                                    Description = 'SQL Anywhere Admin Password'
+                                    SecretId    = $bodsSecretId
+                                    SecretKey   = $sqlAnywherePasswordKey
+                                    Status      = 'FAILED'
+                                    Value       = $null
+                                    Error       = 'Secret not found or returned empty value'
+                                }
+                                Write-Host '   ❌ SQL Anywhere Password: Secret not found or empty' -ForegroundColor Red
+                            }
+                            else {
+                                $secretResults += @{
+                                    Script      = 'Install-IPS.ps1 (MISDis 4.3 only)'
+                                    Description = 'SQL Anywhere Admin Password'
+                                    SecretId    = $bodsSecretId
+                                    SecretKey   = $sqlAnywherePasswordKey
+                                    Status      = 'SUCCESS'
+                                    Value       = if ($sqlAnywherePassword.Length -gt 10) { "$($sqlAnywherePassword.Substring(0,10))..." } else { $sqlAnywherePassword }
+                                    Error       = $null
+                                }
+                                Write-Host '   ✅ SQL Anywhere Password: Retrieved successfully' -ForegroundColor Green
+                            }
+                        }
+                        catch {
+                            $secretResults += @{
+                                Script      = 'Install-IPS.ps1 (MISDis 4.3 only)'
+                                Description = 'SQL Anywhere Admin Password'
+                                SecretId    = $bodsSecretId
+                                SecretKey   = $sqlAnywherePasswordKey
+                                Status      = 'ERROR'
+                                Value       = $null
+                                Error       = $_.Exception.Message
+                            }
+                            Write-Host "   ❌ SQL Anywhere Password: $($_.Exception.Message)" -ForegroundColor Red
+                        }
+                    }
+                    else {
+                        $secretResults += @{
+                            Script      = 'Install-IPS.ps1 (MISDis 4.3 only)'
+                            Description = 'SQL Anywhere Admin Password'
+                            SecretId    = 'N/A'
+                            SecretKey   = 'NOT_CONFIGURED'
+                            Status      = 'SKIPPED'
+                            Value       = $null
+                            Error       = 'sqlAnywhereAdminPassword not configured in secretKeys - will fail for 4.3 installs'
+                        }
+                        Write-Host '   ⚠️ SQL Anywhere Password: Not configured in secretKeys (required for 4.3)' -ForegroundColor Yellow
+                    }
+                }
+                else {
+                    Write-Host "`n   SQL Anywhere password test skipped (not MISDis)" -ForegroundColor Gray
+                }
+                
                 # Test the exact secrets that Install-DataServices.ps1 needs
                 Write-Host "`n   Testing Install-DataServices.ps1 secrets:" -ForegroundColor Cyan
                 
