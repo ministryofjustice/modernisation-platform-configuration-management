@@ -321,6 +321,7 @@ function Install-IPS {
         # Determine secret ID and key based on configuration structure
         if ($Config.SecretConfig.ContainsKey('secretIds') -and $Config.SecretConfig.ContainsKey('secretKeys')) {
             # MISDis-style explicit configuration
+            Write-Host '   Using MISDis-style explicit secret configuration' -ForegroundColor Cyan
             $bodsSecretId = $Config.SecretConfig.secretIds.serviceAccounts
             $bodsAdminPasswordKey = $Config.SecretConfig.secretKeys.bodsAdminPassword
             $sysDbSecretId = $Config.SecretConfig.secretIds.sysDbSecrets
@@ -330,33 +331,43 @@ function Install-IPS {
         }
         else {
             # NCR/ONR-style pattern-based configuration with sensible defaults
+            Write-Host '   Using NCR/ONR-style pattern-based secret configuration' -ForegroundColor Cyan
             $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key
             $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
-            $databasePasswordsSecretId = $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName
             
-            # Use sensible defaults for database password keys
-            if ($Config.SecretConfig.ContainsKey('secretKeys')) {
-                $ipsAuditOwnerKey = if ($Config.SecretConfig.secretKeys.ContainsKey('ipsAuditOwnerPassword')) { 
-                    $Config.SecretConfig.secretKeys.ipsAuditOwnerPassword 
-                } else { 
-                    'bods_ips_audit_owner'  # Standard IPS audit DB key
-                }
-                $ipsCmsOwnerKey = if ($Config.SecretConfig.secretKeys.ContainsKey('ipsCmsOwnerPassword')) { 
-                    $Config.SecretConfig.secretKeys.ipsCmsOwnerPassword 
-                } else { 
-                    'bods_ips_system_owner'  # Standard IPS system DB key
-                }
-            } else {
-                $ipsAuditOwnerKey = 'bods_ips_audit_owner'  # Standard IPS audit DB key
-                $ipsCmsOwnerKey = 'bods_ips_system_owner'   # Standard IPS system DB key
-            }
+            # For NCR/ONR, both system and audit DB secrets come from the same database-specific secret
+            $sysDbSecretId = $Config.SecretConfig.secretMappings.sysDbSecretName -replace '\{sysDbName\}', $Config.DatabaseConfig.sysDbName
+            $audDbSecretId = $Config.SecretConfig.secretMappings.audDbSecretName -replace '\{audDbName\}', $Config.DatabaseConfig.audDbName
+            
+            # Use standard IPS database password keys
+            $sysDbPasswordKey = 'bods_ips_system_owner'  # Standard IPS system DB key
+            $audDbPasswordKey = 'bods_ips_audit_owner'   # Standard IPS audit DB key
+        }
+        
+        # Debug output to help identify empty values
+        Write-Host "   BODS Secret ID: '$bodsSecretId'" -ForegroundColor Gray
+        Write-Host "   BODS Admin Key: '$bodsAdminPasswordKey'" -ForegroundColor Gray
+        Write-Host "   System DB Secret ID: '$sysDbSecretId'" -ForegroundColor Gray
+        Write-Host "   System DB Key: '$sysDbPasswordKey'" -ForegroundColor Gray
+        Write-Host "   Audit DB Secret ID: '$audDbSecretId'" -ForegroundColor Gray
+        Write-Host "   Audit DB Key: '$audDbPasswordKey'" -ForegroundColor Gray
+        
+        # Validate that required secret IDs are not empty
+        if ([string]::IsNullOrEmpty($bodsSecretId)) {
+            throw 'BODS Secret ID is empty. Check SecretConfig.secretMappings.bodsSecretName and dbenv configuration.'
+        }
+        if ([string]::IsNullOrEmpty($sysDbSecretId)) {
+            throw 'System DB Secret ID is empty. Check SecretConfig.secretMappings.sysDbSecretName and DatabaseConfig.sysDbName configuration.'
+        }
+        if ([string]::IsNullOrEmpty($audDbSecretId)) {
+            throw 'Audit DB Secret ID is empty. Check SecretConfig.secretMappings.audDbSecretName and DatabaseConfig.audDbName configuration.'
         }
         
         if ($nodeType -eq 'primary') {
             # Primary node needs CMS, auditing, and CMS DB passwords
             $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
-            $bods_ips_audit_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsAuditOwnerKey
-            $bods_ips_system_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsCmsOwnerKey
+            $bods_ips_audit_owner = Get-SecretValue -SecretId $audDbSecretId -SecretKey $audDbPasswordKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for primary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
@@ -364,7 +375,7 @@ function Install-IPS {
         else {
             # Secondary node needs remote CMS admin and CMS DB passwords
             $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
-            $bods_ips_system_owner = Get-SecretValue -SecretId $databasePasswordsSecretId -SecretKey $ipsCmsOwnerKey
+            $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for secondary node
             $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
