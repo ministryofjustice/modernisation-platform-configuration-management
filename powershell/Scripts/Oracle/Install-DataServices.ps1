@@ -314,53 +314,10 @@ function Install-DataServices {
         "Installer Path: $dataServicesInstallerFilePath" | Out-File -FilePath $logFile -Append
         '' | Out-File -FilePath $logFile -Append
 
-        # Get required password values from secrets using existing configuration structure
-        Write-Host 'Retrieving password values from secrets...' -ForegroundColor Cyan
-        
-        # Determine secret ID and key based on configuration structure
-        if ($Config.SecretConfig.ContainsKey('secretIds') -and $Config.SecretConfig.ContainsKey('secretKeys')) {
-            # MISDis-style explicit configuration
-            Write-Host '   Using MISDis-style explicit secret configuration' -ForegroundColor Cyan
-            $bodsSecretId = $Config.SecretConfig.secretIds.serviceAccounts
-            $bodsAdminPasswordKey = $Config.SecretConfig.secretKeys.bodsAdminPassword
-            $serviceUserPasswordKey = $Config.SecretConfig.secretKeys.serviceUserPassword
-        }
-        else {
-            # NCR/ONR-style pattern-based configuration with sensible defaults
-            Write-Host '   Using NCR/ONR-style pattern-based secret configuration' -ForegroundColor Cyan
-            $bodsAdminPasswordKey = 'bods_admin_password'  # Standard key
-            $bodsSecretId = $Config.SecretConfig.secretMappings.bodsSecretName -replace '\{dbenv\}', $Config.dbenv
-            
-            # Use sensible default for service user password key
-            if ($Config.SecretConfig.ContainsKey('secretKeys') -and $Config.SecretConfig.secretKeys.ContainsKey('serviceUserPassword')) {
-                $serviceUserPasswordKey = $Config.SecretConfig.secretKeys.serviceUserPassword
-            }
-            else {
-                $serviceUserPasswordKey = 'svc_nart'  # Standard fallback for NCR/ONR
-            }
-        }
-        
-        # Debug output to help identify empty values
-        Write-Host "   BODS Secret ID: '$bodsSecretId'" -ForegroundColor Gray
-        Write-Host "   BODS Admin Key: '$bodsAdminPasswordKey'" -ForegroundColor Gray
-        Write-Host "   Service User Key: '$serviceUserPasswordKey'" -ForegroundColor Gray
-        
-        # Validate that required secret IDs are not empty
-        if ([string]::IsNullOrEmpty($bodsSecretId)) {
-            throw 'BODS Secret ID is empty. Check SecretConfig.secretMappings.bodsSecretName and dbenv configuration.'
-        }
-        if ([string]::IsNullOrEmpty($bodsAdminPasswordKey)) {
-            throw 'BODS Admin Password Key is empty. Check SecretConfig configuration.'
-        }
-        if ([string]::IsNullOrEmpty($serviceUserPasswordKey)) {
-            throw 'Service User Password Key is empty. Check ServiceConfig.serviceUser or SecretConfig configuration.'
-        }
-        
-        $bods_admin_password = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
-        $service_user_password = Get-SecretValue -SecretId $bodsSecretId -SecretKey $serviceUserPasswordKey
-        
-        # Build installer arguments with password values
-        $installArgs = @('-q', '-r', '.\ds_install.ini', "cmspassword=$bods_admin_password", "dscmspassword=$bods_admin_password", "dslogininfothispassword=$service_user_password") + $responseFileResult.CommandLineArgs
+        # Build installer arguments using command line args from response file generation
+        # Note: Password values are already included in $responseFileResult.CommandLineArgs
+        Write-Host 'Building installer arguments (passwords retrieved by template generator)...' -ForegroundColor Cyan
+        $installArgs = @('-q', '-r', '.\ds_install.ini') + $responseFileResult.CommandLineArgs
         
         'Installer Arguments (sensitive data masked):' | Out-File -FilePath $logFile -Append
         $installArgs | ForEach-Object { 
