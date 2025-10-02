@@ -302,6 +302,21 @@ function Install-IPS {
     $logFile = '.\IPS\install_ips_unified.log'
     New-Item -Type File -Path $logFile -Force | Out-Null
 
+    # Set environment variables required by IPS installer
+    Write-Host 'Setting environment variables...' -ForegroundColor Cyan
+    
+    # DS_COMMON_DIR is validated by IPS installer even though it's primarily used by Data Services
+    if (-not(Test-Path $Config.dscommondir)) {
+        Write-Host "Creating DS common directory: $($Config.dscommondir)" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $Config.dscommondir -Force | Out-Null
+    }
+    [Environment]::SetEnvironmentVariable('DS_COMMON_DIR', $Config.dscommondir, [System.EnvironmentVariableTarget]::Machine)
+    Write-Host "DS_COMMON_DIR set to: $($Config.dscommondir)" -ForegroundColor Gray
+    
+    # LINK_DIR may also be checked by the installer
+    [Environment]::SetEnvironmentVariable('LINK_DIR', $Config.LINK_DIR, [System.EnvironmentVariableTarget]::Machine)
+    Write-Host "LINK_DIR set to: $($Config.LINK_DIR)" -ForegroundColor Gray
+
     # Add Oracle client path to the PowerShell session
     $env:Path += ";$($Config.ORACLE_19C_HOME)\bin"
     Write-Host "Oracle client path added: $($Config.ORACLE_19C_HOME)\bin" -ForegroundColor Gray
