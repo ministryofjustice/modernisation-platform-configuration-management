@@ -173,6 +173,7 @@ bip_filesystems_mount:
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "eu-west-2a.fs-05865134b09d24a7e.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: pp_ncr_sap_share
+    maintenance_window:
   - dir: /NART
     uid: bobj
     gid: binstall
@@ -180,6 +181,7 @@ bip_filesystems_mount:
     opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //fslinux.azure.hmpp.root/NART$
     metric_dimension: NART
+    maintenance_window: "04.0400-04.0430"
 
 webadmin_filesystems_mount:
   - dir: /NART
@@ -189,3 +191,4 @@ webadmin_filesystems_mount:
     opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //fslinux.azure.hmpp.root/NART$
     metric_dimension: NART
+    maintenance_window:
