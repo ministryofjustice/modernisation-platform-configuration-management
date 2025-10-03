@@ -378,15 +378,6 @@ function Install-IPS {
             throw 'Audit DB Secret ID is empty. Check SecretConfig.secretMappings.audDbSecretName and DatabaseConfig.audDbName configuration.'
         }
         
-        # For version 4.3 (MISDis), retrieve SQL Anywhere password (required for installer validation even when using Oracle)
-        $sqlAnywherePassword = $null
-        if ($Config.application -eq 'delius-mis' -and $Config.SecretConfig.ContainsKey('secretKeys') -and $Config.SecretConfig.secretKeys.ContainsKey('sqlAnywhereAdminPassword')) {
-            Write-Host '   Retrieving SQL Anywhere password for 4.3 installer validation...' -ForegroundColor Yellow
-            $sqlAnywherePasswordKey = $Config.SecretConfig.secretKeys.sqlAnywhereAdminPassword
-            $sqlAnywherePassword = Get-SecretValue -SecretId $bodsSecretId -SecretKey $sqlAnywherePasswordKey
-            Write-Host "   SQL Anywhere Password Key: '$sqlAnywherePasswordKey'" -ForegroundColor Gray
-        }
-        
         if ($nodeType -eq 'primary') {
             # Primary node needs CMS, auditing, and CMS DB passwords
             $bods_cluster_key = Get-SecretValue -SecretId $bodsSecretId -SecretKey $bodsAdminPasswordKey
@@ -394,14 +385,7 @@ function Install-IPS {
             $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for primary node
-            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner")
-            
-            # Add SQL Anywhere password for 4.3 installations
-            if ($null -ne $sqlAnywherePassword) {
-                $installArgs += "sqlanywhereadminpassword=$sqlAnywherePassword"
-            }
-            
-            $installArgs += $responseFileResult.CommandLineArgs
+            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "cmspassword=$bods_cluster_key", "existingauditingdbpassword=$bods_ips_audit_owner", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
         }
         else {
             # Secondary node needs remote CMS admin and CMS DB passwords
@@ -409,14 +393,7 @@ function Install-IPS {
             $bods_ips_system_owner = Get-SecretValue -SecretId $sysDbSecretId -SecretKey $sysDbPasswordKey
             
             # Build installer arguments for secondary node
-            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner")
-            
-            # Add SQL Anywhere password for 4.3 installations
-            if ($null -ne $sqlAnywherePassword) {
-                $installArgs += "sqlanywhereadminpassword=$sqlAnywherePassword"
-            }
-            
-            $installArgs += $responseFileResult.CommandLineArgs
+            $installArgs = @('/wait', '-r .\IPS\ips_install.ini', "remotecmsadminpassword=$bods_cluster_key", "existingcmsdbpassword=$bods_ips_system_owner") + $responseFileResult.CommandLineArgs
         }
         
         'Installer Arguments (sensitive data masked):' | Out-File -FilePath $logFile -Append
