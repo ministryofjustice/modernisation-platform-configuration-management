@@ -121,7 +121,7 @@ while true; do
     args=(${ENDPOINTS[$i]})
     timeranges="${args[4]}"
     if [[ -n $timeranges ]]; then
-      now_dayhourminute=$(date +%u%H%M)
+      now_dayhourminute=$(date +%u.%H%M)
       if ! check_within_timeranges "$now_dayhourminute" "$timeranges"; then
         continue
       fi
