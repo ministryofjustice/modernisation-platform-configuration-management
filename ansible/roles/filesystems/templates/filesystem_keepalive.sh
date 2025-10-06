@@ -2,13 +2,15 @@
 # check mount is working by writing temporary file. Optionally update cloudwatch metric
 FILESHARE_SOURCE="$1"
 METRIC_NAME="$2"
+MAINTENANCE_WINDOW="$3"
 METRIC_DIR="{{ filesystems_metric_dir }}"
 
 if [[ -z $FILESHARE_SOURCE ]]; then
-  echo "Usage: $0 <source> [<metric_name>]" >&2
+  echo "Usage: $0 <source> [<metric_name>] [<maintenance_window]" >&2
   echo "Where" >&2
   echo "  <source>: fileshare source, e.g. first entry in fstab"
   echo "  <metric_name>: friendly name for file share for cloudwatch metric, no special chars or dashes"
+  echo "  <maintenance_window>: don't report errors during maintenance window, e.g. 1.0400-1.0430 day.HHMM where 1=Monday in UTC"
   exit 1
 fi
 
@@ -24,6 +26,15 @@ if [[ -z $mount_dir ]]; then
 else
   timeout 5 echo test > "$mount_dir/${HOSTNAME}_keepalive.txt"
   exitcode=$?
+fi
+
+if [[ $exitcode -ne 0 && -n $MAINTENANCE_WINDOW ]]; then
+  now_utc=$(date -u +%u.%H%M)
+  maintenance_times=(${MAINTENANCE_WINDOW/-/ })
+  if [[ ($now_utc == "${maintenance_times[0]}" || $now_utc > "${maintenance_times[0]}") && $now_utc < "${maintenance_times[1]}" ]]; then
+    echo "$FILESHARE_SOURCE: writing keepalive ${exitcode} failed; expected as in maintenance window"
+    exit 0
+  fi
 fi
 
 if [[ -n $METRIC_NAME ]]; then
