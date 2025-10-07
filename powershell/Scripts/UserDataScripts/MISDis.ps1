@@ -1,6 +1,7 @@
 $Scripts = @(
   '../Common/Set-TimezoneGMT.ps1',
   '../Common/Set-LoginText.ps1',
+  '../Common/Set-WindowsFirewallPortOpenInbound.ps1 -Port 8080',
   '../Oracle/Install-Oracle19cClient.ps1',
   '../Oracle/Set-TnsOraFileMISDis.ps1',
   '../Oracle/Install-SQLDeveloper.ps1',
