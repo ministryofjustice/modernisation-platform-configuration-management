@@ -1,7 +1,5 @@
-# Install WinRAR with specific version 7.12.0
+# Install WinRAR with specific version 7.12.0 because 'latest' failed to download as of Oct 2025
 . ../Common/Install-Choco-Package.ps1 winrar '7.12.0'
-# $scriptPath = Join-Path $PSScriptRoot 'Install-Choco-Package.ps1'
-# & $scriptPath -Package 'winrar' -Version '7.12.0'
 
 # Add WinRAR to system PATH environment variable
 $winrarPath = 'C:\Program Files\WinRAR'

@@ -1,11 +1,12 @@
 # Turn off the firewall as this will possibly interfere with Sia Node creation or other installations
-$Profiles = @("Domain", "Public", "Private")
-foreach ($Profile in $Profiles) {
-  $NetFirewallProfile = Get-NetFirewallProfile -Profile $Profile
+$Profiles = @('Domain', 'Public', 'Private')
+foreach ($FirewallProfile in $Profiles) {
+  $NetFirewallProfile = Get-NetFirewallProfile -Profile $FirewallProfile
   if ($NetFirewallProfile.Enabled -ne $false) {
-    Write-Output "Disabling firewall for profile $Profile"
-    Set-NetFirewallProfile -Profile $Profile -Enabled False
-  } else {
-    Write-Verbose "Firewall already disabled for profile $Profile"
+    Write-Output "Disabling firewall for profile: $FirewallProfile"
+    Set-NetFirewallProfile -Profile $FirewallProfile -Enabled False
+  }
+  else {
+    Write-Verbose "Firewall already disabled for profile: $FirewallProfile"
   }
 }
