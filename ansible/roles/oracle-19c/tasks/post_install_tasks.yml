@@ -10,7 +10,7 @@
   become: yes
   environment: "{{ grid_env }}"
 
-- name: Add FLASH disk group
+- name: Add FLASH disk group with default compatibility
   ansible.builtin.shell: |
     main() {
       echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }} attribute 'compatible.asm' = '{{ datadgcompatible.stdout }}';"'
@@ -21,6 +21,20 @@
   become_user: "{{ oracle_install_user }}"
   become: yes
   environment: "{{ grid_env }}"
+  when: grid_diskgroup_compatible_rdbms is not defined
+
+- name: Add FLASH disk group with defined compatibility
+  ansible.builtin.shell: |
+    main() {
+      echo 'sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }} attribute 'compatible.rdbms' = '{{ grid_diskgroup_compatible_rdbms }}';"'
+      source oraenv <<< +ASM
+      sqlplus -s / as sysasm <<< "create diskgroup FLASH external redundancy disk {{ oracle_flash_diskgroup_sql }} attribute 'compatible.rdbms' = '{{ grid_diskgroup_compatible_rdbms }}';"
+    }
+    main 2>&1 | logger -p local3.info -t ansible-oracle-db
+  become_user: "{{ oracle_install_user }}"
+  become: yes
+  environment: "{{ grid_env }}"
+  when: grid_diskgroup_compatible_rdbms is defined
 
 - name: Save spfile location
   ansible.builtin.shell: |
