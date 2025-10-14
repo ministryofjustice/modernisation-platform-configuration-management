@@ -15,6 +15,9 @@ oracle.install.asm.diskGroup.disksWithFailureGroupNames=
 oracle.install.asm.diskGroup.disks={{ oracle_data_diskgroup }}
 oracle.install.asm.diskGroup.quorumFailureGroupNames=
 oracle.install.asm.diskGroup.diskDiscoveryString=ORCL:*
+{% if grid_diskgroup_compatible_rdbms is defined %}
+oracle.install.asm.diskGroup.attributes=compatible.rdbms={{ grid_diskgroup_compatible_rdbms }}
+{% endif %}
 oracle.install.asm.monitorPassword={{ asmmonitorpassword }}
 oracle.install.asm.gimrDG.name=
 oracle.install.asm.gimrDG.redundancy=
