@@ -33,6 +33,7 @@
     - name: Run emcli execute_sql using SQL file
       shell: |
         . ~/.bash_profile
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         {{ emcli }} execute_sql \
           -sql="FILE" \
           -input_file="FILE:{{ sql_tmpfile }}" \
@@ -50,6 +51,7 @@
     - name: Execute each emcli revoke command
       shell: |
         . ~/.bash_profile
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         {{ item | trim }}
       loop: "{{ emcli_output.stdout_lines }}"
       when: emcli_output.stdout_lines is defined and emcli_output.stdout_lines | length > 0
@@ -105,6 +107,7 @@
     - name: List database targets with pack usage
       shell: |
         . ~/.bash_profile
+        export JAVA_HOME={{ agent_home }}/oracle_common/jdk/jre
         {{ emcli }} execute_sql \
           -sql="FILE" \
           -input_file="FILE:{{ sql_tmpfile }}" \
