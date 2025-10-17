@@ -39,8 +39,8 @@
           -credential_set_name="DBCredsNormal" \
           -targets="EMREP:oracle_database;"
       environment:
-        ORACLE_HOME: "{{ oem_mw_home }}"
-        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+        ORACLE_HOME: "{{ agent_home }}"
+        JAVA_HOME: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Read revoke commands from spool file
       shell: grep 'emcli' "{{ output_file }}" || true
@@ -54,8 +54,8 @@
       loop: "{{ emcli_output.stdout_lines }}"
       when: emcli_output.stdout_lines is defined and emcli_output.stdout_lines | length > 0
       environment:
-        ORACLE_HOME: "{{ oem_mw_home }}"
-        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+        ORACLE_HOME: "{{ agent_home }}"
+        JAVA_HOME: "{{ agent_home }}/oracle_common/jdk/jre"
       register: emcli_revoke_result
       failed_when: >
         (emcli_revoke_result.rc != 0 and
@@ -111,8 +111,8 @@
           -credential_set_name="DBCredsNormal" \
           -targets="EMREP:oracle_database;"
       environment:
-        ORACLE_HOME: "{{ oem_mw_home }}"
-        JAVA_HOME: "{{ oem_mw_home }}/oracle_common/jdk/jre"
+        ORACLE_HOME: "{{ agent_home }}"
+        JAVA_HOME: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Display contents of the output file if it exists
       shell: cat "{{ output_file }}"
