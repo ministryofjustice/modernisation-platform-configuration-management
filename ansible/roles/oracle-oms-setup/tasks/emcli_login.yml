@@ -1,7 +1,13 @@
+- name: Check if Middleware Home exists (we are on OEM Server)
+  stat:
+      path: "{{ oem_mw_home }}"
+  register: oem_mw_home_status
+
 # As this task runs on the OEM server we don't need to store the password in a temporary file - we can use secrets manager directly.
-- name: Secure EMCLI login
+- name: Secure EMCLI login (OEM Host)
   ansible.builtin.shell: |
     . ~/.bash_profile
+    set -e
     export ORACLE_HOME={{ oem_mw_home }}
     export JAVA_HOME=$ORACLE_HOME/oracle_common/jdk/jre
     EMCLI={{ emcli }}
@@ -21,3 +27,10 @@
   become_user: "{{ oracle_install_user }}"
   register: emcli_login_result
   failed_when: emcli_login_result.rc != 0
+  when: oem_mw_home_status.stat.exists
+
+- name: Secure EMCLI Login (non-OEM Host)
+  import_tasks: ../../oracle-oem-agent-setup/tasks/emcli_login.yml
+  when: not oem_mw_home_status.stat.exists
+        
+
