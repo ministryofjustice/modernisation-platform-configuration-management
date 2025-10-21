@@ -15,7 +15,9 @@ SET SERVEROUT ON
 DECLARE
     l_enabled dba_advisor_parameters.parameter_value%TYPE;
 BEGIN
-    SELECT parameter_value
+    -- If the Evolution Task is disabled it disappears from DBA_ADVISOR_PARAMETERS
+    -- so use MAX function to ensure we always get a value back
+    SELECT MAX(parameter_value)
     INTO l_enabled
     FROM dba_advisor_parameters
     WHERE task_name = 'SYS_AUTO_SPM_EVOLVE_TASK'
