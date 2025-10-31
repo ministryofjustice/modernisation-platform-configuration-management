@@ -55,11 +55,53 @@
         loop_var: oem_job
       vars:
         oem_hostname: "{{ ansible_hostname }}"
-        job_name: "Backup Report"
-        reported_applications: "{{ application_groups_flatten | regex_replace('\\n','')}}"
+        job_name: "{{ oem_job | basename | splitext | first }}"
 
     - name: emcli Login
       import_tasks: emcli_login.yml
+
+    # We replace all templated jobs in case the definitions have changed
+    # Any jobs that have been scheduled need to be stopped before they are deleted
+    - name: Get All Scheduled Jobs to be Stopped for Replacement
+      become_user: oracle
+      ansible.builtin.shell: |
+        {{ emcli }} get_jobs  -format=name:csv | awk -F, '{if($1==toupper("{{ oem_job | basename | splitext | first }}") && $8=="Scheduled"){print $3}}'
+      register: get_scheduled_job_ids
+      loop: "{{ oem_job_property_files }}"
+      loop_control:
+        loop_var: oem_job 
+      changed_when: false
+
+    - name: Create List of Scheduled Job IDs
+      set_fact:
+         scheduled_job_ids: "{{ get_scheduled_job_ids.results | map(attribute='stdout') | join(';') }}"
+
+    - name: Stop Scheduled Jobs Prior to Replacement
+      become_user: oracle
+      ansible.builtin.shell: |
+        {{ emcli }} stop_job -job_id="{{ scheduled_job_ids }}"
+      when: scheduled_job_ids != ""
+
+    # Now delete all of the jobs that we are about to replace
+    - name: Get All Jobs to be Replaced
+      become_user: oracle
+      ansible.builtin.shell: |
+        {{ emcli }} get_jobs  -format=name:csv | awk -F, '{if($1==toupper("{{ oem_job | basename | splitext | first }}")){print $3}}'
+      register: get_job_ids
+      loop: "{{ oem_job_property_files }}"
+      loop_control:
+        loop_var: oem_job 
+      changed_when: false
+
+    - name: Create List of Job IDs
+      set_fact:
+         job_ids: "{{ get_job_ids.results | map(attribute='stdout') | join(';') }}"
+
+    - name: Delete Jobs Prior to Replacement
+      become_user: oracle
+      ansible.builtin.shell: |
+        {{ emcli }} delete_job -job_id="{{ job_ids }}"
+      when: job_ids != ""
 
     - name: Create Jobs from OEM Property Files
       become_user: oracle
@@ -75,6 +117,9 @@
       failed_when:
         - not create_jobs.stdout is search('.*Creation of job.*was successful.*')
         - not create_jobs.stderr is search('.*A job matching.*already exists.*')
+
+    - debug:
+         var: create_jobs
 
   always:
     - name: Remove EMCLI Login Script

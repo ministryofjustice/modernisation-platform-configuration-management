@@ -214,35 +214,41 @@ variable.large_os_script=<<MULTILINE
 #!/bin/bash
 #
 #  This script is called by the OEM Job Scheduler to generate a daily report
-#  of RMAN Backups in this region (dev or prod).
-#  The output is written to the #delius-aws-oracle-backups Slack channel
+#  of RMAN Backups in this environment (dev, test, preprod or prod)
+#
+#  For Prison applications the report is sent to the #nomis-aws-oracle-backups Slack channel.
+#  For Probation applications the report is sent to the #delius-aws-oracle-backups Slack channel
 #
 #  Note that the RMAN Catalog database itself does not use a Catalog for backup
 #  for data for the local database backups are taken from V$RMAN views instead
 #
+#  * Probation databases are identified from Enterprise Manager (EM) where the orcl_gtp_line_of_bus is one of "delius" or "delius-mis"
+#  * Prison databases do not always use an EM Target Name which matches the db_name parameter, so they are less easy to map between
+#    EM and RMAN; therefore we simply include all databases which are NOT Probation ones.
 #
-
-REPORTED_APPLICATIONS="{{ reported_applications }}"
+#  The RMAN Recovery Catalog and EM OMS Repository databases are included in both reports as these are common infrastructure.
+#
 
 get_message(){
 
-EXCLUDE_UNCATALOGED_DATABASE_TARGETS=${1}
+DATABASE_GROUP=$1
 
-# Supply comma-separated list of applications for whose databases we are interested in reporting on
-# You can leave this unset if you want all databases, but notice that we have a hard-coded limit
-# of 45 application databases per report (due to Slack restrictions)
-# Ensure the list is quoted
-[[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" = "N" ]] && APPLICATIONS=$(echo $APPLICATIONS | sed "s/[^,]\+/'&'/g") || APPLICATIONS="''"
+if [[ "${DATABASE_GROUP}" != "prisons" ]] && [[ "${DATABASE_GROUP}" != "probation" ]];
+then
+	echo "Invalid database group for reporting."
+	exit 1
+fi
 
+# We must run this on an EM Host and the OMS database must be called EMREP
 OMR=$(awk -F: '/EMREP/{print $1}' /etc/oratab)
 
 [[ -z $OMR ]] && echo "Oracle EM OMR database not found" && exit 1
 
-export ORACLE_SID=$OMR
+export ORACLE_SID=EMREP
 export ORAENV_ASK=NO
 . oraenv
 
-DATABASE_TARGETS=$(
+PROBATION_DATABASES=$(
 sqlplus -s / as sysdba<<EOSQL
 SET HEADING OFF
 SET FEEDBACK OFF
@@ -251,6 +257,7 @@ SET LONG 4000
 SET LINES 4000
 SET PAGES 0
 
+-- Create CSV list of database target names for delius and delius-mis applications
 SELECT
     LISTAGG(''''||target_name||'''',',') WITHIN GROUP (ORDER BY target_name)
 FROM
@@ -258,22 +265,10 @@ FROM
 WHERE
     property_name = 'orcl_gtp_line_of_bus'
     AND target_type = 'oracle_database'
-    AND property_value IN (${APPLICATIONS});
+    AND property_value IN ('delius','delius-mis');
 EXIT
 EOSQL
 )
-
-DATABASE_TARGETS="${DATABASE_TARGETS:-'NONE'}"
-# Default DATABASE_TARGETS_TO_EXCLUDE to 'NONE' otherwise within SQL below where it says
-# UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) will not work unless there
-# is a value for $DATABASE_TARGETS_TO_EXCLUDE
-DATABASE_TARGETS_TO_EXCLUDE="${DATABASE_TARGETS_TO_EXCLUDE:-'NONE'}"
-
-if [[ "${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}" == "N" && "${DATABASE_TARGETS}" != "'NONE'" ]]
-then
-    DATABASE_TARGETS_TO_EXCLUDE=$DATABASE_TARGETS,$DATABASE_TARGETS_TO_EXCLUDE
-    DATABASE_TARGETS_TO_EXCLUDE=$(echo "${DATABASE_TARGETS_TO_EXCLUDE/%,/}")
-fi
 
 CATALOG=$(awk -F: '/RCVCAT/{print $1}' /etc/oratab)
 
@@ -312,12 +307,11 @@ AND        REGEXP_LIKE(s.status,'COMPLETED.*')
 AND        NOT REGEXP_LIKE(s.status,'.*ERROR.*')
 AND        s.object_type = 'DB INCR'
 AND        s.output_device_type = 'SBT_TAPE'
-AND        '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'Y'
 ORDER BY   s.start_time desc
 ),
 report_detail_local_db
 AS (
-SELECT * 
+SELECT *
 FROM (
 SELECT   db_name,
          incremental_level,
@@ -339,16 +333,10 @@ WHERE    incremental_level = 1
 ORDER BY completion_time DESC
 FETCH    FIRST ROW ONLY
 )),
-report_detail_catalog
+completion_times
 AS
-(SELECT db_name,incremental_level,min(start_time) start_time,max(completion_time) completion_time,sum(original_input_bytes) original_input_bytes
-FROM
-    rc_backup_set_details
-WHERE
-    ( db_name,
-      incremental_level,
-      session_key ) IN (
-        SELECT DISTINCT
+(
+SELECT DISTINCT
             db_name,
             incremental_level,
             session_key
@@ -369,12 +357,26 @@ WHERE
                         0,
                         1
                     )
-                AND ((UPPER(db_name) IN ($DATABASE_TARGETS) AND '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'N') OR
-		            (UPPER(db_name) NOT IN ($DATABASE_TARGETS_TO_EXCLUDE) AND '${EXCLUDE_UNCATALOGED_DATABASE_TARGETS}' = 'Y'))
+                AND (
+                        (UPPER(db_name) IN (${PROBATION_DATABASES}) AND '${DATABASE_GROUP}' = 'probation')
+		     OR (UPPER(db_name) NOT IN (${PROBATION_DATABASES}) AND '${DATABASE_GROUP}' = 'prisons')
+                     OR (UPPER(db_name) = 'EMREP')
+                    )
                 GROUP BY
                     db_name,
                     incremental_level
             )
+),
+report_detail_catalog
+AS
+(SELECT db_name,incremental_level,min(start_time) start_time,max(completion_time) completion_time,sum(original_input_bytes) original_input_bytes
+FROM
+    rc_backup_set_details
+WHERE
+    ( db_name,
+      incremental_level,
+      session_key ) IN (
+        SELECT * FROM completion_times
     )
 GROUP BY
     db_name,
@@ -398,23 +400,41 @@ SELECT * FROM report_detail_catalog
 WHERE rownum <= 46  -- Slack reporting limit
 UNION ALL
 SELECT * FROM report_detail_local_db
+UNION ALL
+SELECT db_name,0 incremental_level,NULL start_time,NULL completion_time,NULL original_input_bytes
+FROM   completion_times
+WHERE  session_key IS NULL
 )
 GROUP BY db_name
 ORDER BY db_name
-),
+)
+,
 report_formatting
 AS
 (
 SELECT db_name,
-TRIM(LOWER(TO_CHAR(l0_completion_time,'DY'))) l0_day,
-CASE WHEN SYSDATE-l0_completion_time > 8 THEN 'red' ELSE 'blue' END l0_days_colour,
-CASE WHEN SYSDATE-l0_completion_time > 8 THEN 8 ELSE TRUNC(SYSDATE-l0_completion_time)+1 END l0_days_no,
+CASE WHEN l0_completion_time IS NULL
+  THEN 'cross-red'
+  ELSE TRIM(LOWER(TO_CHAR(l0_completion_time,'DY')))
+END l0_day,
+CASE WHEN l0_completion_time IS NULL THEN 'brown'
+     WHEN SYSDATE-l0_completion_time > 8 THEN 'red'
+     ELSE 'blue' END l0_days_colour,
+CASE WHEN l0_completion_time IS NULL THEN 0
+     WHEN SYSDATE-l0_completion_time > 8 THEN 8
+     ELSE TRUNC(SYSDATE-l0_completion_time)+1 END l0_days_no,
 CASE WHEN l0_completion_time > l0_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l0_date_format,
-TRIM(LOWER(TO_CHAR(l1_completion_time,'DY'))) l1_day,
-CASE WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 AND db_name != 'TRNDA' THEN 'red' 
+CASE WHEN l1_completion_time IS NULL
+  THEN 'cross-red'
+  ELSE TRIM(LOWER(TO_CHAR(l1_completion_time,'DY')))
+END l1_day,
+CASE WHEN l1_completion_time IS NULL THEN 'brown'
+     WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 AND db_name != 'TRNDA' THEN 'red'
      WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 'red'
      ELSE 'blue' END l1_days_colour,
-CASE WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 4 ELSE TRUNC(SYSDATE-l1_completion_time)+1 END l1_days_no,
+CASE WHEN l1_completion_time IS NULL THEN 0
+     WHEN SYSDATE-l1_completion_time > 4 AND SYSDATE-l0_completion_time > 1 THEN 4
+     ELSE TRUNC(SYSDATE-l1_completion_time)+1 END l1_days_no,
 CASE WHEN l1_completion_time > l1_start_time+1 THEN 'DD/MM/YY HH24:MI' ELSE 'HH24:MI' END l1_date_format
 FROM report_summary
 ),
@@ -430,7 +450,7 @@ SELECT JSON_OBJECT(KEY 'type' VALUE 'divider') s2,
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE TO_CHAR(l0_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l0_completion_time,l0_date_format)),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
-                                                             KEY 'text' VALUE ':'||l0_day||': \`'||TRUNC(SYSDATE-l0_completion_time)||'\` '||REPLACE(LPAD(' ',l0_days_no,'X'),'X',':large_'||l0_days_colour||'_square:')),
+							     KEY 'text' VALUE ':'||l0_day||': \`'||COALESCE(TO_CHAR(TRUNC(SYSDATE-l0_completion_time)),'NO DATA')||'\` '||REPLACE(LPAD(' ',l0_days_no,'X'),'X',':large_'||l0_days_colour||'_square:')),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE 'level :one:'),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
@@ -438,7 +458,7 @@ SELECT JSON_OBJECT(KEY 'type' VALUE 'divider') s2,
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
                                                              KEY 'text' VALUE TO_CHAR(l1_start_time,'DD/MM/YY HH24:MI')||' - '||TO_CHAR(l1_completion_time,l1_date_format)),
                                                  JSON_OBJECT(KEY 'type' VALUE 'mrkdwn',
-                                                             KEY 'text' VALUE ':'||l1_day||': \`'||TRUNC(SYSDATE-l1_completion_time)||'\` '||REPLACE(LPAD(' ',l1_days_no,'X'),'X',':large_'||l1_days_colour||'_square:')))) s1
+							     KEY 'text' VALUE ':'||l1_day||': \`'||COALESCE(TO_CHAR(TRUNC(SYSDATE-l1_completion_time)),'NO DATA')||'\` '||REPLACE(LPAD(' ',l1_days_no,'X'),'X',':large_'||l1_days_colour||'_square:')))) s1
 FROM        report_summary rs
 LEFT JOIN   report_formatting  rc
 ON          rs.db_name = rc.db_name
@@ -466,29 +486,11 @@ SECRET_ARN="arn:aws:secretsmanager:eu-west-2:$(aws sts get-caller-identity | jq 
 SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id "${SECRET_ARN}" --query SecretString --output json)
 SLACK_TOKEN=$(echo ${SECRET_VALUE} | jq -r | jq -r 'to_entries[] | select(.key=="slack_token").value')
 
-IFS="|"
-for LINE in $REPORTED_APPLICATIONS
-do
-  APPLICATION_GROUP=$( echo $LINE | cut -d: -f1)
-  APPLICATIONS=$( echo $LINE | cut -d: -f2)
-  if [[ "${APPLICATION_GROUP}" != "prisons" ]]
-  then
-    if [[ "${APPLICATION_GROUP}" == "probation" ]]
-    then
-        SLACK_CHANNEL="#delius-aws-oracle-backups"
-    fi
-    get_message N
-    # Only post to slack when there are backups to report about
-    [[ "${DATABASE_TARGETS}" != "'NONE'" ]] && curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
-  fi
-done
-# Assumption: Prison applications is a special case for which some of the OEM database targets names do not match
-# their coresponding database parameter db_name value which is used as the DB_NAME in the RMAN catalog.
-# At this point, notification of all of the none prision database targets backups would have been posted
-# Therefore we can report on all of remaining RMAN catalog backups are related to prison and OEM applications
-get_message Y
-SLACK_CHANNEL="#nomis-aws-oracle-backups"
-curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="$SLACK_CHANNEL" -d text="Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
+get_message probation
+curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="#delius-aws-oracle-backups" -d text="Probation Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
+
+get_message prisons
+curl -X POST "https://slack.com/api/chat.postMessage" -H  "accept: application/json" -d token=${SLACK_TOKEN} -d channel="#nomis-aws-oracle-backups" -d text="Prisons Backup Report" -d blocks="$MESSAGE" -d icon_emoji=database
 MULTILINE
 
 
@@ -575,7 +577,7 @@ variable.no_shell_command=
 # Attributes which are not required may be omitted.
 schedule.frequency=REPEAT_BY_DAYS
 schedule.interval=1
-schedule.startTime=2024-04-01 11:30
+schedule.startTime=2025-01-01 {{ backup_report_start_time | default('11:30') }}
 schedule.endTime=
 schedule.months=
 schedule.days=
