@@ -68,11 +68,11 @@ function Add-RDLicensingServer {
     }
   }
 
-  if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
-    Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
-    if ($WhatIf.IsPresent) {
-      Write-Output "What-If: Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force"
-    } else {
+  if ($WhatIf.IsPresent) {
+    Write-Output "What-If: skipping Get-RDLicenseConfiguration as not working undo WhatIf"
+  } else {
+    if ((Get-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker).Mode -ne 'PerUser') {
+      Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
       Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
     }
   }
