@@ -1,4 +1,4 @@
-- name: Oracle Audit Databases
+- name: Oracle Audit Collection Main Tasks
   become: yes
   become_user: root
   become_method: sudo
@@ -6,6 +6,7 @@
     - import_tasks: get-kms-key.yml
       tags:
         - always
+      run_once: yes
 
     # Perform database auditing
     - import_tasks: audit-db-instance.yml
@@ -26,6 +27,7 @@
         - collection
         - databases
         - weblogic
+        - upload
 
     # Perform WebLogic cluster auditing - run once per environment
     - import_tasks: audit-weblogic-cluster.yml
