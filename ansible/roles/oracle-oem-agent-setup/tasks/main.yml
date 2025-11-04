@@ -89,7 +89,7 @@
   # This task shoudn't be run when run from oracle-oms-setup role
   when: 
      - "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
-     - create_gold_image | default(yes)
+     - create_gold_image | default(true)
 
 - import_tasks: cleanup.yml
   tags:
