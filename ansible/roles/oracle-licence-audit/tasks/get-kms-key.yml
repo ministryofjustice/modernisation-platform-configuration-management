@@ -1,5 +1,6 @@
 - name: Attempt remote KMS key lookup (ignore failures)
   shell: |
+    PATH=$PATH:/usr/local/bin
     aws s3api get-bucket-encryption \
       --bucket {{ db_backup_s3_bucket_name }} \
       --output text \
@@ -10,6 +11,7 @@
 
 - name: Fallback to localhost if remote lookup failed
   shell: |
+    PATH=$PATH:/usr/local/bin
     aws s3api get-bucket-encryption \
       --bucket {{ db_backup_s3_bucket_name }} \
       --output text \
