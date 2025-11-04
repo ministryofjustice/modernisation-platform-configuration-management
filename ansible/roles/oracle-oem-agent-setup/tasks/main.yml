@@ -74,12 +74,6 @@
     - oem_agent_install
     - agent_ru_upgrade
 
-- name: Create Gold Image Check
-  debug:
-    var: create_gold_image
-
-- import_tasks: debug.yml
-
 - import_tasks: agent_gold_image.yml
   tags:
     - amibuild
@@ -87,9 +81,7 @@
     - oem_agent_gold_image
   # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
   # This task shoudn't be run when run from oracle-oms-setup role
-  when: 
-     - "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
-     - create_gold_image | default(true)
+  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
 
 - import_tasks: cleanup.yml
   tags:
