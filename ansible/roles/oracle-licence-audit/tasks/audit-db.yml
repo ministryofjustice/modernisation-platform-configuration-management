@@ -1,7 +1,12 @@
 # tasks/audit-db.yml
+- name: Get the current caller identity information
+  amazon.aws.aws_caller_info:
+  register: caller_info
+
+# set the filename to use for audit output as caller_info.account plus inventory_hostname
 - name: Set fact for SQL output folder
   set_fact:
-    sql_output_dir: "{{ audit_dir }}/{{ inventory_hostname }}_{{ db_name }}"
+    sql_output_dir: "{{ audit_dir }}/{{ caller_info.account }}_{{ inventory_hostname }}_{{ db_name }}"
 
 - name: Create per-DB work directory
   file:
