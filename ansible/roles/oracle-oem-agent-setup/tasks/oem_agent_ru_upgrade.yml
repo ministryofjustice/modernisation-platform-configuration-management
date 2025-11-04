@@ -30,8 +30,8 @@
 
     - name: Check if RU patch is already applied
       shell: |
-        set -eo pipefail
-        {{ agent_home }}/AgentPatcher/agentpatcher lspatches | grep -c {{ agent_ru_patch_number }} | cat
+        set -euo pipefail
+        {{ agent_home }}/AgentPatcher/agentpatcher lspatches | grep -c {{ agent_ru_patch_number }}
       register: patch_status
       changed_when: false
       failed_when: false
