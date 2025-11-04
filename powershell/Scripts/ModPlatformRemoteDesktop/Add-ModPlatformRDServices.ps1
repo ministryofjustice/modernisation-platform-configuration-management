@@ -92,24 +92,16 @@ $GlobalConfig = @{
     "domain"              = "HMPP"
     "Collections"         = @{
       "CAFM-RDP" = @{
-        "SessionHosts"  = @("PD-CAFM-A-11-A.AZURE.HMPP.ROOT", "PD-CAFM-A-14-B.AZURE.HMPP.ROOT", "PD-CAFM-A-15-A.AZURE.HMPP.ROOT")
+        "SessionHosts"  = @(
+          "PD-CAFM-A-11-A.AZURE.HMPP.ROOT",
+          "PD-CAFM-A-12-B.AZURE.HMPP.ROOT",
+          "PD-CAFM-A-13-A.AZURE.HMPP.ROOT",
+          "PD-CAFM-A-14-B.AZURE.HMPP.ROOT",
+          "PD-CAFM-A-15-A.AZURE.HMPP.ROOT"
+        )
         "Configuration" = @{
           "CollectionDescription" = "PlanetFM RemoteDesktop App Collection"
           "UserGroup"             = @("HMPP\PROD_CAFM_SQL_USERS")
-        }
-      }
-      "CAFM-RDP-A-12" = @{
-        "SessionHosts"  = @("PD-CAFM-A-12-B.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PD-CAFM-A-13-A test"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
-        }
-      }
-      "CAFM-RDP-A-13" = @{
-        "SessionHosts"  = @("PD-CAFM-A-13-A.AZURE.HMPP.ROOT")
-        "Configuration" = @{
-          "CollectionDescription" = "PD-CAFM-A-13-A test"
-          "UserGroup"             = @("HMPP\drobinson", "HMPP\DQS06X")
         }
       }
       "pd-jump2022-1" = @{
@@ -129,26 +121,6 @@ $GlobalConfig = @{
       "PlanetEnterprise" = @{
         "CollectionName" = "CAFM-RDP"
         "DisplayName"    = "Qube Planet"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "calc12"             = @{
-        "CollectionName" = "CAFM-RDP-A-12"
-        "DisplayName"    = "Calculator A-12"
-        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
-      }
-      "PlanetEnterprise12" = @{
-        "CollectionName" = "CAFM-RDP-A-12"
-        "DisplayName"    = "Qube Planet A-12"
-        "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
-      }
-      "calc13"             = @{
-        "CollectionName" = "CAFM-RDP-A-13"
-        "DisplayName"    = "Calculator A-13"
-        "FilePath"       = 'C:\Windows\system32\win32calc.exe'
-      }
-      "PlanetEnterprise13" = @{
-        "CollectionName" = "CAFM-RDP-A-13"
-        "DisplayName"    = "Qube Planet A-13"
         "FilePath"       = 'C:\Program Files (x86)\Qube\Planet FM Enterprise\Programs\PlanetEnterprise.exe'
       }
     }
