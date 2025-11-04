@@ -81,7 +81,9 @@
     - oem_agent_gold_image
   # Added when clause as tags were ignored when this role is called from oracle-oms-setup role
   # This task shoudn't be run when run from oracle-oms-setup role
-  when: "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
+  when: 
+     - "'amibuild' in ansible_run_tags or 'ec2provision' in ansible_run_tags or 'oem_agent_gold_image' in ansible_run_tags"
+     - create_gold_image | default(yes)
 
 - import_tasks: cleanup.yml
   tags:
