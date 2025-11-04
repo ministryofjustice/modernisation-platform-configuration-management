@@ -7,23 +7,40 @@
       tags:
         - always
 
-    - import_tasks: audit-databases.yml
+    # Perform database auditing
+    - import_tasks: audit-db-instance.yml
       tags:
         - collection
         - databases
 
-    - import_tasks: audit-weblogic.yml
+    # Gather CPU usage information
+    - import_tasks: audit-cpu.yml
+      tags:
+        - collection
+        - databases
+        - weblogic
+
+    # Upload audit results from the database and/or CPU audits
+    - import_tasks: collection-upload.yml
+      tags:
+        - collection
+        - databases
+        - weblogic
+
+    # Perform WebLogic cluster auditing - run once per environment
+    - import_tasks: audit-weblogic-cluster.yml
       tags:
         - collection
         - weblogic
       run_once: yes
 
+    # Generate summary and zip up results - run once per environment
     - import_tasks: audit-summary.yml
       tags:
         - summary
       run_once: yes
 
-    - import_tasks: audit-upload.yml
+    - import_tasks: zip-upload.yml
       tags:
         - summary
       run_once: yes
