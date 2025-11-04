@@ -38,11 +38,13 @@ server_type_roles_list:
   - epel
   - disks
   - selinux-config
+  - filesystems
   - sap-bip-4
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
+  - collectd-textfile-monitoring
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -99,6 +101,7 @@ disks_mount:
     fstype: swap
 
 timezone: "Europe/London"
+filesystems_mount: "{{ sap_web_filesystems_mount|default([]) }}"
 
 sap_bip_responsefile: response.web.ini
 sap_web_disable_infoview: "false"
