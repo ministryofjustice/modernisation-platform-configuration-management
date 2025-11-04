@@ -17,7 +17,7 @@
         export PATH=$PATH:/usr/local/bin
         aws s3 sync s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/ \
           --exclude "*" \
-          --include "*-vcpus.txt" \
+          --include "*_vcpus.txt" \
           --include "*options_packs_usage_summary.txt"
 
     - name: Initialize combined text summary
@@ -32,8 +32,8 @@
         > "$summary"
 
         # Loop over each host’s vCPU file
-        find "{{ audit_dir }}" -type f -name "*-vcpus.txt" | sort | while read -r vfile; do
-          host=$(basename "$vfile" -vcpus.txt)
+        find "{{ audit_dir }}" -type f -name "*_vcpus.txt" | sort | while read -r vfile; do
+          host=$(basename "$vfile" _vcpus.txt)
 
           echo "Hostname: $host"              >> "$summary"
           echo "vCPU Info:"                   >> "$summary"

@@ -1,53 +1,102 @@
-- name: Set up audit directory
+# check if weblogic is running on the instance and if it's not skip the cpu audit
+- name: Check if WebLogic is running
+  shell: ps -ef | grep weblogic | grep -v grep
+  register: weblogic_process
+  changed_when: false
+
+- name: Skip CPU audit if WebLogic is not running
+  when: weblogic_process.stdout == ""
   block:
-    - name: Create work directory on remote host
-      file:
-        path: "{{ audit_dir }}"
-        state: directory
-        owner: oracle
-        mode: "777"
+    - name: Log skipping message
+      debug:
+        msg: "WebLogic not running on this host, skipping CPU audit tasks."
 
-    - name: Download utility shell scripts to {{ audit_dir }}
-      copy:
-        src: "{{ item }}"
-        dest: "{{ audit_dir }}/{{ item }}"
-        mode: "0755"
-      loop:
-        - cpuq.sh
-
-- name: CPU auditing
+- name: Run CPU audit if WebLogic is running
+  when: weblogic_process.stdout != ""
   block:
-    - name: Check if cpuq.sh script exists
-      stat:
-        path: "{{ audit_dir }}/cpuq.sh"
-      register: cpuq_stat
+    - name: Get the current caller identity information
+      amazon.aws.aws_caller_info:
+      register: caller_info
 
-    - name: Execute cpu script
-      shell: |
-        cd {{ audit_dir }}
-        echo 'y' | ./cpuq.sh {{ audit_dir }} > /dev/null 2>&1
-      register: cpuout
-
-    - name: Fetch cpu output files
-      fetch:
-        src: "{{ audit_dir }}/{{ inventory_hostname }}-ct_cpuq.txt"
-        dest: "{{ audit_dir }}/"
-        flat: yes
-
-    - name: Get instance ID using instance metadata (on remote EC2)
-      shell: curl -s http://169.254.169.254/latest/meta-data/instance-id
-      register: ec2_instance_id
-
-    - name: Set instance ID fact for later use
+    # set the filename to use for audit output as caller_info.account plus inventory_hostname
+    - name: Set audit filename based on caller identity
       set_fact:
-        instance_id: "{{ ec2_instance_id.stdout }}"
+        audit_filename: "{{ caller_info.account }}_{{ inventory_hostname }}"    
 
-    - name: Get CPU options from AWS CLI (CoreCount and ThreadsPerCore)
-      delegate_to: localhost
-      become: no
-      shell: |
-        aws ec2 describe-instances \
-          --instance-ids {{ instance_id }} \
-          --query "Reservations[].Instances[].CpuOptions" \
-          --region {{ region }} --output json > {{ audit_dir }}/{{ inventory_hostname }}-vcpus.txt
+    - name: Set up audit directory
+      block:
+        - name: Create work directory on remote host
+          file:
+            path: "{{ audit_dir }}"
+            state: directory
+            owner: oracle
+            mode: "777"
 
+        - name: Download utility shell scripts to {{ audit_dir }}
+          copy:
+            src: "{{ item }}"
+            dest: "{{ audit_dir }}/{{ item }}"
+            mode: "0755"
+          loop:
+            - cpuq.sh
+
+    - name: CPU auditing
+      block:
+        - name: Check if cpuq.sh script exists
+          stat:
+            path: "{{ audit_dir }}/cpuq.sh"
+          register: cpuq_stat
+
+        - name: Delete old cpu output files
+          shell: |
+            cd {{ audit_dir }}
+            rm -f *cpu*.txt 2>/dev/null || true
+          when: cpuq_stat.stat.exists
+
+        - name: Execute cpu script
+          shell: |
+            cd {{ audit_dir }}
+            echo 'y' | ./cpuq.sh {{ audit_dir }} > /dev/null 2>&1
+          when: cpuq_stat.stat.exists
+          register: cpuout
+
+        # the output file may get named with an ip address as the machine name, so always rename it to ensure the name is the audit_filename
+        - name: Rename cpu output file to standard name
+          shell: |
+            cd {{ audit_dir }}
+            mv *ct_cpuq.txt {{ audit_filename }}_ct_cpuq.txt 2>/dev/null || true
+          when: cpuq_stat.stat.exists
+
+        - name: Fetch cpu output files
+          fetch:
+            src: "{{ audit_dir }}/{{ audit_filename }}_ct_cpuq.txt"
+            dest: "{{ audit_dir }}/"
+            flat: yes
+
+        - name: Get instance ID using instance metadata (on remote EC2)
+          # Original approach using curl -s http://169.254.169.254/latest/meta-data/instance-id was not working as expected
+          # on some instances due to network restrictions, so we read from the cloud-init data file instead
+          shell: cat /var/lib/cloud/data/instance-id
+          register: ec2_instance_id
+
+        - name: Set instance ID fact for later use
+          set_fact:
+            instance_id: "{{ ec2_instance_id.stdout }}"
+        
+        - name: Get CPU options from AWS CLI (CoreCount and ThreadsPerCore)
+          # some systems may not have aws cli installed or configured, so ignore errors
+          shell: |
+            PATH=$PATH:/usr/local/bin
+            aws ec2 describe-instances \
+              --instance-ids {{ instance_id }} \
+              --query "Reservations[].Instances[].CpuOptions" \
+              --region {{ region }} --output json > {{ audit_dir }}/{{ audit_filename }}_vcpus.txt
+          ignore_errors: true
+
+        - name: Fetch vcpu output files
+          fetch:
+            src: "{{ audit_dir }}/{{ audit_filename }}_vcpus.txt"
+            dest: "{{ audit_dir }}/"
+            flat: yes
+          ignore_errors: true
+          changed_when: false
