@@ -74,46 +74,36 @@
         gold_image_rows: "{{ gold_image_rows + [ dict(csv_header | zip(item)) ] }}"
       loop: "{{ processed_rows }}"
 
-    - name: Filter to target version
-      set_fact:
-        target_image: "{{ gold_image_rows | selectattr('Version Name', 'equalto', agent_image_version_name) | list | first }}"
+    # We can only reuse Gold Image Version Names if they are not Current
+    - name: If Reusing a Gold Image Version Name check it is not Current
+      when: gold_image_rows | selectattr('Version Name', 'equalto', active_gold_image_name) | list | length > 0
+      block:
 
-    - name: Get highest Gold Image Version among Active versions
-      set_fact:
-        max_active_version: >-
-          {{
-            gold_image_rows
-            | selectattr('Status', 'equalto', 'Active')
-            | map(attribute='Gold Image Version')
-            | map('int')
-            | max
-          }}
+        - name: Determine if target image is deletable
+          set_fact:
+           is_deletable: >-
+             {{ gold_image_rows
+                | selectattr('Version Name', 'equalto', active_gold_imahge_name)
+                | selectattr('Status', 'equalto', 'Current')
+                | list | length == 0
+             }}
 
-    - name: Determine if target image is deletable
-      set_fact:
-        is_deletable: >-
-          {{
-            target_image['Status'] == 'Active'
-            and (target_image['Gold Image Version'] | int) == max_active_version
-          }}
+        - name: Show deletion decision
+          debug:
+            msg: >-
+              Version {{ agent_image_version_name }} can{{ '' if is_deletable else 'not' }} be deleted.
 
-    - name: Show deletion decision
-      debug:
-        msg: >-
-          Version {{ agent_image_version_name }} can{{ '' if is_deletable else 'not' }} be deleted.
+        - name: Fail if Gold Image version name already exists and is in Current status
+          ansible.builtin.fail:
+            msg: "Gold Image version name {{ active_gold_image_name }} exists and can't be deleted. Update the Gold Image version name to a different value and try again."
+          when: not is_deletable
 
-    - name: Fail if Gold Image version name already exists and is in Current status
-      ansible.builtin.fail:
-        msg: "Gold Image version name {{ active_gold_image_name }} exists and can't be deleted. Update the Gold Image version name to a different value and try again."
-      when: not is_deletable
-
-    - name: Delete existing Gold Image version if it's not in Current status
-      ansible.builtin.shell: |
-        emcli delete_gold_agent_image -version_name="{{ active_gold_image_name }}"
-      changed_when: false
-      ignore_errors: yes
-      register: create_gold_image_result
-      when: is_deletable
+        - name: Delete existing Gold Image version if it's not in Current status
+          ansible.builtin.shell: |
+            emcli delete_gold_agent_image -version_name="{{ active_gold_image_name }}"
+          changed_when: false
+          register: create_gold_image_result
+          when: is_deletable
 
     - name: Ensure oem agent is up and running
       import_tasks: start_agent.yml
