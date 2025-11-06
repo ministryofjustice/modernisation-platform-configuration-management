@@ -64,3 +64,42 @@ sql_plan_baselines:
      - SQL_a4dca55001c01f27
      - SQL_55297a64b8f91421
      - SQL_cc61b358b26dd4dd
+# For Delius databases *only*, allow the DELIUS_APP_SCHEMA.PRF_COLL_JOB to run for up to the
+# period described in the ND_PARAMETERS table:  PRF_MT_MASTER_ITERATIONS * PRF_MT_MASTER_INTERVAL 
+# (convert from seconds to minutes to set the thresholds)
+host_oem_metrics:
+  oracle_database:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
+    STGNDA:
+      input_file: |
+        START_RECORD 1
+        metric , problemTbsp
+        column , pctUsed
+        key_columns , ;
+        warning_threshold , 81
+        critical_threshold , 90
+        END_RECORD 1
+        START_RECORD 2
+        metric , db_dbms_scheduler_jobs
+        column , elapse_run_time
+        key_columns , DELIUS_APP_SCHEMA;PRF_COLL_JOB;
+        warning_threshold , 240
+        critical_threshold , 250
+        END_RECORD 2
+  oracle_listener:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , Response
+        column , tnsPing
+        warning_threshold , 500
+        critical_threshold , 1200
+        END_RECORD 1
