@@ -1,0 +1,13 @@
+---
+- block:
+    - name: Copy common tomcat root files
+      ansible.builtin.template:
+        src: "web/{{ item }}"
+        dest: "{{ onr_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/ROOT/keepalive.htm
+
+  #  block
+  when: onr_bip_is_web

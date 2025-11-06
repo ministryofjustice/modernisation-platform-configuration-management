@@ -1,0 +1,13 @@
+---
+- block:
+    - import_tasks: set_installed_facts.yml
+      tags:
+        - always
+
+    - import_tasks: setup_tomcat.yml
+      tags:
+        - ec2provision
+        - onr_bip_setup_tomcat
+
+  # block
+  when: ansible_distribution in ['RedHat']
