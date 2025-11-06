@@ -43,12 +43,36 @@
         dest: "{{ agent_install_response_file }}"
         mode: "0600"
 
+    - name: Show Gold Images Available on OEM
+      ansible.builtin.shell: |
+        set -eo pipefail
+        main() {
+          {{ stage }}/AgentPull.sh -showGoldImages
+        }
+        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-show-gold-images
+      register: show_gold_images
+      changed_when: false
+
+    - name: Check if Requested Gold Image is Available
+      set_fact:
+         gold_image_available_on_oms:  "{{ agent_image_name in show_gold_images.stdout_lines }}"
+
+    - name: If the Gold Image is Available use it in Preference to the Default Agent Image
+      ansible.builtin.lineinfile:
+         path: "{{ stage }}/AgentPull.sh"
+         line: "IMAGE_NAME={{ agent_image_name }}"
+         insertafter: EOF
+
     # Running multiple AgentPull.sh scripts simultaneously on different
     # instances has been found to sometimes result in corruption of
     # downloaded zip files.  It is unclear why this is happening (possible
     # concurrency or overloading on OMS, or session management issues).
     # To avoid the problem we throttle this task to happen only on one
     # host at a time.
+    # NB: If we are installing the default Agent on a host with no databases
+    #     it will only install the DB Discovery Plugin; not the DB Plugin
+    #     This can be installed later using:
+    #        emcli deploy_plugin_on_agent -agent_names="<agent>:3872" -plugin=oracle.sysman.db
     - name: Install OEM agent
       ansible.builtin.shell: |
         set -eo pipefail
