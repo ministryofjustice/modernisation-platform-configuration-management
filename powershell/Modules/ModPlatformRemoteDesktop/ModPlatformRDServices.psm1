@@ -73,6 +73,7 @@ function Add-RDLicensingServer {
     if ($WhatIf.IsPresent) {
       Write-Output "What-If: Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force"
     } else {
+      Write-Output "${LicensingServer}: Setting PerUser LicensingMode"
       Set-RDLicenseConfiguration -ConnectionBroker $ConnectionBroker -LicenseServer $LicensingServer -Mode PerUser -Force
     }
   }

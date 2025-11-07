@@ -1,8 +1,9 @@
 audit_dir: /tmp/audit
-audit_zip_file: "audit-{{ ansible_date_time.date }}.zip"
-weblogic_file: "{{ environment_name }}-audit-weblogic.lst"
-weblogic_output: "{{ audit_dir }}/{{ weblogic_file }}"
+audit_zip_file: "audit_{{ ansible_date_time.date }}.zip"
+weblogic_cluster_file: "{{ environment_name }}_audit_weblogic.lst"
+weblogic_cluster_output: "{{ audit_dir }}/{{ weblogic_cluster_file }}"
 # Use folder in yyyy-mm format for audit output as the audit collection could be run multiple times in a month
 audit_output: "dependencies/oracle/utils/audit/{{ ansible_date_time.year }}-{{ '%02d' | format(ansible_date_time.month | int) }}"
 region: "{{ aws_region | default('eu-west-2') }}"
 bucket_name: "{{ dependencies_bucket.name | default('mod-platform-image-artefact-bucket20230203091453221500000001') }}"
+upload_collection: true # Set to true to enable S3 upload of audit results, or false for local debugging purposes

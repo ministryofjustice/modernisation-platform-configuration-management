@@ -1,0 +1,34 @@
+- name: Set up audit directory
+  block:
+    - name: Create work directory on remote host
+      file:
+        path: "{{ audit_dir }}"
+        state: directory
+        owner: oracle
+        mode: "777"
+
+    - name: Download utility SQL scripts to {{ audit_dir }}
+      copy:
+        src: "{{ item }}"
+        dest: "{{ audit_dir }}/{{ item }}"
+        mode: "0644"
+        owner: oracle
+      loop:
+        - options_packs_usage_statistics.sql
+        - options_packs_usage_summary.sql
+        - ReviewLite23.3.sql
+
+- name: Database auditing
+  block:
+    - name: Get db name running
+      shell: ps -ef | grep ora_smon | grep -v grep | cut -d'_' -f3
+      register: db_names
+      changed_when: false
+
+    - name: Audit each Oracle DB instance
+      include_tasks: audit-db.yml
+      loop: "{{ db_names.stdout_lines }}"
+      loop_control:
+        loop_var: db_name
+      when: db_names.stdout_lines | length > 0
+

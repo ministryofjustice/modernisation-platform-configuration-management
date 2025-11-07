@@ -1,0 +1,20 @@
+- name: Upload audit results
+  when: upload_collection | default(true) | bool
+  block:
+    - name: Upload only this hosts audit results to S3
+      delegate_to: localhost
+      become: no
+      shell: |
+        PATH=$PATH:/usr/local/bin
+        aws s3 cp --recursive "{{ audit_dir }}/" \
+          "s3://{{ bucket_name }}/{{ audit_output }}/" \
+          --exclude "*" \
+          --include "*{{ inventory_hostname }}*" \
+          --acl bucket-owner-full-control \
+          {{ general_kms_key_option | default('') }}
+      register: upload_audit_output
+
+    - name: Show output of audit upload
+      when: upload_audit_output is defined
+      debug:
+        msg: "Audit upload output is {{ upload_audit_output.stdout }}"
