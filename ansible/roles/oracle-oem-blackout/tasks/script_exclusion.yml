@@ -79,7 +79,7 @@
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
-        export PATH=$PATH:{{ emcli_java_location }}
+        export JAVA_HOME={{ emcli_java_location }}
         echo "{{ emcli }} set_target_property_value -property_records='{{ get_agent_host.stdout }}:host:Comment:{{ exclude_comment }}'"
         {{ emcli }} set_target_property_value -property_records="{{ get_agent_host.stdout }}:host:Comment:{{ exclude_comment }}"
       register: updatecomment
@@ -126,7 +126,7 @@
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
-        export PATH=$PATH:{{ emcli_java_location }}
+        export JAVA_HOME={{ emcli_java_location }}
         {{ emcli }} set_target_property_value -property_records="{{ get_agent_host.stdout }}:host:Comment:"
       register: updatecomment
 
