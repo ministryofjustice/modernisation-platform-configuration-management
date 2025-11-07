@@ -48,11 +48,7 @@
     # it exists, so check for availability.
     - name: Show Gold Images Available on OEM
       ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
           {{ stage }}/AgentPull.sh -showGoldImages
-        }
-        main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-show-gold-images
       register: show_gold_images
       changed_when: false
 
