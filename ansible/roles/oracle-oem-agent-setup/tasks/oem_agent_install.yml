@@ -113,7 +113,7 @@
               set -eo pipefail
               main() {
                 cd {{ gold_image_tmp.path }}
-                ./agent_deploy.sh RESPONSE_FILE={{ agent_deploy_response_file }}
+                ./agentDeploy.sh RESPONSE_FILE={{ agent_deploy_response_file }}
               }
               main 2>&1 | logger -p local3.info -t ansible-oracle-oem-agent-deploy
             async: 86400
