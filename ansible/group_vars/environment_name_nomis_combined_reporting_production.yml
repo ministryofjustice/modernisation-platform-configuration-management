@@ -152,6 +152,38 @@ sap_bip_confs:
   pd:
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_bip_control_lbs: "private public admin"
+    sap_bip_control_app_servers: |
+      AdaptiveJobServer,Running,Enabled
+      AdaptiveProcessingServer,Stopped,Disabled
+      APS.Analysis,Stopped,Disabled
+      APS.Connectivity,Running,Enabled
+      APS.Core,Stopped,Disabled
+      APS.DF,Running,Enabled
+      APS.Monitoring,Stopped,Disabled
+      APS.Visualization,Running,Enabled
+      APS.WebI,Running,Enabled
+      APS.WebIDSLBridge,Running,Enabled
+      ConnectionServer,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+      WebIntelligenceProcessingServer,Running,Enabled
+    sap_bip_control_cms_servers: |
+      AdaptiveJobServer,Stopped,Disabled
+      APS.Auditing,Running,Enabled
+      APS.Connectivity,Stopped,Disabled
+      APS.Core,Running,Enabled
+      APS.Monitoring,Running,Enabled
+      APS.PromotionManagement,Running,Enabled
+      CentralManagementServer,Running,Enabled
+      ConnectionServer,Stopped,Disabled
+      EventServer,Running,Enabled
+      InputFileRepository,Running,Enabled
+      OutputFileRepository,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+    sap_bip_control_cms_server_1: |
+      APS.Search,Stopped,Disabled
+    sap_bip_control_cms_server_2: |
+      APS.Search,Running,Enabled
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "true"
@@ -167,6 +199,11 @@ sap_bip_confs:
       sap_web_java_opts: "-Xms8192m -Xmx8192m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
+sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
+sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
+sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
+sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
