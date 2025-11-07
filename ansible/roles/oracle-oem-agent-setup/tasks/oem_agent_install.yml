@@ -100,6 +100,7 @@
             ansible.builtin.unarchive:
                src: "{{ gold_image_tmp.path }}/agent.zip"
                dest: "{{ gold_image_tmp.path }}"
+               remote_src: true
 
           - name: Copy Response File to Deploy OEM Agent
             ansible.builtin.template:
@@ -145,16 +146,16 @@
           poll: 60
           throttle: 1
 
-  # always:
-  #   - name: Remove Response Files
-  #     file:
-  #       path: "{{ agent_install_response_file }}"
-  #       state: absent
-  #     loop_control:
-  #       loop_var: response_file
-  #     loop:
-  #        - "{{ agent_install_response_file }}"
-  #        - "{{ agent_deploy_response_file }}"
+  always:
+    - name: Remove Response Files
+      file:
+        path: "{{ agent_install_response_file }}"
+        state: absent
+      loop_control:
+        loop_var: response_file
+      loop:
+         - "{{ agent_install_response_file }}"
+         - "{{ agent_deploy_response_file }}"
 
   # block
   become: true
