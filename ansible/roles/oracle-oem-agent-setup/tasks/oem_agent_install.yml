@@ -72,12 +72,21 @@
               line: "IMAGE_NAME={{ agent_image_name }}"
               insertafter: EOF
 
-          - name: Create Directory for Downloading Gold Image
+          - name: Create Temporary Directory for Downloading Gold Image
             ansible.builtin.tempfile:
                state: directory
                suffix: agent_gold_image
             register: gold_image_tmp
-            
+
+          # If AGENT_BASE_DIR is set the Gold Image will be placed there,
+          # but we want to just place it in a temporary location so we remove
+          # that parameter
+          - name: Remove AGENT_BASE_DIR from Response File
+            ansible.builtin.lineinfile:
+                path: "{{ agent_install_response_file }}"
+                state: absent    
+                regexp: '^\s*AGENT_BASE_DIR\s*=.*$'
+
           - name: Download OEM agent Gold Image
             ansible.builtin.shell: |
               set -eo pipefail
