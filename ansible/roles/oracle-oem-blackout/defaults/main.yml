@@ -1,6 +1,5 @@
 app_dir: /u01/app/oracle/product
 emcli: "{{ '/u01/app/oracle/product/emcli/emcli' if (inventory_hostname is not search('oem')) else '/u01/app/oracle/product/mw135/bin/emcli' }}"
-emcli_java_location: /u01/app/oracle/product/oem-agent/agent_{{ OEM_AGENT_VERSION }}/oracle_common/jdk/jre/bin
 oem_secretsmanager_passwords:
   emrep:
     account_name: "hmpps-oem-{{ aws_environment }}"

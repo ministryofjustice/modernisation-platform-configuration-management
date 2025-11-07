@@ -9,6 +9,21 @@
   register: get_agent_host
   changed_when: false
 
+# The AGENT_HOME is where the agent binaries are located.  We cannot assume this is in the location
+# pointed to the by OEM_AGENT_VERSION since he Agent may have been deployed by a Gold Image with
+# a directory based on the Gold Image Version Name.  Therefore we query the agent directly to find
+# its home.  This allows us to find the location of the JRE to use with EMCLI.
+- name: Locate Agent Binaries Directory
+  shell: |
+    . ~/.bash_profile
+    {{ emctl_agent }} status agent | awk -F: '/Agent Binaries/{print $2}'
+  register: get_agent_binaries_directory
+  changed_when: false  
+
+- name: Set Agent Home
+  set_fact:
+     agent_home: "{{ get_agent_binaries_directory.stdout | trim }}"
+  
 - name: Temporarily Exclude Host from Monitoring
   when: action == 'start'
   block:
@@ -79,10 +94,11 @@
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
-        export JAVA_HOME={{ emcli_java_location }}
         echo "{{ emcli }} set_target_property_value -property_records='{{ get_agent_host.stdout }}:host:Comment:{{ exclude_comment }}'"
         {{ emcli }} set_target_property_value -property_records="{{ get_agent_host.stdout }}:host:Comment:{{ exclude_comment }}"
       register: updatecomment
+      environment:
+         JAVA_HOME: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Show Host Comment Command
       debug:
@@ -126,9 +142,10 @@
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
-        export JAVA_HOME={{ emcli_java_location }}
         {{ emcli }} set_target_property_value -property_records="{{ get_agent_host.stdout }}:host:Comment:"
       register: updatecomment
+      environment:
+         JAVA_HOME: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Show Host Comment Command
       debug:
