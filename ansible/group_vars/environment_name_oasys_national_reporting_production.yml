@@ -73,14 +73,35 @@ sap_bip_confs:
   pd:
     sap_web_java_mem: "4096"
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
+    sap_bip_rws_url: "https://reporting.oasys.service.justice.gov.uk/biprws"
     sap_bip_auditing_db_server: PDBOAUD
     sap_bip_auditing_db_user: bip_audit_owner
     sap_bip_cms_db_server: PDBOSYS
     sap_bip_cms_db_user: bip_system_owner
+    sap_bip_control_lbs: "public"
+    sap_bip_control_app_servers:
+    sap_bip_control_cms_servers: |
+      AdaptiveJobServer,Running,Enabled
+      AdaptiveProcessingServer,Running,Enabled
+      CentralManagementServer,Running,Enabled
+      ConnectionServer,Running,Enabled
+      EventServer,Running,Enabled
+      InputFileRepository,Running,Enabled
+      OutputFileRepository,Running,Enabled
+      WebApplicationContainerServer,Running,Enabled
+      WebIntelligenceProcessingServer,Running,Enabled
+    sap_bip_control_cms_server_1:
+    sap_bip_control_cms_server_2:
 
 sap_environment: "{{ onr_environment }}"
 sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
+sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
+sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
+sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
+sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
+sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_bip_auditing_db_server: "{{ sap_bip_conf.sap_bip_auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_conf.sap_bip_auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_conf.sap_bip_cms_db_server }}"

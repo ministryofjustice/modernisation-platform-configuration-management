@@ -39,7 +39,7 @@
 DRYRUN=0
 VERBOSE=0
 BIPRWS_LOGON_TOKEN=
-LBS=
+LBS="{{ sap_bip_control_lbs }}"
 FORMAT=default
 LOGPREFIX=
 APPLICATION_NAME="{{ application }}"
@@ -58,57 +58,10 @@ CURL_TIMEOUT_BIPRWS_GET=60 # seconds
 # Always logout of biprws on exit
 trap '[[ -n $BIPRWS_LOGON_TOKEN ]] && curl -Ss -m "$CURL_TIMEOUT_BIPRWS_LOGOFF" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-SAP-LogonToken: $BIPRWS_LOGON_TOKEN" --data "" "$BIPRWS_URL/v1/logoff"' EXIT
 
-APP_SERVERS="AdaptiveJobServer,Running,Enabled
-AdaptiveProcessingServer,Stopped,Disabled
-APS.Analysis,Stopped,Disabled
-APS.Connectivity,Running,Enabled
-APS.Core,Stopped,Disabled
-APS.DF,Running,Enabled
-APS.Monitoring,Stopped,Disabled
-APS.Visualization,Running,Enabled
-APS.WebI,Running,Enabled
-APS.WebIDSLBridge,Running,Enabled
-ConnectionServer,Running,Enabled
-WebApplicationContainerServer,Stopped,Disabled
-WebIntelligenceProcessingServer,Running,Enabled"
-
-CMS_SERVERS="AdaptiveJobServer,Stopped,Disabled
-APS.Auditing,Running,Enabled
-APS.Connectivity,Stopped,Disabled
-APS.Core,Running,Enabled
-APS.Monitoring,Running,Enabled
-APS.PromotionManagement,Running,Enabled
-CentralManagementServer,Running,Enabled
-ConnectionServer,Stopped,Disabled
-EventServer,Running,Enabled
-InputFileRepository,Running,Enabled
-OutputFileRepository,Running,Enabled
-WebApplicationContainerServer,Stopped,Disabled"
-
-CMS_SERVERS_1="APS.Search,Stopped,Disabled"
-CMS_SERVERS_2="APS.Search,Running,Enabled"
-
-CMS_ONLY_SERVERS="AdaptiveJobServer,Running,Enabled
-AdaptiveProcessingServer,Stopped,Disabled
-APS.Analysis,Stopped,Disabled
-APS.Auditing,Stopped,Disabled
-APS.Connectivity,Running,Enabled
-APS.Core,Running,Enabled
-APS.Data,Stopped,Disabled
-APS.DF,Running,Enabled
-APS.Monitoring,Running,Enabled
-APS.PromotionManagement,Running,Enabled
-APS.Search,Stopped,Disabled
-APS.Visualization,Running,Enabled
-APS.Webi,Running,Enabled
-APS.WebIDSLBridge,Running,Enabled
-CentralManagementServer,Running,Enabled
-ConnectionServer,Running,Enabled
-EventServer,Running,Enabled
-InputFileRepository,Running,Enabled
-OutputFileRepository,Running,Enabled
-WebApplicationContainerServer,Stopped,Disabled
-WebIntelligenceProcessingServer,Running,Enabled"
+APP_SERVERS="{{ sap_bip_control_app_servers }}"
+CMS_SERVERS="{{ sap_bip_control_cms_servers }}"
+CMS_SERVERS_1="{{ sap_bip_control_cms_server_1 }}"
+CMS_SERVERS_2="{{ sap_bip_control_cms_server_2 }}"
 
 usage() {
   echo "Usage $0: <opts> <cmd>
@@ -117,7 +70,7 @@ Where <opts>:
   -a                        For diff option, only check the entries in <a> match <b>
   -d                        Enable dryrun for maintenance mode commands
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
-  -l public|private|admin   Select LB endpoint(s)
+  -l <endpoint>             Select LB endpoint(s), must be one of: $LBS
   -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
@@ -200,21 +153,15 @@ set_env_variables() {
     ADMIN_URL=admin.$BASE_URL
     PUBLIC_LB_URL=$BASE_URL
     PRIVATE_LB_URL=int.$BASE_URL
-    if [[ -z $LBS ]]; then
-      LBS="private public admin"
-    fi
   else
-    ADMIN_URL=$SAP_ENVIRONMENT.$BASE_URL
+    ADMIN_URL=admin.$SAP_ENVIRONMENT.$BASE_URL
     PUBLIC_LB_URL=$SAP_ENVIRONMENT.$BASE_URL
     PRIVATE_LB_URL=$SAP_ENVIRONMENT-int.$BASE_URL
-    if [[ -z $LBS ]]; then
-      LBS="private public"
-    fi
   fi
 {% if sap_web_biprws_localhost_url is defined %}
   BIPRWS_URL="{{ sap_web_biprws_localhost_url }}"
 {% else %}
-  BIPRWS_URL="https://$ADMIN_URL/biprws"
+  BIPRWS_URL="{{ sap_bip_rws_url }}"
 {% endif %}
 }
 
@@ -294,10 +241,6 @@ set_env_lb() {
     LB_BACKEND_PORT=$PRIVATE_LB_BACKEND_PORT
     LB_URL=$PRIVATE_LB_URL
   elif [[ $1 == "admin" ]]; then
-    if [[ $ADMIN_URL == "$PUBLIC_LB_URL" ]]; then
-      error "No specific admin endpoint for this environment"
-      return 1
-    fi
     LB_NAME=$ADMIN_LB_NAME
     LB_RULE_MAINTENANCE_PRIORITY=$ADMIN_LB_RULE_MAINTENANCE_PRIORITY
     LB_PORT=$ADMIN_LB_PORT
@@ -534,42 +477,29 @@ get_expected_servers() {
   local server
 
   (
-    if [[ -n $APP_EC2_NAMES ]]; then
-      if [[ -z $CMS_EC2_NAMES ]]; then
-        error "Error finding EC2 names with *-bip-cms server-type tag, only got *-bip-app server-type: $APP_EC2_NAMES"
-        return 1
-      fi
-      for ec2 in $APP_EC2_NAMES; do
-        for server in $APP_SERVERS; do
-          echo "${ec2//-/}.$server"
-        done
-      done
-      for ec2 in $CMS_EC2_NAMES; do
-        for server in $CMS_SERVERS; do
-          echo "${ec2//-/}.$server"
-        done
-        if [[ $ec2 == *1 && $CMS_EC2_NAMES == *\ * ]]; then
-          for server in $CMS_SERVERS_1; do
-            echo "${ec2//-/}.$server"
-          done
-        else
-          for server in $CMS_SERVERS_2; do
-            echo "${ec2//-/}.$server"
-          done
-        fi
-      done
-    elif [[ $CMS_EC2_NAMES == *\ * ]]; then
-      error "Unsupported configuration, no app servers but multiple cms"
-      return 1
-    elif [[ -n $CMS_EC2_NAMES ]]; then
-      ec2=$CMS_EC2_NAMES
-      for server in $CMS_ONLY_SERVERS; do
-        echo "${ec2//-/}.$server"
-      done
-    else
+    if [[ -z $CMS_EC2_NAMES ]]; then
       error "Error finding EC2s with *-bip-cms and *-bip-app server-type tags"
       return 1
     fi
+    for ec2 in $APP_EC2_NAMES; do
+      for server in $APP_SERVERS; do
+        echo "${ec2//-/}.$server"
+      done
+    done
+    for ec2 in $CMS_EC2_NAMES; do
+      for server in $CMS_SERVERS; do
+        echo "${ec2//-/}.$server"
+      done
+      if [[ $ec2 == *1 && $CMS_EC2_NAMES == *\ * ]]; then
+        for server in $CMS_SERVERS_1; do
+          echo "${ec2//-/}.$server"
+        done
+      else
+        for server in $CMS_SERVERS_2; do
+          echo "${ec2//-/}.$server"
+        done
+      fi
+    done
   ) | sed 's/,/\t/g' | sort -uf
 }
 
