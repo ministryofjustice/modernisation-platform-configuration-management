@@ -6,13 +6,17 @@ app_dir: /u01/app/oracle/product
 oem_agent_base: "{{ app_dir }}/oem-agent"
 oracle_install_user: oracle
 oracle_install_group: oinstall
+# The "install" response file is used when using AgentPull.sh to install or download agent image
 agent_install_response_file: /tmp/ansible-oracle-oem-agent-install.rsp
+# The "deploy" response file is only used if we are installing a gold image (instead of the default image)
+agent_deploy_response_file: /tmp/ansible-oracle-oem-agent-deploy.rsp
 artefact_dir: /u02
 stage: "{{ artefact_dir }}/stage"
 temp: "{{ artefact_dir }}/temp"
 agent_home_dir: "agent_13.5.0.0.0" # The full path will be set dynamically in get_facts.yml
 agent_instance_home: "{{ oem_agent_base }}/agent_inst"
 agentpatcher_stage: "{{ stage }}/agentpatcher_stage"
+em_upload_port: "4903"
 
 agentpatcher_patch: agentpatcher_p33355570_135000_Generic.zip
 agentpatcher_version: 13.9.5.10.0
