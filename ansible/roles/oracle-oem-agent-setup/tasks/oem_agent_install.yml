@@ -149,7 +149,7 @@
   always:
     - name: Remove Response Files
       file:
-        path: "{{ agent_install_response_file }}"
+        path: "{{ response_file }}"
         state: absent
       loop_control:
         loop_var: response_file
