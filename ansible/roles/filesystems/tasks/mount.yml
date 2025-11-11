@@ -4,8 +4,9 @@
     name: "{{ item }}"
     state: present
   loop:
-    - nfs-utils
+    - autofs
     - cifs-utils
+    - nfs-utils
 
 - name: Create mount point
   ansible.builtin.file:
@@ -27,6 +28,39 @@
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
+
+- name: Configure autofs master
+  ansible.builtin.lineinfile:
+    create: true
+    line: "/- /etc/auto.cifs"
+    path: /etc/auto.master
+    state: present
+  loop_control:
+    label: "{{ item.dir }}"
+  loop: "{{ filesystems_mount }}"
+  when: item.dir == '/NART'
+
+- name: Configure auto cifs file
+  ansible.builtin.lineinfile:
+    create: true
+    line: "{{ item.dir }} -fstype={{ item.fstype }},rw,{{ item.opts }} :{{ item.src }}"
+    path: /etc/auto.cifs
+    state: present
+  loop_control:
+    label: "{{ item.dir }}"
+  loop: "{{ filesystems_mount }}"
+  when: item.dir == '/NART'
+
+- name: Ensure autofs Service is enabled and started
+  ansible.builtin.systemd:
+    name: autofs
+    state: started
+    enabled: yes
+
+- name: Reload autofs
+  ansible.builtin.systemd:
+    name: autofs
+    state: reloaded
 
 - name: Setup monitoring keepalive cron
   ansible.builtin.cron:
