@@ -38,7 +38,7 @@
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
-  when: item.dir == '/NART'
+  when: item.autofs_mount | default(false) | bool
 
 - name: Configure auto cifs file
   ansible.builtin.lineinfile:
@@ -49,7 +49,7 @@
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
-  when: item.dir == '/NART'
+  when: item.autofs_mount | default(false) | bool
 
 - name: Ensure autofs Service is enabled and started
   ansible.builtin.systemd:
