@@ -51,16 +51,23 @@
   loop: "{{ filesystems_mount }}"
   when: item.autofs_mount | default(false) | bool
 
-- name: Ensure autofs Service is enabled and started
+- name: Check if /etc/auto.cifs exists
+  ansible.builtin.stat:
+    path: /etc/auto.cifs
+  register: autofs_cifs_file
+
+- name: Ensure autofs Service is enabled and started if auto cifs exists
   ansible.builtin.systemd:
     name: autofs
     state: started
     enabled: yes
+  when: autofs_cifs_file.stat.exists
 
-- name: Reload autofs
+- name: Reload autofs if auto auto cifs exists
   ansible.builtin.systemd:
     name: autofs
     state: reloaded
+  when: autofs_cifs_file.stat.exists
 
 - name: Setup monitoring keepalive cron
   ansible.builtin.cron:
