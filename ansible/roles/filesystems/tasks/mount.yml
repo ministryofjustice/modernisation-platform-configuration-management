@@ -56,6 +56,13 @@
     path: /etc/auto.cifs
   register: autofs_cifs_file
 
+- name: Update nsswitch config for automount via autofs
+  ansible.builtin.lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^automount:'
+    line: 'automount: files'
+  when: autofs_cifs_file.stat.exists
+
 - name: Ensure autofs Service is enabled and started if auto cifs exists
   ansible.builtin.systemd:
     name: autofs
@@ -66,7 +73,7 @@
 - name: Reload autofs if auto auto cifs exists
   ansible.builtin.systemd:
     name: autofs
-    state: reloaded
+    state: restarted
   when: autofs_cifs_file.stat.exists
 
 - name: Setup monitoring keepalive cron
