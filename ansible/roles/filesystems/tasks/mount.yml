@@ -4,8 +4,9 @@
     name: "{{ item }}"
     state: present
   loop:
-    - nfs-utils
+    - autofs
     - cifs-utils
+    - nfs-utils
 
 - name: Create mount point
   ansible.builtin.file:
@@ -27,6 +28,54 @@
   loop_control:
     label: "{{ item.dir }}"
   loop: "{{ filesystems_mount }}"
+  when: not item.autofs_mount | default(false) | bool
+
+- name: Configure autofs master
+  ansible.builtin.lineinfile:
+    create: true
+    line: "/- /etc/auto.cifs"
+    path: /etc/auto.master
+    state: present
+  loop_control:
+    label: "{{ item.dir }}"
+  loop: "{{ filesystems_mount }}"
+  when: item.autofs_mount | default(false) | bool
+
+- name: Configure auto cifs file
+  ansible.builtin.lineinfile:
+    create: true
+    line: "{{ item.dir }} -fstype={{ item.fstype }},rw,{{ item.opts }} :{{ item.src }}"
+    path: /etc/auto.cifs
+    state: present
+  loop_control:
+    label: "{{ item.dir }}"
+  loop: "{{ filesystems_mount }}"
+  when: item.autofs_mount | default(false) | bool
+
+- name: Check if /etc/auto.cifs exists
+  ansible.builtin.stat:
+    path: /etc/auto.cifs
+  register: autofs_cifs_file
+
+- name: Update nsswitch config for automount via autofs
+  ansible.builtin.lineinfile:
+    path: /etc/nsswitch.conf
+    regexp: '^automount:'
+    line: 'automount: files'
+  when: autofs_cifs_file.stat.exists
+
+- name: Ensure autofs Service is enabled and started if auto cifs exists
+  ansible.builtin.systemd:
+    name: autofs
+    state: started
+    enabled: yes
+  when: autofs_cifs_file.stat.exists
+
+- name: Reload autofs if auto auto cifs exists
+  ansible.builtin.systemd:
+    name: autofs
+    state: restarted
+  when: autofs_cifs_file.stat.exists
 
 - name: Setup monitoring keepalive cron
   ansible.builtin.cron:

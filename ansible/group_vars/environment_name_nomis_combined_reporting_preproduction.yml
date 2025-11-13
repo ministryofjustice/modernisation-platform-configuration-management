@@ -217,8 +217,10 @@ bip_filesystems_mount:
     fstype: cifs
     opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //fslinux.azure.hmpp.root/NART$
-    metric_dimension: NART
+    # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
+    state: absent
+    autofs_mount: true
 
 webadmin_filesystems_mount:
   - dir: /NART
@@ -227,5 +229,7 @@ webadmin_filesystems_mount:
     fstype: cifs
     opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //fslinux.azure.hmpp.root/NART$
-    metric_dimension: NART
+    # metric_dimension: NART
     maintenance_window:
+    state: absent
+    autofs_mount: true
