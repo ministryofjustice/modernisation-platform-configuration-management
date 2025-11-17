@@ -7,6 +7,23 @@ dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
+oracle_setup_config:
+  - directory_path: /home/oracle/sysconsoftware/12c_setup_config
+    initial_directory_path: /home/oracle/sysconsoftware/12c_setup_config
+    group: oinstall
+    owner: oracle
+    s3_bucket_path: TM-1718/12c_setup_config/
+    s3_download_path: /home/oracle/sysconsoftware/12c_setup_config --recursive
+    zip_package: false
+  - directory_path: /u01/tag
+    initial_directory_path: /u01
+    group: root
+    owner: root
+    s3_bucket_path: TM-1718/tag.zip
+    s3_download_path: /u01/
+    zip_file_name: tag.zip
+    zip_package: true
+    zip_package_extracted_directory_path: tag
 winrm_domain_name_fqdn: azure.noms.root
 
 users_and_groups_regular:

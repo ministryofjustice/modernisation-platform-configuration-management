@@ -46,4 +46,9 @@
         - weblogic_install_domain
       when: weblogic_domain_template_filename != 'none'
 
+    - import_tasks: setup_config_folder.yml
+      tags:
+        - ec2provision
+        - weblogic_setup_config_folder
+
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

@@ -1,0 +1,36 @@
+---
+- name: Ensure that the target directory exists
+  file:
+    path: "{{ item.initial_directory_path }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  loop: "{{ oracle_setup_config }}"
+
+- name: Copy files from S3 to EC2 instance
+  command: "aws s3 cp s3://{{ image_builder_s3_bucket_name }}/{{ item.s3_bucket_path }} {{ item.s3_download_path }}"
+  loop: "{{ oracle_setup_config }}"
+
+- name: Unzip tag.zip
+  unarchive:
+    src: "{{ item.initial_directory_path }}/{{ item.zip_file_name }}"
+    dest: "{{ item.initial_directory_path }}"
+    remote_src: yes
+    creates: "{{ item.directory_path }}"
+  loop: "{{ oracle_setup_config }}"
+  when: item.zip_package | default(false) | bool
+
+- name: Ensure correct file permissions for copied files
+  file:
+    path: "{{ item.directory_path }}"
+    mode: '0755'
+    owner: oracle
+    group: oinstall
+    recurse: yes
+  loop: "{{ oracle_setup_config }}"
+
+- name: Copy JAR files to Oracle directory
+  ansible.builtin.copy:
+    src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
+    dest: /u01/app/oracle/Middleware/forms/java
