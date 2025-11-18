@@ -30,17 +30,8 @@
     recurse: yes
   loop: "{{ oracle_setup_config }}"
 
-- name: Copy JAR files to Oracle directory
+- name: Copy Oracle files into relevant locations
   ansible.builtin.copy:
-    src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
-    dest: /u01/app/oracle/Middleware/forms/java
-
-- name: Copy HTTPD Conf file to Oracle OHS1 directory
-  ansible.builtin.copy:
-    src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-
-- name: Copy HTTPD Conf file to Oracle Instances OHS1 directory
-  ansible.builtin.copy:
-    src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop: "{{ oracle_file_locations }}"

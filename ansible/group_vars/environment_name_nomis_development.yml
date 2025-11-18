@@ -7,6 +7,13 @@ dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
+oracle_file_locations:
+  - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
+    dest: /u01/app/oracle/Middleware/forms/java
+  - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
+  - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
 oracle_setup_config:
   - directory_path: /home/oracle/sysconsoftware/12c_setup_config
     initial_directory_path: /home/oracle/sysconsoftware/12c_setup_config
