@@ -1,34 +1,36 @@
 ---
-- name: Ensure that the target directory exists
+- name: Ensure that the initial target directory exists
   file:
-    path: "{{ item.initial_directory_path }}"
+    path: "{{ item.directory_path }}"
     state: directory
     mode: '0755'
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
   loop: "{{ oracle_setup_config }}"
 
-- name: Copy files from S3 to EC2 instance
-  command: "aws s3 cp s3://{{ image_builder_s3_bucket_name }}/{{ item.s3_bucket_path }} {{ item.s3_download_path }}"
+- name: Copy ZIP files from S3 to EC2 Instance
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ item.s3_bucket_path }}/{{ item.zip_file_name }}"
+    dest: "/tmp/{{ item.zip_file_name }}"
+    mode: get
+    overwrite: latest
   loop: "{{ oracle_setup_config }}"
 
 - name: Unzip tag.zip
   unarchive:
-    src: "{{ item.initial_directory_path }}/{{ item.zip_file_name }}"
-    dest: "{{ item.initial_directory_path }}"
-    remote_src: yes
-    creates: "{{ item.directory_path }}"
+    src: "/tmp/{{ item.zip_file_name }}"
+    dest: "{{ item.extract_path }}"
   loop: "{{ oracle_setup_config }}"
-  when: item.zip_package | default(false) | bool
 
 - name: Ensure correct file permissions for copied files
   file:
-    path: "{{ item.directory_path }}"
+    path: "{{ item.directory_path }}/"
     mode: '0755'
     owner: oracle
     group: oinstall
     recurse: yes
-  loop: "{{ oracle_setup_config }}"
+  loop: "{{ oracle_setup_config | list }}"
 
 - name: Copy Oracle files into relevant locations
   ansible.builtin.copy:

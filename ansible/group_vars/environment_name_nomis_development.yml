@@ -16,21 +16,17 @@ oracle_file_locations:
     dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
 oracle_setup_config:
   - directory_path: /home/oracle/sysconsoftware/12c_setup_config
-    initial_directory_path: /home/oracle/sysconsoftware/12c_setup_config
+    extract_path: /home/oracle/sysconsoftware/
     group: oinstall
     owner: oracle
-    s3_bucket_path: TM-1718/12c_setup_config/
-    s3_download_path: /home/oracle/sysconsoftware/12c_setup_config --recursive
-    zip_package: false
+    s3_bucket_path: TM-1718
+    zip_file_name: 12c_setup_config.zip
   - directory_path: /u01/tag
-    initial_directory_path: /u01
-    group: root
-    owner: root
-    s3_bucket_path: TM-1718/tag.zip
-    s3_download_path: /u01/
+    extract_path: /u01/
+    group: oinstall
+    owner: oracle
+    s3_bucket_path: TM-1718
     zip_file_name: tag.zip
-    zip_package: true
-    zip_package_extracted_directory_path: tag
 winrm_domain_name_fqdn: azure.noms.root
 
 users_and_groups_regular:
