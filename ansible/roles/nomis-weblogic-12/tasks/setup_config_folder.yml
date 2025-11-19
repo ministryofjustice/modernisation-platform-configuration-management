@@ -41,7 +41,7 @@
   file:
     path: "{{ item.directory_path }}/"
     mode: '0755'
-    owner: oracle
-    group: oinstall
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
     recurse: yes
   loop: "{{ oracle_setup_config | list }}"
