@@ -12,16 +12,30 @@
   amazon.aws.aws_s3:
     bucket: "{{ image_builder_s3_bucket_name }}"
     object: "{{ item.s3_bucket_path }}/{{ item.zip_file_name }}"
-    dest: "/tmp/{{ item.zip_file_name }}"
+    dest: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     mode: get
     overwrite: latest
   loop: "{{ oracle_setup_config }}"
 
 - name: Unzip tag.zip
   unarchive:
-    src: "/tmp/{{ item.zip_file_name }}"
+    src: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     dest: "{{ item.extract_path }}"
   loop: "{{ oracle_setup_config }}"
+
+- name: Set private IP address in 12c conf files
+  ansible.builtin.replace:
+    path: "{{ item.src }}"
+    regexp: "{{ oracle_conf_ip_to_replace }}"
+    replace: "ip-{{ ansible_default_ipv4.address | replace('.', '-') }}"
+  loop: "{{ oracle_file_locations }}"
+  when: item.src.endswith('.conf')
+
+- name: Copy Oracle files into relevant locations
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop: "{{ oracle_file_locations }}"
 
 - name: Ensure correct file permissions for copied files
   file:
@@ -31,9 +45,3 @@
     group: oinstall
     recurse: yes
   loop: "{{ oracle_setup_config | list }}"
-
-- name: Copy Oracle files into relevant locations
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-  loop: "{{ oracle_file_locations }}"
