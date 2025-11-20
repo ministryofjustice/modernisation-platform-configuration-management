@@ -1,0 +1,12 @@
+- name: Restart weblogic services
+  ansible.builtin.service:
+    daemon_reload: true
+    name: "{{ item }}"
+    enabled: true
+    state: restarted
+  loop:
+    - weblogic-node-manager
+    - weblogic-server
+    - WLS_FORMS
+    - WLS_REPORTS
+    - weblogic-ohs

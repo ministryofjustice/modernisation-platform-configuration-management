@@ -1,0 +1,7 @@
+---
+- name: Configure report server name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^REPORT_SERVER_NAME=.*'
+    line: "REPORT_SERVER_NAME=RptSvr_{{ server_name }}_forms"
+    state: present

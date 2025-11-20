@@ -1,0 +1,9 @@
+---
+- name: Ensure correct file permissions for copied files
+  file:
+    path: "{{ item.directory_path }}/"
+    mode: '0755'
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    recurse: yes
+  loop: "{{ oracle_setup_config | list }}"

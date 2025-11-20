@@ -1,0 +1,7 @@
+---
+- name: Set private IP address
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: "{{ private_ip_to_replace }}"
+    replace: "ip-{{ ansible_default_ipv4.address | replace('.', '-') }}"
+  loop: "{{ file_locations }}"
