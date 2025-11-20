@@ -37,7 +37,7 @@
     block: |
       QA19C =
         (DESCRIPTION =
-          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = 1521))
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
           (CONNECT_DATA =
             (SERVER = DEDICATED)
             (SERVICE_NAME = QA19C)
@@ -48,7 +48,7 @@
 
       QA11G =
         (DESCRIPTION =
-          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = 1521))
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
           (CONNECT_DATA =
             (SERVER = DEDICATED)
             (SERVICE_NAME = QA11G)
