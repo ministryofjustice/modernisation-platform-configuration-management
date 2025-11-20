@@ -31,6 +31,33 @@
   loop: "{{ oracle_file_locations }}"
   when: item.src.endswith('.conf')
 
+- name: Configure tnsnames
+  ansible.builtin.blockinfile:
+    path: "{{ tnsnames_path }}"
+    block: |
+      QA19C =
+        (DESCRIPTION =
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = 1521))
+          (CONNECT_DATA =
+            (SERVER = DEDICATED)
+            (SERVICE_NAME = QA19C)
+          )
+        )
+
+
+
+      QA11G =
+        (DESCRIPTION =
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = 1521))
+          (CONNECT_DATA =
+            (SERVER = DEDICATED)
+            (SERVICE_NAME = QA11G)
+          )
+        )
+
+    insertafter: EOF
+    marker: ""
+
 - name: Copy Oracle files into relevant locations
   ansible.builtin.copy:
     src: "{{ item.src }}"
