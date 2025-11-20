@@ -1,0 +1,24 @@
+---
+- name: Ensure that the initial target directory exists
+  file:
+    path: "{{ item.directory_path }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  loop: "{{ oracle_setup_config }}"
+
+- name: Copy ZIP files from S3 to EC2 Instance
+  amazon.aws.aws_s3:
+    bucket: "{{ image_builder_s3_bucket_name }}"
+    object: "{{ item.s3_bucket_path }}/{{ item.zip_file_name }}"
+    dest: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
+    mode: get
+    overwrite: latest
+  loop: "{{ oracle_setup_config }}"
+
+- name: Unzip tag.zip
+  unarchive:
+    src: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
+    dest: "{{ item.extract_path }}"
+  loop: "{{ oracle_setup_config }}"

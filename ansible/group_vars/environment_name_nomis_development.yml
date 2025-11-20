@@ -7,42 +7,8 @@ dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
-oracle_conf_ip_to_replace: "ip-1-2-3-4"
-oracle_file_locations:
-  - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
-    dest: /u01/app/oracle/Middleware/forms/java
-  - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb.res
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb.res
-  - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb_utf8.res
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb_utf8.res
-  - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
-  - src: /home/oracle/sysconsoftware/12c_setup_config/formsweb.cfg
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/formsweb.cfg
-  - src: /home/oracle/sysconsoftware/12c_setup_config/tag.env
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
-  - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/forms1/server/webutil.cfg
-  - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/webutil.cfg
-  - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x86.dll
-    dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x86.dll
-  - src: /home/oracle/sysconsoftware/12c_setup_config/PRSDK.dll
-    dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRSDK.dll
-  - src: /home/oracle/sysconsoftware/12c_setup_config/PRLIB.dll
-    dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRLIB.dll
-  - src: /u01/app/oracle/Middleware/forms/webutil.pll
-    dest: /u01/tag/FormsSources/WEBUTIL.pll
+private_ip_to_replace: "ip-1-2-3-4"
+rwproperties_string_to_replace: "qa11g-nomis-web12-b"
 oracle_setup_config:
   - directory_path: /home/oracle/sysconsoftware/12c_setup_config
     extract_path: /home/oracle/sysconsoftware/
@@ -57,7 +23,6 @@ oracle_setup_config:
     s3_bucket_path: TM-1718
     zip_file_name: tag.zip
 tnsnames_hostname: dev-nomis-db19c-1-a
-tnsnames_path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
 tnsnames_port: 1521
 zip_file_temp_dir: /tmp
 winrm_domain_name_fqdn: azure.noms.root
