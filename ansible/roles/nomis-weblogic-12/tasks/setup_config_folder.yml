@@ -58,6 +58,20 @@
     insertafter: EOF
     marker: ""
 
+- name: Find and remove log/txt files
+  ansible.builtin.find:
+    paths: /u01/tag/FormsSources
+    patterns: "*.log,*.txt"
+    recurse: no
+  register: forms_sources_files_to_remove
+
+- name: Remove log/txt files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ forms_sources_files_to_remove.files }}"
+  when: forms_sources_files_to_remove.matched > 0
+
 - name: Copy Oracle files into relevant locations
   ansible.builtin.copy:
     src: "{{ item.src }}"
