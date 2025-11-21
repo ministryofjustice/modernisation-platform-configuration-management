@@ -1,13 +1,13 @@
 #!/bin/bash
 
+. ~/.bash_profile
+
 export ORACLE_SID=EMREP
 export ORACLE_BASE=/u01/app/oracle
 export ORAENV_ASK=NO
-. oraenv -s
+export PATH=$PATH:/usr/local/bin
 
-REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone || echo "eu-west-2" | sed 's/[a-z]$//')
-EMCLI=/u01/app/oracle/product/mw135/bin/emcli
-CHANGE_LOG=/tmp/management_pack_changes.$(date +%Y%m%d%H%M%S).log
+. oraenv -s
 
 function connect_to_emcli
 {
@@ -38,19 +38,24 @@ SELECT
     || existing_management_packs
     || '~'
     || requested_management_packs
-FROM
-(
+    || '~'
+    || existing_notifications_allowed
+    || '~'
+    || requested_notifications_allowed
+FROM (
 SELECT
     target_name,
     target_type,
     COALESCE(application_name,'UNKNOWN') application_name,
-    existing_management_packs,
+    COALESCE(existing_management_packs,'none') existing_management_packs,
     coalesce(
         LISTAGG(pack_name, '+') WITHIN GROUP(
         ORDER BY
             pack_name
         ),
-        'none') requested_management_packs
+        'none') requested_management_packs,
+    COALESCE(existing_notifications_allowed,'no') existing_notifications_allowed,
+    COALESCE(MAX(CASE WHEN pack_name = 'db_diag' THEN 'yes' ELSE null END),'no') requested_notifications_allowed
 FROM
     (
         SELECT
@@ -59,7 +64,8 @@ FROM
             et1.host_name,
             mlv.pack_name,
             mtp1.property_value application_name,
-            mtp2.property_value existing_management_packs
+            mtp2.property_value existing_management_packs,
+            mtp3.property_value existing_notifications_allowed
         FROM
             sysman.em_targets             et1
             LEFT JOIN sysman.em_targets             et2 ON et1.host_name = et2.host_name
@@ -77,19 +83,30 @@ FROM
                 WHERE
                     property_display_name = 'Management Packs'
             )
+            LEFT JOIN sysman.mgmt\$target_properties mtp3 ON et1.target_guid = mtp3.target_guid
+                                                            AND mtp3.property_name = (
+                SELECT
+                    property_name
+                FROM
+                    sysman.mgmt\$all_target_prop_defs
+                WHERE
+                    property_display_name = 'Notifications Allowed'
+            )
         WHERE
-            et1.target_type NOT IN ( 'jrf_webservice', 'rest_webservice', 'oracle_si_filesystem_host', 'oracle_si_network_interface_host'
-            , 'oracle_si_network_data_link_host', 'oracle_si_lvm_host', 'oracle_si_volume_host', 'asm_diskgroup_component', 'composite', 'oracle_cloud'
-            , 'oracle_dbsys', 'oracle_emd_proxy' )
+            et1.target_type NOT IN ( 'jrf_webservice', 'rest_webservice', 'oracle_si_filesystem_host',
+                                     'oracle_si_network_interface_host' , 'oracle_si_network_data_link_host',
+                                     'oracle_si_lvm_host', 'oracle_si_volume_host', 'asm_diskgroup_component',
+                                     'composite', 'oracle_cloud', 'oracle_dbsys', 'oracle_emd_proxy' )
     )
 GROUP BY
     target_name,
     target_type,
     application_name,
-    existing_management_packs
+    existing_management_packs,
+    existing_notifications_allowed
 )
-WHERE
-    existing_management_packs != requested_management_packs;
+WHERE existing_management_packs != requested_management_packs
+OR    existing_notifications_allowed != requested_notifications_allowed;
 EXIT
 EOSQL
 )
@@ -97,23 +114,59 @@ EOSQL
 if [[ ! -z ${MANAGEMENT_PACK_CHANGES} ]];
 then
 
+  REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone || echo "eu-west-2" | sed 's/[a-z]$//')
+  CHANGE_LOG=/home/oracle/admin/em/management_pack_changes.$(date +%Y%m%d%H%M%S).log
+  EMCLI=/u01/app/oracle/product/mw135/bin/emcli
   connect_to_emcli
 
-  declare -A CHANGE_COUNT
+  declare -A MANAGEMENT_PACKS_CHANGE_COUNT
+  declare -A NOTIFICATIONS_ALLOWED_NO
+  declare -A NOTIFICATIONS_ALLOWED_YES
 
   while IFS= read -r line;
   do
+     TARGET_NAME=$(echo $line | cut -d~ -f1)
+     TARGET_TYPE=$(echo $line | cut -d~ -f2)
+     APPLICATION_NAME=$(echo $line | cut -d~ -f3)
+     EXISTING_MANAGEMENT_PACKS=$(echo $line | cut -d~ -f4)
+     REQUESTED_MANAGEMENT_PACKS=$(echo $line | cut -d~ -f5)
+     EXISTING_NOTIFICATIONS_ALLOWED=$(echo $line | cut -d~ -f6)
+     REQUESTED_NOTIFICATIONS_ALLOWED=$(echo $line | cut -d~ -f7)
      ${EMCLI} set_target_property_value -subseparator=property_records="~" \
-	     -property_records="$(echo $line | cut -d~ -f1)~$(echo $line | cut -d~ -f2)~Management Packs~$(echo $line | cut -d~ -f5)"
+	     -property_records="${TARGET_NAME}~${TARGET_TYPE}~Management Packs~${REQUESTED_MANAGEMENT_PACKS}"
+     ${EMCLI} set_target_property_value -subseparator=property_records="~" \
+	     -property_records="${TARGET_NAME}~${TARGET_TYPE}~Notifications Allowed~${REQUESTED_NOTIFICATIONS_ALLOWED}"
      if [[ $? == 0 ]];
      then
-	     APPLICATION=$(echo $line | cut -d~ -f3)
-	     if [[ -z "${CHANGE_COUNT[$APPLICATION]}" ]];
+	     if [[ "${EXISTING_MANAGEMENT_PACKS}" != "${REQUESTED_MANAGEMENT_PACKS}" ]];
 	     then
-		     CHANGE_COUNT[$APPLICATION]=0
+	        echo "$(date) Target ${TARGET_NAME}:${TARGET_TYPE} (${APPLICATION_NAME} application) management pack changed from ${EXISTING_MANAGEMENT_PACKS} to ${REQUESTED_MANAGEMENT_PACKS}." >> ${CHANGE_LOG}
+	        if [[ -z "${MANAGEMENT_PACKS_CHANGE_COUNT[$APPLICATION_NAME]}" ]];
+                then
+		     MANAGEMENT_PACKS_CHANGE_COUNT[$APPLICATION_NAME]=0
+	        fi
+	        ((MANAGEMENT_PACKS_CHANGE_COUNT[$APPLICATION_NAME]++))
 	     fi
-	     ((CHANGE_COUNT[$APPLICATION]++))
-	     echo "$(date) Target $(echo $line | cut -d~ -f1):$(echo $line | cut -d~ -f2) ($APPLICATION application) management pack changed from $(echo $line | cut -d~ -f4) to $(echo $line | cut -d~ -f5)." >> ${CHANGE_LOG}
+
+	     if [[ "${EXISTING_NOTIFICATIONS_ALLOWED}" != "${REQUESTED_NOTIFICATIONS_ALLOWED}" ]];
+	     then
+		     if [[ "${REQUESTED_NOTIFICATIONS_ALLOWED}" == "yes" ]];
+		     then
+	                 echo "$(date) Target ${TARGET_NAME}:${TARGET_TYPE} (${APPLICATION_NAME} application) allowed notifications." >> ${CHANGE_LOG}
+	                 if [[ -z "${NOTIFICATIONS_ALLOWED_YES[$APPLICATION_NAME]}" ]];
+                         then
+		            NOTIFICATIONS_ALLOWED_YES[$APPLICATION_NAME]=0
+	                 fi
+	                 ((NOTIFICATIONS_ALLOWED_YES[$APPLICATION_NAME]++))
+	             else
+	                 echo "$(date) Target ${TARGET_NAME}:${TARGET_TYPE} (${APPLICATION_NAME} application) disallowed notifications." >> ${CHANGE_LOG}
+	                 if [[ -z "${NOTIFICATIONS_ALLOWED_NO[$APPLICATION_NAME]}" ]];
+                         then
+		            NOTIFICATIONS_ALLOWED_NO[$APPLICATION_NAME]=0
+	                 fi
+	                 ((NOTIFICATIONS_ALLOWED_NO[$APPLICATION_NAME]++))
+		     fi
+	     fi
      fi
   done <<< "${MANAGEMENT_PACK_CHANGES}"
 
@@ -123,9 +176,27 @@ then
   EMOJI_ICON=":package:"
   USERNAME="Management Pack target property script"
 
-  for KEY in "${!CHANGE_COUNT[@]}";
+  # Add keys from all arrays to determine which arrays have had changes made
+  declare -A CHANGED_APPLICATIONS
+  for key in "${!MANAGEMENT_PACKS_CHANGE_COUNT[@]}" "${!NOTIFICATIONS_ALLOWED_YES[@]}" "${!NOTIFICATIONS_ALLOWED_NO[@]}"; do
+    CHANGED_APPLICATIONS["$key"]=1
+  done
+
+  for KEY in "${!CHANGED_APPLICATIONS[@]}";
   do
-	  CHANGE_MESSAGE="${CHANGE_MESSAGE}\n:black_small_square: ${CHANGE_COUNT[$KEY]} management package changes for *$KEY* targets."
+	  if [[ -z "${MANAGEMENT_PACKS_CHANGE_COUNT[$KEY]}" ]]
+	  then
+	     MANAGEMENT_PACKS_CHANGE_COUNT[$KEY]=0
+	  fi
+	  CHANGE_MESSAGE="${CHANGE_MESSAGE}\n:black_small_square: ${MANAGEMENT_PACKS_CHANGE_COUNT[$KEY]} management pack changes for *$KEY* targets"
+	  if [[ ! -z "${NOTIFICATIONS_ALLOWED_YES[$KEY]}" ]]
+	  then
+		  CHANGE_MESSAGE="${CHANGE_MESSAGE}\n    - ${NOTIFICATIONS_ALLOWED_YES[$KEY]} target notifications were  allowed"
+	  fi
+	  if [[ ! -z "${NOTIFICATIONS_ALLOWED_NO[$KEY]}" ]]
+	  then
+		  CHANGE_MESSAGE="${CHANGE_MESSAGE}\n    - ${NOTIFICATIONS_ALLOWED_NO[$KEY]} target notifications were  disallowed"
+	  fi
   done
 
   read -r -d '' BLOCKS <<EOM
@@ -141,7 +212,7 @@ then
         "type": "section",
         "text": {
            "type": "mrkdwn",
-	   "text": "*Management Pack Updates:*\nThe following targets had their Management Pack property changed due to Management Pack Access updates in the $(hostname) OEM Console:${CHANGE_MESSAGE}"
+	   "text": "*Management Pack Updates:*\nThe following targets had their Management Pack property changed due to Management Pack Access updates to the $(hostname) OEM:${CHANGE_MESSAGE}"
           }
      },
      {
