@@ -35,11 +35,23 @@
       debug:
         var: patches_to_apply
 
-    - name: Stop OMS if a patch needs to be applied
-      ansible.builtin.shell: |
-        {{ emctl_oms }} stop oms -all -force
-      when: patches_to_apply is defined and patches_to_apply | length > 0
-      run_once: true
+    - name: Check if patches exist
+      ansible.builtin.stat:
+        path: "{{ omspatcher_stage }}/{{ item.value.patch_files.filename }}"
+      register: patch_files
+      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
+
+    - name: Show File Existence Check
+      debug:
+        var: patch_files
+
+    - name: Filter missing files
+      set_fact:
+        missing_files: "{{ patch_files.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item') | list }}"
+
+    - name: Debug missing files
+      debug:
+        msg: "Missing files: {{ lookup('ansible.builtin.vars', 'missing_files') }}"
 
     - name: Download patches
       amazon.aws.aws_s3:
@@ -49,9 +61,10 @@
         mode: get
         permission: "public-read"
         overwrite: latest
-      loop: "{{ patches_to_apply_dict | default({}) | dict2items }}"
+      loop: "{{ lookup('vars', 'missing_files') }}"
       loop_control:
-        label: "{{ item.key }}"
+        label: "{{ item }}"
+      when: missing_files | length > 0
 
     - name: Extract patches
       ansible.builtin.unarchive:
@@ -64,6 +77,12 @@
       loop_control:
         label: "{{ item.key }}"
       no_log: true
+
+    - name: Stop OMS if a patch needs to be applied
+      ansible.builtin.shell: |
+        {{ emctl_oms }} stop oms -all -force
+      when: patches_to_apply is defined and patches_to_apply | length > 0
+      run_once: true
 
     # The fuser utility is not installed as a matter of course so we set OPATCH_NO_FUSER to workaround this
     - name: Apply patches if not already applied

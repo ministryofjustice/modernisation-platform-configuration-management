@@ -34,7 +34,7 @@
     - name: Perform EMCLI login if needed
       ansible.builtin.shell: |
         . ~/.bash_profile
-        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        echo "JAVA_HOME=$JAVA_HOME"
         EMCLI={{ emcli }}
         SYSMAN_PASSWORD=$(< /tmp/.emcli_password)
         rm -f /tmp/.emcli_password
@@ -50,12 +50,11 @@
           echo "Logged in."
         fi
       environment:
-        JAVA_HOME: "{{ oracle_home }}/jdk/jre"
-        ORACLE_HOME: "{{ oracle_home }}"
+        JAVA_HOME: "{{ oracle_home + '/jdk/jre' if (inventory_hostname is not search('oem')) else ( emcli.split('/')[:-2] | join('/') ) + '/oracle_common/jdk/jre' }}"
       become: true
       become_user: oracle
       register: emcli_login_result
-      failed_when: emcli_login_result.rc != 0
+      failed_when: emcli_login_result.rc != 0 or emcli_login_result.stderr is search('error')
 
   always:
     - name: Ensure temp password file is deleted (cleanup)

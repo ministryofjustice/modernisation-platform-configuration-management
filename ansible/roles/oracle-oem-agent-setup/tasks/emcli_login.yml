@@ -31,10 +31,11 @@
       become_user: "{{ oracle_install_user }}"
       no_log: true
 
+
     - name: Perform EMCLI login if needed
       ansible.builtin.shell: |
         . ~/.bash_profile
-        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        echo "JAVA_HOME=${JAVA_HOME}"
         EMCLI={{ emcli }}
         SYSMAN_PASSWORD=$(< /tmp/.emcli_password)
         rm -f /tmp/.emcli_password
