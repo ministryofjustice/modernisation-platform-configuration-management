@@ -35,6 +35,17 @@
         ${ORACLE_HOME}/OPatch/opatch version | head -1 | cut -d' '  -f3 | grep {{ oms_opatch_version }} | wc -l
       register: opatch_version_check
 
+    - name: Check status of OMS
+      ansible.builtin.shell: |
+        {{ emctl_oms }} status oms | grep -c "^Oracle Management Server is Up" | cat
+      changed_when: false
+      register: oms_running
+
+    - name: Re-Start OMS After Patching if down
+      ansible.builtin.shell: |
+        {{ emctl_oms }} start oms
+      when: oms_running.stdout == '0'
+
   # block
   when: required_version_check.stdout == "0"
   become: true
