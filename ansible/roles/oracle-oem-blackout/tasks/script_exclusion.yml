@@ -91,6 +91,8 @@
 
     - name: emcli Login
       import_tasks: emcli_login.yml
+      vars:
+        java_home: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
@@ -149,6 +151,8 @@
   block:
     - name: emcli Login
       import_tasks: emcli_login.yml
+      vars:
+        java_home: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
