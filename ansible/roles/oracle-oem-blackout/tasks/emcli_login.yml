@@ -55,6 +55,9 @@
       become_user: oracle
       register: emcli_login_result
       failed_when: emcli_login_result.rc != 0 or emcli_login_result.stderr is search('error')
+   
+    - debug:
+        var: emcli_login_result
 
   always:
     - name: Ensure temp password file is deleted (cleanup)
