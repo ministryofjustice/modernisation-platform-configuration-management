@@ -46,22 +46,29 @@
         - weblogic_install_domain
       when: weblogic_domain_template_filename != 'none'
 
-    # Log on as Oracle user, change directory to the config directory, copy tag.tar to /u01 and extract
+     # Log on as Oracle user, change directory to the config directory, copy tag.tar to /u01 and extract
     - import_tasks: extract-s3-zip-files.yml
       tags:
         - ec2provision
         - weblogic_extract_s3_zip_files
+
+    # PREP:
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_ssl_conf
 
     - import_tasks: review_permissions.yml
       tags:
         - ec2provision
         - weblogic_review_permissions
 
-      # PREP: Set Private IPs for .conf files
-    - import_tasks: set_private_ip.yml
-      tags:
-        - ec2provision
-        - weblogic_set_private_ips
 
       # Copy in Java files from the config directory, and extract into the Forms Home
     - import_tasks: copy-file-to-location.yml
@@ -74,18 +81,17 @@
         - ec2provision
         - weblogic_copy_java_files
 
-       # Copy and edit httpd.conf - Private IP updates done via PREP. Revisit comments.
-        # TODO: Uncomment these once the issues with weblogic-ohs restarts is fixed
-#    - import_tasks: copy-file-to-location.yml
-#      vars:
-#        files:
-#          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-#            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-#          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-#            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
-#      tags:
-#        - ec2provision
-#        - weblogic_copy_httpd_conf
+      # Copy and edit httpd.conf - Private IP updates done via PREP. Revisit comments.
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_httpd_conf
 
     - import_tasks: copy-file-to-location.yml
       vars:

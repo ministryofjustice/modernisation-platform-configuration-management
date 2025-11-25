@@ -20,3 +20,10 @@ export PATH=$PATH:$ORACLE_HOME/bin:/u01/tag/utils/scripts
 
 
 export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/lib:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64/server:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64/native_threads
+
+export PRODUCT_HOME=/u01/app/oracle/Middleware/ohs
+export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/ohs/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/oracle_common/lib:$LD_LIBRARY_PATH
+export ORACLE_INSTANCE=/u01/app/oracle/Middleware/user_projects/domains/nomis
+export COMPONENT_NAME=ohs1
+export COMPONENT_TYPE=OHS
