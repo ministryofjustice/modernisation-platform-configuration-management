@@ -50,7 +50,7 @@
           echo "Logged in."
         fi
       environment:
-        JAVA_HOME: "{{ oracle_home + '/jdk/jre' if (inventory_hostname is not search('oem')) else ( emcli.split('/')[:-2] | join('/') ) + '/oracle_common/jdk/jre' }}"
+        JAVA_HOME: "{{ java_home }}"
       become: true
       become_user: oracle
       register: emcli_login_result
