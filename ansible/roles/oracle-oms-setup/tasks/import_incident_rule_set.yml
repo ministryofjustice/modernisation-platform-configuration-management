@@ -1,59 +1,76 @@
 ---
 - name: Import Incident Rule Set for {{ application }} Targets
   block:
-    # EMCLI Login script contains a password so ensure it is not readable by other users
-    - name: Copy Incident Rule Set Import scripts
+
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
+
+    # 1st: Set up the Rule Set for Targets which may use Native Notifications
+    #      There are targets which are in the "Notification Allowed" dynamic
+    #      group.  They are placed in the group through their "Notifications Allowed"
+    #      target property which is set by the cron-scheduled script
+    #      set_management_packs.sh which checks which Management Packs are
+    #      available for databases on the target host.
+    - name: Copy Incident Rule Set Import scripts for OEM Notifications
       ansible.builtin.template:
         src: "{{ item }}.j2"
         dest: "{{ stage }}/{{ item }}"
         mode: "0700"
         owner: oracle
         group: oinstall
+      vars:
+         rule_set_name: "HMPPS OEM Rule Set With OEM Notifications"
+         target_selection_type: "SELECTED_EXCLUDED"
       loop:
         - import_incident_rule_set.sh
         - rule_set.xml
 
-    - name: emcli Login
-      import_tasks: emcli_login.yml
-
     # Ignore error re-importing the same rule set more than once
-
-    # First we input the rule set for the Group "Notifications Allowed"
-    # which may use OEM Native Notification functionality (it has
-    # Diagnostics Pack availability)
-    - name: Run Incident Rule Set Import With OEM Notifications
+    - name: Run Incident Rule Set Import
       become_user: oracle
       ansible.builtin.shell: |
         echo "running import_incident_rule_set.sh"
         {{ stage }}/import_incident_rule_set.sh
-      register: incident_rule_set_import_with_notifications
-      vars:
-         rule_set_name: "HMPPS OEM Rule Set With OEM Notifications"
-         target_selection_type: "SELECTED_EXCLUDED"
+      register: run_incident_rule_set_import
       failed_when:
-        - incident_rule_set_import_with_notifications.rc > 0
-        - not incident_rule_set_import_with_notifications.stderr is search('.*HMPPS OEM Rule Set With OEM Notifications.*already exists.*')
+        - run_incident_rule_set_import.rc > 0
+        - not run_incident_rule_set_import.stderr is search('.*{{ rule_set_name }}.*already exists.*')
 
-    # Second we input the rule set which applies to all targets -
-    # this allows scripted notifications to run for targets which do
-    # not have a Diagnostics pack licence.  (Note that targets with
-    # "Notifications Allowed" also send scripted notifications; this
-    # is intentional as it provides a fallback notification mechanism
-    # if Native notifications are not working.  Targets which have
-    # Diagnostics packs tend to be the more critical targets being
-    # monitored so this provides an extra level of reassurance).
-    - name: Run Incident Rule Set Import Without OEM Notifications
-      become_user: oracle
-      ansible.builtin.shell: |
-        echo "running import_incident_rule_set.sh"
-        {{ stage }}/import_incident_rule_set.sh
-      register: incident_rule_set_import_without_notifications
+
+    # 2nd: Set up the Rule Set for ALL Targets
+    # This will include both those with AND without support for Native OEM Notifications
+    # NB:  Targets with support for Native OEM Notifications will receive alerts
+    #      through both mechanisms; other targets will recieve only scripted alerts.
+    #      This means we would expect to see 2 alerts per incident for targets with
+    #      a Diagnostics Pack - this is intentional as such targets tend to be of 
+    #      higher criticality and allowing scripted notifications provides a fallback
+    #      if native OEM notifications fail.
+    - name: Copy Incident Rule Set Import scripts without OEM Notifications
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ stage }}/{{ item }}"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
       vars:
          rule_set_name: "HMPPS OEM Rule Set Without OEM Notifications"
          target_selection_type: "ALL_TARGETS"
+      loop:
+        - import_incident_rule_set.sh
+        - rule_set.xml
+
+    # Ignore error re-importing the same rule set more than once
+    - name: Run Incident Rule Set Import
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running import_incident_rule_set.sh"
+        {{ stage }}/import_incident_rule_set.sh
+      register: run_incident_rule_set_import
       failed_when:
-        - incident_rule_set_import_without_notifications.rc > 0
-        - not incident_rule_set_import_without_notifications.stderr is search('.*HMPPS OEM Rule Set Without OEM Notifications.*already exists.*')
+        - run_incident_rule_set_import.rc > 0
+        - not run_incident_rule_set_import.stderr is search('.*{{ rule_set_name }}.*already exists.*')
+
 
     - pause:
         seconds: 30
@@ -64,11 +81,8 @@
 
               Setup --> Incidents --> Incident Rules --> Reorder Rule Sets
 
-              Ensure the following ordering:
-
-              1st place:  HMPPS OEM Rule Set With OEM Notifications
-              2nd place:  HMPPS OEM Rule Set Without OEM Notifications
-
+              1st: HMPPS OEM Rule Set With OEM Notifications
+              2nd: HMPPS OEM Rule Set Without OEM Notifications
           ====================================================================================
 
   always:

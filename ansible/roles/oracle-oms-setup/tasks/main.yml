@@ -3,7 +3,7 @@
   set_fact:
     verbose_level: "-v"
 
-- name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
+- name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 is already installed
   ansible.builtin.stat:
     path: "{{ oem_mw_home }}/bin/emctl"
   register: oem_software_installed
