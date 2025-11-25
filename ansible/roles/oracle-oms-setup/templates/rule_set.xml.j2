@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RuleSet xmlns="http://www.oracle.com/EnterpriseManager/Incident/Rules" isEnabled="true" isGlobalCompressionEnabled="false" isOOB="false" EMVersion="13.5.0.0.0">
-   <RulesetName>HMPPS OEM Rule Set</RulesetName>
+   <RulesetName>{{ rule_set_name }}</RulesetName>
    <RulesetDescription>Rule set to create and manage hmpps-oem incidents</RulesetDescription>
-   <TargetSelectionType>ALL_TARGETS</TargetSelectionType>
+   <TargetSelectionType>{{ target_selection_type }}</TargetSelectionType>
    <SourceSelectionType>TARGET</SourceSelectionType>
    <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="EVENT">
       <RuleName>Incident creation rule for high-availability events</RuleName>
@@ -637,22 +637,37 @@
          </RuleAdvNotification>
       </RuleCondAction>
    </Rule>
+{% if rule_set_name == "HMPPS OEM Rule Set With OEM Notifications" %}
    <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="INCIDENT">
       <RuleName>Send Slack Notification for All Data Guard Incidents</RuleName>
       <RuleDescription>Additional Slack Notification step in addition to all other incidents for the Data Guard Status metric. For Data Guard we want a notification for Warnings in addition to Errors, as these are more operationally significant than warnings for other metrics.</RuleDescription>
-      <AttributeForRule>
-         <AttrValue>MissionCritical</AttrValue>
-         <AttrValue>Production</AttrValue>
-         <OperatorCode>IN</OperatorCode>
-         <Type>SYSTEM_ATTRIBUTE</Type>
-         <AttrName>sys_target_lifecycle_status</AttrName>
-      </AttributeForRule>
       <AttributeForRule>
          <AttrValue>Data Guard Status</AttrValue>
          <OperatorCode>IN</OperatorCode>
          <Type>SYSTEM_ATTRIBUTE</Type>
          <AttrName>sys_creation_rule_guid</AttrName>
       </AttributeForRule>
+      <RuleCondAction>
+         <ActionTypes>ADVANCED_NOTIFICATION</ActionTypes>
+         <IsRepeat>0</IsRepeat>
+         <RepeatFreq>0</RepeatFreq>
+         <RepeatCount>0</RepeatCount>
+         <IsDuration>0</IsDuration>
+         <Duration>0</Duration>
+         <DurationUnit>2</DurationUnit>
+         <RuleAdvNotification>
+            <AppliedTo>INCIDENT</AppliedTo>
+            <DeviceName>SLACK_NOTIFICATION:PLSQL</DeviceName>
+         </RuleAdvNotification>
+      </RuleCondAction>
    </Rule>
+   <SourceObjectSpecificAttributeGroup>
+      <SourceObjectSpecificAttribute>
+         <AttrName>sys_target_guid</AttrName>
+         <OperatorCode>IN</OperatorCode>
+         <AttrValue>Notifications Allowed|composite</AttrValue>
+      </SourceObjectSpecificAttribute>
+   </SourceObjectSpecificAttributeGroup>
+{% endif %}
 </RuleSet>
 

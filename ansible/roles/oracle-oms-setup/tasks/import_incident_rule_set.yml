@@ -17,15 +17,43 @@
       import_tasks: emcli_login.yml
 
     # Ignore error re-importing the same rule set more than once
-    - name: Run Incident Rule Set Import
+
+    # First we input the rule set for the Group "Notifications Allowed"
+    # which may use OEM Native Notification functionality (it has
+    # Diagnostics Pack availability)
+    - name: Run Incident Rule Set Import With OEM Notifications
       become_user: oracle
       ansible.builtin.shell: |
         echo "running import_incident_rule_set.sh"
         {{ stage }}/import_incident_rule_set.sh
-      register: run_incident_rule_set_import
+      register: incident_rule_set_import_with_notifications
+      vars:
+         rule_set_name: "HMPPS OEM Rule Set With OEM Notifications"
+         target_selection_type: "SELECTED_EXCLUDED"
       failed_when:
-        - run_incident_rule_set_import.rc > 0
-        - not run_incident_rule_set_import.stderr is search('.*HMPPS OEM Rule Set.*already exists.*')
+        - incident_rule_set_import_with_notifications.rc > 0
+        - not incident_rule_set_import_with_notifications.stderr is search('.*HMPPS OEM Rule Set With OEM Notifications.*already exists.*')
+
+    # Second we input the rule set which applies to all targets -
+    # this allows scripted notifications to run for targets which do
+    # not have a Diagnostics pack licence.  (Note that targets with
+    # "Notifications Allowed" also send scripted notifications; this
+    # is intentional as it provides a fallback notification mechanism
+    # if Native notifications are not working.  Targets which have
+    # Diagnostics packs tend to be the more critical targets being
+    # monitored so this provides an extra level of reassurance).
+    - name: Run Incident Rule Set Import Without OEM Notifications
+      become_user: oracle
+      ansible.builtin.shell: |
+        echo "running import_incident_rule_set.sh"
+        {{ stage }}/import_incident_rule_set.sh
+      register: incident_rule_set_import_without_notifications
+      vars:
+         rule_set_name: "HMPPS OEM Rule Set Without OEM Notifications"
+         target_selection_type: "ALL_TARGETS"
+      failed_when:
+        - incident_rule_set_import_without_notifications.rc > 0
+        - not incident_rule_set_import_without_notifications.stderr is search('.*HMPPS OEM Rule Set Without OEM Notifications.*already exists.*')
 
     - pause:
         seconds: 30
@@ -36,24 +64,10 @@
 
               Setup --> Incidents --> Incident Rules --> Reorder Rule Sets
 
-              Place HMPPS OEM Rule Set in Order position 1 so that it supercedes any
-              other Rule Sets which have been defined.
-          ====================================================================================
-            As of OEM 13.5 Oracle does not provide an API to add Notification Rules to Inicident Rules.
-            This step must therefore be done manually through the Console as follows:
+              Ensure the following ordering:
 
-             Setup --> Incidents --> Incident Rules
-
-             1. Select HMPPS OEM Rule Set and Edit
-
-             2. Select "Notification rule to slack" and Edit
-
-             3. Next to Step 2 of 4, and Add.   Under Advanced Notifications check the box
-                beside SLACK_NOTIFICATION (PL/SQL Procedure), and Continue.
-
-             4. Next --> Next --> Continue --> Save
-
-             Repeat the above for "Send Slack Notification for All Data Guard Incidents"
+              1st place:  HMPPS OEM Rule Set With OEM Notifications
+              2nd place:  HMPPS OEM Rule Set Without OEM Notifications
 
           ====================================================================================
 
