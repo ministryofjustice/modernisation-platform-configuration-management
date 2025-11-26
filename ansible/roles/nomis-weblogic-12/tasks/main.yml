@@ -52,6 +52,12 @@
         - ec2provision
         - weblogic_extract_s3_zip_files
 
+    # PREP: Set Private IPs for .conf files
+    - import_tasks: set_private_ip.yml
+      tags:
+        - ec2provision
+        - weblogic_set_private_ips
+
     # PREP:
     - import_tasks: copy-file-to-location.yml
       vars:
@@ -68,7 +74,6 @@
       tags:
         - ec2provision
         - weblogic_review_permissions
-
 
       # Copy in Java files from the config directory, and extract into the Forms Home
     - import_tasks: copy-file-to-location.yml
