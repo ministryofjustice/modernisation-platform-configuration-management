@@ -46,19 +46,16 @@
         - weblogic_install_domain
       when: weblogic_domain_template_filename != 'none'
 
-     # Log on as Oracle user, change directory to the config directory, copy tag.tar to /u01 and extract
     - import_tasks: extract-s3-zip-files.yml
       tags:
         - ec2provision
         - weblogic_extract_s3_zip_files
 
-    # PREP: Set Private IPs for .conf files
     - import_tasks: set-private-ip.yml
       tags:
         - ec2provision
         - weblogic_set_private_ips
 
-    # PREP:
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -75,7 +72,6 @@
         - ec2provision
         - weblogic_review_permissions
 
-      # Copy in Java files from the config directory, and extract into the Forms Home
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -86,7 +82,6 @@
         - ec2provision
         - weblogic_copy_java_files
 
-      # Copy and edit httpd.conf - Private IP updates done via PREP. Revisit comments.
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -108,8 +103,7 @@
       tags:
         - ec2provision
         - weblogic_copy_mod_wl_ohs_conf
-#
-      # Copy the application resource files to the instance resource directory
+
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -121,7 +115,6 @@
         - ec2provision
         - weblogic_copy_fmrweb
 
-      # Editing forms.conf - Private IP updates done via PREP
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -133,7 +126,6 @@
         - ec2provision
         - weblogic_copy_forms_conf
 
-      # Configure forms applications - review comments
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -151,8 +143,6 @@
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
           server_name: TM-1718
 
-      # Nothing yet for configure reports server using gui - needs assistance
-      # Configure webutil
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -176,8 +166,6 @@
         - ec2provision
         - weblogic_copy_webutil
 
-      # Nothing yet for change enable web plugin + change MEM_PERM_SIZE value setDomainEnv.sh
-      # Add entries to tnsnames.ora file - Does /u01/app/oracle/Middleware/network/admin/tnsnames.ora exist?
     - import_tasks: configure-tnsnames.yml
       vars:
         tnsnames_filename: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
@@ -192,7 +180,6 @@
         - ec2provision
         - weblogic_configure_tnsnames_config
 
-      # Forms Compilation - Bash profile step configured in .bash_profile, see templates folder
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
@@ -210,12 +197,9 @@
         - ec2provision
         - weblogic_forms_compilation_cleanup
 
-      # Create password less startup funtion - already taken care of via install-domain.yml
     - import_tasks: restart-weblogic-services.yml
       tags:
         - ec2provision
         - weblogic_restart_services
-
-      # Start all services will go here
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
