@@ -53,7 +53,7 @@
         - weblogic_extract_s3_zip_files
 
     # PREP: Set Private IPs for .conf files
-    - import_tasks: set_private_ip.yml
+    - import_tasks: set-private-ip.yml
       tags:
         - ec2provision
         - weblogic_set_private_ips
@@ -70,7 +70,7 @@
         - ec2provision
         - weblogic_copy_ssl_conf
 
-    - import_tasks: review_permissions.yml
+    - import_tasks: review-permissions.yml
       tags:
         - ec2provision
         - weblogic_review_permissions
@@ -146,7 +146,7 @@
         - ec2provision
         - weblogic_copy_forms_applications
 
-    - import_tasks: configure_report_server_name.yml
+    - import_tasks: configure-report-server-name.yml
       vars:
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
           server_name: TM-1718
@@ -178,14 +178,14 @@
 
       # Nothing yet for change enable web plugin + change MEM_PERM_SIZE value setDomainEnv.sh
       # Add entries to tnsnames.ora file - Does /u01/app/oracle/Middleware/network/admin/tnsnames.ora exist?
-    - import_tasks: configure_tnsnames.yml
+    - import_tasks: configure-tnsnames.yml
       vars:
         tnsnames_filename: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
       tags:
         - ec2provision
         - weblogic_configure_tnsnames_admin
 
-    - import_tasks: configure_tnsnames.yml
+    - import_tasks: configure-tnsnames.yml
       vars:
         tnsnames_filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
       tags:
@@ -203,7 +203,7 @@
         - ec2provision
         - weblogic_copy_webutil
 
-    - import_tasks: forms_compilation_cleanup.yml
+    - import_tasks: forms-compilation-cleanup.yml
       vars:
         forms_compilation_filepath: /u01/tag/FormsSources
       tags:
@@ -211,7 +211,7 @@
         - weblogic_forms_compilation_cleanup
 
       # Create password less startup funtion - already taken care of via install-domain.yml
-    - import_tasks: restart_weblogic_services.yml
+    - import_tasks: restart-weblogic-services.yml
       tags:
         - ec2provision
         - weblogic_restart_services
