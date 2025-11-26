@@ -69,6 +69,12 @@
     - ec2provision
     - create_groups
 
+- import_tasks: set_notifications_allowed_group.yml
+  tags:
+    - amibuild
+    - ec2provision
+    - incident_rule_set
+
 - import_tasks: import_incident_rule_set.yml
   tags:
     - amibuild

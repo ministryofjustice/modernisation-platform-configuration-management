@@ -589,6 +589,7 @@
          </IncidentGroupingAttribute>
       </RuleCondAction>
    </Rule>
+{% if rule_set_name == "HMPPS OEM Rule Set With OEM Notifications" %}
    <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="INCIDENT">
       <RuleName>Notification rule to slack</RuleName>
       <RuleDescription>Rule to notify slack of incidents</RuleDescription>
@@ -637,7 +638,6 @@
          </RuleAdvNotification>
       </RuleCondAction>
    </Rule>
-{% if rule_set_name == "HMPPS OEM Rule Set With OEM Notifications" %}
    <Rule isEnabled="true" isGlobalCompressionEnabled="true" ruleType="INCIDENT">
       <RuleName>Send Slack Notification for All Data Guard Incidents</RuleName>
       <RuleDescription>Additional Slack Notification step in addition to all other incidents for the Data Guard Status metric. For Data Guard we want a notification for Warnings in addition to Errors, as these are more operationally significant than warnings for other metrics.</RuleDescription>

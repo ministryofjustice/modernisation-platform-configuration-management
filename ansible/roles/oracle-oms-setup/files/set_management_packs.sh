@@ -47,14 +47,14 @@ SELECT
     target_name,
     target_type,
     COALESCE(application_name,'UNKNOWN') application_name,
-    COALESCE(existing_management_packs,'none') existing_management_packs,
+    COALESCE(existing_management_packs,'null') existing_management_packs,
     coalesce(
         LISTAGG(pack_name, '+') WITHIN GROUP(
         ORDER BY
             pack_name
         ),
         'none') requested_management_packs,
-    COALESCE(existing_notifications_allowed,'no') existing_notifications_allowed,
+    COALESCE(existing_notifications_allowed,'null') existing_notifications_allowed,
     COALESCE(MAX(CASE WHEN pack_name = 'db_diag' THEN 'yes' ELSE null END),'no') requested_notifications_allowed
 FROM
     (
@@ -93,10 +93,12 @@ FROM
                     property_display_name = 'Notifications Allowed'
             )
         WHERE
-            et1.target_type NOT IN ( 'jrf_webservice', 'rest_webservice', 'oracle_si_filesystem_host',
-                                     'oracle_si_network_interface_host' , 'oracle_si_network_data_link_host',
-                                     'oracle_si_lvm_host', 'oracle_si_volume_host', 'asm_diskgroup_component',
-                                     'composite', 'oracle_cloud', 'oracle_dbsys', 'oracle_emd_proxy' )
+            et1.promote_status > 1 -- Ignore unpromoted targets
+            AND et1.target_type NOT IN ( 'jrf_webservice', 'rest_webservice', 'oracle_si_filesystem_host',
+                                         'oracle_si_network_interface_host' , 'oracle_si_network_data_link_host',
+                                         'oracle_si_lvm_host', 'oracle_si_volume_host', 'asm_diskgroup_component',
+                                         'composite', 'oracle_cloud', 'oracle_emd_proxy',
+                                         'oracle_si_osservice_host' )
     )
 GROUP BY
     target_name,
@@ -114,7 +116,7 @@ EOSQL
 if [[ ! -z ${MANAGEMENT_PACK_CHANGES} ]];
 then
 
-  REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone || echo "eu-west-2" | sed 's/[a-z]$//')
+  REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region || echo "eu-west-2" | sed 's/[a-z]$//')
   CHANGE_LOG=/home/oracle/admin/em/management_pack_changes.$(date +%Y%m%d%H%M%S).log
   EMCLI=/u01/app/oracle/product/mw135/bin/emcli
   connect_to_emcli
@@ -172,7 +174,7 @@ then
 
   SLACK_TOKEN=$(aws secretsmanager get-secret-value --secret-id /oracle/database/EMREP/shared-passwords --region ${REGION} --query SecretString --output text | jq -r .slack_token)
 
-  SLACK_CHANNEL="#delius-aws-oracle-dev-alerts-test"
+  SLACK_CHANNEL="#hmpps-oem-alerts"
   EMOJI_ICON=":package:"
   USERNAME="Management Pack target property script"
 

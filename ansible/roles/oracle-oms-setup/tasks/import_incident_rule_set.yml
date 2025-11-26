@@ -5,7 +5,6 @@
     - name: emcli Login
       import_tasks: emcli_login.yml
 
-
     # 1st: Set up the Rule Set for Targets which may use Native Notifications
     #      There are targets which are in the "Notification Allowed" dynamic
     #      group.  They are placed in the group through their "Notifications Allowed"
@@ -35,7 +34,7 @@
       register: run_incident_rule_set_import
       failed_when:
         - run_incident_rule_set_import.rc > 0
-        - not run_incident_rule_set_import.stderr is search('.*{{ rule_set_name }}.*already exists.*')
+        - not run_incident_rule_set_import.stderr is search('.*already exists.*')
 
 
     # 2nd: Set up the Rule Set for ALL Targets
@@ -69,7 +68,7 @@
       register: run_incident_rule_set_import
       failed_when:
         - run_incident_rule_set_import.rc > 0
-        - not run_incident_rule_set_import.stderr is search('.*{{ rule_set_name }}.*already exists.*')
+        - not run_incident_rule_set_import.stderr is search('.*already exists.*')
 
 
     - pause:
