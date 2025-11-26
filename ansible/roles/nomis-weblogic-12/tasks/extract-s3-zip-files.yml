@@ -17,7 +17,7 @@
     overwrite: latest
   loop: "{{ oracle_setup_config }}"
 
-- name: Unzip tag.zip
+- name: Unzip contents
   unarchive:
     src: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     dest: "{{ item.extract_path }}"
