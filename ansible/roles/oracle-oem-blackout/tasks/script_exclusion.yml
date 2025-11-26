@@ -91,6 +91,8 @@
 
     - name: emcli Login
       import_tasks: emcli_login.yml
+      vars:
+        java_home: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
@@ -119,11 +121,21 @@
     dataguard_named_database_metrics: ["dataguard_11gR2", "fsfo_observers"]
     named_database_metrics: []
 
-# Check dataguard configured for none OEM enviroments
+- name: Show HAC
+  debug:
+     var: high_availability_count
+
+- name: Show Group Names
+  debug:
+      var: group_names
+
+# Check dataguard configured for non-OEM enviroments
 - name: Check Dataguard Configured
   set_fact:
     dataguard_configured: "{{ high_availability_count[group_names | select('match','.*_dbs') | first | regex_replace('^.*_(.*)_dbs', '\\1') | regex_replace('^(dsd|boe)$', 'mis\\1') ] | int > 0 }}"
-  when: high_availability_count is defined
+  when: 
+    - high_availability_count is defined
+    - not 'server_type_hmpps_oem' in group_names
 
 - name: Re-Evaluate Named Database Metrics
   include_tasks: reevaluate_database_metrics.yml
@@ -139,6 +151,8 @@
   block:
     - name: emcli Login
       import_tasks: emcli_login.yml
+      vars:
+        java_home: "{{ agent_home }}/oracle_common/jdk/jre"
 
     - name: Update Host Comment Property With Excluded Host
       shell: |
