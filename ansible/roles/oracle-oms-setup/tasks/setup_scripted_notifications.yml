@@ -16,9 +16,11 @@
         dest: "{{ notification_script_directory }}/check_em_incident.sh"
         mode: "0700"
 
+    # Set the variable monitoring_schedule_file if you wish to override the default schedule from the repo
+    # (Default schedules are unique to the OMS Server)
     - name: Copy Notification Schedule
       copy:
-        src: "monitoring_schedule.{{ OMS_SERVER }}"
+        src: "{{ monitoring_schedule_file if monitoring_schedule_file is defined else 'monitoring_schedule.' ~ OMS_SERVER }}"
         dest: "{{ notification_script_directory }}/monitoring_schedule"
         mode: "0600"
 
