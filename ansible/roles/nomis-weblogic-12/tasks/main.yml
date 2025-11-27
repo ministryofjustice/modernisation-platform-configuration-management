@@ -77,7 +77,6 @@
         files:
           - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
             dest: /u01/app/oracle/Middleware/forms/java
-            check_for_backup: false
       tags:
         - ec2provision
         - weblogic_copy_java_files
@@ -133,7 +132,6 @@
             dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/formsweb.cfg
           - src: /home/oracle/sysconsoftware/12c_setup_config/tag.env
             dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
-            check_for_backup: false
       tags:
         - ec2provision
         - weblogic_copy_forms_applications
@@ -152,16 +150,12 @@
             dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/webutil.cfg
           - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x86.dll
             dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x86.dll
-            check_for_backup: false
           - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x64.dll
             dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x64.dll
-            check_for_backup: false
           - src: /home/oracle/sysconsoftware/12c_setup_config/PRSDK.dll
             dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRSDK.dll
-            check_for_backup: false
           - src: /home/oracle/sysconsoftware/12c_setup_config/PRLIB.dll
             dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRLIB.dll
-            check_for_backup: false
       tags:
         - ec2provision
         - weblogic_copy_webutil
@@ -185,7 +179,6 @@
         files:
           - src: /u01/app/oracle/Middleware/forms/webutil.pll
             dest: /u01/tag/FormsSources/WEBUTIL.pll
-            check_for_backup: false
       tags:
         - ec2provision
         - weblogic_copy_webutil

@@ -4,6 +4,8 @@
     path: "{{ item.dest }}"
   register: base_file_stat
   loop: "{{ files }}"
+  when:
+    - item.check_for_backup | default(false) | bool
 
 - name: Check if a backup file exists
   ansible.builtin.stat:
@@ -12,7 +14,7 @@
   loop: "{{ files }}"
   when:
     - (base_file_stat.results[ansible_loop.index0].stat.exists is defined and base_file_stat.results[ansible_loop.index0].stat.exists)
-    - item.check_for_backup | default(true) | bool
+    - item.check_for_backup | default(false) | bool
 
 - name: Create backup
   ansible.builtin.copy:
@@ -22,7 +24,7 @@
   when:
     - (base_file_stat.results[ansible_loop.index0].stat.exists is defined and base_file_stat.results[ansible_loop.index0].stat.exists)
     - not (file_stat.results[ansible_loop.index0].stat.exists is defined and file_stat.results[ansible_loop.index0].stat.exists)
-    - item.check_for_backup | default(true) | bool
+    - item.check_for_backup | default(false) | bool
 
 - name: Copy files into relevant locations
   ansible.builtin.copy:
