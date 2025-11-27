@@ -1,0 +1,36 @@
+---
+- name: Check if tnsnames file is already configured
+  ansible.builtin.shell:
+    cmd: "grep -q 'HOST = {{ tnsnames_hostname }}' {{ tnsnames_filename }}"
+  register: tnsnames_result
+  ignore_errors: yes
+
+- name: Configure tnsnames
+  ansible.builtin.blockinfile:
+    path: "{{ tnsnames_filename }}"
+    block: |
+      QA19C =
+        (DESCRIPTION =
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
+          (CONNECT_DATA =
+            (SERVER = DEDICATED)
+            (SERVICE_NAME = QA19C)
+          )
+        )
+
+
+
+      QA11G =
+        (DESCRIPTION =
+          (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
+          (CONNECT_DATA =
+            (SERVER = DEDICATED)
+            (SERVICE_NAME = QA11G)
+          )
+        )
+
+    insertafter: EOF
+    marker: ""
+    create: yes
+    state: present
+  when: tnsnames_result.rc != 0

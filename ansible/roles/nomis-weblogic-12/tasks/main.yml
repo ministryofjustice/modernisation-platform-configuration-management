@@ -46,4 +46,160 @@
         - weblogic_install_domain
       when: weblogic_domain_template_filename != 'none'
 
+    - import_tasks: extract-s3-zip-files.yml
+      tags:
+        - ec2provision
+        - weblogic_extract_s3_zip_files
+
+    - import_tasks: set-private-ip.yml
+      tags:
+        - ec2provision
+        - weblogic_set_private_ips
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_ssl_conf
+
+    - import_tasks: review-permissions.yml
+      tags:
+        - ec2provision
+        - weblogic_review_permissions
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
+            dest: /u01/app/oracle/Middleware/forms/java
+            check_for_backup: false
+      tags:
+        - ec2provision
+        - weblogic_copy_java_files
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_httpd_conf
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_mod_wl_ohs_conf
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb.res
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb.res
+          - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb_utf8.res
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb_utf8.res
+      tags:
+        - ec2provision
+        - weblogic_copy_fmrweb
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
+          - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
+      tags:
+        - ec2provision
+        - weblogic_copy_forms_conf
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/formsweb.cfg
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/formsweb.cfg
+          - src: /home/oracle/sysconsoftware/12c_setup_config/tag.env
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
+            check_for_backup: false
+      tags:
+        - ec2provision
+        - weblogic_copy_forms_applications
+
+    - import_tasks: configure-report-server-name.yml
+      vars:
+        - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
+          server_name: TM-1718
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/forms1/server/webutil.cfg
+          - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
+            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/webutil.cfg
+          - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x86.dll
+            dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x86.dll
+            check_for_backup: false
+          - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x64.dll
+            dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x64.dll
+            check_for_backup: false
+          - src: /home/oracle/sysconsoftware/12c_setup_config/PRSDK.dll
+            dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRSDK.dll
+            check_for_backup: false
+          - src: /home/oracle/sysconsoftware/12c_setup_config/PRLIB.dll
+            dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRLIB.dll
+            check_for_backup: false
+      tags:
+        - ec2provision
+        - weblogic_copy_webutil
+
+    - import_tasks: configure-tnsnames.yml
+      vars:
+        tnsnames_filename: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
+      tags:
+        - ec2provision
+        - weblogic_configure_tnsnames_admin
+
+    - import_tasks: configure-tnsnames.yml
+      vars:
+        tnsnames_filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
+      tags:
+        - ec2provision
+        - weblogic_configure_tnsnames_config
+
+    - import_tasks: copy-file-to-location.yml
+      vars:
+        files:
+          - src: /u01/app/oracle/Middleware/forms/webutil.pll
+            dest: /u01/tag/FormsSources/WEBUTIL.pll
+            check_for_backup: false
+      tags:
+        - ec2provision
+        - weblogic_copy_webutil
+
+    - import_tasks: forms-compilation-cleanup.yml
+      vars:
+        forms_compilation_filepath: /u01/tag/FormsSources
+      tags:
+        - ec2provision
+        - weblogic_forms_compilation_cleanup
+
+    - import_tasks: restart-weblogic-services.yml
+      tags:
+        - ec2provision
+        - weblogic_restart_services
+
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

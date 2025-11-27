@@ -1,0 +1,18 @@
+---
+- name: Set private IP address for conf files
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: "{{ private_ip_to_replace }}"
+    replace: "ip-{{ ansible_default_ipv4.address | replace('.', '-') }}"
+  loop:
+    - /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
+    - /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
+    - /home/oracle/sysconsoftware/12c_setup_config/forms.conf
+
+- name: Set private IP address for rwproperties files
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: "{{ rwproperties_string_to_replace }}"
+    replace: "ip-{{ ansible_default_ipv4.address | replace('.', '-') }}"
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
