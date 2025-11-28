@@ -51,21 +51,39 @@
         - ec2provision
         - weblogic_extract_s3_zip_files
 
-    - import_tasks: set-private-ip.yml
-      tags:
-        - ec2provision
-        - weblogic_set_private_ips
-
-    - import_tasks: copy-file-to-location.yml
+    - import_tasks: copy-template-file-to-location.yml
       vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
-          - src: /home/oracle/sysconsoftware/12c_setup_config/ssl.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
+        - files:
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
+              mode: 0640
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
+              mode: 0644
       tags:
         - ec2provision
-        - weblogic_copy_ssl_conf
+        - weblogic_copy_template_files
 
     - import_tasks: review-permissions.yml
       tags:
@@ -84,28 +102,6 @@
     - import_tasks: copy-file-to-location.yml
       vars:
         files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-          - src: /home/oracle/sysconsoftware/12c_setup_config/httpd.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
-      tags:
-        - ec2provision
-        - weblogic_copy_httpd_conf
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
-          - src: /home/oracle/sysconsoftware/12c_setup_config/mod_wl_ohs.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
-      tags:
-        - ec2provision
-        - weblogic_copy_mod_wl_ohs_conf
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
           - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb.res
             dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb.res
           - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb_utf8.res
@@ -113,17 +109,6 @@
       tags:
         - ec2provision
         - weblogic_copy_fmrweb
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
-          - src: /home/oracle/sysconsoftware/12c_setup_config/forms.conf
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
-      tags:
-        - ec2provision
-        - weblogic_copy_forms_conf
 
     - import_tasks: copy-file-to-location.yml
       vars:
