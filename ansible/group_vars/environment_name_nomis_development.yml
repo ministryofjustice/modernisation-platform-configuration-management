@@ -7,20 +7,18 @@ dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
-private_ip_to_replace: "ip-1-2-3-4"
-rwproperties_string_to_replace: "qa11g-nomis-web12-b"
 oracle_setup_config:
   - directory_path: /home/oracle/sysconsoftware/12c_setup_config
     extract_path: /home/oracle/sysconsoftware/
     group: oinstall
     owner: oracle
-    s3_bucket_path: TM-1718
+    s3_bucket_path: nomis-weblogic-12
     zip_file_name: 12c_setup_config.zip
   - directory_path: /u01/tag
     extract_path: /u01/
     group: oinstall
     owner: oracle
-    s3_bucket_path: TM-1718
+    s3_bucket_path: nomis-weblogic-12
     zip_file_name: tag.zip
 tnsnames_hostname: dev-nomis-db19c-1-a
 tnsnames_port: 1521
