@@ -56,31 +56,30 @@
         - files:
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
-              mode: 0640
             - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
               dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
               mode: 0644
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
+            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
+              dest: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
+              mode: 0644
+              owner: root
+              group: root
       tags:
         - ec2provision
         - weblogic_copy_template_files
@@ -144,20 +143,6 @@
       tags:
         - ec2provision
         - weblogic_copy_webutil
-
-    - import_tasks: configure-tnsnames.yml
-      vars:
-        tnsnames_filename: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
-      tags:
-        - ec2provision
-        - weblogic_configure_tnsnames_admin
-
-    - import_tasks: configure-tnsnames.yml
-      vars:
-        tnsnames_filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
-      tags:
-        - ec2provision
-        - weblogic_configure_tnsnames_config
 
     - import_tasks: copy-file-to-location.yml
       vars:
