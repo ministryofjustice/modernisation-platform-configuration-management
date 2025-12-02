@@ -58,7 +58,7 @@
         owner: "{{ item.owner | default('oracle') }}"
         group: "{{ item.group | default('oinstall') }}"
         mode: "{{ item.mode | default('0640') }}"
-      loop: oracle_template_file_config
+      loop: "{{ oracle_template_file_config }}"
       tags:
         - ec2provision
         - weblogic_copy_template_files
@@ -72,7 +72,7 @@
       ansible.builtin.copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
-      loop: oracle_file_config
+      loop: "{{ oracle_file_config }}"
       tags:
         - ec2provision
         - weblogic_copy_file_to_location
