@@ -162,5 +162,6 @@
       tags:
         - ec2provision
         - weblogic_restart_services
+      when: restart_weblogic_services | default(true) | bool
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
