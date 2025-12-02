@@ -51,33 +51,14 @@
         - ec2provision
         - weblogic_extract_s3_zip_files
 
-    - import_tasks: copy-template-file-to-location.yml
-      vars:
-        - files:
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/tnsnames.ora
-              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
-            - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/tnsnames.ora
-              dest: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
-              owner: root
-              group: root
+    - name: Copy report server config
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ item.owner | default('oracle') }}"
+        group: "{{ item.group | default('oinstall') }}"
+        mode: "{{ item.mode | default('0640') }}"
+      loop: oracle_template_file_config
       tags:
         - ec2provision
         - weblogic_copy_template_files
@@ -87,69 +68,19 @@
         - ec2provision
         - weblogic_review_permissions
 
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
-            dest: /u01/app/oracle/Middleware/forms/java
+    - name: Copy files into relevant locations
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop: oracle_file_config
       tags:
         - ec2provision
-        - weblogic_copy_java_files
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb.res
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb.res
-          - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb_utf8.res
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb_utf8.res
-      tags:
-        - ec2provision
-        - weblogic_copy_fmrweb
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/formsweb.cfg
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/formsweb.cfg
-          - src: /home/oracle/sysconsoftware/12c_setup_config/tag.env
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
-      tags:
-        - ec2provision
-        - weblogic_copy_forms_applications
+        - weblogic_copy_file_to_location
 
     - import_tasks: configure-report-server-name.yml
       vars:
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
           server_name: TM-1718
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/forms1/server/webutil.cfg
-          - src: /home/oracle/sysconsoftware/12c_setup_config/webutil.cfg
-            dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/webutil.cfg
-          - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x86.dll
-            dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x86.dll
-          - src: /home/oracle/sysconsoftware/12c_setup_config/jacob-1.21-x64.dll
-            dest: /u01/app/oracle/Middleware/forms/webutil/win32/jacob-1.21-x64.dll
-          - src: /home/oracle/sysconsoftware/12c_setup_config/PRSDK.dll
-            dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRSDK.dll
-          - src: /home/oracle/sysconsoftware/12c_setup_config/PRLIB.dll
-            dest: /u01/app/oracle/Middleware/forms/webutil/win32/PRLIB.dll
-      tags:
-        - ec2provision
-        - weblogic_copy_webutil
-
-    - import_tasks: copy-file-to-location.yml
-      vars:
-        files:
-          - src: /u01/app/oracle/Middleware/forms/webutil.pll
-            dest: /u01/tag/FormsSources/WEBUTIL.pll
-      tags:
-        - ec2provision
-        - weblogic_copy_webutil
 
     - import_tasks: forms-compilation-cleanup.yml
       vars:
