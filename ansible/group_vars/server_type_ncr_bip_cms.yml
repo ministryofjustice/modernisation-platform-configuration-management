@@ -125,4 +125,4 @@ collectd_monitored_services_servertype:
     shell_cmd: "systemctl is-active chronyd"
   - metric_name: service_status_app
     metric_dimension: service_sapbobj
-    shell_cmd: "systemctl is-active sapbobj && pgrep java -u bobj"
+    shell_cmd: "pgrep java -u bobj"
