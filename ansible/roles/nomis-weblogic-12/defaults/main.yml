@@ -1,4 +1,29 @@
 ---
+oracle_template_file_config:
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/ssl.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/httpd.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/httpd.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/httpd.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/mod_wl_ohs.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/mod_wl_ohs.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/mod_wl_ohs.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/forms.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/forms.conf
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/server/forms.conf
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/tnsnames.ora
+    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
+  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/tnsnames.ora
+    dest: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
+    owner: root
+    group: root
 oracle_file_config:
   - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
     dest: /u01/app/oracle/Middleware/forms/java
