@@ -1,9 +1,0 @@
----
-- name: Copy report server config
-  ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    owner: "{{ item.owner | default('oracle') }}"
-    group: "{{ item.group | default('oinstall') }}"
-    mode: "{{ item.mode | default('0640') }}"
-  loop: "{{ files }}"
