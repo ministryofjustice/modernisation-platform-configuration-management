@@ -38,7 +38,7 @@ server_type_roles_list:
   - epel
   - disks
   - selinux-config
-  # - oracle-19c-client
+  - oracle-19c-client
   - filesystems
   # - sap-bip-4
   # - collectd
@@ -101,7 +101,7 @@ disks_mount:
 
 timezone: "Europe/London"
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
-# oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
+oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_is_cms: true
 sap_bip_copy_bip_control_script: true
 

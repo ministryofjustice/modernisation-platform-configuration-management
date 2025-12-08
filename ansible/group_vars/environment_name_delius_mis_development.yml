@@ -6,10 +6,10 @@ sap_bip_oracle_client_conf:
   tnsnames_ora_source_filename: tnsnames.ora.delius-bip.dev
 
 sap_bip_db_conf:
-  auditing_db_server: T1BIAUD
-  auditing_db_user: bip_audit_owner # lowercase to match secret name
-  cms_db_server: T1BISYS
-  cms_db_user: bip_system_owner # lowercase to match secret name
+  auditing_db_server: DMDBOE
+  auditing_db_user: b14cms
+  cms_db_server: DMDBOE
+  cms_db_user: b14aud
 
 sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
