@@ -83,6 +83,7 @@
       cron:
         name: management_pack_calculations
         user: oracle
+        minute: "*/5"
         job: "/usr/bin/flock --nonblock --conflict-exit-code 0 {{ notification_script_directory }}/set_management_packs_lock_file -c {{ notification_script_directory }}/set_management_packs.sh >> {{ notification_script_directory }}/set_management_packs.log 2>&1"
 
 
