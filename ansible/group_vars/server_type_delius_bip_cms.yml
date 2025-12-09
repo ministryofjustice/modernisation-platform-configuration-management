@@ -61,7 +61,7 @@ packages_yum_install:
   - libnsl2
   - libnsl2.i686
   - libstdc++.i686
-  # - libstdc++.x86_64
+  - libstdc++.x86_64
   - glibc.i686
   - glibc.x86_64
   - libX11.i686
@@ -97,9 +97,9 @@ disks_mount:
   - ebs_device_name: /dev/sdc
     dir: /u02
     fstype: xfs
-#  - ebs_device_name: /dev/sds
-#    dir: swap
-#    fstype: swap
+  - ebs_device_name: /dev/sds
+    dir: swap
+    fstype: swap
 
 timezone: "Europe/London"
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
