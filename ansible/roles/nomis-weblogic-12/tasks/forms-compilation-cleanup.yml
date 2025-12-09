@@ -1,0 +1,14 @@
+---
+- name: Find and remove log/txt files
+  ansible.builtin.find:
+    paths: "{{ forms_compilation_filepath }}"
+    patterns: "*.log,*.txt"
+    recurse: no
+  register: forms_sources_files_to_remove
+
+- name: Remove log/txt files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ forms_sources_files_to_remove.files }}"
+  when: forms_sources_files_to_remove.matched > 0

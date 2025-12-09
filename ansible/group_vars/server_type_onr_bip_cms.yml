@@ -105,5 +105,14 @@ disks_mount:
 timezone: "Europe/London"
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
+
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: service_sapbobj
+    shell_cmd: "pgrep java -u bobj"
+
 sap_bip_is_cms: true
 sap_bip_copy_bip_control_script: true

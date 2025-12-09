@@ -38,6 +38,7 @@
     - import_tasks: create-db-repo.yml
       tags:
         - weblogic_create_db_repo
+        - never
       when: weblogic_db_repo_prefix is defined
 
     - import_tasks: install-domain.yml
@@ -45,5 +46,53 @@
         - ec2provision
         - weblogic_install_domain
       when: weblogic_domain_template_filename != 'none'
+
+    - import_tasks: extract-s3-zip-files.yml
+      tags:
+        - ec2provision
+        - weblogic_extract_s3_zip_files
+
+    - name: Copy report server config
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ item.owner | default('oracle') }}"
+        group: "{{ item.group | default('oinstall') }}"
+        mode: "{{ item.mode | default('0640') }}"
+      loop: "{{ oracle_template_file_config }}"
+      tags:
+        - ec2provision
+        - weblogic_copy_template_files
+
+    - import_tasks: review-permissions.yml
+      tags:
+        - ec2provision
+        - weblogic_review_permissions
+
+    - name: Copy files into relevant locations
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop: "{{ oracle_file_config }}"
+      tags:
+        - ec2provision
+        - weblogic_copy_file_to_location
+
+    - import_tasks: configure-report-server-name.yml
+      vars:
+        - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
+          server_name: TM-1718
+
+    - import_tasks: forms-compilation-cleanup.yml
+      vars:
+        forms_compilation_filepath: /u01/tag/FormsSources
+      tags:
+        - ec2provision
+        - weblogic_forms_compilation_cleanup
+
+    - import_tasks: enable-weblogic-services.yml
+      tags:
+        - ec2provision
+        - weblogic_enable_services
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

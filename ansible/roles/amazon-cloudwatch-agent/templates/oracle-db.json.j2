@@ -1,0 +1,129 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}",
+      "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+    },
+    "aggregation_dimensions" : [["AutoScalingGroupName"],["InstanceId"],["instance"],["InstanceId","instance"]],
+    "metrics_collected": {
+      "cpu": {
+        "resources": [
+          "*"
+        ],
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ],
+        "metrics_collection_interval": 60,
+        "totalcpu": false,
+        "append_dimensions": {
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
+        }
+      },
+      "disk": {
+        "measurement": [
+          "used_percent",
+          "inodes_free"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
+        }
+      },
+      "diskio": {
+        "measurement": [
+          "io_time"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
+        }
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
+        }
+      },
+      "swap": {
+        "measurement": [
+          "swap_used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ],
+        "append_dimensions": {
+{% if ec2.tags['server-type'] is defined %}
+          "name": "{{ ec2.tags['Name'] }}",
+          "server_type": "{{ ec2.tags['server-type'] }}"
+{% else %}
+          "name": "{{ ec2.tags['Name'] }}"
+{% endif %}
+        }
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "cwagent-var-log-messages",
+            "log_stream_name": "{{ ansible_ec2_instance_id }}"
+          },
+          {
+            "file_path": "/var/log/secure",
+            "log_group_name": "cwagent-var-log-secure",
+            "log_stream_name": "{{ ansible_ec2_instance_id }}"
+          },
+          {
+            "file_path": "/u01/app/grid/diag/tnslsnr/{{ ec2.tags['Name'] }}/listener/trace/listener.log",
+            "log_group_name": "cwagent-oracle-listener-log",
+            "log_stream_name": "{{ ansible_ec2_instance_id }}",
+            "timestamp_format": "%d-%b-%Y %H:%M:%S"
+          }
+        ]
+      }
+    }
+  }
+}

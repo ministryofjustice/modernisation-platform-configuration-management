@@ -7,6 +7,24 @@ dns_search_domains:
   - hmpps-oem.hmpps-development.modernisation-platform.internal
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
+oracle_setup_config:
+  - directory_path: /home/oracle/sysconsoftware/12c_setup_config
+    extract_path: /home/oracle/sysconsoftware/
+    group: oinstall
+    owner: oracle
+    s3_bucket_path: nomis-weblogic-12
+    zip_file_name: 12c_setup_config.zip
+  - directory_path: /u01/tag
+    extract_path: /u01/
+    group: oinstall
+    owner: oracle
+    s3_bucket_path: nomis-weblogic-12
+    zip_file_name: tag.zip
+tnsnames_hostname: dev-nomis-db19c-1-a
+tnsnames_port: 1521
+tnsnames_qa19c_service_name: QA19C
+tnsnames_qa11g_service_name: QA11G
+zip_file_temp_dir: /tmp
 winrm_domain_name_fqdn: azure.noms.root
 
 users_and_groups_regular:
