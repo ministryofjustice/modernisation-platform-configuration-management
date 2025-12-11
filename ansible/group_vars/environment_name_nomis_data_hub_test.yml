@@ -9,17 +9,14 @@ ndh_cdecopy_confs:
   t1:
     ndh_cdecopy_azure_storage_account_name: offlocstageapp
     ndh_cdecopy_azure_storage_container_name: cde
-    ndh_cdecopy_noncore_hostname:
     ndh_cdecopy_s3_bucket_name: offloc-upload20240515092114741500000001
   t2:
     ndh_cdecopy_azure_storage_account_name:
     ndh_cdecopy_azure_storage_container_name:
-    ndh_cdecopy_noncore_hostname:
     ndh_cdecopy_s3_bucket_name:
 
 ndh_environment: "{{ ec2.tags['nomis-data-hub-environment'] }}"
 ndh_cdecopy_conf: "{{ ndh_cdecopy_confs[ndh_environment] }}"
 ndh_cdecopy_azure_storage_account_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_azure_storage_account_name }}"
 ndh_cdecopy_azure_storage_container_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_azure_storage_container_name }}"
-ndh_cdecopy_noncore_hostname: "{{ ndh_cdecopy_conf.ndh_cdecopy_noncore_hostname }}"
 ndh_cdecopy_s3_bucket_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_s3_bucket_name }}"
