@@ -90,6 +90,17 @@
         - ec2provision
         - weblogic_forms_compilation_cleanup
 
+    - name: Render the template web app container config
+      set_fact:
+        rendered_web_app_container_template: "{{ lookup('template', '12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/template_config/web_app_container_config.xml') }}"
+
+    - name: Update config.xml to enable web plugin
+      blockinfile:
+        path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/config.xml
+        insertafter: '</migratable-target>'
+        content: "{{ rendered_web_app_container_template }}"
+        marker: "<!-- WEB APP CONTAINER CONFIG -->"
+
     - import_tasks: enable-weblogic-services.yml
       tags:
         - ec2provision
