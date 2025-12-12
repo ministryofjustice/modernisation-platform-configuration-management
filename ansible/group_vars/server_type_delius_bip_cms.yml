@@ -40,7 +40,7 @@ server_type_roles_list:
   - selinux-config
   - oracle-19c-client
   - filesystems
-  # - sap-bip-4
+  - sap-bip-4
   # - collectd
   # - amazon-cloudwatch-agent
   # - amazon-cloudwatch-agent-collectd
@@ -60,7 +60,7 @@ packages_yum_install:
   - libnsl.i686
   - libnsl2
   - libnsl2.i686
-  - libstdc++.i686
+  - libstdc++-8.5.0-23.el8_10.i686 # latest version runs into dependency issue
   - libstdc++.x86_64
   - glibc.i686
   - glibc.x86_64
@@ -106,6 +106,7 @@ filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_is_cms: true
 sap_bip_copy_bip_control_script: true
+sap_bip_sia_name_cms: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-','') }}" # max length 13
 
 # collectd_monitored_services_servertype:
 #  - metric_name: service_status_os
