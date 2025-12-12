@@ -93,6 +93,9 @@
     - name: Render the template web app container config
       set_fact:
         rendered_web_app_container_template: "{{ lookup('template', '12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/template_config/web_app_container_config.xml') }}"
+      tags:
+        - ec2provision
+        - weblogic_render_web_app_container_config
 
     - name: Update config.xml to enable web plugin
       blockinfile:
@@ -100,6 +103,9 @@
         insertafter: '</migratable-target>'
         content: "{{ rendered_web_app_container_template }}"
         marker: "<!-- WEB APP CONTAINER CONFIG -->"
+      tags:
+        - ec2provision
+        - weblogic_enable_web_plugin
 
     - import_tasks: enable-weblogic-services.yml
       tags:
