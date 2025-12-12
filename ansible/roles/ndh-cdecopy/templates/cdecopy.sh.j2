@@ -5,7 +5,6 @@ AZURE_SAS_TOKEN_SSM_PARAMETER='/azure/sas_token'
 S3_BUCKET_NAME='{{ ndh_cdecopy_s3_bucket_name }}'
 LOCAL_CDE_DIR='{{ ndh_cdecopy_source_dir }}'
 LOCAL_TEMP_DIR='{{ ndh_cdecopy_temp_dir }}'
-WINRM_COPY_PARTS=10
 DRYRUN=0
 AZURE=0
 S3=0
@@ -65,9 +64,6 @@ clean_local_tmpfiles() {
 }
 
 create_local_tmpfiles() {
-  local i
-  local part
-
   if [[ ! -d $LOCAL_TEMP_DIR ]]; then
     debug "local: creating $LOCAL_TEMP_DIR"
     if ((DRYRUN == 0)); then
@@ -91,29 +87,6 @@ create_local_tmpfiles() {
       zip "$1.zip" "$1"
     fi
   fi
-
-  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
-    part="$1.$(printf %02d $i)"
-    if [[ ! -e $part || $1 -nt $part ]]; then
-      debug "local: creating $WINRM_COPY_PARTS parts for winrm"
-      if ((DRYRUN == 0)); then
-        split -d -n $WINRM_COPY_PARTS "$1" "$1."
-      fi
-      break
-    fi
-  done
-
-  # create parts
-  for ((i=0; i<WINRM_COPY_PARTS; i++)); do
-    part="$1.$(printf %02d $i)"
-    if [[ ! -e $part.zip || $part -nt $part.zip ]]; then
-      debug "local: creating $part.zip"
-      if ((DRYRUN == 0)); then
-        rm -f "$part.zip"
-        zip "$part.zip" "$part"
-      fi
-    fi
-  done
 }
 
 get_cde_zip_filename() {
