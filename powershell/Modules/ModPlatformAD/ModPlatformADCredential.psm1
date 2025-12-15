@@ -67,7 +67,12 @@ function Get-ModPlatformADSecret {
   } else {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
   }
-  "$SecretValueRaw" | ConvertFrom-Json
+  if (Test-Json -Json "$SecretValueRaw") {
+    "$SecretValueRaw" | ConvertFrom-Json
+  } else {
+    $DomainJoinUsername = $ModPlatformADConfig.DomainJoinUsername
+    @{$DomainJoinUsername=$SecretValueRaw}
+  }
 }
 
 function Get-ModPlatformADJoinCredential {
