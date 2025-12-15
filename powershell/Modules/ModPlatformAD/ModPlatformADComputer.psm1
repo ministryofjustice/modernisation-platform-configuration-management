@@ -6,10 +6,10 @@ function Rename-ModPlatformADComputer {
 
 .DESCRIPTION
     Rename host to the given newHostname unless it is equal to
-      tag:Name         - rename to value of the Name tag
-      tag:ComputerName - rename to value of the ComputerName tag, e.g. when Name is over 15 chars
-      instanceId       - rename to the instance Id. Doesn't work with netbios as length exceeds 15 chars.
-      keep-existing    - don't rename
+      tag:Name          - rename to value of the Name tag
+      tag:computer-name - rename to value of the computer-name tag, e.g. when Name is over 15 chars
+      instanceId        - rename to the instance Id. Doesn't work with netbios as length exceeds 15 chars.
+      keep-existing     - don't rename
     Outputs a string containing new hostname if rename succeeds, in which case reboot required
 
 .PARAMETER newHostname
@@ -44,8 +44,8 @@ function Rename-ModPlatformADComputer {
     $NewHostname = $env:COMPUTERNAME
   } elseif ($NewHostname -eq "tag:Name") {
     $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
-  } elseif ($NewHostname -eq "tag:ComputerName") {
-    $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "ComputerName"}).Value
+  } elseif ($NewHostname -eq "tag:computer-name") {
+    $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "computer-name"}).Value
   } elseif ($NewHostname -eq "instanceId") {
     $NewHostname = $InstanceId
   }
