@@ -67,10 +67,7 @@ function Get-ModPlatformADSecret {
   } else {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
   }
-  if ($SecretValueRaw[0] != '{') {
-    "$SecretValueRaw" | ConvertFrom-Json
-  } else {
-  }
+  "$SecretValueRaw" | ConvertFrom-Json
 }
 
 function Get-ModPlatformADJoinCredential {
