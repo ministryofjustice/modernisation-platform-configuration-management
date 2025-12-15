@@ -45,9 +45,17 @@ function Get-ModPlatformADConfig {
       "DomainJoinUsername" = "svc_join_domain"
       "DomainAdminUsername" = "svc_admin"
     }
+    "delius-mis-dev.internal" = @{
+      "SecretName" = "delius-mis-dev-ad-admin-password"
+      "DomainNameFQDN" = "delius-mis-dev.internal"
+      "DomainNameNetbios" = "delius-mis-dev"
+      "DomainJoinUsername" = "Admin"
+      "DomainAdminUsername" = "Admin"
+    }
   }
 
   $ModPlatformADConfigsByEnvironmentName = @{
+    "delius-mis-development" = @{"DomainName" = "delius-mis-dev.internal" }
     "hmpps-domain-services-development" = @{"DomainName" = "azure.noms.root" }
     "hmpps-domain-services-test" = @{"DomainName" = "azure.noms.root" }
     "hmpps-domain-services-preproduction" = @{"DomainName" = "azure.hmpp.root" }
