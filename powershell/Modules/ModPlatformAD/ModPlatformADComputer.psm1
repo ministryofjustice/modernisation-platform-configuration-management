@@ -42,12 +42,8 @@ function Rename-ModPlatformADComputer {
   } elseif ($NewHostname -eq "keep-existing") {
     $NewHostname = $env:COMPUTERNAME
   } elseif ($NewHostname -eq "tag:Name") {
-    try {
-      $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "computer-name"}).Value
-    } catch {
-      $NewHostname = $null
-    }
-    if ($NewHostname -eq $null) {
+    $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "computer-name"}).Value
+    if (-not $NewHostname) {
       $NewHostname = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
     }
   } elseif ($NewHostname -eq "instanceId") {
