@@ -29,12 +29,20 @@ function Get-ModPlatformADSecret {
 
   $ErrorActionPreference = "Stop"
 
-  $AccountIdsSSMParameterName = $ModPlatformADConfig.AccountIdsSSMParameterName
-  $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
+  $AccountIdsRaw = "{}"
+  if ($ModPlatformADConfig.ContainsKey("AccountIdsSSMParameterName")) {
+    $AccountIdsSSMParameterName = $ModPlatformADConfig.AccountIdsSSMParameterName
+    $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
+  }
   $AccountIds = "$AccountIdsRaw" | ConvertFrom-Json
-  $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
+
   $SecretName = $ModPlatformADConfig.SecretName
-  $SecretArn = "arn:aws:secretsmanager:eu-west-2:${SecretAccountId}:secret:${SecretName}"
+  $SecretId   = $SecretName
+  if ($ModPlatformADConfig.ContainsKey("SecretAccountName")) {
+    $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
+    $SecretId        = "arn:aws:secretsmanager:eu-west-2:${SecretAccountId}:secret:${SecretName}"
+  }
+
   $SecretRoleName = $null
   if ($ModPlatformADConfig.ContainsKey("SecretRoleName")) {
     $SecretRoleName = $ModPlatformADConfig.SecretRoleName
@@ -52,14 +60,17 @@ function Get-ModPlatformADSecret {
     $env:AWS_ACCESS_KEY_ID = $Creds.Credentials.AccessKeyId
     $env:AWS_SECRET_ACCESS_KEY = $Creds.Credentials.SecretAccessKey
     $env:AWS_SESSION_TOKEN = $Creds.Credentials.SessionToken
-    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
+    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
     $env:AWS_ACCESS_KEY_ID = $Tmp_AWS_ACCESS_KEY_ID
     $env:AWS_SECRET_ACCESS_KEY = $Tmp_AWS_SECRET_ACCESS_KEY
     $env:AWS_SESSION_TOKEN = $Tmp_AWS_SESSION_TOKEN
   } else {
-    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
+    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
   }
-  "$SecretValueRaw" | ConvertFrom-Json
+  if ($SecretValueRaw[0] != '{') {
+    "$SecretValueRaw" | ConvertFrom-Json
+  } else {
+  }
 }
 
 function Get-ModPlatformADJoinCredential {
