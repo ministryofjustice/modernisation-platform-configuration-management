@@ -2,7 +2,7 @@ $Scripts = @(
     "../Common/Set-LocalFirewallOff.ps1",
     "../Common/Set-IPv4Preferred.ps1",
     "../Common/Set-TimezoneGMT.ps1",
-    @("../ModPlatformAD/Join-ModPlatformAD.ps1", @{NewHostname = "tag:computer-name"}),
+    "../ModPlatformAD/Join-ModPlatformAD.ps1",
     "../Microsoft/Install-ADRemoteTools.ps1",
     #"../Microsoft/Add-DnsSuffixSearchList.ps1",
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
