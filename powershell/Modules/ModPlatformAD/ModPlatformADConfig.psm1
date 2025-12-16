@@ -52,10 +52,23 @@ function Get-ModPlatformADConfig {
       "DomainJoinUsername" = "Admin"
       "DomainAdminUsername" = "Admin"
     }
+    "delius-mis-stage.internal" = @{
+      "SecretName" = "delius-mis-stage-ad-admin-password"
+      "DomainNameFQDN" = "delius-mis-stage.internal"
+      "DomainNameNetbios" = "delius-mis-stag"
+      "DomainJoinUsername" = "Admin"
+      "DomainAdminUsername" = "Admin"
+    }
+    "delius-mis-preprod.internal" = @{
+      "SecretName" = "delius-mis-preprod-ad-admin-password"
+      "DomainNameFQDN" = "delius-mis-preprod.internal"
+      "DomainNameNetbios" = "delius-mis-prep"
+      "DomainJoinUsername" = "Admin"
+      "DomainAdminUsername" = "Admin"
+    }
   }
 
   $ModPlatformADConfigsByEnvironmentName = @{
-    "delius-mis-development" = @{"DomainName" = "delius-mis-dev.internal" }
     "hmpps-domain-services-development" = @{"DomainName" = "azure.noms.root" }
     "hmpps-domain-services-test" = @{"DomainName" = "azure.noms.root" }
     "hmpps-domain-services-preproduction" = @{"DomainName" = "azure.hmpp.root" }
