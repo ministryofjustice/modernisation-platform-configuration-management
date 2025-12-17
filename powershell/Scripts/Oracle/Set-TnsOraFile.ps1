@@ -1,30 +1,66 @@
-$AppDirectory = "C:\App"
+# Copy tnsnames.ora from Configs/Oracle/Tns/env/tnsnames.ora[.Name]
+# e.g.
+# Configs/Oracle/Tns/oracle-national-reporting-test/tnsnames.ora
+# Configs/Oracle/Tns/delius-mis-preproduction/tnsnames.ora.delius-mis-dis-1
 
-if (-not (Test-Path $AppDirectory)) {
-    New-Item -ItemType Directory -Path $AppDirectory -Force
+function Get-Tags {
+  $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
+  $InstanceId = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token" = $Token} -Method GET -Uri http://169.254.169.254/latest/meta-data/instance-id
+  $TagsRaw = aws ec2 describe-tags --filters "Name=resource-id,Values=$InstanceId"
+  $Tags = "$TagsRaw" | ConvertFrom-Json
+  return $Tags
 }
 
-$ORACLE_19C_HOME  = "C:\app\oracle\product\19.0.0\client_1"
+function Get-SourceTnsOraPath {
+  $Tags = Get-Tags
+  $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
+  $NameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
 
-$tnsOraFilePath = Join-Path $PSScriptRoot -ChildPath "..\..\Configs\NCR\tnsnames_nart_client.ora"
+  $SourceTnsOraBasePath = Join-Path $PSScriptRoot         -ChildPath "..\..\Configs\Oracle\Tns"
+  $SourceTnsOraEnvPath  = Join-Path $SourceTnsOraBasePath -ChildPath $EnvironmentNameTag
+  $SourceTnsOraPath     = Join-Path $SourceTnsOraEnvPath  -ChildPath ("tnsnames.ora." + $NameTag)
 
-if (Test-Path $tnsOraFilePath) {
-    Write-Host "Tnsnames.ora file found at $tnsOraFilePath"
+  if (-not (Test-Path $SourceTnsOraPath)) {
+    $SourceTnsOraPath = Join-Path $SourceTnsOraEnvPath -ChildPath "tnsnames.ora"
+    if (-not (Test-Path $SourceTnsOraPath)) {
+      Write-Error ("Source tnsnames.ora or " + ("tnsnames.ora." + $NameTag) + " not found in $SourceTnsOraPath")    
+    }
+  }
+  Return $SourceTnsOraPath
 }
-else {
-    Write-Error "Tnsnames.ora file not found at $tnsOraFilePath"
-    exit 1
+
+function Get-TargetTnsOraPath {
+  $OracleHome = $env:ORACLE_HOME
+  if (-Not $OracleHome) {
+    $OracleHome = 'C:\app\oracle\product\19.0.0\client_1'
+  }
+  $TargetTnsOraBasePath = Join-Path $OracleHome -ChildPath 'network\admin'
+  $TargetTnsOraPath = Join-Path $TargetTnsOraBasePath -ChildPath 'tnsnames.ora'
+  if (-Not (Test-Path $TargetTnsOraBasePath)) {
+    Write-Error "Oracle client not found at $TargetTnsOraBasePath, please install first"
+  }
+  Return $TargetTnsOraPath
 }
 
-# check if ORACLE_HOME env var exists, if it does then use that. If not then set it from the variable above.
-
-if (-not $env:ORACLE_HOME) {
-    [Environment]::SetEnvironmentVariable("ORACLE_HOME", $ORACLE_19C_HOME, [System.EnvironmentVariableTarget]::Machine)
-    $env:ORACLE_HOME = $ORACLE_19C_HOME  # Set in current session
+function Copy-TargetTnsOraPath {
+  [CmdletBinding()]
+  param (
+    [string]$SourceTnsOraPath,
+    [string]$TargetTnsOraPath
+  )
+  if (-Not (Test-Path $TargetTnsOraPath)) {
+    Write-Output "TNS config: Creating $TargetTnsOraPath"
+    Copy-Item -Path $SourceTnsOraPath -Destination $TargetTnsOraPath -Force
+  } elseif ((Get-FileHash $SourceTnsOraPath).Hash -ne (Get-FileHash $TargetTnsOraPath).Hash) {
+    Write-Output "TNS config: Updating $TargetTnsOraPath"
+    Copy-Item -Path $TargetTnsOraPath -Destination (Join-Path $TargetTnsOraPath -ChildPath ".backup") -Force
+    Copy-Item -Path $SourceTnsOraPath -Destination $TargetTnsOraPath -Force
+  } else {
+    Write-Output "TNS config: Already up to date $TargetTnsOraPath"
+  }
 }
 
-$tnsOraFileDestination = "$($env:ORACLE_HOME)\network\admin\tnsnames.ora"
-
-Copy-Item -Path $tnsOraFilePath -Destination $tnsOraFileDestination -Force
-
-
+$ErrorActionPreference = "Stop"
+$SourceTnsOraPath = Get-SourceTnsOraPath
+$TargetTnsOraPath = Get-TargetTnsOraPath
+Copy-TargetTnsOraPath $SourceTnsOraPath $TargetTnsOraPath
