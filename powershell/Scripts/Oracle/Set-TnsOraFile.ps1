@@ -23,7 +23,7 @@ function Get-SourceTnsOraPath {
   if (-not (Test-Path $SourceTnsOraPath)) {
     $SourceTnsOraPath = Join-Path $SourceTnsOraEnvPath -ChildPath "tnsnames.ora"
     if (-not (Test-Path $SourceTnsOraPath)) {
-      Write-Error ("Source tnsnames.ora or " + ("tnsnames.ora." + $NameTag) + " not found in $SourceTnsOraPath")    
+      Write-Error ("Source tnsnames.ora or " + ("tnsnames.ora." + $NameTag) + " not found in $SourceTnsOraPath")
     }
   }
   Return $SourceTnsOraPath
@@ -53,7 +53,7 @@ function Copy-TargetTnsOraPath {
     Copy-Item -Path $SourceTnsOraPath -Destination $TargetTnsOraPath -Force
   } elseif ((Get-FileHash $SourceTnsOraPath).Hash -ne (Get-FileHash $TargetTnsOraPath).Hash) {
     Write-Output "TNS config: Updating $TargetTnsOraPath"
-    Copy-Item -Path $TargetTnsOraPath -Destination (Join-Path $TargetTnsOraPath -ChildPath ".backup") -Force
+    Copy-Item -Path $TargetTnsOraPath -Destination ($TargetTnsOraPath + ".backup") -Force
     Copy-Item -Path $SourceTnsOraPath -Destination $TargetTnsOraPath -Force
   } else {
     Write-Output "TNS config: Already up to date $TargetTnsOraPath"
