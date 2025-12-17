@@ -12,33 +12,44 @@ function Get-Tags {
 }
 
 function Get-SourceTnsOraPath {
+  [CmdletBinding()]
+  param (
+    [string]$Filename
+  )
+
   $Tags = Get-Tags
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
   $NameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
 
   $SourceTnsOraBasePath = Join-Path $PSScriptRoot         -ChildPath "..\..\Configs\Oracle\Tns"
   $SourceTnsOraEnvPath  = Join-Path $SourceTnsOraBasePath -ChildPath $EnvironmentNameTag
-  $SourceTnsOraPath     = Join-Path $SourceTnsOraEnvPath  -ChildPath ("tnsnames.ora." + $NameTag)
+  $SourceTnsOraPath     = Join-Path $SourceTnsOraEnvPath  -ChildPath ($Filename + "." + $NameTag)
 
   if (-not (Test-Path $SourceTnsOraPath)) {
-    $SourceTnsOraPath = Join-Path $SourceTnsOraEnvPath -ChildPath "tnsnames.ora"
+    $SourceTnsOraPath = Join-Path $SourceTnsOraEnvPath -ChildPath $Filename
     if (-not (Test-Path $SourceTnsOraPath)) {
-      Write-Error ("Source tnsnames.ora or " + ("tnsnames.ora." + $NameTag) + " not found in $SourceTnsOraPath")
+      Write-Output "Source $Filename or $Filename.$NameTag not found in $SourceTnsOraPath")
+      Return $null
     }
   }
   Return $SourceTnsOraPath
 }
 
 function Get-TargetTnsOraPath {
+  [CmdletBinding()]
+  param (
+    [string]$Filename
+  )
+
   $OracleHome = $env:ORACLE_HOME
   if (-Not $OracleHome) {
     $OracleHome = 'C:\app\oracle\product\19.0.0\client_1'
   }
   $TargetTnsOraBasePath = Join-Path $OracleHome -ChildPath 'network\admin'
-  $TargetTnsOraPath = Join-Path $TargetTnsOraBasePath -ChildPath 'tnsnames.ora'
   if (-Not (Test-Path $TargetTnsOraBasePath)) {
     Write-Error "Oracle client not found at $TargetTnsOraBasePath, please install first"
   }
+  $TargetTnsOraPath = Join-Path $TargetTnsOraBasePath -ChildPath $Filename
   Return $TargetTnsOraPath
 }
 
@@ -61,6 +72,15 @@ function Copy-TargetTnsOraPath {
 }
 
 $ErrorActionPreference = "Stop"
-$SourceTnsOraPath = Get-SourceTnsOraPath
-$TargetTnsOraPath = Get-TargetTnsOraPath
-Copy-TargetTnsOraPath $SourceTnsOraPath $TargetTnsOraPath
+$SourceTnsOraPath = Get-SourceTnsOraPath "sqlnet.ora"
+if ($SourceTnsOraPath) {
+  $TargetTnsOraPath = Get-TargetTnsOraPath "sqlnet.ora"
+  Copy-TargetTnsOraPath $SourceTnsOraPath $TargetTnsOraPath
+}
+$SourceTnsOraPath = Get-SourceTnsOraPath "tnsnames.ora"
+if ($SourceTnsOraPath) {
+  $TargetTnsOraPath = Get-TargetTnsOraPath "tnsnames.ora"
+  Copy-TargetTnsOraPath $SourceTnsOraPath $TargetTnsOraPath
+} else {
+  Write-Error "TNS config: FAILED, please commit tnsnames.ora into repo"
+}
