@@ -1,0 +1,88 @@
+T2BOSYS =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BISYS_TAF)
+    )
+  )
+
+T2BOAUD =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = t2-oasys-db-a.oasys.hmpps-test.modernisation-platform.internal)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIAUD_TAF)
+    )
+  )
+
+T2MISTRANS =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = MISTRANS_TAF)
+    )
+  )
+
+T2OASYSREP =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASREP_TAF)
+    )
+  )
+
+T2OASYS =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYS_TAF)
+    )
+  )
+
+T2OASHA =
+  (DESCRIPTION =
+    (ENABLE=BROKEN) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.t2.oasys.hmpps-test.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASHA_TAF)
+    )
+  )
+
+
+CNOMT1 =
+  (DESCRIPTION =
+    (ADDRESS = (HOST = t1or-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521)) 
+    (ADDRESS = (HOST = t1or-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521)) 
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = OR_TAF)
+      (FAILOVER_MODE = 
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+MIST1 =
+  (DESCRIPTION =
+    (ADDRESS = (HOST = t1mis-a.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+    (ADDRESS = (HOST = t1mis-b.test.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = MIS_TAF)
+      (FAILOVER_MODE = 
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
