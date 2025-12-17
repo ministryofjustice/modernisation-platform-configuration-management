@@ -28,7 +28,6 @@ function Get-SourceTnsOraPath {
   if (-not (Test-Path $SourceTnsOraPath)) {
     $SourceTnsOraPath = Join-Path $SourceTnsOraEnvPath -ChildPath $Filename
     if (-not (Test-Path $SourceTnsOraPath)) {
-      Write-Output "Source $Filename or $Filename.$NameTag not found in $SourceTnsOraPath"
       Return $null
     }
   }
