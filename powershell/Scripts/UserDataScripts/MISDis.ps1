@@ -4,7 +4,7 @@ $Scripts = @(
   @{ Path = '../Common/Set-WindowsFirewallPortOpenInbound.ps1'; Args = @{ Port = 8080 } }, # Required for LB connections
   @{ Path = '../Common/Set-LocalFirewallOff.ps1'; Args = @{} }, # Required for BODS services Automatic (delayed start) to succeed
   @{ Path = '../Oracle/Install-Oracle19cClient.ps1'; Args = @{} },
-  @{ Path = '../Oracle/Set-TnsOraFileMISDis.ps1'; Args = @{} },
+  @{ Path = '../Oracle/Set-TnsOraFile.ps1'; Args = @{} },
   @{ Path = '../Oracle/Install-SQLDeveloper.ps1'; Args = @{} },
   @{ Path = '../MISDis/Move-ComputerDeliusInternalAD.ps1'; Args = @{} },
   @{ Path = '../Common/Test-InstallationEscalation.ps1'; Args = @{} },

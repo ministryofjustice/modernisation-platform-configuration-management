@@ -151,6 +151,15 @@ MISPP =
     )
   )
 
+MISLS =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = lsmis-a.preproduction.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+  )
+ )
+
 MISTRANS2BCK =
   (DESCRIPTION =
     (ENABLE=BROKEN) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
@@ -175,3 +184,5 @@ OASYSREP2BCK =
       )
     )
   )
+
+

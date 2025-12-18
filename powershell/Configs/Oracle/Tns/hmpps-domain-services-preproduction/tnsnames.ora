@@ -353,3 +353,51 @@ OASHA =
       (SERVICE_NAME = OASHA_TAF)
     )
   )
+
+
+
+
+
+# AWS  
+PPBISYS =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BISYS_TAF)
+    )
+  )
+PPBIAUD =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db.preproduction.reporting.nomis.service.justice.gov.uk)(PROTOCOL = TCP)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BIAUD_TAF)
+    )
+  )
+
+
+
+PPBOAUD =
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BIAUD_TAF)
+  )
+ )
+
+PPBOSYS =
+ (DESCRIPTION =
+  (ENABLE = broken)
+  (ADDRESS = (PROTOCOL = TCP)(HOST = pp-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal)(PORT = 1521))
+  (CONNECT_DATA =
+   (SERVER = DEDICATED)
+   (SERVICE_NAME = BISYS_TAF)
+  )
+ )
+
+
