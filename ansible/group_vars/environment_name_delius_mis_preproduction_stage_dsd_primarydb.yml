@@ -24,19 +24,11 @@ delius_users:
   kmoss_dba:
   dbelton_dba:
 oracle_software:
-  version: "19.27"
-  combo_patch: p37591516_190000_Linux-x86-64.zip
+  version: "19.28"
+  combo_patch: p37952382_190000_Linux-x86-64.zip
   opatch:
     version: 12.2.0.1.46
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
-required_patches:
-  p35012866:
-    patch_files:
-      - target_version: "19.18"
-        filename: p35012866_1918000DBRU_Linux-x86-64.zip
-    description: "BUG_33527739_APPLY.SQL GOT ORA-13516: AWR OPERATION FAILED: CATPROC NOT VALID"
-    grid_patch: false
-    database_patch: true
-    datapatch_required: true
+source_db: "DMDDSD"
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-dsd-db-backups"
 source_db: "STGDSD"
