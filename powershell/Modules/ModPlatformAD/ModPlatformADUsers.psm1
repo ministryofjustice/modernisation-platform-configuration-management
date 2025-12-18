@@ -165,7 +165,7 @@ function Add-ModPlatformADUsers {
     }
   }
 
-  foreach ($Group in $ModPlatformADGroups.GetEnumerator()) {
+  foreach ($Group in $Groups.GetEnumerator()) {
     $Groupname = $Group.Name
     $Users     = $Group.Value
 
