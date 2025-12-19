@@ -36,6 +36,7 @@ function Get-ModPlatformADUserConfig {
         )
         Options = @{
           Description           = "Service user for DIS Computer"
+          Enabled               = $true
           CannotChangePassword  = $true
           PasswordNeverExpires  = $true
           ChangePasswordAtLogon = $false
@@ -54,6 +55,7 @@ function Get-ModPlatformADUserConfig {
         )
         Options = @{
           Description           = "Service user for DIS Computer"
+          Enabled               = $true
           CannotChangePassword  = $true
           PasswordNeverExpires  = $true
           ChangePasswordAtLogon = $false
@@ -72,6 +74,7 @@ function Get-ModPlatformADUserConfig {
         )
         Options = @{
           Description           = "Service user for DIS Computer"
+          Enabled               = $true
           CannotChangePassword  = $true
           PasswordNeverExpires  = $true
           ChangePasswordAtLogon = $false
