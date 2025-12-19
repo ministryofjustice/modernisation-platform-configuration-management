@@ -32,8 +32,7 @@ function Get-ModPlatformADUserConfig {
           "AWS Delegated Administrators"
         )
         LocalGroups = @(
-          "Administrators",
-          "Remote Desktop Users"
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
@@ -51,8 +50,7 @@ function Get-ModPlatformADUserConfig {
           "AWS Delegated Administrators"
         )
         LocalGroups = @(
-          "Administrators",
-          "Remote Desktop Users"
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
@@ -70,8 +68,7 @@ function Get-ModPlatformADUserConfig {
           "AWS Delegated Administrators"
         )
         LocalGroups = @(
-          "Administrators",
-          "Remote Desktop Users"
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
