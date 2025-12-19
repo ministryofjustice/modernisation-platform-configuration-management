@@ -28,8 +28,11 @@ function Get-ModPlatformADUserConfig {
       SVC_DIS_NDL = @{
         Secret = "delius-mis-dev-sap-dis-passwords"
         Path   = "DC=Users"
-        Groups = @(
+        ADGroups = @(
           "AWS Delegated Administrators"
+        )
+        LocalGroups = @(
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
@@ -43,8 +46,11 @@ function Get-ModPlatformADUserConfig {
       SVC_DIS_NDL = @{
         Secret = "delius-mis-stage-sap-dis-passwords"
         Path   = "DC=Users"
-        Groups = @(
+        ADGroups = @(
           "AWS Delegated Administrators"
+        )
+        LocalGroups = @(
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
@@ -58,8 +64,11 @@ function Get-ModPlatformADUserConfig {
       SVC_DIS_NDL = @{
         Secret = "delius-mis-preprod-sap-dis-passwords"
         Path   = "DC=Users"
-        Groups = @(
+        ADGroups = @(
           "AWS Delegated Administrators"
+        )
+        LocalGroups = @(
+          "Administrators"
         )
         Options = @{
           Description           = "Service user for DIS Computer"
@@ -133,11 +142,13 @@ function Add-ModPlatformADUsers {
 
   [CmdletBinding()]
   param (
+    [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADUsers,
     [Parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$ModPlatformADCredential
   )
 
-  $Groups = @{}
+  $ADGroups = @{}
+  $LocalGroups = @{}
 
   foreach ($User in $ModPlatformADUsers.GetEnumerator()) {
     $Username = $User.Name
@@ -155,19 +166,27 @@ function Add-ModPlatformADUsers {
     } else {
       Write-Error "Cannot create user as no password found in secret: $Username"
     }
-    if ($ADUser -and $User.Value.ContainsKey("Groups")) {
-      foreach ($Group in $User.Value.Groups) {
-        if (-not ($Groups.ContainsKey($Group))) {
-          $Groups[$Group] = @()
+    if ($ADUser -and $User.Value.ContainsKey("ADGroups")) {
+      foreach ($ADGroup in $User.Value.ADGroups) {
+        if (-not ($ADGroups.ContainsKey($ADGroup))) {
+          $ADGroups[$ADGroup] = @()
         }
-        $Groups[$Group] += $ADUser
+        $ADGroups[$ADGroup] += $ADUser
+      }
+    }
+    if ($ADUser -and $User.Value.ContainsKey("LocalGroups")) {
+      foreach ($LocalGroup in $User.Value.LocalGroups) {
+        if (-not ($LocalGroups.ContainsKey($LocalGroup))) {
+          $LocalGroups[$LocalGroup] = @()
+        }
+        $LocalGroups[$LocalGroup] += $ADUser
       }
     }
   }
 
-  foreach ($Group in $Groups.GetEnumerator()) {
-    $Groupname = $Group.Name
-    $Users     = $Group.Value
+  foreach ($ADGroup in $ADGroups.GetEnumerator()) {
+    $Groupname = $ADGroup.Name
+    $Users     = $ADGroup.Value
 
     $ADGroup = Get-ADGroup -Filter 'Name -eq $Groupname' -Credential $ModPlatformADCredential
 
@@ -177,14 +196,37 @@ function Add-ModPlatformADUsers {
       foreach ($User in $Users) {
         $Username = $User.Name
         if ($ADGroupMembers | Where-Object { $_.distinguishedName -eq $User.DistinguishedName }) {
-          Write-Debug "${Groupname}: $Username already a group member"
+          Write-Debug "${Groupname}: $Username already a AD group member"
         } else {
-          Write-Output "${Groupname}: Adding $Username to group"
+          Write-Output "${Groupname}: Adding $Username to AD group"
           Add-ADGroupMember -Identity $Groupname -Members $User -Credential $ModPlatformADCredential
         }
       }
     } else {
-      Write-Error "${Groupname}: Not adding $Username as group does not exist"
+      Write-Error "${Groupname}: Not adding $Username as AD group does not exist"
+    }
+  }
+
+  foreach ($LocalGroup in $LocalGroups.GetEnumerator()) {
+    $Groupname = $LocalGroup.Name
+    $Users     = $LocalGroup.Value
+
+    $LocalGroup = Get-LocalGroup -Name $Groupname
+
+    if ($LocalGroup) {
+      $LocalGroupMembers = Get-LocalGroupMember -Group $Groupname
+
+      foreach ($User in $Users) {
+        $Username = $ModPlatformADConfig.DomainNameNetbios + '\' + $User.Name
+        if ($LocalGroupMembers | Where-Object { $_.Name -eq $Username }) {
+          Write-Debug "${Groupname}: $Username already a local group member"
+        } else {
+          Write-Output "${Groupname}: Adding $Username to local group"
+          Add-LocalGroupMember -Group $Groupname -Member $Username
+        }
+      }
+    } else {
+      Write-Error "${Groupname}: Not adding $Username as local group does not exist"
     }
   }
 }
