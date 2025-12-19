@@ -159,7 +159,7 @@ function Add-ModPlatformADUsers {
     if ($ADUser) {
       Write-Debug "Updating User: $Username"
       Set-ADUser -Identity $Username -Credential $ModPlatformADCredential @Options
-      Set-ADAccountPassword -Identity $Username -Reset -NewPassword $Password
+      Set-ADAccountPassword -Identity $Username -Reset -NewPassword $Password -Credential $ModPlatformADCredential
     } elseif ($User.Value.ContainsKey("Password")) {
       $Password = $User.Value.Password
       Write-Output "Creating User: $Username"
