@@ -27,4 +27,4 @@ $ADConfig     = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
 $ADCredential = Get-ModPlatformADAdminCredential -ModPlatformADConfig $ADConfig
 $ADUsers      = Get-ModPlatformADUserConfig $ADConfig.DomainNameFQDN
 Get-ModPlatformADUserCredentials $ADUsers
-Add-ModPlatformADUsers $ADUsers $ADCredential
+Add-ModPlatformADUsers $ADConfig $ADUsers $ADCredential
