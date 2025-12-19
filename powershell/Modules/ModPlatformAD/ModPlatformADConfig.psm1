@@ -46,21 +46,30 @@ function Get-ModPlatformADConfig {
       "DomainAdminUsername" = "svc_admin"
     }
     "delius-mis-dev.internal" = @{
-      "SecretName" = "delius-mis-dev-ad-admin-password"
+      "SecretName" = "delius-mis-dev-sap-dis-passwords"
+      "SecretNames" = @{
+        "Admin" = "delius-mis-dev-ad-admin-password"
+      }
       "DomainNameFQDN" = "delius-mis-dev.internal"
       "DomainNameNetbios" = "delius-mis-dev"
       "DomainJoinUsername" = "Admin"
       "DomainAdminUsername" = "Admin"
     }
     "delius-mis-stage.internal" = @{
-      "SecretName" = "delius-mis-stage-ad-admin-password"
+      "SecretName" = "delius-mis-stage-sap-dis-passwords"
+      "SecretNames" = @{
+        "Admin" = "delius-mis-stage-ad-admin-password"
+      }
       "DomainNameFQDN" = "delius-mis-stage.internal"
       "DomainNameNetbios" = "delius-mis-stag"
       "DomainJoinUsername" = "Admin"
       "DomainAdminUsername" = "Admin"
     }
     "delius-mis-preprod.internal" = @{
-      "SecretName" = "delius-mis-preprod-ad-admin-password"
+      "SecretName" = "delius-mis-preprod-sap-dis-passwords"
+      "SecretNames" = @{
+        "Admin" = "delius-mis-preprod-ad-admin-password"
+      }
       "DomainNameFQDN" = "delius-mis-preprod.internal"
       "DomainNameNetbios" = "delius-mis-prep"
       "DomainJoinUsername" = "Admin"
