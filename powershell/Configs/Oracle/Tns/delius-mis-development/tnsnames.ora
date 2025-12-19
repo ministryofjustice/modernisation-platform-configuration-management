@@ -31,3 +31,16 @@ DMDDXB =
    (SERVICE_NAME = DMDDXB)
   )
  )
+DMDNDA=
+  (DESCRIPTION =
+    (LOAD_BALANCE=OFF)
+    (FAILOVER=ON)
+    (CONNECT_TIMEOUT=10)
+    (RETRY_COUNT=3)
+    (ADDRESS_LIST=
+      (ADDRESS = (PROTOCOL = TCP)(HOST=delius-core-dev-db-1.hmpps-development.modernisation-platform.internal)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = TCP)(HOST=delius-core-dev-db-2.hmpps-development.modernisation-platform.internal)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = TCP)(HOST=delius-core-dev-db-3.hmpps-development.modernisation-platform.internal)(PORT = 1521))
+    )
+    (CONNECT_DATA=(SERVICE_NAME=DMDNDA_TAF))
+  )

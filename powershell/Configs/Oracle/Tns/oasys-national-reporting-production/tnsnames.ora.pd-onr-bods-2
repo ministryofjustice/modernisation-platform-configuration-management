@@ -1,0 +1,173 @@
+#### AWS - PD - NART - BODS - DS and IPS Repository database service ####
+PDBOSYS =
+  (DESCRIPTION =
+    (ENABLE=BROKEN) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = pd-oasys-db-a.oasys.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BOSYS_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+#### AWS - PD - NART - BODS - IPS Audit database service ####
+PDBOAUD =
+  (DESCRIPTION =
+    (ENABLE=BROKEN) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = pd-oasys-db-a.oasys.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BOAUD_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+#### AWS - PD - NART - ONR - OASYS REP database service ####
+PDOASYSREP =
+  (DESCRIPTION =
+    (ENABLE = broken) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASYSREP_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+#### AWS - PD - NART - ONR - MISTRANS database service ####
+PDMISTRANS =
+  (DESCRIPTION =
+    (ENABLE = broken) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.onr.oasys.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = MISTRANS_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+#### AWS - PD - NART - ONR - OASYS database service ####
+PDOASYS =
+  (DESCRIPTION =
+    (ENABLE = broken) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+    (ADDRESS = (PROTOCOL = TCP)(HOST = db.oasys.service.justice.gov.uk)(PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = OASPROD_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+
+#### AWS - PD - NART - NOMIS - MIS database service ####
+MISP =
+ (DESCRIPTION =
+  (ENABLE=broken) (CONNECT_TIMEOUT=60)(RETRY_COUNT=6)(RETRY_DELAY=10)
+  (ADDRESS = (HOST = pmis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = pmis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = MIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+#### AWS - PD - NART - NOMIS - OR database service ####
+CNOMP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = por-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = por-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = OR_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+#### AWS - PD - NART - NOMIS - NOMIS database service ####
+CNOMISP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = pnomis-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = pnomis-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = NOMIS_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+#### AWS - PD - NART - NOMIS - NOMIS Audit database service ####
+CNMAUDP =
+ (DESCRIPTION =
+  (ENABLE=broken)
+  (ADDRESS = (HOST = paudit-a.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (ADDRESS = (HOST = paudit-b.production.nomis.service.justice.gov.uk) (protocol = tcp) (port = 1521))
+  (FAILOVER = YES)
+  (CONNECT_DATA =
+   (SERVICE_NAME = CNMAUD_TAF)
+   (FAILOVER_MODE =
+    (TYPE = SELECT)
+    (METHOD = BASIC)
+   )
+  )
+ )
+
+#### X prefix alias - Other TNS entries not in used or no longer in service ####
+XBIPSYSP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = BIPSYS_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
+XBIPAUDP =
+  (DESCRIPTION =
+    (ENABLE=broken)
+    (ADDRESS = (HOST = db-a.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (ADDRESS = (HOST = db-b.reporting.nomis.service.justice.gov.uk) (PROTOCOL = TCP) (PORT = 1521))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = BIPAUD_TAF)
+      (FAILOVER_MODE =
+        (TYPE = SELECT)
+        (METHOD = BASIC)
+      )
+    )
+  )
