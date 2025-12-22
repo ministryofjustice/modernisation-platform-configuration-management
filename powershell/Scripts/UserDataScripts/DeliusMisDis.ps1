@@ -1,4 +1,5 @@
 $Scripts = @(
+    "../Common/Set-LoginText.ps1",
     "../Common/Set-LocalFirewallOff.ps1",
     "../Common/Set-IPv4Preferred.ps1",
     "../Common/Set-TimezoneGMT.ps1",
@@ -8,7 +9,12 @@ $Scripts = @(
     "../Microsoft/Remove-EdgeFirstRunExperience.ps1",
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
     #"../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1",
-    "../ModPlatformAD/Add-ModPlatformADUsers.ps1"
+    "../ModPlatformAD/Add-ModPlatformADUsers.ps1",
+    "../Oracle/Install-Oracle19cClient.ps1",
+    "../Oracle/Set-TnsOraFile.ps1",
+    "../Oracle/Install-SQLDeveloper.ps1",
+    "../Common/Install-WinRAR.ps1",
+    "../Common/Set-LocalPolicies.ps1"
 )
 
 $ErrorActionPreference = "Stop"
