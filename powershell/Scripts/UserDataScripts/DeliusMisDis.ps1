@@ -14,7 +14,8 @@ $Scripts = @(
     "../Oracle/Set-TnsOraFile.ps1",
     "../Oracle/Install-SQLDeveloper.ps1",
     "../Common/Install-WinRAR.ps1",
-    "../Common/Set-LocalPolicies.ps1"
+    "../Common/Set-LocalPolicies.ps1",
+    "../ModPlatformSAP/Test-ModPlatformSAPDatabaseConnection.ps1"
 )
 
 $ErrorActionPreference = "Stop"
