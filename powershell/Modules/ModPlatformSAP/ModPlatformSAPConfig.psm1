@@ -19,12 +19,24 @@ function Get-ModPlatformSAPConfig {
   $ModPlatformSAPConfigsByEnvironment = @{
     'oasys-national-reporting-test' = @{
       't2-onr-bods' = @{
-        sysDb = @{
+        Ips = @{
+          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+          PackagesPrefix       = 'hmpps/onr'
+          PackagesFile         = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+          WorkingDirectory     = 'E:\Software'             # Download installer here
+        }
+        DataServices = @{
+          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+          PackagesPrefix       = 'hmpps/onr'
+          PackagesFile         = 'DS4214P_11-20011165.exe' # Data Services 4.2 SP14 Patch 11
+          WorkingDirectory     = 'E:\Software'             # Download installer here
+        }
+        SysDb = @{
           Name = 'T2BOSYS'
           User = 'bods_ips_system_owner'
           SecretName = '/oracle/database/T2BOSYS/passwords'
         }
-        audDb = @{
+        AudDb = @{
           Name = 'T2BOAUD'
           User = 'bods_ips_audit_owner'
           SecretName = '/oracle/database/T2BOAUD/passwords'
@@ -33,12 +45,12 @@ function Get-ModPlatformSAPConfig {
     }
     'oasys-national-reporting-preproduction' = @{
       'pp-onr-bods' = @{
-        sysDb = @{
+        SysDb = @{
           Name = 'PPBOSYS'
           User = 'bods_ips_system_owner'
           SecretName = '/oracle/database/PPBOSYS/passwords'
         }
-        audDb = @{
+        AudDb = @{
           Name = 'PPBOAUD'
           User = 'bods_ips_audit_owner'
           SecretName = '/oracle/database/PPBOAUD/passwords'
@@ -47,12 +59,12 @@ function Get-ModPlatformSAPConfig {
     }
     'oasys-national-reporting-production' = @{
       'pd-onr-bods' = @{
-        sysDb = @{
+        SysDb = @{
           Name = 'PDBOSYS'
           User = 'bods_ips_system_owner'
           SecretName = '/oracle/database/PDBOSYS/passwords'
         }
-        audDb = @{
+        AudDb = @{
           Name = 'PDBOAUD'
           User = 'bods_ips_audit_owner'
           SecretName = '/oracle/database/PDBOAUD/passwords'
@@ -61,24 +73,24 @@ function Get-ModPlatformSAPConfig {
     }
     'delius-mis-development' = @{
       'delius-mis-dev-dfi' = @{
-        sysDb = @{
+        SysDb = @{
           Name = 'DMDDSD'
           User = 'dfi_mod_ipscms'
           SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
         }
-        audDb = @{
+        AudDb = @{
           Name = 'DMDDSD'
           User = 'dfi_mod_ipsaud'
           SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
         }
       }
       'delius-mis-dev-dis' = @{
-        sysDb = @{
+        SysDb = @{
           Name = 'DMDDXB'
           User = 'ipscms'
           SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
         }
-        audDb = @{
+        AudDb = @{
           Name = 'DMDDXB'
           User = 'ipsaud'
           SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
@@ -87,17 +99,49 @@ function Get-ModPlatformSAPConfig {
     }
     'delius-mis-preproduction' = @{
       'delius-mis-stage-dis' = @{
-        sysDb = @{
-          Name = 'STGDXB'
-          User = 'ipscms'
-          #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
-          SecretName = 'delius-mis-stage-sap-dis-passwords'
+        Ips = @{
+          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+          PackagesPrefix       = 'hmpps/mis'
+          PackagesFile         = 'IPS4304P_900-70002778.EXE'
+          WorkingDirectory     = 'D:\Software'             # Download installer here
         }
-        audDb = @{
-          Name = 'STGDXB'
-          User = 'ipsaud'
-          #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
-          SecretName = 'delius-mis-stage-sap-dis-passwords'
+        DataServices  = @{
+          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+          PackagesPrefix       = 'hmpps/mis'
+          PackagesFile         = 'DS4303P_4-80007397.EXE'
+          WorkingDirectory     = 'D:\Software'             # Download installer here
+        }
+        Config = @{
+          InstallDir = 'D:\BusinessObjects'
+          SysDbName = 'STGDXB'
+          SysDbUser = 'ipscms'
+          AudDbName = 'STGDXB'
+          AudDbUser = 'ipsaud'
+          SiaName   = 'NDLMODDIS101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'ipsaud'
+          }
         }
       }
     }
@@ -136,32 +180,24 @@ function Get-ModPlatformSAPSecret {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$Secrets,
-    [Parameter(Mandatory=$true)][hashtable]$Object,
-    [Parameter(Mandatory=$true)][string]$SecretKey,
-    [Parameter(Mandatory=$true)][string]$UserKey,
-    [Parameter(Mandatory=$true)][string]$PasswordKey
+    [Parameter(Mandatory=$true)][string]$SecretName,
+    [Parameter(Mandatory=$true)][string]$SecretKey
   )
 
-  $SecretName = $Object.$SecretKey
   if ($Secrets.ContainsKey($SecretName)) {
     $SecretValueRaw = $Secrets[$SecretName]
   } else {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretName}" --query SecretString --output text
     $Secrets[$SecretName] = $SecretValueRaw
   }
-  $Username = $Object.$UserKey
-  $Password = $null
   $SecretJson = "$SecretValueRaw" | ConvertFrom-Json
-  $Password = $SecretJson.$Username
-  if ($Password) {
-    $Object[$PasswordKey] = ConvertTo-SecureString $Password -AsPlainText -Force
-  }
+  $SecretJson.$SecretKey
 }
 
-function Get-ModPlatformSAPCredentials {
+function Get-ModPlatformSAPSecrets {
 <#
 .SYNOPSIS
-    Retrieve passwords from SecretsManager Secretsi and append to config object
+    Retrieve secrets from SecretsManager Secrets and return in hashtable
 
 .PARAMETER ModPlatformSAPConfigs
     Output of Get-ModPlatformSAPConfig
@@ -172,11 +208,16 @@ function Get-ModPlatformSAPCredentials {
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformSAPConfig
   )
 
-
-
   $SAPConfigSecrets = @{}
-  Get-ModPlatformSAPSecret $SAPConfigSecrets $ModPlatformSAPConfig.SysDb SecretName User Password
-  Get-ModPlatformSAPSecret $SAPConfigSecrets $ModPlatformSAPConfig.AudDb SecretName User Password
+  $SecretValues = @{}
+  foreach ($Secret in $ModPlatformSAPConfig.Secrets.GetEnumerator()) {
+    $SecretValue = Get-ModPlatformSAPSecret $SAPConfigSecrets $Secret.Value.SecretName $Secret.Value.Key
+    if (-not $SecretValue) {
+      Write-Error ("Missing key '" + $Secret.Value.Key + "' in secret " + $Secret.Value.SecretName)
+    }
+    $SecretValues[$Secret.Name] = $SecretValue
+  }
+  return $SecretValues
 }
 
 Export-ModuleMember -Function Get-ModPlatformSAPConfig
