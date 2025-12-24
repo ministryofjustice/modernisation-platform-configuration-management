@@ -19,83 +19,299 @@ function Get-ModPlatformSAPConfig {
   $ModPlatformSAPConfigsByEnvironment = @{
     'oasys-national-reporting-test' = @{
       't2-onr-bods' = @{
-        Packages = @{
+        InstallPackages = @{
           Ips = @{
-            PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            PackagesPrefix       = 'hmpps/onr'
-            PackagesFile         = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
-            WorkingDirectory     = 'E:\Software'             # Download installer here
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
           }
-          DataServices = @{
-            PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            PackagesPrefix       = 'hmpps/onr'
-            PackagesFile         = 'DS4214P_11-20011165.exe' # Data Services 4.2 SP14 Patch 11
-            WorkingDirectory     = 'E:\Software'             # Download installer here
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
           }
         }
-        SysDb = @{
-          Name = 'T2BOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/T2BOSYS/passwords'
+        Variables = @{
+          InstallDir    = 'E:\BusinessObjects'
+          DSCommonDir   = 'E:\DSCommon'
+          LinkDir       = 'E:\BusinessObjects\Data Services'
+          SysDbName     = 'T2BOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'T2BOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+          SiaName       = 'TODO'
         }
-        AudDb = @{
-          Name = 'T2BOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/T2BOAUD/passwords'
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/T2BOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/T2BOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/t2/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/t2/passwords'
+            Key        = 'svc_t2_onr_bods'
+          }
         }
       }
     }
     'oasys-national-reporting-preproduction' = @{
       'pp-onr-bods' = @{
-        SysDb = @{
-          Name = 'PPBOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/PPBOSYS/passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
         }
-        AudDb = @{
-          Name = 'PPBOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/PPBOAUD/passwords'
+        Variables = @{
+          InstallDir    = 'E:\BusinessObjects'
+          DSCommonDir   = 'E:\DSCommon'
+          LinkDir       = 'E:\BusinessObjects\Data Services'
+          SysDbName     = 'PPBOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'PPBOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+          SiaName       = 'TODO'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/PPBOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/PPBOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/pp/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/pp/passwords'
+            Key        = 'svc_pp_onr_bods'
+          }
         }
       }
     }
     'oasys-national-reporting-production' = @{
       'pd-onr-bods' = @{
-        SysDb = @{
-          Name = 'PDBOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/PDBOSYS/passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
         }
-        AudDb = @{
-          Name = 'PDBOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/PDBOAUD/passwords'
+        Variables = @{
+          InstallDir    = 'E:\BusinessObjects'
+          DSCommonDir   = 'E:\DSCommon'
+          LinkDir       = 'E:\BusinessObjects\Data Services'
+          SysDbName     = 'PDBOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'PDBOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+          SiaName       = 'TODO'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/PDBOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/PDBOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/pd/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/pd/passwords'
+            Key        = 'svc_pd_onr_bods'
+          }
         }
       }
     }
     'delius-mis-development' = @{
       'delius-mis-dev-dfi' = @{
-        SysDb = @{
-          Name = 'DMDDSD'
-          User = 'dfi_mod_ipscms'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        AudDb = @{
-          Name = 'DMDDSD'
-          User = 'dfi_mod_ipsaud'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        Variables = @{
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'DMDDSD'
+          SysDbUser     = 'dfi_mod_ipscms'
+          AudDbName     = 'DMDDSD'
+          AudDbUser     = 'dfi_mod_ipsaud'
+          SiaName       = 'NDLMODDFI101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'dfi_mod_ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'dfi_mod_ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            Key        = 'CMS_Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            Key        = 'SVC_DFI_NDL'
+          }
         }
       }
       'delius-mis-dev-dis' = @{
-        SysDb = @{
-          Name = 'DMDDXB'
-          User = 'ipscms'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        AudDb = @{
-          Name = 'DMDDXB'
-          User = 'ipsaud'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        Variables = @{
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'DMDDXB'
+          SysDbUser     = 'ipscms'
+          AudDbName     = 'DMDDXB'
+          AudDbUser     = 'ipsaud'
+          SiaName       = 'NDLMODDFI101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dfi-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            Key        = 'CMS_Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            Key        = 'SVC_DFI_NDL'
+          }
         }
       }
     }
