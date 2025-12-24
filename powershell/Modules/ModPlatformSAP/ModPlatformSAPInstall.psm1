@@ -75,9 +75,9 @@ function Copy-SAPResponseFile {
   param (
     [Parameter(Mandatory)][string]$TopLevelRepoPath,
     [Parameter(Mandatory)][string]$ResponseFilename,
-    [Parameter(Mandatory)][string]$InstallPackage,
-    [Parameter(Mandatory)][string]$Variables,
-    [Parameter(Mandatory)][string]$Secrets
+    [Parameter(Mandatory)][hashtable]$InstallPackage,
+    [Parameter(Mandatory)][hashtable]$Variables,
+    [Parameter(Mandatory)][hashtable]$Secrets
   )
 
   $Token = Invoke-RestMethod -TimeoutSec 10 -Headers @{"X-aws-ec2-metadata-token-ttl-seconds"=3600} -Method PUT -Uri http://169.254.169.254/latest/api/token
