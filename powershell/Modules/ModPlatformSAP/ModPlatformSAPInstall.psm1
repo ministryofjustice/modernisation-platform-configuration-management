@@ -181,7 +181,7 @@ function Install-IPS {
     "existingcmsdbpassword=***"
   )
 
-  $SetupExe /wait -r $ResponsePath cmspassword=$CMSPassword existingauditingdbpassword=$AuditPassword existingcmsdbpassword=$SysPassword
+  $SetupExe -r $ResponsePath cmspassword=$CMSPassword existingauditingdbpassword=$AuditPassword existingcmsdbpassword=$SysPassword
   #Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
   #$Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru
   #$InstallProcessId = $Process.Id
