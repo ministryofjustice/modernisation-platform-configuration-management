@@ -134,7 +134,7 @@ function Set-SAPEnvironmentVars {
   }
 }
 
-function Install-IPS {
+function Install-SAPIPS {
   param (
     [Parameter(Mandatory)][string]$ResponseFilename,
     [Parameter(Mandatory)][hashtable]$InstallPackage,
@@ -184,15 +184,83 @@ function Install-IPS {
   )
 
   Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
-  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogFile -Append
-  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogErrFile -Append
-  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $LogErrFile
+  "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogFile -Append
+  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru -RedirectStandardError $LogErrFile
   $InstallProcessId = $Process.Id
   $ExitCode = $Process.ExitCode
 
-  Write-Output "Process ID: $InstallProcessId" | Out-File -FilePath $LogFile -Append
-  Write-Output "Exit Code: $ExitCode" | Out-File -FilePath $LogFile -Append
-  Write-Output "Completed at: $(Get-Date)" | Out-File -FilePath $LogFile -Append
+  "Process ID: $InstallProcessId" | Out-File -FilePath $LogFile -Append
+  "Exit Code: $ExitCode" | Out-File -FilePath $LogFile -Append
+  "Completed at: $(Get-Date)" | Out-File -FilePath $LogFile -Append
+
+  Write-Output "Process ID: $InstallProcessId"
+  Write-Output "Exit Code: $ExitCode"
+  Write-Output "Completed at: $(Get-Date)"
+}
+
+function Install-SAPDataServices {
+  param (
+    [Parameter(Mandatory)][string]$ResponseFilename,
+    [Parameter(Mandatory)][hashtable]$InstallPackage,
+    [Parameter(Mandatory)][hashtable]$Secrets
+  )
+
+  $ExistingDataServices = Get-Package | Where-Object { $_.Name -like 'SAP Data Services*' }
+  if ($ExistingDataServices) {
+    Write-Output "Data Services is already installed: $($ExistingDataServices.Name) v$($ExistingDataServices.Version)"
+    return
+  }
+        
+  $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
+  if (-not (Test-Path $File)) {
+    Write-Error "Install file not found: $File"
+  }
+
+  $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
+  $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ds.txt"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ds-error.txt"
+
+  if (-not (Test-Path $ResponsePath)) {
+    Write-Error "Response file not found: $ResponsePath"
+  }
+
+  if (-not (Test-Path $SetupExe)) {
+    Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  $CMSPassword         = $Secrets.CmsAdminPassword
+  $ServiceUserPassword = $Secrets.ServiceUserPassword
+
+  if (-not $CMSPassword -or -not $AuditPassword -or -not $SysPassword) {
+    Write-Error "Missing one or more secrets for cmspassword, existingauditingdbpassword, existingcmsdbpassword command line args"
+  }
+
+  $InstallArgs = @(
+    "-q",
+    "-r $ResponsePath",
+    "cmspassword=$CMSPassword",
+    "dscmspassword=$CMSPassword",
+    "dslogininfothispassword=$ServiceUserPassword"
+  )
+  $InstallArgsDebug = @(
+    "-q",
+    "-r $ResponsePath",
+    "cmspassword=***",
+    "dscmspassword=***",
+    "dslogininfothispassword=***"
+  )
+
+  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
+  "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogFile -Append
+  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru -RedirectStandardError $LogErrFile
+  $InstallProcessId = $Process.Id
+  $ExitCode = $Process.ExitCode
+
+  "Process ID: $InstallProcessId" | Out-File -FilePath $LogFile -Append
+  "Exit Code: $ExitCode" | Out-File -FilePath $LogFile -Append
+  "Completed at: $(Get-Date)" | Out-File -FilePath $LogFile -Append
 
   Write-Output "Process ID: $InstallProcessId"
   Write-Output "Exit Code: $ExitCode"
@@ -203,4 +271,5 @@ Export-ModuleMember -Function Get-SAPInstaller
 Export-ModuleMember -Function Open-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
 Export-ModuleMember -Function Set-SAPEnvironmentVars
-Export-ModuleMember -Function Install-IPS
+Export-ModuleMember -Function Install-SAPIPS
+Export-ModuleMember -Function Install-SAPDataServices

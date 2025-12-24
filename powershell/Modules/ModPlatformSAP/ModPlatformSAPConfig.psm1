@@ -118,14 +118,14 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir  = 'D:\BusinessObjects'
-          DSCommonDir = 'D:\DSCommon'
-          LinkDir     = 'D:\BusinessObjects\Data Services'
-          SysDbName   = 'STGDXB'
-          SysDbUser   = 'ipscms'
-          AudDbName   = 'STGDXB'
-          AudDbUser   = 'ipsaud'
-          SiaName     = 'NDLMODDIS101'
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'STGDXB'
+          SysDbUser     = 'ipscms'
+          AudDbName     = 'STGDXB'
+          AudDbUser     = 'ipsaud'
+          SiaName       = 'NDLMODDIS101'
         }
         Secrets = @{
           ClusterKey = @{
@@ -153,6 +153,10 @@ function Get-ModPlatformSAPConfig {
           CmsAdminPassword = @{
             SecretName = 'delius-mis-stage-sap-dis-passwords'
             Key        = 'CMS_Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
           }
         }
       }
