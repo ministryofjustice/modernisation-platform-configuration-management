@@ -86,6 +86,12 @@ function Copy-SAPResponseFile {
   $Tags = "$TagsRaw" | ConvertFrom-Json
   $NameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "Name"}).Value
   $EnvironmentNameTag = ($Tags.Tags | Where-Object  {$_.Key -eq "environment-name"}).Value
+  if (-not $NameTag) {
+    Write-Error "Missing Name tag"
+  }
+  if (-not $EnvironmentNameTag) {
+    Write-Error "Missing environment-name tag"
+  }
 
   $SourcePath = Join-Path $TopLevelRepoPath -ChildPath "Configs"
   $SourcePath = Join-Path $SourcePath -ChildPath "SAP"
