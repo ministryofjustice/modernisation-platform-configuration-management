@@ -149,6 +149,8 @@ function Install-IPS {
   $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
   $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ips.txt"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ips-error.txt"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -181,15 +183,20 @@ function Install-IPS {
     "existingcmsdbpassword=***"
   )
 
-  $SetupExe -r $ResponsePath cmspassword=$CMSPassword existingauditingdbpassword=$AuditPassword existingcmsdbpassword=$SysPassword
-  #Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
-  #$Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru
-  #$InstallProcessId = $Process.Id
-  #$ExitCode = $Process.ExitCode
+  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
+  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogFile -Append
+  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogErrFile -Append
+  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $LogErrFile
+  $InstallProcessId = $Process.Id
+  $ExitCode = $Process.ExitCode
 
-  #Write-Output "Process ID: $InstallProcessId"
-  #Write-Output "Exit Code: $ExitCode"
-  #Write-Output "Completed at: $(Get-Date)"
+  Write-Output "Process ID: $InstallProcessId" | Out-File -FilePath $LogFile -Append
+  Write-Output "Exit Code: $ExitCode" | Out-File -FilePath $LogFile -Append
+  Write-Output "Completed at: $(Get-Date)" | Out-File -FilePath $LogFile -Append
+
+  Write-Output "Process ID: $InstallProcessId"
+  Write-Output "Exit Code: $ExitCode"
+  Write-Output "Completed at: $(Get-Date)"
 }
 
 Export-ModuleMember -Function Get-SAPInstaller
