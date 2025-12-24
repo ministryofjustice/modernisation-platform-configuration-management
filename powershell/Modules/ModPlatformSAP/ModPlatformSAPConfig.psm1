@@ -285,15 +285,15 @@ function Get-ModPlatformSAPConfig {
         }
         Secrets = @{
           ClusterKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
+            SecretName = 'delius-mis-dev-sap-dis-config'
             Key        = 'cluster_key'
           }
           IpsProductKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
+            SecretName = 'delius-mis-dev-sap-dis-config'
             Key        = 'ips_product_key'
           }
           DataServicesProductKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
+            SecretName = 'delius-mis-dev-sap-dis-config'
             Key        = 'data_services_product_key'
           }
           SysDbPassword = @{
@@ -305,12 +305,12 @@ function Get-ModPlatformSAPConfig {
             Key        = 'ipsaud'
           }
           CmsAdminPassword = @{
-            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            SecretName = 'delius-mis-dev-sap-dis-passwords'
             Key        = 'CMS_Administrator'
           }
           ServiceUserPassword = @{
-            SecretName = 'delius-mis-dev-sap-dfi-passwords'
-            Key        = 'SVC_DFI_NDL'
+            SecretName = 'delius-mis-dev-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
           }
         }
       }
