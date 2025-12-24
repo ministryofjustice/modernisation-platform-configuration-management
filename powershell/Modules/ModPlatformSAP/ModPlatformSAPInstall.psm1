@@ -233,8 +233,8 @@ function Install-SAPDataServices {
   $CMSPassword         = $Secrets.CmsAdminPassword
   $ServiceUserPassword = $Secrets.ServiceUserPassword
 
-  if (-not $CMSPassword -or -not $AuditPassword -or -not $SysPassword) {
-    Write-Error "Missing one or more secrets for cmspassword, existingauditingdbpassword, existingcmsdbpassword command line args"
+  if (-not $CMSPassword -or -not $ServiceUserPassword) {
+    Write-Error "Missing one or more secrets for cmspassword, dslogininfothispassword command line args"
   }
 
   $InstallArgs = @(
