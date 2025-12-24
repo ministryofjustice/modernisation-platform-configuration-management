@@ -7,4 +7,4 @@ $SAPSecrets = Get-ModPlatformSAPSecrets $SAPConfig
 Get-SAPInstaller $SAPConfig.InstallPackages.DataServices
 Open-SAPInstaller $SAPConfig.InstallPackages.DataServices
 Set-SAPEnvironmentVars $SAPConfig.Variables
-Copy-SAPResponseFile "../../" "response-install-ds.ini" $SAPConfig.InstallPackages.Ips $SAPConfig.Variables $SAPSecrets
+Copy-SAPResponseFile "../../" "response-install-ds.ini" $SAPConfig.InstallPackages.DataServices $SAPConfig.Variables $SAPSecrets
