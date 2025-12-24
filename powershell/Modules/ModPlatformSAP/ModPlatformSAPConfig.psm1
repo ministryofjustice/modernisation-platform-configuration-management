@@ -229,4 +229,4 @@ function Get-ModPlatformSAPSecrets {
 }
 
 Export-ModuleMember -Function Get-ModPlatformSAPConfig
-Export-ModuleMember -Function Get-ModPlatformSAPCredentials
+Export-ModuleMember -Function Get-ModPlatformSAPSecrets

@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '1.0.0.1'
+ModuleVersion = '1.0.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -66,14 +66,14 @@ PowerShellVersion = '4.0'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('ModPlatformSAPConfig.psm1',
-               'ModPlatformSAPDatabase.psm1',
+NestedModules = @('ModPlatformSAPConfig.psm1', 
+               'ModPlatformSAPDatabase.psm1', 
                'ModPlatformSAPInstall.psm1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-ModPlatformSAPConfig', 'Get-ModPlatformSAPCredentials',
-               'Test-OracleConnection', 'Get-SAPInstaller', 'Extract-SAPInstaller',
-               'Copy-SAPResponseFile', 'Set-SAPEnvironmentVars'
+FunctionsToExport = 'Get-ModPlatformSAPConfig', 'Get-ModPlatformSAPSecrets', 
+               'Test-OracleConnection', 'Get-SAPInstaller', 'Extract-SAPInstaller', 
+               'Extract-SAPResponseFile', 'Set-SAPEnvironmentVars'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
