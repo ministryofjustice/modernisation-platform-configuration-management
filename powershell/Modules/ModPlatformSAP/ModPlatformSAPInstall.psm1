@@ -134,33 +134,66 @@ function Set-SAPEnvironmentVars {
   }
 }
 
-#function Install-IPS {
-#  param (
-#    [Parameter(Mandatory)][hashtable]$InstallPackage
-#  )
-#
-#  $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
-#  if (-not (Test-Path $File)) {
-#    Write-Error "Install file not found: $File"
-#  }
-#  $ExtractPath = Join-Path $InstallPackage.WorkingDirectory -ChildPath (Get-Item $File).Basename
-#
-#  $SetupExe = Join-Path $ExtractPath -ChildPath "setup.exe"
-#  if (-not (Test-Path $SetupExe)) {
-#    Write-Error "Setup.exe not found: $SetupExe"
-#  }
-#
-#  $InstallArgs = @(
-#    '/wait',
-#    '-r .\IPS\ips_install.ini',
-#    "cmspassword=$bods_cluster_key",
-#    "existingauditingdbpassword=$bods_ips_audit_owner",
-#    "existingcmsdbpassword=$bods_ips_system_owner"
-#  )
-#  + $responseFileResult.CommandLineArgs
-#}
+function Install-IPS {
+  param (
+    [Parameter(Mandatory)][string]$ResponseFilename,
+    [Parameter(Mandatory)][hashtable]$InstallPackage,
+    [Parameter(Mandatory)][hashtable]$Secrets
+  )
+
+  $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
+  if (-not (Test-Path $File)) {
+    Write-Error "Install file not found: $File"
+  }
+
+  $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
+  $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
+
+  if (-not (Test-Path $ResponsePath)) {
+    Write-Error "Response file not found: $ResponsePath"
+  }
+
+  if (-not (Test-Path $SetupExe)) {
+    Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  $CMSPassword   = $Secrets.CmsAdminPassword
+  $AuditPassword = $Secrets.AudDbPassword
+  $SysPassword   = $Secrets.SysDbPassword
+
+  if (-not $CMSPassword -or -not $AuditPassword -or -not $SysPassword) {
+    Write-Error "Missing one or more secrets for cmspassword, existingauditingdbpassword, existingcmsdbpassword command line args"
+  }
+
+  $InstallArgs = @(
+    "/wait",
+    "-r $ResponsePath",
+    "cmspassword=$CMSPassword",
+    "existingauditingdbpassword=$AuditPassword",
+    "existingcmsdbpassword=$SysPassword"
+  )
+  $InstallArgsDebug = @(
+    "/wait",
+    "-r $ResponsePath",
+    "cmspassword=***",
+    "existingauditingdbpassword=***",
+    "existingcmsdbpassword=***"
+  )
+  + $responseFileResult.CommandLineArgs
+
+  Write-Output "Launching $SetupExe $InstallArgsDebug"
+  #$Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru
+  #$InstallProcessId = $Process.Id
+  #$ExitCode = $Process.ExitCode
+
+  #"Process ID: $installProcessId" | Out-File -FilePath $logFile -Append
+  #"Exit Code: $exitCode" | Out-File -FilePath $logFile -Append
+  #"Completed at: $(Get-Date)" | Out-File -FilePath $logFile -Append
+}
 
 Export-ModuleMember -Function Get-SAPInstaller
 Export-ModuleMember -Function Open-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
 Export-ModuleMember -Function Set-SAPEnvironmentVars
+Export-ModuleMember -Function Install-IPS

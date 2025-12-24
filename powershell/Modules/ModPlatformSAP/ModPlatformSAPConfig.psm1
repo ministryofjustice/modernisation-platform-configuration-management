@@ -150,6 +150,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = 'delius-mis-stage-sap-dis-passwords'
             Key        = 'ipsaud'
           }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'CMS_Administrator'
+          }
         }
       }
     }

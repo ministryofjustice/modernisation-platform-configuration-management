@@ -9,3 +9,4 @@ Get-SAPInstaller $SAPConfig.InstallPackages.Ips
 
 Set-SAPEnvironmentVars $SAPConfig.Variables
 Copy-SAPResponseFile "../../" "response-install-ips.ini" $SAPConfig.InstallPackages.Ips $SAPConfig.Variables $SAPSecrets
+Install-IPS "response-install-ips.ini" $SAPConfig.InstallPackages.Ips $SAPSecrets
