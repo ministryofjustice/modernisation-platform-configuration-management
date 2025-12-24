@@ -181,14 +181,15 @@ function Install-IPS {
     "existingcmsdbpassword=***"
   )
 
-  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
-  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru
-  $InstallProcessId = $Process.Id
-  $ExitCode = $Process.ExitCode
+  $SetupExe @InstallArgs
+  #Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
+  #$Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru
+  #$InstallProcessId = $Process.Id
+  #$ExitCode = $Process.ExitCode
 
-  Write-Output "Process ID: $InstallProcessId"
-  Write-Output "Exit Code: $ExitCode"
-  Write-Output "Completed at: $(Get-Date)"
+  #Write-Output "Process ID: $InstallProcessId"
+  #Write-Output "Exit Code: $ExitCode"
+  #Write-Output "Completed at: $(Get-Date)"
 }
 
 Export-ModuleMember -Function Get-SAPInstaller
