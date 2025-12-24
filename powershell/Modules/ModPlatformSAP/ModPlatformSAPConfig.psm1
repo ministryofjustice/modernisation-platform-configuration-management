@@ -19,17 +19,19 @@ function Get-ModPlatformSAPConfig {
   $ModPlatformSAPConfigsByEnvironment = @{
     'oasys-national-reporting-test' = @{
       't2-onr-bods' = @{
-        Ips = @{
-          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-          PackagesPrefix       = 'hmpps/onr'
-          PackagesFile         = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
-          WorkingDirectory     = 'E:\Software'             # Download installer here
-        }
-        DataServices = @{
-          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-          PackagesPrefix       = 'hmpps/onr'
-          PackagesFile         = 'DS4214P_11-20011165.exe' # Data Services 4.2 SP14 Patch 11
-          WorkingDirectory     = 'E:\Software'             # Download installer here
+        Packages = @{
+          Ips = @{
+            PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            PackagesPrefix       = 'hmpps/onr'
+            PackagesFile         = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            WorkingDirectory     = 'E:\Software'             # Download installer here
+          }
+          DataServices = @{
+            PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            PackagesPrefix       = 'hmpps/onr'
+            PackagesFile         = 'DS4214P_11-20011165.exe' # Data Services 4.2 SP14 Patch 11
+            WorkingDirectory     = 'E:\Software'             # Download installer here
+          }
         }
         SysDb = @{
           Name = 'T2BOSYS'
@@ -99,25 +101,31 @@ function Get-ModPlatformSAPConfig {
     }
     'delius-mis-preproduction' = @{
       'delius-mis-stage-dis' = @{
-        Ips = @{
-          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-          PackagesPrefix       = 'hmpps/mis'
-          PackagesFile         = 'IPS4304P_900-70002778.EXE'
-          WorkingDirectory     = 'D:\Software'             # Download installer here
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        DataServices  = @{
-          PackagesS3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-          PackagesPrefix       = 'hmpps/mis'
-          PackagesFile         = 'DS4303P_4-80007397.EXE'
-          WorkingDirectory     = 'D:\Software'             # Download installer here
-        }
-        Config = @{
-          InstallDir = 'D:\BusinessObjects'
-          SysDbName = 'STGDXB'
-          SysDbUser = 'ipscms'
-          AudDbName = 'STGDXB'
-          AudDbUser = 'ipsaud'
-          SiaName   = 'NDLMODDIS101'
+        Variables = @{
+          InstallDir  = 'D:\BusinessObjects'
+          DSCommonDir = 'D:\DSCommon'
+          LinkDir     = 'D:\BusinessObjects\Data Services'
+          SysDbName   = 'STGDXB'
+          SysDbUser   = 'ipscms'
+          AudDbName   = 'STGDXB'
+          AudDbUser   = 'ipsaud'
+          SiaName     = 'NDLMODDIS101'
         }
         Secrets = @{
           ClusterKey = @{
