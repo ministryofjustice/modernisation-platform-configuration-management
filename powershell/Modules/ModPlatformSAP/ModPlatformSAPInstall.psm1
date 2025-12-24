@@ -108,6 +108,7 @@ function Copy-SAPResponseFile {
   $DestinationPath = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $DestinationFile = Join-Path $DestinationPath -ChildPath $ResponseFilename
 
+  Write-Output "Copying response file $SourceFile $DestinationFile"
   Copy-TemplateFile $SourceFile $DestinationFile $Variables $Secrets
 }
 
