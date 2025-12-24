@@ -19,7 +19,7 @@ function Get-SAPInstaller {
   }
 }
 
-function Extract-SAPInstaller {
+function Open-SAPInstaller {
   param (
     [Parameter(Mandatory)][hashtable]$InstallPackage
   )
@@ -71,7 +71,7 @@ function Copy-TemplateFile {
   $TemplateContent | Out-File -FilePath $OutTemplatePath -Force -Encoding ascii
 }
 
-function Extract-SAPResponseFile {
+function Copy-SAPResponseFile {
   param (
     [Parameter(Mandatory)][string]$TopLevelRepoPath,
     [Parameter(Mandatory)][string]$ResponseFilename,
@@ -154,6 +154,6 @@ function Set-SAPEnvironmentVars {
 #}
 
 Export-ModuleMember -Function Get-SAPInstaller
-Export-ModuleMember -Function Extract-SAPInstaller
-Export-ModuleMember -Function Extract-SAPResponseFile
+Export-ModuleMember -Function Open-SAPInstaller
+Export-ModuleMember -Function Copy-SAPResponseFile
 Export-ModuleMember -Function Set-SAPEnvironmentVars
