@@ -14,7 +14,7 @@ existingauditingdbserver={AudDbName}
 existingauditingdbuser={AudDbUser}
 ### Existing CMS DB password (passed as command line parameter)
 ### Existing CMS DB reset flag: 0 or 1 where 1 means don't reset
-existingcmsdbreset=0
+existingcmsdbreset=1
 ### Existing CMS DB server
 existingcmsdbserver={SysDbName}
 ### Existing CMS DB user name
@@ -23,18 +23,10 @@ existingcmsdbuser={SysDbUser}
 installdir={InstallDir}
 ### Choose install type: default, custom, webtier
 installtype=default
-### Choose install mode: new, expand
-neworexpandinstall=expand
+### Install new or use existing LCM: new or existing
+neworexistinglcm=existing
 ### Product Keycode
 productkey={IpsProductKey}
-### Remote CMS administrator name
-remotecmsadminname=Administrator
-### Remote CMS administrator password
-remotecmsadminpassword={CmsAdminPassword}
-### Remote CMS name
-remotecmsname=EC2AMAZ-165BP5R.azure.hmpp.root
-### Remote CMS port
-remotecmsport=6400
 ### Language Packs Selected to Install
 selectedlanguagepacks=en
 ### Choose to install integrated database: 0 or 1
@@ -42,7 +34,7 @@ selectintegrateddatabase=0
 ### Setup UI Language
 setupuilanguage=en
 ### SIA node name
-sianame=T2ONRBODS2
+sianame=PDONRBODS1
 ### SIA connector port
 siaport=6410
 ### Tomcat connection port
