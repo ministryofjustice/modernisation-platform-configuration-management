@@ -36,6 +36,12 @@ function Open-SAPInstaller {
     New-Item -ItemType Directory -Path $ExtractPath | Out-Null
   }
 
+  $SetupExe = Join-Path $ExtractPath -ChildPath "setup.exe"
+  if (Test-Path $SetupExe) {
+    Write-Output "Skipping extract as setup.exe found"
+    return
+  }
+
   if ($File -match '\.ZIP$') {
     Write-Output "Extracting ZIP archive to $ExtractPath"
     Expand-Archive $File -DestinationPath $ExtractPath
@@ -258,7 +264,7 @@ function Install-SAPDataServices {
     Write-Output "Data Services is already installed: $($ExistingDataServices.Name) v$($ExistingDataServices.Version)"
     return
   }
-        
+
   $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
   if (-not (Test-Path $File)) {
     Write-Error "Install file not found: $File"
