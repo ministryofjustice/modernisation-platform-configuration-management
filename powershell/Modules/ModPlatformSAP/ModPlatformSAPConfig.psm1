@@ -43,6 +43,7 @@ function Get-ModPlatformSAPConfig {
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'T2BOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
+          ServiceUser   = 'AZURE\svc_nart'
         }
         Secrets = @{
           ClusterKey = @{
@@ -102,6 +103,7 @@ function Get-ModPlatformSAPConfig {
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'PPBOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
+          ServiceUser   = 'HMPP\svc_nart'
         }
         Secrets = @{
           ClusterKey = @{
@@ -161,6 +163,7 @@ function Get-ModPlatformSAPConfig {
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'PDBOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
+          ServiceUser   = 'HMPP\svc_nart'
         }
         Secrets = @{
           ClusterKey = @{
@@ -221,6 +224,7 @@ function Get-ModPlatformSAPConfig {
           AudDbName     = 'DMDDSD'
           AudDbUser     = 'dfi_mod_ipsaud'
           SiaName       = 'NDLMODDFI101'
+          ServiceUser   = 'delius-mis-dev\SVC_DFI_NDL'
         }
         Secrets = @{
           ClusterKey = @{
@@ -279,6 +283,7 @@ function Get-ModPlatformSAPConfig {
           AudDbName     = 'DMDDXB'
           AudDbUser     = 'ipsaud'
           SiaName       = 'NDLMODDFI101'
+          ServiceUser   = 'delius-mis-dev\SVC_DIS_NDL'
         }
         Secrets = @{
           ClusterKey = @{
@@ -339,6 +344,7 @@ function Get-ModPlatformSAPConfig {
           AudDbName     = 'STGDXB'
           AudDbUser     = 'ipsaud'
           SiaName       = 'NDLMODDIS101'
+          ServiceUser   = 'delius-mis-stag\SVC_DIS_NDL'
         }
         Secrets = @{
           ClusterKey = @{
