@@ -160,6 +160,11 @@ function Install-SAPIPS {
     Write-Error "Setup.exe not found: $SetupExe"
   }
 
+  if (Test-Path $LogFile) {
+    Write-Output "Remove $LogFile to force re-install"
+    return
+  }
+
   $CMSPassword   = $Secrets.CmsAdminPassword
   $AuditPassword = $Secrets.AudDbPassword
   $SysPassword   = $Secrets.SysDbPassword
@@ -257,6 +262,11 @@ function Install-SAPDataServices {
 
   if (-not (Test-Path $SetupExe)) {
     Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  if (Test-Path $LogFile) {
+    Write-Output "Remove $LogFile to force re-install"
+    return
   }
 
   $CMSPassword         = $Secrets.CmsAdminPassword
