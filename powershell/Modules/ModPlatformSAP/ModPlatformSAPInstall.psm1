@@ -38,7 +38,7 @@ function Open-SAPInstaller {
 
   $SetupExe = Join-Path $ExtractPath -ChildPath "setup.exe"
   if (Test-Path $SetupExe) {
-    Write-Output "Skipping extract as setup.exe found"
+    Write-Output "Skipping extract as $SetupExe already present"
     return
   }
 
