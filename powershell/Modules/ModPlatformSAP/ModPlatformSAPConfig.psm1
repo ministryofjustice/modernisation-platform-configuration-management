@@ -19,85 +19,358 @@ function Get-ModPlatformSAPConfig {
   $ModPlatformSAPConfigsByEnvironment = @{
     'oasys-national-reporting-test' = @{
       't2-onr-bods' = @{
-        sysDb = @{
-          Name = 'T2BOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/T2BOSYS/passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'T2BOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/T2BOAUD/passwords'
+        Variables = @{
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName     = 'T2BOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'T2BOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/T2BOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/T2BOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/t2/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/t2/passwords'
+            Key        = 'svc_nart'
+          }
         }
       }
     }
     'oasys-national-reporting-preproduction' = @{
       'pp-onr-bods' = @{
-        sysDb = @{
-          Name = 'PPBOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/PPBOSYS/passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'PPBOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/PPBOAUD/passwords'
+        Variables = @{
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName     = 'PPBOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'PPBOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/PPBOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/PPBOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/pp/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/pp/passwords'
+            Key        = 'svc_pp_onr_bods'
+          }
         }
       }
     }
     'oasys-national-reporting-production' = @{
       'pd-onr-bods' = @{
-        sysDb = @{
-          Name = 'PDBOSYS'
-          User = 'bods_ips_system_owner'
-          SecretName = '/oracle/database/PDBOSYS/passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/onr'
+            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            ExtractDir   = 'IPS_42_SP9_P0'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            ExtractDir   = 'DS4214P_11-20011165'
+            WorkingDir   = 'E:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'PDBOAUD'
-          User = 'bods_ips_audit_owner'
-          SecretName = '/oracle/database/PDBOAUD/passwords'
+        Variables = @{
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName     = 'PDBOSYS'
+          SysDbUser     = 'bods_ips_system_owner'
+          AudDbName     = 'PDBOAUD'
+          AudDbUser     = 'bods_ips_audit_owner'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'bods_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = '/oracle/database/PDBOSYS/passwords'
+            Key        = 'bods_ips_system_owner'
+          }
+          AudDbPassword = @{
+            SecretName = '/oracle/database/PDBOAUD/passwords'
+            Key        = 'bods_ips_audit_owner'
+          }
+          CmsAdminPassword = @{
+            SecretName = '/sap/bods/pd/passwords'
+            Key        = 'bods_admin_password'
+          }
+          ServiceUserPassword = @{
+            SecretName = '/sap/bods/pd/passwords'
+            Key        = 'svc_pd_onr_bods'
+          }
         }
       }
     }
     'delius-mis-development' = @{
       'delius-mis-dev-dfi' = @{
-        sysDb = @{
-          Name = 'DMDDSD'
-          User = 'dfi_mod_ipscms'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'DMDDSD'
-          User = 'dfi_mod_ipsaud'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        Variables = @{
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'DMDDSD'
+          SysDbUser     = 'dfi_mod_ipscms'
+          AudDbName     = 'DMDDSD'
+          AudDbUser     = 'dfi_mod_ipsaud'
+          SiaName       = 'NDLMODDFI101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'dfi_cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'dfi_mod_ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'dfi_mod_ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'DFI_IPS_Administrator_LCMS_Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'SVC_DFI_NDL'
+          }
         }
       }
       'delius-mis-dev-dis' = @{
-        sysDb = @{
-          Name = 'DMDDXB'
-          User = 'ipscms'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'DMDDXB'
-          User = 'ipsaud'
-          SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+        Variables = @{
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'DMDDXB'
+          SysDbUser     = 'ipscms'
+          AudDbName     = 'DMDDXB'
+          AudDbUser     = 'ipsaud'
+          SiaName       = 'NDLMODDFI101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-dev-sap-dis-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dis-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-dev-sap-dis-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-dev-oracle-dsd-db-application-passwords'
+            Key        = 'ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-dev-sap-dis-passwords'
+            Key        = 'Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-dev-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
+          }
         }
       }
     }
     'delius-mis-preproduction' = @{
       'delius-mis-stage-dis' = @{
-        sysDb = @{
-          Name = 'STGDXB'
-          User = 'ipscms'
-          #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
-          SecretName = 'delius-mis-stage-sap-dis-passwords'
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
-        audDb = @{
-          Name = 'STGDXB'
-          User = 'ipsaud'
-          #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
-          SecretName = 'delius-mis-stage-sap-dis-passwords'
+        Variables = @{
+          InstallDir    = 'D:\BusinessObjects'
+          DSCommonDir   = 'D:\DSCommon'
+          LinkDir       = 'D:\BusinessObjects\Data Services'
+          SysDbName     = 'STGDXB'
+          SysDbUser     = 'ipscms'
+          AudDbName     = 'STGDXB'
+          AudDbUser     = 'ipsaud'
+          SiaName       = 'NDLMODDIS101'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            #SecretName = 'delius-mis-stage-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-stage-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
+          }
         }
       }
     }
@@ -136,32 +409,24 @@ function Get-ModPlatformSAPSecret {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$Secrets,
-    [Parameter(Mandatory=$true)][hashtable]$Object,
-    [Parameter(Mandatory=$true)][string]$SecretKey,
-    [Parameter(Mandatory=$true)][string]$UserKey,
-    [Parameter(Mandatory=$true)][string]$PasswordKey
+    [Parameter(Mandatory=$true)][string]$SecretName,
+    [Parameter(Mandatory=$true)][string]$SecretKey
   )
 
-  $SecretName = $Object.$SecretKey
   if ($Secrets.ContainsKey($SecretName)) {
     $SecretValueRaw = $Secrets[$SecretName]
   } else {
     $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretName}" --query SecretString --output text
     $Secrets[$SecretName] = $SecretValueRaw
   }
-  $Username = $Object.$UserKey
-  $Password = $null
   $SecretJson = "$SecretValueRaw" | ConvertFrom-Json
-  $Password = $SecretJson.$Username
-  if ($Password) {
-    $Object[$PasswordKey] = ConvertTo-SecureString $Password -AsPlainText -Force
-  }
+  $SecretJson.$SecretKey
 }
 
-function Get-ModPlatformSAPCredentials {
+function Get-ModPlatformSAPSecrets {
 <#
 .SYNOPSIS
-    Retrieve passwords from SecretsManager Secretsi and append to config object
+    Retrieve secrets from SecretsManager Secrets and return in hashtable
 
 .PARAMETER ModPlatformSAPConfigs
     Output of Get-ModPlatformSAPConfig
@@ -172,12 +437,17 @@ function Get-ModPlatformSAPCredentials {
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformSAPConfig
   )
 
-
-
   $SAPConfigSecrets = @{}
-  Get-ModPlatformSAPSecret $SAPConfigSecrets $ModPlatformSAPConfig.SysDb SecretName User Password
-  Get-ModPlatformSAPSecret $SAPConfigSecrets $ModPlatformSAPConfig.AudDb SecretName User Password
+  $SecretValues = @{}
+  foreach ($Secret in $ModPlatformSAPConfig.Secrets.GetEnumerator()) {
+    $SecretValue = Get-ModPlatformSAPSecret $SAPConfigSecrets $Secret.Value.SecretName $Secret.Value.Key
+    if (-not $SecretValue) {
+      Write-Error ("Missing key '" + $Secret.Value.Key + "' in secret " + $Secret.Value.SecretName)
+    }
+    $SecretValues[$Secret.Name] = $SecretValue
+  }
+  return $SecretValues
 }
 
 Export-ModuleMember -Function Get-ModPlatformSAPConfig
-Export-ModuleMember -Function Get-ModPlatformSAPCredentials
+Export-ModuleMember -Function Get-ModPlatformSAPSecrets
