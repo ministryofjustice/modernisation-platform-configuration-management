@@ -198,6 +198,35 @@ function Install-SAPIPS {
   Write-Output "Completed at: $(Get-Date)"
 }
 
+function Set-SAPIPSServiceControl {
+  param (
+    [Parameter(Mandatory)][hashtable]$Variables,
+    [Parameter(Mandatory)][hashtable]$Secrets
+  )
+
+  $ServiceNames = @(
+    "Server Intelligence Agent*",
+    "Apache Tomcat*"
+  )
+
+  $ServiceUser         = $Variables.ServiceUser
+  $ServiceUserPassword = $Secrets.ServiceUserPassword
+
+  foreach ($Service in $ServiceNames) {
+    $ServiceName = (Get-Service | Where-Object { $_.DisplayName -like $Service }).Name
+
+    if ($ServiceName) {
+      Write-Output "Setting $ServiceName to Automatic (Delayed Start)"
+      sc.exe config $ServiceName start=delayed-auto
+
+      Write-Output "Setting $ServiceName to RunAs $ServiceUser"
+      sc.exe config $ServiceName obj=$ServiceUser password=$ServiceUserPassword
+    } else {
+      Write-Error "Could not find service matching $Service"
+    }
+  }
+}
+
 function Install-SAPDataServices {
   param (
     [Parameter(Mandatory)][string]$ResponseFilename,
@@ -267,9 +296,28 @@ function Install-SAPDataServices {
   Write-Output "Completed at: $(Get-Date)"
 }
 
+function Set-SAPDataServicesServiceControl {
+  $ServiceNames = @(
+    "SAP Data Services*"
+  )
+
+  foreach ($Service in $ServiceNames) {
+    $ServiceName = (Get-Service | Where-Object { $_.DisplayName -like $Service }).Name
+
+    if ($ServiceName) {
+      Write-Output "Setting $ServiceName to Automatic (Delayed Start)"
+      sc.exe config $ServiceName start=delayed-auto
+    } else {
+      Write-Error "Could not find service matching $Service"
+    }
+  }
+}
+
 Export-ModuleMember -Function Get-SAPInstaller
 Export-ModuleMember -Function Open-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
 Export-ModuleMember -Function Set-SAPEnvironmentVars
 Export-ModuleMember -Function Install-SAPIPS
+Export-ModuleMember -Function Set-SAPIPSServiceControl
 Export-ModuleMember -Function Install-SAPDataServices
+Export-ModuleMember -Function Set-SAPDataServicesServiceControl
