@@ -10,10 +10,20 @@
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $true)][string[]]$Services
+    [string[]]$Services
 )
 
-foreach ($Service in $Services) {
+$ServiceNames = $Services
+
+if (-not $ServiceNames) {
+  $ServiceNames = @(
+    "SAP Data Services*",
+    "Server Intelligence Agent*",
+    "Apache Tomcat*"
+  )
+}
+
+foreach ($Service in $ServiceNames) {
 
     $serviceName = (Get-Service | Where-Object { $_.DisplayName -like $Service }).Name
 
@@ -21,8 +31,7 @@ foreach ($Service in $Services) {
         Write-Host "Setting $serviceName to Automatic (Delayed Start)..."
         # only possible to set using PowerShell 7.x so must use sc.exe here
         sc.exe config $serviceName start=delayed-auto        
-    }
-    else {
-        Write-Host "ServiceName: $serviceName DOES NOT EXIST"
+    } elseif ($Services) {
+        Write-Error "ServiceName: $serviceName DOES NOT EXIST"
     }
 }
