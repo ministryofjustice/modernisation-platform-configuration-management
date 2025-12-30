@@ -297,14 +297,14 @@ function Install-SAPDataServices {
   }
 
   $InstallArgs = @(
-    "-q",
+    "/wait",
     "-r $ResponsePath",
     "cmspassword=$CMSPassword",
     "dscmspassword=$CMSPassword",
     "dslogininfothispassword=$ServiceUserPassword"
   )
   $InstallArgsDebug = @(
-    "-q",
+    "/wait",
     "-r $ResponsePath",
     "cmspassword=***",
     "dscmspassword=***",
