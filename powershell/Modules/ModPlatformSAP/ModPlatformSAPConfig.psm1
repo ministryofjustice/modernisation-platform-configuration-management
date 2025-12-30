@@ -224,15 +224,15 @@ function Get-ModPlatformSAPConfig {
         }
         Secrets = @{
           ClusterKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
-            Key        = 'cluster_key'
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'dfi_cluster_key'
           }
           IpsProductKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
             Key        = 'ips_product_key'
           }
           DataServicesProductKey = @{
-            SecretName = 'delius-mis-dev-sap-dfi-config'
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
             Key        = 'data_services_product_key'
           }
           SysDbPassword = @{
@@ -244,11 +244,11 @@ function Get-ModPlatformSAPConfig {
             Key        = 'dfi_mod_ipsaud'
           }
           CmsAdminPassword = @{
-            SecretName = 'delius-mis-dev-sap-dfi-passwords'
-            Key        = 'CMS_Administrator'
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'DFI_IPS_Administrator_LCMS_Administrator'
           }
           ServiceUserPassword = @{
-            SecretName = 'delius-mis-dev-sap-dfi-passwords'
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
             Key        = 'SVC_DFI_NDL'
           }
         }
@@ -303,7 +303,7 @@ function Get-ModPlatformSAPConfig {
           }
           CmsAdminPassword = @{
             SecretName = 'delius-mis-dev-sap-dis-passwords'
-            Key        = 'CMS_Administrator'
+            Key        = 'Administrator'
           }
           ServiceUserPassword = @{
             SecretName = 'delius-mis-dev-sap-dis-passwords'
@@ -365,7 +365,7 @@ function Get-ModPlatformSAPConfig {
           }
           CmsAdminPassword = @{
             SecretName = 'delius-mis-stage-sap-dis-passwords'
-            Key        = 'CMS_Administrator'
+            Key        = 'Administrator'
           }
           ServiceUserPassword = @{
             SecretName = 'delius-mis-stage-sap-dis-passwords'
