@@ -112,7 +112,7 @@ function Copy-SAPResponseFile {
   Copy-TemplateFile $SourceFile $DestinationFile $Variables $Secrets
 }
 
-function Set-SAPEnvironmentVars {
+function Add-SAPDirectories {
   param (
     [Parameter(Mandatory)][hashtable]$Variables
   )
@@ -127,6 +127,20 @@ function Set-SAPEnvironmentVars {
       Write-Output ("Creating Directory " + $DirEnv.Value)
       New-Item -ItemType Directory -Path $DirEnv.Value -Force | Out-Null
     }
+  }
+}
+
+function Set-SAPEnvironmentVars {
+  param (
+    [Parameter(Mandatory)][hashtable]$Variables
+  )
+
+  $DirEnvVars = @{
+    'DS_COMMON_DIR' = $Variables.DSCommonDir
+    'LINK_DIR'      = $Variables.LinkDir
+  }
+
+  foreach ($DirEnv in $DirEnvVars.GetEnumerator()) {
     if ([Environment]::GetEnvironmentVariable($DirEnv.Name, [System.EnvironmentVariableTarget]::Machine) -ne $DirEnv.Value) {
       Write-Output ("Setting Machine Env Variable " + $DirEnv.Name + "=" + $DirEnv.Value)
       [Environment]::SetEnvironmentVariable($DirEnv.Name, $DirEnv.Value, [System.EnvironmentVariableTarget]::Machine)
@@ -326,6 +340,7 @@ function Set-SAPDataServicesServiceControl {
 Export-ModuleMember -Function Get-SAPInstaller
 Export-ModuleMember -Function Open-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
+Export-ModuleMember -Function Add-SAPDirectories
 Export-ModuleMember -Function Set-SAPEnvironmentVars
 Export-ModuleMember -Function Install-SAPIPS
 Export-ModuleMember -Function Set-SAPIPSServiceControl

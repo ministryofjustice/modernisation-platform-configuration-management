@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '1.0.0.6'
+ModuleVersion = '1.0.0.7'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -73,7 +73,8 @@ NestedModules = @('ModPlatformSAPConfig.psm1',
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-ModPlatformSAPConfig', 'Get-ModPlatformSAPSecrets', 
                'Test-OracleConnection', 'Get-SAPInstaller', 'Open-SAPInstaller', 
-               'Copy-SAPResponseFile', 'Set-SAPEnvironmentVars', 'Install-SAPIPS', 
+               'Copy-SAPResponseFile', 'Add-SAPDirectories', 
+               'Set-SAPEnvironmentVars', 'Install-SAPIPS', 
                'Set-SAPIPSServiceControl', 'Install-SAPDataServices', 
                'Set-SAPDataServicesServiceControl'
 
