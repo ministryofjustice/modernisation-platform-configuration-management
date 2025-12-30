@@ -36,14 +36,13 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\BusinessObjects'
-          DSCommonDir   = 'E:\DSCommon'
-          LinkDir       = 'E:\BusinessObjects\Data Services'
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
           SysDbName     = 'T2BOSYS'
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'T2BOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
-          SiaName       = 'TODO'
         }
         Secrets = @{
           ClusterKey = @{
@@ -72,7 +71,7 @@ function Get-ModPlatformSAPConfig {
           }
           ServiceUserPassword = @{
             SecretName = '/sap/bods/t2/passwords'
-            Key        = 'svc_t2_onr_bods'
+            Key        = 'svc_nart'
           }
         }
       }
@@ -96,14 +95,13 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\BusinessObjects'
-          DSCommonDir   = 'E:\DSCommon'
-          LinkDir       = 'E:\BusinessObjects\Data Services'
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
           SysDbName     = 'PPBOSYS'
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'PPBOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
-          SiaName       = 'TODO'
         }
         Secrets = @{
           ClusterKey = @{
@@ -156,14 +154,13 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\BusinessObjects'
-          DSCommonDir   = 'E:\DSCommon'
-          LinkDir       = 'E:\BusinessObjects\Data Services'
+          InstallDir    = 'E:\SAP BusinessObjects'
+          DSCommonDir   = 'F:\BODS_COMMON_DIR'
+          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
           SysDbName     = 'PDBOSYS'
           SysDbUser     = 'bods_ips_system_owner'
           AudDbName     = 'PDBOAUD'
           AudDbUser     = 'bods_ips_audit_owner'
-          SiaName       = 'TODO'
         }
         Secrets = @{
           ClusterKey = @{
