@@ -180,8 +180,8 @@ function Install-SAPIPS {
   $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
   $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ips.txt"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ips-error.txt"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -284,8 +284,8 @@ function Install-SAPDataServices {
   $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
   $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ds.txt"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ds-error.txt"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -308,7 +308,6 @@ function Install-SAPDataServices {
   }
 
   $InstallArgs = @(
-    "/wait",
     "-q",
     "-r $ResponsePath",
     "cmspassword=$CMSPassword",
@@ -316,7 +315,6 @@ function Install-SAPDataServices {
     "dslogininfothispassword=$ServiceUserPassword"
   )
   $InstallArgsDebug = @(
-    "/wait",
     "-q",
     "-r $ResponsePath",
     "cmspassword=***",
