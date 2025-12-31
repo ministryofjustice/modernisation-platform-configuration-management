@@ -36,14 +36,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\SAP BusinessObjects'
-          DSCommonDir   = 'F:\BODS_COMMON_DIR'
-          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
-          SysDbName     = 'T2BOSYS'
-          SysDbUser     = 'bods_ips_system_owner'
-          AudDbName     = 'T2BOAUD'
-          AudDbUser     = 'bods_ips_audit_owner'
-          ServiceUser   = 'AZURE\svc_nart'
+          InstallDir     = 'E:\SAP BusinessObjects'
+          DSCommonDir    = 'F:\BODS_COMMON_DIR'
+          LinkDir        = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName      = 'T2BOSYS'
+          SysDbUser      = 'bods_ips_system_owner'
+          AudDbName      = 'T2BOAUD'
+          AudDbUser      = 'bods_ips_audit_owner'
+          SiaNameBase    = 'T2ONRBODS'
+          ServiceUser    = 'AZURE\svc_nart'
+          DomainNameFQDN = 'azure.noms.root'
         }
         Secrets = @{
           ClusterKey = @{
@@ -74,6 +76,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = '/sap/bods/t2/passwords'
             Key        = 'svc_nart'
           }
+          CmsPrimaryHostname = @{
+            SecretName = '/sap/bods/t2/config'
+            Key        = 'cms_primary_hostname'
+          }
         }
       }
     }
@@ -96,14 +102,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\SAP BusinessObjects'
-          DSCommonDir   = 'F:\BODS_COMMON_DIR'
-          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
-          SysDbName     = 'PPBOSYS'
-          SysDbUser     = 'bods_ips_system_owner'
-          AudDbName     = 'PPBOAUD'
-          AudDbUser     = 'bods_ips_audit_owner'
-          ServiceUser   = 'HMPP\svc_nart'
+          InstallDir     = 'E:\SAP BusinessObjects'
+          DSCommonDir    = 'F:\BODS_COMMON_DIR'
+          LinkDir        = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName      = 'PPBOSYS'
+          SysDbUser      = 'bods_ips_system_owner'
+          AudDbName      = 'PPBOAUD'
+          AudDbUser      = 'bods_ips_audit_owner'
+          SiaNameBase    = 'PPONRBODS'
+          ServiceUser    = 'HMPP\svc_nart'
+          DomainNameFQDN = 'azure.hmpp.root'
         }
         Secrets = @{
           ClusterKey = @{
@@ -134,6 +142,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = '/sap/bods/pp/passwords'
             Key        = 'svc_pp_onr_bods'
           }
+          CmsPrimaryHostname = @{
+            SecretName = '/sap/bods/pp/config'
+            Key        = 'cms_primary_hostname'
+          }
         }
       }
     }
@@ -156,14 +168,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'E:\SAP BusinessObjects'
-          DSCommonDir   = 'F:\BODS_COMMON_DIR'
-          LinkDir       = 'E:\SAP BusinessObjects\Data Services'
-          SysDbName     = 'PDBOSYS'
-          SysDbUser     = 'bods_ips_system_owner'
-          AudDbName     = 'PDBOAUD'
-          AudDbUser     = 'bods_ips_audit_owner'
-          ServiceUser   = 'HMPP\svc_nart'
+          InstallDir     = 'E:\SAP BusinessObjects'
+          DSCommonDir    = 'F:\BODS_COMMON_DIR'
+          LinkDir        = 'E:\SAP BusinessObjects\Data Services'
+          SysDbName      = 'PDBOSYS'
+          SysDbUser      = 'bods_ips_system_owner'
+          AudDbName      = 'PDBOAUD'
+          AudDbUser      = 'bods_ips_audit_owner'
+          SiaNameBase    = 'PDONRBODS'
+          ServiceUser    = 'HMPP\svc_nart'
+          DomainNameFQDN = 'azure.hmpp.root'
         }
         Secrets = @{
           ClusterKey = @{
@@ -194,6 +208,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = '/sap/bods/pd/passwords'
             Key        = 'svc_pd_onr_bods'
           }
+          CmsPrimaryHostname = @{
+            SecretName = '/sap/bods/pd/config'
+            Key        = 'cms_primary_hostname'
+          }
         }
       }
     }
@@ -216,15 +234,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'D:\BusinessObjects'
-          DSCommonDir   = 'D:\DSCommon'
-          LinkDir       = 'D:\BusinessObjects\Data Services'
-          SysDbName     = 'DMDDSD'
-          SysDbUser     = 'dfi_mod_ipscms'
-          AudDbName     = 'DMDDSD'
-          AudDbUser     = 'dfi_mod_ipsaud'
-          SiaName       = 'NDLMODDFI101'
-          ServiceUser   = 'delius-mis-dev\SVC_DFI_NDL'
+          InstallDir     = 'D:\BusinessObjects'
+          DSCommonDir    = 'D:\DSCommon'
+          LinkDir        = 'D:\BusinessObjects\Data Services'
+          SysDbName      = 'DMDDSD'
+          SysDbUser      = 'dfi_mod_ipscms'
+          AudDbName      = 'DMDDSD'
+          AudDbUser      = 'dfi_mod_ipsaud'
+          SiaNameBase    = 'NDLMODDFI10'
+          ServiceUser    = 'delius-mis-dev\SVC_DFI_NDL'
+          DomainNameFQDN = 'delius-mis-dev.internal'
         }
         Secrets = @{
           ClusterKey = @{
@@ -255,6 +274,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
             Key        = 'SVC_DFI_NDL'
           }
+          CmsPrimaryHostname = @{
+            SecretName = 'NDMIS_DFI_SERVICEACCOUNTS_DEV'
+            Key        = 'dfi_cms_primary_hostname'
+          }
         }
       }
       'delius-mis-dev-dis' = @{
@@ -275,15 +298,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'D:\BusinessObjects'
-          DSCommonDir   = 'D:\DSCommon'
-          LinkDir       = 'D:\BusinessObjects\Data Services'
-          SysDbName     = 'DMDDXB'
-          SysDbUser     = 'ipscms'
-          AudDbName     = 'DMDDXB'
-          AudDbUser     = 'ipsaud'
-          SiaName       = 'NDLMODDFI101'
-          ServiceUser   = 'delius-mis-dev\SVC_DIS_NDL'
+          InstallDir     = 'D:\BusinessObjects'
+          DSCommonDir    = 'D:\DSCommon'
+          LinkDir        = 'D:\BusinessObjects\Data Services'
+          SysDbName      = 'DMDDXB'
+          SysDbUser      = 'ipscms'
+          AudDbName      = 'DMDDXB'
+          AudDbUser      = 'ipsaud'
+          SiaNameBase    = 'NDLMODDFI10'
+          ServiceUser    = 'delius-mis-dev\SVC_DIS_NDL'
+          DomainNameFQDN = 'delius-mis-dev.internal'
         }
         Secrets = @{
           ClusterKey = @{
@@ -313,6 +337,10 @@ function Get-ModPlatformSAPConfig {
           ServiceUserPassword = @{
             SecretName = 'delius-mis-dev-sap-dis-passwords'
             Key        = 'SVC_DIS_NDL'
+          }
+          CmsPrimaryHostname = @{
+            SecretName = 'delius-mis-dev-sap-dis-config'
+            Key        = 'cms_primary_hostname'
           }
         }
       }
@@ -336,15 +364,16 @@ function Get-ModPlatformSAPConfig {
           }
         }
         Variables = @{
-          InstallDir    = 'D:\BusinessObjects'
-          DSCommonDir   = 'D:\DSCommon'
-          LinkDir       = 'D:\BusinessObjects\Data Services'
-          SysDbName     = 'STGDXB'
-          SysDbUser     = 'ipscms'
-          AudDbName     = 'STGDXB'
-          AudDbUser     = 'ipsaud'
-          SiaName       = 'NDLMODDIS101'
-          ServiceUser   = 'delius-mis-stag\SVC_DIS_NDL'
+          InstallDir     = 'D:\BusinessObjects'
+          DSCommonDir    = 'D:\DSCommon'
+          LinkDir        = 'D:\BusinessObjects\Data Services'
+          SysDbName      = 'STGDXB'
+          SysDbUser      = 'ipscms'
+          AudDbName      = 'STGDXB'
+          AudDbUser      = 'ipsaud'
+          SiaNameBase    = 'NDLMODDIS10'
+          ServiceUser    = 'delius-mis-stag\SVC_DIS_NDL'
+          DomainNameFQDN = 'delius-mis-stage.internal'
         }
         Secrets = @{
           ClusterKey = @{
@@ -377,6 +406,10 @@ function Get-ModPlatformSAPConfig {
             SecretName = 'delius-mis-stage-sap-dis-passwords'
             Key        = 'SVC_DIS_NDL'
           }
+          CmsPrimaryHostname = @{
+            SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'cms_primary_hostname'
+          }
         }
       }
     }
@@ -395,6 +428,10 @@ function Get-ModPlatformSAPConfig {
       foreach ($Config in $ConfigsByName.GetEnumerator()) {
         if ($NameTag.StartsWith($Config.Name)) {
           $ConfigCopy = $Config.Value.Clone()
+          $ConfigCopy.Variables["NameTag"]            = $NameTag
+          $ConfigCopy.Variables["EnvironmentNameTag"] = $EnvironmentNameTag
+          $ConfigCopy.Variables["NameTagIndex"]       = $NameTag.split("-")[-1]
+          $ConfigCopy.Variables["NameTagNoDashes"]    = $NameTag.replace("-","")
           return $ConfigCopy
         }
       }

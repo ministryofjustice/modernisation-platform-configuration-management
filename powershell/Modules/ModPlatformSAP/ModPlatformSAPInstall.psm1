@@ -98,18 +98,30 @@ function Copy-SAPResponseFile {
   if (-not $EnvironmentNameTag) {
     Write-Error "Missing environment-name tag"
   }
+  $NameTagIndex = $NameTag.split("-")[-1]
 
-  $SourcePath = Join-Path $TopLevelRepoPath -ChildPath "Configs"
-  $SourcePath = Join-Path $SourcePath -ChildPath "SAP"
-  $SourcePath = Join-Path $SourcePath -ChildPath "ResponseFiles"
-  $SourcePath = Join-Path $SourcePath -ChildPath $EnvironmentNameTag
-  $SourceFile = Join-Path $SourcePath -ChildPath ($ResponseFilename + "." + "$NameTag")
+  $SourceBasePath = Join-Path $TopLevelRepoPath -ChildPath "Configs"
+  $SourceBasePath = Join-Path $SourceBasePath -ChildPath "SAP"
+  $SourceBasePath = Join-Path $SourceBasePath -ChildPath "ResponseFiles"
+  $SourceEnvPath  = Join-Path $SourceBasePath -ChildPath $EnvironmentNameTag
 
-  if (-not (Test-Path $SourceFile)) {
-    $SourceFile = Join-Path $SourcePath -ChildPath $ResponseFilename
+  $SourceFiles = @(
+    (Join-Path $SourceEnvPath -ChildPath ($ResponseFilename + "." + "$NameTag")),
+    (Join-Path $SourceEnvPath -ChildPath ($ResponseFilename + "." + "$NameTagIndex")),
+    (Join-Path $SourceEnvPath -ChildPath $ResponseFilename),
+    (Join-Path $SourceBasePath -ChildPath ($ResponseFilename + "." + "$NameTag")),
+    (Join-Path $SourceBasePath -ChildPath ($ResponseFilename + "." + "$NameTagIndex")),
+    (Join-Path $SourceBasePath -ChildPath $ResponseFilename)
+  )
+  $SourceFile = $null
+  foreach ($SourceFileIter in $SourceFiles) {
+    if (Test-Path $SourceFileIter) {
+      $SourceFile = $SourceFileIter
+      break
+    }
   }
-  if (-not (Test-Path $SourceFile)) {
-    Write-Error "Cannot find $SourceFile"
+  if (-not $SourceFile) {
+    Write-Error "Cannot find response file in repo $ResponseFilename $EnvironmentNameTag $NameTag"
   }
   $DestinationPath = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $DestinationFile = Join-Path $DestinationPath -ChildPath $ResponseFilename
@@ -125,7 +137,6 @@ function Add-SAPDirectories {
 
   $DirEnvVars = @{
     'DS_COMMON_DIR' = $Variables.DSCommonDir
-    'LINK_DIR'      = $Variables.LinkDir
   }
 
   foreach ($DirEnv in $DirEnvVars.GetEnumerator()) {
