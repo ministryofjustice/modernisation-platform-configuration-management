@@ -36,6 +36,12 @@ function Open-SAPInstaller {
     New-Item -ItemType Directory -Path $ExtractPath | Out-Null
   }
 
+  $SetupExe = Join-Path $ExtractPath -ChildPath "setup.exe"
+  if (Test-Path $SetupExe) {
+    Write-Output "Skipping extract as $SetupExe already present"
+    return
+  }
+
   if ($File -match '\.ZIP$') {
     Write-Output "Extracting ZIP archive to $ExtractPath"
     Expand-Archive $File -DestinationPath $ExtractPath
@@ -92,24 +98,53 @@ function Copy-SAPResponseFile {
   if (-not $EnvironmentNameTag) {
     Write-Error "Missing environment-name tag"
   }
+  $NameTagIndex = $NameTag.split("-")[-1]
 
-  $SourcePath = Join-Path $TopLevelRepoPath -ChildPath "Configs"
-  $SourcePath = Join-Path $SourcePath -ChildPath "SAP"
-  $SourcePath = Join-Path $SourcePath -ChildPath "ResponseFiles"
-  $SourcePath = Join-Path $SourcePath -ChildPath $EnvironmentNameTag
-  $SourceFile = Join-Path $SourcePath -ChildPath ($ResponseFilename + "." + "$NameTag")
+  $SourceBasePath = Join-Path $TopLevelRepoPath -ChildPath "Configs"
+  $SourceBasePath = Join-Path $SourceBasePath -ChildPath "SAP"
+  $SourceBasePath = Join-Path $SourceBasePath -ChildPath "ResponseFiles"
+  $SourceEnvPath  = Join-Path $SourceBasePath -ChildPath $EnvironmentNameTag
 
-  if (-not (Test-Path $SourceFile)) {
-    $SourceFile = Join-Path $SourcePath -ChildPath $ResponseFilename
+  $SourceFiles = @(
+    (Join-Path $SourceEnvPath -ChildPath ($ResponseFilename + "." + "$NameTag")),
+    (Join-Path $SourceEnvPath -ChildPath ($ResponseFilename + "." + "$NameTagIndex")),
+    (Join-Path $SourceEnvPath -ChildPath $ResponseFilename),
+    (Join-Path $SourceBasePath -ChildPath ($ResponseFilename + "." + "$NameTag")),
+    (Join-Path $SourceBasePath -ChildPath ($ResponseFilename + "." + "$NameTagIndex")),
+    (Join-Path $SourceBasePath -ChildPath $ResponseFilename)
+  )
+  $SourceFile = $null
+  foreach ($SourceFileIter in $SourceFiles) {
+    if (Test-Path $SourceFileIter) {
+      $SourceFile = $SourceFileIter
+      break
+    }
   }
-  if (-not (Test-Path $SourceFile)) {
-    Write-Error "Cannot find $SourceFile"
+  if (-not $SourceFile) {
+    Write-Error "Cannot find response file in repo $ResponseFilename $EnvironmentNameTag $NameTag"
   }
   $DestinationPath = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $DestinationFile = Join-Path $DestinationPath -ChildPath $ResponseFilename
 
   Write-Output "Copying response file $SourceFile $DestinationFile"
   Copy-TemplateFile $SourceFile $DestinationFile $Variables $Secrets
+}
+
+function Add-SAPDirectories {
+  param (
+    [Parameter(Mandatory)][hashtable]$Variables
+  )
+
+  $DirEnvVars = @{
+    'DS_COMMON_DIR' = $Variables.DSCommonDir
+  }
+
+  foreach ($DirEnv in $DirEnvVars.GetEnumerator()) {
+    if (-not (Test-Path $DirEnv.Value)) {
+      Write-Output ("Creating Directory " + $DirEnv.Value)
+      New-Item -ItemType Directory -Path $DirEnv.Value -Force | Out-Null
+    }
+  }
 }
 
 function Set-SAPEnvironmentVars {
@@ -123,10 +158,6 @@ function Set-SAPEnvironmentVars {
   }
 
   foreach ($DirEnv in $DirEnvVars.GetEnumerator()) {
-    if (-not (Test-Path $DirEnv.Value)) {
-      Write-Output ("Creating Directory " + $DirEnv.Value)
-      New-Item -ItemType Directory -Path $DirEnv.Value -Force | Out-Null
-    }
     if ([Environment]::GetEnvironmentVariable($DirEnv.Name, [System.EnvironmentVariableTarget]::Machine) -ne $DirEnv.Value) {
       Write-Output ("Setting Machine Env Variable " + $DirEnv.Name + "=" + $DirEnv.Value)
       [Environment]::SetEnvironmentVariable($DirEnv.Name, $DirEnv.Value, [System.EnvironmentVariableTarget]::Machine)
@@ -149,8 +180,8 @@ function Install-SAPIPS {
   $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
   $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ips.txt"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ips-error.txt"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -158,6 +189,11 @@ function Install-SAPIPS {
 
   if (-not (Test-Path $SetupExe)) {
     Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  if (Test-Path $LogFile) {
+    Write-Output "Remove $LogFile to force re-install"
+    return
   }
 
   $CMSPassword   = $Secrets.CmsAdminPassword
@@ -198,6 +234,35 @@ function Install-SAPIPS {
   Write-Output "Completed at: $(Get-Date)"
 }
 
+function Set-SAPIPSServiceControl {
+  param (
+    [Parameter(Mandatory)][hashtable]$Variables,
+    [Parameter(Mandatory)][hashtable]$Secrets
+  )
+
+  $ServiceNames = @(
+    "Server Intelligence Agent*",
+    "Apache Tomcat*"
+  )
+
+  $ServiceUser         = $Variables.ServiceUser
+  $ServiceUserPassword = $Secrets.ServiceUserPassword
+
+  foreach ($Service in $ServiceNames) {
+    $ServiceName = (Get-Service | Where-Object { $_.DisplayName -like $Service }).Name
+
+    if ($ServiceName) {
+      Write-Output "Setting $ServiceName to Automatic (Delayed Start)"
+      sc.exe config $ServiceName start=delayed-auto
+
+      Write-Output "Setting $ServiceName to RunAs $ServiceUser"
+      sc.exe config $ServiceName obj=$ServiceUser password=$ServiceUserPassword
+    } else {
+      Write-Error "Could not find service matching $Service"
+    }
+  }
+}
+
 function Install-SAPDataServices {
   param (
     [Parameter(Mandatory)][string]$ResponseFilename,
@@ -210,7 +275,7 @@ function Install-SAPDataServices {
     Write-Output "Data Services is already installed: $($ExistingDataServices.Name) v$($ExistingDataServices.Version)"
     return
   }
-        
+
   $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
   if (-not (Test-Path $File)) {
     Write-Error "Install file not found: $File"
@@ -219,8 +284,8 @@ function Install-SAPDataServices {
   $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
   $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
   $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "log-install-ds.txt"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "log-install-ds-error.txt"
+  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
+  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -228,6 +293,11 @@ function Install-SAPDataServices {
 
   if (-not (Test-Path $SetupExe)) {
     Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  if (Test-Path $LogFile) {
+    Write-Output "Remove $LogFile to force re-install"
+    return
   }
 
   $CMSPassword         = $Secrets.CmsAdminPassword
@@ -267,9 +337,29 @@ function Install-SAPDataServices {
   Write-Output "Completed at: $(Get-Date)"
 }
 
+function Set-SAPDataServicesServiceControl {
+  $ServiceNames = @(
+    "SAP Data Services*"
+  )
+
+  foreach ($Service in $ServiceNames) {
+    $ServiceName = (Get-Service | Where-Object { $_.DisplayName -like $Service }).Name
+
+    if ($ServiceName) {
+      Write-Output "Setting $ServiceName to Automatic (Delayed Start)"
+      sc.exe config $ServiceName start=delayed-auto
+    } else {
+      Write-Error "Could not find service matching $Service"
+    }
+  }
+}
+
 Export-ModuleMember -Function Get-SAPInstaller
 Export-ModuleMember -Function Open-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
+Export-ModuleMember -Function Add-SAPDirectories
 Export-ModuleMember -Function Set-SAPEnvironmentVars
 Export-ModuleMember -Function Install-SAPIPS
+Export-ModuleMember -Function Set-SAPIPSServiceControl
 Export-ModuleMember -Function Install-SAPDataServices
+Export-ModuleMember -Function Set-SAPDataServicesServiceControl

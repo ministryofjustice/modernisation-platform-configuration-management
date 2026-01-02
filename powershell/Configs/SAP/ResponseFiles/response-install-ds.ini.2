@@ -9,11 +9,11 @@ dscmsenablessl=0
 ### #property.CMSServerPort.description#
 dscmsport=6400
 ### #property.CMSServerName.description#
-dscmssystem=NDMIS-DEV-DFI-1:6400
+dscmssystem={CmsPrimaryHostname}:6400
 ### #property.CMSUser.description#
 dscmsuser=Administrator
 ### #property.DSCommonDir.description#
-dscommondir={DSCommonDir}
+dscommondir={DSCommonDir}\
 ### #property.DSConfigCMSSelection.description#
 dsconfigcmsselection=install
 ### #property.DSConfigMergeSelection.description#
@@ -23,19 +23,19 @@ dsexistingdsconfigfile=
 ### #property.DSInstallTypeSelection.description#
 dsinstalltypeselection=Custom
 ### #property.DSLocalCMS.description#
-dslocalcms=true
+dslocalcms=false
 ### #property.DSLoginInfoAccountSelection.description#
 dslogininfoaccountselection=this
 ### #property.DSLoginInfoThisUser.description#
-dslogininfothisuser=delius-mis-dev\SVC_DIS_NDL
+dslogininfothisuser={ServiceUser}
 ### #property.DSLoginInfoThisPassword.description#
 ### Service user password (passed as command line parameter)
 ### Installation folder for SAP products
-installdir={InstallDir}
+installdir={InstallDir}\
 ### #property.IsCommonDirChanged.description#
 iscommondirchanged=1
 ### #property.MasterCmsName.description#
-mastercmsname=NDMIS-DEV-DFI-1
+mastercmsname={CmsPrimaryHostname}
 ### #property.MasterCmsPort.description#
 mastercmsport=6400
 ### Keycode for the product.
