@@ -52,6 +52,7 @@ oracle_template_file_config:
 
 db_config: "{{ db_configs[weblogic_db_name] }}"
 weblogic_admin_username: weblogic
+weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 weblogic_db_username: oms_owner
 weblogic_domain_template_filename: none  # override in group vars once template has been created
 
