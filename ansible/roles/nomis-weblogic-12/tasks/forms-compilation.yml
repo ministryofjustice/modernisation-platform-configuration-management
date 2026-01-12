@@ -1,7 +1,7 @@
 ---
 - name: Run script to compile all forms
   ansible.builtin.command:
-    cmd: bash /u01/tag/utils/scripts/all_forms_helper.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} t={{ tnsnames_qa11g_service_name }}
+    cmd: bash /u01/tag/utils/scripts/compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} t={{ tnsnames_qa11g_service_name }}
 
 - name: Find and remove log/txt files
   ansible.builtin.find:
