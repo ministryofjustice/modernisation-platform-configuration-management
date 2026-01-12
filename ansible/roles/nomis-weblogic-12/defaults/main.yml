@@ -50,6 +50,7 @@ oracle_template_file_config:
   - src: 12/u01/tag/utils/scripts/compile_all_forms.sh
     dest: /u01/tag/utils/scripts/compile_all_forms.sh
 
+db_config: "{{ db_configs[weblogic_db_name] }}"
 weblogic_admin_username: weblogic
 weblogic_db_username: oms_owner
 weblogic_domain_template_filename: none  # override in group vars once template has been created
