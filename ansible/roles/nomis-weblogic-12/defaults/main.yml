@@ -69,6 +69,11 @@ weblogic_admin_password_secret:
     value: auto
 
 weblogic_secretsmanager_passwords:
+  db:
+    secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    users:
+      - tagsar:
+      - oms_owner:
   db_repo:
     secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
     users:
