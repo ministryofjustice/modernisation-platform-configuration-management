@@ -1,0 +1,29 @@
+---
+- name: Run script to compile all forms
+  become_user: oracle
+  ansible.builtin.shell: |
+    source ~/.bash_profile
+    cd /u01/tag/FormsSources/
+    set -o pipefail
+    bash compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} t={{ tnsnames_qa11g_service_name }} | tee /tmp/forms_compilation.log
+  args:
+    executable: /bin/bash
+
+- name: Find and remove log/txt files
+  ansible.builtin.find:
+    paths: "{{ forms_compilation_filepath }}"
+    patterns: "*.log,*.txt"
+    recurse: no
+  register: forms_sources_files_to_remove
+
+- name: Remove log/txt files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ forms_sources_files_to_remove.files }}"
+  when: forms_sources_files_to_remove.matched > 0
+
+- name: Remove forms compilation log file
+  ansible.builtin.file:
+    path: /tmp/forms_compilation.log
+    state: absent

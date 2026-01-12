@@ -83,12 +83,12 @@
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
           server_name: TM-1718
 
-    - import_tasks: forms-compilation-cleanup.yml
+    - import_tasks: forms-compilation.yml
       vars:
         forms_compilation_filepath: /u01/tag/FormsSources
       tags:
         - ec2provision
-        - weblogic_forms_compilation_cleanup
+        - weblogic_forms_compilation
 
     - name: Render the template web app container config
       set_fact:

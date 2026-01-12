@@ -47,8 +47,13 @@ oracle_template_file_config:
     dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/tnsnames.ora
   - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/tnsnames.ora
     dest: /u01/app/oracle/Middleware/network/admin/tnsnames.ora
+  - src: 12/u01/tag/utils/scripts/compile_all_forms.sh
+    dest: /u01/tag/utils/scripts/compile_all_forms.sh
 
+db_config: "{{ db_configs[weblogic_db_name] }}"
 weblogic_admin_username: weblogic
+weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+weblogic_db_username: oms_owner
 weblogic_domain_template_filename: none  # override in group vars once template has been created
 
 # Set these in appropriate group vars:
@@ -66,6 +71,11 @@ weblogic_admin_password_secret:
     value: auto
 
 weblogic_secretsmanager_passwords:
+  db:
+    secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    users:
+      - tagsar:
+      - oms_owner:
   db_repo:
     secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
     users:
