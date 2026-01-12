@@ -3,7 +3,8 @@
   become_user: oracle
   ansible.builtin.shell: |
     source ~/.bash_profile
-    bash /u01/tag/utils/scripts/compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} t={{ tnsnames_qa11g_service_name }}
+    set -o pipefail
+    bash /u01/tag/utils/scripts/compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} t={{ tnsnames_qa11g_service_name }} | tee /tmp/forms_compilation.log
   args:
     chdir: /u01/tag/FormsSources/
     executable: /bin/bash
@@ -21,3 +22,8 @@
     state: absent
   loop: "{{ forms_sources_files_to_remove.files }}"
   when: forms_sources_files_to_remove.matched > 0
+
+- name: Remove forms compilation log file
+  ansible.builtin.file:
+    path: /tmp/forms_compilation.log
+    state: absent
