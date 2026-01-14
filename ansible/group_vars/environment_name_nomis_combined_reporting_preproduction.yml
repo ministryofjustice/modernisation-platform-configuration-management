@@ -6,7 +6,6 @@ dns_zone_internal: nomis-combined-reporting.hmpps-preproduction.modernisation-pl
 dns_search_domains:
   - hmpps-oem.hmpps-preproduction.modernisation-platform.internal
   - azure.hmpp.root
-  - lsast.reporting.nomis.service.justice.gov.uk
   - preproduction.reporting.nomis.service.justice.gov.uk
 ncr_environment: "{{ ec2.tags['nomis-combined-reporting-environment'] }}"
 sap_environment: "{{ ncr_environment }}"
@@ -81,9 +80,6 @@ audit_service_name: BIAUD_TAF
 system_service_name: BISYS_TAF
 
 sap_bip_oracle_client_confs:
-  ls:
-    sqlnet_ora_source_filename: sqlnet.ora
-    tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.ls
   pp:
     sqlnet_ora_source_filename: sqlnet.ora
     tnsnames_ora_source_filename: tnsnames.ora.ncr-bip.pp
@@ -91,11 +87,6 @@ sap_bip_oracle_client_confs:
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[ncr_environment] }}"
 
 sap_bip_db_confs:
-  ls:
-    auditing_db_server: LSBIAUD
-    auditing_db_user: bip_audit_owner # lowercase to match secret name
-    cms_db_server: LSBISYS
-    cms_db_user: bip_system_owner # lowercase to match secret name
   pp:
     auditing_db_server: PPBIAUD
     auditing_db_user: bip_audit_owner # lowercase to match secret name
@@ -109,21 +100,6 @@ sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
-  ls:
-    sap_bip_rar_base: "BIPLATS4304P_500-70002683"
-    sap_bip_rws_url: "https://lsast.reporting.nomis.service.justice.gov.uk/biprws"
-    web:
-      sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
-      sap_web_disable_cmcapp: "false"
-      sap_web_apps:
-        - AdminTools
-        - BOE
-        - BusinessProcessBI
-        - bipodata
-        - biprws
-        - clientapi
-        - dswsbobje
-        - webi-websetup
   pp:
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/biprws"
@@ -185,9 +161,6 @@ sap_web_conf: "{{ sap_bip_conf.web }}"
 sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
 
 ncr_bip_confs:
-  ls:
-    ncr_bip_sso_url: "https://lsast.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
-    ncr_bip_provisioning_database_hostname: "lsnomis.preproduction.nomis.service.justice.gov.uk"
   pp:
     ncr_bip_sso_url: "https://preproduction.reporting.nomis.service.justice.gov.uk/BrowserCheck.jsp?t="
     ncr_bip_provisioning_database_hostname: "ppnomis.preproduction.nomis.service.justice.gov.uk"
