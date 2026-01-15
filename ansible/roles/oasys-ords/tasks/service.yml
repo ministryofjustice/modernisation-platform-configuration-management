@@ -12,12 +12,8 @@
 
 - name: systemd unit file for tomcat
   template:
-    src: "{{ item }}.j2"
-    dest: "/etc/systemd/system/{{ item }}"
-  loop:
-    - tomcat.service
-    - tomcat-daily-restart.service
-    - tomcat-daily-restart.timer
+    src: tomcat.service.j2
+    dest: /etc/systemd/system/tomcat.service
 
 - name: enable tomcat
   systemd:
@@ -30,7 +26,10 @@
     name: "tomcat"
     state: "started"
 
-- name: enable tomcat daily restart
-  systemd:
-    name: tomcat-daily-restart.timer
-    enabled: yes
+- name: add daily tomcat restart
+  ansible.builtin.cron:
+    name: "daily_tomcat_restart"
+    minute: "0"
+    hour: "{{ oasys_ords_restart_hour }}"
+    user: root
+    job: "/usr/bin/systemctl restart tomcat.service"
