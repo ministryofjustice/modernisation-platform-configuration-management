@@ -25,3 +25,12 @@
   systemd:
     name: "tomcat"
     state: "started"
+
+- name: add tomcat restart
+  ansible.builtin.cron:
+    name: "tomcat_restart"
+    minute: "{{ 60 | random(seed=ansible_default_ipv4.address) }}"
+    hour: "04"
+    day: "17"
+    user: root
+    job: "/usr/bin/systemctl restart tomcat.service"
