@@ -26,9 +26,9 @@
     name: "tomcat"
     state: "started"
 
-- name: add daily tomcat restart
+- name: add tomcat restart
   ansible.builtin.cron:
-    name: "daily_tomcat_restart"
+    name: "tomcat_restart"
     minute: "{{ 60 | random(seed=ansible_default_ipv4.address) }}"
     hour: "{{ oasys_ords_restart_hour }}"
     day: "{{ oasys_ords_restart_day }}"
