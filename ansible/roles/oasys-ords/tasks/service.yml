@@ -30,7 +30,7 @@
   ansible.builtin.cron:
     name: "tomcat_restart"
     minute: "{{ 60 | random(seed=ansible_default_ipv4.address) }}"
-    hour: "{{ oasys_ords_restart_hour }}"
-    day: "{{ oasys_ords_restart_day }}"
+    hour: "04"
+    day: "17"
     user: root
     job: "/usr/bin/systemctl restart tomcat.service"
