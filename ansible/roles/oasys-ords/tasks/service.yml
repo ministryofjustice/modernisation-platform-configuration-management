@@ -33,4 +33,4 @@
     hour: "{{ oasys_ords_restart_hour }}"
     day: "{{ oasys_ords_restart_day }}"
     user: root
-    job: "/usr/bin/systemctl restart tomcat.service 2>&1 | logger -p local3.info -t tomcat-restart"
+    job: "/usr/bin/systemctl restart tomcat.service 2>&1 | /usr/bin/logger -p local3.info -t tomcat-restart"
