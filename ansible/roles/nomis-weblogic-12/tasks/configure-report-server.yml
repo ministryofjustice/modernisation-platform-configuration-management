@@ -1,0 +1,69 @@
+---
+- name: Configure report server name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^REPORT_SERVER_NAME=.*'
+    line: "REPORT_SERVER_NAME={{ server_name }}"
+    state: present
+
+- name: Template the createReportsServerInstance script
+  ansible.builtin.template:
+    src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
+    dest: /home/oracle/admin/scripts/createReportsServerInstance.sh
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+
+- name: Create the initial report server
+  become_user: oracle
+  command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
+
+- name: Set reports server configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: oracle
+    group: oinstall
+    mode: '0640'
+  loop: "{{ report_server_configuration_filenames }}"
+
+- name: Update sourceDir line in rwservlet.conf file
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^(\s*)<!--property name="sourceDir" value=".*"/-->'
+    line: '\1<!--property name="sourceDir" value="u01/tag/reports"/-->'
+    backrefs: yes
+  loop: "{{ rwserver_conf_filenames }}"
+
+- name: Update tempDir line in rwservlet.conf file
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^(\s*)<!--property name="tempDir" value=".*"/-->'
+    line: '\1<!--property name="tempDir" value="u01/tag/tmp"/-->'
+    backrefs: yes
+  loop: "{{ rwserver_conf_filenames }}"
+
+- name: Check jobtype for rwEng in rwserver.conf
+  ansible.builtin.lineinfile:
+    path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwserver.conf
+    regexp: '^(\s*)<job engineId="rwEng" jobType=".*'
+    line: '\1<job engineId="rwEng" jobType="report"/>'
+    backrefs: yes
+  check_mode: yes
+  register: rweng_check
+
+- name: Backup and amend rwEng in rwserver.conf
+  block:
+    - name: Create a backup of rwserver.conf
+      ansible.builtin.copy:
+        src: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwserver.conf
+        dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/{{ ansible_date_time.iso8601 }}_rwserver.conf
+        remote_src: yes
+
+    - name: Modify rwserver.conf
+      ansible.builtin.lineinfile:
+        path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwserver.conf
+        regexp: '^(\s*)<job engineId="rwEng" jobType=".*'
+        line: '\1<job engineId="rwEng" jobType="report"/>'
+        backrefs: yes
+  when: rweng_check.changed

@@ -78,11 +78,6 @@
         - ec2provision
         - weblogic_copy_file_to_location
 
-    - import_tasks: configure-report-server-name.yml
-      vars:
-        - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
-          server_name: TM-1718
-
     - import_tasks: forms-compilation.yml
       vars:
         forms_compilation_filepath: /u01/tag/FormsSources
@@ -111,5 +106,27 @@
       tags:
         - ec2provision
         - weblogic_enable_services
+
+    - import_tasks: configure-report-server.yml
+      vars:
+        - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
+          machine_name: AdminServerMachine
+          server_name: RptSvr_TM-1718_forms
+          tools_instance_name: RptTools_TM-1718_forms
+          rwserver_conf_filenames:
+            - /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwserver.conf
+            - /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwserver.conf
+          report_server_configuration_filenames:
+            - src: 12/u01/reports_server_configuration/rwservlet.properties
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwservlet.properties
+            - src: 12/u01/reports_server_configuration/rwservlet.properties
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
+            - src: 12/u01/reports_server_configuration/reports_ohs.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ohs1/moduleconf/reports_ohs.conf
+            - src: 12/u01/reports_server_configuration/reports_ohs.conf
+              dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/reports_ohs.conf
+      tags:
+        - ec2provision
+        - weblogic_configure_reports_server
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
