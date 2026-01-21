@@ -371,7 +371,7 @@ function Get-ModPlatformSAPConfig {
           SysDbUser      = 'ipscms'
           AudDbName      = 'STGDXB'
           AudDbUser      = 'ipsaud'
-          SiaNameBase    = 'NDLMODDIS10'
+          SiaNameBase    = 'NDLMODDIS40'
           ServiceUser    = 'delius-mis-stag\SVC_DIS_NDL'
           DomainNameFQDN = 'delius-mis-stage.internal'
         }
@@ -408,6 +408,136 @@ function Get-ModPlatformSAPConfig {
           }
           CmsPrimaryHostname = @{
             SecretName = 'delius-mis-stage-sap-dis-config'
+            Key        = 'cms_primary_hostname'
+          }
+        }
+      }
+      'delius-mis-preprod-dis' = @{
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'D:\BusinessObjects'
+          DSCommonDir    = 'D:\DSCommon'
+          LinkDir        = 'D:\BusinessObjects\Data Services'
+          SysDbName      = 'PREDXB'
+          SysDbUser      = 'ipscms'
+          AudDbName      = 'PREDXB'
+          AudDbUser      = 'ipsaud'
+          SiaNameBase    = 'NDLMODDIS50'
+          ServiceUser    = 'delius-mis-prep\SVC_DIS_NDL'
+          DomainNameFQDN = 'delius-mis-preprod.internal'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-preprod-sap-dis-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-preprod-sap-dis-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-preprod-sap-dis-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+            Key        = 'ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-preprod-sap-dis-passwords'
+            Key        = 'Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-preprod-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
+          }
+          CmsPrimaryHostname = @{
+            SecretName = 'delius-mis-preprod-sap-dis-config'
+            Key        = 'cms_primary_hostname'
+          }
+        }
+      }
+    }
+    'delius-mis-production' = @{
+      'delius-mis-prod-dis' = @{
+        InstallPackages = @{
+          Ips = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'IPS4304P_900-70002778.EXE'
+            ExtractDir   = 'IPS4304P_900-70002778'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+          DataServices  = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/mis'
+            S3File       = 'DS4303P_4-80007397.EXE'
+            ExtractDir   = 'DS4303P_4-80007397'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'D:\BusinessObjects'
+          DSCommonDir    = 'D:\DSCommon'
+          LinkDir        = 'D:\BusinessObjects\Data Services'
+          SysDbName      = 'PRDDXB'
+          SysDbUser      = 'ipscms'
+          AudDbName      = 'PRDDXB'
+          AudDbUser      = 'ipsaud'
+          SiaNameBase    = 'NDLMODDIS00'
+          ServiceUser    = 'delius-mis-prod\SVC_DIS_NDL'
+          DomainNameFQDN = 'delius-mis-prod.internal'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-prod-sap-dis-config'
+            Key        = 'cluster_key'
+          }
+          IpsProductKey = @{
+            SecretName = 'delius-mis-prod-sap-dis-config'
+            Key        = 'ips_product_key'
+          }
+          DataServicesProductKey = @{
+            SecretName = 'delius-mis-prod-sap-dis-config'
+            Key        = 'data_services_product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-prod-oracle-dsd-db-application-passwords'
+            Key        = 'ipscms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-prod-oracle-dsd-db-application-passwords'
+            Key        = 'ipsaud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-prod-sap-dis-passwords'
+            Key        = 'Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-prod-sap-dis-passwords'
+            Key        = 'SVC_DIS_NDL'
+          }
+          CmsPrimaryHostname = @{
+            SecretName = 'delius-mis-prod-sap-dis-config'
             Key        = 'cms_primary_hostname'
           }
         }
