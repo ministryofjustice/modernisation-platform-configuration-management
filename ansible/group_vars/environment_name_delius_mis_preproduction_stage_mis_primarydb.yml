@@ -80,3 +80,30 @@ disks_partition:
     oracle_group: flash
     oracle_label: FLASH04
 source_db: "STGMIS"
+all_oem_metrics:
+   host:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme7n1 ;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 1
+        START_RECORD 2
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme7n1p1 ;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 2
+        START_RECORD 3
+        metric , ME$IOWAIT
+        column , IOWAIT
+        warning_threshold , 50
+        critical_threshold , 70
+        occurences , 12
+        END_RECORD 3
