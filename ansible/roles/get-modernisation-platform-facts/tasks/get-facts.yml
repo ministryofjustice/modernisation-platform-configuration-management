@@ -8,3 +8,5 @@
 - name: Get account_ids JSON
   set_fact:
     account_ids: "{{ lookup('aws_ssm', 'account_ids', region='eu-west-2') }}"
+  tags:
+     - get-account-ids-json
