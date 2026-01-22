@@ -27,3 +27,49 @@
   ansible.builtin.file:
     path: /tmp/forms_compilation.log
     state: absent
+
+- name: Set timestamp
+  set_fact:
+    timestamp: "{{ ansible_date_time.iso8601_basic }}"
+
+- name: Rename existing directories with timestamp
+  command: mv /u01/tag/{{ item }} /u01/tag/{{ timestamp }}_{{ item }}
+  args:
+    removes: "/u01/tag/{{ item }}"
+  loop:
+    - FormsObjects
+    - forms
+
+- name: Re-create FormsObjects/forms directories
+  file:
+    path: "/u01/tag/{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  loop:
+    - FormsObjects
+    - forms
+
+- name: Move compiled form files to FormsObjects
+  shell: mv /u01/tag/FormsSources/*.{mmx,plx,fmx} /u01/tag/FormsObjects/
+  args:
+    warn: false
+  failed_when: false
+
+- name: Ensure ownership of moved form files
+  file:
+    path: /u01/tag/FormsObjects
+    owner: oracle
+    group: oinstall
+    recurse: true
+
+- name: Optionally copy FormsObjects files to forms
+  copy:
+    src: /u01/tag/FormsObjects/
+    dest: /u01/tag/forms/
+    owner: oracle
+    group: oinstall
+    mode: preserve
+    remote_src: true
+  when: copy_forms_objects | default(true) | bool
