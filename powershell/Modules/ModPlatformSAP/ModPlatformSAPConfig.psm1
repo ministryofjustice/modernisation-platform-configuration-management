@@ -17,6 +17,74 @@ function Get-ModPlatformSAPConfig {
   )
 
   $ModPlatformSAPConfigsByEnvironment = @{
+    'hmpps-domain-services-development' = @{
+      'dev-jump2022-1' = @{
+        InstallPackages = @{
+          Client = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/ncr-packages'
+            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
+            ExtractDir   = 'BIP43'
+            WorkingDir   = 'C:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'
+        }
+        Secrets = @{}
+      }
+    }
+    'hmpps-domain-services-test' = @{
+      't1-jump2022-1' = @{
+        InstallPackages = @{
+          Client = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/ncr-packages'
+            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
+            ExtractDir   = 'BIP43'
+            WorkingDir   = 'C:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'
+        }
+        Secrets = @{}
+      }
+    }
+    'hmpps-domain-services-preproduction' = @{
+      'pp-jump2022-1' = @{
+        InstallPackages = @{
+          Client = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/ncr-packages'
+            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
+            ExtractDir   = 'BIP43'
+            WorkingDir   = 'C:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'
+        }
+        Secrets = @{}
+      }
+    }
+    'hmpps-domain-services-production' = @{
+      'pd-jump2022-1' = @{
+        InstallPackages = @{
+          Client = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/ncr-packages'
+            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
+            ExtractDir   = 'BIP43'
+            WorkingDir   = 'C:\Software'             # Download installer here
+          }
+        }
+        Variables = @{
+          InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'
+        }
+        Secrets = @{}
+      }
+    }
     'oasys-national-reporting-test' = @{
       't2-onr-bods' = @{
         InstallPackages = @{
