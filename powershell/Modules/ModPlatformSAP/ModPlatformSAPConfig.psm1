@@ -232,6 +232,13 @@ function Get-ModPlatformSAPConfig {
             ExtractDir   = 'DS4303P_4-80007397'
             WorkingDir   = 'D:\Software'             # Download installer here
           }
+          Client = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/ncr-packages'
+            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
+            ExtractDir   = 'BIPLATCLNT4304P_500-70005711'
+            WorkingDir   = 'D:\Software'             # Download installer here
+          }
         }
         Variables = @{
           InstallDir     = 'D:\BusinessObjects'
