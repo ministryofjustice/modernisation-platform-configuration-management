@@ -27,19 +27,19 @@
     mode: '0640'
   loop: "{{ report_server_configuration_filenames }}"
 
-- name: Update sourceDir line in rwservlet.conf file
+- name: Update sourceDir line in rwserver.conf file
   ansible.builtin.lineinfile:
     path: "{{ item }}"
     regexp: '^(\s*)<!--property name="sourceDir" value=".*"/-->'
-    line: '\1<!--property name="sourceDir" value="u01/tag/reports"/-->'
+    line: '\1<property name="sourceDir" value="u01/tag/reports"/>'
     backrefs: yes
   loop: "{{ rwserver_conf_filenames }}"
 
-- name: Update tempDir line in rwservlet.conf file
+- name: Update tempDir line in rwserver.conf file
   ansible.builtin.lineinfile:
     path: "{{ item }}"
     regexp: '^(\s*)<!--property name="tempDir" value=".*"/-->'
-    line: '\1<!--property name="tempDir" value="u01/tag/tmp"/-->'
+    line: '\1<property name="tempDir" value="u01/tag/tmp"/>'
     backrefs: yes
   loop: "{{ rwserver_conf_filenames }}"
 
