@@ -21,10 +21,11 @@ $Scripts = @(
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
     "../Mozilla/Install-Firefox.ps1",
     "../LibreOffice/Install-LibreOffice.ps1",
-    "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
+    "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1",
     "../Oracle/Install-Oracle19cClient.ps1",
     "../Oracle/Set-TnsOraFile.ps1",
-    "../SAP/Install-BIPWindowsClient43.ps1"
+    "../ModPlatformSAP/Install-SAPClient.ps1",
+    "../ModPlatformSAP/Install-SAPClientAsAdministrator.ps1"
 )
 
 $ErrorActionPreference = "Stop"
