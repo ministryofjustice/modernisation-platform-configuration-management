@@ -4,6 +4,7 @@ $Scripts = @(
     "../Common/Set-TimezoneGMT.ps1",
     "../Common/Install-Putty.ps1",
     "../Common/Install-WinSCP.ps1",
+    "../Common/Install-WinRAR.ps1",
     "../Common/Get-PGPInstaller.ps1",
     "../ModPlatformAD/Join-ModPlatformAD.ps1",
     "../ModPlatformAD/Move-ModPlatformADComputer.ps1",
@@ -21,10 +22,11 @@ $Scripts = @(
     "../Microsoft/Remove-StartMenuShutdownOption.ps1",
     "../Mozilla/Install-Firefox.ps1",
     "../LibreOffice/Install-LibreOffice.ps1",
-    "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1"
+    "../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1",
     "../Oracle/Install-Oracle19cClient.ps1",
     "../Oracle/Set-TnsOraFile.ps1",
-    "../SAP/Install-BIPWindowsClient43.ps1"
+    "../ModPlatformSAP/Install-SAPClient.ps1",
+    "../ModPlatformSAP/Install-SAPClientAsAdministrator.ps1"
 )
 
 $ErrorActionPreference = "Stop"
