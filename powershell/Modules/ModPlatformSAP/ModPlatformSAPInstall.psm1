@@ -61,7 +61,7 @@ function Open-SAPInstaller {
     if ($InstallPackage.ContainsKey('S3Files')) {
       $AllFiles = @()
       $AllFiles += $File
-      foreach ($S3File in $S3Files) {
+      foreach ($S3File in $InstallPackage.S3Files) {
         $AllFiles += (Join-Path $InstallPackage.WorkingDir -ChildPath $S3File)
       }
       Write-Output ("copy /b " + $AllFiles + " $File.joined")
