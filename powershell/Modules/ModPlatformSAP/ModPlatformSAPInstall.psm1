@@ -65,7 +65,7 @@ function Open-SAPInstaller {
         $AllFiles += (Join-Path $InstallPackage.WorkingDir -ChildPath $S3File)
       }
       Write-Output ("copy /b " + $AllFiles + " $File.joined")
-      copy /b @AllFiles "$File.joined"
+      cmd.exe /c copy /b @AllFiles "$File.joined"
       Write-Output "Extracting multi-part ZIP archive to $ExtractPath"
       Expand-Archive "$File.joined" -DestinationPath $ExtractPath
     } else {
