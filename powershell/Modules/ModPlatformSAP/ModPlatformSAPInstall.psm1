@@ -58,8 +58,13 @@ function Open-SAPInstaller {
   }
 
   if ($File -match '\.ZIP$') {
-    Write-Output "Extracting ZIP archive to $ExtractPath"
-    Expand-Archive $File -DestinationPath $ExtractPath
+    if ($InstallPackage.ContainsKey('S3Files')) {
+      Write-Output "Extracting multi-part ZIP archive to $ExtractPath"
+      unrar x -r -y -idq "$File" "$ExtractPath"
+    } else {
+      Write-Output "Extracting ZIP archive to $ExtractPath"
+      Expand-Archive $File -DestinationPath $ExtractPath
+    }
   } else {
     if (Get-Command unrar -ErrorAction SilentlyContinue) {
       Write-Output "Extracting EXE archive to $ExtractPath"
