@@ -59,12 +59,11 @@ function Open-SAPInstaller {
 
   if ($File -match '\.ZIP$') {
     if ($InstallPackage.ContainsKey('S3Files')) {
-      @AllFiles = ()
+      $AllFiles = @()
       $AllFiles += $File
       foreach ($S3File in $S3Files) {
-        $AllFiles += (Join-Path $InstallPackage.WorkingDir -ChildPath ackage.S3Path) + '/' + $S3File)
+        $AllFiles += (Join-Path $InstallPackage.WorkingDir -ChildPath $S3File)
       }
-      $File = Join-Path $InstallPackage.WorkingDir -ChildPath $S3File
       Write-Output ("copy /b " + @AllFiles + " $File.joined")
       copy /b @AllFiles "$File.joined"
       Write-Output "Extracting multi-part ZIP archive to $ExtractPath"
