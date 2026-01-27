@@ -59,15 +59,11 @@ function Open-SAPInstaller {
 
   if ($File -match '\.ZIP$') {
     if ($InstallPackage.ContainsKey('S3Files')) {
-      $AllFiles = @()
-      $AllFiles += $File
-      foreach ($S3File in $InstallPackage.S3Files) {
-        $AllFiles += (Join-Path $InstallPackage.WorkingDir -ChildPath $S3File)
-      }
-      Write-Output ("copy /b " + $AllFiles + " $File.joined")
-      cmd.exe /c copy /b @AllFiles "$File.joined"
+      $JoinedFile = Join-Path $InstallPackage.WorkingDir -ChildPath ("Joined" + $InstallPackage.S3File)
+      Write-Output ("copy /b " + $File.replace('.zip$','.*')  + " $JoinedFile")
+      cmd.exe /c copy /b $File.replace('.zip$','.*') $JoinedFile
       Write-Output "Extracting multi-part ZIP archive to $ExtractPath"
-      Expand-Archive "$File.joined" -DestinationPath $ExtractPath
+      Expand-Archive $JoinedFile -DestinationPath $ExtractPath
     } else {
       Write-Output "Extracting ZIP archive to $ExtractPath"
       Expand-Archive $File -DestinationPath $ExtractPath
