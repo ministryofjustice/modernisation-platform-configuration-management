@@ -44,6 +44,14 @@ function Get-ModPlatformSAPConfig {
             ExtractDir   = 'BIP43'
             WorkingDir   = 'C:\Software'             # Download installer here
           }
+          FlexiLogReader = @{
+            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path       = 'hmpps/sap/FlexiLogReader'
+            S3File       = 'FlexiLogReader64.zip'
+            S3Files      = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
+            ExtractDir   = 'FlexiLogReader64'
+            WorkingDir   = 'C:\Software'             # Download installer here
+          }
         }
         Variables = @{
           InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'

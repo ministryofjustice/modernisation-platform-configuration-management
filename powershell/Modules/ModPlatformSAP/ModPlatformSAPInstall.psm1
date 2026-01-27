@@ -17,6 +17,21 @@ function Get-SAPInstaller {
     Write-Output ("Downloading " + $InstallPackage.S3BucketName + '/' + $Key + " to " + $File)
     Read-S3Object -BucketName $InstallPackage.S3BucketName -Key $Key -File $File | Out-Null
   }
+
+  if ($InstallPackage.ContainsKey('S3Files')) {
+    $S3Files = $InstallPackage.S3Files
+    foreach ($S3File in $S3Files) {
+      $Key  = ($InstallPackage.S3Path) + '/' + $S3File
+      $File = Join-Path $InstallPackage.WorkingDir -ChildPath $S3File
+
+      if (Test-Path $File) {
+        Write-Debug ($S3File + ": Already downloaded")
+      } else {
+        Write-Output ("Downloading " + $InstallPackage.S3BucketName + '/' + $Key + " to " + $File)
+        Read-S3Object -BucketName $InstallPackage.S3BucketName -Key $Key -File $File | Out-Null
+      }
+    }
+  }
 }
 
 function Open-SAPInstaller {
