@@ -63,7 +63,7 @@ function Open-SAPInstaller {
       $Wildcard = $File -ireplace('.zip$','.*')
       Write-Output ("copy /b " + $Wildcard  + " $JoinedFile")
       cmd.exe /c copy /b $Wildcard $JoinedFile
-      Write-Output "Extracting multi-part ZIP archive to $ExtractPath"
+      Write-Output "Extracting multi-part ZIP archive $JoinedFile to $ExtractPath"
       Expand-Archive $JoinedFile -DestinationPath $ExtractPath
     } else {
       Write-Output "Extracting ZIP archive to $ExtractPath"
