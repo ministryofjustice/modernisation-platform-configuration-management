@@ -6,13 +6,6 @@
     line: "REPORT_SERVER_NAME={{ server_name }}"
     state: present
 
-- name: Configure report tools name
-  ansible.builtin.lineinfile:
-    path: "{{ filename }}"
-    regexp: '^COMPONENT_CONFIG_PATH=.*'
-    line: "COMPONENT_CONFIG_PATH={{ tools_instance_name }}"
-    state: present
-
 - name: Template the createReportsServerInstance script
   ansible.builtin.template:
     src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
@@ -25,8 +18,28 @@
   become_user: oracle
   command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
 
+- name: Start report server
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
+
+- name: Stop report server
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
+
+- name: Configure report tools name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^COMPONENT_CONFIG_PATH=.*'
+    line: "COMPONENT_CONFIG_PATH={{ tools_instance_name }}"
+    state: present
+
 # TODO: Add step for JaznSec removal (rwserver.conf) - may already be factored in at the end of this document?
-# TODO: DO WE NEED START/STOP HERE? Definitely needs start at the end
 
 - name: Set reports server configuration files
   ansible.builtin.template:
@@ -77,3 +90,10 @@
         line: '\1<job engineId="rwEng" jobType="report"/>'
         backrefs: yes
   when: rweng_check.changed
+
+- name: Start report server after config updates
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
