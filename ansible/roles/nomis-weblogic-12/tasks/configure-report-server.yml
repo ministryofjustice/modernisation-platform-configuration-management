@@ -6,6 +6,13 @@
     line: "REPORT_SERVER_NAME={{ server_name }}"
     state: present
 
+- name: Configure report tools name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^COMPONENT_CONFIG_PATH=.*'
+    line: "COMPONENT_CONFIG_PATH={{ tools_instance_name }}"
+    state: present
+
 - name: Template the createReportsServerInstance script
   ansible.builtin.template:
     src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
@@ -14,11 +21,11 @@
     group: oinstall
     mode: '0755'
 
-#- name: Create the initial report server
-#  become_user: oracle
-#  command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
+- name: Create the initial report server
+  become_user: oracle
+  command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
 
-# TDOO: Review start/stop config (commenting for now)
+# TODO: Add step for JaznSec removal (rwserver.conf) - may already be factored in at the end of this document?
 
 - name: Set reports server configuration files
   ansible.builtin.template:
@@ -33,7 +40,7 @@
   ansible.builtin.lineinfile:
     path: "{{ item }}"
     regexp: '^(\s*)<!--property name="sourceDir" value=".*"/-->'
-    line: '\1<property name="sourceDir" value="u01/tag/reports"/>'
+    line: '\1<property name="sourceDir" value="/u01/tag/reports"/>'
     backrefs: yes
   loop: "{{ rwserver_conf_filenames }}"
 
@@ -41,7 +48,7 @@
   ansible.builtin.lineinfile:
     path: "{{ item }}"
     regexp: '^(\s*)<!--property name="tempDir" value=".*"/-->'
-    line: '\1<property name="tempDir" value="u01/tag/tmp"/>'
+    line: '\1<property name="tempDir" value="/u01/tag/tmp"/>'
     backrefs: yes
   loop: "{{ rwserver_conf_filenames }}"
 
