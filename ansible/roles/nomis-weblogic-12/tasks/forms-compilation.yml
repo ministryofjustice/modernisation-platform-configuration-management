@@ -29,7 +29,8 @@
     state: absent
 
 - name: Move files from Forms Sources to Forms
-  ansible.builtin.synchronize:
+  ansible.builtin.copy:
     src: /u01/tag/FormsSources/
     dest: /u01/tag/forms/
-    delete: no
+    remote_src: yes
+    force: yes
