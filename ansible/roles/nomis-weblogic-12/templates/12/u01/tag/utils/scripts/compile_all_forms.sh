@@ -1,3 +1,4 @@
+{% raw %}
 #!/usr/bin/env bash
 item=0
 forms_source_files=$(ls /u01/tag/FormsSources/*.fmb /u01/tag/FormsSources/*.pll 2>/dev/null)
@@ -70,3 +71,4 @@ mv /u01/tag/FormsSources/*.fmx /u01/tag/FormsObjects/
 mv /u01/tag/FormsSources/*.plx /u01/tag/FormsObjects/
 mv /u01/tag/FormsSources/*.mmx /u01/tag/FormsObjects/
 echo "Successfully compiled forms and moved *.fmx/*.plx items to /u01/tag/FormsObjects/"
+{% endraw %}
