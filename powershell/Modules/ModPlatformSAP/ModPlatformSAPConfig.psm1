@@ -21,11 +21,12 @@ function Get-ModPlatformSAPConfig {
       'dev-jump2022-1' = @{
         InstallPackages = @{
           Client = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/ncr-packages'
-            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
-            ExtractDir   = 'BIP43'
-            WorkingDir   = 'C:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/ncr-packages'
+            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software\BIP43'
+            SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
         }
         Variables = @{
@@ -38,19 +39,21 @@ function Get-ModPlatformSAPConfig {
       't1-jump2022-1' = @{
         InstallPackages = @{
           Client = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/ncr-packages'
-            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
-            ExtractDir   = 'BIP43'
-            WorkingDir   = 'C:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/ncr-packages'
+            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software\BIP43'
+            SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
           FlexiLogReader = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/sap/FlexiLogReader'
-            S3File       = 'FlexiLogReader64.zip'
-            S3Files      = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
-            ExtractDir   = ''
-            WorkingDir   = 'C:\Software'             # Download installer here
+            S3BucketNam e = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/sap/FlexiLogReader'
+            S3File        = 'FlexiLogReader64.zip'
+            S3Files       = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software'
+            SkipIfPresent = 'C:\Software\FlexiLogReader64\FlexiLogReader64.exe'
           }
         }
         Variables = @{
@@ -63,11 +66,12 @@ function Get-ModPlatformSAPConfig {
       'pp-jump2022-1' = @{
         InstallPackages = @{
           Client = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/ncr-packages'
-            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
-            ExtractDir   = 'BIP43'
-            WorkingDir   = 'C:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/ncr-packages'
+            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software\BIP43'
+            SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
         }
         Variables = @{
@@ -80,11 +84,12 @@ function Get-ModPlatformSAPConfig {
       'pd-jump2022-1' = @{
         InstallPackages = @{
           Client = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/ncr-packages'
-            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
-            ExtractDir   = 'BIP43'
-            WorkingDir   = 'C:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/ncr-packages'
+            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software\BIP43'
+            SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
         }
         Variables = @{
@@ -97,18 +102,20 @@ function Get-ModPlatformSAPConfig {
       't2-onr-bods' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/onr'
-            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
-            ExtractDir   = 'IPS_42_SP9_P0'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/onr'
+            S3File        = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\IPS_42_SP9_P0'
+            SkipIfPresent = 'E:\Software\IPS_42_SP9_P0\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
-            ExtractDir   = 'DS4214P_11-20011165'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\DS4214P_11-20011165'
+            SkipIfPresent = 'E:\Software\DS4214P_11-20011165\setup.exe'
           }
         }
         Variables = @{
@@ -163,18 +170,20 @@ function Get-ModPlatformSAPConfig {
       'pp-onr-bods' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/onr'
-            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
-            ExtractDir   = 'IPS_42_SP9_P0'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/onr'
+            S3File        = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\IPS_42_SP9_P0'
+            SkipIfPresent = 'E:\Software\IPS_42_SP9_P0\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
-            ExtractDir   = 'DS4214P_11-20011165'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\DS4214P_11-20011165'
+            SkipIfPresent = 'E:\Software\DS4214P_11-20011165\setup.exe'
           }
         }
         Variables = @{
@@ -229,18 +238,20 @@ function Get-ModPlatformSAPConfig {
       'pd-onr-bods' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/onr'
-            S3File       = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
-            ExtractDir   = 'IPS_42_SP9_P0'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/onr'
+            S3File        = '51054935.ZIP'            # Information Platform Services 4.2 SP9 Patch 0
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\IPS_42_SP9_P0'
+            SkipIfPresent = 'E:\Software\IPS_42_SP9_P0\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
-            ExtractDir   = 'DS4214P_11-20011165'
-            WorkingDir   = 'E:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4214P_11-20011165.EXE' # Data Services 4.2 SP14 Patch 11
+            WorkingDir    = 'E:\Software'             # Download installer here
+            ExtractDir    = 'E:\Software\DS4214P_11-20011165'
+            SkipIfPresent = 'E:\Software\DS4214P_11-20011165\setup.exe'
           }
         }
         Variables = @{
@@ -295,25 +306,28 @@ function Get-ModPlatformSAPConfig {
       'delius-mis-dev-dfi' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'IPS4304P_900-70002778.EXE'
-            ExtractDir   = 'IPS4304P_900-70002778'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'IPS4304P_900-70002778.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\IPS4304P_900-70002778'
+            SkipIfPresent = 'D:\Software\IPS4304P_900-70002778\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4303P_4-80007397.EXE'
-            ExtractDir   = 'DS4303P_4-80007397'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4303P_4-80007397.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\DS4303P_4-80007397'
+            SkipIfPresent = 'D:\Software\DS4303P_4-80007397\setup.exe'
           }
           Client = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/ncr-packages'
-            S3File       = 'BIPLATCLNT4304P_500-70005711.EXE'
-            ExtractDir   = 'BIPLATCLNT4304P_500-70005711'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/ncr-packages'
+            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\BIPLATCLNT4304P_500-70005711'
+            SkipIfPresent = 'D:\Software\BIPLATCLNT4304P_500-70005711\setup.exe'
           }
         }
         Variables = @{
@@ -366,18 +380,20 @@ function Get-ModPlatformSAPConfig {
       'delius-mis-dev-dis' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'IPS4304P_900-70002778.EXE'
-            ExtractDir   = 'IPS4304P_900-70002778'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'IPS4304P_900-70002778.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\IPS4304P_900-70002778'
+            SkipIfPresent = 'D:\Software\IPS4304P_900-70002778\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4303P_4-80007397.EXE'
-            ExtractDir   = 'DS4303P_4-80007397'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4303P_4-80007397.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\DS4303P_4-80007397'
+            SkipIfPresent = 'D:\Software\DS4303P_4-80007397\setup.exe'
           }
         }
         Variables = @{
@@ -432,18 +448,20 @@ function Get-ModPlatformSAPConfig {
       'delius-mis-stage-dis' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'IPS4304P_900-70002778.EXE'
-            ExtractDir   = 'IPS4304P_900-70002778'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'IPS4304P_900-70002778.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\IPS4304P_900-70002778'
+            SkipIfPresent = 'D:\Software\IPS4304P_900-70002778\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4303P_4-80007397.EXE'
-            ExtractDir   = 'DS4303P_4-80007397'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4303P_4-80007397.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\DS4303P_4-80007397'
+            SkipIfPresent = 'D:\Software\DS4303P_4-80007397\setup.exe'
           }
         }
         Variables = @{
@@ -498,18 +516,20 @@ function Get-ModPlatformSAPConfig {
       'delius-mis-preprod-dis' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'IPS4304P_900-70002778.EXE'
-            ExtractDir   = 'IPS4304P_900-70002778'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'IPS4304P_900-70002778.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\IPS4304P_900-70002778'
+            SkipIfPresent = 'D:\Software\IPS4304P_900-70002778\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4303P_4-80007397.EXE'
-            ExtractDir   = 'DS4303P_4-80007397'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4303P_4-80007397.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\DS4303P_4-80007397'
+            SkipIfPresent = 'D:\Software\DS4303P_4-80007397\setup.exe'
           }
         }
         Variables = @{
@@ -564,18 +584,20 @@ function Get-ModPlatformSAPConfig {
       'delius-mis-prod-dis' = @{
         InstallPackages = @{
           Ips = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'IPS4304P_900-70002778.EXE'
-            ExtractDir   = 'IPS4304P_900-70002778'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'IPS4304P_900-70002778.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\IPS4304P_900-70002778'
+            SkipIfPresent = 'D:\Software\IPS4304P_900-70002778\setup.exe'
           }
           DataServices  = @{
-            S3BucketName = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path       = 'hmpps/mis'
-            S3File       = 'DS4303P_4-80007397.EXE'
-            ExtractDir   = 'DS4303P_4-80007397'
-            WorkingDir   = 'D:\Software'             # Download installer here
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/mis'
+            S3File        = 'DS4303P_4-80007397.EXE'
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\DS4303P_4-80007397'
+            SkipIfPresent = 'D:\Software\DS4303P_4-80007397\setup.exe'
           }
         }
         Variables = @{

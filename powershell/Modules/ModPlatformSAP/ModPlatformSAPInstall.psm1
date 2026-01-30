@@ -34,41 +34,40 @@ function Get-SAPInstaller {
   }
 }
 
-function Open-SAPInstaller {
+function Expand-SAPInstaller {
   param (
     [Parameter(Mandatory)][hashtable]$InstallPackage
   )
+
+  if (Test-Path $InstallPackage.SkipIfPresent) {
+    Write-Output ("Skipping extract as " + $InstallPackage.SkipIfPresent + " already present")
+    return
+  }
 
   $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.S3File
 
   if (-not (Test-Path $File)) {
     Write-Error "Install file not found: $File"
   }
-  $ExtractPath = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
 
-  if (-not (Test-Path -PathType container $ExtractPath)) {
-    Write-Output ("Creating " + $ExtractPath)
-    New-Item -ItemType Directory -Path $ExtractPath | Out-Null
+  if (-not (Test-Path -PathType container $InstallPackage.ExtractDir)) {
+    Write-Output ("Creating " + $InstallPackage.ExtractDir)
+    New-Item -ItemType Directory -Path $InstallPackage.ExtractDir | Out-Null
   }
 
-  $SetupExe = Join-Path $ExtractPath -ChildPath "setup.exe"
-  if (Test-Path $SetupExe) {
-    Write-Output "Skipping extract as $SetupExe already present"
-    return
-  }
-
+  $SetupExe = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
   if ($File -match '\.ZIP$') {
     if ($InstallPackage.ContainsKey('S3Files')) {
-      Write-Output "Extracting Multi-part ZIP archive with 7z.exe x -y $File -o$ExtractPath"
-      7z.exe x -y "$File" -o"$ExtractPath"
+      Write-Output "Extracting Multi-part ZIP archive with 7z.exe x -y $File -o$InstallPackage.ExtractDir"
+      7z.exe x -y "$File" -o"$InstallPackage.ExtractDir"
     } else {
-      Write-Output "Extracting ZIP archive to $ExtractPath"
-      Expand-Archive $File -DestinationPath $ExtractPath
+      Write-Output "Extracting ZIP archive to $InstallPackage.ExtractDir"
+      Expand-Archive $File -DestinationPath $InstallPackage.ExtractDir
     }
   } else {
     if (Get-Command unrar -ErrorAction SilentlyContinue) {
-      Write-Output "Extracting EXE archive to $ExtractPath"
-      unrar x -r -y -idq "$File" "$ExtractPath"
+      Write-Output "Extracting EXE archive to $InstallPackage.ExtractDir"
+      unrar x -r -y -idq "$File" "$InstallPackage.ExtractDir"
     } else {
       Write-Error 'Cannot extract EXE archive as unrar not found'
     }
@@ -143,8 +142,7 @@ function Copy-SAPResponseFile {
   if (-not $SourceFile) {
     Write-Error "Cannot find response file in repo $ResponseFilename $EnvironmentNameTag $NameTag"
   }
-  $DestinationPath = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
-  $DestinationFile = Join-Path $DestinationPath -ChildPath $ResponseFilename
+  $DestinationFile = Join-Path $InstallPackage.ExtractDir -ChildPath $ResponseFilename
 
   Write-Output "Copying response file $SourceFile $DestinationFile"
   Copy-TemplateFile $SourceFile $DestinationFile $Variables $Secrets
@@ -197,11 +195,10 @@ function Install-SAPIPS {
     Write-Error "Install file not found: $File"
   }
 
-  $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
-  $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
-  $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
+  $ResponsePath = Join-Path $InstallPackage.ExtractDir -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
+  $LogFile      = Join-Path $InstallPackage.ExtractDir -ChildPath "install.log"
+  $LogErrFile   = Join-Path $InstallPackage.ExtractDir -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -301,11 +298,10 @@ function Install-SAPDataServices {
     Write-Error "Install file not found: $File"
   }
 
-  $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
-  $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
-  $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
+  $ResponsePath = Join-Path $InstallPackage.ExtractDir -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
+  $LogFile      = Join-Path $InstallPackage.ExtractDir -ChildPath "install.log"
+  $LogErrFile   = Join-Path $InstallPackage.ExtractDir -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -391,11 +387,10 @@ function Install-SAPClient {
     Write-Error "Install file not found: $File"
   }
 
-  $ExtractPath  = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.ExtractDir
-  $ResponsePath = Join-Path $ExtractPath -ChildPath $ResponseFilename
-  $SetupExe     = Join-Path $ExtractPath -ChildPath "setup.exe"
-  $LogFile      = Join-Path $ExtractPath -ChildPath "install.log"
-  $LogErrFile   = Join-Path $ExtractPath -ChildPath "install-error.log"
+  $ResponsePath = Join-Path $InstallPackage.ExtractDir -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
+  $LogFile      = Join-Path $InstallPackage.ExtractDir -ChildPath "install.log"
+  $LogErrFile   = Join-Path $InstallPackage.ExtractDir -ChildPath "install-error.log"
 
   if (-not (Test-Path $ResponsePath)) {
     Write-Error "Response file not found: $ResponsePath"
@@ -437,7 +432,7 @@ function Install-SAPClient {
 }
 
 Export-ModuleMember -Function Get-SAPInstaller
-Export-ModuleMember -Function Open-SAPInstaller
+Export-ModuleMember -Function Expand-SAPInstaller
 Export-ModuleMember -Function Copy-SAPResponseFile
 Export-ModuleMember -Function Add-SAPDirectories
 Export-ModuleMember -Function Set-SAPEnvironmentVars
