@@ -34,14 +34,14 @@
     insertbefore: '^\s*echo "  (start|stop)ComponentInternal'
     marker: "# {mark} ANSIBLE WLST NM CONNECT"
     block: |
-      {{ sh_indent }}echo "  nmConnect(" >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    host='{{ nm_host }}'," >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    port={{ nm_port }}," >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    domainName=r'\${DOMAIN_HOME}'," >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "    nmType='{{ nm_type }}'" >>\"\${PY_LOC}\""
-      {{ sh_indent }}echo "  )" >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "  nmConnect(" >> "${PY_LOC}"
+      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    host='{{ nm_host }}'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    port={{ nm_port }}," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    domainName=r'\${DOMAIN_HOME}'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    nmType='{{ nm_type }}'" >> "${PY_LOC}"
+      {{ sh_indent }}echo "  )" >> "${PY_LOC}"
   loop:
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
