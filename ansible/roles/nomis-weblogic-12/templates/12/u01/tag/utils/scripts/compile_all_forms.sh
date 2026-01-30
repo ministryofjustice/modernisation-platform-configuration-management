@@ -1,7 +1,7 @@
 {% raw %}
 #!/usr/bin/env bash
 item=0
-forms_source_files=$(ls /u01/tag/FormsSources/*.fmb /u01/tag/FormsSources/*.pll 2>/dev/null)
+forms_source_files=$(ls /u01/tag/FormsSources/*.{fmb,pll,mmb} 2>/dev/null | xargs -n1 basename | sed 's/\.[^.]*$//')
 forms_to_compile=()
 sleep_time=15
 
