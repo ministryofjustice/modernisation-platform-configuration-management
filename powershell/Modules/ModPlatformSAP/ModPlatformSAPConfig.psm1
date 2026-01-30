@@ -47,7 +47,7 @@ function Get-ModPlatformSAPConfig {
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
           FlexiLogReader = @{
-            S3BucketNam e = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/sap/FlexiLogReader'
             S3File        = 'FlexiLogReader64.zip'
             S3Files       = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
