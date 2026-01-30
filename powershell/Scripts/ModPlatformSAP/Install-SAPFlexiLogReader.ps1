@@ -9,7 +9,7 @@ Get-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
 Expand-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
 
 # Create a shortcut
-$ShortcutDir = Join-Path -Path [Environment]::GetFolderPath('CommonDesktopDirectory') -ChildPath "4.3 Client Tools"
+$ShortcutDir = Join-Path -Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) -ChildPath "4.3 Client Tools"
 if (-not (Test-Path $ShortcutDir)) {
   Write-Output "Creating $ShortcutDir"
   New-Item -ItemType Directory -Path $ShortcutDir -Force
