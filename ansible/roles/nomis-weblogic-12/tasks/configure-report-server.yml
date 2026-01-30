@@ -23,22 +23,46 @@
   become_user: oracle
   command: bash /home/oracle/admin/scripts/createCredentialsFiles.sh
 
-- name: Insert WLST connect block before stopComponentInternal echo
+- name: Insert WLST nmConnect block for start/stop scripts
   vars:
     sh_indent: "\t"
+    nm_port: 5556
+    nm_host: "localhost"
+    nm_type: "ssl"  # set to "none" if Node Manager is not SSL
   ansible.builtin.blockinfile:
     path: "{{ item }}"
     insertbefore: '^\s*echo "  (start|stop)ComponentInternal'
-    marker: "# {mark} ANSIBLE WLST CONNECT"
+    marker: "# {mark} ANSIBLE WLST NM CONNECT"
     block: |
-      {{ sh_indent }}echo "  connect(" >>"${PY_LOC}"
-      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >>"${PY_LOC}"
-      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >>"${PY_LOC}"
-      {{ sh_indent }}echo "    url='t3://localhost:7001'" >>"${PY_LOC}"
-      {{ sh_indent }}echo "  )" >>"${PY_LOC}"
+      {{ sh_indent }}echo "  nmConnect(" >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    host='{{ nm_host }}'," >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    port={{ nm_port }}," >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    domainName=r'\${DOMAIN_HOME}'," >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "    nmType='{{ nm_type }}'" >>\"\${PY_LOC}\""
+      {{ sh_indent }}echo "  )" >>\"\${PY_LOC}\""
   loop:
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
+
+
+#- name: Insert WLST connect block before stopComponentInternal echo
+#  vars:
+#    sh_indent: "\t"
+#  ansible.builtin.blockinfile:
+#    path: "{{ item }}"
+#    insertbefore: '^\s*echo "  (start|stop)ComponentInternal'
+#    marker: "# {mark} ANSIBLE WLST CONNECT"
+#    block: |
+#      {{ sh_indent }}echo "  connect(" >>"${PY_LOC}"
+#      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >>"${PY_LOC}"
+#      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >>"${PY_LOC}"
+#      {{ sh_indent }}echo "    url='t3://localhost:7001'" >>"${PY_LOC}"
+#      {{ sh_indent }}echo "  )" >>"${PY_LOC}"
+#  loop:
+#    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
+#    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
 
 #- name: Create the initial report server
 #  become_user: oracle
