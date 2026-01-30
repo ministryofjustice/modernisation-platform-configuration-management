@@ -49,7 +49,7 @@ function Get-ModPlatformSAPConfig {
             S3Path       = 'hmpps/sap/FlexiLogReader'
             S3File       = 'FlexiLogReader64.zip'
             S3Files      = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
-            ExtractDir   = 'FlexiLogReader64'
+            ExtractDir   = ''
             WorkingDir   = 'C:\Software'             # Download installer here
           }
         }
