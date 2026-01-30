@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 $SAPConfig  = Get-ModPlatformSAPConfig
 $SAPSecrets = Get-ModPlatformSAPSecrets $SAPConfig
 Get-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
-Open-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
+Expand-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
 
 # Create a shortcut
 $ShortcutDir = Join-Path -Path [Environment]::GetFolderPath('CommonDesktopDirectory') -ChildPath "4.3 Client Tools"
