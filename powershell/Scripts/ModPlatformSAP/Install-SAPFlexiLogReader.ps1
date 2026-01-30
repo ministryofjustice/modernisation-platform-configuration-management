@@ -24,4 +24,6 @@ if (-not (Test-Path $ShortcutPath)) {
   $Shortcut.TargetPath = $TargetPath
   $Shortcut.IconLocation = $TargetPath
   $Shortcut.Save()
+} else {
+  Write-Output "Skipping Desktop Shortcut as $ShortcutDir already present"
 }
