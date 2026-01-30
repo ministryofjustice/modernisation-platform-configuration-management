@@ -16,8 +16,8 @@ if (-not (Test-Path $ShortcutDir)) {
 }
 $TargetPath = Join-Path -Path $SAPConfig.InstallPackages.FlexiLogReader.ExtractDir -ChildPath "FlexiLogReader64"
 $TargetPath = Join-Path -Path $TargetPath -ChildPath "FlexiLogReader64.exe"
-$ShortcutLink = Join-Path -Path $ShortcutDir -ChildPath "FlexiLogReader64.lnk"
-$Shortcut = $WScriptShell.CreateShortcut($ShortcutPathLink)
+$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "FlexiLogReader64.lnk"
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
 $Shortcut.TargetPath = $TargetPath
 $Shortcut.IconLocation = $TargetPath
 $Shortcut.Save()
