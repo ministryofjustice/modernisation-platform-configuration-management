@@ -11,14 +11,17 @@ Expand-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
 # Create a shortcut
 $ShortcutDir = Join-Path -Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) -ChildPath "4.3 Client Tools"
 if (-not (Test-Path $ShortcutDir)) {
-  Write-Output "Creating $ShortcutDir"
+  Write-Output "Creating Desktop Folder: $ShortcutDir"
   New-Item -ItemType Directory -Path $ShortcutDir -Force
 }
-$TargetPath = Join-Path -Path $SAPConfig.InstallPackages.FlexiLogReader.ExtractDir -ChildPath "FlexiLogReader64"
-$TargetPath = Join-Path -Path $TargetPath -ChildPath "FlexiLogReader64.exe"
 $ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "FlexiLogReader64.lnk"
-$WScriptShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
-$Shortcut.TargetPath = $TargetPath
-$Shortcut.IconLocation = $TargetPath
-$Shortcut.Save()
+if (-not (Test-Path $ShortcutPath)) {
+  Write-Output "Creating Desktop Shortcut: $ShortcutDir"
+  $WScriptShell = New-Object -ComObject WScript.Shell
+  $Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
+  $TargetPath = Join-Path -Path $SAPConfig.InstallPackages.FlexiLogReader.ExtractDir -ChildPath "FlexiLogReader64"
+  $TargetPath = Join-Path -Path $TargetPath -ChildPath "FlexiLogReader64.exe"
+  $Shortcut.TargetPath = $TargetPath
+  $Shortcut.IconLocation = $TargetPath
+  $Shortcut.Save()
+}
