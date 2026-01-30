@@ -26,6 +26,7 @@
 - name: Insert WLST nmConnect block for start/stop scripts
   vars:
     sh_indent: "\t"
+    domain_name: "nomis"
     nm_port: 5556
     nm_host: "localhost"
     nm_type: "ssl"  # set to "none" if Node Manager is not SSL
@@ -39,7 +40,7 @@
       {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >> "${PY_LOC}"
       {{ sh_indent }}echo "    host='{{ nm_host }}'," >> "${PY_LOC}"
       {{ sh_indent }}echo "    port={{ nm_port }}," >> "${PY_LOC}"
-      {{ sh_indent }}echo "    domainName=r'\${DOMAIN_HOME}'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    domainName='{{ domain_name }}'," >> "${PY_LOC}"
       {{ sh_indent }}echo "    nmType='{{ nm_type }}'" >> "${PY_LOC}"
       {{ sh_indent }}echo "  )" >> "${PY_LOC}"
   loop:
