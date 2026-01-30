@@ -50,24 +50,25 @@ function Expand-SAPInstaller {
     Write-Error "Install file not found: $File"
   }
 
-  if (-not (Test-Path -PathType container $InstallPackage.ExtractDir)) {
-    Write-Output ("Creating " + $InstallPackage.ExtractDir)
-    New-Item -ItemType Directory -Path $InstallPackage.ExtractDir | Out-Null
+  $ExtractDir = $InstallPackage.ExtractDir
+  if (-not (Test-Path -PathType container $ExtractDir)) {
+    Write-Output "Creating $ExtractDir"
+    New-Item -ItemType Directory -Path $ExtractDir | Out-Null
   }
 
-  $SetupExe = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
+  $SetupExe = Join-Path $ExtractDir -ChildPath "setup.exe"
   if ($File -match '\.ZIP$') {
     if ($InstallPackage.ContainsKey('S3Files')) {
-      Write-Output "Extracting Multi-part ZIP archive with 7z.exe x -y $File -o$InstallPackage.ExtractDir"
-      7z.exe x -y "$File" -o"$InstallPackage.ExtractDir"
+      Write-Output "Extracting Multi-part ZIP archive with 7z.exe x -y $File -o$ExtractDir"
+      7z.exe x -y "$File" -o"$ExtractDir"
     } else {
-      Write-Output "Extracting ZIP archive to $InstallPackage.ExtractDir"
-      Expand-Archive $File -DestinationPath $InstallPackage.ExtractDir
+      Write-Output "Extracting ZIP archive to $ExtractDir"
+      Expand-Archive $File -DestinationPath $ExtractDir
     }
   } else {
     if (Get-Command unrar -ErrorAction SilentlyContinue) {
-      Write-Output "Extracting EXE archive to $InstallPackage.ExtractDir"
-      unrar x -r -y -idq "$File" "$InstallPackage.ExtractDir"
+      Write-Output "Extracting EXE archive to $ExtractDir"
+      unrar x -r -y -idq "$File" "$ExtractDir"
     } else {
       Write-Error 'Cannot extract EXE archive as unrar not found'
     }
