@@ -86,6 +86,7 @@ function Get-ModPlatformADConfig {
     "planetfm-test" = @{"DomainName" = "azure.noms.root" }
     "planetfm-preproduction" = @{"DomainName" = "azure.hmpp.root" }
     "planetfm-production" = @{"DomainName" = "azure.hmpp.root" }
+    "prison-retail-production" = @{"DomainName" = "azure.hmpp.root" }
     "corporate-staff-rostering-development" = @{"DomainName" = "azure.noms.root" }
     "corporate-staff-rostering-test" = @{"DomainName" = "azure.noms.root" }
     "corporate-staff-rostering-preproduction" = @{"DomainName" = "azure.hmpp.root" }
