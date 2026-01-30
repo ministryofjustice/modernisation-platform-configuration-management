@@ -73,6 +73,15 @@ function Get-ModPlatformSAPConfig {
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
           }
+          FlexiLogReader = @{
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/sap/FlexiLogReader'
+            S3File        = 'FlexiLogReader64.zip'
+            S3Files       = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software'
+            SkipIfPresent = 'C:\Software\FlexiLogReader64\FlexiLogReader64.exe'
+          }
         }
         Variables = @{
           InstallDir     = 'C:\Program Files (x86)\SAP BusinessObjects'
@@ -90,6 +99,15 @@ function Get-ModPlatformSAPConfig {
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
+          }
+          FlexiLogReader = @{
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/sap/FlexiLogReader'
+            S3File        = 'FlexiLogReader64.zip'
+            S3Files       = @('FlexiLogReader64.z01', 'FlexiLogReader64.z02', 'FlexiLogReader64.z03', 'FlexiLogReader64.z04')
+            WorkingDir    = 'C:\Software'             # Download installer here
+            ExtractDir    = 'C:\Software'
+            SkipIfPresent = 'C:\Software\FlexiLogReader64\FlexiLogReader64.exe'
           }
         }
         Variables = @{
