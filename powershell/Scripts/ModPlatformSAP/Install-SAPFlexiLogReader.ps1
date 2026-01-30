@@ -15,7 +15,7 @@ if (-not (Test-Path $ShortcutDir)) {
 }
 $ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "FlexiLogReader64.lnk"
 if (-not (Test-Path $ShortcutPath)) {
-  Write-Output "Creating Desktop Shortcut: $ShortcutDir"
+  Write-Output "Creating Desktop Shortcut: $ShortcutPath"
   $WScriptShell = New-Object -ComObject WScript.Shell
   $Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
   $TargetPath = Join-Path -Path $SAPConfig.InstallPackages.FlexiLogReader.ExtractDir -ChildPath "FlexiLogReader64"
