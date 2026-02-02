@@ -108,10 +108,18 @@ oracle_patch_details:
     psu_patch: p37591516_190000_Linux-x86-64.zip
     patch_string: "19.27.0.0.250415"
 
-oracle_ru_patch: JUL2025 # override this in group_vars when rolling out a new patch
+  OCT2025:
+    opatch_version: 12.2.0.1.48
+    oracle_combo_patch: 38273558
+    oracle_release_update: 38298204
+    oracle_ojvm_patch: 38194382
+    psu_patch: p38273558_190000_Linux-x86-64.zip
+    patch_string: "19.29.0.0.251021"
+
+oracle_ru_patch: OCT2025 # override this in group_vars when rolling out a new patch
 oracle_patch: "{{ oracle_patch_details[ oracle_ru_patch ] }}"
 opatch: "p6880880_190000_Linux-x86-64.{{ oracle_patch.opatch_version }}.zip"
 #opatch: "p6880880_190000_Linux-x86-64.zip"
 #opatch_zip: "p6880880_190000_Linux-x86-64.zip"
-opatch_zip: "p6880880_190000_Linux-x86-64.12.2.0.1.46.zip"
+opatch_zip: "p6880880_190000_Linux-x86-64.12.2.0.1.48.zip"
 oracle_version: "{{ oracle_patch.patch_string.split('.')[:3] | join('.') }}"
