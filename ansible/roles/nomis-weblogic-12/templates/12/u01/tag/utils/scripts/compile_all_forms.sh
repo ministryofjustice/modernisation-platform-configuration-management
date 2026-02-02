@@ -1,6 +1,7 @@
+{% raw %}
 #!/usr/bin/env bash
 item=0
-forms_source_files=$(ls /u01/tag/FormsSources/*.fmb /u01/tag/FormsSources/*.pll 2>/dev/null)
+forms_source_files=$(ls /u01/tag/FormsSources/*.{fmb,pll,mmb} 2>/dev/null | xargs -n1 basename | sed 's/\.[^.]*$//')
 forms_to_compile=()
 sleep_time=15
 
@@ -64,9 +65,4 @@ for form_to_compile in "${forms_to_compile[@]}"; do
 		fi
 	fi
 done
-
-echo "Moving *.fmx/*.plx/*.mmx files into FormsObjects..."
-mv /u01/tag/FormsSources/*.fmx /u01/tag/FormsObjects/
-mv /u01/tag/FormsSources/*.plx /u01/tag/FormsObjects/
-mv /u01/tag/FormsSources/*.mmx /u01/tag/FormsObjects/
-echo "Successfully compiled forms and moved *.fmx/*.plx items to /u01/tag/FormsObjects/"
+{% endraw %}

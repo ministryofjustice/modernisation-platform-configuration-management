@@ -3,7 +3,7 @@
     daemon_reload: true
     name: "{{ item }}"
     enabled: true
-    state: started
+    state: "{{ service_state | default('started') }}"
   loop:
     - weblogic-node-manager
     - weblogic-server
