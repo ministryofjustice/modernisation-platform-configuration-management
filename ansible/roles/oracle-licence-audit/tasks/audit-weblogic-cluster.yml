@@ -1,67 +1,234 @@
 - name: Audit weblogic cluster
   block:
-    - name: Create weblogic dictionary
+
+    - name: Initialise weblogic dictionaries
       set_fact:
         weblogic_info: {}
+        weblogic_temp_info: {}
         weblogic_cluster: "{{ environment_name }}-cluster"
 
-    - name: Get the number of Container instances for the service
+    - name: Get number of registered container instances in cluster
       delegate_to: localhost
       become: no
-      shell: aws ecs describe-clusters --clusters {{ weblogic_cluster }} --region {{ region }} | jq -r '.clusters[].registeredContainerInstancesCount'
+      shell: >
+        aws ecs describe-clusters --clusters {{ weblogic_cluster }} --region {{ region }} | jq -r '.clusters[].registeredContainerInstancesCount'
       register: container_count
-      
-      #if: container_count.stdout | int > 0
-    - name: Process weblogic services if containers exist
+      changed_when: false
+
+    - name: Process weblogic services if container instances exist
+      when: container_count.stdout | int > 0
       block:
-        - name: List services that contain 'weblogic' in the name
+
+        - name: List weblogic services
           delegate_to: localhost
           become: no
-          shell: aws ecs list-services --cluster {{ weblogic_cluster }} --region {{ region }} | jq -r '.serviceArns[]' | egrep -- "weblogic" | awk -F'/' '{print $NF}'
+          shell: >
+            aws ecs list-services --cluster {{ weblogic_cluster }} --region {{ region }} | jq -r '.serviceArns[]' | egrep -- "weblogic" | awk -F'/' '{print $NF}'
           register: weblogic_services
+          changed_when: false
 
-          #if: weblogic_services.stdout_lines | length > 0
         - name: Process each weblogic service
+          when: weblogic_services.stdout_lines | length > 0
           block:
-            - name: Create temporary weblogic dictionary and Initalise variables
+
+            # ------------------------------------------------------------
+            # LICENSING LOGIC — UNIQUE CONTAINER INSTANCES
+            # ------------------------------------------------------------
+
+            - name: Collect RUNNING task ARNs for all weblogic services
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ecs list-tasks --cluster {{ weblogic_cluster }} --service-name {{ item }} --desired-status RUNNING --region {{ region }} | jq -r '.taskArns[]?'
+              loop: "{{ weblogic_services.stdout_lines }}"
+              register: weblogic_task_arns_by_service
+              changed_when: false
+
+            - name: Flatten task ARNs
               set_fact:
-                weblogic_temp_info: {}
-                vcpu_list: []
-                total_services_vcpus: 0
-                total_available_vpcus: 0
+                weblogic_task_arns: >-
+                  {{
+                    weblogic_task_arns_by_service.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                  }}
 
-            - name: Find cluster information for {{ environment_name }}
-              include_tasks: get-ecs-info.yml
-              vars:
-                service: "{{ serv }}"
-                cluster: "{{ weblogic_cluster }}"
-              with_items: "{{ weblogic_services.stdout_lines }}"
-              loop_control:
-                loop_var: serv
-
-            - name: Get the no. of vpcus used by all services into a list
+            - name: Chunk task ARNs for describe-tasks (max 100)
               set_fact:
-                vcpu_list: "{{ vcpu_list + [item.value.total_no_vcpus] }}"
-                total_services_vcpus: "{{  total_services_vcpus | default(0) | int + item.value.total_no_vcpus }}"
-                total_available_vpcus: "{{ container_count.stdout | default(0) | int * item.value.instance_type_vcpu_count }}"
-              with_dict: "{{ weblogic_temp_info }}"
+                weblogic_task_chunks: "{{ weblogic_task_arns | batch(100) | list }}"
+              when: weblogic_task_arns | length > 0
 
-            - name: Calculate the number of vcpu's allowed
-              block:
-                - set_fact:
-                    no_vcpus_used: "{{ total_available_vpcus }}"
-                  when: total_services_vcpus | int >= total_available_vpcus | int
+            - name: Resolve container instance ARNs from tasks
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ecs describe-tasks --cluster {{ weblogic_cluster }} --tasks {{ item | join(' ') }} --region {{ region }} | jq -r '.tasks[].containerInstanceArn?'
+              loop: "{{ weblogic_task_chunks }}"
+              register: weblogic_ci_arns_raw
+              changed_when: false
+              when: weblogic_task_arns | length > 0
 
-                - set_fact:
-                    no_vcpus_used: "{{ total_services_vcpus }}"
-                  when: total_services_vcpus | int  < total_available_vpcus | int
-
-            - name: Populate weblogic main info dictionary
+            - name: Deduplicate container instance ARNs
               set_fact:
-                weblogic_info: "{{ weblogic_info | combine( {item.value.environment: { 'instance_type': item.value.instance_type, 'instance_type_vcpu_count': item.value.instance_type_vcpu_count, 'total_no_vcpus_available': total_available_vpcus,'total_no_vcpus_used': no_vcpus_used | int }} ) }}"
-              with_dict: "{{ weblogic_temp_info }}"
+                weblogic_container_instances: >-
+                  {{
+                    weblogic_ci_arns_raw.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                    | unique
+                  }}
+              when: weblogic_task_arns | length > 0
 
-            - name: Remove weblogic results file
+            - name: Chunk container instances for describe-container-instances
+              set_fact:
+                weblogic_ci_chunks: "{{ weblogic_container_instances | batch(100) | list }}"
+              when: weblogic_task_arns | length > 0
+
+            - name: Get EC2 instance IDs from container instances
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ecs describe-container-instances --cluster {{ weblogic_cluster }} --container-instances {{ item | join(' ') }} --region {{ region }} | jq -r '.containerInstances[].ec2InstanceId'
+              loop: "{{ weblogic_ci_chunks }}"
+              register: weblogic_instance_data
+              changed_when: false
+              when: weblogic_task_arns | length > 0
+
+            - name: Flatten EC2 instance IDs
+              set_fact:
+                weblogic_ec2_ids: >-
+                  {{
+                    weblogic_instance_data.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                  }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Chunk EC2 instance IDs for describe-instances (max 100)
+              set_fact:
+                weblogic_ec2_chunks: "{{ weblogic_ec2_ids | batch(100) | list }}"
+              when: weblogic_task_arns | length > 0
+
+            - name: Get instance types from EC2
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ec2 describe-instances --instance-ids {{ item | join(' ') }} --region {{ region }} | jq -r '.Reservations[].Instances[] | "\(.InstanceId):\(.InstanceType)"'
+              loop: "{{ weblogic_ec2_chunks }}"
+              register: weblogic_ec2_types_raw
+              changed_when: false
+              when: weblogic_task_arns | length > 0
+
+            - name: Flatten EC2 instance type data
+              set_fact:
+                weblogic_ec2_types: >-
+                  {{
+                    weblogic_ec2_types_raw.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                  }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Build instance type list
+              set_fact:
+                weblogic_instance_types: >-
+                  {{
+                    weblogic_ec2_types
+                    | map('regex_replace', '^.+:(.+)$', '\\1')
+                    | list
+                  }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Get unique instance types
+              set_fact:
+                weblogic_unique_types: "{{ weblogic_instance_types | unique | sort }}"
+              when: weblogic_task_arns | length > 0
+
+            - name: Get vCPU counts for each unique instance type
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ec2 describe-instance-types --instance-types {{ weblogic_unique_types | join(' ') }} --region {{ region }} | jq -r '.InstanceTypes[] | "\(.InstanceType):\(.VCpuInfo.DefaultVCpus)"'
+              register: weblogic_vcpu_info
+              changed_when: false
+              when: weblogic_task_arns | length > 0
+
+            - name: Build instance type summary
+              set_fact:
+                instance_type_counts: >-
+                  {%- set counts = {} -%}
+                  {%- for itype in weblogic_instance_types -%}
+                    {%- set _ = counts.update({itype: counts.get(itype, 0) + 1}) -%}
+                  {%- endfor -%}
+                  {{ counts }}
+                instance_type_vcpus: >-
+                  {%- set vcpus = {} -%}
+                  {%- for line in weblogic_vcpu_info.stdout_lines -%}
+                    {%- set parts = line.split(':') -%}
+                    {%- set _ = vcpus.update({parts[0]: parts[1] | int}) -%}
+                  {%- endfor -%}
+                  {{ vcpus }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Create instance type summary string
+              set_fact:
+                instance_type_summary: >-
+                  {{
+                    instance_type_counts.keys() | list | sort
+                    | map('regex_replace', '^(.+)$', '\\1(' ~ instance_type_counts['\\1'] | default(0) ~ ')')
+                    | join(', ')
+                  }}
+                instance_vcpu_summary: >-
+                  {{
+                    instance_type_vcpus.keys() | list | sort
+                    | map('regex_replace', '^(.+)$', '\\1:' ~ instance_type_vcpus['\\1'] | default(0))
+                    | join(', ')
+                  }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Calculate total vCPUs used by weblogic (licensing basis)
+              set_fact:
+                total_vcpus_used: >-
+                  {%- set ns = namespace(total=0) -%}
+                  {%- for itype in instance_type_counts.keys() -%}
+                    {%- set count = instance_type_counts[itype] | int -%}
+                    {%- set vcpus = instance_type_vcpus[itype] | int -%}
+                    {%- set ns.total = ns.total + (count * vcpus) -%}
+                  {%- endfor -%}
+                  {{ ns.total }}
+              when: weblogic_task_arns | length > 0
+
+            - name: Default vCPU usage to zero if no tasks running
+              set_fact:
+                total_vcpus_used: 0
+                instance_type_summary: "none"
+                instance_vcpu_summary: "none"
+              when: weblogic_task_arns | length == 0
+
+            # ------------------------------------------------------------
+            # OUTPUT
+            # ------------------------------------------------------------
+
+            - name: Populate weblogic audit dictionary
+              set_fact:
+                weblogic_info: >-
+                  {{
+                    weblogic_info | combine({
+                      environment_name: {
+                        'cluster': weblogic_cluster,  
+                        'container_instances': (weblogic_container_instances | length) if (weblogic_task_arns | length > 0) else 0,
+                        'instance_type': instance_type_summary,
+                        'instance_type_vcpu_count': instance_vcpu_summary,
+                        'total_vcpus_used': total_vcpus_used | int
+                      }
+                    })
+                  }}
+
+            - name: Remove old weblogic results file
               delegate_to: localhost
               become: no
               file:
@@ -87,19 +254,20 @@
               become: no
               lineinfile:
                 path: "{{ weblogic_cluster_output }}"
-                line: "Environment:InstanceType:InstanceTypeVcpuCount:TotalVpcuAvailable:TotalVcpuUsed"
+                line: "Environment:InstanceType(Count):InstanceType:VcpuCount:ContainerInstances:TotalVcpuUsed"
 
-            - name: Copy results to local file
+            - name: Write results to local file
               delegate_to: localhost
               become: no
               lineinfile:
                 path: "{{ weblogic_cluster_output }}"
-                line: "{{ item.key }}:{{ item.value.instance_type }}:{{ item.value.instance_type_vcpu_count }}:{{item.value.total_no_vcpus_available }}:{{ item.value.total_no_vcpus_used }}"
+                line: "{{ item.key }}:{{ item.value.instance_type }}:{{ item.value.instance_type_vcpu_count }}:{{ item.value.container_instances }}:{{ item.value.total_vcpus_used }}"
               with_dict: "{{ weblogic_info }}"
+
 
             - name: Total up number for weblogic vcpu's
               set_fact:
-                total_vpcu: "{{ total_vpcu | default(0) | int + item.value.total_no_vcpus_used }}"
+                total_vcpu: "{{ total_vcpu | default(0) | int + item.value.total_vcpus_used | int }}"
               with_dict: "{{ weblogic_info }}"
 
             - name: Copy vcpu total to local file
@@ -107,20 +275,15 @@
               become: no
               lineinfile:
                 path: "{{ weblogic_cluster_output }}"
-                line: "Vcpu Total: {{ total_vpcu | default(0) | int }}"
+                line: "vCPU Total: {{ total_vcpu | default(0) | int }}"
 
             - name: Upload audit results
               when: upload_collection | default(true) | bool
-              block:
-                - name: Upload weblogic output file to S3
-                  delegate_to: localhost
-                  become: no
-                  shell: |
-                    export PATH=$PATH:/usr/local/bin
-                    aws s3 cp {{ weblogic_cluster_output }} s3://{{ bucket_name }}/{{ audit_output }}/ --acl bucket-owner-full-control {{ general_kms_key_option }}
-          
-          when: weblogic_services.stdout_lines | length > 0
-      
-      when: container_count.stdout | int > 0
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws s3 cp {{ weblogic_cluster_output }} s3://{{ bucket_name }}/{{ audit_output }}/ --acl bucket-owner-full-control {{ general_kms_key_option }}
 
-  when: environment_name is defined and environment_name != ""
+  when:
+    - environment_name is defined
+    - environment_name != ""
