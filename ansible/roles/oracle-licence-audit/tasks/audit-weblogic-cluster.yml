@@ -267,7 +267,7 @@
 
             - name: Total up number for weblogic vcpu's
               set_fact:
-                total_vcpu: "{{ total_vcpu | default(0) | int + item.value.total_vcpus_used | int }}"
+                total_vcpus: "{{ total_vcpus | default(0) | int + item.value.total_vcpus_used | int }}"
               with_dict: "{{ weblogic_info }}"
 
             - name: Copy vcpu total to local file
@@ -275,7 +275,7 @@
               become: no
               lineinfile:
                 path: "{{ weblogic_cluster_output }}"
-                line: "vCPU Total: {{ total_vcpu | default(0) | int }}"
+                line: "vCPU Total: {{ total_vcpus | default(0) | int }}"
 
             - name: Upload audit results
               when: upload_collection | default(true) | bool
