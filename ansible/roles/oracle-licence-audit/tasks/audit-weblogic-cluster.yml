@@ -177,17 +177,17 @@
             - name: Create instance type summary string
               set_fact:
                 instance_type_summary: >-
-                  {{
-                    instance_type_counts.keys() | list | sort
-                    | map('regex_replace', '^(.+)$', '\\1(' ~ instance_type_counts['\\1'] | default(0) ~ ')')
-                    | join(', ')
-                  }}
+                  {%- set items = [] -%}
+                  {%- for itype in instance_type_counts.keys() | list | sort -%}
+                    {%- set _ = items.append(itype ~ '(' ~ (instance_type_counts[itype] | default(0)) ~ ')') -%}
+                  {%- endfor -%}
+                  {{ items | join(', ') }}
                 instance_vcpu_summary: >-
-                  {{
-                    instance_type_vcpus.keys() | list | sort
-                    | map('regex_replace', '^(.+)$', '\\1:' ~ instance_type_vcpus['\\1'] | default(0))
-                    | join(', ')
-                  }}
+                  {%- set items = [] -%}
+                  {%- for itype in instance_type_vcpus.keys() | list | sort -%}
+                    {%- set _ = items.append(itype ~ ':' ~ (instance_type_vcpus[itype] | default(0))) -%}
+                  {%- endfor -%}
+                  {{ items | join(', ') }}
               when: weblogic_task_arns | length > 0
 
             - name: Calculate total vCPUs used by weblogic (licensing basis)
