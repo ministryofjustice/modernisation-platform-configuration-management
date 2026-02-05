@@ -9,6 +9,11 @@
         - weblogic_create_db_repo
         - weblogic_install_domain
 
+    - import_tasks: packages.yml
+      tags:
+        - amibuild
+        - weblogic_packages
+
     - import_tasks: setup-oracle-user.yml
       tags:
         - ec2provision
@@ -69,6 +74,11 @@
         - ec2provision
         - weblogic_review_permissions
 
+    - import_tasks: moj-admin-scripts.yml
+      tags:
+        - ec2provision
+        - weblogic_moj_admin_scripts
+
     - name: Copy files into relevant locations
       ansible.builtin.copy:
         src: "{{ item.src }}"
@@ -107,6 +117,16 @@
         - ec2provision
         - weblogic_enable_services
 
+    - name: Ensure ListenAddress is empty in nodemanager.properties
+      ansible.builtin.lineinfile:
+        path: /u01/app/oracle/Middleware/user_projects/domains/nomis/nodemanager/nodemanager.properties
+        regexp: '^ListenAddress=.*'
+        line: 'ListenAddress='
+        backrefs: false
+      tags:
+        - ec2provision
+        - weblogic_nodemanager_properties_update
+
     - import_tasks: configure-report-server.yml
       vars:
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
@@ -128,5 +148,64 @@
       tags:
         - ec2provision
         - weblogic_configure_reports_server
+
+    - import_tasks: copy-managed-server-files-tgz.yml
+      tags:
+        - ec2provision
+        - weblogic_copy_managed_server_files
+        - weblogic_copy_managed_server_files_tgz
+
+    - include_tasks:
+        file: create-managed-app.yml
+        apply:
+          tags:
+            - ec2provision
+            - ec2patch
+            - weblogic_create_managed_app
+      tags:
+        - ec2provision
+        - ec2patch
+        - weblogic_create_managed_app
+      loop_control:
+        loop_var: weblogic_managed_app
+      loop:
+#        - WLS_AUTOLOGOFF
+#        - WLS_TAGSAR
+        - WLS_HOTPAGE
+
+    - import_tasks: configure_hotpage.yml
+      vars:
+        config_filepath: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/config.xml
+      tags:
+        - ec2provision
+        - weblogic_configure_hotpage
+
+    - import_tasks: logging.yml
+      tags:
+        - ec2provision
+        - weblogic_logrotate
+
+    - import_tasks: enable-weblogic-services.yml
+      vars:
+        service_state: restarted
+      tags:
+        - ec2provision
+        - weblogic_restart_services
+
+#    - name: "Restart managed apps"
+#      ansible.builtin.service:
+#        name: "{{ weblogic_managed_app }}"
+#        state: restarted
+#      async: 1200
+#      poll: 20
+#      tags:
+#        - ec2provision
+#        - weblogic_restart_managed_apps
+#      loop_control:
+#        loop_var: weblogic_managed_app
+#      loop:
+#        #        - WLS_AUTOLOGOFF
+#        #        - WLS_TAGSAR
+#        - WLS_HOTPAGE
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

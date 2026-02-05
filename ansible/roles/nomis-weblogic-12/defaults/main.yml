@@ -53,8 +53,11 @@ oracle_template_file_config:
 db_config: "{{ db_configs[weblogic_db_name] }}"
 weblogic_admin_username: weblogic
 weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
+weblogic_db_hostname_b: "{{ ec2.tags['oracle-db-hostname-b'] }}"
 weblogic_db_username: oms_owner
 weblogic_domain_template_filename: none  # override in group vars once template has been created
+weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 
 # Set these in appropriate group vars:
 # weblogic_db_repo_hostname:

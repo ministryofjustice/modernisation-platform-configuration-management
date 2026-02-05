@@ -1,0 +1,115 @@
+---
+- name: Fail if weblogic_managed_app variable not defined
+  fail:
+    msg: "Error, please ensure weblogic_managed_app is defined"
+  when: weblogic_managed_app is not defined
+
+- name: "{{ weblogic_managed_app }} Check if managed app already configured"
+  ansible.builtin.stat:
+    path: /etc/systemd/system/{{ weblogic_managed_app }}
+  register: weblogic_created_managed_app_check
+
+- name: Configure managed app
+  block:
+    - import_tasks: enable-weblogic-services.yml
+
+    - name: "{{ weblogic_managed_app }} Copy managed app configuration files"
+      ansible.builtin.template:
+        src: "12{{ item }}"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+      loop:
+        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+
+    - name: "{{ weblogic_managed_app }} Create managed app"
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -o pipefail
+        . ~/.bash_profile
+        . $WL_HOME/server/bin/setWLSEnv.sh
+        main() {
+          echo "# create managed app {{ weblogic_managed_app }}"
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties --start_managed_server false
+        }
+        main 2>&1 # | logger -p local3.info -t ansible-weblogic
+      args:
+        executable: /bin/bash
+      async: 7200
+      poll: 60
+      when: managed_check.rc != 0
+
+    - name: "{{ weblogic_managed_app }} Create managed app security and logs directory"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0755"
+      loop:
+        - "/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/{{ weblogic_managed_app }}/security"
+        - "/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/{{ weblogic_managed_app }}/logs"
+
+    - name: "{{ weblogic_managed_app }} Copy managed app boot properties"
+      ansible.builtin.template:
+        src: "12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties"
+        dest: "{{ item }}"
+        owner: oracle
+        group: oinstall
+        force: false
+      loop:
+        - "/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/{{ weblogic_managed_app }}/security/boot.properties"
+
+    - name: "{{ weblogic_managed_app }} Copy managed app systemd script"
+      vars:
+        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
+      ansible.builtin.template:
+        src: "12/etc/systemd/system/{{ weblogic_managed_server_name }}.service"
+        dest: "/etc/systemd/system/{{ weblogic_managed_server_name }}.service"
+        mode: "0644"
+
+    - name: "{{ weblogic_managed_app }} Reload systemd daemon"
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    # this ensures values in boot.properties become encrypted
+    - name: "{{ weblogic_managed_app }} Restart service"
+      ansible.builtin.service:
+        name: "{{ weblogic_managed_app }}"
+        state: restarted
+      async: 1200
+      poll: 20
+
+  always:
+    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+
+  # block
+  when: not weblogic_created_managed_app_check.stat.exists
+
+#- name: Update managed app
+#  block:
+#    - name: "{{ weblogic_managed_app }} Update managed app init.d script"
+#      vars:
+#        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
+#      ansible.builtin.template:
+#        src: "12/etc/init.d/weblogic-managed-server"
+#        dest: "/etc/init.d/{{ weblogic_managed_server_name }}"
+#        mode: "0755"
+
+#- name: Update managed app
+#  block:
+#    - name: "{{ weblogic_managed_app }} Update managed app systemd script"
+#      vars:
+#        weblogic_managed_server_name: "{{ weblogic_managed_app }}"
+#      ansible.builtin.template:
+#        src: "12/etc/systemd/system/{{ weblogic_managed_server_name }}.service"
+#        dest: "/etc/systemd/system/{{ weblogic_managed_server_name }}.service"
+#        mode: "0755"
+
+  # block
+#  when: weblogic_created_managed_app_check.stat.exists
