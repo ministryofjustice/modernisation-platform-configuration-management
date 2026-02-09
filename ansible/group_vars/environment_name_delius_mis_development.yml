@@ -15,14 +15,14 @@ sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
-sap_bip_config_secret_id: delius-mis-dev-sap-boe-config
-sap_bip_passwords_secret_id: delius-mis-dev-sap-boe-passwords
-sap_bip_sysdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
-sap_bip_auditdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
 
 sap_bip_conf:
+  sap_bip_config_secret_id: delius-mis-dev-sap-boe-config
+  sap_bip_passwords_secret_id: delius-mis-dev-sap-boe-passwords
+  sap_bip_sysdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
+  sap_bip_auditdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
   sap_bip_rar_base: "BIPLATS4304P_1400-70002683"
-  sap_bip_rws_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/biprws"
+  sap_bip_rws_url: "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/biprws"
   web:
     sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
     sap_web_disable_cmcapp: "false"
@@ -35,7 +35,7 @@ sap_bip_conf:
       - clientapi
       - dswsbobje
       - webi-websetup
-  sap_bip_control_lbs: "private public"
+  sap_bip_control_lbs: "dev-mis-alb"
   sap_bip_control_app_servers: |
     AdaptiveJobServer,Running,Enabled
     AdaptiveProcessingServer,Stopped,Disabled
@@ -75,6 +75,10 @@ sap_bip_conf:
   sap_bip_control_cms_server_1:
   sap_bip_control_cms_server_2:
 
+sap_bip_config_secret_id: "{{ sap_bip_conf.sap_bip_config_secret_id }}"
+sap_bip_passwords_secret_id: "{{ sap_bip_conf.sap_bip_passwords_secret_id }}"
+sap_bip_sysdb_secret_id: "{{ sap_bip_conf.sap_bip_sysdb_secret_id }}"
+sap_bip_auditdb_secret_id: "{{ sap_bip_conf.sap_bip_auditdb_secret_id }}"
 sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
 sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
 sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
