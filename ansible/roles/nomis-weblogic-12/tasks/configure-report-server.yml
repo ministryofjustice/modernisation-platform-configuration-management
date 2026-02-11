@@ -107,14 +107,6 @@
   check_mode: yes
   register: rweng_check
 
-#- name: Create a backup of rwserver.conf where required
-#  ansible.builtin.copy:
-#    src: "{{ item.item }}"
-#    dest: "{{ item.item }}.{{ ansible_date_time.iso8601 }}"
-#    remote_src: yes
-#  loop: "{{ rweng_check.results }}"
-#  when: item.changed
-
 - name: Modify rwserver.conf where required
   ansible.builtin.lineinfile:
     path: "{{ item.item }}"

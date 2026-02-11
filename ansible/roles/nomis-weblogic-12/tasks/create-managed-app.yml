@@ -37,7 +37,6 @@
         executable: /bin/bash
       async: 7200
       poll: 60
-      when: managed_check.rc != 0
 
     - name: "{{ weblogic_managed_app }} Create managed app security and logs directory"
       ansible.builtin.file:
