@@ -7,7 +7,7 @@ $SAPSecrets = Get-ModPlatformSAPSecrets $SAPConfig
 Set-SAPEnvironmentVars $SAPConfig.Variables
 Install-SAPClient "response-install-client.ini" $SAPConfig.InstallPackages.Client
 
-$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "Designer (User Specific).lnk"
+$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "Designer \(User Specific\).lnk"
 if (-not (Test-Path $ShortcutPath)) {
   Write-Output "Creating Desktop Shortcut: $ShortcutPath"
   $WScriptShell = New-Object -ComObject WScript.Shell
@@ -23,7 +23,7 @@ if (-not (Test-Path $ShortcutPath)) {
   Write-Output "Skipping Desktop Shortcut as $ShortcutPath already present"
 }
 
-$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "Information Design Tool (User Specific).lnk"
+$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "Information Design Tool \(User Specific\).lnk"
 if (-not (Test-Path $ShortcutPath)) {
   Write-Output "Creating Desktop Shortcut: $ShortcutPath"
   $WScriptShell = New-Object -ComObject WScript.Shell
