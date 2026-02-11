@@ -17,7 +17,7 @@ if (-not (Test-Path $ShortcutPath)) {
   $TargetPath = Join-Path -Path $TargetPath -ChildPath "win64_x64"
   $TargetPath = Join-Path -Path $TargetPath -ChildPath "designer.exe"
   $Shortcut.TargetPath = $TargetPath
-  $Shortcut.Arguments = "-configuration '%USERPROFILE%\Documents'"
+  $Shortcut.Arguments = "-configuration %USERPROFILE%"
   $Shortcut.IconLocation = $TargetPath
   $Shortcut.Save()
 } else {
@@ -33,7 +33,7 @@ if (-not (Test-Path $ShortcutPath)) {
   $TargetPath = Join-Path -Path $TargetPath -ChildPath "win64_x64"
   $TargetPath = Join-Path -Path $TargetPath -ChildPath "InformationDesignTool.exe"
   $Shortcut.TargetPath = $TargetPath
-  $Shortcut.Arguments = "-configuration '%USERPROFILE%\Documents'"
+  $Shortcut.Arguments = "-configuration %USERPROFILE%"
   $Shortcut.IconLocation = $TargetPath
   $Shortcut.Save()
 } else {
