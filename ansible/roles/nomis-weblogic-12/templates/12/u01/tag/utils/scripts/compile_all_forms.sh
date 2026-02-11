@@ -1,7 +1,7 @@
 {% raw %}
 #!/usr/bin/env bash
 batch_size=5
-batch_sleep=15
+batch_sleep=10
 sleep_between_successful_compilations=2
 sleep_between_unsuccessful_compilations=60
 max_attempts=4
