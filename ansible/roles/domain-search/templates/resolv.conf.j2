@@ -1,5 +1,9 @@
 # Managed by ansible, git repo modernisation-platform-configuration-management, role domain-search
-search {{ ansible_ec2_placement_region }}.compute.internal {{ dns_zone_internal }} {{ dns_search_domains  | join(' ') }}
+{% if dns_zone_internal is defined %}
+search {{ ansible_ec2_placement_region }}.compute.internal {{ dns_zone_internal }} {{ dns_search_domains | join(' ') }}
+{% else %}
+search {{ ansible_ec2_placement_region }}.compute.internal {{ dns_search_domains | join(' ') }}
+{% endif %}
 {% for nameserver in ansible_facts.dns.nameservers -%}
 nameserver {{ nameserver }}
 {% endfor %}
