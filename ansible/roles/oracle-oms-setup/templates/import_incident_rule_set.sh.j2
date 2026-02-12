@@ -5,7 +5,7 @@
 export ORACLE_HOME={{ oem_mw_home }}
 export JAVA_HOME=$ORACLE_HOME/oracle_common/jdk/jre
 
-RULE_SET_BASE_NAME="HMPPS OEM Rule Set"
+RULE_SET_BASE_NAME="{{ rule_set_name }}"
 RULE_SET_NAME=${RULE_SET_BASE_NAME}
 
 {{ emcli }} import_incident_rule_set -import_file={{ stage }}/rule_set.xml  -alt_rule_set_name="${RULE_SET_NAME}"
