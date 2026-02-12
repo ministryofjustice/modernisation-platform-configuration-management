@@ -119,7 +119,7 @@ if ($Script) {
     Import-Module ModPlatformAD -Force
     $ADConfig = Get-ModPlatformADConfig
     $ADSecret = Get-ModPlatformADSecret $ADConfig
-    if (-not (Get-Member -inputobject $ADSecret -name $Username -Membertype Properties)) {
+    if (-not ($ADSecret.ContainsKey("$Username"))) {
       Write-Error ("Cannot find username '$Username' in secret " + $ModPlatformADConfig.SecretName)
       Exit 1
     }

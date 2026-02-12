@@ -19,7 +19,7 @@ function Get-ModPlatformADSecret {
     $Password = ConvertTo-SecureString $ADSecret.svc_join_domain
 
 .OUTPUTS
-    PSCustomObject
+    $hashtable
 #>
 
   [CmdletBinding()]
@@ -28,38 +28,55 @@ function Get-ModPlatformADSecret {
   )
 
   $ErrorActionPreference = "Stop"
+  $Passwords = @{}
 
-  $AccountIdsSSMParameterName = $ModPlatformADConfig.AccountIdsSSMParameterName
-  $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
+  $AccountIdsRaw = "{}"
+  if ($ModPlatformADConfig.ContainsKey("AccountIdsSSMParameterName")) {
+    $AccountIdsSSMParameterName = $ModPlatformADConfig.AccountIdsSSMParameterName
+    $AccountIdsRaw = aws ssm get-parameter --name $AccountIdsSSMParameterName --with-decryption --query Parameter.Value --output text
+  }
   $AccountIds = "$AccountIdsRaw" | ConvertFrom-Json
-  $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
-  $SecretName = $ModPlatformADConfig.SecretName
-  $SecretArn = "arn:aws:secretsmanager:eu-west-2:${SecretAccountId}:secret:${SecretName}"
-  $SecretRoleName = $null
-  if ($ModPlatformADConfig.ContainsKey("SecretRoleName")) {
-    $SecretRoleName = $ModPlatformADConfig.SecretRoleName
+
+  if ($ModPlatformADConfig.ContainsKey("SecretName")) {
+    $SecretName = $ModPlatformADConfig.SecretName
+    $SecretId   = $SecretName
+    if ($ModPlatformADConfig.ContainsKey("SecretAccountName")) {
+      $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
+      $SecretId        = "arn:aws:secretsmanager:eu-west-2:${SecretAccountId}:secret:${SecretName}"
+    }
+    $SecretRoleName = $null
+    if ($ModPlatformADConfig.ContainsKey("SecretRoleName")) {
+      $SecretRoleName = $ModPlatformADConfig.SecretRoleName
+    }
+    if ($SecretRoleName) {
+      $AccountId = aws sts get-caller-identity --query Account --output text
+      $SecretRoleName = $ModPlatformADConfig.SecretRoleName
+      $RoleArn = "arn:aws:iam::${AccountId}:role/${SecretRoleName}"
+      $Session = "ModPlatformADConfig-$env:COMPUTERNAME"
+      $CredsRaw = aws sts assume-role --role-arn "${RoleArn}" --role-session-name "${Session}"
+      $Creds = "$CredsRaw" | ConvertFrom-Json
+      $Tmp_AWS_ACCESS_KEY_ID = $env:AWS_ACCESS_KEY_ID
+      $Tmp_AWS_SECRET_ACCESS_KEY = $env:AWS_SECRET_ACCESS_KEY
+      $Tmp_AWS_SESSION_TOKEN = $env:AWS_SESSION_TOKEN
+      $env:AWS_ACCESS_KEY_ID = $Creds.Credentials.AccessKeyId
+      $env:AWS_SECRET_ACCESS_KEY = $Creds.Credentials.SecretAccessKey
+      $env:AWS_SESSION_TOKEN = $Creds.Credentials.SessionToken
+      $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
+      $env:AWS_ACCESS_KEY_ID = $Tmp_AWS_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $Tmp_AWS_SECRET_ACCESS_KEY
+      $env:AWS_SESSION_TOKEN = $Tmp_AWS_SESSION_TOKEN
+    } else {
+      $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretId}" --query SecretString --output text
+    }
+    ("$SecretValueRaw" | ConvertFrom-Json).psobject.properties | foreach { $Passwords[$_.Name] = $_.Value }
   }
-  if ($SecretRoleName) {
-    $AccountId = aws sts get-caller-identity --query Account --output text
-    $SecretRoleName = $ModPlatformADConfig.SecretRoleName
-    $RoleArn = "arn:aws:iam::${AccountId}:role/${SecretRoleName}"
-    $Session = "ModPlatformADConfig-$env:COMPUTERNAME"
-    $CredsRaw = aws sts assume-role --role-arn "${RoleArn}" --role-session-name "${Session}"
-    $Creds = "$CredsRaw" | ConvertFrom-Json
-    $Tmp_AWS_ACCESS_KEY_ID = $env:AWS_ACCESS_KEY_ID
-    $Tmp_AWS_SECRET_ACCESS_KEY = $env:AWS_SECRET_ACCESS_KEY
-    $Tmp_AWS_SESSION_TOKEN = $env:AWS_SESSION_TOKEN
-    $env:AWS_ACCESS_KEY_ID = $Creds.Credentials.AccessKeyId
-    $env:AWS_SECRET_ACCESS_KEY = $Creds.Credentials.SecretAccessKey
-    $env:AWS_SESSION_TOKEN = $Creds.Credentials.SessionToken
-    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
-    $env:AWS_ACCESS_KEY_ID = $Tmp_AWS_ACCESS_KEY_ID
-    $env:AWS_SECRET_ACCESS_KEY = $Tmp_AWS_SECRET_ACCESS_KEY
-    $env:AWS_SESSION_TOKEN = $Tmp_AWS_SESSION_TOKEN
-  } else {
-    $SecretValueRaw = aws secretsmanager get-secret-value --secret-id "${SecretArn}" --query SecretString --output text
+  if ($ModPlatformADConfig.ContainsKey("SecretNames")) {
+    foreach ($SecretId in $ModPlatformADConfig.SecretNames.GetEnumerator()) {
+      $SecretValueRaw = aws secretsmanager get-secret-value --secret-id $SecretId.Value --query SecretString --output text
+      $Passwords[$SecretId.Name] = $SecretValueRaw
+    }
   }
-  "$SecretValueRaw" | ConvertFrom-Json
+  return $Passwords
 }
 
 function Get-ModPlatformADJoinCredential {
@@ -78,7 +95,7 @@ function Get-ModPlatformADJoinCredential {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
+    Optional hasthtable containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -91,7 +108,7 @@ function Get-ModPlatformADJoinCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [PSCustomObject]$ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
@@ -125,7 +142,7 @@ function Get-ModPlatformADAdminCredential {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
+    Optional hashtable containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -138,7 +155,7 @@ function Get-ModPlatformADAdminCredential {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [PSCustomObject]$ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"
@@ -172,7 +189,7 @@ function Get-ModPlatformADSafeModeAdministratorPassword {
     HashTable as returned from Get-ModPlatformADConfig function
 
 .PARAMETER ModPlatformADSecret
-    Optional PSCustomObject containing secrets as returned from Get-ModPlatformADSecret
+    Optional hashtable containing secrets as returned from Get-ModPlatformADSecret
 
 .EXAMPLE
     $ADConfig = Get-ModPlatformADConfig
@@ -185,7 +202,7 @@ function Get-ModPlatformADSafeModeAdministratorPassword {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory=$true)][hashtable]$ModPlatformADConfig,
-    [PSCustomObject]$ModPlatformADSecret
+    [hashtable]$ModPlatformADSecret
   )
 
   $ErrorActionPreference = "Stop"

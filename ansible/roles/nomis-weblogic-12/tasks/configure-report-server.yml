@@ -1,0 +1,153 @@
+---
+- name: Configure report server name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^REPORT_SERVER_NAME=.*'
+    line: "REPORT_SERVER_NAME={{ server_name }}"
+    state: present
+
+- name: Template Reports scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  loop:
+    - src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
+      dest: /home/oracle/admin/scripts/createReportsServerInstance.sh
+    - src: 12/home/oracle/admin/scripts/createCredentialsFiles.sh.j2
+      dest: /home/oracle/admin/scripts/createCredentialsFiles.sh
+
+- name: Generate credentials files
+  become_user: oracle
+  command: bash /home/oracle/admin/scripts/createCredentialsFiles.sh
+
+- name: Insert WLST nmConnect block for start/stop scripts
+  vars:
+    sh_indent: "\t"
+    domain_name: "nomis"
+    nm_port: 5556
+    nm_host: "localhost"
+    nm_type: "ssl"
+  ansible.builtin.blockinfile:
+    path: "{{ item }}"
+    insertbefore: '^\s*echo "  (start|stop)ComponentInternal'
+    marker: "# {mark} ANSIBLE WLST NM CONNECT"
+    block: |
+      {{ sh_indent }}echo "  nmConnect(" >> "${PY_LOC}"
+      {{ sh_indent }}echo "    userConfigFile='/u01/tmp/wlst.userconfig'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    userKeyFile='/u01/tmp/wlst.userkey'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    host='{{ nm_host }}'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    port={{ nm_port }}," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    domainName='{{ domain_name }}'," >> "${PY_LOC}"
+      {{ sh_indent }}echo "    nmType='{{ nm_type }}'" >> "${PY_LOC}"
+      {{ sh_indent }}echo "  )" >> "${PY_LOC}"
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
+    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
+
+- name: Create the initial report server
+  become_user: oracle
+  command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
+
+- name: Start report server
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
+
+- name: Stop report server
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
+
+- name: Configure report tools name
+  ansible.builtin.lineinfile:
+    path: "{{ filename }}"
+    regexp: '^COMPONENT_CONFIG_PATH=.*'
+    line: "COMPONENT_CONFIG_PATH=/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsToolsComponent/{{ tools_instance_name }}"
+    state: present
+
+- name: Set reports server configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: oracle
+    group: oinstall
+    mode: '0640'
+  loop: "{{ report_server_configuration_filenames }}"
+
+- name: Update sourceDir line in rwserver.conf file
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^(\s*)<!--property name="sourceDir" value=".*"/-->'
+    line: '\1<property name="sourceDir" value="/u01/tag/reports"/>'
+    backrefs: yes
+  loop: "{{ rwserver_conf_filenames }}"
+
+- name: Update tempDir line in rwserver.conf file
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^(\s*)<!--property name="tempDir" value=".*"/-->'
+    line: '\1<property name="tempDir" value="/u01/tag/tmp"/>'
+    backrefs: yes
+  loop: "{{ rwserver_conf_filenames }}"
+
+- name: Check jobtype for rwEng in rwserver.conf
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^(\s*)<job jobType="report" engineId="rwEng" securityId="rwJaznSec"/>'
+    line: '\1<job jobType="report" engineId="rwEng"/>'
+    backrefs: yes
+  loop: "{{ rwserver_conf_filenames }}"
+  check_mode: yes
+  register: rweng_check
+
+- name: Create a backup of rwserver.conf where required
+  ansible.builtin.copy:
+    src: "{{ item.item }}"
+    dest: "{{ item.item }}.{{ ansible_date_time.iso8601 }}"
+    remote_src: yes
+  loop: "{{ rweng_check.results }}"
+  when: item.changed
+
+- name: Modify rwserver.conf where required
+  ansible.builtin.lineinfile:
+    path: "{{ item.item }}"
+    regexp: '^(\s*)<job jobType="report" engineId="rwEng" securityId="rwJaznSec"/>'
+    line: '\1<job engineId="rwEng" jobType="report"/>'
+    backrefs: yes
+  loop: "{{ rweng_check.results }}"
+  when: item.changed
+
+- import_tasks: enable-weblogic-services.yml
+  vars:
+    service_state: restarted
+
+- name: Start report server after config updates
+  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
+  become: yes
+  become_user: oracle
+  args:
+    executable: /bin/bash
+
+- name: Remove WLST NM connect block from start/stop scripts
+  ansible.builtin.blockinfile:
+    path: "{{ item }}"
+    marker: "# {mark} ANSIBLE WLST NM CONNECT"
+    state: absent
+  loop:
+    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
+    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
+
+- name: Remove WLST userConfig and userKey files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /u01/tmp/wlst.userconfig
+    - /u01/tmp/wlst.userkey

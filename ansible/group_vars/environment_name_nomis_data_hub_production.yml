@@ -25,18 +25,15 @@ ndh_cdecopy_confs:
   pd:
     ndh_cdecopy_azure_storage_account_name: offlocprodapp
     ndh_cdecopy_azure_storage_container_name: cde
-    ndh_cdecopy_noncore_hostname: PDRDW0030.azure.hmpp.root
     ndh_cdecopy_s3_bucket_name: offloc-upload20240517094139820400000001
   dr:
     # don't enable offloc on DR until needed
     ndh_cdecopy_azure_storage_account_name:
     ndh_cdecopy_azure_storage_container_name:
-    ndh_cdecopy_noncore_hostname:
     ndh_cdecopy_s3_bucket_name:
 
 ndh_environment: "{{ ec2.tags['nomis-data-hub-environment'] }}"
 ndh_cdecopy_conf: "{{ ndh_cdecopy_confs[ndh_environment] }}"
 ndh_cdecopy_azure_storage_account_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_azure_storage_account_name }}"
 ndh_cdecopy_azure_storage_container_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_azure_storage_container_name }}"
-ndh_cdecopy_noncore_hostname: "{{ ndh_cdecopy_conf.ndh_cdecopy_noncore_hostname }}"
 ndh_cdecopy_s3_bucket_name: "{{ ndh_cdecopy_conf.ndh_cdecopy_s3_bucket_name }}"

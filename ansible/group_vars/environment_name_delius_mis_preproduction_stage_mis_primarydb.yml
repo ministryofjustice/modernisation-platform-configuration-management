@@ -6,6 +6,7 @@ database_primary_sid: STGMIS
 rman_level_0_backup_duration_target: "12:00"
 rman_uncompressed_backup: Y
 rman_retention_policy: RECOVERY WINDOW OF 31 DAYS
+rman_channel_cap: 4
 database_parameters:
   sga_max_size: 60G
   sga_target: 60G
@@ -39,12 +40,14 @@ required_patches:
         filename: p35413661_1925000DBRU_Linux-x86-64.zip
       - target_version: "19.27"
         filename: p35413661_1927000DBRU_Linux-x86-64.zip
+      - target_version: "19.28"
+        filename: p35413661_1928000DBRU_Linux-x86-64.zip        
     description: "ORA-600 [OPTDESC] ASSERT NEED TO BE INTRODUCED EARLIER IN QKNA INSTEAD OF QERIX"
     grid_patch: false
     database_patch: true
 oracle_software:
-  version: "19.27"
-  combo_patch: p37591516_190000_Linux-x86-64.zip
+  version: "19.28"
+  combo_patch: p37952382_190000_Linux-x86-64.zip
   opatch:
     version: 12.2.0.1.46
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
@@ -78,3 +81,94 @@ disks_partition:
     oracle_group: flash
     oracle_label: FLASH04
 source_db: "STGMIS"
+all_oem_metrics:
+   host:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme2n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 1
+        START_RECORD 2
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme2n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 2
+        START_RECORD 3
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme4n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 3
+        START_RECORD 4
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme4n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 4
+        START_RECORD 5
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme6n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 5
+        START_RECORD 6
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme6n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 6
+        START_RECORD 7
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme7n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 7
+        START_RECORD 8
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme7n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 8
+        START_RECORD 9
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme12n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 9
+        START_RECORD 10
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme12n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 8
+        END_RECORD 10
+        START_RECORD 11
+        metric , ME$IOWAIT
+        column , IOWAIT
+        warning_threshold , 50
+        critical_threshold , 70
+        occurrences , 12
+        END_RECORD 11

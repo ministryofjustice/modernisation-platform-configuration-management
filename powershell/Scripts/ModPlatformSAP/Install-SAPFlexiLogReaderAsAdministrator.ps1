@@ -1,0 +1,28 @@
+Import-Module ModPlatformSAP -Force
+
+$ErrorActionPreference = "Stop"
+
+. ../Common/Install-7Zip.ps1
+$SAPConfig  = Get-ModPlatformSAPConfig
+$SAPSecrets = Get-ModPlatformSAPSecrets $SAPConfig
+Get-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
+Expand-SAPInstaller $SAPConfig.InstallPackages.FlexiLogReader
+
+$ShortcutDir = Join-Path -Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) -ChildPath "4.3 Client Tools"
+if (-not (Test-Path $ShortcutDir)) {
+  Write-Output "Creating Desktop Folder: $ShortcutDir"
+  New-Item -ItemType Directory -Path $ShortcutDir -Force
+}
+$ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "FlexiLogReader64.lnk"
+if (-not (Test-Path $ShortcutPath)) {
+  Write-Output "Creating Desktop Shortcut: $ShortcutPath"
+  $WScriptShell = New-Object -ComObject WScript.Shell
+  $Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
+  $TargetPath = Join-Path -Path $SAPConfig.InstallPackages.FlexiLogReader.ExtractDir -ChildPath "FlexiLogReader64"
+  $TargetPath = Join-Path -Path $TargetPath -ChildPath "FlexiLogReader64.exe"
+  $Shortcut.TargetPath = $TargetPath
+  $Shortcut.IconLocation = $TargetPath
+  $Shortcut.Save()
+} else {
+  Write-Output "Skipping Desktop Shortcut as $ShortcutPath already present"
+}

@@ -1,0 +1,6 @@
+/u01/app/oracle/Middleware/oracle_common/common/bin/wlst.sh <<EOF
+connect("{{ weblogic_admin_username }}","{{ weblogic_admin_password }}","localhost:7001")
+createReportsToolsInstance(instanceName='{{ tools_instance_name }}',machine='{{ machine_name }}')
+createReportsServerInstance(instanceName='{{ server_name }}',machine='{{ machine_name }}')
+exit()
+EOF
