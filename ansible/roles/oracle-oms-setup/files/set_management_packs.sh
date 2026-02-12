@@ -49,7 +49,7 @@ SELECT
     COALESCE(application_name,'UNKNOWN') application_name,
     COALESCE(existing_management_packs,'null') existing_management_packs,
     coalesce(
-        LISTAGG(pack_name, '+') WITHIN GROUP(
+        LISTAGG(DISTINCT pack_name, '+') WITHIN GROUP(
         ORDER BY
             pack_name
         ),
