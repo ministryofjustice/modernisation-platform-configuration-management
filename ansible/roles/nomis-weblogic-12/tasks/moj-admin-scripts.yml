@@ -1,0 +1,38 @@
+---
+- name: Create moj admin directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /home/oracle/admin/scripts/
+
+- name: Copy moj admin scripts
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+#    - /home/oracle/admin/scripts/wait_for_entry_in_log.sh
+    - /home/oracle/admin/scripts/create_managed_app.py
+#    - /home/oracle/admin/scripts/set_ms_log_rotation.py
+#    - /home/oracle/admin/scripts/get_param.py
+#    - /home/oracle/admin/scripts/set_param.py
+#    - /home/oracle/admin/scripts/ms_state.py
+#    - /home/oracle/admin/scripts/ms_state.sh
+#    - /home/oracle/admin/scripts/lb_maintenance_mode.sh
+
+#- name: Copy moj admin files
+#  ansible.builtin.template:
+#    src: "12{{ item }}"
+#    dest: "{{ item }}"
+#    owner: oracle
+#    group: oinstall
+#    mode: "0644"
+#  loop:
+#    - /home/oracle/admin/scripts/README.md
+#    - /home/oracle/admin/scripts/weblogic.properties

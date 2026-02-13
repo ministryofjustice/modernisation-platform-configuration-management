@@ -1,0 +1,23 @@
+[Unit]
+Description=WLS_HOTPAGE
+After=weblogic-server.service
+Requires=weblogic-server.service
+
+[Service]
+KillMode=process
+KillSignal=SIGTERM
+ExecStart=/home/oracle/admin/scripts/start_WLS_HOTPAGE.sh
+ExecStop=/home/oracle/admin/scripts/stopManagedWebLogic.sh WLS_HOTPAGE
+Group=oinstall
+PIDFile=/tmp/WLS_HOTPAGE.pid
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=30
+TasksMax=infinity
+TimeoutStartSec=360
+TimeoutStopSec=180
+Type=simple
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

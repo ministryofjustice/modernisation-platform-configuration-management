@@ -1,0 +1,64 @@
+---
+# set up specific log-rotate for nomis-web instances
+- name: set up specific log-rotate for nomis-web instances
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - /etc/logrotate.d/nomis-web
+
+- name: Get SELinux state
+  ansible.builtin.shell: getenforce || true
+  changed_when: false
+  check_mode: false
+  register: logrotate_selinux_mode
+
+- name: Check if permissive state applied already
+  ansible.builtin.stat:
+    path: /root/.ansible-logrotate-selinux
+  register: ansible_logrotate_selinux_installed
+
+- name: Enable permissive mode for logrotate
+  ansible.builtin.shell: |
+    set -eo pipefail
+    main() {
+      if [[ ! -e /root/.ansible-logrotate-selinux ]]; then
+        semanage permissive -a logrotate_t > /root/.ansible-logrotate-selinux
+      fi
+    }
+    main 2>&1 | logger -p local3.info -t ansible-nomis-web
+  when:
+    - logrotate_selinux_mode.stdout|lower == "enforcing" or logrotate_selinux_mode.stdout|lower == "permissive"
+    - not ansible_logrotate_selinux_installed.stat.exists
+
+# cleanup java rotate logs
+- name: Setup archived log cleanup cron 1
+  ansible.builtin.cron:
+    name: "log_cleanup_1"
+    minute: "10"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/*/logs -name 'access.log[0-9]*' -mtime +90 -exec rm -f {} \\;"
+
+#- name: Setup archived log cleanup cron 2
+#  ansible.builtin.cron:
+#    name: "log_cleanup_2"
+#    minute: "20"
+#    hour: "3"
+#    job: "find /u01/app/oracle/Middleware/logs  -mtime +90 -exec rm -f {} \\;"
+
+- name: Setup archived log cleanup cron 3
+  ansible.builtin.cron:
+    name: "log_cleanup_3"
+    minute: "30"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/ohs1/logs -name 'access_log.*' -mtime +90 -exec rm -f {} \\;"
+
+- name: Setup archived log cleanup cron 4
+  ansible.builtin.cron:
+    name: "log_cleanup_4"
+    minute: "40"
+    hour: "3"
+    job: "find /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/ohs1/logs -name 'ohs1-*.log' -mtime +365 -exec rm -f {} \\;"
