@@ -87,9 +87,11 @@
         - agent_emctl.stat.exists
         - has_diagnostic_pack
 
-    - name: Disable OEM Script-Based Monitoring if no Diagnostic Pack
+    # Script-based alerts are used for *all* targets (including those which also
+    # use Native OEM notifications) so we must also start or stop exclusions
+    # to prevent us receiving script-based notifications during the blackout
+    - name: Start or Stop Exclusion for OEM Script-Based Monitoring
       include_tasks: script_exclusion.yml
-      when: not has_diagnostic_pack
 
   # block
   become: true

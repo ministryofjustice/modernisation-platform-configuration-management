@@ -3,7 +3,7 @@
   debug:
     var: ansible_run_tags
 
-- name: Check Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
+- name: Check if Oracle Enterprise Manager Cloud Control 13c Release 5 already installed
   ansible.builtin.stat:
     path: "{{ oem_agent_base }}/agent_inst/bin/emctl"
   register: oem_agent_software_installed
