@@ -1,0 +1,41 @@
+---
+# Deploy Extract parameter files based on which database is local
+- name: Generate TABLE lines for MIS
+  ansible.builtin.shell: |
+    # get sys password for the source database from Secret Manager
+    sys_pwd=$(aws secretsmanager get-secret-value \
+      --secret-id "/oracle/database/{{ oracle_goldengate_db.mis.tns_alias }}/passwords" \
+      --query 'SecretString' \
+      --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+    if [ -z "$sys_pwd" ]; then
+      echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_db.mis.tns_alias }}"
+      exit 1
+    fi
+    sqlplus -s sys/$sys_pwd@{{ oracle_goldengate_db.mis.tns_alias }} as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    SELECT 'TABLE ' || src_owner || '.' || src_table_name || ';'
+    FROM {{ oracle_goldengate_db.mis.schema_owner }}.STRM_TAB_CONTROL
+    ORDER BY 1;
+    EXIT;
+    EOF
+  register: mis_tableinclude_output
+  become: yes
+  become_user: oracle
+  changed_when: false
+  failed_when: mis_tableinclude_output.rc != 0
+
+- name: Set fact splitting stdout into lines
+  ansible.builtin.set_fact:
+    oms_owner_tableinclude_lines: "{{ mis_tableinclude_output.stdout_lines }}"  
+
+- name: Deploy Extract parameter file for MIS
+  ansible.builtin.template:
+    src: extract_mis.prm.j2
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_streams.mis.extract_name }}.prm"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0644"
+
+# call task add_checkpointtable.yml to create the checkpoint table used by the capture and replicat processes. We need to create it after deploying the parameter files because the parameter files specify the name of the checkpoint table, and it needs to exist before we can start the processes.
+- name: Create checkpoint table for capture and replicat processes
+  import_tasks: add_checkpointtable.yml

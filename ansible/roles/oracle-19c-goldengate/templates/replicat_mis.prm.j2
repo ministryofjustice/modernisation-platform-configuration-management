@@ -1,0 +1,38 @@
+REPLICAT {{ oracle_goldengate_streams.mis.replicat_name }}
+
+GETENV (NLS_LANG)
+
+-- Use credential store alias instead of hardcoded credentials
+USERIDALIAS MIS_DB
+
+ASSUMETARGETDEFS
+
+-- --- Checkpoint table ---
+-- Recommended to ensure restartability
+CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
+
+-- --- Error handling ---
+REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_streams.mis.replicat_name }}.dsc, APPEND, MEGABYTES 500
+REPORTCOUNT EVERY 5 MINUTES, RATE
+
+DBOPTIONS DEFERREFCONST
+DBOPTIONS SUPPRESSTRIGGERS
+DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
+
+-- Map MIS staging tables
+MAP "{{ oracle_goldengate_db.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_streams.mis.target_schema }}"."STG_*", &
+    COLMAP (
+      USEDEFAULTS, &
+      MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &
+      MIS_COMMAND_FLAG = @CASE(
+        @GETENV('GGHEADER', 'OPTYPE'), 
+          'INSERT', 'I', 
+          'UPDATE', 'U', 
+          'PK UPDATE', 'U', 
+          'SQL COMPUPDATE', 'U', 
+          'DELETE', 'D', 
+          'TRUNCATE', 'D', 
+          '?'), &
+      MIS_SCN = @GETENV('TRANSACTION', 'CSN'));
+-- We don't set MIS_LOAD_ID here. It'll get set by the DML Apply handler package.

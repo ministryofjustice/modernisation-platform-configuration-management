@@ -1,0 +1,136 @@
+---
+- name: Detect local Oracle database instance
+  import_tasks: detect_local_database.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Install Oracle GoldenGate binaries
+  import_tasks: install.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Configure Oracle ASM
+  import_tasks: configure_asm.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Configure GoldenGate home subdirectories and mgr
+  import_tasks: configure_gg_home.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Configure Oracle database parameters for GoldenGate
+  import_tasks: configure_database_parameters.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-database-config
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Create GoldenGate database administrator user
+  import_tasks: create_gg_dbuser.yml
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-database-config
+    - goldengate-dbuser
+    - goldengate-audit
+    - goldengate-mis
+
+- name: Configure GoldenGate credential store
+  import_tasks: configure_credential_store.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - goldengate-credentials
+    - goldengate-audit
+    - goldengate-mis
+
+# Database-specific deployment tasks
+- name: Deploy GoldenGate database objects (packages, control tables)
+  import_tasks: deploy_db_objects.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-database-objects
+    - goldengate-audit
+    - goldengate-mis
+
+# Audit database processes (AUDITDATA and AUDITREF)
+- name: Install GoldenGate capture processes (Audit databases)
+  import_tasks: install_audit_capture.yml
+  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-audit
+    - goldengate-capture
+
+- name: Install GoldenGate replicat processes (Audit databases)
+  import_tasks: install_audit_replicat.yml
+  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-audit
+    - goldengate-replicat
+
+# MIS database processes
+- name: Install GoldenGate capture processes (MIS database)
+  import_tasks: install_mis_capture.yml
+  when: oracle_goldengate_deploy_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-capture
+
+- name: Install GoldenGate replicat processes (MIS database)
+  import_tasks: install_mis_replicat.yml
+  when: oracle_goldengate_deploy_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-replicat
+
+# Control scripts (deploy on all hosts)
+- name: Deploy GoldenGate control scripts
+  import_tasks: deploy_control_scripts.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-scripts
+    - goldengate-audit
+    - goldengate-mis
+
+# To do:
+# - Add packages for supporting DML handlers and database jobs
+# - Implement capture and replicat update processes (e.g. using Ansible to deploy updated parameter files and then restart the processes to pick up changes)
+# - Implement foreign archive log cleanup processes to manage storage in the ASM directory used for source archive logs (e.g. use RMAN)
+# - Configure GoldenGate error handling and alerting (e.g. email notifications on process failures, automated restarts, etc.)
+# - Configure GoldenGate monitoring (e.g. Oracle Enterprise Manager, Grafana dashboards using GoldenGate metrics, or custom monitoring scripts)
+# - Implement any necessary security hardening for the GoldenGate installation (e.g. encrypting trail files)
+# - Implement backup and recovery processes for GoldenGate configuration and metadata (e.g. regular backups of the credential store, parameter files, etc.)?
+# - Implement processes for applying GoldenGate software patches and updates

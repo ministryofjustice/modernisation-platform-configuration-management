@@ -1,0 +1,8 @@
+---
+- name: restart manager
+  ansible.builtin.service:
+    name: ggmgr
+    state: restarted
+  when: false  # enable when you have a proper service definition
+
+# Similarly add handlers to restart Extract/Replicat if you wrap them in services

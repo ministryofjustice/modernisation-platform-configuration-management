@@ -1,0 +1,278 @@
+---
+# Create GoldenGate administrator database user
+# This user is created in the source and target databases with appropriate privileges
+# Password retrieved from AWS Secrets Manager
+
+# As auditdata and auditref streams both connect to the same audit database, they can use the same ggadmin user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
+
+- name: Create GoldenGate database user when local database is configured
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.mis.tns_alias]
+  block:
+    - name: Generate random password for ggadmin user
+      ansible.builtin.set_fact:
+        ggadmin_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+        gg_oms_schema_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+      no_log: true
+
+    # CAPTURE priv is still needed for the source db user as the downstream capture process will connect remotely using this user, ßbut we don't need to grant APPLY privileges on the source database as the replicat process won't be connecting to the source database
+    - name: Set GoldenGate admin privileges based on database type 
+      when: oracle_goldengate_local_db_sid in [oracle_goldengate_db.source.tns_alias]
+      ansible.builtin.set_fact: 
+        gg_privilege_type: 'CAPTURE'
+
+    - name: Set GoldenGate admin privileges based on database type 
+      when: oracle_goldengate_local_db_sid in [oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.auditref.tns_alias, oracle_goldengate_db.mis.tns_alias]
+      ansible.builtin.set_fact: 
+        gg_privilege_type: '*'
+
+    # Create gg db user based on https://docs.oracle.com/en/middleware/goldengate/core/19.1/oracle-db/establishing-oracle-goldengate-credentials.html 
+    - name: Create SQL script to create GoldenGate admin user
+      ansible.builtin.copy:
+        content: |
+          -- Create GoldenGate Administrator User
+          -- This user will be used for GoldenGate replication processes
+          
+          SET ECHO ON
+          SET FEEDBACK ON
+          
+          WHENEVER SQLERROR EXIT SQL.SQLCODE
+          
+          -- Check if user exists
+          DECLARE
+            v_count NUMBER;
+          BEGIN
+            SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
+            IF v_count > 0 THEN
+              EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_dbuser }} CASCADE';
+              DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_dbuser }} dropped');
+            END IF;
+          END;
+          /
+          
+          -- Create GoldenGate user
+          PROMPT Creating GoldenGate user {{ oracle_goldengate_dbuser }}...
+          CREATE USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ ggadmin_password }}"
+            DEFAULT TABLESPACE USERS
+            TEMPORARY TABLESPACE TEMP
+            QUOTA UNLIMITED ON USERS;
+                   
+          -- Grant additional GoldenGate-specific privileges
+          GRANT CREATE SESSION TO {{ oracle_goldengate_dbuser }};
+          GRANT CREATE VIEW to {{ oracle_goldengate_dbuser }};
+          GRANT CONNECT to {{ oracle_goldengate_dbuser }};
+          GRANT RESOURCE to {{ oracle_goldengate_dbuser }};
+          GRANT ALTER SYSTEM to {{ oracle_goldengate_dbuser }} ;
+          GRANT SELECT ANY DICTIONARY to {{ oracle_goldengate_dbuser }};
+          GRANT SELECT ON v$database to {{ oracle_goldengate_dbuser }};
+
+          EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE); 
+
+          -- Verify user creation
+          PROMPT
+          PROMPT Verifying user creation:
+          SELECT username, account_status, default_tablespace, created 
+          FROM dba_users 
+          WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
+          
+          PROMPT
+          PROMPT Verifying DBA privilege:
+          SELECT grantee, granted_role 
+          FROM dba_role_privs 
+          WHERE grantee = UPPER('{{ oracle_goldengate_dbuser }}')
+          AND granted_role = 'DBA';
+          
+          PROMPT
+          PROMPT GoldenGate user {{ oracle_goldengate_dbuser }} created successfully!
+          
+          EXIT
+        dest: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
+        owner: oracle
+        group: oinstall
+        mode: "0600"
+      no_log: true
+
+    - name: Create GoldenGate database user
+      ansible.builtin.shell: |
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        
+        if [ -z "$SYS_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+          exit 1
+        fi
+        
+        # Create the GoldenGate user
+        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba @/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql
+      environment:
+        ORACLE_SID: "{{ oracle_goldengate_local_db_sid }}"
+      register: create_user_output
+      become: yes
+      become_user: oracle
+      changed_when: "'created successfully' in create_user_output.stdout"
+      failed_when: create_user_output.rc != 0
+      no_log: true
+
+    - name: Display user creation results (sanitized)
+      ansible.builtin.debug:
+        msg: 
+          - "Database: {{ oracle_goldengate_local_db_sid }}"
+          - "GoldenGate user: {{ oracle_goldengate_dbuser }}"
+          - "Status: {{ 'Created successfully' if create_user_output.changed else 'Already exists or error' }}"
+
+    - name: Store ggadmin password in AWS Secrets Manager
+      ansible.builtin.shell: |
+        # Retrieve current secret value
+        CURRENT_SECRET=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null)
+        
+        if [ -z "$CURRENT_SECRET" ]; then
+          echo "ERROR: Cannot retrieve existing passwords secret for {{ oracle_goldengate_local_db_sid }}"
+          exit 1
+        fi
+
+        # Check if ggadmin password already exists
+        if echo "$CURRENT_SECRET" | jq -e 'has("ggadmin")' >/dev/null; then
+          # If ggadmin exists, check if the password needs updating
+          CURRENT_PASSWORD=$(echo "$CURRENT_SECRET" | jq -r '.ggadmin')
+          if [ "$CURRENT_PASSWORD" != "{{ ggadmin_password }}" ]; then
+            echo "Updating existing ggadmin password in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ ggadmin_password }}" '.ggadmin = $pwd')
+          else
+            echo "ggadmin password is already up-to-date in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            exit 0
+          fi
+        else
+          # Add ggadmin password to the existing secret
+          echo "Adding ggadmin password to AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+          UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ ggadmin_password }}" '. + {ggadmin: $pwd}')
+        fi
+        
+        # Update the secret with the new value
+        aws secretsmanager update-secret \
+          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+          --secret-string "$UPDATED_SECRET"
+      register: secret_store_output
+      changed_when: "'ARN' in secret_store_output.stdout"
+      failed_when: secret_store_output.rc != 0
+      no_log: true
+
+    - name: Display secret storage confirmation
+      ansible.builtin.debug:
+        msg: "GoldenGate ggadmin password stored in AWS Secrets Manager at /oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords (ggadmin key)"
+
+    - name: Clean up temporary SQL script
+      ansible.builtin.file:
+        path: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
+        state: absent
+
+    - name: Create AUDITDATA schema and tables if local database is the audit database
+      when: oracle_goldengate_deploy_auditdata
+      ansible.builtin.shell: |
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        
+        if [ -z "$SYS_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+          exit 1
+        fi
+        
+        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba <<EOF
+        SET ECHO ON
+        SET FEEDBACK ON
+        
+        WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+        -- For auditdata we need to create a dummy schema in the target database and create the table structures based on the source schema as we have to use MAP in the Replicat param file.
+        -- User will be locked as we don't want anyone connecting to it, it's only needed for the Replicat MAP in the param file.
+        CREATE USER GG_OMS_OWNER PROFILE DEFAULT IDENTIFIED BY {{ gg_oms_owner_password }} DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS ACCOUNT LOCK;
+        EXIT;
+        EOF
+      register: create_schema_output
+      become: yes
+      become_user: oracle
+      changed_when: "'created' in create_schema_output.stdout"
+      failed_when: create_schema_output.rc != 0 and 'already exists' not in create_schema_output.stderr
+      no_log: true
+
+    - name: Display schema creation results (sanitized)
+      ansible.builtin.debug:
+        msg: 
+          - "Database: {{ oracle_goldengate_local_db_sid }}"
+          - "Schema: GG_OMS_OWNER"
+          - "Status: {{ 'Created successfully' if create_schema_output.changed else 'Already exists or error' }}"
+
+    - name: Create AUDITDATA tables if local database is the audit database
+      when: oracle_goldengate_deploy_auditdata
+      ansible.builtin.shell: |
+        -- connect to source database as sysdba to generate DDL for the source tables, replacing the schema name with the target schema name in the output so that we can create the same table structures in the target database for the replicat MAP to work, and then execute the generated DDL in the target database to create the tables
+        export ORACLE_SID={{ oracle_goldengate_source_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_source_db_sid }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_source_db_sid }} as sysdba <<EOF
+        SET LONG 2000000
+        SET PAGESIZE 0
+        BEGIN
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PRETTY', true);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SIZE_BYTE_KEYWORD', false);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SEGMENT_ATTRIBUTES', false);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'STORAGE', false);
+        --   DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'CONSTRAINTS', false);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'REF_CONSTRAINTS', false);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'TABLESPACE', false);
+          DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PARTITIONING', false);
+        END;
+        /
+
+        SELECT replace(DBMS_METADATA.get_ddl ('TABLE', table_name, owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_streams.auditdata.target_schema }}')
+        FROM   all_tables
+        WHERE  owner      = '{{ oracle_goldengate_db.source.schema_owner }}'
+        order by table_name
+
+        spool /tmp/table_ddl.sql
+        /
+
+        spool off
+        EXIT;
+        EOF
+
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+
+        # run the same SQL script in the target database to create the tables there based on the source table structures
+        sqlplus -s / as sysdba <<EOF
+        SET ECHO ON
+        SET FEEDBACK ON
+        WHENEVER SQLERROR EXIT SQL.SQLCODE
+        @/tmp/table_ddl.sql
+        EXIT;
+        EOF
+      register: create_tables_output
+      become: yes
+      become_user: oracle
+      changed_when: "'TABLE' in create_tables_output.stdout"
+      failed_when: create_tables_output.rc != 0

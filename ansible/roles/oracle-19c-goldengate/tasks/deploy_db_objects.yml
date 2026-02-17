@@ -1,0 +1,45 @@
+---
+- name: Deploy MIS support packages
+  ansible.builtin.template:
+    src: sql/install_mis_packages.sql.j2
+    dest: "{{ oracle_goldengate_home }}/sql/install_mis_packages.sql"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0644"
+
+- name: Run MIS support package install
+  ansible.builtin.command: >
+    sqlplus -s /nolog @{{ oracle_goldengate_home }}/sql/install_mis_packages.sql
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  changed_when: false  # adjust when you wire in proper checks
+
+- name: Deploy Audit support packages
+  ansible.builtin.template:
+    src: sql/install_audit_packages.sql.j2
+    dest: "{{ oracle_goldengate_home }}/sql/install_audit_packages.sql"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0644"
+
+- name: Run Audit support package install
+  ansible.builtin.command: >
+    sqlplus -s /nolog @{{ oracle_goldengate_home }}/sql/install_audit_packages.sql
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  changed_when: false
+
+- name: Deploy control-table procedures and batch control table
+  ansible.builtin.template:
+    src: sql/create_mis_batch_control.sql.j2
+    dest: "{{ oracle_goldengate_home }}/sql/create_mis_batch_control.sql"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0644"
+
+- name: Run control-table DDL script
+  ansible.builtin.command: >
+    sqlplus -s /nolog @{{ oracle_goldengate_home }}/sql/create_mis_batch_control.sql
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  changed_when: false

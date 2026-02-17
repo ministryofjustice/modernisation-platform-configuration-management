@@ -1,0 +1,9 @@
+---
+# Deploy Replicat parameter files based on which database is local
+- name: Deploy Replicat parameter file for MIS
+  ansible.builtin.template:
+    src: replicat_mis.prm.j2
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_streams.mis.replicat_name }}.prm"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0644"

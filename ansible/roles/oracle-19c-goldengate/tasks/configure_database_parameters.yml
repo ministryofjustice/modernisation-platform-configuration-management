@@ -1,0 +1,165 @@
+---
+# Configure Oracle database parameters for GoldenGate replication
+# This task enables ENABLE_GOLDENGATE_REPLICATION parameter on source and target databases
+# Note: This parameter change does not require database restart
+
+- name: Create GoldenGate database user when local database is configured
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+  block:
+    - name: Configure SQL statements for the source database
+      when: oracle_goldengate_local_db_sid == oracle_goldengate_db.source.tns_alias
+      block:
+        # if the db is the source db then additionally enable supplemental logging which is required for GoldenGate replication
+        - name: Set Supplemental Logging
+          ansible.builtin.set_fact: 
+            supplemental_logging_sql: | 
+              -- Show current value
+              PROMPT Supplemental logging value:
+              SELECT supplemental_log_data_min FROM v$database;
+
+              -- Enable minimal supplemental logging
+              ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+              
+              -- Show supplemental logging status
+              PROMPT Supplemental logging enabled:
+              SELECT supplemental_log_data_min FROM v$database;
+
+        - name: Read LOG_ARCHIVE_CONFIG
+          ansible.builtin.shell: |
+            export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+            export ORAENV_ASK=NO
+            . oraenv > /dev/null 2>&1
+
+            sqlplus -s / as sysdba << 'EOSQL'
+            SET ECHO OFF
+            SET FEEDBACK OFF
+            SET HEADING OFF
+            SET PAGESIZE 0
+            SET TRIMSPOOL ON
+            WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+            SELECT value FROM v$parameter WHERE name = 'log_archive_config';
+
+            EXIT
+            EOSQL
+          register: log_archive_config_output
+          become: yes
+          become_user: oracle
+          changed_when: false
+          failed_when: log_archive_config_output.rc != 0
+
+        - name: Normalise LOG_ARCHIVE_CONFIG value
+          ansible.builtin.set_fact:
+            lac: "{{ (log_archive_config_output.stdout | trim) }}"
+
+        - name: Extract DG_CONFIG entries as a list
+          ansible.builtin.set_fact:
+            dg_config_list: >-
+              {{
+                (
+                  lac
+                  | regex_search('DG_CONFIG\\s*=\\s*\\(([^)]*)\\)', '\\1')
+                  | default('')
+                )
+                .split(',')
+                | map('trim')
+                | reject('equalto','')
+                | list
+              }}
+
+        - name: Compute updated DG_CONFIG list including MIS/Audit
+          ansible.builtin.set_fact:
+            dg_config_new: >-
+              {{
+                (dg_config_list + [oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.mis.tns_alias])
+                | map('trim')
+                | unique
+                | list
+              }}
+
+        - name: Decide if update is needed
+          ansible.builtin.set_fact:
+            needs_lac_update: "{{ dg_config_new | difference(dg_config_list) | length > 0 }}"
+
+        - name: Update LOG_ARCHIVE_CONFIG to include MIS and Audit if missing
+          when: needs_lac_update
+          ansible.builtin.shell: |
+            export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+            export ORAENV_ASK=NO
+            . oraenv > /dev/null 2>&1
+
+            sqlplus -s / as sysdba << 'EOSQL'
+            SET ECHO OFF
+            SET FEEDBACK ON
+            WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+            ALTER SYSTEM SET LOG_ARCHIVE_CONFIG='DG_CONFIG=({{ dg_config_new | join(",") }})' SCOPE=BOTH;
+
+            EXIT
+            EOSQL
+          register: lac_update_output
+          become: yes
+          become_user: oracle
+          failed_when: lac_update_output.rc != 0
+
+        # WHY IS MIS EXTRACT WORKING WITHOUT HAVING THE ADDITIONAL DEST CONFIG WITH TEMPLATE? IS IT USING THE ARCHIVE LOGS SENT FROM SOURCE THAT WERE CONFIGURED FOR STREAMS USE?
+        # MAYBE AUDIT EXTRACT WILL WORK WITHOUT THE ADDITIONAL DEST CONFIG AS WELL? NEED TO TEST THIS. IF SO THEN MAYBE THE ADDITIONAL DEST CONFIG FOR THE SOURCE DB ISN'T ACTUALLY NEEDED UNLESS WE WANT TO USE IT FOR SOME REASON OTHER THAN GOLDENGATE REPLICATION (E.G. RMAN BACKUPS OF THE ARCHIVE LOGS OR SOMETHING)
+        - name: Set Log Archiving
+          ansible.builtin.set_fact: 
+            log_archive_dest_sql: | 
+              PROMPT Current Log Archiving value:
+              SELECT value FROM v$parameter WHERE name = 'log_archive_dest_8'; 
+              
+              PROMPT Enable log shipping to target database 
+              PROMPT *********************************************
+              PROMPT *********** NOT ENABLING FOR NOW ************
+              PROMPT ALTER SYSTEM SET log_archive_dest_8='SERVICE={{ oracle_goldengate_db.audit.tns_alias }} ASYNC NOREGISTER VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) TEMPLATE={{ oracle_goldengate_asm_dir }}/%t_%s_%r.log DB_UNIQUE_NAME={{ oracle_goldengate_db.audit.tns_alias }}' SCOPE=BOTH; 
+              PROMPT *********************************************
+
+              ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_8=ENABLE SCOPE=BOTH;
+
+              PROMPT New Log archiving configuration: 
+              SELECT DEST_ID, STATUS, DESTINATION FROM v$archive_dest WHERE DEST_ID = 8;
+    # end of block for source database specific parameter configuration
+
+    - name: Configure parameters in the database
+      ansible.builtin.shell: |
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        
+        # Execute SQL to enable GoldenGate replication
+        sqlplus -s / as sysdba << 'EOSQL'
+        SET ECHO OFF
+        SET FEEDBACK ON
+        SET HEADING OFF
+        SET PAGESIZE 0
+        
+        WHENEVER SQLERROR EXIT SQL.SQLCODE
+        
+        PROMPT Current ENABLE_GOLDENGATE_REPLICATION value:
+        SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+        
+        PROMPT Enable GoldenGate replication
+        ALTER SYSTEM SET ENABLE_GOLDENGATE_REPLICATION=TRUE SCOPE=BOTH;
+        
+        PROMPT New ENABLE_GOLDENGATE_REPLICATION value:
+        SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+        
+        {{ supplemental_logging_sql | default('') }}
+
+        {{ log_archive_dest_sql | default('') }}
+        
+        EXIT
+        EOSQL
+      environment:
+        ORACLE_SID: "{{ oracle_goldengate_local_db_sid }}"
+      register: sql_output
+      become: yes 
+      become_user: oracle 
+      failed_when: sql_output.rc != 0 
+      
+    - name: Display SQL output for {{ oracle_goldengate_local_db_sid }}
+      ansible.builtin.debug:
+        var: sql_output.stdout_lines
+      when: sql_output is defined

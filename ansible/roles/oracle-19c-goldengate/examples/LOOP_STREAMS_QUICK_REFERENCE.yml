@@ -1,0 +1,145 @@
+---
+# Quick Reference: Looping through oracle_goldengate_streams
+# 
+# The oracle_goldengate_streams variable structure:
+# oracle_goldengate_streams:
+#   auditdata:
+#     extract_name: EXTAUDD
+#     replicat_name: REPAUDD
+#     trail_prefix: dt
+#   auditref:
+#     extract_name: EXTAUDR
+#     replicat_name: REPAUDR
+#     trail_prefix: rf
+#   mis:
+#     extract_name: EXTMIS
+#     replicat_name: REPMIS
+#     trail_prefix: ms
+
+# ============================================================================
+# MOST COMMON PATTERNS
+# ============================================================================
+
+# Pattern 1: Loop through all streams and access the key (stream name)
+# Result: Creates dirdat/auditdata, dirdat/auditref, dirdat/mis
+- name: Create directory for each stream
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0755"
+  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# Pattern 2: Access nested values (trail_prefix)
+# Result: Creates dirdat/dt, dirdat/rf, dirdat/ms
+- name: Create directory using trail prefix
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_home }}/dirdat/{{ item.value.trail_prefix }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0755"
+  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop_control:
+    label: "{{ item.value.trail_prefix }}"
+
+# Pattern 3: Combine key and value (YOUR SPECIFIC REQUIREMENT)
+# Result: Creates dirdat/auditdata/dt, dirdat/auditref/rf, dirdat/mis/ms
+- name: Create stream subdirectory with trail prefix
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0755"
+  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}/{{ item.value.trail_prefix }}"
+
+# ============================================================================
+# CONDITIONAL LOOPS (Only create for deployed streams)
+# ============================================================================
+
+# Pattern 4: Only create directories for streams deployed on this host
+- name: Create directories only for deployed streams
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0755"
+  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  when: >
+    (item.key == 'auditdata' and oracle_goldengate_deploy_auditdata | default(false)) or
+    (item.key == 'auditref' and oracle_goldengate_deploy_auditref | default(false)) or
+    (item.key == 'mis' and oracle_goldengate_deploy_mis | default(false))
+  loop_control:
+    label: "{{ item.key }}"
+
+# ============================================================================
+# ACCESSING ALL ATTRIBUTES
+# ============================================================================
+
+# Pattern 5: Access all attributes of each stream
+- name: Use all stream attributes
+  ansible.builtin.debug:
+    msg: |
+      Stream Name: {{ item.key }}
+      Extract Name: {{ item.value.extract_name }}
+      Replicat Name: {{ item.value.replicat_name }}
+      Trail Prefix: {{ item.value.trail_prefix }}
+      Full Path: {{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}
+  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# ============================================================================
+# ACCESSING A SPECIFIC STREAM
+# ============================================================================
+
+# Pattern 6: Access a specific stream directly (no loop)
+- name: Create directory for auditdata stream only
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_home }}/dirdat/auditdata/{{ oracle_goldengate_streams.auditdata.trail_prefix }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_group }}"
+    mode: "0755"
+
+# Pattern 7: Use specific stream values
+- name: Display auditdata extract name
+  ansible.builtin.debug:
+    msg: "Auditdata Extract: {{ oracle_goldengate_streams.auditdata.extract_name }}"
+
+# ============================================================================
+# USEFUL LOOP VARIABLES REFERENCE
+# ============================================================================
+# 
+# When using: loop: "{{ oracle_goldengate_streams | dict2items }}"
+# 
+# Available variables in loop body:
+#   item.key                         → Stream name (auditdata, auditref, mis)
+#   item.value.extract_name          → Extract name (EXTAUDD, EXTAUDR, EXTMIS)
+#   item.value.replicat_name         → Replicat name (REPAUDD, REPAUDR, REPMIS)
+#   item.value.trail_prefix          → Trail prefix (dt, rf, ms)
+#
+# Example iteration 1:
+#   item.key = "auditdata"
+#   item.value.extract_name = "EXTAUDD"
+#   item.value.replicat_name = "REPAUDD"
+#   item.value.trail_prefix = "dt"
+#
+# Example iteration 2:
+#   item.key = "auditref"
+#   item.value.extract_name = "EXTAUDR"
+#   item.value.replicat_name = "REPAUDR"
+#   item.value.trail_prefix = "rf"
+#
+# Example iteration 3:
+#   item.key = "mis"
+#   item.value.extract_name = "EXTMIS"
+#   item.value.replicat_name = "REPMIS"
+#   item.value.trail_prefix = "ms"

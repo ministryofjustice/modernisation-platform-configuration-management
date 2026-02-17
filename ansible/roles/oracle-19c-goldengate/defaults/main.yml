@@ -1,0 +1,98 @@
+---
+artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+artefacts_s3_bucket_path: hmpps/oracle-19c-software
+
+oracle_inventory: /u01/app/oraInventory
+  
+oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
+oracle_goldengate_software_dir: /u02/stage/goldengate
+oracle_goldengate_software: V983658-01.zip
+
+# OS user/group for GoldenGate software (must already exist on host)
+oracle_goldengate_owner: oracle
+oracle_goldengate_group: oinstall
+
+# Database user for GoldenGate replication (created in target databases)
+oracle_goldengate_dbuser: ggadmin
+
+# GoldenGate subdirectories under the home directory by default but trail and checkpoint directories can be overridden to point to different storage if needed
+oracle_goldengate_trail_dir: "{{ oracle_goldengate_home }}/dirdat"
+oracle_goldengate_param_dir: "{{ oracle_goldengate_home }}/dirprm"
+oracle_goldengate_report_dir: "{{ oracle_goldengate_home }}/dirrpt"
+oracle_goldengate_checkpoint_dir: "{{ oracle_goldengate_home }}/dirchk"
+oracle_goldengate_scripts_dir: "/home/oracle/admin/goldengate/scripts"
+
+oracle_goldengate_directories:
+  - "{{ oracle_goldengate_trail_dir }}"
+  - "{{ oracle_goldengate_param_dir }}"
+  - "{{ oracle_goldengate_report_dir }}"
+  - "{{ oracle_goldengate_checkpoint_dir }}"
+  - "{{ oracle_goldengate_scripts_dir }}"
+  
+oracle_goldengate_asm_dir: "+DATA/{{ oracle_goldengate_db.source.tns_alias }}/GG_ARCHIVELOGS"
+
+# Logical names per stream
+oracle_goldengate_streams:
+  auditdata:
+    extract_name: AUDDTEXT
+    replicat_name: AUDTREP
+    trail_prefix: dt
+    target_schema: AUDITDATA_OMS_OWNER
+  auditref:
+    extract_name: AUDRFEXT
+    replicat_name: AUDRREP
+    trail_prefix: rf
+    target_schema: AUDITREF
+  mis:
+    extract_name: MISEXT
+    replicat_name: MISREP
+    trail_prefix: ms
+    target_schema: BODISTAGING
+
+# DB connection defaults (override via inventory/group vars)
+oracle_goldengate_db:
+  source:
+    tns_alias: T1CNOMG
+    schema_owner: OMS_OWNER
+    credential_alias: SOURCE_DB
+  audit:
+    tns_alias: T1CAUDG
+    schema_owner: AUDITDATA
+    credential_alias: AUDIT_DB
+  auditref:
+    tns_alias: T1CAUDG
+    schema_owner: AUDITREF
+    credential_alias: AUDIT_DB
+  mis:
+    tns_alias: T1CMISG
+    schema_owner: BODISTAGING
+    credential_alias: MIS_DB
+  
+# Define which database instance is running on this host
+# This controls which GoldenGate components are deployed
+# If not set, will be automatically detected by checking running Oracle instances
+# Valid values: T1CAUDG (for audit databases) or T1CMISG (for MIS database)
+oracle_goldengate_local_db_sid: ""
+
+# Automatically determine which streams to deploy based on local database
+# AUDITDATA and AUDITREF are deployed on hosts running the audit database (T1CAUDG)
+# MIS is deployed on hosts running the MIS database (T1CMISG)
+oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.audit.tns_alias }}"
+oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.auditref.tns_alias }}"
+oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.mis.tns_alias }}"
+
+# Where to find SQL/PLSQL artefacts in the repo
+oracle_goldengate_sql_dir: "{{ role_path }}/templates/sql"
+
+# full path to the home directory
+gg_env:
+  GG_HOME: "{{ oracle_goldengate_home }}"
+  PATH: "{{ oracle_goldengate_home }}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+
+bash_profile: |
+  export GG_HOME={{ oracle_goldengate_home }}
+  #export GG_HOME=/u01/app/oracle/ggs
+  export PATH=$GG_HOME:$PATH
+  export LD_LIBRARY_PATH=$GG_HOME:$ORACLE_HOME/lib
+  alias gg='cd $GG_HOME; ./ggsci'
+  alias cdgg='cd $GG_HOME'
