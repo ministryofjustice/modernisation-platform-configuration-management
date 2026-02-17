@@ -1,6 +1,12 @@
 ---
+- name: Set deployment target host as a fact for use in templates
+  ansible.builtin.set_fact:
+    target_host: "{{ inventory_hostname }}"
+  when: (inventory_hostname is defined) and (inventory_hostname|length > 0)
+  
 - name: Detect local Oracle database instance
   import_tasks: detect_local_database.yml
+  when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
   tags:
     - goldengate
     - goldengate-install

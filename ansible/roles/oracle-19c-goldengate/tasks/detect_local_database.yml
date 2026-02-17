@@ -50,3 +50,57 @@
   changed_when: false
   when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
   
+# which deployment is being run is determined by which database is detected as running locally. If the audit or auditref database is detected then the audit deployment will be run, if the mis database is detected then the mis deployment will be run. If the source database is detected then no deployment will be run since GoldenGate binaries are only needed on target hosts for replication, and the source host is only used for capture.
+# compare the local sid against the configured database SIDs to set facts used to control which GoldenGate components are deployed in later tasks
+
+- name: Set GoldenGate deployment flags for audit database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: true
+    oracle_goldengate_deploy_auditref: true
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_db.audit.tns_alias
+
+- name: Set GoldenGate deployment flags for auditref database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: true
+    oracle_goldengate_deploy_auditref: true
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_db.auditref.tns_alias
+
+- name: Set GoldenGate deployment flags for mis database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: false
+    oracle_goldengate_deploy_auditref: false
+    oracle_goldengate_deploy_mis: true
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_db.mis.tns_alias
+
+- name: Set GoldenGate deployment flags to false for unmatched database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: false
+    oracle_goldengate_deploy_auditref: false
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid != oracle_goldengate_db.audit.tns_alias
+    - oracle_goldengate_local_db_sid != oracle_goldengate_db.auditref.tns_alias
+    - oracle_goldengate_local_db_sid != oracle_goldengate_db.mis.tns_alias
+
+- name: Display planned GoldenGate deployment
+  ansible.builtin.debug:
+    msg:
+      - "GoldenGate deployment plan:"
+      - "  Deploy AuditData: {{ oracle_goldengate_deploy_auditdata | default(false) }}"
+      - "  Deploy AuditRef: {{ oracle_goldengate_deploy_auditref | default(false) }}"
+      - "  Deploy MIS: {{ oracle_goldengate_deploy_mis | default(false) }}"
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+

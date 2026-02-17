@@ -90,7 +90,7 @@
           recurse: yes
         register: goldengate_shiphome_dirs
 
-        failed_when: install_output.rc != 0 and "Installation completed successfully" not in ((install_output.stdout | default('')) ~ (install_output.stderr | default('')))
+      - name: Fail if GoldenGate shiphome directory not found
         ansible.builtin.fail:
           msg: "GoldenGate shiphome directory not found under {{ oracle_goldengate_software_dir }}"
         when: goldengate_shiphome_dirs.matched | default(0) | int == 0
@@ -117,3 +117,9 @@
           dest: "/home/{{ oracle_goldengate_owner }}/.bash_profile"
           owner: "{{ oracle_goldengate_owner }}"
           group: "{{ oracle_goldengate_group }}"
+          
+      # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
+      - name: Pause after installation for verification
+        ansible.builtin.pause:
+          prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful before proceeding with configuration. Press Enter to continue when ready."
+
