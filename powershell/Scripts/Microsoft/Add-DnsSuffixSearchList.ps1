@@ -116,6 +116,27 @@ $DeliusConfigs = @{
     "delius-mis-dev.internal",
     "azure.noms.root"
   )
+  "stage" = @(
+    "us-east-1.ec2-utilities.amazonaws.com",
+    "eu-west-2.compute.internal",
+    "eu-west-2.ec2-utilities.amazonaws.com",
+    "delius-mis-stage.internal",
+    "azure.hmpp.root"
+  )
+  "preprod" = @(
+    "us-east-1.ec2-utilities.amazonaws.com",
+    "eu-west-2.compute.internal",
+    "eu-west-2.ec2-utilities.amazonaws.com",
+    "delius-mis-preprod.internal",
+    "azure.hmpp.root"
+  )
+  "prod" = @(
+    "us-east-1.ec2-utilities.amazonaws.com",
+    "eu-west-2.compute.internal",
+    "eu-west-2.ec2-utilities.amazonaws.com",
+    "delius-mis-prod.internal",
+    "azure.hmpp.root"
+  )
 }
 
 function Get-ConfigByTags {
