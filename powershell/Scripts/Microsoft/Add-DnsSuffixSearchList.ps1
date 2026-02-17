@@ -103,6 +103,13 @@ $Configs = @{
     "azure.hmpp.root",
     "infra.int"
   )
+  "delius-mis-development" = @(
+    "us-east-1.ec2-utilities.amazonaws.com",
+    "eu-west-2.compute.internal",
+    "eu-west-2.ec2-utilities.amazonaws.com",
+    "delius-mis-dev.internal",
+    "azure.noms.root"
+  )
 }
 
 function Get-ConfigNameByTags {
