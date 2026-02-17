@@ -96,14 +96,20 @@ $Configs = @{
     "azure.hmpp.root",
     "nomis.hmpps-production.modernisation-platform.internal"
   )
-  "core-shared-services-production-hmpp-dc" = @(
+}
+
+$DomainConfigs = @{
+  "azure.hmpp.root" = @(
     "us-east-1.ec2-utilities.amazonaws.com",
     "eu-west-2.compute.internal",
     "eu-west-2.ec2-utilities.amazonaws.com",
     "azure.hmpp.root",
     "infra.int"
   )
-  "delius-mis-development" = @(
+}
+
+$DeliusConfigs = @{
+  "dev" = @(
     "us-east-1.ec2-utilities.amazonaws.com",
     "eu-west-2.compute.internal",
     "eu-west-2.ec2-utilities.amazonaws.com",
@@ -120,12 +126,16 @@ function Get-ConfigNameByTags {
   $EnvironmentNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "environment-name" }).Value
   $DomainNameTag = ($Tags.Tags | Where-Object { $_.Key -eq "domain-name" }).Value
   $ServerTypeTag = ($Tags.Tags | Where-Object { $_.Key -eq "server-type" }).Value
+  $DeliusEnvTag = ($Tags.Tags | Where-Object { $_.Key -eq "delius-environment" }).Value
 
   if ($Configs.Contains($EnvironmentNameTag)) {
-    Return $EnvironmentNameTag
+    Return $Configs[$EnvironmentNameTag]
+  }
+  elseif ($DeliusEnvTag -and $DeliusConfigs.Contains($DeliusEnvTag)) {
+    Return $DeliusConfigs[$DeliusEnvTag]
   }
   elseif ($DomainNameTag -eq 'azure.hmpp.root' -and $ServerTypeTag -eq 'DomainController' -and $EnvironmentNameTag -eq 'core-shared-services-production') {
-    Return "$EnvironmentNameTag-hmpp-dc"
+    Return $DomainConfigs[$DomainNameTag]
   }
   else {
     Write-Error "Unsupported environment-name tag value $EnvironmentNameTag"
@@ -135,13 +145,14 @@ function Get-ConfigNameByTags {
 
 $ErrorActionPreference = "Stop"
 
-if (-not $ConfigName) {
-  $ConfigName = Get-ConfigNameByTags
+if ($ConfigName) {
+  if (-not $Configs.Contains($ConfigName)) {
+    Write-Error "Unsupported ConfigName $ConfigName"
+  }
+  $TargetSuffixSearchList = $Configs[$ConfigName]
+} else {
+  $TargetSuffixSearchList = Get-ConfigByTags
 }
-if (-not $Configs.Contains($ConfigName)) {
-  Write-Error "Unsupported ConfigName $ConfigName"
-}
-$TargetSuffixSearchList = $Configs[$ConfigName]
 $ExistingSuffixSearchList = (Get-DnsClientGlobalSetting).SuffixSearchList
 
 $Missing = $TargetSuffixSearchList | Where-Object { $ExistingSuffixSearchList -NotContains $_ }
