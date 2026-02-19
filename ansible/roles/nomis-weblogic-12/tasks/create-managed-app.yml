@@ -28,9 +28,15 @@
         set -o pipefail
         . ~/.bash_profile
         . $WL_HOME/server/bin/setWLSEnv.sh
+        if [ "{{ weblogic_managed_app }}" = "WLS_TAGSAR" ]; then
+          EXTRA_ARG=""
+        else
+          EXTRA_ARG="--start_managed_server false"
+        fi
         main() {
           echo "# create managed app {{ weblogic_managed_app }}"
-          java weblogic.WLST ~/admin/scripts/create_managed_app.py -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties --start_managed_server false
+          java weblogic.WLST ~/admin/scripts/create_managed_app.py \
+            -p /u01/software/weblogic/{{ weblogic_managed_app }}.properties $EXTRA_ARG
         }
         main 2>&1 # | logger -p local3.info -t ansible-weblogic
       args:
@@ -79,13 +85,13 @@
       async: 1200
       poll: 20
 
-  always:
-    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+#  always:
+#    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
+#      ansible.builtin.file:
+#        path: "{{ item }}"
+#        state: absent
+#      loop:
+#        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
 
   # block
   when: not weblogic_created_managed_app_check.stat.exists
