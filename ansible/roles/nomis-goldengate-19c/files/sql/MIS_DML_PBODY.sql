@@ -1,0 +1,1182 @@
+CREATE OR REPLACE PACKAGE BODY MIS_DML_PKG AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:  	This script creates procedures to support
+ *                      Oracle Goldengate DML Handlers for Prison-NOMIS release 1.0e.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version: 		1.0e
+ *
+ *  Author:		R. Taylor - EDS UK Ltd.
+ *
+ *  Date:		Monday, 21 May 2007.
+ * 
+ *  Change History:	Version:  Date:	    Author:	Description:	
+ *
+ *			1.1.0	  21/05/07  R. Taylor	Initial version for 1.1
+ *			1.1.1	  06/06/07  R. Taylor	Moved table renaming to apply.
+ *                                                      Added message logging.
+ *			                                Tag LCRs for apply.
+ *			1.1.2	  11/06/07  R. Taylor	Added procedures for creating and
+ *                                                      dropping capture and apply processes.
+ *                                                      Added procedures for handling column
+ *                                                      type differences between source and target.
+ *			1.1.3	  13/06/07  R. Taylor	Added data type check to capture and
+ *                                                      apply startup procedures.
+ *			1.1.4	  25/06/07  R. Taylor	Check apply error queue as part of batch
+ *                                                      creation; set batch flag for apply errors.
+ *                                                      Also check for active capture process.
+ *			1.1.5	  02/07/07  R. Taylor	Check and log scn message numbers.
+ *                                                      Correct name lengths for capture process.
+ *                                                      Add table existence checks to capture and
+ *                                                      apply startup procedures.
+ *			1.1.6	  11/07/07  R. Taylor	Use low watermark scn for stop_apply logging.
+ *                                                      Check for changes to defined primary key columns in
+ *                                                      capture transform rather than unique index columns.
+ *                                                      Do not check for record existing in apply
+ *                                                      transform if no key information is enabled.
+ *			1.1.7	  23/07/07  R. Taylor	Ignore all long/lob data types, only capture
+ *                                                      LCRs with INSERT/UPDATE/DELETE command type.
+ *			1.1.8	  24/07/07  R. Taylor	Restructure apply to allow CLOBs to be processed.
+ *			1.0e.9	  17/09/07  R. Taylor	Renumbered for switch from 1.1 to 1.0e.
+ *                                                      Redesigned to use DML apply handlers to cope with
+ *                                                      multiple key updates expected with offender merge.
+ *			1.0e.10	  26/09/07  R. Taylor	Revert to key splitting in capture transform.
+ *			1.0e.11	  01/10/07  R. Taylor	Added handling for invalid LOB locators.
+ *			1.0e.12	  01/05/08  R. Taylor	Harden input parameter handling.
+ *                                                      Call refresh_col_controls from start_capture.
+ *			1.0e.13	  05/05/08  P. Godhania	Added log_purge procedure.
+ *			1.0e.14	  07/05/08  R. Taylor	Use upper case in get name and table exists functions.
+ *			1.0e.15	  20/05/08  R. Taylor	Message logging changes.
+ *			1.0e.16	  27/05/08  R. Taylor	Check for queued errors in start_apply.
+ *			1.0e.17	  10/06/08  R. Taylor	Retry on timeout in stop_apply/capture.
+ *			1.0e.18	  12/06/08  R. Taylor	Set batch error_flag to N on apply completion.
+ *                                                      Sleep before retry in stop_apply/capture. 
+ *			1.0e.19	  15/08/08  R. Taylor	Modify set_col_differences to detect target columns
+ *                                                      that do not occur in source table. 
+ *			1.0e.20	  15/08/08  R. Taylor	Always convert LONG columns to LOB in capture
+ *                                                      transformation to avoid errors from apply process. 
+ *			1.0e.21	  01/09/08  R. Taylor	Store key column names against STRM_TAB_CONTROL.
+ *                                                      Redesign apply handlers to use distinct procedures for
+ *                                                      each table. Generate procedures in set_apply_handlers.
+ *                                                      Get key columns from control record in capture transform.
+ *			1.0e.22	  10/09/08  R. Taylor	Log message create time in stop_apply.
+ *                                                      Add get_capture_nrs_name function.
+ *                                                      Add reload_tables procedure.
+ *			1.0e.23	  22/09/08  R. Taylor	Add calls to refresh_col_controls, refresh_apply_keys,
+ *                                                      set_apply_handlers to start_apply (parameter-driven) and
+ *                                                      remove calls from create_new_batch.
+ *                                                      Modify apply_handler_user not to set batch error
+ *                                                      flag for invalid_lob_locator exceptions.
+ *			1.0e.24	  23/09/08  R. Taylor	Use same local procedure convert_lcr_to_insert in capture
+ *                                                      transform key splitting and apply handler processing.
+ *			1.0e.25	  24/09/08  R. Taylor	Increase plsql buffer length in reload_table and
+ *                                                      column list functions.
+ *			1.0e.26	  17/10/08  R. Taylor	Expose mis_gen_pkg.log_strm_error procedure (previously local).
+ *			1.0e.27	  19/12/08  R. Taylor	Added stop point handling.
+ *                                                      Modified log_purge to check file status before deletion.
+ *			1.0e.28	  15/01/09  R. Taylor	Check start_scn when setting stop points.
+ *			1.0e.29	  19/01/09  R. Taylor	Ensure apply running during wait for stop points.
+ *                                                      Check for apply process errors (as well as queue entries).
+ *			1.0e.30	  22/01/09  R. Taylor	Add function get_scn_timestamp. Use in create_new_batch.
+ *			1.0e.31	  23/01/09  R. Taylor	Modified set_stop_points to reference staged_start_datetime.
+ *                                                      Remove get_scn_timestamp function as cannot invoke
+ *                                                      scn_to_timestamp across database link parameter.
+ *                                                      Call set_stop_points at end of create_new_batch and
+ *                                                      return output parameter.
+ *                                                      Modify apply_hi_scn to default low watermark if high is null.
+ *                                                      Add apply_message_date and capture_log_date functions.
+ *			1.0e.32	  26/01/09  R. Taylor	Remove apply_message_date function.
+ *                                                      Use capture_log_date for staged end date in create_new_batch.
+ *			1.0e.33	  04/03/09  R. Taylor	Defect 14424 - modify capture control for stop points.
+ *                                                      Raise application errors with defined text.
+ *                                                      Trap empty STRM_TAB_CONTROL when checking tables.
+ *			1.0e.34	  19/03/09  R. Taylor	Defect 14424 - modify capture control for stop points.
+ *                                                      Correct error message in check_table_existence.
+ *			1.0e.35	  22/03/09  R. Taylor	Add function get_scn_timestamp. Use in create_new_batch.
+ *			                                Modify apply_hi_scn to check capture if no apply info.
+ *                                                      Add unload_tables procedure.
+ *			1.0e.36	  06/08/09  R. Taylor	Add procedure set_capture_pos_rules. Use in start_capture.
+ *			1.0e.37	  14/08/09  R. Taylor	Modify use of where clauses in apply handler
+ * 							to use bind variables.
+ *			1.0e.38	  07/10/09  R. Taylor	Modify command type checking in capture transformation.
+ *			1.0e.39	  14/10/09  R. Taylor	Call update_tab_stats procedure from check_table_existence.
+ *			1.0e.40   15/10/09  R. Taylor	Modify setting of bind variables in apply handler.
+ *			1.0e.41   30/11/09  R. Taylor	Revert apply handler to remove bind variable use.
+ *			1.0e.42   14/12/09  R. Taylor	Revert capture transform command type checking.
+ *			1.0e.43   19/01/10  R. Taylor	Trap embedded quotes in apply where clause.
+ *			1.0e.44   13/01/10  R. Taylor	Rewrite apply handling to handle some execute errors to
+ * 							achieve INSERT/UPDATE switching for batches without select.
+ *			1.0e.45   19/01/10  R. Taylor	Reinstate capture transform command type checking changes.
+ *			1.0e.46   21/01/10  R. Taylor	Always try insert first in apply handler.
+ *			1.0e.47   21/01/10  R. Taylor	Pass batch number into apply handler.
+ *			1.0e.48   08/02/10  R. Taylor	Convert schema name in capture transform.
+ *			1.0e.49   15/02/10  R. Taylor	Split positive capture rules out by table.
+ *                                                      Add procedure clear_capture_pos_rules.
+ *			1.0e.50	  24/02/10  R. Taylor	Use upper case in update table stats procedure.
+ *                                                      Explicitly set instantiation scn for new tables.
+ *			1.0e.51	  01/03/10  R. Taylor	Specify command types in positive capture rules.
+ *			1.0e.52	  11/03/10  R. Taylor	Added get_version function.
+ *			1.0e.53	  06/08/10  R. Taylor	Modified for Oracle 11gR1.
+ *			1.0e.54	  12/08/10  R. Taylor	Updated to allow for normal and reference target tables
+ *                                                      from a common source table.
+ *			1.0e.55	  02/09/10  R. Taylor	Allow for missing key columns.
+ *			1.0e.56	  08/09/10  R. Taylor	Adjust LOB table rule conditions.
+ *			1.0e.57	  15/09/10  R. Taylor	Change REF table exception handling.
+ *                                                      Added log_apply procedure.
+ *			1.0e.58	  16/09/10  R. Taylor	Change mis_scn handling in unload_tables.
+ *			1.0e.59	  01/05/13  R. Taylor	Added purge_records procedure (defect 19143).
+ *			1.0e.60	  27/01/26  Migration	Migrated PK change detection from Streams Capture to
+ *                                                      GoldenGate Replicat apply handler. UPDATEs that modify
+ *                                                      PK columns are now split into DELETE+INSERT within
+ *                                                      apply_handler_user procedure for GG compatibility.
+ */
+
+  FUNCTION get_version RETURN varchar2 IS
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  BEGIN
+    return g_version;
+  END;
+
+
+  FUNCTION convert_anydata_to_varchar2 (
+    p_any_val in sys.anydata
+  ) RETURN varchar2 IS
+  -- packaged function convert_anydata_to_varchar2
+  -- will convert a SYS.ANYDATA record to a VARCHAR2 string
+
+    v_varchar2_val 	varchar2(32767);   
+    v_type 		varchar2(32) := '';   
+    v_rtn 		number;
+
+  BEGIN   
+    IF p_any_val is null THEN
+        return NULL;
+    END IF;
+  
+    v_type := lower(p_any_val.gettypename());
+
+    CASE v_type   
+            --alphabetical list of currently used types   
+            when 'sys.char' then   
+                v_rtn := p_any_val.getchar(v_varchar2_val);   
+            when 'sys.date' then   
+                v_rtn := p_any_val.getdate(v_varchar2_val);   
+            when 'sys.number' then   
+                v_rtn := p_any_val.getnumber(v_varchar2_val);   
+            when 'sys.raw' then   
+                v_varchar2_val := '<binary data>';   
+            when 'sys.timestamp' then   
+                v_rtn := p_any_val.gettimestamp(v_varchar2_val);   
+            when 'sys.varchar2' then
+                v_rtn := p_any_val.getvarchar2(v_varchar2_val);   
+            else
+                RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_data_exception,'Data type not handled.');
+    END CASE;
+
+    return substr(v_varchar2_val, 1, 2000);
+
+  END;
+
+  FUNCTION convert_anydata_to_date (
+    p_any_val in sys.anydata
+  ) RETURN date IS
+  -- packaged function convert_anydata_to_date
+  -- will convert a SYS.ANYDATA record to a date value
+
+    v_date_val 		date := null;   
+    v_type 		varchar2(32) := '';   
+    v_rtn 		number;
+
+  BEGIN   
+    IF p_any_val is null THEN
+        return NULL;
+    END IF;
+  
+    v_type := lower(p_any_val.gettypename());
+
+    CASE v_type   
+            --alphabetical list of currently used types   
+            when 'sys.char' then   
+                v_rtn := p_any_val.getchar(v_date_val);   
+            when 'sys.date' then   
+                v_rtn := p_any_val.getdate(v_date_val);
+            when 'sys.timestamp' then   
+                v_rtn := p_any_val.gettimestamp(v_date_val);
+            when 'sys.timestamp_with_timezone' then
+                v_rtn := p_any_val.gettimestamptz(v_date_val);
+            when 'sys.timestamp_with_ltz' then
+                v_rtn := p_any_val.gettimestampltz(v_date_val);
+            when 'sys.varchar2' then
+                v_rtn := p_any_val.getvarchar2(v_date_val);   
+            else
+                RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_data_exception,'Data type not handled.');
+    END CASE;
+
+    return v_date_val;
+
+  END;
+
+  FUNCTION get_xform_func_name(
+        p_tgt_owner 		IN     VARCHAR2,
+        p_tab_seq	 	IN     NUMBER
+    ) RETURN varchar2 RESULT_CACHE
+  IS
+  -- packaged function get_xfrom_func_name returns the capture transformation name
+  -- for the supplied target table
+    v_length 		number := length(p_tgt_owner);
+  BEGIN
+    IF v_length > 18 THEN
+        return substr(upper(p_tgt_owner), v_length-17, 18) ||
+                '_XFORM_'||mod(p_tab_seq,100000);
+    ELSE
+        return upper(p_tgt_owner)||'_XFORM_'||mod(p_tab_seq,100000);
+    END IF;
+  END;
+
+  FUNCTION get_dml_proc_name(
+        p_tgt_owner 		IN     VARCHAR2,
+        p_tab_seq	 	IN     NUMBER,
+        p_key_columns	 	IN     VARCHAR2
+    ) RETURN varchar2 RESULT_CACHE
+  IS
+  -- packaged function get_dml_proc_name returns the dml handler name
+  -- for the supplied target table (includes hash of key column names)
+    v_length 		number := length(p_tgt_owner);
+  BEGIN
+    IF v_length > 14 THEN
+        return 'OGG_'||substr(upper(p_tgt_owner), v_length-13, 14) ||
+                '_DML_'||mod(p_tab_seq,100000)||'_'||DBMS_UTILITY.GET_HASH_VALUE(p_key_columns,0,100000);
+    ELSE
+        return 'OGG_'||upper(p_tgt_owner) ||
+                '_DML_'||mod(p_tab_seq,100000)||'_'||DBMS_UTILITY.GET_HASH_VALUE(p_key_columns,0,100000);
+    END IF;
+  END;
+
+
+
+
+
+  PROCEDURE convert_lcr_to_insert (
+    p_row_lcr 	IN OUT sys.lcr$_row_record
+  ) IS
+  -- packaged procedure convert_lcr_to_insert
+  -- will convert row LCR record to INSERT using CONSTRUCT method
+    v_new_values     sys.lcr$_row_list;
+    v_old_values     sys.lcr$_row_list;
+    v_merged_values  sys.lcr$_row_list := sys.lcr$_row_list();
+    v_val_anydata    sys.anydata;
+  BEGIN
+    -- Get existing new and old values
+    v_new_values := p_row_lcr.get_values('new', 'N');
+    v_old_values := p_row_lcr.get_values('old', 'N');
+    
+    -- Build merged column list (prefer NEW values, fallback to OLD)
+    IF v_new_values IS NOT NULL AND v_new_values.COUNT > 0 THEN
+      v_merged_values := v_new_values;
+    ELSIF v_old_values IS NOT NULL THEN
+      v_merged_values := v_old_values;
+    END IF;
+    
+    -- For any OLD columns not in NEW, add them
+    IF v_old_values IS NOT NULL THEN
+      FOR i IN 1..v_old_values.COUNT LOOP
+        v_val_anydata := p_row_lcr.get_value('new', v_old_values(i).column_name, 'N');
+        IF v_val_anydata IS NULL THEN
+          v_merged_values.EXTEND;
+          v_merged_values(v_merged_values.COUNT) := v_old_values(i);
+        END IF;
+      END LOOP;
+    END IF;
+    
+    -- Construct new LCR with INSERT command type using Oracle CONSTRUCT method
+    p_row_lcr := sys.lcr$_row_record.CONSTRUCT(
+      source_database_name  => p_row_lcr.get_source_database_name(),
+      command_type          => 'INSERT',
+      object_owner          => p_row_lcr.get_object_owner(),
+      object_name           => p_row_lcr.get_object_name(),
+      old_values            => NULL,
+      new_values            => v_merged_values
+    );
+  END;
+
+  PROCEDURE parse_anydata_lcr (
+    p_in_anydata    IN  sys.anydata,
+    p_row_lcr	    OUT sys.lcr$_row_record,
+    p_src_db_name   OUT varchar2,
+    p_src_obj_owner OUT varchar2,
+    p_object_name   OUT varchar2,
+    p_command_type  OUT varchar2,
+    p_src_time	    OUT DATE,
+    p_scn	        OUT number,
+    p_tag 	        OUT varchar2
+  ) IS
+  -- local procedure apply_handler_user
+  -- will return important values for ANYDAYA structure containing an LCR.
+    v_rtn_val		number;
+  BEGIN
+    -- get row LCR
+    v_rtn_val := p_in_anydata.getObject(p_row_lcr);
+    -- get source database name
+    p_src_db_name := p_row_lcr.get_source_database_name();
+    -- get source object owner
+    p_src_obj_owner := p_row_lcr.get_object_owner();
+    -- get source object name
+    p_object_name := p_row_lcr.get_object_name();
+    -- get command type
+    p_command_type := p_row_lcr.get_command_type();
+    -- get source time for row LCR
+    p_src_time := p_row_lcr.get_source_time();
+    -- get SCN for row LCR
+    p_scn := p_row_lcr.get_scn();
+    -- get tag for row LCR
+    p_tag := RAWTOHEX(p_row_lcr.get_tag());
+  END;
+
+
+  FUNCTION capture_rule_row_xform_user (
+    p_in_anydata    IN sys.anydata,
+    p_tgt_owner     IN varchar2,
+    p_tgt_tables    IN varchar2,
+    p_key_columns   IN varchar2,
+    p_proc_flags    IN varchar2
+  ) RETURN mis_gen_pkg.mis_anydata_array
+  IS
+  -- packaged function capture_rule_row_xform_user will check row LCRs
+  -- destined for tables listed in STRM_TAB_CONTROL prior to queueing.
+  -- The function will convert updates that affect target key values
+  -- to paired delete and insert records.
+  -- Needs to be invoked from a wrapper function to pass in specific
+  -- staging table details.
+
+    v_rtn_val			number;
+    v_row_lcr0			sys.lcr$_row_record;
+    v_row_lcr			sys.lcr$_row_record;
+    v_row_lcr2			sys.lcr$_row_record;
+    v_out_anydata_array mis_gen_pkg.mis_anydata_array;
+
+    v_command_type		varchar2(30) := '';
+    v_object_name		varchar2(30);
+    v_source_db_name		varchar2(128);
+    v_source_object_owner	varchar2(30);
+    v_scn			    number;
+    v_tag 			    varchar2(20);
+    v_source_time		DATE;
+    v_target_object_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    v_target_object_names	varchar2(400) := mis_gen_pkg.strip_input(p_tgt_tables,400);
+    v_tgt_table_list		mis_gen_pkg.object_list;
+    v_target_object_name	varchar2(30);
+    v_plsql			varchar2(4000); 
+
+    v_proc_flags_str		varchar2(400) := mis_gen_pkg.strip_input(p_proc_flags,400);
+    v_proc_flags_list		mis_gen_pkg.object_list;
+    v_proc_flags		varchar2(30);
+
+    v_key_column_str		varchar2(400) := mis_gen_pkg.strip_input(p_key_columns,400);
+    v_key_column_list		mis_gen_pkg.object_list;
+    v_old_key_str		varchar2(2000) := null;
+    v_new_key_str		varchar2(2000) := null;
+    v_column_name		all_tab_columns.column_name%type;
+    v_key_change 		BOOLEAN := FALSE;
+    v_command_ok 		BOOLEAN := FALSE;
+
+  BEGIN
+
+    -- create empty return array
+    v_out_anydata_array := mis_gen_pkg.mis_anydata_array();
+
+    IF p_in_anydata.getTypeName() = 'SYS.LCR$_ROW_RECORD' THEN
+
+        -- get LCR details
+        parse_anydata_lcr
+           (p_in_anydata, v_row_lcr0, v_source_db_name, v_source_object_owner,
+            v_object_name, v_command_type, v_source_time, v_scn, v_tag);
+
+        -- debug message
+        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.1',
+                        'Processing ' || v_command_type || ' row LCR for ' || v_source_object_owner || '.' ||
+                        v_object_name || '@' || v_source_db_name || '.');
+
+        -- reset object owner to what is stored in the control table
+        v_row_lcr0.set_object_owner(v_target_object_owner);
+
+        -- process target table(s)
+        v_tgt_table_list := mis_gen_pkg.comma_to_object_list(v_target_object_names);
+        v_proc_flags_list := mis_gen_pkg.comma_to_object_list(v_proc_flags_str);
+
+        FOR i IN 1..v_tgt_table_list.count
+        LOOP
+            v_row_lcr := v_row_lcr0;
+            v_target_object_name := v_tgt_table_list(i);
+
+            -- debug message
+            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.2',
+                            'Processing ' || v_command_type || ' row LCR for target table ' ||
+                            v_target_object_name || '.');
+
+            -- rename object X to STG_X
+            v_row_lcr.set_object_name(v_target_object_name);
+
+            v_proc_flags := nvl(v_proc_flags_list(i),'NONE');
+
+            -- process INSERTs, UPDATES or DELETES, or
+            -- if processing flag is set for table include LOB WRITEs and LOB TRIMs
+            CASE v_command_type
+            WHEN 'INSERT' THEN
+                -- convert long data to lob data (just in case)
+                v_row_lcr.CONVERT_LONG_TO_LOB_CHUNK();
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                    -- add dummy batch number column
+                    v_row_lcr.add_column('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(-1));
+                END IF;
+                v_command_ok := TRUE;
+            WHEN 'UPDATE' THEN
+                -- convert long data to lob data (just in case)
+                v_row_lcr.CONVERT_LONG_TO_LOB_CHUNK();
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                    -- add dummy batch number column
+                    v_row_lcr.add_column('old', 'MIS_LOAD_ID', sys.anydata.convertNumber(-1));
+                END IF;
+                v_command_ok := TRUE;
+
+                -- debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.4',
+                                'Checking UPDATE row LCR for ' || v_source_object_owner || '.' ||
+                                v_object_name || '@' || v_source_db_name || '.', 2);
+                -- get primary key columns
+                v_key_column_list := mis_gen_pkg.comma_to_object_list(v_key_column_str);
+
+                -- check for key changes
+                FOR i IN 1..v_key_column_list.count
+                LOOP
+                    IF v_key_column_list(i) IS NOT NULL THEN
+                        v_new_key_str := convert_anydata_to_varchar2(v_row_lcr.get_value('new',
+                                                                     v_key_column_list(i), 'Y'));
+                        v_old_key_str := convert_anydata_to_varchar2(v_row_lcr.get_value('old',
+                                                                     v_key_column_list(i)));
+                        IF v_old_key_str IS NOT NULL AND (v_old_key_str <> v_new_key_str) THEN
+                            v_key_change := TRUE;
+                            v_column_name := v_key_column_list(i);
+                            EXIT; -- do not bother testing other values if any key changed
+                        END IF;
+                    END IF;
+                END LOOP;
+            WHEN 'DELETE' THEN
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                    -- add dummy batch number column
+                    v_row_lcr.add_column('old', 'MIS_LOAD_ID', sys.anydata.convertNumber(-1));
+                END IF;
+                v_command_ok := TRUE;
+            WHEN 'LONG WRITE' THEN
+                IF (instr(v_proc_flags, 'LONG') > 0) THEN
+                    -- convert long data to lob data and reset command type
+                    v_row_lcr.CONVERT_LONG_TO_LOB_CHUNK();
+                    v_command_type := v_row_lcr.get_command_type();
+                    IF (instr(v_proc_flags, 'REF') = 0) THEN
+                        -- add dummy batch number column
+                        v_row_lcr.add_column('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(-1));
+                    END IF;
+                    v_command_ok := TRUE;
+                END IF;
+            ELSE
+                IF (((instr(v_proc_flags, 'LOB') > 0) OR (instr(v_proc_flags, 'LONG') > 0)) AND
+                    v_command_type IN ('LOB WRITE','LOB TRIM','LOB ERASE')) THEN
+                    -- add dummy batch number column
+                    IF (instr(v_proc_flags, 'REF') = 0) THEN
+                        v_row_lcr.add_column('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(-1));
+                    END IF;
+                    v_command_ok := TRUE;
+                END IF;
+            END CASE;
+
+            IF v_key_change THEN
+        
+                -- split update that modifies key values into a delete and an insert
+                -- N.B. updates to keys and out-of-line LOBs at the same time result
+                -- in apply errors (whether or not the record is split).
+
+                -- log message
+                mis_gen_pkg.log_strm_message(v_target_object_owner, 'capture_rule_row_xform_user.6',
+                             'Update to key values detected for ' ||
+                             v_source_object_owner || '.' ||v_object_name || '@' || v_source_db_name ||
+                             ' (column_name=' || v_column_name || ' old:' || v_old_key_str ||
+                             ' new:' || v_new_key_str || ' scn=' || v_row_lcr.get_scn() ||
+                             '). Splitting row LCR.');
+
+                -- copy LCR record
+                v_row_lcr2 := v_row_lcr;
+
+                -- convert original LCR to delete
+                v_row_lcr.set_values('new', NULL);
+                v_row_lcr.set_command_type('DELETE');
+
+                -- tag delete row LCR for apply process
+                v_row_lcr.set_tag(HEXTORAW(g_tag2));
+
+                -- tag insert row LCR for apply process
+                v_row_lcr2.set_tag(HEXTORAW(g_tag));
+
+                -- convert copy LCR to insert
+                convert_lcr_to_insert(v_row_lcr2);
+
+                -- insert LCRs into output ANYDATA array
+                v_out_anydata_array.extend(2);
+                v_out_anydata_array(v_out_anydata_array.count-1) := sys.anydata.convertObject(v_row_lcr);
+                v_out_anydata_array(v_out_anydata_array.count) := sys.anydata.convertObject(v_row_lcr2);
+
+            ELSIF v_command_ok THEN
+
+                -- debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.7',
+                            'Capturing ' || v_command_type || ' row LCR for ' ||
+                            v_source_object_owner || '.' ||
+                            v_object_name || '@' || v_source_db_name || ', scn=' || v_row_lcr.get_scn() || '.');
+
+                -- tag row LCR for apply process
+                v_row_lcr.set_tag(HEXTORAW(g_tag));
+
+                -- insert LCR into output ANYDATA array
+                v_out_anydata_array.extend();
+                v_out_anydata_array(v_out_anydata_array.count) := sys.anydata.convertObject(v_row_lcr);
+
+            ELSE
+
+                -- return empty array for row LCRs of wrong command type; debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.8',
+                            'Rejected ' || v_command_type || ' row LCR for ' || v_source_object_owner || '.' ||
+                            v_object_name || '@' || v_source_db_name || '.');
+
+            END IF;
+        END LOOP;
+
+    ELSE
+
+        -- return empty array for non-row LCRs; log message
+        mis_gen_pkg.log_strm_message(v_target_object_owner, 'capture_rule_row_xform_user.9',
+                         'Rejected non-row LCR.');
+
+    END IF;
+
+    return v_out_anydata_array;
+
+    EXCEPTION
+
+        WHEN OTHERS THEN -- *** ABORT CAPTURE PROCESS ***
+            mis_gen_pkg.log_strm_error (v_target_object_owner, 'capture_rule_row_xform_user',
+                p_src_db => v_source_db_name, p_src_owner => v_source_object_owner,
+                p_src_table => v_object_name, p_tgt_table => v_target_object_name,
+                    p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+            RAISE;
+
+  END;
+
+
+  PROCEDURE apply_handler_user (
+    p_in_anydata    IN sys.anydata,
+    p_batch_number  IN varchar2,
+    p_tgt_owner     IN varchar2,
+    p_tgt_table     IN varchar2,
+    p_key_columns   IN varchar2,
+    p_keep_dups     IN char,
+    p_proc_flags    IN varchar2,
+    p_del_columns   IN varchar2
+  ) IS
+
+  -- packaged procedure apply_handler_user
+  -- Will convert queued row LCRs for Target tables and apply them.
+  -- It is assumed that the capture process will only capture row LCRs for OMS_OWNER tables defined in the control table.
+  -- Needs to be invoked from a wrapper function to pass in specific user name for
+  -- staging table owner, staging table name, key and deletion column names and processing flags.
+
+    v_rtn_val			number;
+    v_row_lcr			sys.lcr$_row_record;
+    v_lcr_anydata_array mis_gen_pkg.mis_anydata_array;
+
+    v_command_type		varchar2(30);
+    v_object_name		varchar2(30) := null;
+    v_scn			number := null;
+    v_tag 			varchar2(20) := null;
+    v_source_db_name		varchar2(128) := null;
+    v_source_object_owner	varchar2(30) := null;
+    v_target_object_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    v_target_object_name	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    v_row_lcr_list		sys.lcr$_row_list := NULL;
+    v_plsql			varchar2(4000); 
+
+    v_batch_number		NUMBER(38,0) := nvl(p_batch_number,-1);
+    v_source_time		DATE := null;
+    v_row_count			number := -1;
+    v_max_scn			number := null;
+    v_command_flag		char := ' ';
+    v_keep_dups			char := p_keep_dups;
+    v_proc_flags		varchar2(30) := nvl(mis_gen_pkg.strip_input(p_proc_flags,30),'NONE');
+
+    v_missing_column_list	mis_gen_pkg.object_list;
+    v_key_column_list		mis_gen_pkg.object_list;
+    v_val_anydata		sys.anydata;
+    v_where_clause		varchar2(4000) := '';
+    
+    v_execute 			BOOLEAN := TRUE;
+    
+    -- Variables for PK change detection and splitting
+    v_old_key_str		varchar2(2000) := null;
+    v_new_key_str		varchar2(2000) := null;
+    v_column_name		all_tab_columns.column_name%type;
+    v_key_change 		BOOLEAN := FALSE;
+    v_saved_new_values		sys.lcr$_row_list := NULL;
+
+    FUNCTION get_where_clause (
+        p_row_lcr		IN     sys.lcr$_row_record,
+        p_key_column_str  	IN     varchar2,
+        p_key_column_list 	OUT    mis_gen_pkg.object_list,
+        p_tgt_owner  		IN     varchar2,
+        p_tgt_object  		IN     varchar2,
+        p_proc_flags  		IN     varchar2,
+        p_batch_number  	IN     number,
+        p_default 		IN     varchar2
+    ) RETURN varchar2 IS
+    
+        l_plsql			varchar2(4000); 
+        l_key_str		varchar2(2000) := null;
+        l_where_clause		varchar2(4000) := '';
+    
+    BEGIN
+        -- get primary key columns
+        p_key_column_list := mis_gen_pkg.comma_to_object_list(p_key_column_str);
+    
+        IF p_key_column_list.count > 0 THEN
+            -- primary key info defined, check for record existence
+            IF (instr(p_proc_flags, 'REF') = 0) THEN
+                l_where_clause := 'where MIS_LOAD_ID=' || p_batch_number;
+            ELSE
+                l_where_clause := 'where 1=1';
+            END IF;
+
+            FOR i IN 1..p_key_column_list.count
+            LOOP
+                IF p_key_column_list(i) IS NOT NULL THEN
+                    l_key_str := convert_anydata_to_varchar2(p_row_lcr.get_value('new',
+                                                         p_key_column_list(i), p_default));
+                    IF l_key_str IS NOT NULL THEN
+                        -- escape embedded single quotes
+                        l_key_str := replace(l_key_str, '''', '''''');
+                        -- append key to where clause
+                        l_where_clause := l_where_clause || ' and ' || p_key_column_list(i) ||
+                                          '=''' || l_key_str || '''';
+                    END IF;
+                END IF;
+            END LOOP;
+        END IF;
+        
+        return l_where_clause;
+
+    END get_where_clause;
+
+  BEGIN
+
+    IF p_in_anydata.getTypeName() = 'SYS.LCR$_ROW_RECORD' THEN
+
+        -- get LCR details
+        parse_anydata_lcr
+           (p_in_anydata, v_row_lcr, v_source_db_name, v_source_object_owner,
+            v_object_name, v_command_type, v_source_time, v_scn, v_tag);
+
+        -- debug message
+        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1',
+                        'Processing ' || v_command_type || ' row LCR for ' ||
+                        v_source_object_owner || '.' || v_object_name || '@' ||
+                        v_source_db_name || '.', 2);
+
+        -----------------------------------------------
+        -- Check for PK updates and split if necessary
+        -- This logic replaces the Streams Capture DML handler for GoldenGate
+        -----------------------------------------------
+        v_key_change := FALSE;
+        
+        IF v_command_type = 'UPDATE' AND length(p_key_columns) > 0 THEN
+            
+            -- debug message
+            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1a',
+                            'Checking UPDATE row LCR for PK changes on ' || 
+                            v_source_object_owner || '.' || v_object_name || '@' || 
+                            v_source_db_name || '.', 2);
+            
+            -- get primary key columns
+            v_key_column_list := mis_gen_pkg.comma_to_object_list(p_key_columns);
+            
+            -- check for key changes
+            FOR i IN 1..v_key_column_list.count
+            LOOP
+                IF v_key_column_list(i) IS NOT NULL THEN
+                    v_new_key_str := convert_anydata_to_varchar2(v_row_lcr.get_value('new',
+                                                                 v_key_column_list(i), 'Y'));
+                    v_old_key_str := convert_anydata_to_varchar2(v_row_lcr.get_value('old',
+                                                                 v_key_column_list(i)));
+                    IF v_old_key_str IS NOT NULL AND (v_old_key_str <> v_new_key_str) THEN
+                        v_key_change := TRUE;
+                        v_column_name := v_key_column_list(i);
+                        EXIT; -- do not bother testing other values if any key changed
+                    END IF;
+                END IF;
+            END LOOP;
+            
+            IF v_key_change THEN
+        
+                -- split update that modifies key values into a delete and an insert
+                -- N.B. updates to keys and out-of-line LOBs at the same time result
+                -- in apply errors (whether or not the record is split).
+
+                -- log message
+                mis_gen_pkg.log_strm_message(v_target_object_owner, 'apply_handler_user.1b',
+                             'Update to key values detected for ' ||
+                             v_source_object_owner || '.' || v_object_name || '@' || v_source_db_name ||
+                             ' (column_name=' || v_column_name || ' old:' || v_old_key_str ||
+                             ' new:' || v_new_key_str || ' scn=' || v_row_lcr.get_scn() ||
+                             '). Splitting UPDATE into DELETE and INSERT.');
+
+                BEGIN
+                    -- save the 'new' values before we modify the LCR
+                    v_saved_new_values := v_row_lcr.get_values('new', 'N');
+                EXCEPTION
+                    WHEN mis_gen_pkg.e_row_missing THEN
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1c',
+                            'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
+                END;
+                
+                -- Step 1: Convert LCR to DELETE and execute it
+                BEGIN
+                    v_row_lcr.set_values('new', NULL);
+                EXCEPTION
+                    WHEN mis_gen_pkg.e_row_missing THEN
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1d',
+                            'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
+                END;
+                BEGIN
+                    v_row_lcr.set_command_type('DELETE');
+                EXCEPTION
+                    WHEN mis_gen_pkg.e_row_missing THEN
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1e',
+                            'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
+                END;
+                
+                -- debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1f',
+                                'Executing DELETE row LCR for old key values on ' || v_target_object_name ||
+                                ' (batch number ' || v_batch_number || ').', 1);
+                
+                BEGIN
+                    v_row_lcr.execute(conflict_resolution => FALSE);
+                EXCEPTION
+                    WHEN mis_gen_pkg.e_row_missing THEN
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1x',
+                            'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
+                    WHEN NO_DATA_FOUND THEN
+                        -- row may have already been deleted, log but continue with insert
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1x',
+                                        'NO_DATA_FOUND during LCR execute. Continuing with INSERT.', 1);
+                END;
+                
+                -- Step 2: Restore 'new' values and convert to INSERT
+                -- restore all saved new values
+                FOR i IN 1..v_saved_new_values.count
+                LOOP
+                    BEGIN
+                        v_row_lcr.add_column('new', v_saved_new_values(i).column_name, 
+                                           v_saved_new_values(i).data);
+                    EXCEPTION
+                        WHEN mis_gen_pkg.duplicate_column_name THEN 
+                            -- ignore error if column value already present
+                            null;
+                    END;
+                END LOOP;
+                
+                -- convert to INSERT
+                convert_lcr_to_insert(v_row_lcr);
+                
+                -- debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1g',
+                                'Converted to INSERT row LCR for new key values on ' || v_target_object_name ||
+                                ' (batch number ' || v_batch_number || ').', 1);
+                
+                -- Update command type to INSERT for subsequent processing
+                v_command_type := 'INSERT';
+                
+            END IF;
+            
+        END IF;
+
+
+        IF v_command_type IN ('LOB WRITE','LOB TRIM','LOB ERASE','LOB_UPDATE') THEN
+
+            -- *** pass through LCR with no further changes if LOB processing enabled ***
+            IF (instr(v_proc_flags, 'LOB') > 0) OR (instr(v_proc_flags, 'LONG') > 0) THEN
+
+                -- debug message
+                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.2',
+                                'Processing ' || v_command_type || ' row LCR for ' || v_target_object_name ||
+                                ' (batch number ' || v_batch_number || ').', 1);
+
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                    -- add new batch number column
+                    v_row_lcr.set_value('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
+                END IF;
+
+            ELSE
+                v_execute := false;
+            END IF;
+
+            -- determine where clause for logging
+            v_where_clause := get_where_clause
+                                 (v_row_lcr, p_key_columns, v_key_column_list, v_target_object_owner,
+                                  v_target_object_name, v_proc_flags, v_batch_number, 'N');
+
+        ELSE
+
+            -- debug message
+            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.3',
+                            'Processing ' || v_command_type || ' row LCR for ' || v_target_object_name ||
+                            ' (batch number ' || v_batch_number || ').', 1);
+
+            -- remove columns that do not exist in target table
+            v_missing_column_list := mis_gen_pkg.comma_to_object_list(p_del_columns);
+
+            FOR i IN 1..v_missing_column_list.count
+            LOOP
+                BEGIN
+                    v_row_lcr.delete_column(v_missing_column_list(i));
+                EXCEPTION
+                    WHEN mis_gen_pkg.invalid_column THEN null; -- ignore if column already deleted
+                    WHEN mis_gen_pkg.invalid_null_value THEN null; -- ignore if no missing column name
+                END;
+            END LOOP;
+
+            -- treat all rows as potential updates (enables get new values defaulting)
+            v_row_lcr.set_command_type('UPDATE');
+            -- determine where clause for row check/upsert handling
+            v_where_clause := get_where_clause
+                                 (v_row_lcr, p_key_columns, v_key_column_list,
+                                  v_target_object_owner, v_target_object_name,
+                                  v_proc_flags, v_batch_number, 'Y');
+
+            -- These are now done in the Replicat parameter file
+            -- add source time
+            --v_row_lcr.add_column('new', 'MIS_SOURCE_TIME', sys.anydata.convertDate(v_source_time));
+            -- add command flag column (I/U/D/L)
+            --v_command_flag := substr(v_command_type,1,1);
+            --v_row_lcr.add_column('new', 'MIS_COMMAND_FLAG', sys.anydata.convertChar(v_command_flag));
+            -- add scn column
+            --v_row_lcr.add_column('new', 'MIS_SCN', sys.anydata.convertNumber(v_scn));
+
+            IF v_command_type = 'INSERT' THEN
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                  -- set new batch number column
+                  v_row_lcr.set_value('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
+                END IF;
+                -- reset to insert
+                v_row_lcr.set_command_type('INSERT');
+            ELSE
+                IF (instr(v_proc_flags, 'REF') = 0) THEN
+                  -- set old batch number column
+                  v_row_lcr.set_value('old', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
+                END IF;
+
+                IF (v_tag = g_tag2) THEN
+                    -- debug message
+                    mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.5',
+                        'Processing target row LCR for ' || v_target_object_name || ' (' ||
+                        v_where_clause || ').');
+
+                    -- determine whether row already exists for target batch
+                    v_plsql := 'select count(MIS_SCN), max(MIS_SCN) from ' ||
+                                      v_target_object_owner || '.' || v_target_object_name || ' ' ||
+                                      v_where_clause;  
+                    execute immediate v_plsql into v_row_count, v_max_scn;
+
+                    -- check execution condition for records flagged as old key values
+                    IF (v_scn = v_max_scn) THEN
+                        v_execute := FALSE;
+                    END IF;
+                END IF;
+
+                -- row presumed not to exist, so insert regardless of command type
+                -- reset row values to new values only (ensuring all old values are copied over first)
+                convert_lcr_to_insert(v_row_lcr);
+
+            END IF;
+
+        END IF;
+
+    	  IF v_execute THEN
+            -- debug message
+            /* too many recs being logged with this
+            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.7',
+                            'Executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
+                            v_target_object_name || ' (' || v_where_clause || ').');
+            */
+
+            BEGIN
+                v_row_lcr.execute(conflict_resolution => FALSE);
+            EXCEPTION
+                WHEN DUP_VAL_ON_INDEX OR NO_DATA_FOUND THEN
+                    IF (v_row_count = 0) OR (v_keep_dups = 'Y') THEN
+                        -- should not be INSERT/UPDATE issues in these cases
+                        RAISE;
+                    ELSE
+                        -- reset to update
+                        v_row_lcr.set_command_type('UPDATE');
+                        IF (instr(v_proc_flags, 'REF') = 0) THEN
+                        -- set old key values
+                            v_row_lcr.add_column('old', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
+                        END IF;
+
+                        FOR i IN 1..v_key_column_list.count
+                        LOOP
+                            IF v_key_column_list(i) IS NOT NULL THEN
+                                v_val_anydata := v_row_lcr.get_value('new', v_key_column_list(i), 'Y');
+                                -- make sure the old key value is set
+                                v_row_lcr.add_column('old', v_key_column_list(i), v_val_anydata);
+                            END IF;
+                        END LOOP;
+                        
+                        -- debug message
+                        /* too many recs being logged with this
+                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.7a',
+                            'Re-executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
+                            v_target_object_name || '.');
+                        */
+                        BEGIN
+                        -- retry as update
+                            v_row_lcr.execute(conflict_resolution => FALSE);
+                        END;
+                    END IF;
+            END;
+        ELSE
+            -- debug message
+            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.8',
+                            'Not executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
+                            v_target_object_name || ' (' || v_where_clause || ').');
+        END IF;
+
+    END IF;
+
+  EXCEPTION
+
+    WHEN mis_gen_pkg.invalid_lob_locator THEN
+        -- log error then ignore
+        mis_gen_pkg.log_strm_error (v_target_object_owner, 'apply_handler_user.9',
+            p_src_db => v_source_db_name, p_src_owner => v_source_object_owner,
+            p_src_table => v_object_name, p_tgt_table => v_target_object_name,
+            p_batch_id => v_batch_number, p_err_code => SQLCODE,
+            p_text => 'Invalid LOB locator for ' ||
+                      v_row_lcr.get_command_type() || ' on ' ||
+                      v_target_object_name || ' ('||v_where_clause||')');
+        -- update message on active batch (but do not set error flag)
+        mis_batch_pkg.update_batch_record_force(v_batch_number, null, null, 'Invalid LOB locator for ' ||
+                                  v_target_object_name);
+
+    WHEN OTHERS THEN -- *** ABORT APPLY PROCESS ***
+        mis_gen_pkg.log_strm_error (v_target_object_owner, 'apply_handler_user',
+            p_src_db => v_source_db_name, p_src_owner => v_source_object_owner,
+            p_src_table => v_object_name, p_tgt_table => v_target_object_name,
+            p_batch_id => v_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        -- update error flag and message on active batch
+        mis_batch_pkg.update_batch_record_force(v_batch_number, 'Y', null, 'Apply transform error ('||SQLCODE||')');
+
+        RAISE;
+
+  END;
+
+
+  PROCEDURE set_apply_handlers (
+    p_tgt_owner 	IN     VARCHAR2
+  ) IS
+  -- packaged procedure set_apply_handlers
+  -- will set DML apply handlers for source tables in p_tgt_owner.STRM_TAB_CONTROL
+
+    l_plsql 		varchar2(4000); 
+    l_tgt_owner		varchar2(32) := mis_gen_pkg.strip_input(p_tgt_owner,32);
+    l_apply_handler	varchar2(32);
+    l_batch_number	NUMBER(38,0) := -1;
+
+    l_src_owner_list		mis_gen_pkg.owner_list;
+    l_src_table_list		mis_gen_pkg.object_list;
+    l_tgt_table_list		mis_gen_pkg.object_list;
+    l_keep_dups_list		mis_gen_pkg.keep_dups_list;
+    l_proc_flag_list		mis_gen_pkg.object_list;
+    l_tab_seq_list          mis_gen_pkg.tab_seq_list;
+    l_key_columns_list		mis_gen_pkg.key_col_list ;
+    l_del_columns_list		mis_gen_pkg.object_list ;
+
+    procedure set_apply_handler (
+        p_tgt_owner 	IN     VARCHAR2,
+        p_src_owner 	IN     VARCHAR2,
+        p_table 	IN     VARCHAR2,
+ 	p_command_type 	IN     VARCHAR2,
+        p_apply_handler IN     VARCHAR2
+    ) is
+        l_apply_name 	VARCHAR2(32) := mis_gen_pkg.g_apply_name;
+        l_plsql 	varchar2(2000); 
+    begin
+        l_plsql := 
+            'begin dbms_apply_adm.set_dml_handler(
+		object_name => ''' || p_tgt_owner || '.' || p_table || ''',
+		object_type => ''TABLE'',
+		operation_name => ''' || p_command_type || ''',
+		error_handler => false,
+		user_procedure => ''' || p_apply_handler || ''',
+		apply_database_link => null,
+		apply_name => ''' || l_apply_name || ''',
+		assemble_lobs => false); end;'; 
+        execute immediate l_plsql;
+    end;
+
+  BEGIN
+    -- get active batch number
+    l_batch_number := MIS_BATCH_PKG.get_batch_number(l_tgt_owner);
+
+    -- retrieve details of all target tables
+    l_plsql := 'select src_owner, src_table, tgt_table, keep_dups, proc_flags, tab_seq, key_columns ' ||
+                 'from ' || l_tgt_owner || '.STRM_TAB_CONTROL';
+
+    execute immediate l_plsql
+    bulk collect into l_src_owner_list, l_src_table_list, l_tgt_table_list,
+                      l_keep_dups_list, l_proc_flag_list, l_tab_seq_list, l_key_columns_list;
+
+    -- define handlers for each table
+    FOR i in 1..l_src_owner_list.count
+    LOOP
+        -- get handler name
+        l_apply_handler	:= get_dml_proc_name(l_tgt_owner, l_tab_seq_list(i), l_key_columns_list(i));
+
+        -- determine columns to be deleted from LCRs for table
+        l_plsql := 'select src_column ' ||
+                     'from ' || l_tgt_owner || '.' || 'STRM_COL_DELETIONS ' ||
+                    'where tgt_table = :tgt_table';  
+        execute immediate l_plsql bulk collect into l_del_columns_list
+        using l_tgt_table_list(i);
+
+        -- create DML Apply procedure for table
+        l_plsql := 'CREATE OR REPLACE PROCEDURE ' || l_apply_handler || '(p_in_anydata IN sys.anydata) AS ' ||
+            'BEGIN ' ||
+                'mis_dml_pkg.apply_handler_user' ||
+                '(p_in_anydata,'||l_batch_number||','''||l_tgt_owner||''','''||
+                  l_tgt_table_list(i)||''','''||l_key_columns_list(i)||''','''||
+                  l_keep_dups_list(i)||''','''||l_proc_flag_list(i)||''','''||
+                  mis_gen_pkg.object_list_to_comma(l_del_columns_list)||'''); ' ||
+            'END;';
+        --dbms_utility.exec_ddl_statement(l_plsql);
+        execute immediate l_plsql;
+
+        -- set handlers
+        set_apply_handler(l_tgt_owner, l_src_owner_list(i), l_tgt_table_list(i), 'INSERT', l_apply_handler);
+        set_apply_handler(l_tgt_owner, l_src_owner_list(i), l_tgt_table_list(i), 'UPDATE', l_apply_handler);
+        set_apply_handler(l_tgt_owner, l_src_owner_list(i), l_tgt_table_list(i), 'DELETE', l_apply_handler);
+        IF (instr(l_proc_flag_list(i), 'LOB') > 0) OR (instr(l_proc_flag_list(i), 'LONG') > 0) THEN
+            set_apply_handler
+               (l_tgt_owner, l_src_owner_list(i), l_tgt_table_list(i), 'LOB_UPDATE', l_apply_handler);
+        END IF;
+    END LOOP;
+
+    mis_gen_pkg.log_strm_debug (l_tgt_owner, 'set_apply_handlers',
+                    'DML apply handlers reset for ' || l_src_owner_list.count || ' tables.');
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (l_tgt_owner, 'set_apply_handlers',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+  PROCEDURE clear_apply_handlers (
+    p_tgt_owner 	IN     VARCHAR2
+  ) IS
+  -- packaged procedure clear_apply_handlers
+  -- will remove DML handlers for apply processes related to p_tgt_owner
+
+    l_plsql 		varchar2(2000); 
+    l_plsql2 		varchar2(2000); 
+    l_tgt_owner		varchar2(32) := mis_gen_pkg.strip_input(p_tgt_owner,32);
+
+    l_src_owner_list		mis_gen_pkg.owner_list;
+    l_src_table_list		mis_gen_pkg.object_list;
+    l_operations_list		mis_gen_pkg.operations_list;
+    l_procedure_list		mis_gen_pkg.procedure_list;
+    l_apply_name_list 		mis_gen_pkg.apply_list;
+
+    procedure clear_apply_handler (
+        p_apply_name 	IN     VARCHAR2,
+ 	    p_src_owner 	IN     VARCHAR2,
+        p_src_table 	IN     VARCHAR2,
+ 	    p_command_type 	IN     VARCHAR2
+    ) is
+        l_plsql 	varchar2(2000);
+    begin
+        l_plsql := 
+            'begin dbms_apply_adm.set_dml_handler(
+		object_name => ''' || p_src_owner || '.' || p_src_table || ''',
+		object_type => ''TABLE'',
+		operation_name => ''' || p_command_type || ''',
+		error_handler => false,
+		user_procedure => null,
+		apply_database_link => null,
+		apply_name => ''' || p_apply_name || ''',
+		assemble_lobs => false); end;'; 
+        execute immediate l_plsql;
+    end;
+
+  BEGIN
+    -- get list of apply processes
+    l_apply_name_list := mis_gen_pkg.get_apply_list(l_tgt_owner);
+
+    -- retrieve details of all target tables
+    l_plsql := 'select OBJECT_OWNER, OBJECT_NAME, OPERATION_NAME, ' ||
+                      'REPLACE(USER_PROCEDURE,''"'','''') USER_PROCEDURE ' ||
+                 'from DBA_APPLY_DML_HANDLERS ' ||
+                'where APPLY_NAME = :apply_name';
+
+    -- clear handlers for each apply process
+    FOR i in 1..l_apply_name_list.count
+    LOOP
+
+        execute immediate l_plsql
+        bulk collect into l_src_owner_list, l_src_table_list, l_operations_list, l_procedure_list
+        using l_apply_name_list(i);
+
+        -- clear handlers for each table
+        FOR j in 1..l_src_owner_list.count
+        LOOP
+            -- clear handler
+            clear_apply_handler
+                (l_apply_name_list(i), l_src_owner_list(j), l_src_table_list(j), l_operations_list(j));
+            -- drop DML Apply procedure for table
+            BEGIN
+                l_plsql2 := 'DROP PROCEDURE ' || l_procedure_list(j);
+                dbms_utility.exec_ddl_statement(l_plsql2);
+            EXCEPTION WHEN OTHERS THEN null;
+            END;
+        END LOOP;
+
+        mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+                        'DML apply handlers cleared for ' || l_src_owner_list.count || ' tables.');
+    END LOOP;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (l_tgt_owner, 'set_apply_handlers',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+END MIS_DML_PKG;
+/
+
+show errors

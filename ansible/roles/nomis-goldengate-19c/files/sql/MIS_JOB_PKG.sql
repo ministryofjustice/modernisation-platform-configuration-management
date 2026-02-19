@@ -1,0 +1,59 @@
+CREATE OR REPLACE PACKAGE MIS_JOB_PKG AUTHID DEFINER AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:  	This script creates procedures to support
+ *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
+ *  
+ *  Version: 		1.0e
+ *
+ *  Author:		
+ *
+ *  Date:		
+ * 
+ *  Change History:	Version:  Date:	    Author:	Description:	
+ *
+ *			1.0e.59	  01/05/13  R. Taylor	Added purge_records procedure (defect 19143).
+ */
+
+    -- package level variable declarations
+    g_version 	 	VARCHAR2(20) := '1.0e.59';
+
+    -- debug flag: positive value to log debug messages
+    g_debug NUMBER := 0;
+
+    -- MIS archive log directory object
+    g_mis_archived_dir     VARCHAR2(50) := 'MIS_ARCHIVELOG_DIR';
+
+    -- Packaged procedure log_apply records transaction watermark details
+    -- for all apply processes associated with the target table owner
+    PROCEDURE log_apply (
+        p_tgt_owner 	IN     VARCHAR2);
+
+    -- Packaged procedure to delete archived logs from the file system
+    -- which are purgable according to the retention policy
+    -- and have also been mined by the streams processes. 
+    -- Note: use deprecated in favour of mis_purge_logs.sh script, which also works with ASM.
+    PROCEDURE log_purge ;
+
+    -- create the purge archive log job
+    PROCEDURE create_log_purge_job ;
+
+    PROCEDURE create_audit_reference_job;
+
+
+    -- Packaged procedure PURGE_RECORDS
+    -- will delete rows older than p_months months from historical tables
+    PROCEDURE PURGE_RECORDS (
+        p_staging_owner 	IN     varchar2,
+        p_months     in integer default 26 );
+
+
+    -- Packaged function get_version
+    -- will return a VARCHAR2 string containing a package version number
+    FUNCTION get_version RETURN varchar2;
+
+END MIS_JOB_PKG;
+/
+
+show errors

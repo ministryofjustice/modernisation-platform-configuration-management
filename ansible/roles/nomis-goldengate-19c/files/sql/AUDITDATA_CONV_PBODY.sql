@@ -1,0 +1,354 @@
+CREATE OR REPLACE PACKAGE BODY AUDITDATA.AUDITDATA_CONV_PKG AS
+
+/*
+ *  NOMIS AuditData GoldenGate code.
+ *  
+ *  Description:  	This script creates procedures to support
+ *                      Oracle GoldenGate processes for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the AUDITDATA user.
+ *  
+ *  Change History:	
+ *          Version:  Date:	    Author:	    Description:	
+ *
+ *			1.0e.1	  15/01/26  D. Belton	Initial version for 1.0e audit based on AUD_STRM_PKG2
+ */
+
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  FUNCTION get_version RETURN varchar2 IS
+  BEGIN
+    return g_version;
+  END;
+
+  FUNCTION convert_anydata_to_varchar2 (
+    p_any_val in sys.anydata
+  ) RETURN varchar2 IS
+  -- packaged function convert_anydata_to_varchar2
+  -- will convert a SYS.ANYDATA record to a VARCHAR2 string
+
+    v_varchar2_val 	varchar2(32767);   
+    v_type 		varchar2(32) := '';   
+    v_rtn 		number;
+
+  BEGIN   
+    IF p_any_val is null THEN
+        return NULL;
+    END IF;
+  
+    v_type := lower(p_any_val.gettypename());
+
+    CASE v_type   
+            --alphabetical list of currently used types   
+            when 'sys.char' then   
+                v_rtn := p_any_val.getchar(v_varchar2_val);   
+            when 'sys.date' then   
+                v_rtn := p_any_val.getdate(v_varchar2_val);   
+            when 'sys.number' then   
+                v_rtn := p_any_val.getnumber(v_varchar2_val);   
+            when 'sys.raw' then   
+                v_varchar2_val := '<binary data>';   
+            when 'sys.timestamp' then   
+                v_rtn := p_any_val.gettimestamp(v_varchar2_val);   
+            when 'sys.varchar2' then
+                v_rtn := p_any_val.getvarchar2(v_varchar2_val);   
+            else
+                RAISE_APPLICATION_ERROR(g_AUD_CONV_EXCEPTION,'Data type not handled.');
+    END CASE;
+
+    return substr(v_varchar2_val, 1, 2000);
+
+  END;
+
+  FUNCTION convert_anydata_to_date (
+    p_any_val in sys.anydata
+  ) RETURN date IS
+  -- packaged function convert_anydata_to_date
+  -- will convert a SYS.ANYDATA record to a date value
+
+    v_date_val 		date := null;   
+    v_type 		varchar2(32) := '';   
+    v_rtn 		number;
+
+  BEGIN   
+    IF p_any_val is null THEN
+        return NULL;
+    END IF;
+  
+    v_type := lower(p_any_val.gettypename());
+
+    CASE v_type   
+            --alphabetical list of currently used types   
+            when 'sys.char' then   
+                v_rtn := p_any_val.getchar(v_date_val);   
+            when 'sys.date' then   
+                v_rtn := p_any_val.getdate(v_date_val);
+            when 'sys.timestamp' then   
+                v_rtn := p_any_val.gettimestamp(v_date_val);
+            when 'sys.timestamp_with_timezone' then
+                v_rtn := p_any_val.gettimestamptz(v_date_val);
+            when 'sys.timestamp_with_ltz' then
+                v_rtn := p_any_val.gettimestampltz(v_date_val);
+            when 'sys.varchar2' then
+                v_rtn := p_any_val.getvarchar2(v_date_val);   
+            else
+                RAISE_APPLICATION_ERROR(g_AUD_CONV_EXCEPTION,'Data type not handled.');
+    END CASE;
+
+    return v_date_val;
+
+  END;
+
+
+  FUNCTION get_queue_name(
+    p_staging_owner IN varchar2
+  ) RETURN varchar2 RESULT_CACHE
+  IS
+  -- local function get_queue_name returns the queue name
+  -- for the supplied staging table owner
+  BEGIN
+    return 'OGGQ$'||p_staging_owner;
+  END;
+
+
+  FUNCTION convert_OBJ_PRIVILEGE (
+    p_obj_priv in varchar2
+  ) RETURN varchar2 RESULT_CACHE IS
+  -- packaged function convert_OBJ_PRIVILEGE
+  -- will convert a DBA_AUDIT_TRAIL.OBJ_PRIVILEGE value to user-friendly string
+    l_priv_str 	varchar2(500) := '';
+    l_char 	varchar2(1) := '';
+    l_empty 	boolean := TRUE;
+  BEGIN   
+    IF length(p_obj_priv) != 16 THEN
+        l_priv_str := substr(p_obj_priv,1,500);
+    ELSE
+        FOR i IN 1..13
+        LOOP
+            l_char := upper(substr(p_obj_priv,i,1));
+            IF l_char != '-' THEN
+                IF l_empty = TRUE THEN
+                    l_empty := FALSE;
+                ELSE
+                    l_priv_str := l_priv_str || ', ';
+                END IF;
+                l_priv_str := l_priv_str ||
+                    CASE i
+		        WHEN 1 THEN 'ALTER'
+		        WHEN 2 THEN 'AUDIT'
+		        WHEN 3 THEN 'COMMENT'
+		        WHEN 4 THEN 'DELETE'
+		        WHEN 5 THEN 'GRANT'
+		        WHEN 6 THEN 'INDEX'
+		        WHEN 7 THEN 'INSERT'
+		        WHEN 8 THEN 'LOCK'
+		        WHEN 9 THEN 'RENAME'
+		        WHEN 10 THEN 'SELECT'
+		        WHEN 11 THEN 'UPDATE'
+		        WHEN 12 THEN 'REFERENCES'
+		        WHEN 13 THEN 'EXECUTE'
+		    END;
+                IF l_char = 'G' THEN
+                    l_priv_str := l_priv_str || ' WITH GRANT OPTION';
+                END IF;
+            END IF;
+        END LOOP;
+    END IF;
+    return l_priv_str;
+  END;
+
+
+  FUNCTION compareanydata (
+    anydata1 IN SYS.ANYDATA,
+    anydata2 IN SYS.ANYDATA
+  ) RETURN BOOLEAN IS
+  /*
+  Summary
+  ==============
+  Compares 2 values stored as sys.anydata
+  Returns true if they are equal, false if they different, null on an exception
+  */
+	chr1 VARCHAR2(1000);
+	dat1 DATE;
+	num1 NUMBER;
+	rw1 RAW(32000);
+	ts1 TIMESTAMP;
+	var1 VARCHAR2(32767);
+	str1 VARCHAR2(4000);
+	chr2 VARCHAR2(1000);
+	dat2 DATE;
+	num2 NUMBER;
+	rw2 RAW(32000);
+	ts2 TIMESTAMP;
+	var2 VARCHAR2(32767);
+	str2 VARCHAR2(4000);
+  --
+	res NUMBER;
+	v_values_match		boolean;
+	v_typename		varchar2(30);
+
+  BEGIN
+
+    IF anydata1.GETTYPENAME() <> anydata2.GETTYPENAME() THEN
+	v_values_match := false;
+    ELSE
+	CASE anydata1.GETTYPENAME()
+		WHEN 'SYS.CHAR' THEN
+			res := anydata1.GETCHAR(chr1);	
+			res := anydata2.GETCHAR(chr2);
+			IF chr1 = chr2 
+			OR (chr1 IS NULL and chr2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		WHEN 'SYS.DATE' THEN
+			res := anydata1.GETDATE(dat1);	
+			res := anydata2.GETDATE(dat2);
+			IF dat1 = dat2 
+			OR (dat1 IS NULL and dat2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		WHEN 'SYS.NUMBER' THEN
+			res := anydata1.GETNUMBER(num1);	
+			res := anydata2.GETNUMBER(num2);
+			IF num1 = num2 
+			OR (num1 IS NULL and num2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		WHEN 'SYS.RAW' THEN
+			res := anydata1.GETRAW(rw1);	
+			res := anydata2.GETRAW(rw2);
+			IF rw1 = rw2 
+			OR (rw1 IS NULL and rw2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		WHEN 'SYS.TIMESTAMP' THEN
+			res := anydata1.GETTIMESTAMP(ts1);	
+			res := anydata2.GETTIMESTAMP(ts2);
+			IF ts1 = ts2 
+			OR (ts1 IS NULL and ts2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		WHEN 'SYS.VARCHAR2' THEN
+			res := anydata1.GETVARCHAR2(var1);	
+			res := anydata2.GETVARCHAR2(var2);
+			IF var1 = var2 
+			OR (var1 IS NULL and var2 IS NULL) THEN
+				v_values_match := TRUE;
+			ELSE
+				v_values_match := FALSE;
+			END IF;
+		ELSE
+			v_values_match := false;
+
+	END CASE;
+    END IF;
+    RETURN v_values_match;
+  EXCEPTION
+	WHEN OTHERS THEN
+		RETURN null;
+  END;
+
+
+  FUNCTION convertaddinfo(
+    	p_addinfo_in IN VARCHAR2, 
+        p_ipaddress_in IN VARCHAR2,
+        p_workstation_in IN VARCHAR2,
+        p_addinfo_out OUT VARCHAR2,
+        p_ipaddress_out OUT VARCHAR2,
+        p_workstation_out OUT VARCHAR2)
+  RETURN BOOLEAN
+  IS
+  /*
+  Summary
+  ==============
+  Does basic validation of audit_additional_info and, if valid, extracts IP address and 
+  workstation name from it, swapping them around with the ip address and workstation values 
+  supplied in the audit_client_ip_address and audit_client_workstation_name columns.
+
+  Caters for Citrix environments, where the values in the audit_client_ip adddress and 
+  audit_client_workstation name will be that of the Citrix server, the end client ip address 
+  and workstation name being embedded in the audit_additional_info column.
+
+  Returns true if audit_additional_info is valid, false if invalid, null on an exception.
+  */
+	v_pos1			integer;
+	v_pos2			Integer;
+	v_workstation_nodomain  varchar2(256);
+	v_wbt_prefix		varchar2(4) := 'WBT,';
+	v_wts_prefix		varchar2(4) := 'WTS,';
+
+  BEGIN
+
+  --validate
+
+  --format of p_addinfo_in should be:	field 1   - ip address
+  --					separator - comma
+  --					field 2   - workstation name
+  --format of p_addinfo_out (if valid):	field 1   - WTS (for Windows terminal server)
+  --					separator - comma
+  --					field 2	  - ip address
+  --					separator - comma
+  --					field 3	  - workstation name
+  --format of p_addinfo_out (if invalid):	field 1   - WBT (for windows based terminal)
+  --					separator - comma
+  --					field 2	  - p_addinfo_in (unconverted)
+
+  --invalid if null or empty string
+	IF p_addinfo_in IS NULL
+	OR TRIM(p_addinfo_in) = '' THEN
+		p_addinfo_out := v_wbt_prefix;
+		RETURN FALSE;
+	END IF;
+
+  --invalid if more or less than one comma separator
+
+	v_pos1 := INSTR(p_addinfo_in, ',', 1, 1);
+	v_pos2 := INSTR(p_addinfo_in, ',', 1, 2);
+
+	IF v_pos1 = 0
+	OR v_pos2 > 0 THEN
+		p_addinfo_out := v_wbt_prefix || p_addinfo_in;
+		RETURN FALSE;
+	END IF;
+
+  --invalid if ip address not between 7 (n.n.n.n) and 39 chars long
+	IF v_pos1 NOT BETWEEN 8 AND 40 THEN
+		p_addinfo_out := v_wbt_prefix || p_addinfo_in;
+		RETURN FALSE;
+	END IF;
+
+  --invalid if workstation not between 1 and 64 chars long
+	IF LENGTH(p_addinfo_in) BETWEEN (v_pos1 + 1) AND (v_pos1 + 64) THEN
+		p_addinfo_out := v_wbt_prefix || p_addinfo_in;
+		RETURN FALSE;
+	END IF;
+
+
+  --swap the fields
+	p_ipaddress_out := SUBSTR(p_addinfo_in, 1, v_pos1 - 1);
+	p_workstation_out := SUBSTR(p_addinfo_in, v_pos1 + 1);
+	p_addinfo_out := v_wts_prefix || p_ipaddress_in || ',' || p_workstation_in;
+
+	RETURN TRUE;
+
+  EXCEPTION
+	WHEN OTHERS THEN
+		--do nothing
+		RETURN null;
+  END;
+
+
+END AUDITDATA_CONV_PKG;
+/
+
+show errors

@@ -4,7 +4,7 @@
     checkpoint_table_db_alias: "{{ oracle_goldengate_db.audit.credential_alias if oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref else oracle_goldengate_db.mis.credential_alias }}"
 
 - name: Create checkpoint table using ggsci
-  ansible.builtin.command: |
+  ansible.builtin.shell: |
     export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1

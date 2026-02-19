@@ -3,6 +3,7 @@ artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500
 artefacts_s3_bucket_path: hmpps/oracle-19c-software
 
 oracle_inventory: /u01/app/oraInventory
+oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"
   
 oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
 oracle_goldengate_software_dir: /u02/stage/goldengate
@@ -28,7 +29,7 @@ oracle_goldengate_directories:
   - "{{ oracle_goldengate_report_dir }}"
   - "{{ oracle_goldengate_checkpoint_dir }}"
   - "{{ oracle_goldengate_scripts_dir }}"
-  
+
 oracle_goldengate_asm_dir: "+DATA/{{ oracle_goldengate_db.source.tns_alias }}/GG_ARCHIVELOGS"
 
 # Logical names per stream
@@ -52,21 +53,25 @@ oracle_goldengate_streams:
 # DB connection defaults (override via inventory/group vars)
 oracle_goldengate_db:
   source:
-    tns_alias: T1CNOMG
+    tns_alias: T1CNOM
     schema_owner: OMS_OWNER
     credential_alias: SOURCE_DB
+    oracle_home: "{{ oracle11g_home }}"
   audit:
     tns_alias: T1CAUDG
     schema_owner: AUDITDATA
     credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home }}"
   auditref:
     tns_alias: T1CAUDG
     schema_owner: AUDITREF
     credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home }}"
   mis:
     tns_alias: T1CMISG
     schema_owner: BODISTAGING
     credential_alias: MIS_DB
+    oracle_home: "{{ oracle11g_home }}"
   
 # Define which database instance is running on this host
 # This controls which GoldenGate components are deployed
@@ -87,11 +92,11 @@ oracle_goldengate_sql_dir: "{{ role_path }}/templates/sql"
 # full path to the home directory
 gg_env:
   GG_HOME: "{{ oracle_goldengate_home }}"
-  PATH: "{{ oracle_goldengate_home }}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+  ORACLE_HOME: "{{ oracle11g_home }}"
+  PATH: "${ORACLE_HOME}/bin:${GG_HOME}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
 
 bash_profile: |
   export GG_HOME={{ oracle_goldengate_home }}
-  #export GG_HOME=/u01/app/oracle/ggs
   export PATH=$GG_HOME:$PATH
   export LD_LIBRARY_PATH=$GG_HOME:$ORACLE_HOME/lib
   alias gg='cd $GG_HOME; ./ggsci'

@@ -6,7 +6,7 @@
 # As auditdata and auditref streams both connect to the same audit database, they can use the same ggadmin user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
 
 - name: Create GoldenGate database user when local database is configured
-  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.mis.tns_alias]
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_db.source.tns_alias, oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.mis.tns_alias]
   block:
     - name: Generate random password for ggadmin user
       ansible.builtin.set_fact:
@@ -63,7 +63,7 @@
           GRANT RESOURCE to {{ oracle_goldengate_dbuser }};
           GRANT ALTER SYSTEM to {{ oracle_goldengate_dbuser }} ;
           GRANT SELECT ANY DICTIONARY to {{ oracle_goldengate_dbuser }};
-          GRANT SELECT ON v$database to {{ oracle_goldengate_dbuser }};
+          GRANT SELECT ON v_$database to {{ oracle_goldengate_dbuser }};
 
           EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE); 
 
@@ -86,38 +86,45 @@
           
           EXIT
         dest: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
-        owner: oracle
+        owner: "{{ oracle_goldengate_owner }}"
         group: oinstall
         mode: "0600"
       no_log: true
 
     - name: Create GoldenGate database user
       ansible.builtin.shell: |
-        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
-        export ORAENV_ASK=NO
-        . oraenv > /dev/null 2>&1
-        
-        # Retrieve SYS password from AWS Secrets Manager
-        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
-          --query 'SecretString' \
-          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
-        
-        if [ -z "$SYS_PASSWORD" ]; then
-          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
-          exit 1
+        . ~/.bash_profile
+        export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
+        export ORACLE_HOME="{{ oracle_goldengate_db.source.oracle_home }}"
+        export PATH="${ORACLE_HOME}/bin:${PATH}"
+
+        LOCAL_DB_SID="{{ oracle_goldengate_local_db_sid }}"
+        SOURCE_DB_SID="{{ oracle_goldengate_db.source.tns_alias }}"
+
+        if [ "${LOCAL_DB_SID}" = "${SOURCE_DB_SID}" ]; then
+          SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+            --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+            --query 'SecretString' \
+            --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+          if [ -z "${SYS_PASSWORD}" ]; then
+            echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            exit 1
+          fi
+
+          SQL_CONNECT_STR="sys/${SYS_PASSWORD}@{{ oracle_goldengate_local_db_sid }} as sysdba"
+        else
+          SQL_CONNECT_STR="/ as sysdba"
         fi
-        
-        # Create the GoldenGate user
-        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba @/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql
-      environment:
-        ORACLE_SID: "{{ oracle_goldengate_local_db_sid }}"
+
+        sqlplus -s "${SQL_CONNECT_STR}" @/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql
       register: create_user_output
       become: yes
-      become_user: oracle
+      become_user: "{{ oracle_goldengate_owner }}"
+      args:
+        executable: /bin/bash
       changed_when: "'created successfully' in create_user_output.stdout"
       failed_when: create_user_output.rc != 0
-      no_log: true
 
     - name: Display user creation results (sanitized)
       ansible.builtin.debug:
@@ -128,6 +135,8 @@
 
     - name: Store ggadmin password in AWS Secrets Manager
       ansible.builtin.shell: |
+        . ~/.bash_profile
+
         # Retrieve current secret value
         CURRENT_SECRET=$(aws secretsmanager get-secret-value \
           --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
@@ -163,7 +172,7 @@
       register: secret_store_output
       changed_when: "'ARN' in secret_store_output.stdout"
       failed_when: secret_store_output.rc != 0
-      no_log: true
+      #no_log: true
 
     - name: Display secret storage confirmation
       ansible.builtin.debug:
@@ -177,22 +186,12 @@
     - name: Create AUDITDATA schema and tables if local database is the audit database
       when: oracle_goldengate_deploy_auditdata
       ansible.builtin.shell: |
-        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
-        export ORAENV_ASK=NO
-        . oraenv > /dev/null 2>&1
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.audit.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
         
-        # Retrieve SYS password from AWS Secrets Manager
-        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
-          --query 'SecretString' \
-          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
-        
-        if [ -z "$SYS_PASSWORD" ]; then
-          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
-          exit 1
-        fi
-        
-        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba <<EOF
+        sqlplus -s / as sysdba <<EOF
         SET ECHO ON
         SET FEEDBACK ON
         
@@ -220,10 +219,11 @@
     - name: Create AUDITDATA tables if local database is the audit database
       when: oracle_goldengate_deploy_auditdata
       ansible.builtin.shell: |
+        . ~/.bash_profile
         -- connect to source database as sysdba to generate DDL for the source tables, replacing the schema name with the target schema name in the output so that we can create the same table structures in the target database for the replicat MAP to work, and then execute the generated DDL in the target database to create the tables
         export ORACLE_SID={{ oracle_goldengate_source_db_sid }}
-        export ORAENV_ASK=NO
-        . oraenv > /dev/null 2>&1
+        export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
 
         # Retrieve SYS password from AWS Secrets Manager
         SYS_PASSWORD=$(aws secretsmanager get-secret-value \
@@ -273,6 +273,13 @@
         EOF
       register: create_tables_output
       become: yes
-      become_user: oracle
+      become_user: "{{ oracle_goldengate_owner }}"
+      args:
+        executable: /bin/bash
       changed_when: "'TABLE' in create_tables_output.stdout"
       failed_when: create_tables_output.rc != 0
+
+    # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
+    - name: Pause after installation for verification
+      ansible.builtin.pause:
+        prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."

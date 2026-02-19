@@ -121,5 +121,4 @@
       # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
       - name: Pause after installation for verification
         ansible.builtin.pause:
-          prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or 'A' to abort."
-
+          prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."
