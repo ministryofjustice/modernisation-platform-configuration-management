@@ -96,6 +96,12 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
+filesystems_domain_name_fqdn: azure.hmpp.root
+filesystems_domains:
+  azure.hmpp.root:
+    secret_name: delius-mis-stage-sap-boe-passwords
+    mount_fs_username: svc_fsx_nart
+
 bip_filesystems_mount:
  - dir: /opt/data/BusinessObjects
    fstype: nfs
