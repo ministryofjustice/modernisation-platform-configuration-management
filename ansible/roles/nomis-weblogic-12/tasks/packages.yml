@@ -1,0 +1,21 @@
+---
+- name: Install the latest version of required packages
+  ansible.builtin.package:
+    name:
+#      - libaio-devel
+#      - compat-libstdc++-33
+#      - libstdc++-devel
+#      - gcc
+#      - gcc-c++
+#      - ksh
+#      - compat-libcap1-1.10
+#      - glibc
+#      - glibc-devel.i686
+#      - compat-libstdc++-33.i686
+#      - libstdc++.i686
+#      - libXext.i686
+#      - libXtst.i686
+#      - openmotif
+#      - openmotif22
+      - policycoreutils-python-utils
+    state: latest

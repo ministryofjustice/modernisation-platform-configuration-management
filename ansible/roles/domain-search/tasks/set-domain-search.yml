@@ -4,11 +4,6 @@
     msg: "Please run get-ec2-facts role to collect tags"
   when: ec2 is not defined
 
-- name: Fail if dns_zone_internal variable not defined
-  fail:
-    msg: "dns_zone_internal variable must be defined"
-  when: dns_zone_internal is not defined
-
 - name: Fail if search interface not found
   fail:
     msg: "dns search interface {{ dns_search_interface }} not found in {{ ansible_facts.interfaces|default('') }}"

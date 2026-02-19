@@ -1,0 +1,89 @@
+---
+# The "Notifications Allowed" dynamic group contains targets which exist on
+# a host where at least one of the databases has access to the Diagnostics
+# Pack.  It is called the "Notifications Allowed" group since access to this
+# management pack allows use of OEM native notifications functionality.
+
+
+# Membership of the group is determined by the value of the "Notifications Allowed"
+# target property.  This property is re-calculated regularly by a script which
+# checks which Management Packs exist for databases on the host.
+# Here we set up the shell script that does the property calculation.
+
+- name: Create Notifications Allowed Target Property
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:
+
+    - name: emcli Login
+      import_tasks: emcli_login.yml
+
+    # No error is thrown if the property already exists
+    - name: Create Notifications Allowed Target Property
+      shell: |
+         {{ emcli }} add_target_property -target_type="*" -property="Notifications Allowed"
+
+# We also create an additional target property of which management packs are available
+# for the target (this is not used for routing notifications but purely for
+# information)
+- name: Create Management Packs Target Property
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:
+
+    - name: Create Management Packs Target Property
+      shell: |
+         {{ emcli }} add_target_property -target_type="*" -property="Management Packs"
+
+# Now we attempt to create the dynamic Notifications Allowed group. However, Oracle
+# will not accept a user defined Name in a group definition - it must use the internal
+# UDTP (User Defined Target Property) identifier instead.  This is not directly 
+# exposed through emcli but we can find it in an error message if we deliberately
+# try to create an invalid dynamic group.
+- name: Create Notifications Allowed Dynamic Group
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:
+
+     - name: Get UDTP Value for Notifications Allowed Target Property
+       shell: |
+          {{ emcli }} create_dynamic_group -properties="DUMMY:DUMMY" -name="DUMMY" 2>&1 | grep -oP '(?<=Notifications Allowed\()[^)]+'
+       register: get_notifications_allowed_udtp_id
+       changed_when: false
+
+     - name: Create Notifications Allowed Dynamic Group
+       shell: |
+          {{ emcli }} create_dynamic_group -properties="{{ get_notifications_allowed_udtp_id.stdout | trim }}:yes" -name="Notifications Allowed"
+       register: create_dynamic_group
+       failed_when: 
+          - create_dynamic_group.rc != 0
+          - create_dynamic_group.stdout is search('.*already exists.*')
+       changed_when: create_dynamic_group.rc == 0
+
+# Install script that populates the "Notifications Allowed" and
+# "Management Packs" properties for the targets
+- name: Setup Management Packs Script
+  become: yes
+  become_user: "{{ oracle_install_user }}"
+  block:
+    - name: Create Script Directory
+      file:
+        path: "{{ notification_script_directory }}"
+        state: directory
+
+    - name: Copy Management Packs Script
+      copy:
+        src: set_management_packs.sh
+        dest: "{{ notification_script_directory }}/set_management_packs.sh"
+        mode: "0700"
+
+    # We use flock to prevent more than one concurrent execution of the management packs calculation script.
+    # If the script is already running when a new one tries to start, the new one exists with success status.
+    - name: Schedule Management Packs Calculation Script Cron Every 5 Minutes
+      cron:
+        name: management_pack_calculations
+        user: oracle
+        minute: "*/5"
+        job: "/usr/bin/flock --nonblock --conflict-exit-code 0 {{ notification_script_directory }}/set_management_packs_lock_file -c {{ notification_script_directory }}/set_management_packs.sh >> {{ notification_script_directory }}/set_management_packs.log 2>&1"
+
+

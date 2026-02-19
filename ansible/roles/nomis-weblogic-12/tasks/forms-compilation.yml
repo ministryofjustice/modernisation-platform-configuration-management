@@ -5,7 +5,7 @@
     source ~/.bash_profile
     cd /u01/tag/FormsSources/
     set -o pipefail
-    bash compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} s={{ start_index | default(0) }} t={{ tnsnames_qa11g_service_name }} | tee /tmp/forms_compilation.log
+    bash compile_all_forms.sh u={{ weblogic_db_username }} p={{ weblogic_db_password }} s={{ start_index | default(0) }} t={{ tnsnames_qa19c_service_name }} | tee /tmp/forms_compilation.log
   args:
     executable: /bin/bash
 

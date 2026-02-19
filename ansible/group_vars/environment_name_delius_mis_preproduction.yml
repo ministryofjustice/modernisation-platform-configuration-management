@@ -1,0 +1,105 @@
+---
+sap_environment: "{{ ec2.tags['delius-environment'] }}"
+
+sap_bip_oracle_client_confs:
+  stage:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.delius-bip.stage
+
+sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[sap_environment] }}"
+
+sap_bip_db_confs:
+  stage:
+    auditing_db_server: STGBXC
+    auditing_db_user: b14aud
+    cms_db_server: STGBXC
+    cms_db_user: b14cms
+
+sap_bip_db_conf: "{{ sap_bip_db_confs[sap_environment] }}"
+
+sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
+sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
+sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
+sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
+
+sap_bip_confs:
+  stage:
+    sap_bip_config_secret_id: delius-mis-stage-sap-boe-config
+    sap_bip_passwords_secret_id: delius-mis-stage-sap-boe-passwords
+    sap_bip_sysdb_secret_id: delius-mis-stage-oracle-boe-db-application-passwords
+    sap_bip_auditdb_secret_id: delius-mis-stage-oracle-boe-db-application-passwords
+    sap_bip_rar_base: "BIPLATS4304P_1400-70002683"
+    sap_bip_rws_url: "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
+    web:
+      sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
+      sap_web_disable_cmcapp: "false"
+      sap_web_apps:
+        - AdminTools
+        - BOE
+        - BusinessProcessBI
+        - bipodata
+        - biprws
+        - clientapi
+        - dswsbobje
+        - webi-websetup
+    sap_bip_control_lbs: "stage-mis-alb"
+    sap_bip_control_app_servers: |
+      AdaptiveJobServer,Running,Enabled
+      AdaptiveProcessingServer,Stopped,Disabled
+      APS.Analysis,Stopped,Disabled
+      APS.Connectivity,Running,Enabled
+      APS.Core,Stopped,Disabled
+      APS.DF,Running,Enabled
+      APS.Monitoring,Stopped,Disabled
+      APS.Visualization,Running,Enabled
+      APS.WebI,Running,Enabled
+      APS.WebIDSLBridge,Running,Enabled
+      ConnectionServer,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+      WebIntelligenceProcessingServer,Running,Enabled
+    sap_bip_control_cms_servers: |
+      AdaptiveJobServer,Running,Enabled
+      AdaptiveProcessingServer,Stopped,Disabled
+      APS.Analysis,Stopped,Disabled
+      APS.Auditing,Stopped,Disabled
+      APS.Connectivity,Running,Enabled
+      APS.Core,Running,Enabled
+      APS.Data,Stopped,Disabled
+      APS.DF,Running,Enabled
+      APS.Monitoring,Running,Enabled
+      APS.PromotionManagement,Running,Enabled
+      APS.Search,Stopped,Disabled
+      APS.Visualization,Running,Enabled
+      APS.Webi,Running,Enabled
+      APS.WebIDSLBridge,Running,Enabled
+      CentralManagementServer,Running,Enabled
+      ConnectionServer,Running,Enabled
+      EventServer,Running,Enabled
+      InputFileRepository,Running,Enabled
+      OutputFileRepository,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+      WebIntelligenceProcessingServer,Running,Enabled
+    sap_bip_control_cms_server_1:
+    sap_bip_control_cms_server_2:
+
+sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
+sap_bip_config_secret_id: "{{ sap_bip_conf.sap_bip_config_secret_id }}"
+sap_bip_passwords_secret_id: "{{ sap_bip_conf.sap_bip_passwords_secret_id }}"
+sap_bip_sysdb_secret_id: "{{ sap_bip_conf.sap_bip_sysdb_secret_id }}"
+sap_bip_auditdb_secret_id: "{{ sap_bip_conf.sap_bip_auditdb_secret_id }}"
+sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
+sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
+sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
+sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
+sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
+sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
+sap_web_conf: "{{ sap_bip_conf.web }}"
+
+bip_filesystems_mount:
+ - dir: /opt/data/BusinessObjects
+   fstype: nfs
+   uid: bobj
+   gid: binstall
+   opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+   src: "eu-west-2a.fs-0e6f80027b87246cf.efs.eu-west-2.amazonaws.com:/"

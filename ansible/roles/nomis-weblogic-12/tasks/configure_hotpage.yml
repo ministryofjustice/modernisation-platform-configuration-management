@@ -1,0 +1,16 @@
+- name: Append HotPage app-deployment if not present
+  ansible.builtin.blockinfile:
+    path: "{{ config_filepath }}"
+    block: |
+      <app-deployment>
+        <name>HotPage</name>
+        <target>cluster_hotpage</target>
+        <module-type>ear</module-type>
+        <source-path>/u01/tag/HotPage/deploy/HotPage.war</source-path>
+        <security-dd-model>DDOnly</security-dd-model>
+        <staging-mode xsi:nil="true"></staging-mode>
+        <plan-staging-mode xsi:nil="true"></plan-staging-mode>
+        <cache-in-app-directory>false</cache-in-app-directory>
+      </app-deployment>
+    insertafter: '</app-deployment>'
+    marker: ""
