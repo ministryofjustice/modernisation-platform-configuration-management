@@ -7,13 +7,8 @@
 - name: Detect local Oracle database instance
   import_tasks: detect_local_database.yml
   when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
-  tags:
-    - goldengate
-    - goldengate-install
-    - goldengate-config
-    - goldengate-audit
-    - goldengate-mis
-
+  tags: always
+  
 - name: Install Oracle GoldenGate binaries
   import_tasks: install.yml
   tags:
