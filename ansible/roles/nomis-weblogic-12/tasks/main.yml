@@ -150,15 +150,6 @@
         - ec2provision
         - weblogic_nodemanager_properties_update
 
-#    - import_tasks: enable-weblogic-services.yml
-#      vars:
-#        service_state: restarted
-#        services_to_manage:
-#          - weblogic-node-manager
-#      tags:
-#        - ec2provision
-#        - weblogic_restart_nodemanager
-
     - import_tasks: copy-managed-server-files-tgz.yml
       tags:
         - ec2provision
@@ -169,6 +160,15 @@
       tags:
         - ec2provision
         - weblogic_configure_tagsar
+
+    - import_tasks: enable-weblogic-services.yml
+      vars:
+        service_state: restarted
+        services_to_manage:
+          - weblogic-node-manager
+      tags:
+        - ec2provision
+        - weblogic_restart_nodemanager
 
     - include_tasks:
         file: create-managed-app.yml
