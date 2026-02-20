@@ -145,7 +145,7 @@
         
         if [ -z "$CURRENT_SECRET" ]; then
           echo "ERROR: Cannot retrieve existing passwords secret for {{ oracle_goldengate_local_db_sid }}"
-          exit 1
+          exit 0
         fi
 
         # Check if ggadmin password already exists
@@ -166,13 +166,13 @@
         fi
         
         # Update the secret with the new value
-        aws secretsmanager update-secret \
+        aws secretsmanager put-secret-value \
           --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
           --secret-string "$UPDATED_SECRET"
       register: secret_store_output
       changed_when: "'ARN' in secret_store_output.stdout"
       failed_when: secret_store_output.rc != 0
-      #no_log: true
+      no_log: true
 
     - name: Display secret storage confirmation
       ansible.builtin.debug:
@@ -183,7 +183,7 @@
         path: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
         state: absent
 
-    - name: Create AUDITDATA schema and tables if local database is the audit database
+    - name: Create AUDITDATA schema if local database is the audit database
       when: oracle_goldengate_deploy_auditdata
       ansible.builtin.shell: |
         . ~/.bash_profile
@@ -197,9 +197,26 @@
         
         WHENEVER SQLERROR EXIT SQL.SQLCODE
 
+        -- Check if user exists
+        DECLARE
+          v_count NUMBER;
+        BEGIN
+          SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_streams.auditdata.target_schema }}');
+          IF v_count > 0 THEN
+            EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_streams.auditdata.target_schema }} CASCADE';
+            DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_streams.auditdata.target_schema }} dropped');
+          END IF;
+        END;
+        /
+        
         -- For auditdata we need to create a dummy schema in the target database and create the table structures based on the source schema as we have to use MAP in the Replicat param file.
         -- User will be locked as we don't want anyone connecting to it, it's only needed for the Replicat MAP in the param file.
-        CREATE USER GG_OMS_OWNER PROFILE DEFAULT IDENTIFIED BY {{ gg_oms_owner_password }} DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS ACCOUNT LOCK;
+        CREATE USER {{ oracle_goldengate_streams.auditdata.target_schema }} PROFILE DEFAULT 
+        IDENTIFIED BY "{{ gg_oms_schema_password }}" 
+        DEFAULT TABLESPACE USERS 
+        TEMPORARY TABLESPACE TEMP 
+        QUOTA UNLIMITED ON USERS 
+        ACCOUNT LOCK;
         EXIT;
         EOF
       register: create_schema_output
@@ -210,10 +227,11 @@
       no_log: true
 
     - name: Display schema creation results (sanitized)
+      when: oracle_goldengate_deploy_auditdata
       ansible.builtin.debug:
         msg: 
           - "Database: {{ oracle_goldengate_local_db_sid }}"
-          - "Schema: GG_OMS_OWNER"
+          - "Schema: {{ oracle_goldengate_streams.auditdata.target_schema }}"
           - "Status: {{ 'Created successfully' if create_schema_output.changed else 'Already exists or error' }}"
 
     - name: Create AUDITDATA tables if local database is the audit database
@@ -221,19 +239,28 @@
       ansible.builtin.shell: |
         . ~/.bash_profile
         -- connect to source database as sysdba to generate DDL for the source tables, replacing the schema name with the target schema name in the output so that we can create the same table structures in the target database for the replicat MAP to work, and then execute the generated DDL in the target database to create the tables
-        export ORACLE_SID={{ oracle_goldengate_source_db_sid }}
+        export ORACLE_SID={{ oracle_goldengate_db.source.tns_alias }}
         export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
         export PATH=${ORACLE_HOME}/bin:$PATH
 
         # Retrieve SYS password from AWS Secrets Manager
         SYS_PASSWORD=$(aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_source_db_sid }}/passwords" \
+          --secret-id "/oracle/database/${ORACLE_SID}/passwords" \
           --query 'SecretString' \
           --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
-
-        sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_source_db_sid }} as sysdba <<EOF
+  
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba <<EOF
+        column c1 format a4000
+        set wrap on
         SET LONG 2000000
         SET PAGESIZE 0
+        SET LINESIZE 9999
+        SET FEEDBACK OFF
+        SET HEADING OFF
+        SET ECHO OFF
+        SET TRIMSPOOL ON
+        SET TERMOUT OFF
+        SET SERVEROUTPUT ON
         BEGIN
           DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
           DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PRETTY', true);
@@ -247,10 +274,21 @@
         END;
         /
 
-        SELECT replace(DBMS_METADATA.get_ddl ('TABLE', table_name, owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_streams.auditdata.target_schema }}')
-        FROM   all_tables
-        WHERE  owner      = '{{ oracle_goldengate_db.source.schema_owner }}'
-        order by table_name
+        SELECT replace(DBMS_METADATA.get_ddl (o.object_type, o.object_name, o.owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_streams.auditdata.target_schema }}') c1
+        FROM   dba_objects o
+        WHERE  o.owner      = '{{ oracle_goldengate_db.source.schema_owner }}'
+        AND    o.object_type in ('TABLE','CLUSTER')
+        AND    EXISTS 
+          (SELECT 1 FROM dual d 
+            WHERE o.object_type = 'CLUSTER'
+        	UNION 
+        	SELECT 1 FROM dba_tables t 
+            WHERE o.object_type = 'TABLE' 
+            AND t.owner = o.owner 
+            AND t.table_name = o.object_name 
+            AND (t.TABLESPACE_NAME IS NOT null or (t.TABLESPACE_NAME IS null and t.partitioned = 'YES'))
+            ) -- exclude external tables but not partitioned tables without a tablespace assigned
+        order by decode(o.object_type, 'CLUSTER', 1, 'TABLE', 2), o.object_name
 
         spool /tmp/table_ddl.sql
         /
@@ -268,7 +306,9 @@
         SET ECHO ON
         SET FEEDBACK ON
         WHENEVER SQLERROR EXIT SQL.SQLCODE
+        spool /tmp/create_auditdata_tables.log
         @/tmp/table_ddl.sql
+        spool off
         EXIT;
         EOF
       register: create_tables_output

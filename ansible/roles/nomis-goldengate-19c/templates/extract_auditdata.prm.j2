@@ -45,16 +45,18 @@ TABLE OMS_OWNER.OMS_DELETED_ROWS;
 TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
 
 -- 3) Apply the negative Streams logic using WHERE with @PRESENT.
---    WHERE selects rows to *include*, so we NEGATE the original rule.
+--    WHERE selects rows to *include*, so we include the following:
+--     - rows where column AUDIT_MODULE_NAME is not present in the table (doesn't matter what DML operation)
+--     - or column AUDIT_MODULE_NAME is present and it's value is not $$START$$ or $$END$$ and it's not a DELETE operation.
 TABLE OMS_OWNER.*
   WHERE (
-        -- Include rows from tables where column does not exist
+        -- Include rows from tables where column exist
         AUDIT_MODULE_NAME = @ABSENT
         OR
         -- Include rows where column exists AND the negative rule does NOT match
         NOT (
               AUDIT_MODULE_NAME = @PRESENT
-              AND 
+              AND
               (
                 AUDIT_MODULE_NAME = '$$START$$' 
                 OR 
