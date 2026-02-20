@@ -67,7 +67,7 @@
 
     - name: Repack TAGSAR.ear and move it back to deploy
       ansible.builtin.shell: |
-        jar -cvf TAGSAR.ear META-INF TAGSAREjb.jar
+        jar -cvf TAGSAR.ear META-INF adf TAGSAREjb.jar
         mv TAGSAR.ear /u01/tag/tagsar/deploy/
       become_user: oracle
       args:
