@@ -272,7 +272,7 @@ if jmsModuleName:
         cmo.setLocalJNDIName(jmsFServerFactoryLocJNDIName)
         cmo.setRemoteJNDIName(jmsFServerFactoryRemJNDIName)
         # Set timeout seconds for Java Transaction API (JTA)
-        cd('/JTA/NomisDomain/')
+        cd('/JTA/nomis/')
         cmo.setTimeoutSeconds(1000)
         save()
         activate()
