@@ -85,13 +85,13 @@
       async: 1200
       poll: 20
 
-#  always:
-#    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
-#      ansible.builtin.file:
-#        path: "{{ item }}"
-#        state: absent
-#      loop:
-#        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
+  always:
+    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /u01/software/weblogic/{{ weblogic_managed_app }}.properties
 
   # block
   when: not weblogic_created_managed_app_check.stat.exists
