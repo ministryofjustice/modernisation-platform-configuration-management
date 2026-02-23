@@ -73,6 +73,13 @@
       args:
         chdir: /u01/tag/tagsar/deploy/tmp
 
+    - name: Copy all JAR files to NOMIS domain lib directory
+      ansible.builtin.shell: |
+        cp /u01/tag/tagsar/applib/*.jar .
+      become_user: oracle
+      args:
+        chdir: /u01/app/oracle/Middleware/user_projects/domains/nomis/lib/
+
   always:
     - name: Clean up tmp directory
       ansible.builtin.file:
