@@ -1,15 +1,15 @@
 [Unit]
-Description=WLS_HOTPAGE
+Description=WLS_TAGSAR
 After=weblogic-server.service
 Requires=weblogic-server.service
 
 [Service]
 KillMode=process
 KillSignal=SIGTERM
-ExecStart=/home/oracle/admin/scripts/start_WLS_SERVICE.sh WLS_HOTPAGE
-ExecStop=/home/oracle/admin/scripts/stopManagedWebLogic.sh WLS_HOTPAGE
+ExecStart=/home/oracle/admin/scripts/start_WLS_SERVICE.sh WLS_TAGSAR
+ExecStop=/home/oracle/admin/scripts/stopManagedWebLogic.sh WLS_TAGSAR
 Group=oinstall
-PIDFile=/tmp/WLS_HOTPAGE.pid
+PIDFile=/tmp/WLS_TAGSAR.pid
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=30
