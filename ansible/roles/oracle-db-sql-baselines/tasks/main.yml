@@ -28,24 +28,25 @@
 #         - Baseline #m   
 #
 
-# The expected format for baseline definitions is the Baseline name
-# with the suffix .json appended
-- name: Get Expected Baseline Names (non-Delius)
+- name: Extract Database Name from target_db_names
   set_fact:
-     sql_plan_baselines_to_add: "{{ db_configs[target_db_name]['sql_plan_baselines'] | default([]) | unique }}"
-  when: target_db_name is defined
-
-# If it is a Delius database then the target_db_name will not be initially defined;
-# set it to the Primary Database SID
-- name: Get Expected Baseline Names (Delius)
-  set_fact:
-     sql_plan_baselines_to_add: "{{ sql_plan_baselines | default([]) | unique }}"
-     target_db_name: "{{ database_primary_sid }}"
-  when: target_db_name is not defined
+     target_db_name: "{{ database_primary_sid if (application in ['delius-core','delius-mis'] ) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
 
 - name: Handle Special Case of RMAN Database Name
   set_fact:
-     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name=='RCVCAT') else target_db_name }}"
+     target_db_name: "{{ (db_configs['RCVCAT']['rcvcat_db_name']) if (target_db_name=='RCVCAT') else (target_db_name) }}"
+
+# The expected format for baseline definitions is the Baseline name
+# with the suffix .json appended
+- name: Get Expected Baseline Names (Delius)
+  set_fact:
+     sql_plan_baselines_to_add: "{{ sql_plan_baselines | default([]) | unique }}"
+  when: application in ['delius-core','delius-mis'] 
+
+- name: Get Expected Baseline Names (non-Delius)
+  set_fact:
+     sql_plan_baselines_to_add: "{{ db_configs[target_db_name]['sql_plan_baselines'] | default([]) | unique }}"
+  when: not application in ['delius-core','delius-mis'] 
 
 - name: Get Expected Baseline File Names (append .json to the name)
   set_fact:
