@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DOMAIN_HOME=/u01/app/oracle/Middleware/user_projects/domains/nomis
-SERVER=WLS_HOTPAGE
-PIDFILE=/tmp/WLS_HOTPAGE.pid
+SERVER=$1
+PIDFILE=/tmp/$1.pid
 
 $DOMAIN_HOME/bin/startManagedWebLogic.sh $SERVER \
   > $DOMAIN_HOME/servers/$SERVER/logs/systemd-start.log 2>&1 &
