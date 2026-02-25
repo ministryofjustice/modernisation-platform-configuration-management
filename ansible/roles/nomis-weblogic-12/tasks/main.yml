@@ -216,12 +216,4 @@
         - WLS_TAGSAR
         - WLS_HOTPAGE
 
-    # TODO: Revisit Node Manager killling reports server on restart
-    - import_tasks: start-report-server.yml
-      vars:
-          server_name: rep_server1
-      tags:
-        - ec2provision
-        - weblogic_start_reports_server
-
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
