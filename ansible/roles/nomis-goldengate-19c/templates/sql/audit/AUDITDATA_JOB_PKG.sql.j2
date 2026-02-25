@@ -1,43 +1,37 @@
-CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_JOB_PKG AS
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG AS
 
 /*
  *  NOMIS Audit Data Jobs code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Audit data jobs for Prison-NOMIS release 1.0e.
  *  
- *                  This script should be compiled by the AUDITDATA user.
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
  *  
- *  Change History:	
- *          Version:  Date:	    Author:	    Description:	
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
  *
- *			1.0e.1	  15/01/26  D. Belton	Initial version for 1.0e audit
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit
  */
 
     -- package version
-    g_version 	 	VARCHAR2(20) := '1.0e.1';
+    g_version      VARCHAR2(20) := '1.0e.1';
 
     -- package level variable declarations
---    g_queue_owner 	VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER'); this would be right if the package was installed in ggint but its now in auditdata
-    g_data_owner 	VARCHAR2(30) := 'AUDITDATA';
-    g_ref_owner 	VARCHAR2(30) := 'AUDITREF';
-    g_data_apply_name VARCHAR2(30) := 'AUDDTAPP';
-    g_ref_apply_name  VARCHAR2(30) := 'AUDRFAPP';
-    g_log_dir		varchar2(30) := 'AUD_ERRORLOG_DIR';
-    g_binary_dir	varchar2(30) := 'AUD_BINARY_DIR';
-    g_historic_days 	CONSTANT NUMBER := 793;
+--    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER'); this would be right if the package was installed in ggint but its now in auditdata
+    g_historic_days   CONSTANT NUMBER := 793;
 
 
     -- define exceptions
 /* Conversion specific?
-    g_aud_conv_exception 	CONSTANT NUMBER := -20041;
-    AUD_CONV_EXCEPTION 		EXCEPTION;
+    g_aud_conv_exception   CONSTANT NUMBER := -20041;
+    AUD_CONV_EXCEPTION     EXCEPTION;
     PRAGMA EXCEPTION_INIT(AUD_CONV_EXCEPTION, -20041);
 
     -- Packaged function convert_anydata_to_varchar2
     -- will convert a SYS.ANYDATA record to a VARCHAR2 string
     FUNCTION convert_anydata_to_varchar2 (
-        p_any_val 	IN     sys.anydata)
+        p_any_val   IN     sys.anydata)
     RETURN varchar2;
 
     -- packaged function convert_anydata_to_date
@@ -63,7 +57,7 @@ CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_JOB_PKG AS
     -- and workstation name being embedded in the audit_additional_info column;
     -- returns true if audit_additional_info is valid, false if invalid, null on an exception.
     FUNCTION convertaddinfo(
-    	p_addinfo_in IN VARCHAR2, 
+      p_addinfo_in IN VARCHAR2, 
         p_ipaddress_in IN VARCHAR2,
         p_workstation_in IN VARCHAR2,
         p_addinfo_out OUT VARCHAR2,
@@ -101,14 +95,14 @@ CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_JOB_PKG AS
     -- will insert offender cross-reference entries for up to p_table_row_limit
     -- rows from AUDITDATA.AUDIT_TABLE, based on values in AUDIT_COLUMN
     PROCEDURE populate_offender_refs (
-        p_table_row_limit	IN     NUMBER DEFAULT 2000000,
-        p_commit_unit_size	IN     NUMBER DEFAULT 1000 );
+        p_table_row_limit  IN     NUMBER DEFAULT 2000000,
+        p_commit_unit_size  IN     NUMBER DEFAULT 1000 );
 
     -- Packaged procedure export_binary_data
     -- extracts binary data (images and documents) for a specified transaction from the NOMIS audit database;
     -- requires creation of g_binary_dir DIRECTORY to receive output files.
     PROCEDURE export_binary_data (
-        p_lcr_commit_scn 	in     number );
+        p_lcr_commit_scn   in     number );
 
     -- Packaged function get_version
     -- will return a VARCHAR2 string containing a package version number

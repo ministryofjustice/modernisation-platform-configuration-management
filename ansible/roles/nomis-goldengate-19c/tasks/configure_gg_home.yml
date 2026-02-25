@@ -22,7 +22,7 @@
     #    path: "{{ item }}"
     #    state: directory
     #    owner: "{{ oracle_goldengate_owner }}"
-    #    group: "{{ oracle_goldengate_group }}"
+    #    group: "{{ oracle_goldengate_osgroup }}"
     #    mode: "0755"
     #  loop:
     #    - "{{ oracle_goldengate_directories }}"
@@ -43,9 +43,9 @@
         path: "{{ oracle_goldengate_trail_dir }}/{{ item.key }}"
         state: directory
         owner: "{{ oracle_goldengate_owner }}"
-        group: "{{ oracle_goldengate_group }}"
+        group: "{{ oracle_goldengate_osgroup }}"
         mode: "0755"
-      loop: "{{ oracle_goldengate_streams | dict2items }}"
+      loop: "{{ oracle_goldengate_group | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
 
@@ -54,7 +54,7 @@
         src: mgr.prm.j2
         dest: "{{ oracle_goldengate_param_dir }}/mgr.prm"
         owner: "{{ oracle_goldengate_owner }}"
-        group: "{{ oracle_goldengate_group }}"
+        group: "{{ oracle_goldengate_osgroup }}"
         mode: "0644"
 
     - name: Start GoldenGate Manager

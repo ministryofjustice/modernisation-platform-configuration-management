@@ -1,8 +1,8 @@
 ---
-# Quick Reference: Looping through oracle_goldengate_streams
+# Quick Reference: Looping through oracle_goldengate_group
 # 
-# The oracle_goldengate_streams variable structure:
-# oracle_goldengate_streams:
+# The oracle_goldengate_group variable structure:
+# oracle_goldengate_group:
 #   auditdata:
 #     extract_name: EXTAUDD
 #     replicat_name: REPAUDD
@@ -27,9 +27,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
@@ -40,9 +40,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.value.trail_prefix }}"
 
@@ -53,9 +53,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}/{{ item.value.trail_prefix }}"
 
@@ -69,9 +69,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   when: >
     (item.key == 'auditdata' and oracle_goldengate_deploy_auditdata | default(false)) or
     (item.key == 'auditref' and oracle_goldengate_deploy_auditref | default(false)) or
@@ -92,7 +92,7 @@
       Replicat Name: {{ item.value.replicat_name }}
       Trail Prefix: {{ item.value.trail_prefix }}
       Full Path: {{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
@@ -103,22 +103,22 @@
 # Pattern 6: Access a specific stream directly (no loop)
 - name: Create directory for auditdata stream only
   ansible.builtin.file:
-    path: "{{ oracle_goldengate_home }}/dirdat/auditdata/{{ oracle_goldengate_streams.auditdata.trail_prefix }}"
+    path: "{{ oracle_goldengate_home }}/dirdat/auditdata/{{ oracle_goldengate_group.auditdata.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
 
 # Pattern 7: Use specific stream values
 - name: Display auditdata extract name
   ansible.builtin.debug:
-    msg: "Auditdata Extract: {{ oracle_goldengate_streams.auditdata.extract_name }}"
+    msg: "Auditdata Extract: {{ oracle_goldengate_group.auditdata.extract_name }}"
 
 # ============================================================================
 # USEFUL LOOP VARIABLES REFERENCE
 # ============================================================================
 # 
-# When using: loop: "{{ oracle_goldengate_streams | dict2items }}"
+# When using: loop: "{{ oracle_goldengate_group | dict2items }}"
 # 
 # Available variables in loop body:
 #   item.key                         → Stream name (auditdata, auditref, mis)

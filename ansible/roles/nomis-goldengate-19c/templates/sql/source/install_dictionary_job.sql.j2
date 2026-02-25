@@ -1,0 +1,38 @@
+-- In source db create job to run this procedure every hour or so to keep the logminer dictionary fresh. This is needed for integrated extract to work well and avoid missing transactions due to dictionary changes in the source db. The procedure will build the logminer dictionary in the redo logs which means it will be available to goldengate without the need to create a separate dictionary file and manage it on the filesystem. See https://alexlima.com/2025/05/30/why-you-should-rebuild-the-logminer-dictionary-periodically-for-oracle-goldengate/ for more details.
+
+-- Run the following manually if you want to build the logminer dictionary immediately, otherwise it will be built when the scheduled job runs:
+--    execute DBMS_LOGMNR_D.BUILD(options => DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+
+BEGIN
+  DBMS_SCHEDULER.CREATE_JOB (
+    job_name         => 'BUILD_LOGMINER_DICT_HOURLY',
+    job_type         => 'PLSQL_BLOCK',
+    job_action       => '
+      BEGIN 
+        DBMS_LOGMNR_D.BUILD(
+          options => DBMS_LOGMNR_D.STORE_IN_REDO_LOGS
+        ); 
+      END;',
+    start_date       => SYSTIMESTAMP,
+    repeat_interval  => 'FREQ=HOURLY; INTERVAL=1',
+    enabled          => TRUE,
+    comments         => 'Build LogMiner dictionary every hour for Integrated Extract');
+END;
+/
+
+-- Print the latest scn of the redo log with the data dict in it:
+SELECT * FROM (
+  SELECT 
+    sequence#,
+    first_change#,
+    TO_CHAR(completion_time, 'YYYY-MM-DD HH24:MI:SS') AS completion_time,
+    dictionary_begin,
+    dictionary_end
+  FROM v$archived_log 
+  WHERE (dictionary_begin = 'YES' OR dictionary_end = 'YES') 
+    AND STANDBY_DEST = 'NO' 
+    AND NAME IS NOT NULL 
+    AND STATUS = 'A'
+  ORDER BY sequence# DESC)
+WHERE ROWNUM = 1;
+

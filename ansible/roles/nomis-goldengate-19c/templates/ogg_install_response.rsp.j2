@@ -34,7 +34,7 @@ oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_sc
 #         ORA12c for installing Oracle GoldenGate for Oracle Database 12c or
 #         ORA11g for installing Oracle GoldenGate for Oracle Database 11g 
 #-------------------------------------------------------------------------------
-INSTALL_OPTION=ORA11g
+INSTALL_OPTION={{ response_file_version }}
 
 #-------------------------------------------------------------------------------
 # Specify a location to install Oracle GoldenGate
@@ -56,7 +56,7 @@ MANAGER_PORT=
 # Specify the location of the Oracle Database.
 # Required only if START_MANAGER is true.
 #-------------------------------------------------------------------------------
-DATABASE_LOCATION={{ oracle_goldengate_local_db_sid }}:/u01/app/oracle/product/11.2.0.4/db_1
+DATABASE_LOCATION=
 
 
 ################################################################################

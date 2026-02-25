@@ -7,15 +7,15 @@ GGHOME={{ oracle_goldengate_home }}
 SCRIPTS_DIR={{ oracle_goldengate_scripts_dir }}
 
 # Process names
-EXTRACT_AUDITDATA={{ oracle_goldengate_streams.auditdata.extract_name }}
-REPLICAT_AUDITDATA={{ oracle_goldengate_streams.auditdata.replicat_name }}
-TNS_AUDITDATA={{ oracle_goldengate_streams.auditdata.tns_alias }}
-EXTRACT_AUDITREF={{ oracle_goldengate_streams.auditref.extract_name }}
-REPLICAT_AUDITREF={{ oracle_goldengate_streams.auditref.replicat_name }}
-TNS_AUDITREF={{ oracle_goldengate_streams.auditref.tns_alias }}
-EXTRACT_MIS={{ oracle_goldengate_streams.mis.extract_name }}
-REPLICAT_MIS={{ oracle_goldengate_streams.mis.replicat_name }}
-TNS_MIS={{ oracle_goldengate_streams.mis.tns_alias }}
+EXTRACT_AUDITDATA={{ oracle_goldengate_group.auditdata.extract_name }}
+REPLICAT_AUDITDATA={{ oracle_goldengate_group.auditdata.replicat_name }}
+TNS_AUDITDATA={{ oracle_goldengate_group.auditdata.tns_alias }}
+EXTRACT_AUDITREF={{ oracle_goldengate_group.auditref.extract_name }}
+REPLICAT_AUDITREF={{ oracle_goldengate_group.auditref.replicat_name }}
+TNS_AUDITREF={{ oracle_goldengate_group.auditref.tns_alias }}
+EXTRACT_MIS={{ oracle_goldengate_group.mis.extract_name }}
+REPLICAT_MIS={{ oracle_goldengate_group.mis.replicat_name }}
+TNS_MIS={{ oracle_goldengate_group.mis.tns_alias }}
 
 ACTION=$1
 STREAM=$2

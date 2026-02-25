@@ -1,44 +1,33 @@
-CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_CONV_PKG AS
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_CONV_PKG AS
 
 /*
  *  NOMIS Audit Data Conversion code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Audit data conversion for Prison-NOMIS release 1.0e.
  *  
- *                  This script should be compiled by the AUDITDATA user.
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
  *  
  *                      N.B. This package is dependent on the AUDITDATA_GEN_PKG package.
  *  
- *  Change History:	
- *          Version:  Date:	    Author:	    Description:	
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
  *
- *			1.0e.1	  15/01/26  D. Belton	Initial version for 1.0e audit based on AUD_STRM_PKG2
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
  */
 
     -- package version
-    g_version 	 	VARCHAR2(20) := '1.0e.1';
-
-    -- package level variable declarations
---    g_queue_owner 	VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER'); this would be right if the package was installed in ggint but its now in auditdata
-    g_data_owner 	VARCHAR2(30) := 'AUDITDATA';
-    g_ref_owner 	VARCHAR2(30) := 'AUDITREF';
-    g_data_apply_name VARCHAR2(30) := 'AUDDTAPP';
-    g_ref_apply_name  VARCHAR2(30) := 'AUDRFAPP';
-    g_log_dir		varchar2(30) := 'AUD_ERRORLOG_DIR';
-    g_binary_dir	varchar2(30) := 'AUD_BINARY_DIR';
-    g_historic_days 	CONSTANT NUMBER := 793;
-
+    g_version      VARCHAR2(20) := '1.0e.1';
 
     -- define exceptions
-    g_aud_conv_exception 	CONSTANT NUMBER := -20041;
-    AUD_CONV_EXCEPTION 		EXCEPTION;
+    g_aud_conv_exception   CONSTANT NUMBER := -20041;
+    AUD_CONV_EXCEPTION     EXCEPTION;
     PRAGMA EXCEPTION_INIT(AUD_CONV_EXCEPTION, -20041);
 
     -- Packaged function convert_anydata_to_varchar2
     -- will convert a SYS.ANYDATA record to a VARCHAR2 string
     FUNCTION convert_anydata_to_varchar2 (
-        p_any_val 	IN     sys.anydata)
+        p_any_val   IN     sys.anydata)
     RETURN varchar2;
 
     -- packaged function convert_anydata_to_date
@@ -65,7 +54,7 @@ CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_CONV_PKG AS
     -- and workstation name being embedded in the audit_additional_info column;
     -- returns true if audit_additional_info is valid, false if invalid, null on an exception.
     FUNCTION convertaddinfo(
-    	p_addinfo_in IN VARCHAR2, 
+      p_addinfo_in IN VARCHAR2, 
         p_ipaddress_in IN VARCHAR2,
         p_workstation_in IN VARCHAR2,
         p_addinfo_out OUT VARCHAR2,

@@ -1,19 +1,19 @@
-CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PKG AS
 /*
  *  NOMIS MIS Goldengate code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
  *  
- *  Version: 		1.0e
+ *  Version:     1.0e
  *
- *  Author:		
+ *  Author:    
  *
- *  Date:		
+ *  Date:    
  * 
- *  Change History:	Version:  Date:	    Author:	Description:	
+ *  Change History:  Version:  Date:      Author:  Description:  
  *
- *			1.0e.59	  01/05/13  R. Taylor	Added purge_records procedure (defect 19143).
+ *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
  */
 
   FUNCTION get_version RETURN varchar2 IS
@@ -26,23 +26,23 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE set_col_deletions (
-    p_src_db 		IN     VARCHAR2,
-    p_src_owner 	IN     VARCHAR2,
-    p_src_table 	IN     VARCHAR2,
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2,
-    p_proc_flags 	IN     VARCHAR2 DEFAULT ''
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2,
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2,
+    p_proc_flags   IN     VARCHAR2 DEFAULT ''
   ) IS
   -- local procedure set_col_deletions
   -- will insert/overwrite entries in p_tgt_owner.STRM_COL_DELETIONS
 
-    l_plsql 	varchar2(2000); 
-    l_plsql2	varchar2(2000); 
-    l_col_list	mis_gen_pkg.object_list;
-    l_dtyp_str	varchar2(200) := '''NONE''';
-    l_src_db	varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
-    l_src_owner	varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_plsql   varchar2(2000); 
+    l_plsql2  varchar2(2000); 
+    l_col_list  mis_gen_pkg.object_list;
+    l_dtyp_str  varchar2(200) := '''NONE''';
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_src_owner  varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
 
   BEGIN
 
@@ -91,34 +91,34 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
   END;
 
   PROCEDURE set_col_differences (
-    p_src_db 		IN     VARCHAR2,
-    p_src_owner 	IN     VARCHAR2,
-    p_src_table 	IN     VARCHAR2,
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2,
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2
   ) IS
   -- local procedure set_col_differences
   -- will insert/overwrite entries in p_tgt_owner.STRM_COL_DIFFERENCES
 
-    l_plsql 	varchar2(2000); 
-    l_plsql2	varchar2(2000); 
-    l_col_list	mis_gen_pkg.object_list;
-    l_src_db	varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
-    l_src_owner	varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_plsql   varchar2(2000); 
+    l_plsql2  varchar2(2000); 
+    l_col_list  mis_gen_pkg.object_list;
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_src_owner  varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
 
     TYPE data_type_list IS TABLE OF all_tab_columns.data_type%type;
     TYPE data_length_list IS TABLE OF all_tab_columns.data_length%type;
     TYPE nullable_list IS TABLE OF all_tab_columns.nullable%type;
 
-    l_src_dtyp	data_type_list;
-    l_src_dlen	data_length_list;
-    l_src_null	nullable_list;
-    l_tgt_dtyp	data_type_list;
-    l_tgt_dlen	data_length_list;
-    l_tgt_null	nullable_list;
+    l_src_dtyp  data_type_list;
+    l_src_dlen  data_length_list;
+    l_src_null  nullable_list;
+    l_tgt_dtyp  data_type_list;
+    l_tgt_dlen  data_length_list;
+    l_tgt_null  nullable_list;
 
-    l_abort 	varchar2(1);
+    l_abort   varchar2(1);
 
     FUNCTION base_type (p_typ IN VARCHAR2)
     RETURN VARCHAR2 IS
@@ -229,16 +229,16 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
   END;
 
   PROCEDURE set_key_cols (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2
   ) IS
   -- local procedure set_key_cols
   -- will update entries in p_tgt_owner.STRM_TAB_CONTROL with KEY_COLUMNS value
     
-    l_plsql		varchar2(4000); 
-    l_tgt_owner		varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_key_column_list 	mis_gen_pkg.object_list;
-    l_key_column_str	varchar2(400) := '';
+    l_plsql    varchar2(4000); 
+    l_tgt_owner    varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_key_column_list   mis_gen_pkg.object_list;
+    l_key_column_str  varchar2(400) := '';
     
   BEGIN
     
@@ -270,25 +270,25 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE add_tab_control (
-    p_src_db 		IN     VARCHAR2,
-    p_src_owner 	IN     VARCHAR2,
-    p_src_table 	IN     VARCHAR2,
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2,
-    p_keep_dups 	IN     CHAR DEFAULT 'N',
-    p_proc_flags 	IN     VARCHAR2 DEFAULT null
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2,
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2,
+    p_keep_dups   IN     CHAR DEFAULT 'N',
+    p_proc_flags   IN     VARCHAR2 DEFAULT null
   ) IS
   -- packaged procedure add_tab_control
   -- will insert/overwrite an entry in p_tgt_owner.STRM_TAB_CONTROL
 
-    l_plsql 	varchar2(2000) := ''; 
-    l_src_db	varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
-    l_src_owner	varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
-    l_src_table	varchar2(30) := mis_gen_pkg.strip_input(p_src_table,30);
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_plsql   varchar2(2000) := ''; 
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_src_owner  varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
+    l_src_table  varchar2(30) := mis_gen_pkg.strip_input(p_src_table,30);
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
     l_proc_flag varchar2(30) := replace(mis_gen_pkg.strip_input(p_proc_flags,30),',',' ');
-    l_tab_seq 	number; 
+    l_tab_seq   number; 
 
   BEGIN
 
@@ -322,15 +322,15 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   FUNCTION target_table_exists (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2
   ) RETURN BOOLEAN
   IS
   -- local function target_table_exists
   -- returns TRUE if the specified table exists
 
-    l_plsql 		varchar2(2000);
-    l_tgt_table 	VARCHAR2(30);
+    l_plsql     varchar2(2000);
+    l_tgt_table   VARCHAR2(30);
 
   BEGIN
 
@@ -350,17 +350,17 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
   END;
 
   FUNCTION source_table_exists (
-    p_src_db 		IN     VARCHAR2,
-    p_src_owner 	IN     VARCHAR2,
-    p_src_table 	IN     VARCHAR2
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2
   ) RETURN BOOLEAN
   IS
   -- local function source_table_exists
   -- returns TRUE if the specified table exists
 
-    l_plsql 		varchar2(2000);
-    l_src_table 	VARCHAR2(30);
-    l_src_db	varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_plsql     varchar2(2000);
+    l_src_table   VARCHAR2(30);
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
 
   BEGIN
 
@@ -381,22 +381,22 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE refresh_col_controls (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2 DEFAULT NULL
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2 DEFAULT NULL
   ) IS
   -- packaged procedure refresh_col_deletions
   -- will overwrite entries in p_tgt_owner.STRM_COL_DELETIONS
   -- and p_tgt_owner.STRM_COL_DIFFERENCES
   -- and update p_tgt_owner.STRM_TAB_CONTROL.KEY_COLUMNS
 
-    l_plsql 	varchar2(2000); 
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
 
-    l_src_db_name_list	mis_gen_pkg.db_name_list;
-    l_src_owner_list	mis_gen_pkg.owner_list;
-    l_src_table_list	mis_gen_pkg.object_list;
-    l_tgt_table_list	mis_gen_pkg.object_list;
-    l_proc_flag_list	mis_gen_pkg.object_list;
+    l_src_db_name_list  mis_gen_pkg.db_name_list;
+    l_src_owner_list  mis_gen_pkg.owner_list;
+    l_src_table_list  mis_gen_pkg.object_list;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
   BEGIN
 
     l_plsql := 'select src_db, src_owner, src_table, tgt_table, proc_flags ' ||
@@ -431,24 +431,24 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE update_tab_stats (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2
   ) IS
   -- local procedure update_tab_stats
   -- will gather statistics for a table (if out of date)
 
-    l_plsql 	varchar2(2000); 
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
 
-    l_gather 		BOOLEAN := FALSE;
-    l_num_rows 		number;
-    l_last_analyzed 	DATE;
-    l_row_count 	number := NULL;
-    l_stats_aged 	number := mis_gen_pkg.g_stats_max_days;
-    l_stats_new 	number := (mis_gen_pkg.g_stats_min_mins/1440);
-    l_stats_pct 	number := mis_gen_pkg.g_stats_pct_tolerance;
-    l_stats_low_count 	number := mis_gen_pkg.g_stats_low_count;
+    l_gather     BOOLEAN := FALSE;
+    l_num_rows     number;
+    l_last_analyzed   DATE;
+    l_row_count   number := NULL;
+    l_stats_aged   number := mis_gen_pkg.g_stats_max_days;
+    l_stats_new   number := (mis_gen_pkg.g_stats_min_mins/1440);
+    l_stats_pct   number := mis_gen_pkg.g_stats_pct_tolerance;
+    l_stats_low_count   number := mis_gen_pkg.g_stats_low_count;
 
   BEGIN
 
@@ -509,22 +509,22 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE check_table_existence (
-    p_staging_owner 	IN     VARCHAR2
+    p_staging_owner   IN     VARCHAR2
   ) IS
   -- packaged procedure check_table_existence
   -- will raise an exception if tables listed in STRM_TAB_CONTROL
   -- do not exist in source or target schemas (or if STRM_TAB_CONTROL is empty)
   -- if tables exist will update target table statistics if indicated 
 
-    l_plsql 		varchar2(2000); 
-    l_staging_owner	varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
+    l_plsql     varchar2(2000); 
+    l_staging_owner  varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
 
-    l_src_db_name_list	mis_gen_pkg.db_name_list;
-    l_src_owner_list	mis_gen_pkg.owner_list;
-    l_src_table_list	mis_gen_pkg.object_list;
-    l_tgt_table_list	mis_gen_pkg.object_list;
-    l_proc_flag_list	mis_gen_pkg.object_list;
-    l_error 		BOOLEAN := FALSE;
+    l_src_db_name_list  mis_gen_pkg.db_name_list;
+    l_src_owner_list  mis_gen_pkg.owner_list;
+    l_src_table_list  mis_gen_pkg.object_list;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
+    l_error     BOOLEAN := FALSE;
 
   BEGIN
 
@@ -568,14 +568,14 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
 
 
   PROCEDURE check_differences (
-    p_staging_owner 	IN     VARCHAR2
+    p_staging_owner   IN     VARCHAR2
   ) IS
   -- packaged procedure check_differences
   -- will raise an exception if critical column type differences exist
   -- between source and target for any staging tables
-    l_plsql		varchar2(2000);
-    l_staging_owner	varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
-    l_abort_cnt 	NUMBER;
+    l_plsql    varchar2(2000);
+    l_staging_owner  varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
+    l_abort_cnt   NUMBER;
   BEGIN
     -- check table differences information
     l_plsql := 'select count(abort_flag) ' ||
@@ -590,15 +590,15 @@ CREATE OR REPLACE PACKAGE BODY MIS_TAB_CTRL_PKG AS
   END;  
 
   PROCEDURE refresh_apply_keys (
-    p_staging_owner 	IN varchar2,
-    p_tgt_table 	IN     VARCHAR2 DEFAULT NULL
+    p_staging_owner   IN varchar2,
+    p_tgt_table   IN     VARCHAR2 DEFAULT NULL
   ) IS
   -- packaged procedure refresh_apply_keys
   -- will select not to compare old column values for staging tables during apply.
 
-    l_plsql 		varchar2(2000);
-    l_staging_owner	varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
-    l_tgt_table_list	mis_gen_pkg.object_list;
+    l_plsql     varchar2(2000);
+    l_staging_owner  varchar2(30) := mis_gen_pkg.strip_input(p_staging_owner,30);
+    l_tgt_table_list  mis_gen_pkg.object_list;
 
   BEGIN
 

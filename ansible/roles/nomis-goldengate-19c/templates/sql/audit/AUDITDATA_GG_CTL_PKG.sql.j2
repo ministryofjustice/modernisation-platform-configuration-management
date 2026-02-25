@@ -1,0 +1,80 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG AS
+
+    -- package version
+    g_version      VARCHAR2(20) := '1.0e.1';
+
+/*
+ *  NOMIS AuditData GoldenGate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle GoldenGate processes for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
+ */
+
+    -- package level variable declarations
+--    g_queue_owner   VARCHAR2(30) := USER; this would be right if the package was installed in ggint but its now in auditdata
+    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_db_user }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_db.source.schema_owner }}';
+    g_capture_name   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.extract_name }}';
+    g_consumer_name   VARCHAR2(30) := 'OGG$CAP_'||g_capture_name;
+--    g_capture_rs_name   VARCHAR2(30) := 'RS_C_OMS_AUDIT';
+--    g_capture_nrs_name   VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
+    g_replicat_name VARCHAR2(30) := '{{ oracle_goldengate_group.audit.replicat_name }}';
+    g_apply_name   VARCHAR2(30) := 'OGG$'||g_replicat_name;
+    g_apply_rs_name VARCHAR2(30) := 'RS_A_'||g_replicat_name;
+    g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||g_replicat_name;
+    g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.target_schema }}';
+--    g_queue_name   VARCHAR2(30) := 'Q_AUDITDATA';
+    g_handler_name   VARCHAR2(30) := 'AUDIT_PROCESS_ROW';
+
+    -- Type definitions for lists of information
+    TYPE owner_list IS TABLE OF all_tables.owner%type;
+    TYPE table_list IS TABLE OF all_tables.table_name%type;
+    TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
+
+    -- sleep before retry period: times in seconds to wait after timeout before retry
+    g_sleep1   NUMBER := 180;
+    g_sleep2   NUMBER := 540;
+
+    -- define exceptions
+    AUD_STREAMS_EXCEPTION EXCEPTION;
+    PRAGMA EXCEPTION_INIT(AUD_STREAMS_EXCEPTION, -20020);
+    AUD_STREAMS_QUEUE_EXCEPTION EXCEPTION;
+    PRAGMA EXCEPTION_INIT(AUD_STREAMS_QUEUE_EXCEPTION, -20021);
+
+    -- define error conditions for exception handling
+    rule_set_exists EXCEPTION;
+    PRAGMA EXCEPTION_INIT(rule_set_exists, -24153);
+    timeout_stopping_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(timeout_stopping_process, -26672);
+    cannot_alter_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(cannot_alter_process, -26666);
+
+    -- Packaged procedure stop_extract stops audit capture process
+    PROCEDURE stop_extract (p_force IN BOOLEAN  DEFAULT FALSE);
+
+    -- Packaged procedure start_extract starts audit capture process
+    PROCEDURE start_extract;
+
+    -- Packaged procedure stop_replicat stops audit apply process
+    PROCEDURE stop_replicat (p_force IN BOOLEAN DEFAULT FALSE);
+
+    -- Packaged procedure start_replicat starts audit apply process
+    -- first resets apply handlers and checks for errors
+    PROCEDURE start_replicat (p_refresh_flag IN BOOLEAN DEFAULT TRUE);
+
+    -- Packaged function get_version
+    -- will return a VARCHAR2 string containing a package version number
+    FUNCTION get_version RETURN varchar2;
+
+END AUDITDATA_GG_CTL_PKG;
+/
+
+show errors
+

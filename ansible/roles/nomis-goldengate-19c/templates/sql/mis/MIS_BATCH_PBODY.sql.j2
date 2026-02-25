@@ -1,34 +1,34 @@
-CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AS
 /*
  *  NOMIS MIS Goldengate code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Oracle Goldengate batch id processes for Prison-NOMIS release 1.0e.
  *                  Based on MIS_STRM_PKG1
  *  
- *  Version: 		1.0e
+ *  Version:     1.0e
  *
- *  Author:		R. Taylor - EDS UK Ltd.
+ *  Author:    R. Taylor - EDS UK Ltd.
  *
- *  Date:		Monday, 21 May 2007.
+ *  Date:    Monday, 21 May 2007.
  * 
- *  Change History:	Version:  Date:	    Author:	Description:	
+ *  Change History:  Version:  Date:      Author:  Description:  
  *
- *			1.1.0	  21/05/07  R. Taylor	Initial version for 1.1
+ *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
  */
 
 
   FUNCTION get_batch_number(
-    p_staging_owner 	IN varchar2,
-    p_ignore_datetime 	IN BOOLEAN DEFAULT FALSE
+    p_staging_owner   IN varchar2,
+    p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
   ) RETURN number
   IS
   -- packaged function get_batch_number returns the active batch number for
   -- the staging process, derived from the ETL_LOAD_LOG table
 
-    l_batch_number	NUMBER(38,0) := -1;
-    l_plsql		varchar2(2000); 
-    l_staging_owner	varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
+    l_batch_number  NUMBER(38,0) := -1;
+    l_plsql    varchar2(2000); 
+    l_staging_owner  varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
 
   BEGIN
     -- determine number of latest open batch for source
@@ -61,13 +61,13 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   FUNCTION get_scn_timestamp(
-    p_scn 		IN     number
+    p_scn     IN     number
   ) RETURN TIMESTAMP IS
   -- packaged function get_scn_timestamp returns the timestamp
   -- for a SCN value derived from the source database for a queue
-    l_timestamp 	timestamp(6) := null;
-    l_timestamp0 	timestamp(6) := null;
-    l_plsql		varchar2(2000); 
+    l_timestamp   timestamp(6) := null;
+    l_timestamp0   timestamp(6) := null;
+    l_plsql    varchar2(2000); 
   BEGIN
     FOR c_db IN
      (select source_database
@@ -84,14 +84,14 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   PROCEDURE update_batch_record(
-    p_batch_number 	IN     number,
-    p_error_flag 	IN     varchar2,
-    p_staged_end_date 	IN     date DEFAULT null,
-    p_message 		IN     varchar2 DEFAULT null
+    p_batch_number   IN     number,
+    p_error_flag   IN     varchar2,
+    p_staged_end_date   IN     date DEFAULT null,
+    p_message     IN     varchar2 DEFAULT null
   ) IS
   -- local procedure update_batch_record updates the batch control table
 
-    l_plsql		varchar2(2000); 
+    l_plsql    varchar2(2000); 
 
   BEGIN
 
@@ -111,10 +111,10 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   END;
 
   PROCEDURE update_batch_record_force(
-    p_batch_number 	IN     number,
-    p_error_flag 	IN     varchar2,
-    p_staged_end_date 	IN     date DEFAULT null,
-    p_message 		IN     varchar2 DEFAULT null
+    p_batch_number   IN     number,
+    p_error_flag   IN     varchar2,
+    p_staged_end_date   IN     date DEFAULT null,
+    p_message     IN     varchar2 DEFAULT null
   ) IS
   PRAGMA AUTONOMOUS_TRANSACTION;
   -- packaged procedure update_batch_record_force updates the batch control table
@@ -125,16 +125,16 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   PROCEDURE renumber_old_batch_rows(
-    p_tgt_owner 	IN     varchar2,
+    p_tgt_owner   IN     varchar2,
     p_new_batch_number  IN     number,
     p_old_batch_number  IN     number DEFAULT -1
   ) IS
   -- packaged procedure renumber_old_batch_rows updates the batch number
   -- for rows in all staging table owned by the specified user
 
-    l_plsql		varchar2(2000); 
-    l_tgt_owner		varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table_list	mis_gen_pkg.object_list;
+    l_plsql    varchar2(2000); 
+    l_tgt_owner    varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table_list  mis_gen_pkg.object_list;
 
   BEGIN
 
@@ -177,7 +177,7 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   END;
 
   FUNCTION apply_hi_scn(
-    p_staging_owner 	IN     varchar2 DEFAULT NULL
+    p_staging_owner   IN     varchar2 DEFAULT NULL
   ) RETURN number
   IS
   -- local function apply_hi_scn returns the high watermark SCN
@@ -185,11 +185,11 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   -- n.b. if this is not available, the low watermark is returned instead
   -- n.b.2 if this is not available either information is obtained from the capture process
 
-    v_plsql			    varchar2(2000); 
-    v_apply_name_list 	mis_gen_pkg.apply_list;
+    v_plsql          varchar2(2000); 
+    v_apply_name_list   mis_gen_pkg.apply_list;
     v_capture_name_list mis_gen_pkg.capture_list;
-    v_max_scn 			number;
-    v_hi_scn 			number := 0;
+    v_max_scn       number;
+    v_hi_scn       number := 0;
 
   BEGIN
 
@@ -243,16 +243,16 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   FUNCTION apply_error_count(
-    p_staging_owner 	IN     varchar2 DEFAULT NULL
+    p_staging_owner   IN     varchar2 DEFAULT NULL
   ) RETURN number
   IS
   -- local function apply_error_count returns the number of error messages queued
   -- for apply processes associated with a particular staging table owner (if supplied)
 
-    v_plsql			    varchar2(2000); 
-    v_apply_name_list 	mis_gen_pkg.apply_list;
-    v_err_count 		number;
-    v_err_total 		number := 0;
+    v_plsql          varchar2(2000); 
+    v_apply_name_list   mis_gen_pkg.apply_list;
+    v_err_count     number;
+    v_err_total     number := 0;
 
   BEGIN
 
@@ -289,19 +289,19 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   END;
 
   FUNCTION capture_inactive_count(
-    p_staging_owner 	IN     varchar2 DEFAULT NULL
+    p_staging_owner   IN     varchar2 DEFAULT NULL
   ) RETURN number
   IS
   -- local function capture_inactive_count returns the number of capture processes
   -- for a particular staging table owner (if supplied) that are not enabled
 
-    v_plsql			    varchar2(2000); 
+    v_plsql          varchar2(2000); 
     v_capture_name_list mis_gen_pkg.capture_list;
-    v_status 			varchar2(20);
-    v_err_number 		number;
-    v_err_total 		number := 0;
-    v_first_scn 		number;
-    v_captured_scn 		number;
+    v_status       varchar2(20);
+    v_err_number     number;
+    v_err_total     number := 0;
+    v_first_scn     number;
+    v_captured_scn     number;
 
   BEGIN
 
@@ -351,17 +351,17 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   END;
 
   FUNCTION capture_log_date(
-    p_staging_owner 	IN     varchar2,
-    p_scn 		IN     number
+    p_staging_owner   IN     varchar2,
+    p_scn     IN     number
   ) RETURN date IS
   -- local function capture_log_date returns the next date (end of log) for logs
   -- registered to capture processes associated with a particular staging table owner
   -- containing data for a given SCN
 
-    v_plsql			    varchar2(2000); 
+    v_plsql          varchar2(2000); 
     v_capture_name_list mis_gen_pkg.capture_list;
-    v_next_time 		date;
-    v_log_date 			date := null;
+    v_next_time     date;
+    v_log_date       date := null;
 
   BEGIN
 
@@ -394,9 +394,9 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   PROCEDURE create_new_batch(
-    p_staging_owner 	IN  varchar2,
-    p_restart 		    IN  BOOLEAN DEFAULT TRUE,
-    p_more_points 	    OUT BOOLEAN
+    p_staging_owner   IN  varchar2,
+    p_restart         IN  BOOLEAN DEFAULT TRUE,
+    p_more_points       OUT BOOLEAN
   ) IS
   -- packaged procedure create_new_batch
   -- stops running apply processes,
@@ -404,21 +404,21 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   -- marks previous batch as complete, tidies any orphan rows,
   -- restarts apply processes. 
 
-    v_staging_owner		varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
-    v_old_batch_number		NUMBER(38,0) := -1;
-    v_max_batch_number		NUMBER(38,0) := -1;
-    v_new_batch_number		NUMBER(38,0) := -1;
-    v_apply_proc_error_count 	number;
-    v_apply_error_count 	number;
-    v_capture_error_count 	number;
-    v_plsql			varchar2(2000); 
-    v_date			DATE; 
-    v_queue_name		varchar2(30) := mis_gen_pkg.g_apply_queue_name; 
-    v_job_name			varchar2(32) := v_queue_name || '_APPLY'; 
-    v_staged_end_datetime 	DATE := null;
-    v_apply_scn 		number := 0;
-    v_error_flag 		varchar2(1) := 'Y';
-    v_message 			varchar2(80) := null;
+    v_staging_owner    varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
+    v_old_batch_number    NUMBER(38,0) := -1;
+    v_max_batch_number    NUMBER(38,0) := -1;
+    v_new_batch_number    NUMBER(38,0) := -1;
+    v_apply_proc_error_count   number;
+    v_apply_error_count   number;
+    v_capture_error_count   number;
+    v_plsql      varchar2(2000); 
+    v_date      DATE; 
+    v_queue_name    varchar2(30) := mis_gen_pkg.g_apply_queue_name; 
+    v_job_name      varchar2(32) := v_queue_name || '_APPLY'; 
+    v_staged_end_datetime   DATE := null;
+    v_apply_scn     number := 0;
+    v_error_flag     varchar2(1) := 'Y';
+    v_message       varchar2(80) := null;
   BEGIN
 
     p_more_points := FALSE;
@@ -524,18 +524,14 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
         -- clear maximum SCN parameters
         mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
         -- restart apply
--- can't start ogg replicat from the package so need to do that after returning from this procedure
---        start_apply(v_staging_owner);
+        mis_gg_ctl_pkg.start_replicat(v_staging_owner);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
         -- restart capture in case stopped due to SCN limit
--- can't start ogg capture from the package so need to do that after returning from this procedure
-/*
         BEGIN
-    	    start_capture(p_staging_owner);
+          mis_gg_ctl_pkg.start_extract(p_staging_owner);
         EXCEPTION
             WHEN mis_gen_pkg.cannot_alter_process THEN null;
         END;
-*/
     ELSE
         -- not restarting so clear apply handlers (force error if apply started directly)
         mis_dml_pkg.clear_apply_handlers(p_staging_owner);
@@ -565,26 +561,26 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
   END;
 
   PROCEDURE reload_table (
-    p_src_db 		IN     VARCHAR2,
-    p_src_owner 	IN     VARCHAR2,
-    p_src_table 	IN     VARCHAR2,
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2,
-    p_batch_number	IN     NUMBER
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2,
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2,
+    p_batch_number  IN     NUMBER
   ) IS
   PRAGMA AUTONOMOUS_TRANSACTION;
   -- local procedure reload_table
   -- will insert/overwrite entries for latest batch in p_tgt_owner.p_tgt_table
   -- with all data from p_src_owner.p_src_table@p_src_db
 
-    l_plsql 	varchar2(4000); 
-    l_col_list	mis_gen_pkg.object_list;
-    l_src_db	varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
-    l_src_owner	varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
-    l_src_table	varchar2(30) := mis_gen_pkg.strip_input(p_src_table,30);
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
-    l_batch_number 	number := p_batch_number;
+    l_plsql   varchar2(4000); 
+    l_col_list  mis_gen_pkg.object_list;
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_src_owner  varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
+    l_src_table  varchar2(30) := mis_gen_pkg.strip_input(p_src_table,30);
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number := p_batch_number;
 
   BEGIN
 
@@ -630,23 +626,23 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   PROCEDURE reload_tables (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_tgt_table 	IN     VARCHAR2 DEFAULT null
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2 DEFAULT null
   ) IS
   -- packaged procedure reload_tables
   -- will insert/overwrite entries for latest batch in p_tgt_owner.p_tgt_table
   -- with all data from associated source table
 
-    l_plsql 	varchar2(2000); 
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
-    l_batch_number 	number;
-    l_src_db_name_list	mis_gen_pkg.db_name_list;
-    l_src_owner_list	mis_gen_pkg.owner_list;
-    l_src_table_list	mis_gen_pkg.object_list;
-    l_tgt_table_list	mis_gen_pkg.object_list;
-    l_proc_flag_list	mis_gen_pkg.object_list;
-    l_ref_table_count	number := 0;
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number;
+    l_src_db_name_list  mis_gen_pkg.db_name_list;
+    l_src_owner_list  mis_gen_pkg.owner_list;
+    l_src_table_list  mis_gen_pkg.object_list;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
+    l_ref_table_count  number := 0;
 
   BEGIN
 
@@ -704,22 +700,22 @@ CREATE OR REPLACE PACKAGE BODY MIS_BATCH_PKG AS
 
 
   PROCEDURE unload_tables (
-    p_tgt_owner 	IN     VARCHAR2,
-    p_stop_scn 		IN     NUMBER DEFAULT 0,
-    p_batch_number 	IN     NUMBER DEFAULT null,
-    p_tgt_table 	IN     VARCHAR2 DEFAULT null
+    p_tgt_owner   IN     VARCHAR2,
+    p_stop_scn     IN     NUMBER DEFAULT 0,
+    p_batch_number   IN     NUMBER DEFAULT null,
+    p_tgt_table   IN     VARCHAR2 DEFAULT null
   ) IS
   -- packaged procedure unload_tables
   -- will delete entries for (latest) batch in p_tgt_owner.p_tgt_table
   -- where mis_scn >= p_stop_scn.
 
-    l_plsql 	varchar2(2000); 
-    l_tgt_owner	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
-    l_tgt_table	varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
-    l_batch_number 	number := p_batch_number;
-    l_tgt_table_list	mis_gen_pkg.object_list;
-    l_proc_flag_list	mis_gen_pkg.object_list;
-    l_ref_table_count	number := 0;
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number := p_batch_number;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
+    l_ref_table_count  number := 0;
 
   BEGIN
 

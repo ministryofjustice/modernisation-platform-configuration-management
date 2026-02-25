@@ -14,55 +14,51 @@
   tags:
     - goldengate
     - goldengate-install
-    - goldengate-audit
-    - goldengate-mis
+
+- name: Install Oracle GoldenGate patches
+  import_tasks: install_patches.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-patches
 
 - name: Configure Oracle ASM
   import_tasks: configure_asm.yml
   tags:
     - goldengate
-    - goldengate-install
-    - goldengate-audit
-    - goldengate-mis
+#    - goldengate-install
+    - goldengate-config
 
 - name: Configure GoldenGate home subdirectories and mgr
   import_tasks: configure_gg_home.yml
   tags:
     - goldengate
-    - goldengate-install
+#    - goldengate-install
     - goldengate-config
-    - goldengate-audit
-    - goldengate-mis
 
 - name: Configure Oracle database parameters for GoldenGate
   import_tasks: configure_database_parameters.yml
   tags:
     - goldengate
-    - goldengate-install
+#    - goldengate-install
     - goldengate-database-config
-    - goldengate-audit
-    - goldengate-mis
 
 - name: Create GoldenGate database administrator user
   import_tasks: create_gg_dbuser.yml
   when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
   tags:
     - goldengate
-    - goldengate-install
+#    - goldengate-install
     - goldengate-database-config
     - goldengate-dbuser
-    - goldengate-audit
-    - goldengate-mis
 
 - name: Configure GoldenGate credential store
   import_tasks: configure_credential_store.yml
   tags:
     - goldengate
-    - goldengate-install
+#    - goldengate-install
     - goldengate-config
     - goldengate-credentials
-    - goldengate-audit
-    - goldengate-mis
 
 # Database-specific deployment tasks
 - name: Deploy GoldenGate database objects (packages, control tables)

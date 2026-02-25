@@ -1,19 +1,19 @@
-CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
 /*
  *  NOMIS MIS Goldengate code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
  *  
- *  Version: 		1.0e
+ *  Version:     1.0e
  *
- *  Author:		
+ *  Author:    
  *
- *  Date:		
+ *  Date:    
  * 
- *  Change History:	Version:  Date:	    Author:	Description:	
+ *  Change History:  Version:  Date:      Author:  Description:  
  *
- *			1.0e.59	  01/05/13  R. Taylor	Added purge_records procedure (defect 19143).
+ *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
  */
 
   FUNCTION get_version RETURN varchar2 IS
@@ -25,17 +25,17 @@ CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
 
 
     PROCEDURE log_apply (
-        p_tgt_owner 	IN     VARCHAR2
+        p_tgt_owner   IN     VARCHAR2
     ) IS
     -- packaged procedure log_apply records transaction watermark details
     -- for all apply processes associated with the target table owner
 
-        v_plsql			    varchar2(2000); 
-        v_apply_name_list 	mis_gen_pkg.apply_list;
-        v_msg_number 		number;
-        v_msg_date 	 		date;
-        v_status 			varchar2(20) := '';
-        v_apply_error 		number := 0;
+        v_plsql          varchar2(2000); 
+        v_apply_name_list   mis_gen_pkg.apply_list;
+        v_msg_number     number;
+        v_msg_date        date;
+        v_status       varchar2(20) := '';
+        v_apply_error     number := 0;
 
     BEGIN
         -- get list of apply processes
@@ -78,9 +78,9 @@ CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
     
         l_base_dir      VARCHAR2(500);
         l_file          VARCHAR2(500);
-        l_exists 		BOOLEAN;
-        l_file_length 	NUMBER;
-        l_blocksize 	NUMBER;
+        l_exists     BOOLEAN;
+        l_file_length   NUMBER;
+        l_blocksize   NUMBER;
     BEGIN
 
         FOR c_logs IN
@@ -168,7 +168,7 @@ CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
 
 
   PROCEDURE PRUNE_TABLE (
-    p_staging_owner 	IN     varchar2,
+    p_staging_owner   IN     varchar2,
     p_table      in varchar2,
     p_date_col   in varchar2,
     p_prune_date in date,
@@ -193,7 +193,7 @@ CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
     -- Get the min and max key values prior to the prune date
 
     v_statement := 'select min(' || p_key_col || '), max(' || p_key_col || ')' ||
-		        ' from ' || p_staging_owner  || '.' || p_table ||
+            ' from ' || p_staging_owner  || '.' || p_table ||
                    ' where ' || p_date_col || ' < :prune_date';
     EXECUTE IMMEDIATE v_statement into v_min_key, v_max_key using p_prune_date;
 
@@ -248,7 +248,7 @@ CREATE OR REPLACE PACKAGE BODY MIS_JOB_PKG AS
 
 
   PROCEDURE PURGE_RECORDS (
-    p_staging_owner 	IN     varchar2,
+    p_staging_owner   IN     varchar2,
     p_months     in integer default 26
   ) IS
   -- packaged procedure purge_records

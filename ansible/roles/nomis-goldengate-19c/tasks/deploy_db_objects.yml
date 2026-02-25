@@ -1,57 +1,215 @@
 ---
-- name: Deploy MIS support packages
-  ansible.builtin.template:
-    src: sql/install_mis_packages.sql.j2
-    dest: "{{ oracle_goldengate_home }}/sql/install_mis_packages.sql"
+# create oracle_goldengate_sql_dir directory if it doesn't exist
+- name: Ensure GoldenGate SQL directory exists
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_sql_dir }}"
+    state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
-    mode: "0644"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
 
-- name: Run MIS support package install
-  ansible.builtin.shell: |
-    . ~/.bash_profile
-    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
-    export ORACLE_HOME={{ oracle_goldengate_db.mis.oracle_home }}
-    export PATH=${ORACLE_HOME}/bin:$PATH
-
-    sqlplus -s / as sysdba @{{ oracle_goldengate_home }}/sql/install_mis_packages.sql
-  become: yes
+- name: Deploy MIS database objects
+  when: 
+    - oracle_goldengate_deploy_mis
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    # set fact oracle_goldengate_sql_owner to the database schema owner for the MIS stream, this is used in the SQL templates to set the correct schema for the created objects
+    - name: Set facts for MIS stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_db.mis.schema_owner }}"
+        oracle_goldengate_stream: "mis"
+        oracle_goldengate_stream_extract_name: "{{ oracle_goldengate_db.mis.extract_name }}"
+        oracle_goldengate_stream_replicat_name: "{{ oracle_goldengate_db.mis.replicat_name }}"
+        oracle_goldengate_stream_trail_prefix: "{{ oracle_goldengate_db.mis.trail_prefix }}"
+        oracle_goldengate_stream_target_schema: "{{ oracle_goldengate_db.mis.target_schema }}"
+        oracle_goldengate_stream_dummy_target_schema: "{{ oracle_goldengate_db.mis.dummy_target_schema }}"
+        # Set the capture and apply process names for the MIS stream based on the logical stream name defined in defaults/main.yml, this is used in the SQL templates to create the correct database objects for the stream
+        oracle_goldengate_capture_process_name: "OGG$CAP_{{ oracle_goldengate_group.mis.extract_name }}"
+        oracle_goldengate_apply_process_name: "OGG$APPLY_{{ oracle_goldengate_group.mis.replicat_name }}"
+
+    - name: Ensure MIS SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/mis"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    # copy all scripts in sql/mis directory to the GoldenGate home directory on the host, preserving ownership and permissions. These include the support package installation script and the control table creation script.
+    - name: Deploy MIS support packages
+      ansible.builtin.copy:
+        src: sql/mis/
+        dest: "{{ oracle_goldengate_sql_dir }}/mis/"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+        recurse: yes
+
+    - name: Run MIS support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.mis.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        sqlplus -s / as sysdba @{{ oracle_goldengate_sql_dir }}/mis/install_mis_packages.sql
+      args:
+        executable: /bin/bash
+      register: mis_config_output
+      failed_when: mis_config_output.rc != 0
+
+    - name: Run MIS configuration script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.mis.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        sqlplus -s / as sysdba @{{ oracle_goldengate_sql_dir }}/mis/install_mis_jobs.sql
+      args:
+        executable: /bin/bash
+      register: mis_config_output
+      failed_when: mis_config_output.rc != 0
 
 - name: Deploy Audit support packages
-  ansible.builtin.template:
-    src: sql/install_audit_packages.sql.j2
-    dest: "{{ oracle_goldengate_home }}/sql/install_audit_packages.sql"
-    owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
-    mode: "0644"
-
-- name: Run Audit support package install
-  ansible.builtin.shell: |
-    . ~/.bash_profile
-    export ORACLE_SID={{ oracle_goldengate_db.audit.tns_alias }}
-    export ORACLE_HOME={{ oracle_goldengate_db.audit.oracle_home }}
-    export PATH=${ORACLE_HOME}/bin:$PATH
-
-    sqlplus -s / as sysdba @{{ oracle_goldengate_home }}/sql/install_audit_packages.sql
-  become: yes
+  when:
+    - oracle_goldengate_deploy_audit
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for Audit stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_db.audit.schema_owner }}"
+        oracle_goldengate_stream: "auditdata"
 
-- name: Deploy control-table procedures and batch control table
-  ansible.builtin.template:
-    src: sql/create_mis_batch_control.sql.j2
-    dest: "{{ oracle_goldengate_home }}/sql/create_mis_batch_control.sql"
-    owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
-    mode: "0644"
+    - name: Ensure Audit SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/audit"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
 
-- name: Run control-table DDL script
-  ansible.builtin.shell: |
-    . ~/.bash_profile
-    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
-    export ORACLE_HOME={{ oracle_goldengate_db.mis.oracle_home }}
-    export PATH=${ORACLE_HOME}/bin:$PATH
+    - name: Deploy Audit support packages
+      ansible.builtin.copy:
+        src: sql/audit/
+        dest: "{{ oracle_goldengate_sql_dir }}/audit/"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+        recurse: yes
 
-    sqlplus -s / as sysdba @{{ oracle_goldengate_home }}/sql/create_mis_batch_control.sql
-  become: yes
+    - name: Run Audit support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.audit.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.audit.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        sqlplus -s / as sysdba @{{ oracle_goldengate_sql_dir }}/audit/install_audit_packages.sql
+      args:
+        executable: /bin/bash
+      register: audit_config_output
+      failed_when: audit_config_output.rc != 0
+
+
+- name: Deploy Auditref support packages
+  when:
+    - oracle_goldengate_deploy_auditref
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for Auditref stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_db.auditref.schema_owner }}"
+        oracle_goldengate_stream: "auditref"
+        oracle_goldengate_stream_extract_name: "{{ oracle_goldengate_db.auditref.extract_name }}"
+        oracle_goldengate_stream_replicat_name: "{{ oracle_goldengate_db.auditref.replicat_name }}"
+        oracle_goldengate_stream_trail_prefix: "{{ oracle_goldengate_db.auditref.trail_prefix }}"
+        oracle_goldengate_stream_target_schema: "{{ oracle_goldengate_db.auditref.target_schema }}"
+        oracle_goldengate_stream_dummy_target_schema: "{{ oracle_goldengate_db.auditref.dummy_target_schema }}"
+        # Set the capture and apply process names for the Auditref stream based on the logical stream name defined in defaults/main.yml, this is used in the SQL templates to create the correct database objects for the stream
+        oracle_goldengate_capture_process_name: "OGG$CAP_{{ oracle_goldengate_group.auditref.extract_name }}"
+        oracle_goldengate_apply_process_name: "OGG$APPLY_{{ oracle_goldengate_group.auditref.replicat_name }}"
+        
+    - name: Ensure Auditref SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/auditref"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    - name: Deploy MIS support packages (Auditref stream uses the same support packages as MIS stream)
+      ansible.builtin.copy:
+        src: sql/mis/
+        dest: "{{ oracle_goldengate_sql_dir }}/auditref/"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+        recurse: yes
+
+    - name: Run Auditref support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.auditref.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        sqlplus -s / as sysdba @{{ oracle_goldengate_sql_dir }}/auditref/install_mis_packages.sql
+      args:
+        executable: /bin/bash
+      register: auditref_config_output
+      failed_when: auditref_config_output.rc != 0
+
+# If deploying objects for the source db then run script to add the database job that adds the data dictionary to the archive logs every hour (was originally being done daily around 11.30pm).
+# Could be done in the configure_database_parameters task.
+- name: Deploy source database objects
+  when:
+    - oracle_goldengate_deploy_source
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for source stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_db.source.schema_owner }}"
+        oracle_goldengate_stream: "source"
+
+    - name: Ensure Source SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/source"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    - name: Deploy Source scripts
+      ansible.builtin.copy:
+        src: sql/source/
+        dest: "{{ oracle_goldengate_sql_dir }}/source/"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+        recurse: yes
+
+    - name: Run Source scripts
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_db.source.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/$ORACLE_SID/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        
+        if [ -z "$SYS_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
+          exit 1
+        fi
+
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @{{ oracle_goldengate_sql_dir }}/source/install_dictionary_job.sql
+      args:
+        executable: /bin/bash
+      register: source_config_output
+      failed_when: source_config_output.rc != 0
+      

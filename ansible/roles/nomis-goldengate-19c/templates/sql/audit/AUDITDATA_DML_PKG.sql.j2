@@ -1,37 +1,36 @@
-CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_DML_PKG AS
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
 
     -- package version
-    g_version 	 	VARCHAR2(20) := '1.0e.1';
+    g_version      VARCHAR2(20) := '1.0e.1';
 
 /*
  *  NOMIS AuditData GoldenGate code.
  *  
- *  Description:  	This script creates procedures to support
+ *  Description:    This script creates procedures to support
  *                      Oracle GoldenGate processes for Prison-NOMIS.
  *  
- *                  This script should be compiled by the GGADMIN user.
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
  *  
- *  Change History:	
- *          Version:  Date:	    Author:	    Description:	
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
  *
- *			1.0e.1	  15/01/26  D. Belton	Initial version for 1.0e audit based on AUD_STRM_PKG2
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
  */
 
     -- package level variable declarations
---    g_queue_owner 	VARCHAR2(30) := USER; this would be right if the package was installed in ggint but its now in auditdata
-    g_queue_owner 	VARCHAR2(30) := 'GGINT';
-    g_source_owner 	VARCHAR2(30) := 'OMS_OWNER';
-    g_capture_name 	VARCHAR2(30) := 'AUDDTCAP';
-    g_consumer_name 	VARCHAR2(30) := 'OGG$CAP_'||g_capture_name;
---    g_capture_rs_name 	VARCHAR2(30) := 'RS_C_OMS_AUDIT';
---    g_capture_nrs_name 	VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
-    g_replicat_name VARCHAR2(30) := 'AUDDTAPP';
-    g_apply_name 	VARCHAR2(30) := 'OGG$'||g_replicat_name;
-    g_apply_rs_name VARCHAR2(30) := 'RS_A_'||g_replicat_name;
-    g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||g_replicat_name;
-    g_data_owner 	VARCHAR2(30) := 'AUDITDATA';
---    g_queue_name 	VARCHAR2(30) := 'Q_AUDITDATA';
-    g_handler_name 	VARCHAR2(30) := 'AUDIT_PROCESS_ROW';
+--    g_queue_owner   VARCHAR2(30) := USER; this would be right if the package was installed in ggint but its now in auditdata
+    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_db_user }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_db.source.schema_owner }}';
+    g_capture_name   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.extract_name }}';
+    g_consumer_name   VARCHAR2(30) := 'OGG$CAP_'||g_capture_name;
+--    g_capture_rs_name   VARCHAR2(30) := 'RS_C_OMS_AUDIT';
+--    g_capture_nrs_name   VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
+    g_apply_name   VARCHAR2(30) := 'OGG$'||auditdata_gen_pkg.g_replicat_name;
+    g_apply_rs_name VARCHAR2(30) := 'RS_A_'||auditdata_gen_pkg.g_replicat_name;
+    g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||auditdata_gen_pkg.g_replicat_name;
+    g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.target_schema }}';
+--    g_queue_name   VARCHAR2(30) := 'Q_AUDITDATA';
+    g_handler_name   VARCHAR2(30) := 'AUDIT_PROCESS_ROW';
 
     -- Type definitions for lists of information
     TYPE owner_list IS TABLE OF all_tables.owner%type;
@@ -39,8 +38,8 @@ CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_DML_PKG AS
     TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
 
     -- sleep before retry period: times in seconds to wait after timeout before retry
-    g_sleep1 	NUMBER := 180;
-    g_sleep2 	NUMBER := 540;
+    g_sleep1   NUMBER := 180;
+    g_sleep2   NUMBER := 540;
 
     -- define exceptions
     AUD_STREAMS_EXCEPTION EXCEPTION;
@@ -76,19 +75,6 @@ CREATE OR REPLACE PACKAGE AUDITDATA.AUDITDATA_DML_PKG AS
     PROCEDURE maintain_module_config (
         p_module_name in varchar2,
         p_exclude_ind in char);
-
-    -- Packaged procedure stop_capture stops audit capture process
---    PROCEDURE stop_capture (p_force IN BOOLEAN  DEFAULT FALSE);
-
-    -- Packaged procedure start_capture starts audit capture process
---    PROCEDURE start_capture;
-
-    -- Packaged procedure stop_apply stops audit apply process
-    PROCEDURE stop_apply (p_force IN BOOLEAN DEFAULT FALSE);
-
-    -- Packaged procedure start_apply starts audit apply process
-    -- first resets apply handlers and checks for errors
-    PROCEDURE start_apply (p_refresh_flag IN BOOLEAN DEFAULT TRUE);
 
     -- Packaged function get_version
     -- will return a VARCHAR2 string containing a package version number

@@ -201,17 +201,17 @@
         DECLARE
           v_count NUMBER;
         BEGIN
-          SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_streams.auditdata.target_schema }}');
+          SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_group.auditdata.dummy_target_schema }}');
           IF v_count > 0 THEN
-            EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_streams.auditdata.target_schema }} CASCADE';
-            DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_streams.auditdata.target_schema }} dropped');
+            EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_group.auditdata.dummy_target_schema }} CASCADE';
+            DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_group.auditdata.dummy_target_schema }} dropped');
           END IF;
         END;
         /
         
         -- For auditdata we need to create a dummy schema in the target database and create the table structures based on the source schema as we have to use MAP in the Replicat param file.
         -- User will be locked as we don't want anyone connecting to it, it's only needed for the Replicat MAP in the param file.
-        CREATE USER {{ oracle_goldengate_streams.auditdata.target_schema }} PROFILE DEFAULT 
+        CREATE USER {{ oracle_goldengate_group.auditdata.dummy_target_schema }} PROFILE DEFAULT 
         IDENTIFIED BY "{{ gg_oms_schema_password }}" 
         DEFAULT TABLESPACE USERS 
         TEMPORARY TABLESPACE TEMP 
@@ -231,7 +231,7 @@
       ansible.builtin.debug:
         msg: 
           - "Database: {{ oracle_goldengate_local_db_sid }}"
-          - "Schema: {{ oracle_goldengate_streams.auditdata.target_schema }}"
+          - "Schema: {{ oracle_goldengate_group.auditdata.dummy_target_schema }}"
           - "Status: {{ 'Created successfully' if create_schema_output.changed else 'Already exists or error' }}"
 
     - name: Create AUDITDATA tables if local database is the audit database
@@ -279,7 +279,7 @@
         END;
         /
 
-        SELECT replace(DBMS_METADATA.get_ddl (o.object_type, o.object_name, o.owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_streams.auditdata.target_schema }}') c1
+        SELECT replace(DBMS_METADATA.get_ddl (o.object_type, o.object_name, o.owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_group.auditdata.dummy_target_schema }}') c1
         FROM   dba_objects o
         WHERE  o.owner      = '{{ oracle_goldengate_db.source.schema_owner }}'
         AND    o.object_type in ('TABLE','CLUSTER')

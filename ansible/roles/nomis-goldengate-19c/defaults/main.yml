@@ -2,16 +2,27 @@
 artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
 artefacts_s3_bucket_path: hmpps/oracle-19c-software
 
+# This is version 19.1.0.0.4
+oracle_goldengate_software: V983658-01.zip
+oracle_opatch_software: p6880880_190000_Linux-x86-64.12.2.0.1.48.zip
+
+oracle_goldengate_software_patches:
+  ORA11g:
+    # 38781234 Oracle GoldenGate 19.30.0.0.260120 for Oracle 11g (Patchset)
+    - p38781234_1930000OGGRU_Linux-x86-64.zip
+  ORA19c:
+    # 38781237 Oracle GoldenGate 19.30.0.0.260120 for Oracle 19c (Patchset)
+    - p38781237_1930000OGGRU_Linux-x86-64.zip
+
 oracle_inventory: /u01/app/oraInventory
 oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"
   
 oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
 oracle_goldengate_software_dir: /u02/stage/goldengate
-oracle_goldengate_software: V983658-01.zip
 
 # OS user/group for GoldenGate software (must already exist on host)
 oracle_goldengate_owner: oracle
-oracle_goldengate_group: oinstall
+oracle_goldengate_osgroup: oinstall
 
 # Database user for GoldenGate replication (created in target databases)
 oracle_goldengate_dbuser: ggadmin
@@ -22,6 +33,8 @@ oracle_goldengate_param_dir: "{{ oracle_goldengate_home }}/dirprm"
 oracle_goldengate_report_dir: "{{ oracle_goldengate_home }}/dirrpt"
 oracle_goldengate_checkpoint_dir: "{{ oracle_goldengate_home }}/dirchk"
 oracle_goldengate_scripts_dir: "/home/oracle/admin/goldengate/scripts"
+oracle_goldengate_sql_dir: "/home/oracle/admin/goldengate/sql"
+oracle_goldengate_log_dir: "/home/oracle/admin/goldengate/logs"
 
 oracle_goldengate_directories:
   - "{{ oracle_goldengate_trail_dir }}"
@@ -29,31 +42,36 @@ oracle_goldengate_directories:
   - "{{ oracle_goldengate_report_dir }}"
   - "{{ oracle_goldengate_checkpoint_dir }}"
   - "{{ oracle_goldengate_scripts_dir }}"
+  - "{{ oracle_goldengate_sql_dir }}"
+  - "{{ oracle_goldengate_log_dir }}"
 
 oracle_goldengate_asm_dir: "+DATA/{{ oracle_goldengate_db.source.tns_alias }}/GG_ARCHIVELOGS"
 
-# Logical names per stream
-oracle_goldengate_streams:
+# Logical names for each group
+oracle_goldengate_group:
   auditdata:
     extract_name: AUDDTEXT
     replicat_name: AUDTREP
     trail_prefix: dt
-    target_schema: AUDITDATA_OMS_OWNER
+    target_schema: AUDITDATA
+    dummy_target_schema: AUDITDATA_OMS_OWNER
   auditref:
     extract_name: AUDRFEXT
     replicat_name: AUDRREP
     trail_prefix: rf
     target_schema: AUDITREF
+    dummy_target_schema:
   mis:
     extract_name: MISEXT
     replicat_name: MISREP
     trail_prefix: ms
     target_schema: BODISTAGING
+    dummy_target_schema:
 
 # DB connection defaults (override via inventory/group vars)
 oracle_goldengate_db:
   source:
-    tns_alias: T1CNOM
+    tns_alias: T1CNOMxx
     schema_owner: OMS_OWNER
     credential_alias: SOURCE_DB
     oracle_home: "{{ oracle11g_home }}"
@@ -85,9 +103,6 @@ oracle_goldengate_local_db_sid: ""
 oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.audit.tns_alias }}"
 oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.auditref.tns_alias }}"
 oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.mis.tns_alias }}"
-
-# Where to find SQL/PLSQL artefacts in the repo
-oracle_goldengate_sql_dir: "{{ role_path }}/templates/sql"
 
 # full path to the home directory
 gg_env:

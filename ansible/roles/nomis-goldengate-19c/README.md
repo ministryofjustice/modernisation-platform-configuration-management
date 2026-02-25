@@ -104,42 +104,23 @@ ogg_control.sh status all
 
 ## Usage
 
-### Deploying to Audit Database Host
+### Deploying to Database Hosts
 
 ```yaml
-- hosts: audit_db_servers
-  roles:
-    - role: oracle-19c-goldengate
-      oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
-      # Local database SID is automatically detected by checking running Oracle instances
-      # Manual override: oracle_goldengate_local_db_sid: T1CAUDG
-      # Database SIDs are automatically derived from oracle_goldengate_db structure
-      # Override TNS aliases if needed for your environment
-      oracle_goldengate_db:
-        source:
-          tns_alias: T1CNOMG
-          schema_owner: OMS_OWNER
-        audit:
-          tns_alias: T1CAUDG
-          schema_owner: AUDITDATA
-        auditref:
-          tns_alias: T1CAUDG
-          schema_owner: AUDITREF
-        mis:
-          tns_alias: T1CMISG
-          schema_owner: BODISTAGING
-```
-
-### Deploying to MIS Database Host
-
-```yaml
-- hosts: mis_db_servers
-  roles:
-    - role: oracle-19c-goldengate
-      oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
-      # Local database SID is automatically detected by checking running Oracle instances
-      # Manual override: oracle_goldengate_local_db_sid: T1CMISG
-      # Database SIDs are automatically derived from oracle_goldengate_db structure
+    # Override TNS aliases in the group_vars environment config
+    oracle_goldengate_db:
+      source:
+        tns_alias: T1CNOMG
+        schema_owner: OMS_OWNER
+      audit:
+        tns_alias: T1CAUDG
+        schema_owner: AUDITDATA
+      auditref:
+        tns_alias: T1CAUDG
+        schema_owner: AUDITREF
+      mis:
+        tns_alias: T1CMISG
+        schema_owner: BODISTAGING
 ```
 
 ## Ansible Tags
@@ -189,7 +170,7 @@ ansible-playbook site.yml --tags goldengate-install --skip-tags goldengate-confi
 
 ## Prerequisites
 
-- Oracle Database 19c installed and running
+- Oracle Database 11g installed and running
 - Existing Oracle OS user and group (typically `oracle` and `oinstall`) on the host
 - AWS CLI configured on the target host (for retrieving database passwords)
 - SYS passwords stored in AWS Secrets Manager at `/oracle/database/${ORACLE_SID}/passwords`
@@ -200,5 +181,5 @@ ansible-playbook site.yml --tags goldengate-install --skip-tags goldengate-confi
 
 ## Important Notes
 
-- **OS Users**: The role uses existing Oracle OS user (`oracle_goldengate_owner: oracle`) and group (`oracle_goldengate_group: oinstall`). These must already exist on the host.
+- **OS Users**: The role uses existing Oracle OS user (`oracle_goldengate_owner: oracle`) and group (`oracle_goldengate_osgroup: oinstall`). These must already exist on the host.
 - **Database User**: The role creates a DATABASE user named `ggadmin` (configurable via `oracle_goldengate_dbuser`) in the target databases (AUD and MIS) with DBA privileges for GoldenGate operations.

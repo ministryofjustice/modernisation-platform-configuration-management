@@ -31,18 +31,18 @@
 - name: Deploy Extract parameter file for AUDITDATA
   ansible.builtin.template:
     src: extract_auditdata.prm.j2
-    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_streams.auditdata.extract_name }}.prm"
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_group.auditdata.extract_name }}.prm"
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0644"
 
 # The AUDITREF capture Streams process didn't have any complex filtering rules, so no need to dynamically generate the parameter file content from SQL like we did for AUDITDATA. Just deploy a static template.
 - name: Deploy Extract parameter file for AUDITREF
   ansible.builtin.template:
     src: extract_auditref.prm.j2
-    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_streams.auditref.extract_name }}.prm"
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_group.auditref.extract_name }}.prm"
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0644"
 
 # call task add_checkpointtable.yml to create the checkpoint table used by the capture and replicat processes. We need to create it after deploying the parameter files because the parameter files specify the name of the checkpoint table, and it needs to exist before we can start the processes.

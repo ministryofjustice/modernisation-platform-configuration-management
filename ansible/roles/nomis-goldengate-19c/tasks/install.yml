@@ -47,7 +47,7 @@
           path: "{{ item }}"
           state: directory
           owner: "{{ oracle_goldengate_owner }}"
-          group: "{{ oracle_goldengate_group }}"
+          group: "{{ oracle_goldengate_osgroup }}"
           mode: "0755"
         loop:
           - "{{ oracle_goldengate_home }}"
@@ -68,18 +68,21 @@
           src: "{{ oracle_goldengate_software_dir }}/{{ item }}"
           dest: "{{ oracle_goldengate_software_dir }}"
           owner: "{{ oracle_goldengate_owner }}"
-          group: "{{ oracle_goldengate_group }}"
+          group: "{{ oracle_goldengate_osgroup }}"
           remote_src: yes
         loop:
           - "{{ oracle_goldengate_software }}"
         no_log: true
 
+      - name: Get Ora version
+        import_tasks: get_ora_version.yml
+
       - name: Create GoldenGate response file from template
         ansible.builtin.template:
-          src: ogg11g_install_response.rsp.j2
-          dest: "{{ oracle_goldengate_software_dir }}/ogg11g_install_response.rsp"
+          src: "ogg_install_response.rsp.j2"
+          dest: "{{ oracle_goldengate_software_dir }}/ogg_install_response.rsp"
           owner: "{{ oracle_goldengate_owner }}"
-          group: "{{ oracle_goldengate_group }}"
+          group: "{{ oracle_goldengate_osgroup }}"
           mode: "0644"
 
       - name: Find GoldenGate shiphome directory
@@ -102,7 +105,7 @@
 
       - name: Install GoldenGate software
         ansible.builtin.command: |
-          ./runInstaller -silent -showProgress -waitforcompletion -responseFile {{ oracle_goldengate_software_dir }}/ogg11g_install_response.rsp
+          ./runInstaller -silent -showProgress -waitforcompletion -responseFile {{ oracle_goldengate_software_dir }}/ogg_install_response.rsp
         become: yes
         become_user: "{{ oracle_goldengate_owner }}"
         args:
@@ -116,9 +119,13 @@
           block: "{{ bash_profile }}"
           dest: "/home/{{ oracle_goldengate_owner }}/.bash_profile"
           owner: "{{ oracle_goldengate_owner }}"
-          group: "{{ oracle_goldengate_group }}"
+          group: "{{ oracle_goldengate_osgroup }}"
 
-      # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
-      - name: Pause after installation for verification
-        ansible.builtin.pause:
-          prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."
+      - name: Clean up GoldenGate software files
+        ansible.builtin.file:
+          path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
+          state: absent
+        loop:
+          - "{{ oracle_goldengate_software }}"
+          - "ogg_install_response.rsp"
+          - "{{ goldengate_shiphome_dir }}"

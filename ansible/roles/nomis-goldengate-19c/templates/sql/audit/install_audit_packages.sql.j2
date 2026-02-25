@@ -1,0 +1,86 @@
+spool /tmp/{{ oracle_goldengate_stream }}_setup.log
+
+PROMPT Executing grants needed for apply dml handler processing:
+grant select on DBA_APPLY_DML_HANDLERS to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_REGISTERED_ARCHIVED_LOG to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_CAPTURE to {{ oracle_goldengate_sql_owner }};
+
+-- execute DBMS_STREAMS_AUTH.GRANT_ADMIN_PRIVILEGE('{{ oracle_goldengate_dbuser }}');
+grant execute on sys.dbms_lob to "{{ oracle_goldengate_dbuser }}";
+grant execute on sys.dbms_reputil2 to "{{ oracle_goldengate_dbuser }}";
+
+grant dba to {{ oracle_goldengate_dbuser }};
+grant select any table to {{ oracle_goldengate_dbuser }};
+grant insert any table to {{ oracle_goldengate_dbuser }};
+grant update any table to {{ oracle_goldengate_dbuser }};
+grant delete any table to {{ oracle_goldengate_dbuser }};
+grant write on directory AUD_ARCHIVELOG_DIR to {{ oracle_goldengate_dbuser }};
+grant read on directory AUD_ARCHIVELOG_DIR to {{ oracle_goldengate_dbuser }};
+grant execute on sys.dbms_lock to {{ oracle_goldengate_dbuser }};
+grant create any procedure to {{ oracle_goldengate_dbuser }};
+grant alter any procedure to {{ oracle_goldengate_dbuser }};
+grant drop any procedure to {{ oracle_goldengate_dbuser }};
+grant select any sequence to {{ oracle_goldengate_dbuser }};
+--grant select on sys.gv_$streams_apply_server to {{ oracle_goldengate_dbuser }};
+grant analyze any to {{ oracle_goldengate_dbuser }};
+
+PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
+@AUDITDATA_GEN_PKG.sql
+@AUDITDATA_GG_CTL_PKG.sql
+@AUDITDATA_CONV_PKG.sql
+@AUDITDATA_DML_PKG.sql
+@AUDITDATA_JOB_PKG.sql
+
+@AUDITDATA_GEN_PBODY.sql
+@AUDITDATA_GG_CTL_PBODY.sql
+@AUDITDATA_CONV_PBODY.sql
+@AUDITDATA_DML_PBODY.sql
+@AUDITDATA_JOB_PBODY.sql
+
+create or replace public synonym AUDITDATA_GEN_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG;
+create or replace public synonym AUDITDATA_GG_CTL_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG;
+create or replace public synonym AUDITDATA_CONV_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_CONV_PKG;
+create or replace public synonym AUDITDATA_DML_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG;
+create or replace public synonym AUDITDATA_JOB_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG;
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_CONV_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG to {{ oracle_goldengate_dbuser }};
+
+-- do we need public synonyms for each target table? created for auditdata job but maybe don't need public synonyms for the package to compile?
+DECLARE
+	l_grant varchar2(1000);
+BEGIN
+	FOR i IN (SELECT tgt_table FROM {{ oracle_goldengate_sql_owner }}.STRM_TAB_CONTROL ORDER BY 1) LOOP
+		l_grant := 'grant select on {{ oracle_goldengate_sql_owner }}.'||i.tgt_table||' to {{ oracle_goldengate_dbuser }}';
+		EXECUTE IMMEDIATE l_grant;
+		l_grant := 'create or replace public synonym '||i.tgt_table||' for {{ oracle_goldengate_sql_owner }}.'||i.tgt_table;
+		EXECUTE IMMEDIATE l_grant;
+	END LOOP;
+END;
+/
+
+PROMPT Executing procedures to set up Apply dml handler configuration:
+EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_deconf;
+EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_conf;
+
+begin 
+    DBMS_CAPTURE_ADM.INCLUDE_EXTRA_ATTRIBUTE(capture_name => 'OGG$CAP_{{ oracle_goldengate_group.audit.extract_name }}', attribute_name => 'USERNAME', include => true);
+    DBMS_CAPTURE_ADM.INCLUDE_EXTRA_ATTRIBUTE(capture_name => 'OGG$CAP_{{ oracle_goldengate_group.audit.extract_name }}', attribute_name => 'SESSION#', include => true);
+end;
+/
+
+PROMPT Create new index for performance
+DECLARE
+    v_count INTEGER;
+BEGIN
+  -- check if index exists before trying to create it, as it may already exist if the script has been run before
+  SELECT COUNT(*) INTO v_count FROM all_indexes WHERE index_name = 'AUDIT_ERROR_DATETIME_INDX' AND owner = UPPER('{{ oracle_goldengate_sql_owner }}');
+  IF v_count = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE INDEX {{ oracle_goldengate_sql_owner }}.audit_error_datetime_indx ON {{ oracle_goldengate_sql_owner }}.audit_error(error_datetime)';
+  END IF;
+END;
+/
+
+spool off 

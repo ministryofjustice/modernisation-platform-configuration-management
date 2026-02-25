@@ -1,0 +1,1204 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
+
+/*
+ *  NOMIS AuditData GoldenGate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle GoldenGate processes for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
+ */
+
+  FUNCTION get_version RETURN varchar2 IS
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  BEGIN
+    return g_version;
+  END;
+
+  PROCEDURE audit_log_error (
+    p_errcode in pls_integer,
+    p_errmsg in varchar2,
+    p_scn in number,
+    p_object_name in varchar2,
+    p_command_type in varchar2,
+    p_target_object_name in varchar2,
+    p_commit_scn in number,
+    p_source_time in date,
+    p_error_location in varchar2)
+  IS
+  -- will insert entries in auditdata.AUDIT_ERROR (or write to a file)
+  BEGIN
+    AUDITDATA_GEN_PKG.log_audit_error (
+        p_location => p_error_location,
+        p_src_time => p_source_time,
+        p_src_object => p_object_name,
+        p_tgt_object => p_target_object_name,
+        p_command_type => p_command_type,
+        p_row_scn => p_scn,
+        p_commit_scn => p_commit_scn,
+        p_error_code => p_errcode,
+        p_message => p_errmsg);
+  END;
+
+  FUNCTION compareanydata (
+        anydata1 IN SYS.ANYDATA,
+        anydata2 IN SYS.ANYDATA)
+  RETURN BOOLEAN IS
+  -- local function compareanydata
+  -- compares 2 values stored as sys.anydata;
+  -- returns true if they are equal, false if they different, null on an exception.
+  BEGIN
+    return AUDITDATA_CONV_PKG.compareanydata(anydata1,anydata2);
+  END;
+
+  FUNCTION convertaddinfo(
+    p_addinfo_in IN VARCHAR2, 
+    p_ipaddress_in IN VARCHAR2,
+    p_workstation_in IN VARCHAR2,
+    p_addinfo_out OUT VARCHAR2,
+    p_ipaddress_out OUT VARCHAR2,
+    p_workstation_out OUT VARCHAR2)
+  RETURN BOOLEAN IS
+  -- local function convertaddinfo
+  -- does basic validation of audit_additional_info and, if valid, extracts IP address and 
+  -- workstation name from it, swapping them around with the ip address and workstation values 
+  -- supplied in the audit_client_ip_address and audit_client_workstation_name columns;
+  -- caters for Citrix environments, where the values in the audit_client_ip adddress and 
+  -- audit_client_workstation name will be that of the Citrix server, the end client ip address 
+  -- and workstation name being embedded in the audit_additional_info column;
+  -- returns true if audit_additional_info is valid, false if invalid, null on an exception.
+  BEGIN
+    return AUDITDATA_CONV_PKG.convertaddinfo(
+      p_addinfo_in, 
+      p_ipaddress_in,
+      p_workstation_in,
+      p_addinfo_out,
+      p_ipaddress_out,
+      p_workstation_out);
+  END;
+
+
+  PROCEDURE audit_process_row (p_any in anydata)
+  IS
+  /*
+  Summary
+  ==============
+  Writes details of changes made to NOMIS database to audit database
+
+  Change History
+  ===========
+  Version/Date/Author:  1  26/06/2006  J Smith
+  Change Summary:  New procedure
+
+  Version/Date/Author:  2  08/10/2008  J Smith
+  Change Summary:  Changes required for rel 1.0e:-
+    Audit_process_row parameter type changed to sys.anydata (required for dml handlers)
+                Additional audit_table columns populated
+    Audit_datetime column name changed to audit_timestamp (already changed for rel 1.0a production)
+    Presence of audit_ columns tested for, and error logged if any absent
+    Population of audit_timestamp column tested for, and error logged if null
+    Additional audit_column columns populated 
+    Changed columns tested for explicitly
+    Audit_ columns for deletes obtained from matching oms_deleted_rows insert - this will always
+      be the LCR within the transaction which comes immediately before the LCR for the delete,
+      because a) row LCRs within a single transaction are always applied in the same order as the
+      corresponding changes on the source database (see Streams Replication Admin Guide 10gR2),
+      and b) the insert into the oms_owner_deletes table on the source database is performed via a
+      before delete trigger. So, on the database, the row for the oms_owner_deletes table is 
+      created first, then modified by the contents of the subsequent delete LCR
+    Orphan deletes (ones where the corresponding oms_deleted_rows insert didn't precede it because the
+      module is configured to be ignored) not written to the database
+    Values in audit_additional_info extracted into ip address and workstation audit columns
+    Additional parameters passed to audit_log_error procedure
+    Audit tables now in auditdata schema
+
+  Version/Date/Author:  3  11/11/2008  J Smith
+  Change Summary:  Changes required following 1.0e unit testing:- cater for missing module name
+
+  Version/Date/Author:  4  18/11/2008  J Smith
+  Change Summary:  Changes required for performance:- 
+      Bulk inserts used for audit_column inserts
+      Corrections:
+      Align processing of empty audit_ columns with Audit HLD (just trap audit_timestamp)
+  
+  Version/Date/Author:  5  24/11/2008  R Taylor
+  Change Summary:  Change buffer size for module name 
+
+  Version/Date/Author:  6  16/04/2009  J Smith
+  Change Summary:  Cater for LOB update rows following updates as well as inserts
+  
+  Version/Date/Author:  7  17/03/2010  R Taylor
+  Change Summary:  Use check_data_type function for data type checking
+      Move variable initialisation into declarations
+      Add object name clause to selection of previous audit datails for LOB update
+  
+  Version/Date/Author:  8  23/09/2010  R Taylor
+  Change Summary:  Use result cached function for extra module name tests (Oracle 11gR1 feature)
+
+ */
+  v_error_location  varchar2(256) := 'audit_process_row';
+  v_line_number   number;
+
+  p_row_lcr    sys.lcr$_row_record;
+  v_rtn_val    number;
+  v_command_type  varchar2(30);
+  v_scn      number;
+--start v2
+  v_commit_scn    number;
+  v_source_time    date;
+  v_source_db         auditdata.audit_table.lcr_source_db_name%type;
+--end v2
+  v_object_owner      varchar2(32);    
+  v_object_name    varchar2(32);
+  v_target_object_name  varchar2(32);
+  v_row_lcr_list_old  sys.lcr$_row_list;      
+  v_row_lcr_list_new  sys.lcr$_row_list;
+  v_row_unit_num    number;  
+  v_col_name    varchar2(30);    
+  v_audit_datetime  timestamp := null; --v7
+  v_audit_user_id    varchar2(32) := null; --v7
+  v_audit_module_name  auditdata.audit_table.audit_module_name%type := null; --v5/v7
+  v_audit_client_user_id  varchar2(64) := null; --v7
+  v_audit_client_ip_address  varchar2(39) := null; --v7
+  v_audit_client_workstation  varchar2(64) := null; --v7
+  v_audit_additional_info  varchar2(256) := null; --v7
+--v4/v7:
+  v_audit_datetime_fnd  boolean := false;
+  v_audit_user_id_fnd  boolean := false;
+  v_audit_module_name_fnd  boolean := false;
+  v_audit_client_user_id_fnd  boolean := false;
+  v_audit_client_ip_address_fnd boolean := false;
+  v_audit_client_workstation_fnd boolean := false;
+  v_audit_additional_info_fnd  boolean := false;
+--end v4/v7
+  v_col_num    number;
+  v_saved_new_col_num  number;
+  v_saved_old_col_num  number;
+  type v_saved_vals_old_tab is table of sys.anydata index by binary_integer;
+  v_saved_vals_old v_saved_vals_old_tab;
+  type v_saved_vals_new_tab is table of sys.anydata index by binary_integer;
+  v_saved_vals_new v_saved_vals_new_tab;
+  type v_saved_col_names_old_tab is table of varchar2(30) index by binary_integer;
+  v_saved_col_names_old v_saved_col_names_old_tab;
+  type v_saved_col_names_new_tab is table of varchar2(30) index by binary_integer;
+  v_saved_col_names_new v_saved_col_names_new_tab;
+  v_null_anydata    sys.anydata;
+  v_audit_table_seq    number;
+  v_audit_column_seq  number;
+  v_lob_info    number;
+  v_save_row    boolean;
+  v_save_column    boolean;
+  v_old_ind      char := '0';
+  v_new_ind    char := '1';
+  e_invalid_command_type  exception;
+  e_invalid_data_type  exception;
+  v_data_type    varchar2(32);
+  v_lcr_extra_attribute  sys.anydata;
+  v_lcr_username    varchar2(32);
+  v_lcr_session    number;
+--start v2
+  v_compare_col_num  number;
+  --v_column_changed  boolean; --v4
+  v_table_row_required  boolean;
+  v_column_rows_required  boolean;
+  v_deletions_table_name  varchar2(30) := 'OMS_DELETED_ROWS';
+  v_audit_client_ip_address_cnv  varchar2(39);
+  v_audit_client_workstation_cnv  varchar2(64);
+  v_audit_additional_info_cnv    varchar2(260);
+  v_addinfoconverted    boolean;
+--v3/v8
+  v_audit_datetime_prv  timestamp := null; --v7
+  v_audit_user_id_prv  varchar2(32) := null; --v7
+  v_audit_module_name_prv  auditdata.audit_table.audit_module_name%type := null; --v5/v7
+  v_audit_client_user_id_prv  varchar2(64) := null; --v7
+  v_audit_client_ip_address_prv varchar2(39) := null; --v7
+  v_audit_client_workstation_prv varchar2(64) := null; --v7
+  v_audit_additional_info_prv  varchar2(256) := null; --v7
+  v_audit_values_missing  boolean := false; --v7
+  v_lcr_command_type_prv  varchar2(30) := null; --v7
+--end v2
+
+-- start v7
+  function check_data_type (p_row_unit sys.LCR$_ROW_UNIT) return varchar2 is
+    --make sure data type is in the allowed range
+    l_data_type  varchar2(32) := lower(p_row_unit.data.gettypename());
+  begin
+    IF l_data_type not in ('sys.blob', 'sys.char', 'sys.date', 'sys.number',
+               'sys.raw', 'sys.timestamp', 'sys.varchar2') THEN
+      RAISE e_invalid_data_type;
+    END IF;
+    return l_data_type;
+  end check_data_type;
+-- end v7
+-- start v8
+  function save_module_rows (p_audit_module_name varchar2)
+  return boolean result_cache relies_on (auditdata.module_capture_config) is
+    --check if module name is de-configured
+    l_module_exclude_count  number := 0;
+  begin
+    IF p_audit_module_name is not null
+    AND trim(p_audit_module_name) <> '' THEN
+      SELECT count(*) INTO l_module_exclude_count from auditdata.module_capture_config 
+      WHERE module_name = p_audit_module_name
+      AND exclude_ind = '1';
+    END IF;
+    IF l_module_exclude_count > 0 THEN
+      RETURN false;
+    ELSE
+      RETURN true;
+    END IF;
+  end save_module_rows;
+-- end v8
+
+BEGIN
+--    audit_log_error(NULL, 'Start of audit_process_row', null, NULL, NULL, NULL, NULL, NULL, NULL);
+
+  v_line_number:=10;
+  IF p_any IS NULL THEN
+      audit_log_error(NULL, 'input is null', null, NULL, NULL, NULL, NULL, NULL, NULL);
+    RETURN;
+  END IF;
+  
+  --convert input parameter to lcr
+  v_rtn_val := p_any.getobject(p_row_lcr);
+
+  v_line_number:=20;
+  --get basic LCR info
+  v_object_owner := replace(p_row_lcr.get_object_owner(),'GG_');
+  v_source_time  := p_row_lcr.get_source_time();
+
+  v_scn := p_row_lcr.get_scn();
+  if nvl(v_scn,0) = 0 and v_source_time is not null
+  then
+    begin
+      SELECT max(next_scn)
+      into v_scn
+      FROM DBA_REGISTERED_ARCHIVED_LOG 
+      WHERE consumer_name = g_consumer_name
+      AND first_time < v_source_time AND next_time > v_source_time;
+    exception
+    when no_data_found then
+      select max(next_scn)
+      into v_scn
+      FROM DBA_REGISTERED_ARCHIVED_LOG 
+      WHERE consumer_name = g_consumer_name;
+        audit_log_error(NULL, 'SCN not found for '||to_char(v_source_time,'dd/mm/yyyy hh24:mi:ss')||', current max next_scn is '||v_scn, null, NULL, NULL, NULL, NULL, NULL, NULL);
+      return;
+    end;
+  end if;
+
+--start v2
+  v_commit_scn := p_row_lcr.get_commit_scn();
+  if nvl(v_commit_scn,0) = 0 and v_source_time is not null
+  then
+    begin
+      SELECT max(next_scn)
+      into v_commit_scn
+      FROM DBA_REGISTERED_ARCHIVED_LOG 
+      WHERE consumer_name = g_consumer_name
+      AND first_time < v_source_time AND next_time > v_source_time;
+    exception
+    when no_data_found then
+      select max(next_scn)
+      into v_commit_scn
+      FROM DBA_REGISTERED_ARCHIVED_LOG 
+      WHERE consumer_name = g_consumer_name;
+        audit_log_error(NULL, 'Commit SCN not found for '||to_char(v_source_time,'dd/mm/yyyy hh24:mi:ss')||', current max next_scn is '||v_commit_scn, null, NULL, NULL, NULL, NULL, NULL, NULL);
+      return;
+    end;
+  end if;
+
+--end v2
+  v_object_name := p_row_lcr.get_object_name();
+  v_target_object_name := null;  --used for error logging
+  v_command_type := lower(p_row_lcr.get_command_type());
+
+--start gg v1
+  v_source_db := p_row_lcr.get_source_database_name();
+  if nvl(v_source_db,'NULL') = 'NULL'
+  then
+    SELECT source_database
+    into v_source_db
+    FROM dba_capture
+    WHERE CLIENT_NAME = g_capture_name;
+  end if;
+--end gg v1
+
+  v_line_number:=30;
+  --check the command type
+  IF v_command_type not in ('insert', 'update', 'delete', 'lob write', 'lob trim', 'lob erase') THEN
+    RAISE e_invalid_command_type;
+  END IF;
+
+  v_line_number:=40;
+  --initialise other variables
+  v_saved_vals_old.delete;
+  v_saved_vals_new.delete;
+  v_saved_col_names_old.delete;
+  v_saved_col_names_new.delete;
+  v_saved_new_col_num    := 0;
+  v_saved_old_col_num    := 0;
+  v_save_row      := false;
+
+  --get the column data
+  v_line_number:=50;
+  v_row_lcr_list_old := p_row_lcr.get_values('old');
+  v_row_lcr_list_new := p_row_lcr.get_values('new', 'N');
+  --loop through the column values in the LCR. Depending on column:-
+    --either populate the appropriate audit_table 'audit' column variable
+    --or save the values into an array for writing later to the audit_column table
+  v_line_number:=60;
+  CASE
+  WHEN v_command_type = 'delete' THEN
+  v_line_number:=70;
+    v_save_row := true;
+    IF v_row_lcr_list_old.count > 0 THEN
+      FOR v_row_unit_num IN 1..v_row_lcr_list_old.count
+      LOOP
+        v_line_number:=80;
+        --make sure data type is in the allowed range
+        v_data_type := check_data_type(v_row_lcr_list_old(v_row_unit_num)); -- v7
+          
+        v_col_name := lower(v_row_lcr_list_old(v_row_unit_num).column_name);
+        v_saved_old_col_num := v_saved_old_col_num + 1;
+        v_saved_col_names_old(v_saved_old_col_num) := v_col_name;
+        v_saved_vals_old(v_saved_old_col_num) := v_row_lcr_list_old(v_row_unit_num).data;
+      END LOOP;
+    END IF;
+  WHEN  v_command_type = 'insert'  OR v_command_type = 'update' OR v_command_type = 'lob write' THEN
+    v_save_row := true;
+    v_line_number:=100;
+    IF v_row_lcr_list_new.count > 0 THEN
+      v_line_number:=110;
+      FOR v_row_unit_num IN 1..v_row_lcr_list_new.count
+      LOOP
+        v_line_number:=120;
+        v_col_name := lower(v_row_lcr_list_new(v_row_unit_num).column_name);
+        CASE v_col_name
+--start v2
+--        WHEN 'audit_datetime' THEN
+        WHEN 'audit_timestamp' THEN
+--end v2
+          v_line_number:=130;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.gettimestamp(v_audit_datetime);
+          v_audit_datetime_fnd := true;  --v4
+        WHEN 'audit_user_id' THEN
+          v_line_number:=140;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_user_id);
+          v_audit_user_id_fnd := true;  --v4
+        WHEN 'audit_module_name' THEN
+          v_line_number:=150;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_module_name);
+          v_audit_module_name_fnd := true;  --v4
+        WHEN 'audit_client_user_id' THEN
+          v_line_number:=160;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_client_user_id);
+          v_audit_client_user_id_fnd := true;  --v4
+        WHEN 'audit_client_ip_address' THEN
+          v_line_number:=170;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_client_ip_address);
+          v_audit_client_ip_address_fnd := true;  --v4
+        WHEN 'audit_client_workstation_name' THEN
+          v_line_number:=180;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_client_workstation);
+          v_audit_client_workstation_fnd := true;  --v4
+        WHEN 'audit_additional_info' THEN
+          v_line_number:=190;
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_additional_info);
+          v_audit_additional_info_fnd := true;  --v4
+        ELSE
+          v_line_number:=200;
+          --make sure data type is in the allowed range
+          v_data_type := check_data_type(v_row_lcr_list_new(v_row_unit_num)); -- v7
+          
+          v_save_column := false;
+          v_lob_info := p_row_lcr.get_lob_information('new', v_col_name, 'Y');
+          IF (v_command_type = 'insert' or v_command_type = 'update') THEN
+            IF (v_lob_info = dbms_lcr.not_a_lob or v_lob_info = dbms_lcr.inline_lob) THEN
+              v_save_column := true;
+            END IF;
+          ELSE
+            --lob write
+            IF v_lob_info = DBMS_LCR.LOB_CHUNK or v_lob_info = DBMS_LCR.LAST_LOB_CHUNK THEN
+              v_save_column := true;
+            END IF;
+          END IF;
+          v_line_number:=230;
+          IF v_save_column = true THEN
+            v_saved_new_col_num := v_saved_new_col_num + 1;
+            v_saved_col_names_new(v_saved_new_col_num) := v_col_name;
+            v_saved_vals_new(v_saved_new_col_num) := v_row_lcr_list_new(v_row_unit_num).data;
+          END IF;
+        END CASE;
+      END LOOP;
+    END IF;
+    v_line_number:=250;
+    IF v_command_type = 'update' THEN
+      v_line_number:=260;
+      --only updates have old values (updated lobs don't)
+      --but don't save updates with no new values as these will have been created to follow lob writes
+      IF v_row_lcr_list_old.count > 0 AND v_row_lcr_list_new.count > 0 THEN
+        v_line_number:=270;
+        FOR v_row_unit_num IN 1..v_row_lcr_list_old.count
+        LOOP
+          v_line_number:=280;
+          --make sure data type is in the allowed range
+          v_data_type := check_data_type(v_row_lcr_list_old(v_row_unit_num)); -- v7
+          
+          v_saved_old_col_num := v_saved_old_col_num + 1;
+          v_saved_col_names_old(v_saved_old_col_num) :=
+              lower(v_row_lcr_list_old(v_row_unit_num).column_name);
+          v_saved_vals_old(v_saved_old_col_num) := v_row_lcr_list_old(v_row_unit_num).data;
+        END LOOP;
+      ELSE
+        v_save_row := false;
+      END IF;
+    END IF;
+    IF v_command_type = 'lob write' THEN
+      --required because LOB_WRITES are not picked up by the negative schema capture rule
+--start v3: module name may be null or empty
+      v_save_row := save_module_rows(v_audit_module_name); -- v8
+--end v3
+    END IF;
+  ELSE
+    -- 'lob trim', or 'lob erase' 
+    v_save_row := false;
+  END CASE;
+
+  v_line_number:=300;
+--start v2: check that all the required audit_ columns are present; if they aren't, log an error, then continue
+--            NB cater for valid absences, i.e. deletions and lob updates
+--  Also, exclude audit_additional_info as this is not mandatory
+  IF v_save_row = true THEN
+    v_line_number:=310;
+    IF v_command_type <> 'delete' THEN
+--start v4: just trap empty timestamp field
+      v_line_number:=320;
+      IF v_audit_datetime is null
+      OR v_audit_datetime_fnd = false
+      OR v_audit_user_id_fnd = false
+      OR v_audit_module_name_fnd = false
+      OR v_audit_client_user_id_fnd = false
+      OR v_audit_client_ip_address_fnd = false
+      OR v_audit_client_workstation_fnd = false THEN
+      v_line_number:=330;
+--end v4
+        IF v_command_type = 'update' 
+        AND v_row_lcr_list_new.count > 0 THEN
+          v_line_number:=340;
+          IF lower(v_row_lcr_list_new(1).data.gettypename()) = 'sys.raw' THEN
+--v6: check for preceding update as well as insert
+          --could be an UPDATE for an immediately preceding INSERT or UPDATE
+          --of a row containing a blob (this won't have audit values)
+          BEGIN
+            v_line_number:=350;
+            SELECT a.lcr_command_type, a.audit_timestamp,
+              a.audit_user_id, a.audit_module_name,
+              a.audit_client_user_id, a.audit_client_ip_address,
+              a.audit_client_workstation_name, a.audit_additional_info
+            INTO v_lcr_command_type_prv, v_audit_datetime_prv,
+              v_audit_user_id_prv, v_audit_module_name_prv,
+              v_audit_client_user_id_prv, v_audit_client_ip_address_prv,
+              v_audit_client_workstation_prv, v_audit_additional_info_prv
+            FROM auditdata.audit_table a
+            WHERE a.audit_table_seq in
+              (SELECT MAX(b.audit_table_seq) from auditdata.audit_table b
+              WHERE b.lcr_commit_scn = v_commit_scn
+              AND b.lcr_object_name = v_object_name --v7: allow index use
+              AND (lcr_command_type = 'INSERT' OR lcr_command_type = 'UPDATE')
+              AND b.lcr_source_time between (v_source_time - 1/24)
+                            and v_source_time);
+            v_line_number:=360;
+            v_audit_values_missing := FALSE;
+            --do a blanket update of the audit variables
+            v_audit_datetime := v_audit_datetime_prv;
+            v_audit_user_id := v_audit_user_id_prv;
+            v_audit_module_name := v_audit_module_name_prv;
+            v_audit_client_user_id := v_audit_client_user_id_prv;
+            v_audit_client_ip_address := v_audit_client_ip_address_prv;
+            v_audit_client_workstation := v_audit_client_workstation_prv;
+            v_audit_additional_info := v_audit_additional_info_prv;
+            v_audit_values_missing := FALSE; --v4
+          EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+              --module must have been excluded
+              --(can only get lob UPDATES with a prior INSERT)
+              v_save_row := FALSE;
+              v_audit_values_missing := FALSE; --v4
+          END;
+          ELSE
+            v_audit_values_missing := TRUE;
+          END IF;
+        ELSE
+          v_audit_values_missing := TRUE;
+        END IF;
+      END IF;
+      IF v_audit_values_missing = TRUE THEN
+          audit_log_error(SQLCODE, SQLERRM || ' - Source table audit column(s) missing or not populated',
+        v_scn, v_object_name, v_command_type, 
+        v_target_object_name, v_commit_scn, v_source_time, v_error_location);
+      END IF;
+    END IF;
+  END IF;
+--end v2
+
+  IF v_save_row = true THEN
+    v_line_number:=400;
+--v2: 'row required' booleans introduced to control flow
+--(update rather than insert may now be required for delete, or may need to remove delete altogether)
+    v_table_row_required   := TRUE;
+    v_column_rows_required := TRUE;
+    --write the audit_table record using the saved 'audit' variables
+    v_target_object_name   := 'audit_table';
+--start gg v1
+    BEGIN
+      v_lcr_extra_attribute  := p_row_lcr.get_extra_attribute('username');
+      v_lcr_username := v_lcr_extra_attribute.AccessVarchar2();
+      --v_rtn_val              := v_lcr_extra_attribute.getvarchar2(v_lcr_username);
+      v_line_number:=420;
+      v_lcr_extra_attribute := p_row_lcr.get_extra_attribute('session#');
+      v_lcr_session := v_lcr_extra_attribute.AccessNumber();
+      --v_rtn_val := v_lcr_extra_attribute.getnumber(v_lcr_session);
+    EXCEPTION
+      WHEN OTHERS THEN
+        v_lcr_username := nvl(v_audit_user_id,'UNKNOWN');
+        v_lcr_session  := null;
+    END;
+--end gg v1
+--start v2: if this is a delete, update the preceding OMS_DELETED_ROWS insert rather than creating a new row
+    IF v_command_type = 'delete' THEN
+    BEGIN
+      SELECT a.audit_table_seq, a.audit_module_name 
+      INTO v_audit_table_seq, v_audit_module_name
+      from  auditdata.audit_table a
+      WHERE a.audit_table_seq IN
+        (SELECT MAX(b.audit_table_seq) FROM auditdata.audit_table b
+          WHERE b.lcr_commit_scn = v_commit_scn
+          AND b.lcr_source_time between (v_source_time - 1/24) and v_source_time
+          AND b.lcr_command_type = 'INSERT'
+          AND b.lcr_object_name = v_deletions_table_name);
+          --audit_ values will be same for all deletes in the transaction,
+          --so no need to match on object name
+          --  if there have been deletes in the transaction
+          --  affecting more than one source table
+          --just checked last hour's worth of records in order to limit search
+--start v3: module name may be null or empty
+      IF NOT save_module_rows(v_audit_module_name) THEN --v8
+--end v3
+        --delete the retrieved row and give up on the current LCR
+        --(don't need to write 'old' columns away, either)
+        DELETE FROM auditdata.audit_table
+        WHERE audit_table_seq = v_audit_table_seq;
+        v_table_row_required := FALSE;
+        v_column_rows_required := FALSE;
+      ELSE
+        --update the retrieved row
+        UPDATE auditdata.audit_table 
+        SET capture_datetime = systimestamp,
+          lcr_scn = p_row_lcr.get_scn(),
+          lcr_username = v_lcr_username,
+          lcr_session = v_lcr_session,
+          lcr_source_db_name = v_source_db,
+          lcr_object_owner = v_object_owner,
+          lcr_object_name = p_row_lcr.get_object_name(),
+          lcr_command_type = p_row_lcr.get_command_type(),
+          lcr_commit_scn = v_commit_scn,
+          lcr_source_time = v_source_time
+        WHERE audit_table_seq = v_audit_table_seq;
+        v_table_row_required := FALSE;
+        v_column_rows_required := TRUE;
+      END IF;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        --unpaired delete; just leave things as they are
+        audit_log_error(SQLCODE, SQLERRM ||
+          ' - delete without corresponding deletions table insert', 
+          v_scn, v_object_name, v_command_type, v_target_object_name,
+          v_commit_scn, v_source_time, v_error_location);
+        v_table_row_required := TRUE;
+        v_column_rows_required := TRUE;
+    END;
+    END IF;
+
+    IF v_table_row_required THEN
+      v_line_number:=500;
+--end v2
+
+--start v2: swap ip addresses and workstation names for Citrix clients and servers
+        IF v_audit_additional_info IS NOT NULL THEN
+        v_line_number:=510;
+        v_addinfoconverted := convertaddinfo(v_audit_additional_info, v_audit_client_ip_address, v_audit_client_workstation,
+          v_audit_additional_info_cnv, v_audit_client_ip_address_cnv, v_audit_client_workstation_cnv);
+        IF v_addinfoconverted = TRUE THEN
+          v_audit_additional_info := v_audit_additional_info_cnv;
+          v_audit_client_ip_address := v_audit_client_ip_address_cnv;
+          v_audit_client_workstation := v_audit_client_workstation_cnv;
+        ELSE
+          IF v_addinfoconverted is null THEN
+            audit_log_error(SQLCODE, SQLERRM || ' - error converting additional info',
+            v_scn, v_object_name, v_command_type, v_target_object_name,
+            v_commit_scn, v_source_time, v_error_location);
+          END IF;
+        END IF;
+        END IF;
+--end v2
+
+      v_line_number:=550;
+        SELECT auditdata.audit_table_seq.nextval INTO v_audit_table_seq from dual;
+--v2: lcr_commit_lcr and lcr_source_time populated, audit_datetime column name changed to audit_timestamp
+        INSERT INTO auditdata.audit_table 
+      COLUMNS(
+      audit_table_seq,
+      capture_datetime,
+      lcr_scn,
+      lcr_username,
+      lcr_session,
+      lcr_source_db_name,
+      lcr_object_owner,
+      lcr_object_name,
+      lcr_command_type,
+      audit_timestamp,
+      audit_user_id,
+      audit_module_name,
+      audit_client_user_id,
+      audit_client_ip_address,
+      audit_client_workstation_name,
+      audit_additional_info,
+      lcr_commit_scn,
+      lcr_source_time)
+      VALUES(
+      v_audit_table_seq,
+      systimestamp,
+      v_scn,
+      v_lcr_username,
+      v_lcr_session,
+      v_source_db,
+      v_object_owner,
+      p_row_lcr.get_object_name(),
+      p_row_lcr.get_command_type(),
+      v_audit_datetime,
+      v_audit_user_id,
+      v_audit_module_name,
+      v_audit_client_user_id,
+      v_audit_client_ip_address,
+      v_audit_client_workstation,
+      v_audit_additional_info,
+      v_commit_scn,
+      v_source_time
+      );
+    END IF;
+
+    --write the audit_column records using the column values written to the array
+    v_target_object_name := 'audit_column';
+    IF v_saved_old_col_num > 0 
+    AND v_column_rows_required = TRUE THEN
+      v_line_number:=580;
+--start v4: loop replaced by bulk insert
+      --FOR v_col_num IN 1..v_saved_old_col_num
+      --LOOP
+      FORALL indx in v_saved_vals_old.first..v_saved_vals_old.last
+--v2: lcr_source_time populated
+        INSERT INTO auditdata.audit_column 
+        COLUMNS(
+        audit_table_seq,
+        lcr_column_name,
+        lcr_column_old_new_ind,
+        lcr_column_value,
+        lcr_source_time)
+        VALUES(
+        v_audit_table_seq,
+        v_saved_col_names_old(indx),
+        v_old_ind,
+        v_saved_vals_old(indx),
+        v_source_time
+        );
+      --END LOOP;
+--end v4
+    END IF;
+
+    v_line_number:=600;
+    IF v_saved_new_col_num > 0 
+--start v2:     ignore the new columns associated for inserts associated with the deletions table
+    AND v_object_name != v_deletions_table_name THEN
+--end v2
+      v_line_number:=610;
+    
+--start v4: remove unchanged columns from table, then do bulk insert for the rest    
+      --FOR v_col_num IN 1..v_saved_new_col_num
+      FOR v_col_num IN v_saved_col_names_new.first..v_saved_col_names_new.last
+      LOOP
+        v_line_number:=620;
+--start v2: check that column value really is different
+        --v_column_changed := true;
+        IF v_command_type = 'update' 
+        AND v_saved_old_col_num > 0 THEN
+          FOR v_compare_col_num IN 1..v_saved_old_col_num
+          LOOP
+            if v_saved_col_names_new(v_col_num) = v_saved_col_names_old(v_compare_col_num) then
+              if compareanydata(v_saved_vals_new(v_col_num),
+                                v_saved_vals_old(v_compare_col_num))  then
+                --v_column_changed := false;
+                v_saved_vals_new.delete(v_col_num);
+                v_saved_col_names_new.delete(v_col_num);
+              end if;
+              exit;
+            end if;
+          END LOOP;
+        END IF;
+      END LOOP;
+      --if v_column_changed = true then
+      IF v_saved_col_names_new.count > 0 THEN
+        v_line_number:=650;
+--end v2
+        FORALL indx IN INDICES OF v_saved_col_names_new
+          INSERT INTO auditdata.audit_column
+          COLUMNS(
+          audit_table_seq,
+          lcr_column_name,
+          lcr_column_old_new_ind,
+          lcr_column_value,
+          lcr_source_time
+          ) 
+          VALUES(
+          v_audit_table_seq,
+          v_saved_col_names_new(indx),
+          v_new_ind,
+          v_saved_vals_new(indx),
+          v_source_time
+          );
+      END IF;
+      --END LOOP;
+--end v4
+    END IF;
+--*/
+  END IF;
+  EXCEPTION
+  WHEN e_invalid_command_type THEN
+    audit_log_error(SQLCODE, v_line_number ||' - '|| SQLERRM || ' - Unrecognised command type',
+      v_scn, v_object_name, v_command_type, 
+      v_target_object_name, v_commit_scn, v_source_time, v_error_location);
+    RAISE;
+  WHEN e_invalid_data_type THEN
+    audit_log_error(SQLCODE, v_line_number ||' - '||SQLERRM || ' - Unrecognised data type - ' ||
+      v_data_type, v_scn, v_object_name, v_command_type, 
+      v_target_object_name, v_commit_scn, v_source_time, v_error_location);
+    RAISE;        
+  WHEN OTHERS THEN
+    audit_log_error(SQLCODE, v_line_number ||' - '||SQLERRM|| ' - OTHERS ', v_scn, v_object_name, v_command_type, 
+      v_target_object_name, v_commit_scn, v_source_time, v_error_location);
+    RAISE;
+  END;
+
+  PROCEDURE apply_dml_conf
+  IS
+  /*
+  Summary
+  ==============
+  Sets all dml handlers for all tables in selected schema
+  NB if the assemble_lobs parameter needs changing after the initial running of this script,
+  it must be done one table and operation at a time, as this script won't change it
+
+  Change History
+  ===========
+  Version/Date/Author:  1  17/10/2008  J Smith
+  Change Summary:  New procedure
+  Version/Date/Author:  2  05/11/2008  R Taylor
+  Change Summary:  Use global variables to derive names, log current applied scn
+  */
+  TYPE table_list IS TABLE OF VARCHAR2(30);
+  v_tab_list  table_list;
+  v_plsql   varchar2(2000);
+  v_handler   varchar2(80) := g_data_owner || '.AUDITDATA_DML_PKG.' || g_handler_name;
+  v_dblink   varchar2(128) := 'T1CNOM.REGRESS.RDBMS.DEV.US.ORACLE.COM';
+  v_scn     number := null;
+  v_table   varchar2(30) := null;
+  v_date     date := null;
+  BEGIN
+  --get source database link name
+--  v_plsql := 'select db_link from dba_db_links where owner = :user and username = :ggint';
+--    'SELECT source_database, applied_message_number, APPLIED_MESSAGE_CREATE_TIME' ||
+--     ' FROM all_apply_progress' ||
+--    ' WHERE apply_name = :apply_name';  
+--  execute immediate v_plsql into v_dblink, v_scn, v_date using g_apply_name;
+--  execute immediate v_plsql into v_dblink, v_scn, v_date using user, 'GGINT';
+  --create an array of tables in the selected schema
+  v_plsql := 
+    'SELECT table_name FROM all_tables@' || v_dblink 
+    || ' WHERE owner = ''' || g_source_owner || '''';  
+  execute immediate v_plsql bulk collect into v_tab_list;
+
+  if v_tab_list.count > 0 then
+    for i in 1..v_tab_list.count
+    loop
+      v_table := v_tab_list(i);
+      --dbms_output.put_line('Creating handlers for ' || v_tab_list(i));
+      --create insert handler
+      -- The error_handler parameter defines whether the handler replaces normal apply processing or only execute for error handling.
+      -- If we set apply_name to NULL then the handler is used for ALL apply & inbound servers
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''INSERT'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''INSERT'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+
+      --create update handler
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''UPDATE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''UPDATE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+
+      --create delete handler
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''DELETE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''DELETE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => false);
+        end;';
+      execute immediate v_plsql;
+
+      --create lob update handler
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''LOB_UPDATE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => FALSE);
+        end;';
+      execute immediate v_plsql;
+      v_plsql := 
+        'begin
+        dbms_apply_adm.set_dml_handler(
+          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_type => ''table'',
+          operation_name => ''LOB_UPDATE'',
+          error_handler => false,
+          user_procedure => ''' || v_handler || ''',
+          apply_database_link => null,
+          apply_name => ''' || g_apply_name || ''',
+          assemble_lobs => FALSE);
+        end;';
+      execute immediate v_plsql;
+
+    end loop;
+    audit_log_error(0, 'DML Handlers set for '||g_apply_name||' ('||v_tab_list.count||' tables).',
+                    v_scn, null, null, null, null, v_date, 'apply_dml_conf');
+
+  end if;
+--  EXCEPTION
+--  WHEN OTHERS THEN
+--    audit_log_error(SQLCODE, SQLERRM, v_scn, v_table, null, 
+--      null, null, v_date, 'apply_dml_conf');
+--    RAISE;
+  END;
+
+
+  PROCEDURE apply_dml_deconf
+  IS
+  -- packaged procedure apply_dml_deconf
+  -- will remove DML handlers for audit apply process
+
+    l_line_number   number;
+  l_plsql     varchar2(2000); 
+    l_plsql2     varchar2(2000); 
+
+    l_src_owner_list    owner_list;
+    l_src_table_list    table_list;
+    l_operations_list    operations_list;
+
+    procedure clear_apply_handler (
+        p_apply_name   IN     VARCHAR2,
+     p_src_owner   IN     VARCHAR2,
+        p_src_table   IN     VARCHAR2,
+     p_command_type   IN     VARCHAR2
+    ) is
+        l_plsql   varchar2(2000); 
+    begin
+      l_line_number := 40;
+        l_plsql := 
+            'begin dbms_apply_adm.set_dml_handler(
+    object_name => ''' || p_src_owner || '.' || p_src_table || ''',
+    object_type => ''TABLE'',
+    operation_name => ''' || p_command_type || ''',
+    error_handler => false,
+    user_procedure => null,
+    apply_database_link => null,
+    apply_name => ''' || p_apply_name || ''',
+    assemble_lobs => false); end;'; 
+        execute immediate l_plsql;
+    end;
+
+  BEGIN
+    l_line_number := 10;
+  for i in (select OBJECT_OWNER, OBJECT_NAME, OPERATION_NAME from DBA_APPLY_DML_HANDLERS where APPLY_NAME = g_apply_name)
+  loop
+        clear_apply_handler
+            (g_apply_name, i.OBJECT_OWNER, i.OBJECT_NAME, i.OPERATION_NAME);
+  end loop;
+
+/*    -- retrieve details of all target tables
+    l_plsql := 'select OBJECT_OWNER, OBJECT_NAME, OPERATION_NAME ' ||
+                 'from DBA_APPLY_DML_HANDLERS ' ||
+                'where APPLY_NAME = :apply_name';
+
+    -- clear handlers for apply process
+    execute immediate l_plsql
+    bulk collect into l_src_owner_list, l_src_table_list, l_operations_list
+    using g_apply_name;
+
+    l_line_number := 20;
+    -- clear handlers for each table
+    FOR j in 1..l_src_owner_list.count
+    LOOP
+      l_line_number := 30;
+        -- clear handler
+        clear_apply_handler
+            (g_apply_name, l_src_owner_list(j), l_src_table_list(j), l_operations_list(j));
+    END LOOP;
+*/
+  EXCEPTION
+    WHEN OTHERS THEN
+  audit_log_error(SQLCODE,     l_line_number ||' - '||SQLERRM, null, null, null, null, null, null, 'apply_dml_deconf');
+        RAISE;
+  END;
+  
+
+  PROCEDURE maintain_module_config (
+  p_module_name in varchar2,
+  p_exclude_ind in char)
+  IS
+   PRAGMA AUTONOMOUS_TRANSACTION;
+  /*
+  Summary
+  ===========
+  This procedure maintains configuration for modules to be excluded from the recording
+  of C-NOMIS business data changes on the NOMIS Audit database
+  The procedure is called by the module_capture_config_t1 before row trigger on the module_capture_config table,
+  which passes a module name and an 'exclude' indicator ('1' = exclude '0' = do not exclude)
+  The procedure  adds the module to (or removes it from)
+--  the module exclusion negative rule for the capture process
+-- For OGG it can't be added as a rule so it will need to be handled within the apply DML processing.
+
+  Change History
+  ===========
+  Version/Date/Author:  1  13/10/2008  J Smith
+  Change Summary:  New procedure
+  Version/Date/Author:  2  06/11/2008  R Taylor
+  Change Summary:  Rewritten to use package information (and not update config tables)
+  */
+  v_module_name    varchar2(256) := upper(trim(p_module_name));
+  v_exclude_ind    varchar2(256) := trim(p_exclude_ind);
+  v_rule_name    varchar2(30);
+  v_rule_enabled_status  varchar2(8);
+  v_rule_condition    varchar2(4000);
+  v_rule_start    varchar2(11) := '''$$START$$''';
+  v_start_pos    integer;
+  v_rule_terminator  varchar2(9) := '''$$END$$''';
+  v_terminator_pos    integer;
+  v_module_in_rule    boolean;
+  v_module_pos    integer := 0;
+  v_module_to_remove  varchar2(256);
+  e_input_error    exception;
+  e_config_unchanged  exception;
+  e_neg_rule_missing  exception;
+  e_rule_condition_invalid  exception;
+
+  BEGIN
+null;
+-- this won't work now as the capture rules are in the prm file in dirprm
+
+/*
+  --validate parameters
+  if v_module_name = '' then
+    -- Module Name not specified
+    raise e_input_error;
+  elsif instr(v_module_name, '$$START$$') > 0 or instr(v_module_name, '$$END$$') > 0 then
+    -- Module Name not allowed - contains rule start or terminator value
+    raise e_input_error;
+  end if;
+
+  if v_exclude_ind = '' then
+    -- Exclude Indicator not specified
+    raise e_input_error;
+  elsif v_exclude_ind <> '0' and v_exclude_ind <> '1' then
+    -- Invalid Exclude Indicator - it should be 1 for include or 0 for do not exclude
+    raise e_input_error;
+  end if;
+
+  -- retrieve the rule name, rule set status and the rule condition
+  BEGIN
+    select sr.rule_name, s.rule_set_rule_enabled, r.rule_condition
+    into   v_rule_name, v_rule_enabled_status, v_rule_condition
+    from   dba_rule_set_rules s, dba_rules r, DBA_STREAMS_RULES sr
+          where  sr.STREAMS_TYPE = 'CAPTURE'
+          and    sr.STREAMS_NAME = g_capture_name
+          and    sr.RULE_SET_TYPE = 'NEGATIVE'
+          and    sr.RULE_SET_NAME = g_capture_nrs_name
+          and    sr.SCHEMA_NAME = g_source_owner
+          and    instr(sr.ORIGINAL_RULE_CONDITION, v_rule_start) > 0
+          and    instr(sr.ORIGINAL_RULE_CONDITION, v_rule_terminator) >
+                 instr(sr.ORIGINAL_RULE_CONDITION, v_rule_start)
+    and    r.rule_name = sr.rule_name
+    and    s.rule_name = r.rule_name
+    and    s.rule_set_name = sr.rule_set_name;
+    if v_rule_enabled_status <> 'ENABLED' then
+      audit_log_error(0, 'Warning: ' || v_rule_name || ' rule not currently enabled',
+        null, null, null, null, null, null, 'maintain_module_config');
+    end if;
+
+  EXCEPTION
+    WHEN NO_DATA_FOUND then
+      raise e_neg_rule_missing;
+  END;
+
+  --first do basic check of the format of the existing rule condition
+  --NB the relevant part of the rule text has the format...
+  --  AND ((:dml.get_value('NEW','"AUDIT_MODULE_NAME"') IN ('$$START$$','XXXXXX',YYYYYY','$$END$$'))
+  --where XXXXXX and YYYYYY are module names
+
+  v_start_pos := instr(v_rule_condition, v_rule_start);
+  if v_start_pos = 0 or
+  v_start_pos is null then
+    raise e_rule_condition_invalid;
+  end if;
+  v_terminator_pos := instr(v_rule_condition, v_rule_terminator);
+  if v_terminator_pos = 0 or
+  v_terminator_pos is null then
+    raise e_rule_condition_invalid;
+  end if;
+
+  --search the rule for the presence of the module
+  v_module_pos := instr(v_rule_condition, v_module_name, v_start_pos);
+  if v_module_pos = 0 
+  or v_module_pos > v_terminator_pos then
+    v_module_in_rule := false;
+  else
+    v_module_in_rule := true;
+  end if;
+
+  --check input against rule contents
+  if (v_exclude_ind = '1' and v_module_in_rule = true)
+  or (v_exclude_ind = '0' and v_module_in_rule = false) then
+    raise e_config_unchanged;
+  end if;
+
+  --update the rule text
+  if v_exclude_ind = '1' then
+    --add the rule if it isn't already present
+    --adding module to rule
+    v_rule_condition := substr(v_rule_condition, 1, v_terminator_pos - 1) ||
+      '''' || v_module_name || '''' || ',' ||
+      substr(v_rule_condition, v_terminator_pos, length(v_rule_condition));
+  else
+    --remove module from rule
+    v_module_to_remove := '''' || v_module_name || '''' || ',';
+    v_rule_condition := replace(v_rule_condition, v_module_to_remove, '');
+  end if;  
+    
+  --now update the rule
+--  dbms_rule_adm.alter_rule(
+--    rule_name   => v_rule_name,
+--    condition  => v_rule_condition);
+*/
+
+  EXCEPTION
+  WHEN e_input_error then
+    audit_log_error(SQLCODE, 'Capture rule update abandoned because of input errors',
+      null, null, null, null, null, null, 'maintain_module_config');
+    RAISE AUD_STREAMS_EXCEPTION;
+  WHEN e_config_unchanged then
+    audit_log_error(SQLCODE, 'Capture rule unchanged - the Exclude Indicator for ' ||
+      v_module_name || ' already is ' || v_exclude_ind,
+      null, null, null, null, null, null, 'maintain_module_config');
+    -- do not re-raise error for no change
+  WHEN e_neg_rule_missing then
+    audit_log_error(SQLCODE, 'Error: no negative module rule found for ' || g_capture_name,
+      null, null, null, null, null, null, 'maintain_module_config');
+    RAISE AUD_STREAMS_EXCEPTION;
+  WHEN e_rule_condition_invalid then
+    audit_log_error(SQLCODE, 'Error: ' || v_rule_start || ' and/or ' || v_rule_terminator ||
+      ' marker missing from negative rule condition for ' || g_capture_name,
+      null, null, null, null, null, null, 'maintain_module_config');
+    RAISE AUD_STREAMS_EXCEPTION;
+  WHEN OTHERS THEN
+    audit_log_error(SQLCODE, SQLERRM, null, null, null, null, null, null, 'maintain_module_config');
+    RAISE;
+  END;
+
+
+END AUDITDATA_DML_PKG;
+/
+
+show errors

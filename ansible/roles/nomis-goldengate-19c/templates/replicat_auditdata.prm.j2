@@ -1,4 +1,4 @@
-REPLICAT {{ oracle_goldengate_streams.auditdata.replicat_name }}
+REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
 
 GETENV (NLS_LANG)
 
@@ -13,7 +13,7 @@ CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
 
 -- --- Error handling ---
 REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
-DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_streams.auditdata.replicat_name }}.dsc, APPEND, MEGABYTES 500
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditdata.replicat_name }}.dsc, APPEND, MEGABYTES 500
 
 REPORTCOUNT EVERY 5 MINUTES, RATE
 DBOPTIONS DEFERREFCONST
@@ -21,6 +21,6 @@ DBOPTIONS SUPPRESSTRIGGERS
 DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
 
 -- We need to map to dummy tables in the target because replicat expects to be able to query the target database for metadata about the source tables, and if we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. The dummy tables can be empty because we are not actually replicating any data, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
-MAP "{{ oracle_goldengate_db.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_streams.auditdata.target_schema }}"."*";
+MAP "{{ oracle_goldengate_db.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditdata.dummy_target_schema }}"."*";
 
 

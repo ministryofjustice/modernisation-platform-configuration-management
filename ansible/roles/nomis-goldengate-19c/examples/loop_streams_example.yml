@@ -1,6 +1,6 @@
 ---
 # Example: Create trail subdirectories for each GoldenGate stream
-# This demonstrates looping through oracle_goldengate_streams dictionary
+# This demonstrates looping through oracle_goldengate_group dictionary
 
 # Method 1: Using dict2items to loop through the dictionary
 # Creates: dirdat/auditdata, dirdat/auditref, dirdat/mis
@@ -9,9 +9,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
@@ -22,9 +22,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}: {{ item.value.trail_prefix }}"
 
@@ -35,9 +35,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}/{{ item.value.trail_prefix }}"
 
@@ -50,7 +50,7 @@
       Replicat: {{ item.value.replicat_name }}
       Trail Prefix: {{ item.value.trail_prefix }}
       Directory: {{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
@@ -61,9 +61,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   when: >
     (item.key == 'auditdata' and oracle_goldengate_deploy_auditdata) or
     (item.key == 'auditref' and oracle_goldengate_deploy_auditref) or
@@ -77,9 +77,9 @@
     path: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  with_dict: "{{ oracle_goldengate_streams }}"
+  with_dict: "{{ oracle_goldengate_group }}"
 
 # Method 7: Create multiple related directories for each stream
 - name: Create trail and checkpoint directories for each stream
@@ -87,16 +87,16 @@
     path: "{{ item.dir }}/{{ item.stream.key }}/{{ item.stream.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
   loop: >-
-    {{ oracle_goldengate_streams | dict2items |
+    {{ oracle_goldengate_group | dict2items |
        map('combine_dirs', [oracle_goldengate_trail_dir, oracle_goldengate_checkpoint_dir]) |
        flatten }}
   vars:
     combine_dirs: >-
       {% set result = [] -%}
-      {% for stream in oracle_goldengate_streams | dict2items -%}
+      {% for stream in oracle_goldengate_group | dict2items -%}
         {% for dir in [oracle_goldengate_trail_dir, oracle_goldengate_checkpoint_dir] -%}
           {% set _ = result.append({'dir': dir, 'stream': stream}) -%}
         {% endfor -%}
@@ -111,9 +111,9 @@
     path: "{{ base_dir }}/{{ stream_item.key }}/{{ stream_item.value.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   loop_control:
     loop_var: stream_item
     label: "{{ base_dir | basename }}/{{ stream_item.key }}/{{ stream_item.value.trail_prefix }}"
@@ -123,10 +123,10 @@
 # Example of accessing specific stream data
 - name: Create directory for a specific stream (auditdata only)
   ansible.builtin.file:
-    path: "{{ oracle_goldengate_home }}/dirdat/{{ oracle_goldengate_streams.auditdata.trail_prefix }}"
+    path: "{{ oracle_goldengate_home }}/dirdat/{{ oracle_goldengate_group.auditdata.trail_prefix }}"
     state: directory
     owner: "{{ oracle_goldengate_owner }}"
-    group: "{{ oracle_goldengate_group }}"
+    group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
   when: oracle_goldengate_deploy_auditdata
 
@@ -134,7 +134,7 @@
 - name: Create trail files for each stream
   ansible.builtin.command:
     cmd: "touch {{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}000000"
-  loop: "{{ oracle_goldengate_streams | dict2items }}"
+  loop: "{{ oracle_goldengate_group | dict2items }}"
   args:
     creates: "{{ oracle_goldengate_home }}/dirdat/{{ item.key }}/{{ item.value.trail_prefix }}000000"
   loop_control:

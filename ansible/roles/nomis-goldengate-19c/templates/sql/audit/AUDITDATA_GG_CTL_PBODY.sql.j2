@@ -1,0 +1,278 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG AS
+
+/*
+ *  NOMIS AuditData GoldenGate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle GoldenGate processes for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
+ */
+
+  FUNCTION get_version RETURN varchar2 IS
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  BEGIN
+    return g_version;
+  END;
+
+  PROCEDURE audit_log_error (
+    p_errcode in pls_integer,
+    p_errmsg in varchar2,
+    p_scn in number,
+    p_object_name in varchar2,
+    p_command_type in varchar2,
+    p_target_object_name in varchar2,
+    p_commit_scn in number,
+    p_source_time in date,
+    p_error_location in varchar2)
+  IS
+  -- will insert entries in auditdata.AUDIT_ERROR (or write to a file)
+  BEGIN
+    AUDITDATA_GEN_PKG.log_audit_error (
+        p_location => p_error_location,
+        p_src_time => p_source_time,
+        p_src_object => p_object_name,
+        p_tgt_object => p_target_object_name,
+        p_command_type => p_command_type,
+        p_row_scn => p_scn,
+        p_commit_scn => p_commit_scn,
+        p_error_code => p_errcode,
+        p_message => p_errmsg);
+  END;
+
+
+  PROCEDURE stop_extract(
+    p_force     IN     BOOLEAN  DEFAULT FALSE
+  ) IS
+  -- packaged procedure stop_extract stops audit capture process
+    v_plsql      varchar2(2000); 
+    v_msg_number     number := null;
+    v_retry_txt     varchar2(20) := '';
+  BEGIN
+    -- define SCN select statement
+    v_plsql := 'select captured_scn ' ||
+                 'from dba_capture ' ||
+                'where capture_name = :capture_name';
+    -- get SCN for last redo log record scanned
+    execute immediate v_plsql into v_msg_number using g_capture_name;
+
+    -- stop capture process
+    DECLARE
+      l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+    BEGIN
+      --  SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+      DBMS_SCHEDULER.create_job(
+        job_name            => l_job_name,
+        job_type            => 'EXECUTABLE',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_extract_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        number_of_arguments => 0,
+        enabled             => FALSE,
+        auto_drop           => TRUE
+      );
+      
+      DBMS_SCHEDULER.enable(l_job_name);
+
+      -- Wait for completion (blocks this session)
+      DBMS_SCHEDULER.run_job(
+        job_name            => l_job_name,
+        use_current_session => TRUE
+      );
+    EXCEPTION
+        WHEN timeout_stopping_process THEN
+            BEGIN -- retry stopping capture process
+                SYS.DBMS_LOCK.SLEEP(g_sleep1);
+                v_retry_txt := ' on second attempt';
+            execute immediate v_plsql into v_msg_number using g_capture_name;
+                SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+            EXCEPTION
+                WHEN timeout_stopping_process THEN
+                BEGIN
+                    SYS.DBMS_LOCK.SLEEP(g_sleep2);
+                    v_retry_txt := ' on third attempt';
+                execute immediate v_plsql into v_msg_number using g_capture_name;
+                    SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+                EXCEPTION
+                    WHEN timeout_stopping_process THEN RAISE;
+                END;
+            END;
+    END;
+    -- log message
+    audit_log_error(0, 'Capture process ' || g_capture_name || ' stopped' || v_retry_txt || '.',
+        v_msg_number, null, null, null, null, null, 'stop_extract');
+  EXCEPTION
+    WHEN OTHERS THEN
+  audit_log_error(SQLCODE, SQLERRM, v_msg_number, null, null, null, null, null, 'stop_extract');
+        RAISE;
+  END;
+
+  PROCEDURE start_extract IS
+  -- packaged procedure start_extract starts audit capture process
+    l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+  BEGIN
+    -- start capture processes
+    --      SYS.DBMS_CAPTURE_ADM.start_extract(g_capture_name);
+    DBMS_SCHEDULER.create_job(
+      job_name            => l_job_name,
+      job_type            => 'EXECUTABLE',
+      job_action          => '{{ oracle_goldengate_scripts_dir }}/start_extract_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+      number_of_arguments => 0,
+      enabled             => FALSE,
+      auto_drop           => TRUE
+    );
+    
+    DBMS_SCHEDULER.enable(l_job_name);
+
+    -- Wait for completion (blocks this session)
+    DBMS_SCHEDULER.run_job(
+      job_name            => l_job_name,
+      use_current_session => TRUE
+    );
+    -- log message
+    audit_log_error(0, 'Capture process ' || g_capture_name || ' started.',
+         null, null, null, null, null, null, 'start_extract');
+  EXCEPTION
+    WHEN OTHERS THEN
+  audit_log_error(SQLCODE, SQLERRM, null, null, null, null, null, null, 'start_extract');
+        RAISE;
+  END;
+
+  PROCEDURE stop_replicat(
+    p_force     IN     BOOLEAN  DEFAULT FALSE
+  ) IS
+  -- packaged procedure stop_replicat stops audit apply process
+    v_plsql      varchar2(2000); 
+    v_msg_number     number := null;
+    v_msg_date        date := null;
+    v_retry_txt     varchar2(20) := '';
+  BEGIN
+    -- define SCN select statement (low watermark, all transactions up to this are applied)
+    v_plsql := 'select applied_message_number, APPLIED_MESSAGE_CREATE_TIME ' ||
+                 'from dba_apply_progress ' ||
+                'where apply_name = :apply_name';
+    -- get max applied SCN
+    execute immediate v_plsql into v_msg_number, v_msg_date
+    using g_apply_name;
+
+    -- stop audit apply process
+    DECLARE
+      l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+    BEGIN
+      --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+      DBMS_SCHEDULER.create_job(
+        job_name            => l_job_name,
+        job_type            => 'EXECUTABLE',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        number_of_arguments => 0,
+        enabled             => FALSE,
+        auto_drop           => TRUE
+      );
+      
+      DBMS_SCHEDULER.enable(l_job_name);
+
+      -- Wait for completion (blocks this session)
+      DBMS_SCHEDULER.run_job(
+        job_name            => l_job_name,
+        use_current_session => TRUE
+      );
+
+    EXCEPTION
+        WHEN timeout_stopping_process THEN
+            BEGIN -- retry stopping apply process
+                SYS.DBMS_LOCK.SLEEP(g_sleep1);
+                v_retry_txt := ' on second attempt';
+                execute immediate v_plsql into v_msg_number, v_msg_date
+                using g_apply_name;
+                SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+            EXCEPTION
+                WHEN timeout_stopping_process THEN
+                BEGIN
+                    SYS.DBMS_LOCK.SLEEP(g_sleep2);
+                    v_retry_txt := ' on third attempt';
+                    execute immediate v_plsql into v_msg_number, v_msg_date
+                    using g_apply_name;
+                    SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+                EXCEPTION
+                    WHEN timeout_stopping_process THEN RAISE;
+                END;
+            END;
+    END;
+
+    -- log message
+    audit_log_error(0, 'Apply process ' || g_apply_name || ' stopped' || v_retry_txt || '.',
+         v_msg_number, null, null, null, null, v_msg_date, 'stop_replicat');
+  EXCEPTION
+    WHEN OTHERS THEN
+    audit_log_error(SQLCODE, SQLERRM, v_msg_number, null, null, 
+      null, null, v_msg_date, 'stop_replicat');
+        RAISE;
+  END;
+
+  PROCEDURE start_replicat(
+    p_refresh_flag  IN     BOOLEAN DEFAULT TRUE
+  ) IS
+  -- packaged procedure start_replicat starts audit apply process
+  -- first resets apply handlers and checks for errors
+    v_plsql      varchar2(2000); 
+    v_apply_error_count   number;
+  BEGIN
+
+    IF (p_refresh_flag = TRUE) THEN
+        -- set apply DML handlers
+        apply_dml_conf;
+    END IF;
+
+    -- count apply process errors
+    v_plsql := 'select sum(message_count) ' ||
+                 'from dba_apply_error ' ||
+                'where apply_name = :apply_name';
+    execute immediate v_plsql into v_apply_error_count using g_apply_name;
+
+    -- determine if any messages queued in apply error queue
+    IF v_apply_error_count > 0 THEN
+        RAISE AUD_STREAMS_QUEUE_EXCEPTION;
+    END IF;
+
+    DECLARE
+      l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+    BEGIN
+      --  SYS.DBMS_APPLY_ADM.start_replicat(g_apply_name);
+      DBMS_SCHEDULER.create_job(
+        job_name            => l_job_name,
+        job_type            => 'EXECUTABLE',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/start_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        number_of_arguments => 0,
+        enabled             => FALSE,
+        auto_drop           => TRUE
+      );
+      
+      DBMS_SCHEDULER.enable(l_job_name);
+
+      -- Wait for completion (blocks this session)
+      DBMS_SCHEDULER.run_job(
+        job_name            => l_job_name,
+        use_current_session => TRUE
+      );
+    END;
+    
+    -- log message
+    audit_log_error(0, 'Apply process ' || g_apply_name || ' started.',
+         null, null, null, null, null, null, 'start_replicat');
+
+  EXCEPTION
+    WHEN AUD_STREAMS_QUEUE_EXCEPTION THEN
+  audit_log_error(SQLCODE, 'Apply error queue contains ' || v_apply_error_count || ' messages',
+      null, null, null, null, null, null, 'start_replicat');
+        RAISE;
+  END;
+
+
+END AUDITDATA_GG_CTL_PKG;
+/
+
+show errors

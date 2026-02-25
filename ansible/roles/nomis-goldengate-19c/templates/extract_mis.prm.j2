@@ -1,4 +1,4 @@
-EXTRACT {{ oracle_goldengate_streams.mis.extract_name }}
+EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
 
 -- Use NOUSERID for Downstream sourceless Extract to avoid connecting to the source database
 NOUSERID
@@ -6,7 +6,7 @@ NOUSERID
 -- Use a mining user on the downstream (local) database
 TRANLOGOPTIONS MININGUSERALIAS MIS_DB
 
-EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_streams.mis.trail_prefix }}
+EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }}
 
 REPORTCOUNT EVERY 5 MINUTES, RATE
 WARNLONGTRANS 1H, CHECKINTERVAL 30m

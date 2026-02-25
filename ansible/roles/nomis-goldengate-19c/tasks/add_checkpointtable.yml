@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     checkpoint_table_db_alias: "{{ oracle_goldengate_db.audit.credential_alias if oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref else oracle_goldengate_db.mis.credential_alias }}"
 
-- name: Create checkpoint table using ggsci
+- name: Create checkpoint and heartbeat tables using ggsci
   ansible.builtin.shell: |
     export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
     export ORAENV_ASK=NO
@@ -11,6 +11,7 @@
     ./ggsci << EOF
     dblogin alias {{ checkpoint_table_db_alias }}
     ADD CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
+    ADD HEARTBEATTABLE {{ oracle_goldengate_dbuser }}.HEARTBEATS
     EXIT
     EOF
   args:
