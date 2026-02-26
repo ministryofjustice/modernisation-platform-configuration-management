@@ -1,0 +1,17 @@
+[Unit]
+Description=NOMIS_REPORTS_SERVER
+After=weblogic-server.service
+PartOf=WLS_REPORTS.service
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/startNomisReportsServer.sh {{ reports_server }}
+ExecStop=/home/oracle/admin/scripts/stopNomisReportsServer.sh {{ reports_server }}
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+TimeoutStartSec=180
+Type=oneshot
+User=oracle
+
+[Install]
+WantedBy=multi-user.target

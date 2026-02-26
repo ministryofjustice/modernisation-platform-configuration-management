@@ -85,3 +85,13 @@
     - /etc/systemd/system/weblogic-ohs.service
     - /etc/systemd/system/WLS_FORMS.service
     - /etc/systemd/system/WLS_REPORTS.service
+
+- name: Copy WLS_REPORTS init.d script with reports server name
+  ansible.builtin.template:
+    src: "12{{ item }}.j2"
+    dest: "{{ item }}"
+    mode: "0644"
+  loop:
+    - /etc/systemd/system/NOMIS_REPORTS_SERVER.service
+  vars:
+    reports_server: "{{ reports_server_name }}"

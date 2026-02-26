@@ -51,6 +51,7 @@ oracle_template_file_config:
     dest: /u01/tag/utils/scripts/compile_all_forms.sh
 
 db_config: "{{ db_configs[weblogic_db_name] }}"
+reports_server_name: rep_server1
 weblogic_admin_username: weblogic
 weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
