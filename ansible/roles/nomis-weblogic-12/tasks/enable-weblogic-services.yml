@@ -4,9 +4,10 @@
     name: "{{ item }}"
     enabled: true
     state: "{{ service_state | default('started') }}"
-  loop:
-    - weblogic-node-manager
-    - weblogic-server
-    - WLS_FORMS
-    - WLS_REPORTS
-    - weblogic-ohs
+  loop: "{{ services_to_manage | default([
+              'weblogic-node-manager',
+              'weblogic-server',
+              'WLS_FORMS',
+              'WLS_REPORTS',
+              'weblogic-ohs'
+            ]) }}"
