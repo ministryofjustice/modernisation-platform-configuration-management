@@ -32,8 +32,8 @@
         . ~/.bash_profile
         export PATH=$PATH:/usr/local/bin
         . oraenv <<< "${ORACLE_SID}"
-        -- sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
-        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
+        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
+        -- sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "{{ database_name }}"
