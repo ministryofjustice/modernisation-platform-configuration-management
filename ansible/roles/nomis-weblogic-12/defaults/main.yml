@@ -55,6 +55,7 @@ weblogic_admin_username: weblogic
 weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
 weblogic_db_hostname_b: "{{ ec2.tags['oracle-db-hostname-b'] }}"
+weblogic_db_tagsar_username: tagsar
 weblogic_db_username: oms_owner
 weblogic_domain_template_filename: none  # override in group vars once template has been created
 weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
@@ -72,6 +73,14 @@ weblogic_db_repo_password_secret:
 weblogic_admin_password_secret:
   - key: "{{ weblogic_admin_username }}"
     value: auto
+
+#weblogic_other_form_servers:
+#  - { name: WLS_FORMS }
+#  - { name: WLS_REPORTS }
+#  - { name: AdminServer }
+#  - { name: WLS_AUTOLOGOFF }
+#  - { name: WLS_TAGSAR }
+#  - { name: WLS_HOTPAGE }
 
 weblogic_secretsmanager_passwords:
   db:

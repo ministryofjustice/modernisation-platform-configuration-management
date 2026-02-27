@@ -1,6 +1,7 @@
 [Unit]
 Description=WLS_REPORTS
 After=weblogic-server.service
+PartOf=weblogic-node-manager.service
 
 [Service]
 ExecStart=/home/oracle/admin/scripts/startManagedWebLogic.sh WLS_REPORTS
