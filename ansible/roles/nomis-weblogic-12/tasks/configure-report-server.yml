@@ -62,20 +62,6 @@
     services_to_manage:
       - NOMIS_REPORTS_SERVER
 
-#- name: Start report server
-#  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
-#  become: yes
-#  become_user: oracle
-#  args:
-#    executable: /bin/bash
-#
-#- name: Stop report server
-#  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh {{ server_name }}
-#  become: yes
-#  become_user: oracle
-#  args:
-#    executable: /bin/bash
-
 - name: Configure report tools name
   ansible.builtin.lineinfile:
     path: "{{ filename }}"
@@ -131,13 +117,6 @@
   vars:
     service_state: restarted
 
-#- name: Start report server after config updates
-#  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
-#  become: yes
-#  become_user: oracle
-#  args:
-#    executable: /bin/bash
-
 - import_tasks: enable-weblogic-services.yml
   vars:
     services_to_manage:
@@ -159,17 +138,3 @@
   loop:
     - /u01/tmp/wlst.userconfig
     - /u01/tmp/wlst.userkey
-
-
-
-### HERE
-#- import_tasks: enable-weblogic-services.yml
-#  vars:
-#    services_to_manage:
-#      - NOMIS_REPORTS_SERVER
-#
-#- import_tasks: enable-weblogic-services.yml
-#  vars:
-#    service_state: stopped
-#    services_to_manage:
-#      - NOMIS_REPORTS_SERVER
