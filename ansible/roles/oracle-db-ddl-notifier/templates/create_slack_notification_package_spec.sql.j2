@@ -1,0 +1,14 @@
+CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
+  PROCEDURE send_message(
+    p_text    IN VARCHAR2
+  );
+  gc_url            VARCHAR2(2000)  := 'https://slack.com/api/chat.postMessage';
+  gc_wallet         VARCHAR2(1000)  := 'file:{{ app_dir }}/wallets/slack_wallet';
+  gc_channel        VARCHAR2(1000)  := '{{ channel_name }}';
+  gc_application           VARCHAR2(1000)  := '{{ application }}';
+  gc_target_environment    VARCHAR2(1000)  := '{{ target_environment }}';
+  gc_target_db_name        VARCHAR2(1000)  := '{{ target_db_name }}';
+  gc_application_tier      VARCHAR2(1000)  := '{{ application_tier }}';
+  gc_account_name          VARCHAR2(1000)  := '{{ account_name }}';
+END slack_notifier;
+/

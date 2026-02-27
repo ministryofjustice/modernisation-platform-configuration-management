@@ -1,18 +1,3 @@
-CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
-  PROCEDURE send_message(
-    p_text    IN VARCHAR2
-  );
-  gc_url            VARCHAR2(2000)  := 'https://slack.com/api/chat.postMessage';
-  gc_wallet         VARCHAR2(1000)  := 'file:{{ app_dir }}/wallets/slack_wallet';
-  gc_channel        VARCHAR2(1000)  := '{{ channel_name }}';
-  gc_application           VARCHAR2(1000)  := '{{ application }}';
-  gc_target_environment    VARCHAR2(1000)  := '{{ target_environment }}';
-  gc_target_db_name        VARCHAR2(1000)  := '{{ target_db_name }}';
-  gc_application_tier      VARCHAR2(1000)  := '{{ application_tier }}';
-  gc_account_name          VARCHAR2(1000)  := '{{ account_name }}';
-END slack_notifier;
-/
-
 CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
 
   gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
@@ -29,8 +14,7 @@ CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
                   '"username":"'|| gc_application ||' DDL Notifier",' ||
                   '"icon_emoji":"dbschema",' ||
                   '"blocks":[' ||
-                    '{"type":"section","fields":[{"type":"mrkdwn","text":"*Application:* ' || gc_application || '\n*Tier:* ' || gc_application_tier || '\n*Database:* ' || gc_target_db_name || '"},{"type":"mrkdwn","text":"*Timestamp:* ' || TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') || '"}]},' ||
-                    '{"type":"divider"},' ||
+                    '{"type":"section","fields":[{"type":"mrkdwn","text":"*Application:* ' || gc_application || '\n*Tier:* ' || gc_application_tier || '\n*Database:* ' || gc_target_db_name || '"},{"type":"mrkdwn","text":":clock1: ' || TO_CHAR(SYSDATE, 'DD-MM-YYYY HH24:MI:SS') || '"}]},' ||
                     '{"type":"section","text":{"type":"mrkdwn","text":"' || REPLACE(p_text, '"', '\"') || '"}}' ||
                   ']}';
 

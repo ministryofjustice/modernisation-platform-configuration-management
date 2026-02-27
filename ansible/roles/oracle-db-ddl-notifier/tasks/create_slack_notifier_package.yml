@@ -9,23 +9,29 @@
          this_db_ddl_notifier: "{{ ddl_notifier if (application in ['delius-core','delius-mis']) else db_configs[target_db_name].ddl_notifier }}"
 
     # Restrict privileges on this script as it contains Slack Token - should only be readable by oracle
-    - name: Create Slack Notification Installation Script
+    # Therefore we put the token in the package body and wrap it.
+    # We prefer not to wrap the package spec as this makes it harder to use - therefore
+    # we keep the spec in a separate file which we do not wrap.
+    - name: Create Slack Notification Installation Scripts
       template:
-        src: create_slack_notifier_package.sql.j2
-        dest: "{{ stage }}/create_slack_notification_package.sql"
+        src: "{{ item }}.sql.j2"
+        dest: "{{ stage }}/{{ item }}.sql"
         mode: "0700"
         owner: oracle
         group: oinstall
       vars:
         notification_schema: "{{ this_db_ddl_notifier.notification_schema }}"
         channel_name: "{{ this_db_ddl_notifier.slack_channel }}"
+      loop:
+         - create_slack_notification_package_spec
+         - create_slack_notification_package_body
 
     - name: Create a wrapped file to encrypt the Slack Notification Package
       ansible.builtin.shell: |
         . ~/.bash_profile
         export PATH=$PATH:/usr/local/bin
         . oraenv <<< "${ORACLE_SID}"
-        wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
+        wrap iname={{ stage }}/create_slack_notification_package_body.sql oname={{ stage }}/create_slack_notification_package_body.plb
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "{{ database_name }}"
@@ -37,9 +43,10 @@
         . ~/.bash_profile
         export PATH=$PATH:/usr/local/bin
         . oraenv <<< "${ORACLE_SID}"
-        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
+        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package_spec.sql
+        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package_body.plb
         # Do not install plain text version of this package as it contains the Slack token
-        # sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
+        # sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package_body.sql
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "{{ database_name }}"
@@ -77,6 +84,7 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - "{{ stage }}/create_slack_notification_package.sql"
-        - "{{ stage }}/create_slack_notification_package.plb"
+        - "{{ stage }}/create_slack_notification_package_spec.sql"
+        - "{{ stage }}/create_slack_notification_package_body.sql"
+        - "{{ stage }}/create_slack_notification_package_body.plb"
         - "{{ stage }}/create_ddl_notifier_trigger.sql"
