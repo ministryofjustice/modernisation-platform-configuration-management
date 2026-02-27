@@ -1,0 +1,12 @@
+---
+# Keep role-internal mappings here
+oracle_goldengate_directories:
+  - "{{ oracle_goldengate_trail_dir }}"
+  - "{{ oracle_goldengate_param_dir }}"
+  - "{{ oracle_goldengate_report_dir }}"
+  - "{{ oracle_goldengate_checkpoint_dir }}"
+
+bash_profile: |
+  OGG_HOME={{ oracle_goldengate_home }}; export OGG_HOME
+  PATH=$PATH:$OGG_HOME; export PATH
+  alias ggsci='cd $OGG_HOME; ./ggsci'

@@ -1,0 +1,76 @@
+---
+# check if {{ oracle_goldengate_trail_dir }} exists and store as a fact for use in the installation task to determine if we need to create it during installation or if it already exists from a previous installation and we can skip creating it again. This allows us to re-run the configuration tasks without re-installing the software which is useful for testing and development.
+- name: Check if GoldenGate trail directory exists and set as fact
+  ansible.builtin.stat:
+    path: "{{ oracle_goldengate_trail_dir }}"
+  register: gg_trail_dir
+- name: Set GoldenGate trail directory exists as a fact for use in installation task
+  ansible.builtin.set_fact:
+    gg_trail_dir_exists: "{{ gg_trail_dir.stat.exists }}"
+
+- name: Configure Oracle GoldenGate software
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  environment: "{{ gg_env }}"
+  when: 
+    - gg_home_exists
+    - not gg_trail_dir_exists
+  block:
+    # Ideally at least the trail directory will be located in the ASM storage mounted as a volume on the host, but for simplicity we are creating all GoldenGate subdirectories under the home directory using the standard ggsci command which will create them with the correct permissions and ownership. To locate them elsewhere override the directory variables to point to different locations e.g.
+    #- name: Create GoldenGate subdirectories
+    #  ansible.builtin.file:
+    #    path: "{{ item }}"
+    #    state: directory
+    #    owner: "{{ oracle_goldengate_owner }}"
+    #    group: "{{ oracle_goldengate_osgroup }}"
+    #    mode: "0755"
+    #  loop:
+    #    - "{{ oracle_goldengate_directories }}"
+
+    - name: Create Main GoldenGate subdirectories
+      ansible.builtin.shell: |
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        ./ggsci <<< "create subdirs"
+      args:
+        chdir: "{{ oracle_goldengate_home }}"
+      register: create_subdirs
+      failed_when: create_subdirs.rc != 0 and "created" not in create_subdirs.stdout
+
+    - name: Create Trail Subdirectories for each stream
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_trail_dir }}/{{ item.key }}"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+      loop: "{{ oracle_goldengate_group | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Deploy GoldenGate Manager parameter file
+      ansible.builtin.template:
+        src: mgr.prm.j2
+        dest: "{{ oracle_goldengate_param_dir }}/mgr.prm"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Start GoldenGate Manager
+      ansible.builtin.shell: |
+        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        ./ggsci <<< "start manager"
+      args:
+        chdir: "{{ oracle_goldengate_home }}"
+      register: start_manager
+      failed_when: start_manager.rc != 0 and ("started" not in start_manager.stdout or "is already running" not in start_manager.stdout)
+
+    # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
+    - name: Pause after installation for verification
+      ansible.builtin.pause:
+        prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."
+
+      

@@ -1,0 +1,40 @@
+---
+# Deploy Extract parameter files based on which database is local
+- name: Generate TABLE lines for MIS
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+    sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    SELECT 'TABLE ' || src_owner || '.' || src_table_name || ';'
+    FROM {{ oracle_goldengate_group.mis.schema_owner }}.STRM_TAB_CONTROL
+    ORDER BY 1;
+    EXIT;
+    EOF
+  register: mis_tableinclude_output
+  become: yes
+  become_user: oracle
+  changed_when: false
+  failed_when: mis_tableinclude_output.rc != 0
+
+- name: Set fact splitting stdout into lines
+  ansible.builtin.set_fact:
+    oms_owner_tableinclude_lines: "{{ mis_tableinclude_output.stdout_lines }}"  
+
+- name: Deploy Extract parameter file for MIS
+  ansible.builtin.template:
+    src: extract_mis.prm.j2
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_group.mis.extract_name }}.prm"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0644"
+
+# call task add_checkpointtable.yml to create the checkpoint table used by the capture and replicat processes. We need to create it after deploying the parameter files because the parameter files specify the name of the checkpoint table, and it needs to exist before we can start the processes.
+- name: Create checkpoint table for capture and replicat processes
+  import_tasks: add_checkpointtable.yml
+
+# Register Extract process with the database
+- name: Register MIS Extract process
+  import_tasks: register_mis_extract.yml

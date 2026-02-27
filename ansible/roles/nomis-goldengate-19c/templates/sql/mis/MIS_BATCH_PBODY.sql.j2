@@ -1,0 +1,781 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle Goldengate batch id processes for Prison-NOMIS release 1.0e.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version:     1.0e
+ *
+ *  Author:    R. Taylor - EDS UK Ltd.
+ *
+ *  Date:    Monday, 21 May 2007.
+ * 
+ *  Change History:  Version:  Date:      Author:  Description:  
+ *
+ *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ */
+
+
+  FUNCTION get_batch_number(
+    p_staging_owner   IN varchar2,
+    p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
+  ) RETURN number
+  IS
+  -- packaged function get_batch_number returns the active batch number for
+  -- the staging process, derived from the ETL_LOAD_LOG table
+
+    l_batch_number  NUMBER(38,0) := -1;
+    l_plsql    varchar2(2000); 
+    l_staging_owner  varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
+
+  BEGIN
+    -- determine number of latest open batch for source
+    l_plsql := 'select max(load_id) ' ||
+                 'from ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG';
+    IF p_staging_owner IS NOT NULL THEN
+        l_plsql := l_plsql ||
+               ' where repository_name = ''' || l_staging_owner || '''';
+        IF p_ignore_datetime <> TRUE THEN
+            l_plsql := l_plsql ||
+                 ' and staged_end_datetime is null' ||
+                 ' and load_start_datetime is null';
+        END IF;
+    END IF;
+
+    execute immediate l_plsql into l_batch_number;
+
+    return nvl(l_batch_number,-1);
+
+  EXCEPTION
+
+    WHEN NO_DATA_FOUND THEN return -1;
+
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (l_staging_owner, 'get_batch_number',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+  FUNCTION get_scn_timestamp(
+    p_scn     IN     number
+  ) RETURN TIMESTAMP IS
+  -- packaged function get_scn_timestamp returns the timestamp
+  -- for a SCN value derived from the source database for a queue
+    l_timestamp   timestamp(6) := null;
+    l_timestamp0   timestamp(6) := null;
+    l_plsql    varchar2(2000); 
+  BEGIN
+    FOR c_db IN
+     (select source_database
+      from   all_capture ac
+      where  ac.queue_owner = mis_gen_pkg.g_queue_owner
+        and  ac.queue_name = mis_gen_pkg.g_capture_queue_name)
+    LOOP
+        l_plsql := 'select scn_to_timestamp@' || c_db.source_database || '(:scn) from dual';
+        execute immediate l_plsql into l_timestamp0 using p_scn;
+        l_timestamp := greatest(nvl(l_timestamp,l_timestamp0),l_timestamp0);
+    END LOOP;
+    return l_timestamp;
+  END;
+
+
+  PROCEDURE update_batch_record(
+    p_batch_number   IN     number,
+    p_error_flag   IN     varchar2,
+    p_staged_end_date   IN     date DEFAULT null,
+    p_message     IN     varchar2 DEFAULT null
+  ) IS
+  -- local procedure update_batch_record updates the batch control table
+
+    l_plsql    varchar2(2000); 
+
+  BEGIN
+
+    IF p_batch_number > 1 THEN
+        -- update timestamp on existing active batch
+        l_plsql := 'update ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+                      'set staged_end_datetime = nvl(:end_datetime,staged_end_datetime), ' ||
+                          'message = nvl(:message,message), ' ||
+                          'error_flag = :error_flag ' ||
+                    'where load_id = :load_id';  
+        execute immediate l_plsql
+        using p_staged_end_date, p_message, p_error_flag, p_batch_number;
+    ELSE -- no, do not do it
+        null;
+    END IF;
+
+  END;
+
+  PROCEDURE update_batch_record_force(
+    p_batch_number   IN     number,
+    p_error_flag   IN     varchar2,
+    p_staged_end_date   IN     date DEFAULT null,
+    p_message     IN     varchar2 DEFAULT null
+  ) IS
+  PRAGMA AUTONOMOUS_TRANSACTION;
+  -- packaged procedure update_batch_record_force updates the batch control table
+  BEGIN
+    update_batch_record(p_batch_number,p_error_flag,p_staged_end_date,p_message);
+    commit;
+  END;
+
+
+  PROCEDURE renumber_old_batch_rows(
+    p_tgt_owner   IN     varchar2,
+    p_new_batch_number  IN     number,
+    p_old_batch_number  IN     number DEFAULT -1
+  ) IS
+  -- packaged procedure renumber_old_batch_rows updates the batch number
+  -- for rows in all staging table owned by the specified user
+
+    l_plsql    varchar2(2000); 
+    l_tgt_owner    varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table_list  mis_gen_pkg.object_list;
+
+  BEGIN
+
+    IF (p_old_batch_number <> -1) AND (p_new_batch_number <> get_batch_number(l_tgt_owner)) THEN
+        -- Prevent merging of normal batches except into highest batch number
+        RAISE mis_gen_pkg.mis_streams_exception;
+    END IF;
+
+    l_plsql := 'select tgt_table from ' || l_tgt_owner || '.STRM_TAB_CONTROL ' ||
+                'where instr(nvl(proc_flags,''NONE''),''REF'') = 0';
+    execute immediate l_plsql bulk collect into l_tgt_table_list;
+
+    FOR i in 1..l_tgt_table_list.count
+    LOOP
+        l_plsql := 'update ' || l_tgt_owner || '.' || l_tgt_table_list(i) ||
+                     ' set MIS_LOAD_ID = :new_load_id' ||
+                   ' where MIS_LOAD_ID = :old_load_id';
+        execute immediate l_plsql
+        using p_new_batch_number, p_old_batch_number;
+    END LOOP;
+
+    -- log message
+    MIS_gen_pkg.log_strm_message (l_tgt_owner, 'renumber_old_batch_rows',
+                      'Records for batch ' || p_old_batch_number ||
+                      ' re-numbered as batch ' || p_new_batch_number || '.');
+
+  EXCEPTION
+
+    WHEN mis_gen_pkg.mis_streams_exception THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'renumber_old_batch_rows ('||p_old_batch_number||')',
+                        p_batch_id => p_new_batch_number,
+                        p_err_code => SQLCODE, p_text => 'Invalid batch number combination.');
+        RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_exception,'Invalid batch number combination.');
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'renumber_old_batch_rows ('||p_old_batch_number||')',
+                        p_batch_id => p_new_batch_number,
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  FUNCTION apply_hi_scn(
+    p_staging_owner   IN     varchar2 DEFAULT NULL
+  ) RETURN number
+  IS
+  -- local function apply_hi_scn returns the high watermark SCN
+  -- for apply processes associated with a particular staging table owner (if supplied)
+  -- n.b. if this is not available, the low watermark is returned instead
+  -- n.b.2 if this is not available either information is obtained from the capture process
+
+    v_plsql          varchar2(2000); 
+    v_apply_name_list   mis_gen_pkg.apply_list;
+    v_capture_name_list mis_gen_pkg.capture_list;
+    v_max_scn       number;
+    v_hi_scn       number := 0;
+
+  BEGIN
+
+    -- get list of apply processes
+    v_apply_name_list := mis_gen_pkg.get_apply_list(p_staging_owner);
+
+    v_plsql := 'select nvl(da.max_applied_message_number, dap.applied_message_number) ' ||
+                 'from dba_apply_progress dap, dba_apply da ' ||
+                'where da.apply_name = :apply_name ' ||
+                  'and da.apply_name = dap.apply_name';
+
+    -- get apply SCN
+    FOR i IN 1..v_apply_name_list.count
+    LOOP
+        execute immediate v_plsql
+        into v_max_scn
+        using v_apply_name_list(i);
+        IF v_max_scn IS NOT NULL THEN
+            v_hi_scn := greatest(v_hi_scn,v_max_scn);
+        END IF;
+    END LOOP;
+
+    IF v_hi_scn = 0 THEN
+    -- get information from capture
+        v_capture_name_list := mis_gen_pkg.get_capture_list(p_staging_owner);
+
+        v_plsql := 'select nvl(dc.applied_scn, dc.start_scn) ' ||
+                     'from dba_capture dc ' ||
+                    'where dc.capture_name = :capture_name';
+
+        -- get applied SCN
+        FOR i IN 1..v_capture_name_list.count
+        LOOP
+            execute immediate v_plsql
+            into v_max_scn
+            using v_capture_name_list(i);
+            IF v_max_scn IS NOT NULL THEN
+                v_hi_scn := greatest(v_hi_scn,v_max_scn);
+            END IF;
+        END LOOP;
+    END IF;
+
+    return v_hi_scn;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (p_staging_owner, 'apply_hi_scn',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+  END;
+
+
+  FUNCTION apply_error_count(
+    p_staging_owner   IN     varchar2 DEFAULT NULL
+  ) RETURN number
+  IS
+  -- local function apply_error_count returns the number of error messages queued
+  -- for apply processes associated with a particular staging table owner (if supplied)
+
+    v_plsql          varchar2(2000); 
+    v_apply_name_list   mis_gen_pkg.apply_list;
+    v_err_count     number;
+    v_err_total     number := 0;
+
+  BEGIN
+
+    -- get list of apply processes
+    v_apply_name_list := mis_gen_pkg.get_apply_list(p_staging_owner);
+
+    v_plsql := 'select sum(message_count) ' ||
+                 'from dba_apply_error ' ||
+                'where apply_name = :apply_name';
+
+    -- count apply process errors
+    FOR i IN 1..v_apply_name_list.count
+    LOOP
+        execute immediate v_plsql
+        into v_err_count
+        using v_apply_name_list(i);
+        IF v_err_count > 0 THEN
+            v_err_total := v_err_total + v_err_count;
+            mis_gen_pkg.log_strm_message (p_staging_owner, 'apply_error_count',
+                              'Apply process ' || v_apply_name_list(i) || ' has ' || v_err_count || ' queued errors.');
+
+        END IF;
+    END LOOP;
+
+    return v_err_total;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (p_staging_owner, 'apply_error_count',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  FUNCTION capture_inactive_count(
+    p_staging_owner   IN     varchar2 DEFAULT NULL
+  ) RETURN number
+  IS
+  -- local function capture_inactive_count returns the number of capture processes
+  -- for a particular staging table owner (if supplied) that are not enabled
+
+    v_plsql          varchar2(2000); 
+    v_capture_name_list mis_gen_pkg.capture_list;
+    v_status       varchar2(20);
+    v_err_number     number;
+    v_err_total     number := 0;
+    v_first_scn     number;
+    v_captured_scn     number;
+
+  BEGIN
+
+    -- get list of capture processes
+    v_capture_name_list := mis_gen_pkg.get_capture_list(p_staging_owner);
+
+    v_plsql := 'select status, error_number, first_scn, captured_scn ' ||
+                 'from dba_capture ' ||
+                'where capture_name = :capture_name';
+
+    -- count capture process errors
+    FOR i IN 1..v_capture_name_list.count
+    LOOP
+        execute immediate v_plsql
+        into v_status, v_err_number, v_first_scn, v_captured_scn
+        using v_capture_name_list(i);
+        IF v_status = 'ENABLED' THEN
+            mis_gen_pkg.log_strm_debug (p_staging_owner, 'capture_inactive_count',
+                              'Capture process ' || v_capture_name_list(i) ||
+                              ' is ENABLED (captured_scn=' || v_captured_scn ||
+                              ', first_scn=' || v_first_scn || ').', -1);
+        ELSIF v_err_number = mis_gen_pkg.g_scn_limit_reached THEN
+            mis_gen_pkg.log_strm_message (p_staging_owner, 'capture_inactive_count',
+                              'Capture process ' || v_capture_name_list(i) ||
+                              ' is ' || v_status || ' because SCN limit reached (' ||
+                              'captured_scn=' || v_captured_scn ||
+                              ', first_scn=' || v_first_scn || ').');
+        ELSE
+            v_err_total := v_err_total + 1;
+            mis_gen_pkg.log_strm_message (p_staging_owner, 'capture_inactive_count',
+                              'Capture process ' || v_capture_name_list(i) ||
+                              ' is ' || v_status || ' (error_number=' || nvl(v_err_number,0) ||
+                              ', captured_scn=' || v_captured_scn ||
+                              ', first_scn=' || v_first_scn || ').');
+        END IF;
+    END LOOP;
+
+    return v_err_total;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (p_staging_owner, 'capture_inactive_count',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  FUNCTION capture_log_date(
+    p_staging_owner   IN     varchar2,
+    p_scn     IN     number
+  ) RETURN date IS
+  -- local function capture_log_date returns the next date (end of log) for logs
+  -- registered to capture processes associated with a particular staging table owner
+  -- containing data for a given SCN
+
+    v_plsql          varchar2(2000); 
+    v_capture_name_list mis_gen_pkg.capture_list;
+    v_next_time     date;
+    v_log_date       date := null;
+
+  BEGIN
+
+    -- get list of capture processes
+    v_capture_name_list := mis_gen_pkg.get_capture_list(p_staging_owner);
+
+    v_plsql := 'select min(next_time) ' ||
+                 'from dba_registered_archived_log ' ||
+                'where consumer_name = :capture_name ' ||
+                  'and :scn between first_scn and next_scn';
+
+    -- count capture process errors
+    FOR i IN 1..v_capture_name_list.count
+    LOOP
+        execute immediate v_plsql
+        into v_next_time
+        using v_capture_name_list(i), p_scn;
+        v_log_date := greatest(nvl(v_log_date,v_next_time),v_next_time);
+    END LOOP;
+
+    return v_log_date;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+        mis_gen_pkg.log_strm_error (p_staging_owner, 'capture_log_date',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+  END;
+
+
+
+  PROCEDURE create_new_batch(
+    p_staging_owner   IN  varchar2,
+    p_restart         IN  BOOLEAN DEFAULT TRUE,
+    p_more_points       OUT BOOLEAN
+  ) IS
+  -- packaged procedure create_new_batch
+  -- stops running apply processes,
+  -- creates a new batch entry for the supplied staging table owner,
+  -- marks previous batch as complete, tidies any orphan rows,
+  -- restarts apply processes. 
+
+    v_staging_owner    varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
+    v_old_batch_number    NUMBER(38,0) := -1;
+    v_max_batch_number    NUMBER(38,0) := -1;
+    v_new_batch_number    NUMBER(38,0) := -1;
+    v_apply_proc_error_count   number;
+    v_apply_error_count   number;
+    v_capture_error_count   number;
+    v_plsql      varchar2(2000); 
+    v_date      DATE; 
+    v_queue_name    varchar2(30) := mis_gen_pkg.g_apply_queue_name; 
+    v_job_name      varchar2(32) := v_queue_name || '_APPLY'; 
+    v_staged_end_datetime   DATE := null;
+    v_apply_scn     number := 0;
+    v_error_flag     varchar2(1) := 'Y';
+    v_message       varchar2(80) := null;
+  BEGIN
+
+    p_more_points := FALSE;
+    
+    -- check for apply process errors before stopping
+    v_apply_proc_error_count := MIS_GG_CTRL_PKG.apply_process_error_count(v_staging_owner);
+
+    -- Suspend apply processes associated with staging table owner
+-- can't stop ogg replicat from the package so needs to be done before calling this procedure
+--    stop_apply(v_staging_owner);
+    
+    -- determine number of latest batch for source
+    v_old_batch_number := get_batch_number(v_staging_owner, TRUE);
+
+    IF v_old_batch_number > 1 THEN
+
+        -- get details of existing active batch
+        v_plsql := 'select staged_end_datetime, nvl(error_flag,''N'') ' ||
+                     'from ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+                    'where load_id = :load_id';  
+        execute immediate v_plsql into v_staged_end_datetime, v_error_flag
+        using v_old_batch_number;
+
+        IF v_error_flag <> 'Y' THEN
+            -- if no error flag set, all is hopefully well
+            v_message := 'Apply complete';
+        END IF;
+
+    END IF;
+
+
+    -- determine number of inactive capture processes
+    v_capture_error_count := capture_inactive_count(v_staging_owner);
+    IF v_capture_error_count > 0 THEN
+        v_error_flag := 'Y';
+        v_message := 'Capture process inactive (' || v_capture_error_count || ')';
+    END IF;
+
+    
+    -- determine number of messages queued in apply error queue
+    v_apply_error_count := apply_error_count(v_staging_owner);
+    IF v_apply_error_count > 0 THEN
+        v_error_flag := 'Y';
+        v_message := 'Apply error queue contains ' || v_apply_error_count || ' messages';
+    ELSIF v_apply_proc_error_count > 0 THEN
+        v_error_flag := 'Y';
+        v_message := 'Apply process error detected';
+    END IF;
+    
+    -- get hi watermark SCN
+    v_apply_scn := apply_hi_scn(v_staging_owner);
+
+    -- set new start date
+    IF v_staged_end_datetime IS NULL THEN
+    BEGIN
+        v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
+    EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+        MIS_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
+                        v_apply_scn || ' is not a currently valid system change number at source;' ||
+                        ' will check registered log dates instead.', -1);
+        v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
+    END;
+    ELSE
+        v_date := v_staged_end_datetime;
+    END IF;
+
+
+    -- determine highest current batch number
+    v_max_batch_number := get_batch_number(NULL);
+
+    -- determine number for new batch for source
+    IF v_max_batch_number < 1 THEN
+        v_new_batch_number := 2;
+    ELSE
+        v_new_batch_number := v_max_batch_number + 1;
+    END IF;
+
+    -- insert new active batch row for source
+    v_plsql := 'insert into ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+                      '(load_id, job_name, repository_name, staged_start_datetime, message) ' ||
+               'VALUES (:load_id, :job_name, :repos_name, :start_datetime, ''Batch created'')';  
+    execute immediate v_plsql
+    using v_new_batch_number, v_job_name, v_staging_owner, v_date;
+
+
+    IF (v_staged_end_datetime IS NULL) AND (v_old_batch_number > 1) THEN
+        -- update timestamp and message to close existing active batch
+        update_batch_record_force(v_old_batch_number, v_error_flag, v_date, v_message);
+    ELSIF (v_apply_error_count > 0) OR (v_apply_proc_error_count > 0) OR (v_capture_error_count > 0) THEN
+        -- errors in apply queue or inactive capture process
+        -- update error flag and message on new active batch
+        update_batch_record(v_new_batch_number, v_error_flag, null, v_message);
+    ELSE
+        -- there was no open batch, so need to tidy up any rows with -1 for batch number
+        -- try to put any such rows in the new batch instead
+        renumber_old_batch_rows(p_staging_owner, v_new_batch_number);
+    END IF;
+
+    -- Reset and resume Streams processes associated with staging table owner
+    -- (as long as there are no queued apply errors and the capture processes have not aborted)
+    IF (p_restart = TRUE) AND (v_apply_error_count = 0) AND
+       (v_apply_proc_error_count = 0) AND (v_capture_error_count = 0) THEN
+        -- clear maximum SCN parameters
+        mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
+        -- restart apply
+        mis_gg_ctrl_pkg.start_replicat(v_staging_owner);
+        update_batch_record(v_new_batch_number, null, null, 'Apply underway');
+        -- restart capture in case stopped due to SCN limit
+        BEGIN
+          mis_gg_ctrl_pkg.start_extract(p_staging_owner);
+        EXCEPTION
+            WHEN mis_gen_pkg.cannot_alter_process THEN null;
+        END;
+    ELSE
+        -- not restarting so clear apply handlers (force error if apply started directly)
+        mis_dml_pkg.clear_apply_handlers(p_staging_owner);
+    END IF;
+
+    -- log message
+    MIS_gen_pkg.log_strm_message (v_staging_owner, 'create_new_batch',
+                      'New batch created (' || v_new_batch_number || ').');
+
+
+  EXCEPTION
+
+    WHEN mis_gen_pkg.mis_streams_exception THEN
+        MIS_gen_pkg.log_strm_error (v_staging_owner, 'create_new_batch',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => NULL, p_batch_id => v_new_batch_number,
+            p_err_code => SQLCODE, p_text => 'Error in processing - check log for other entries.');
+        RAISE;
+
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (v_staging_owner, 'create_new_batch',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => NULL, p_batch_id => v_new_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  PROCEDURE reload_table (
+    p_src_db     IN     VARCHAR2,
+    p_src_owner   IN     VARCHAR2,
+    p_src_table   IN     VARCHAR2,
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2,
+    p_batch_number  IN     NUMBER
+  ) IS
+  PRAGMA AUTONOMOUS_TRANSACTION;
+  -- local procedure reload_table
+  -- will insert/overwrite entries for latest batch in p_tgt_owner.p_tgt_table
+  -- with all data from p_src_owner.p_src_table@p_src_db
+
+    l_plsql   varchar2(4000); 
+    l_col_list  mis_gen_pkg.object_list;
+    l_src_db  varchar2(128) := mis_gen_pkg.strip_input(p_src_db,128);
+    l_src_owner  varchar2(30) := mis_gen_pkg.strip_input(p_src_owner,30);
+    l_src_table  varchar2(30) := mis_gen_pkg.strip_input(p_src_table,30);
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number := p_batch_number;
+
+  BEGIN
+
+    -- determine column names for insert statement
+    l_plsql := 'select sc.column_name ' ||
+                 'from all_tab_columns@' || l_src_db || ' sc ' ||
+                 'where sc.owner = :src_owner ' ||
+                  'and sc.table_name = :src_table ' ||
+               'minus ' ||
+               'select scd.src_column ' ||
+                 'from ' || l_tgt_owner || '.STRM_COL_DELETIONS scd ' ||
+                'where scd.tgt_table = :tgt_table';
+
+    execute immediate l_plsql bulk collect into l_col_list
+    using l_src_owner, l_src_table, l_tgt_table;
+
+    -- remove old target entries (if any)
+    l_plsql := 'delete from ' || l_tgt_owner || '.' || l_tgt_table || ' ' ||
+                'where mis_load_id = :load_id';
+    execute immediate l_plsql
+    using l_batch_number;
+
+    -- add new target entries
+    l_plsql := 'insert into ' || l_tgt_owner || '.' || l_tgt_table || ' ' ||
+               '(MIS_LOAD_ID, ' || mis_gen_pkg.object_list_to_comma(l_col_list) || ') ' ||
+               'SELECT :load_id, ' || mis_gen_pkg.object_list_to_comma(l_col_list) || ' ' ||
+                 'FROM ' || l_src_owner || '.' || l_src_table || '@' || l_src_db;
+    execute immediate l_plsql
+    using l_batch_number;
+
+    commit;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'reload_table',
+            p_src_db => l_src_db, p_src_owner => l_src_owner, p_src_table => l_src_table,
+            p_tgt_table => l_tgt_table, p_batch_id => l_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+  PROCEDURE reload_tables (
+    p_tgt_owner   IN     VARCHAR2,
+    p_tgt_table   IN     VARCHAR2 DEFAULT null
+  ) IS
+  -- packaged procedure reload_tables
+  -- will insert/overwrite entries for latest batch in p_tgt_owner.p_tgt_table
+  -- with all data from associated source table
+
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number;
+    l_src_db_name_list  mis_gen_pkg.db_name_list;
+    l_src_owner_list  mis_gen_pkg.owner_list;
+    l_src_table_list  mis_gen_pkg.object_list;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
+    l_ref_table_count  number := 0;
+
+  BEGIN
+
+    -- get active batch number
+    l_batch_number := get_batch_number(l_tgt_owner);
+
+    l_plsql := 'select src_db, src_owner, src_table, tgt_table, proc_flags ' ||
+                 'from ' || l_tgt_owner || '.STRM_TAB_CONTROL';
+
+    IF p_tgt_table IS NULL THEN
+        execute immediate l_plsql
+        bulk collect into l_src_db_name_list, l_src_owner_list, l_src_table_list,
+                          l_tgt_table_list, l_proc_flag_list;
+    ELSE
+        l_plsql := l_plsql || ' where tgt_table = :tgt_table';
+        execute immediate l_plsql
+        bulk collect into l_src_db_name_list, l_src_owner_list, l_src_table_list,
+                          l_tgt_table_list, l_proc_flag_list
+        using l_tgt_table;
+    END IF;
+
+    FOR i in 1..l_src_owner_list.count
+    LOOP
+        l_tgt_table := l_tgt_table_list(i);
+        IF instr(nvl(l_proc_flag_list(i),'NONE'),'REF') = 0 THEN
+            reload_table (l_src_db_name_list(i), l_src_owner_list(i), l_src_table_list(i),
+                          l_tgt_owner, l_tgt_table, l_batch_number);
+        ELSE
+            l_ref_table_count := l_ref_table_count + 1;
+        END IF;
+    END LOOP;
+
+    IF l_ref_table_count > 0 THEN
+        RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_exception, l_ref_table_count ||
+         ' REF table(s) not reloaded (out of ' || l_src_owner_list.count || ').');
+    END IF;
+
+  EXCEPTION
+
+    WHEN mis_gen_pkg.mis_streams_exception THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'reload_tables',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => l_tgt_table, p_batch_id => l_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        -- do not re-raise
+
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'reload_tables',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => l_tgt_table, p_batch_id => l_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+  PROCEDURE unload_tables (
+    p_tgt_owner   IN     VARCHAR2,
+    p_stop_scn     IN     NUMBER DEFAULT 0,
+    p_batch_number   IN     NUMBER DEFAULT null,
+    p_tgt_table   IN     VARCHAR2 DEFAULT null
+  ) IS
+  -- packaged procedure unload_tables
+  -- will delete entries for (latest) batch in p_tgt_owner.p_tgt_table
+  -- where mis_scn >= p_stop_scn.
+
+    l_plsql   varchar2(2000); 
+    l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);
+    l_tgt_table  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_table,30);
+    l_batch_number   number := p_batch_number;
+    l_tgt_table_list  mis_gen_pkg.object_list;
+    l_proc_flag_list  mis_gen_pkg.object_list;
+    l_ref_table_count  number := 0;
+
+  BEGIN
+
+    IF p_batch_number IS NULL THEN
+        -- get active batch number
+        l_batch_number := get_batch_number(l_tgt_owner);
+    END IF;
+
+    l_plsql := 'select tgt_table, proc_flags ' ||
+                 'from ' || l_tgt_owner || '.STRM_TAB_CONTROL';
+
+    IF p_tgt_table IS NULL THEN
+        execute immediate l_plsql
+        bulk collect into l_tgt_table_list, l_proc_flag_list;
+    ELSE
+        l_plsql := l_plsql || ' where tgt_table = :tgt_table';
+        execute immediate l_plsql
+        bulk collect into l_tgt_table_list, l_proc_flag_list
+        using l_tgt_table;
+    END IF;
+
+    FOR i in 1..l_tgt_table_list.count
+    LOOP
+        IF instr(nvl(l_proc_flag_list(i),'NONE'),'REF') = 0 THEN
+            -- remove old target entries (if any)
+            l_plsql := 'delete from ' || l_tgt_owner || '.' || l_tgt_table_list(i) || ' ' ||
+                        'where mis_load_id = :load_id ' ||
+                          'and nvl(mis_scn, 0) >= :scn';
+            execute immediate l_plsql
+            using l_batch_number, p_stop_scn;
+        ELSE
+            l_ref_table_count := l_ref_table_count + 1;
+        END IF;
+    END LOOP;
+
+    IF l_ref_table_count > 0 THEN
+        RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_exception, l_ref_table_count ||
+         ' REF table(s) not unloaded (out of ' || l_tgt_table_list.count || ').');
+    END IF;
+
+  EXCEPTION
+
+    WHEN mis_gen_pkg.mis_streams_exception THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'unload_tables',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => l_tgt_table, p_batch_id => l_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        -- do not re-raise as it will roll back changes
+
+    WHEN OTHERS THEN
+        MIS_gen_pkg.log_strm_error (l_tgt_owner, 'unload_tables',
+            p_src_db => NULL, p_src_owner => NULL, p_src_table => NULL,
+            p_tgt_table => l_tgt_table, p_batch_id => l_batch_number,
+            p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+
+END MIS_BATCH_PKG;
+/
+
+show errors

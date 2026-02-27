@@ -1,0 +1,140 @@
+---
+- name: Create scripts directory
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_scripts_dir }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
+
+# Deploy Master Control Script
+- name: Deploy master OGG control script
+  ansible.builtin.template:
+    src: ogg_control.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/ogg_control.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+
+# Deploy Extract control scripts - AUDITDATA
+- name: Deploy AUDITDATA Extract start script
+  ansible.builtin.template:
+    src: start_extract_auditdata.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_extract_auditdata.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Deploy AUDITDATA Extract stop script
+  ansible.builtin.template:
+    src: stop_extract_auditdata.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_extract_auditdata.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditdata
+
+# Deploy Extract control scripts - AUDITREF
+- name: Deploy AUDITREF Extract start script
+  ansible.builtin.template:
+    src: start_extract_auditref.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_extract_auditref.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Deploy AUDITREF Extract stop script
+  ansible.builtin.template:
+    src: stop_extract_auditref.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_extract_auditref.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditref
+
+# Deploy Extract control scripts - MIS
+- name: Deploy MIS Extract start script
+  ansible.builtin.template:
+    src: start_extract_mis.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_extract_mis.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_mis
+
+- name: Deploy MIS Extract stop script
+  ansible.builtin.template:
+    src: stop_extract_mis.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_extract_mis.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_mis
+
+# Deploy Replicat control scripts - AUDITDATA
+- name: Deploy AUDITDATA Replicat start script
+  ansible.builtin.template:
+    src: start_replicat_auditdata.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditdata.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Deploy AUDITDATA Replicat stop script
+  ansible.builtin.template:
+    src: stop_replicat_auditdata.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_replicat_auditdata.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditdata
+
+# Deploy Replicat control scripts - AUDITREF
+- name: Deploy AUDITREF Replicat start script
+  ansible.builtin.template:
+    src: start_replicat_auditref.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditref.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Deploy AUDITREF Replicat stop script
+  ansible.builtin.template:
+    src: stop_replicat_auditref.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_replicat_auditref.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_auditref
+
+# Deploy Replicat control scripts - MIS
+- name: Deploy MIS Replicat start script
+  ansible.builtin.template:
+    src: start_replicat_mis.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_replicat_mis.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_mis
+
+- name: Deploy MIS Replicat stop script
+  ansible.builtin.template:
+    src: stop_replicat_mis.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_replicat_mis.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: oracle_goldengate_deploy_mis
+
+# Deploy Operations Guide
+- name: Deploy operations guide
+  ansible.builtin.template:
+    src: OPERATIONS_GUIDE.md.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/OPERATIONS_GUIDE.md"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0644"

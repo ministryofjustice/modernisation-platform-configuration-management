@@ -1,0 +1,67 @@
+EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+
+-- Use NOUSERID for Downstream sourceless Extract to avoid connecting to the source database
+NOUSERID
+
+-- Use a mining user on the downstream (local) database
+TRANLOGOPTIONS MININGUSERALIAS AUDIT_DB
+
+EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}
+
+REPORTCOUNT EVERY 5 MINUTES, RATE
+WARNLONGTRANS 1H, CHECKINTERVAL 30m
+LOGALLSUPCOLS
+UPDATERECORDFORMAT COMPACT
+TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N)
+
+-- Original Streams rules:
+-- Positive i.e. include only DML on tables owned by OMS_OWNER: 
+-- (:dml.get_object_owner() = 'OMS_OWNER')
+
+--If there are multiple TABLE statements, the first match is considered valid. Place the wildcarded statements at the end.
+
+-- Original Negative Streams rules:
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'CMP3$%' or :dml.get_object_name() like 'CMP4$%'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'MV_OFFENDER_MATCH_DETAILS'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'OFFENDER_SCHEDULES'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'RE$ACTION_IMP_TAB'))
+
+-- CMP3$ and CMP4$ are special internal tables used by the Oracle Compression Advisor that we want to exclude completely.
+
+TABLEEXCLUDE OMS_OWNER.CMP3$*;
+TABLEEXCLUDE OMS_OWNER.CMP4$*;
+TABLEEXCLUDE OMS_OWNER.MV_OFFENDER_MATCH_DETAILS;
+TABLEEXCLUDE OMS_OWNER.OFFENDER_SCHEDULES;
+TABLEEXCLUDE OMS_OWNER.RE$ACTION_IMP_TAB;
+
+-- Negative rule i.e. exclude inserts/updates on tables owned by OMS_OWNER where AUDIT_MODULE_NAME is either $$START$$ or $$END$$, but include deletes and all operations on rows where AUDIT_MODULE_NAME is null (i.e. the column exists but is not populated) or does not exist (i.e. the table does not have that column):
+-- ((((:dml.get_object_owner() = 'OMS_OWNER') and ((:dml.get_command_type() <> 'DELETE') AND (:dml.get_object_name() <> 'OMS_DELETED_ROWS') AND (:dml.get_value('NEW','"AUDIT_MODULE_NAME"').accessvarchar2() IN ('$$START$$','$$END$$'))))
+
+-- This is implemented using a combination of TABLEEXCLUDE and a WHERE clause on the wildcard TABLE statement as described in the Oracle GoldenGate documentation for filtering DML based on column values. Note that we have to use @PRESENT and @ABSENT to check for the existence of the AUDIT_MODULE_NAME column because not all tables have it, and we want to include all rows from tables that don't have that column.
+-- 1) Always include OMS_DELETED_ROWS (Streams rule explicitly does NOT exclude it)
+TABLE OMS_OWNER.OMS_DELETED_ROWS;
+
+-- 2) Exclude it from the wildcard table rule.
+TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
+
+-- 3) Apply the negative Streams logic using WHERE with @PRESENT.
+--    WHERE selects rows to *include*, so we include the following:
+--     - rows where column AUDIT_MODULE_NAME is not present in the table (doesn't matter what DML operation)
+--     - or column AUDIT_MODULE_NAME is present and it's value is not $$START$$ or $$END$$ and it's not a DELETE operation.
+TABLE OMS_OWNER.*
+  WHERE (
+        -- Include rows from tables where column exist
+        AUDIT_MODULE_NAME = @ABSENT
+        OR
+        -- Include rows where column exists AND the negative rule does NOT match
+        NOT (
+              AUDIT_MODULE_NAME = @PRESENT
+              AND
+              (
+                AUDIT_MODULE_NAME = '$$START$$' 
+                OR 
+                AUDIT_MODULE_NAME = '$$END$$'
+              )
+              AND @GETENV('TRANSACTION','OPTYPE') <> 'DELETE'
+            )
+       );

@@ -1,0 +1,110 @@
+---
+# Start GoldenGate Extract and Replicat processes
+
+- name: Start AUDITDATA Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditdata_extract
+  changed_when: "'RUNNING' in start_auditdata_extract.stdout"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Start AUDITDATA Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditdata_replicat
+  changed_when: "'RUNNING' in start_auditdata_replicat.stdout"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Start AUDITREF Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditref_extract
+  changed_when: "'RUNNING' in start_auditref_extract.stdout"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Start AUDITREF Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditref_replicat
+  changed_when: "'RUNNING' in start_auditref_replicat.stdout"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Start MIS Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_mis_extract
+  changed_when: "'RUNNING' in start_mis_extract.stdout"
+  when: oracle_goldengate_deploy_mis
+
+- name: Start MIS Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    START REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_mis_replicat
+  changed_when: "'RUNNING' in start_mis_replicat.stdout"
+  when: oracle_goldengate_deploy_mis

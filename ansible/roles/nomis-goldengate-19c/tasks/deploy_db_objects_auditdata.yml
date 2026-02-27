@@ -1,0 +1,73 @@
+---
+# create oracle_goldengate_sql_dir directory if it doesn't exist
+- name: Ensure GoldenGate SQL directory exists
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_sql_dir }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
+
+- name: Deploy AuditData support packages
+  when:
+    - oracle_goldengate_deploy_auditdata is defined and oracle_goldengate_deploy_auditdata
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for Audit stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.auditdata.schema_owner }}"
+        oracle_goldengate_group_name: "auditdata"
+
+    - name: Ensure AuditData SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/auditdata"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    - name: Deploy AuditData support packages
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ oracle_goldengate_sql_dir }}/auditdata/{{ item | basename | regex_replace('\\.j2$', '') }}"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+      loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/auditdata/*.j2', wantlist=True) }}"
+
+    - name: Run AuditData support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.auditdata.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        # Retrieve the Source {{ oracle_goldengate_dbuser }} password from AWS Secrets Manager for creating the new db link
+        export SOURCE_DB_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.{{ oracle_goldengate_dbuser }}' 2>/dev/null)
+        
+        if [ -z "$SOURCE_DB_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve {{ oracle_goldengate_dbuser }} password from AWS Secrets Manager for {{ oracle_goldengate_group.source.tns_alias }}"
+          exit 1
+        fi
+
+        cd {{ oracle_goldengate_sql_dir }}/auditdata
+        sqlplus -s / as sysdba @install_auditdata_packages.sql
+      args:
+        executable: /bin/bash
+      register: audit_config_output
+      failed_when: audit_config_output.rc != 0
+
+    - name: Show output of AuditData package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['AuditData package install output:'] + (audit_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in audit_config_output.stdout or 'compilation errors' in audit_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of AuditData package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of AuditData package install: {{ audit_config_output.stdout }}"
+      when: "'ORA-' in audit_config_output.stdout or 'compilation errors' in audit_config_output.stdout"
+

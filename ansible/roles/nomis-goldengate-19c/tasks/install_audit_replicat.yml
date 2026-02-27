@@ -1,0 +1,21 @@
+---
+# Deploy Replicat parameter files based on which database is local
+- name: Deploy Replicat parameter file for AUDITDATA
+  ansible.builtin.template:
+    src: replicat_auditdata.prm.j2
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_group.auditdata.replicat_name }}.prm"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0644"
+
+- name: Deploy Replicat parameter file for AUDITREF
+  ansible.builtin.template:
+    src: replicat_auditref.prm.j2
+    dest: "{{ oracle_goldengate_param_dir }}/{{ oracle_goldengate_group.auditref.replicat_name }}.prm"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0644"
+
+# Register Replicat processes
+- name: Register Audit Replicat processes
+  import_tasks: register_audit_replicat.yml

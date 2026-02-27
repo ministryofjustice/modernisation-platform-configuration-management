@@ -1,0 +1,64 @@
+---
+# Register and manage MIS Extract process
+
+- name: Set MIS Extract BEGIN clause
+  ansible.builtin.set_fact:
+    mis_begin_clause: >-
+      {% if oracle_goldengate_extract_start_mode == 'csn' and oracle_goldengate_extract_start_csn != '' %}
+      BEGIN CSN {{ oracle_goldengate_extract_start_csn }}
+      {% elif oracle_goldengate_extract_start_mode == 'scn' and oracle_goldengate_extract_start_scn != '' %}
+      BEGIN SCN {{ oracle_goldengate_extract_start_scn }}
+      {% elif oracle_goldengate_extract_start_mode == 'time' and oracle_goldengate_extract_start_time != '' %}
+      BEGIN TIME '{{ oracle_goldengate_extract_start_time }}'
+      {% else %}
+      BEGIN NOW
+      {% endif %}
+  when: oracle_goldengate_deploy_mis
+
+- name: Set MIS Extract REGISTER SCN clause
+  ansible.builtin.set_fact:
+    mis_register_scn_clause: >-
+      {% if oracle_goldengate_register_start_mode == 'scn' and oracle_goldengate_register_start_scn != '' %}
+      SCN {{ oracle_goldengate_register_start_scn }}
+      {% else %}
+      {% endif %}
+  when: oracle_goldengate_deploy_mis
+
+- name: Register MIS Extract process in GoldenGate
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.mis.credential_alias }}
+    REGISTER EXTRACT {{ oracle_goldengate_group.mis.extract_name }} DATABASE {{ mis_register_scn_clause }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: register_mis_extract
+  failed_when: register_mis_extract.rc != 0 and "already registered" not in register_mis_extract.stderr
+  changed_when: register_mis_extract.rc == 0 and "already registered" not in register_mis_extract.stderr
+  when: oracle_goldengate_deploy_mis
+
+- name: Add MIS Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.mis.credential_alias }}
+    ADD EXTRACT {{ oracle_goldengate_group.mis.extract_name }}, INTEGRATED TRANLOG, {{ mis_begin_clause }}
+    ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.mis.extract_name }}, MEGABYTES 500
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: add_mis_extract
+  failed_when: add_mis_extract.rc != 0 and "already exists" not in add_mis_extract.stderr
+  changed_when: add_mis_extract.rc == 0 and "already exists" not in add_mis_extract.stderr
+  when: oracle_goldengate_deploy_mis

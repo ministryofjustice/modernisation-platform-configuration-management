@@ -1,0 +1,10 @@
+CREATE OR REPLACE PROCEDURE {{ oracle_goldengate_sql_owner }}.maintain_module_config (
+    p_mod_name in varchar2,
+    p_exclude  in char) IS
+BEGIN
+    {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.maintain_module_config(p_mod_name, p_exclude);
+END;
+/
+
+alter trigger {{ oracle_goldengate_sql_owner }}.module_capture_config_t1 compile;
+

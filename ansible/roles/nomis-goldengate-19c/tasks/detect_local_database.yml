@@ -1,0 +1,122 @@
+---
+# Detect which Oracle database instance is running on this host
+# This determines which GoldenGate components will be deployed
+- name: Detect local Oracle database instance
+  when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
+  block:
+    - name: Check for running Oracle instances
+      ansible.builtin.shell: |
+        ps -ef | grep -E '[o]ra_pmon_' | awk '{print $NF}' | sed 's/ora_pmon_//'
+      register: running_instances
+      changed_when: false
+      failed_when: false
+      become: yes
+
+    - name: Display detected Oracle instances
+      ansible.builtin.debug:
+        msg: "Detected Oracle instances: {{ running_instances.stdout_lines }}"
+      when: running_instances.stdout_lines | length > 0
+
+    - name: Fail if no Oracle instances are running 
+      ansible.builtin.fail: 
+        msg: "No running Oracle instances detected on this host. GoldenGate cannot be deployed without a local database." 
+      when: running_instances.stdout_lines | length == 0
+
+    - name: Extract configured database SIDs from oracle_goldengate_db
+      ansible.builtin.set_fact:
+        configured_db_sids: "{{ oracle_goldengate_group.values() | map(attribute='tns_alias') | list | unique }}"
+
+    - name: Find matching database instance running on this host
+      ansible.builtin.set_fact:
+        oracle_goldengate_local_db_sid: "{{ item }}"
+      when: item in running_instances.stdout_lines
+      loop: "{{ configured_db_sids }}"
+
+- name: Display detected local database SID
+  ansible.builtin.debug:
+    msg: "Local database SID for GoldenGate: {{ oracle_goldengate_local_db_sid | default('None detected') }}"
+
+- name: Warn if no matching database found
+  ansible.builtin.debug:
+    msg: "WARNING: No configured database instance found running on this host. GoldenGate processes will not be deployed."
+  when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
+
+- name: Verify detected database matches configured databases
+  ansible.builtin.assert:
+    that:
+      - oracle_goldengate_local_db_sid is defined
+      - oracle_goldengate_local_db_sid != ""
+      - oracle_goldengate_local_db_sid in configured_db_sids
+    fail_msg: "Detected database '{{ oracle_goldengate_local_db_sid }}' is not in the configured oracle_goldengate_db list: {{ configured_db_sids }}"
+    success_msg: "Successfully detected local database: {{ oracle_goldengate_local_db_sid }}"
+  changed_when: false
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+  
+# which deployment is being run is determined by which database is detected as running locally. If the audit or auditref database is detected then the audit deployment will be run, if the mis database is detected then the mis deployment will be run. If the source database is detected then no deployment will be run since GoldenGate binaries are only needed on target hosts for replication, and the source host is only used for capture.
+# compare the local sid against the configured database SIDs to set facts used to control which GoldenGate components are deployed in later tasks
+
+- name: Set GoldenGate deployment flags for audit database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: true
+    oracle_goldengate_deploy_auditref: true
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias
+
+- name: Set GoldenGate deployment flags for auditref database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: true
+    oracle_goldengate_deploy_auditref: true
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias
+
+- name: Set GoldenGate deployment flags for mis database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: false
+    oracle_goldengate_deploy_auditref: false
+    oracle_goldengate_deploy_mis: true
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias
+
+- name: Set GoldenGate deployment flags to false for unmatched database
+  ansible.builtin.set_fact:
+    oracle_goldengate_deploy_auditdata: false
+    oracle_goldengate_deploy_auditref: false
+    oracle_goldengate_deploy_mis: false
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid != ""
+    - oracle_goldengate_local_db_sid != oracle_goldengate_group.auditdata.tns_alias
+    - oracle_goldengate_local_db_sid != oracle_goldengate_group.auditref.tns_alias
+    - oracle_goldengate_local_db_sid != oracle_goldengate_group.mis.tns_alias
+
+- name: Display planned GoldenGate deployment
+  ansible.builtin.debug:
+    msg:
+      - "GoldenGate deployment plan:"
+      - "  Deploy AuditData: {{ oracle_goldengate_deploy_auditdata | default(false) }}"
+      - "  Deploy AuditRef: {{ oracle_goldengate_deploy_auditref | default(false) }}"
+      - "  Deploy MIS: {{ oracle_goldengate_deploy_mis | default(false) }}"
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+
+# Check if this is the source host as that doesn't need the binaries installed as the capture process will connect remotely to the source database and binaries are only needed on the target hosts for replication
+- name: Source host check
+  ansible.builtin.command: >
+    pgrep -f "ora_pmon_{{ oracle_goldengate_group.source.tns_alias }}"
+  register: db_check
+  changed_when: false
+  failed_when: false
+
+- ansible.builtin.set_fact:
+    host_is_source: "{{ db_check.rc == 0 }}"
+
+- name: Get Ora version
+  import_tasks: detect_ora_version.yml
+

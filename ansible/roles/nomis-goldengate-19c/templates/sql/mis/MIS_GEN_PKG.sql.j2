@@ -1,0 +1,268 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID DEFINER AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle Goldengate for Prison-NOMIS release 1.0e.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version:     1.0e
+ *
+ *  Author:    R. Taylor - EDS UK Ltd.
+ *
+ *  Date:    Monday, 21 May 2007.
+ * 
+ *  Change History:  Version:  Date:      Author:  Description:  
+ *
+ *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ *      1.1.1    06/06/07  R. Taylor  Moved table renaming to apply.
+ *      1.1.2    11/06/07  R. Taylor  Added procedures for creating and
+ *                                                      dropping capture and apply processes.
+ *                                                      Added procedures for handling column
+ *                                                      type differences between source and target.
+ *      1.1.3    13/06/07  R. Taylor  Added data type check to capture and
+ *                                                      apply startup procedures.
+ *                                                      Add refresh_apply_keys procedure.
+ *      1.1.4    26/06/07  R. Taylor  Added exception definitions.
+ *      1.1.5    05/07/07  R. Taylor  Added exception definitions.
+ *                                                      Add table existence check procedure.
+ *      1.1.8    24/07/07  R. Taylor  Added exception definitions.
+ *      1.0e.9    17/09/07  R. Taylor  Renumbered for switch from 1.1 to 1.0e.
+ *                                                      Redesigned to use DML apply handlers to cope with
+ *                                                      multiple key updates expected with offender merge.
+ *      1.0e.10    26/09/07  R. Taylor  Additional LCR tag value added.
+ *      1.0e.11    01/10/07  R. Taylor  Added exception definitions.
+ *      1.0e.13    05/05/08  P. Godhania  Add definitions for log_purge procedure.
+ *      1.0e.14    07/05/08  R. Taylor  Added exception definitions.
+ *      1.0e.15    20/05/08  R. Taylor  Modified g_debug setting.
+ *      1.0e.16    27/05/08  R. Taylor  Updated start_capture/start_apply comments.
+ *                                                      Added queue exception.
+ *      1.0e.17    10/06/08  R. Taylor  Added timeout exception.
+ *      1.0e.18    12/06/08  R. Taylor  Added sleep before retry periods.
+ *      1.0e.19    15/08/08  R. Taylor  refresh_col_controls/check_col_differences will
+ *                                                      now detect not null target columns not in source.
+ *      1.0e.20    15/08/08  R. Taylor  Always convert LONG columns to LOB in capture
+ *                                                      transformation to avoid errors from apply process. 
+ *      1.0e.21    01/09/08  R. Taylor  Add extra list types and get_dml_proc_name function.
+ *      1.0e.22    10/09/08  R. Taylor  Add get_capture_nrs_name function.
+ *                                                      Increase sleep values for retry of stop_apply/capture. 
+ *                                                      Add reload_tables procedure.
+ *      1.0e.23    22/09/08  R. Taylor  Amend start_apply procedure parameters.
+ *                                                      Add clear_apply_handlers procedure.
+ *                      1.0e.24    23/09/08  R. Taylor   Added invalid parameter value and
+ *                                                      invalid data type exceptions.
+ *      1.0e.25    24/09/08  R. Taylor  Increase internal buffer length in reload_tables.
+ *      1.0e.26    17/10/08  R. Taylor  Expose log_strm_error procedure (previously local).
+ *      1.0e.27    19/12/08  R. Taylor  Added stop point handling.
+ *                      1.0e.28    15/01/09  R. Taylor   Added control job exception.
+ *      1.0e.29    19/01/09  R. Taylor  Ensure apply running during wait for stop points.
+ *      1.0e.30    22/01/09  R. Taylor  Add function get_scn_timestamp.
+ *      1.0e.31    23/01/09  R. Taylor  Remove get_scn_timestamp function as cannot invoke
+ *                                                      scn_to_timestamp across database link parameter.
+ *                                                      Call set_stop_points at end of create_new_batch and
+ *                                                      return output parameter.
+ *      1.0e.32    26/01/09  R. Taylor  Use capture log date for staged end date in create_new_batch.
+ *      1.0e.33    04/03/09  R. Taylor  Define exception number constants.
+ *      1.0e.34    19/03/09  R. Taylor  Defect 14424 - further modify capture control for stop points.
+ *      1.0e.35    22/03/09  R. Taylor  Add function get_scn_timestamp.
+ *                                                      Add unload_tables procedure.
+ *      1.0e.36    06/08/09  R. Taylor  Add procedure set_capture_pos_rules. Use in start_capture.
+ *      1.0e.37    14/08/09  R. Taylor  Define maximum number of expected key columns.
+ *      1.0e.38    12/10/09  R. Taylor  Define retry limit for stop point waiting.
+ *      1.0e.39    14/10/09  R. Taylor  Define constants for statistics refresh control.
+ *      1.0e.40    26/10/09  R. Taylor  Modify sleep/retry limits for process control.
+ *      1.0e.41   30/11/09  R. Taylor  Revert apply handler to remove bind variable use.
+ *      1.0e.42   14/12/09  R. Taylor  Revert capture transform command type checking.
+ *      1.0e.43   19/01/10  R. Taylor  Remove redundant g_max_rows variable.
+ *      1.0e.44   13/01/10  R. Taylor  Define row count to which stats recalc will be presumed.
+ *      1.0e.45   19/01/10  R. Taylor  Reinstated capture transform command type checking changes.
+ *      1.0e.46   21/01/10  R. Taylor  Always try insert first in apply handler.
+ *      1.0e.47   21/01/10  R. Taylor  Pass batch number into apply handler.
+ *      1.0e.48   08/02/10  R. Taylor  Convert schema name in capture transform.
+ *      1.0e.49   15/02/10  R. Taylor  Split positive capture rules out by table.
+ *                                                      Add procedure clear_capture_pos_rules.
+ *      1.0e.50   25/02/10  R. Taylor  Explicitly set instantiation scn for new tables.
+ *      1.0e.51    01/03/10  R. Taylor  Specify command types in positive capture rules.
+ *      1.0e.52    11/03/10  R. Taylor  Added get_version function.
+ *      1.0e.53    06/08/10  R. Taylor  Modified for Oracle 11gR1.
+ *      1.0e.54    12/08/10  R. Taylor  Updated to allow for normal and reference target tables
+ *                                                      from a common source table.
+ *                                                      Define value for mis_owner at top of script.
+ *      1.0e.55    02/09/10  R. Taylor  Allow for missing key columns.
+ *      1.0e.56    08/09/10  R. Taylor  Adjust LOB table rule conditions.
+ *      1.0e.57    15/09/10  R. Taylor  Change REF table exception handling.
+ *                                                      Added log_apply procedure.
+ *      1.0e.58    16/09/10  R. Taylor  Change mis_scn handling in unload_tables.
+ *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ */
+
+    -- Type definitions for lists of table information
+    TYPE mis_anydata_array IS VARRAY(2147483647) OF SYS.ANYDATA;
+    TYPE db_name_list IS TABLE OF VARCHAR2(128);
+    TYPE owner_list IS TABLE OF all_tables.owner%type;
+    TYPE object_list IS TABLE OF all_objects.object_name%type;
+    TYPE apply_list IS TABLE OF all_apply.apply_name%type;
+    TYPE capture_list IS TABLE OF all_capture.capture_name%type;
+    TYPE keep_dups_list is TABLE OF CHAR;
+    TYPE key_col_list is TABLE OF VARCHAR2(400);
+    TYPE tab_seq_list is TABLE OF NUMBER;
+    TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
+    TYPE procedure_list IS TABLE OF all_apply_dml_handlers.user_procedure%type;
+    TYPE rule_list IS TABLE OF all_streams_rules.rule_name%type;
+    TYPE string_list is TABLE OF VARCHAR2(4000);
+    TYPE scn_list is TABLE OF NUMBER;
+
+    -- package level variable declarations
+    g_version      VARCHAR2(20) := '1.0e.59';
+    g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.mis.schema_owner }}';
+--    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
+    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_dbuser }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';
+    
+    g_ogg_group_name VARCHAR2(30) := '{{ oracle_goldengate_group_name }}';
+    g_ogg_scripts_dir VARCHAR2(200) := '{{ oracle_goldengate_scripts_dir }}';
+
+    g_ogg_extract   VARCHAR2(30) := '{{ oracle_goldengate_capture_process_name }}';
+    g_capture_name VARCHAR2(30) := 'OGG$CAP_'||g_ogg_extract;
+    g_capture_queue_name VARCHAR2(30) := 'OGG$Q_'||g_ogg_extract;
+
+    g_ogg_replicat VARCHAR2(30) := '{{ oracle_goldengate_apply_process_name }}';
+    g_apply_name   VARCHAR2(30) := 'OGG$'||g_ogg_replicat;
+    g_apply_queue_name VARCHAR2(30) := 'OGGQ$'||g_ogg_replicat;
+
+    -- debug flag: positive value to log debug messages
+    g_debug NUMBER := 1;
+
+    -- retry limit: number of times to loop when waiting for stop point processing
+    --              wait time for each loop is g_retry_limit * g_sleep1
+    g_retry_limit   NUMBER := 120;
+
+    -- sleep before retry period: times in seconds to wait after timeout before retry
+    g_sleep1   NUMBER := 90;
+    g_sleep2   NUMBER := 510;
+
+
+    -- define controls for statistics refresh of busy tables
+    g_stats_max_days    NUMBER := 8;
+    g_stats_min_mins    NUMBER := 15;
+    g_stats_pct_tolerance  NUMBER := 10;
+    g_stats_low_count     NUMBER := 1000;
+
+    -- define exceptions
+    g_mis_streams_exception         CONSTANT NUMBER := -20001;
+    MIS_STREAMS_EXCEPTION         EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_EXCEPTION, -20001);
+    g_mis_streams_data_exception   CONSTANT NUMBER := -20002;
+    MIS_STREAMS_DATA_EXCEPTION     EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_DATA_EXCEPTION, -20002);
+    g_mis_streams_table_exception   CONSTANT NUMBER := -20003;
+    MIS_STREAMS_TABLE_EXCEPTION   EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_TABLE_EXCEPTION, -20003);
+    g_mis_streams_queue_exception   CONSTANT NUMBER := -20004;
+    MIS_STREAMS_QUEUE_EXCEPTION   EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_QUEUE_EXCEPTION, -20004);
+    g_mis_streams_ctrl_exception   CONSTANT NUMBER := -20005;
+    MIS_STREAMS_CTRL_EXCEPTION     EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_CTRL_EXCEPTION, -20005);
+
+    -- define error conditions for exception handling
+    invalid_column EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_column, -23607);
+    duplicate_column_name EXCEPTION;
+    PRAGMA EXCEPTION_INIT(duplicate_column_name, -26673);
+    invalid_lob_locator EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_lob_locator, -22275);
+    cannot_alter_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(cannot_alter_process, -26666);
+    timeout_stopping_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(timeout_stopping_process, -26672);
+    invalid_param_value EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_param_value, -23605);
+    invalid_datatype EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_param_value, -902);
+    scn_limit_reached EXCEPTION;
+    PRAGMA EXCEPTION_INIT(scn_limit_reached, -26717);
+    invalid_scn EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_scn, -8181);
+    invalid_null_value EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_null_value, -24031);
+    e_row_missing EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_row_missing, -26787);  -- ORA-26787: row with key does not exist
+
+    -- define error codes that need numerical checking
+    g_scn_limit_reached   NUMBER := 26717;
+
+
+    -- function strip_input
+    -- will remove single quotes and comment characters from input string
+    FUNCTION strip_input (p_str varchar2, p_len number)
+    RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged procedure log_strm_error
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_error (
+        p_staging_owner IN     varchar2,
+        p_location   IN     varchar2 DEFAULT 'MIS_GEN_PKG',
+        p_src_db   IN     varchar2 DEFAULT NULL,
+        p_src_owner   IN     varchar2 DEFAULT NULL,
+        p_src_table   IN     varchar2 DEFAULT NULL,
+        p_tgt_table   IN     varchar2 DEFAULT NULL,
+        p_batch_id   IN     number   DEFAULT NULL,
+        p_err_code   IN     number   DEFAULT NULL,
+        p_text      IN     varchar2 DEFAULT NULL);
+
+    -- Packaged procedure log_strm_message
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_message (
+        p_staging_owner IN     varchar2,
+        p_location   IN     varchar2,
+        p_text      IN     varchar2);
+
+    -- packaged procedure log_strm_debug
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_debug (
+        p_staging_owner   IN     varchar2,
+        p_location     IN     varchar2,
+        p_text      IN     varchar2,
+        p_threshold   IN     number DEFAULT 0);
+
+    -- Packaged function get_queue_name returns the streams queue name
+    -- for the supplied staging table owner
+    FUNCTION get_queue_name(
+        p_staging_owner IN     varchar2) 
+    RETURN varchar2 RESULT_CACHE;
+
+    FUNCTION get_capture_name(
+        p_source_owner IN varchar2
+    ) RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged function get_capture_list returns a list of all capture processes
+    -- or those associated with a particular staging table owner (if supplied)
+    FUNCTION get_capture_list(
+        p_staging_owner   IN     varchar2 DEFAULT NULL
+    ) RETURN capture_list;
+
+    -- Packaged procedure get_apply_list returns a list of all apply processes
+    -- or those associated with a particular staging table owner (if supplied)
+    FUNCTION get_apply_list(
+        p_staging_owner   IN     varchar2 DEFAULT NULL
+    ) RETURN apply_list;
+
+    -- Packaged function object_list_to_comma returns a comma-separated string
+    -- containing values from a object_list type
+    FUNCTION object_list_to_comma(
+        p_object_list     IN     object_list)
+    RETURN varchar2;
+
+    -- Packaged function comma_to_object_list returns a object_list type
+    -- containing values from a comma-separated string
+    FUNCTION comma_to_object_list(
+        p_object_str     IN     varchar2)
+    RETURN object_list RESULT_CACHE;
+
+
+
+END MIS_GEN_PKG;
+/
+
+show errors
