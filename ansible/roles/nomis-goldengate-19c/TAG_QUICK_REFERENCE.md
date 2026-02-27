@@ -20,7 +20,20 @@
 | Install Audit replicat | `ansible-playbook site.yml --tags install-audit-replicat` |
 | Install MIS extract | `ansible-playbook site.yml --tags install-mis-extract` |
 | Install MIS replicat | `ansible-playbook site.yml --tags install-mis-replicat` |
+| Register Audit extract | `ansible-playbook site.yml --tags register-audit-extract` |
+| Register Audit replicat | `ansible-playbook site.yml --tags register-audit-replicat` |
+| Register MIS extract | `ansible-playbook site.yml --tags register-mis-extract` |
+| Register MIS replicat | `ansible-playbook site.yml --tags register-mis-replicat` |
+| Start Audit extract | `ansible-playbook site.yml --tags start-audit-extract` |
+| Start Audit replicat | `ansible-playbook site.yml --tags start-audit-replicat` |
+| Start MIS extract | `ansible-playbook site.yml --tags start-mis-extract` |
+| Start MIS replicat | `ansible-playbook site.yml --tags start-mis-replicat` |
+| Stop Audit extract | `ansible-playbook site.yml --tags stop-audit-extract` |
+| Stop Audit replicat | `ansible-playbook site.yml --tags stop-audit-replicat` |
+| Stop MIS extract | `ansible-playbook site.yml --tags stop-mis-extract` |
+| Stop MIS replicat | `ansible-playbook site.yml --tags stop-mis-replicat` |
 | Deploy scripts | `ansible-playbook site.yml --tags deploy-scripts` |
+| Get current SCN | `ansible-playbook site.yml --tags get-current-scn` |
 
 ## Test by Phase
 
@@ -31,6 +44,8 @@
 | Software only | `ansible-playbook site.yml --tags goldengate-software` |
 | DB config only | `ansible-playbook site.yml --tags goldengate-database-config` |
 | All processes | `ansible-playbook site.yml --tags goldengate-processes` |
+| Start all processes | `ansible-playbook site.yml --tags goldengate-start` |
+| Stop all processes | `ansible-playbook site.yml --tags goldengate-stop` |
 
 ## Test by Database
 
@@ -46,6 +61,11 @@
 |----------|---------|
 | All extract processes | `ansible-playbook site.yml --tags goldengate-extract` |
 | All replicat processes | `ansible-playbook site.yml --tags goldengate-replicat` |
+| Register all processes | `ansible-playbook site.yml --tags goldengate-register` |
+| Start all extracts | `ansible-playbook site.yml --tags goldengate-start-extract` |
+| Stop all extracts | `ansible-playbook site.yml --tags goldengate-stop-extract` |
+| Start all replicats | `ansible-playbook site.yml --tags goldengate-start-replicat` |
+| Stop all replicats | `ansible-playbook site.yml --tags goldengate-stop-replicat` |
 | All credentials | `ansible-playbook site.yml --tags goldengate-credentials` |
 | All scripts | `ansible-playbook site.yml --tags goldengate-scripts` |
 
@@ -63,6 +83,9 @@ ansible-playbook site.yml --tags deploy-source-objects,deploy-auditdata-objects,
 
 # Install all Audit processes
 ansible-playbook site.yml --tags install-audit-extract,install-audit-replicat
+
+# Register all Audit processes
+ansible-playbook site.yml --tags register-audit-extract,register-audit-replicat
 ```
 
 ## Skip Specific Tasks
@@ -118,6 +141,30 @@ ansible-playbook site.yml --tags install-audit-extract,install-audit-replicat --
 
 # Test process installation for MIS
 ansible-playbook site.yml --tags install-mis-extract,install-mis-replicat --check
+```
+
+### Register Processes
+```bash
+# Register all processes
+ansible-playbook site.yml --tags goldengate-register
+
+# Register specific process
+ansible-playbook site.yml --tags register-audit-extract
+```
+
+### Start/Stop Processes
+```bash
+# Start all extracts
+ansible-playbook site.yml --tags goldengate-start-extract
+
+# Stop all replicats
+ansible-playbook site.yml --tags goldengate-stop-replicat
+
+# Start specific process
+ansible-playbook site.yml --tags start-audit-extract
+
+# Stop specific process
+ansible-playbook site.yml --tags stop-mis-replicat
 ```
 
 ### Re-deploy After Code Changes

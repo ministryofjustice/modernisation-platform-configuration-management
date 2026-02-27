@@ -5,12 +5,12 @@
 - name: Skip GoldenGate installation on source host since binaries are only needed on target hosts for replication 
   ansible.builtin.debug: 
     msg: "This host is the source host, skipping GoldenGate software installation since binaries are only needed on target hosts for replication." 
-  when: host_is_source
+  when: host_is_source is defined and host_is_source
 
 - name: Install GoldenGate software on target hosts only
-  when: not host_is_source
-
+  when: host_is_source is not defined or not host_is_source
   block:
+
   - name: Check if Oracle GoldenGate is already installed 
     ansible.builtin.stat: 
       path: "{{ oracle_goldengate_home }}" 

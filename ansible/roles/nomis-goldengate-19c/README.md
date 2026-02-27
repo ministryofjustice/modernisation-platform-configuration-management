@@ -139,8 +139,14 @@ The role supports granular control via tags for different deployment scenarios:
 - `goldengate-mis` - Tasks for MIS database hosts
 
 ### Process-Specific Tags
-- `goldengate-extract` - Extract/extract process configuration
+- `goldengate-extract` - Extract process configuration
 - `goldengate-replicat` - Replicat process configuration
+- `goldengate-start` - Start all Extract and Replicat processes
+- `goldengate-stop` - Stop all Extract and Replicat processes
+- `goldengate-start-extract` - Start all Extract processes
+- `goldengate-stop-extract` - Stop all Extract processes
+- `goldengate-start-replicat` - Start all Replicat processes
+- `goldengate-stop-replicat` - Stop all Replicat processes
 - `goldengate-database-config` - Database parameter configuration
 - `goldengate-dbuser` - GoldenGate database user creation
 - `goldengate-credentials` - Credential store setup
@@ -166,6 +172,18 @@ ansible-playbook site.yml --tags goldengate-replicat
 
 # Install GoldenGate software only (no configuration)
 ansible-playbook site.yml --tags goldengate-install --skip-tags goldengate-config
+
+# Start all Extract and Replicat processes
+ansible-playbook site.yml --tags goldengate-start
+
+# Stop all processes on Audit database host
+ansible-playbook site.yml --tags goldengate-stop,goldengate-audit
+
+# Start only Extract processes
+ansible-playbook site.yml --tags goldengate-start-extract
+
+# Stop specific process
+ansible-playbook site.yml --tags stop-mis-replicat
 ```
 
 ## Prerequisites

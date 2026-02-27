@@ -1,116 +1,166 @@
 - name: Apply GoldenGate software patches
   when: oracle_goldengate_software_patches[response_file_version] is defined
   block:
-    - name: Download latest Oracle OPatch utility from S3
-      amazon.aws.aws_s3:
-        bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ oracle_opatch_software }}"
-        dest: "{{ oracle_goldengate_software_dir }}/{{ oracle_opatch_software }}"
-        mode: get
-        overwrite: latest
-
-    - name: Unzip OPatch utility
-      ansible.builtin.unarchive:
-        src: "{{ oracle_goldengate_software_dir }}/{{ oracle_opatch_software }}"
-        dest: "{{ oracle_goldengate_home }}"
-        owner: "{{ oracle_goldengate_owner }}"
-        group: "{{ oracle_goldengate_osgroup }}"
-        remote_src: yes
-
-    - name: Run OPatch to check the version
+    # check if patch is already applied by running opatch lsinventory and looking for the patch number in the output.
+    - name: Check if GoldenGate patches are already applied
       ansible.builtin.shell: |
         export ORACLE_HOME="{{ oracle_goldengate_home }}"
         export PATH="{{ oracle_goldengate_home }}/OPatch:${PATH}"
-        opatch version
+        opatch lsinventory -oh {{ oracle_goldengate_home }} -invPtrLoc {{ oracle_inventory }}/oraInst.loc
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
       args:
         executable: /bin/bash
-      register: opatch_version_output
-      failed_when: opatch_version_output.rc != 0
+      register: opatch_inventory_output
+      failed_when: opatch_inventory_output.rc != 0
       changed_when: false
-
-    - name: Show OPatch version in logs
+    - name: Show OPatch inventory output in logs
       ansible.builtin.debug:
-        msg: "OPatch version output: {{ opatch_version_output.stdout }}"
-
-    - name: Download GoldenGate software patches from S3
-      when: oracle_goldengate_software_patches[response_file_version] is defined
-      amazon.aws.aws_s3:
-        bucket: "{{ artefacts_s3_bucket_name }}"
-        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
-        dest: "{{ oracle_goldengate_software_dir }}/{{ item }}"
-        mode: get
-        overwrite: latest
-      loop: "{{ oracle_goldengate_software_patches[response_file_version] }}"
-
-    - name: Unzip GoldenGate software patches
-      ansible.builtin.unarchive:
-        src: "{{ oracle_goldengate_software_dir }}/{{ item }}"
-        dest: "{{ oracle_goldengate_software_dir }}"
-        owner: "{{ oracle_goldengate_owner }}"
-        group: "{{ oracle_goldengate_osgroup }}"
-        remote_src: yes
-      loop: "{{ oracle_goldengate_software_patches[response_file_version] }}"
-      register: patch_unarchive_output
-      failed_when: patch_unarchive_output.failed
-      no_log: true
-
-    - name: Find extracted OPatch patch directories
-      ansible.builtin.find:
-        paths: "{{ oracle_goldengate_software_dir }}"
-        recurse: yes
-        file_type: file
-        patterns: "actions.xml"
-      register: patch_actions_files
-
-    - name: Set extracted patch directories fact
+        msg: "OPatch inventory output: {{ opatch_inventory_output.stdout }}"
+    - name: Set fact with list of already applied patches
       ansible.builtin.set_fact:
-        extracted_patch_dirs: >-
-          {{
-            patch_actions_files.files
-            | map(attribute='path')
-            | map('dirname')
-            | map('dirname')
-            | map('dirname')
-            | list
-            | unique
-          }}
-
-    - name: Fail if no extracted patch directories found
-      ansible.builtin.fail:
-        msg: "No extracted patch directories found under {{ oracle_goldengate_software_dir }} (expected to find */etc/config/actions.xml)"
-      when: extracted_patch_dirs | length == 0
-
-    - name: Show extracted patch directories in logs
+        applied_patches: "{{ opatch_inventory_output.stdout | regex_findall('Patch\\s+(\\d+)') }}"
+    - name: Show list of already applied patches in logs
       ansible.builtin.debug:
-        msg: "Extracted patch directories: {{ extracted_patch_dirs }}"
+        msg: "Already applied patches: {{ applied_patches }}"
+    - name: Initialise list of patches to apply
+      ansible.builtin.set_fact:
+        patches_to_apply: []
+
+    - name: Build list of patches to apply by removing already applied patches
+      ansible.builtin.set_fact:
+        patches_to_apply: "{{ patches_to_apply + [item] }}"
+      vars:
+        patch_id: >-
+          {{
+            (item | regex_findall('^p?([0-9]+)_') | first | default(''))
+            or (item | regex_findall('([0-9]{6,})') | first | default(''))
+          }}
+      when:
+        - patch_id | length > 0
+        - patch_id not in applied_patches
+      loop: "{{ oracle_goldengate_software_patches[response_file_version] }}"
+          
+    - name: Show list of patches to apply in logs
+      ansible.builtin.debug:
+        msg: "Patches to apply: {{ patches_to_apply }}"
+    - name: Skip patch installation if all patches are already applied
+      ansible.builtin.debug:
+        msg: "All patches are already applied, skipping patch installation."
+      when: patches_to_apply | length == 0
 
     - name: Install GoldenGate software patches
-      ansible.builtin.command: >-
-        opatch apply -silent -oh {{ oracle_goldengate_home }}
-      become: yes
-      become_user: "{{ oracle_goldengate_owner }}"
-      environment:
-        ORACLE_HOME: "{{ oracle_goldengate_home }}"
-        PATH: "{{ oracle_goldengate_home }}/OPatch:{{ ansible_env.PATH }}"
-      args:
-        chdir: "{{ item }}"
-      loop: "{{ extracted_patch_dirs }}"
-      register: patch_install_output
-      failed_when: patch_install_output.rc != 0 and "OPatch succeeded" not in patch_install_output.stdout
+      when: patches_to_apply | length > 0
+      block:
+        - name: Download latest Oracle OPatch utility from S3
+          amazon.aws.aws_s3:
+            bucket: "{{ artefacts_s3_bucket_name }}"
+            object: "{{ artefacts_s3_bucket_path }}/{{ oracle_opatch_software }}"
+            dest: "{{ oracle_goldengate_software_dir }}/{{ oracle_opatch_software }}"
+            mode: get
+            overwrite: latest
 
-    - name: Show patch installation output in logs
-      ansible.builtin.debug:
-        msg: "Patch installation output: {{ patch_install_output.results | map(attribute='stdout') | list }}"
+        - name: Unzip OPatch utility
+          ansible.builtin.unarchive:
+            src: "{{ oracle_goldengate_software_dir }}/{{ oracle_opatch_software }}"
+            dest: "{{ oracle_goldengate_home }}"
+            owner: "{{ oracle_goldengate_owner }}"
+            group: "{{ oracle_goldengate_osgroup }}"
+            remote_src: yes
 
-    - name: Clean up patch files
-      ansible.builtin.file:    
-        path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
-        state: absent
-      loop: >-
-        {{
-          (oracle_goldengate_software_patches[response_file_version] | default([]))
-          + (extracted_patch_dirs | default([]))
-          + [oracle_opatch_software]
-        }}
+        - name: Run OPatch to check the version
+          ansible.builtin.shell: |
+            export ORACLE_HOME="{{ oracle_goldengate_home }}"
+            export PATH="{{ oracle_goldengate_home }}/OPatch:${PATH}"
+            opatch version
+          become: yes
+          become_user: "{{ oracle_goldengate_owner }}"
+          args:
+            executable: /bin/bash
+          register: opatch_version_output
+          failed_when: opatch_version_output.rc != 0
+          changed_when: false
+
+        - name: Show OPatch version in logs
+          ansible.builtin.debug:
+            msg: "OPatch version output: {{ opatch_version_output.stdout }}"
+
+        - name: Download GoldenGate software patches from S3
+          amazon.aws.aws_s3:
+            bucket: "{{ artefacts_s3_bucket_name }}"
+            object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+            dest: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+            mode: get
+            overwrite: latest
+          loop: "{{ patches_to_apply }}"
+
+        - name: Unzip GoldenGate software patches
+          ansible.builtin.unarchive:
+            src: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+            dest: "{{ oracle_goldengate_software_dir }}"
+            owner: "{{ oracle_goldengate_owner }}"
+            group: "{{ oracle_goldengate_osgroup }}"
+            remote_src: yes
+          loop: "{{ patches_to_apply }}"
+          register: patch_unarchive_output
+          failed_when: patch_unarchive_output.failed
+          no_log: true
+
+        - name: Find extracted OPatch patch directories
+          ansible.builtin.find:
+            paths: "{{ oracle_goldengate_software_dir }}"
+            recurse: yes
+            file_type: file
+            patterns: "actions.xml"
+          register: patch_actions_files
+
+        - name: Set extracted patch directories fact
+          ansible.builtin.set_fact:
+            extracted_patch_dirs: >-
+              {{
+                patch_actions_files.files
+                | map(attribute='path')
+                | map('dirname')
+                | map('dirname')
+                | map('dirname')
+                | list
+                | unique
+              }}
+
+        - name: Fail if no extracted patch directories found
+          ansible.builtin.fail:
+            msg: "No extracted patch directories found under {{ oracle_goldengate_software_dir }} (expected to find */etc/config/actions.xml)"
+          when: extracted_patch_dirs | length == 0
+
+        - name: Show extracted patch directories in logs
+          ansible.builtin.debug:
+            msg: "Extracted patch directories: {{ extracted_patch_dirs }}"
+
+        - name: Install GoldenGate software patches
+          ansible.builtin.command: >-
+            opatch apply -silent -oh {{ oracle_goldengate_home }}
+          become: yes
+          become_user: "{{ oracle_goldengate_owner }}"
+          environment:
+            ORACLE_HOME: "{{ oracle_goldengate_home }}"
+            PATH: "{{ oracle_goldengate_home }}/OPatch:{{ ansible_env.PATH }}"
+          args:
+            chdir: "{{ item }}"
+          loop: "{{ extracted_patch_dirs }}"
+          register: patch_install_output
+          failed_when: patch_install_output.rc != 0 and "OPatch succeeded" not in patch_install_output.stdout
+
+        - name: Show patch installation output in logs
+          ansible.builtin.debug:
+            msg: "Patch installation output: {{ patch_install_output.results | map(attribute='stdout') | list }}"
+
+        - name: Clean up patch files
+          ansible.builtin.file:    
+            path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
+            state: absent
+          loop: >-
+            {{
+              (oracle_goldengate_software_patches[response_file_version] | default([]))
+              + (extracted_patch_dirs | default([]))
+              + [oracle_opatch_software]
+            }}

@@ -26,7 +26,7 @@ The Oracle GoldenGate 19c installation supports three replication streams across
 
 #### 2. Audit Database Host (T1CAUDG)
 **Deploys Two GoldenGate Processes:**
-- **AUDITDATA** - Replicates AUDITDATA.AUDIT_TABLE and AUDIT_COLUMN
+- **AUDITDATA** - Replicates to AUDITDATA.AUDIT_TABLE and AUDIT_COLUMN
   - Extract: EXTAUDD
   - Replicat: REPAUDD
 - **AUDITREF** - Replicates all tables from OMS_OWNER to AUDITREF schema
@@ -34,13 +34,13 @@ The Oracle GoldenGate 19c installation supports three replication streams across
   - Replicat: REPAUDR
 
 **Shared Characteristics:**
-- Both processes share database package code
+- AUDITREF shares database package code with MIS process
 - Use same target database (T1CAUDG)
 - Different schemas (AUDITDATA vs AUDITREF)
 
 #### 3. MIS Database Host (T1CMISG)
 **Deploys One GoldenGate Process:**
-- **MIS** - Replicates BODISTAGING.STG_* tables
+- **MIS** - Replicates to BODISTAGING.STG_* tables
   - Extract: EXTMIS
   - Replicat: REPMIS
 

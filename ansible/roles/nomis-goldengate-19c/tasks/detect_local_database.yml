@@ -1,34 +1,36 @@
 ---
 # Detect which Oracle database instance is running on this host
 # This determines which GoldenGate components will be deployed
+- name: Detect local Oracle database instance
+  when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
+  block:
+    - name: Check for running Oracle instances
+      ansible.builtin.shell: |
+        ps -ef | grep -E '[o]ra_pmon_' | awk '{print $NF}' | sed 's/ora_pmon_//'
+      register: running_instances
+      changed_when: false
+      failed_when: false
+      become: yes
 
-- name: Check for running Oracle instances
-  ansible.builtin.shell: |
-    ps -ef | grep -E '[o]ra_pmon_' | awk '{print $NF}' | sed 's/ora_pmon_//'
-  register: running_instances
-  changed_when: false
-  failed_when: false
-  become: yes
+    - name: Display detected Oracle instances
+      ansible.builtin.debug:
+        msg: "Detected Oracle instances: {{ running_instances.stdout_lines }}"
+      when: running_instances.stdout_lines | length > 0
 
-- name: Display detected Oracle instances
-  ansible.builtin.debug:
-    msg: "Detected Oracle instances: {{ running_instances.stdout_lines }}"
-  when: running_instances.stdout_lines | length > 0
+    - name: Fail if no Oracle instances are running 
+      ansible.builtin.fail: 
+        msg: "No running Oracle instances detected on this host. GoldenGate cannot be deployed without a local database." 
+      when: running_instances.stdout_lines | length == 0
 
-- name: Fail if no Oracle instances are running 
-  ansible.builtin.fail: 
-    msg: "No running Oracle instances detected on this host. GoldenGate cannot be deployed without a local database." 
-  when: running_instances.stdout_lines | length == 0
+    - name: Extract configured database SIDs from oracle_goldengate_db
+      ansible.builtin.set_fact:
+        configured_db_sids: "{{ oracle_goldengate_group.values() | map(attribute='tns_alias') | list | unique }}"
 
-- name: Extract configured database SIDs from oracle_goldengate_db
-  ansible.builtin.set_fact:
-    configured_db_sids: "{{ oracle_goldengate_group.values() | map(attribute='tns_alias') | list | unique }}"
-
-- name: Find matching database instance running on this host
-  ansible.builtin.set_fact:
-    oracle_goldengate_local_db_sid: "{{ item }}"
-  when: item in running_instances.stdout_lines
-  loop: "{{ configured_db_sids }}"
+    - name: Find matching database instance running on this host
+      ansible.builtin.set_fact:
+        oracle_goldengate_local_db_sid: "{{ item }}"
+      when: item in running_instances.stdout_lines
+      loop: "{{ configured_db_sids }}"
 
 - name: Display detected local database SID
   ansible.builtin.debug:

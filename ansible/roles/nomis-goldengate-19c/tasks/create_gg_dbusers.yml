@@ -3,14 +3,73 @@
 # This user is created in the source and target databases with appropriate privileges
 # Password retrieved from AWS Secrets Manager
 
-# As auditdata and auditref streams both connect to the same audit database, they can use the same ggadmin user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
+# As auditdata and auditref streams both connect to the same audit database, they can use the same {{ oracle_goldengate_dbuser }} user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
 
-- name: Create GoldenGate database user when local database is configured
-  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_group.source.tns_alias, oracle_goldengate_group.auditdata.tns_alias, oracle_goldengate_group.mis.tns_alias]
+- name: Check for the database passwords in AWS Secrets Manager
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    DB_PASSWORDS=$(aws secretsmanager get-secret-value \
+      --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+      --query 'SecretString' \
+      --output text 2>/dev/null)
+
+    if [ -z "${DB_PASSWORDS}" ]; then
+      echo "ERROR: Failed to retrieve passwords from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+      exit 1
+    fi
+  register: check_secrets_output
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  args:
+    executable: /bin/bash
+  failed_when: check_secrets_output.rc != 0
+
+- name: Check for GoldenGate database admin user in the secrets manager output
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    SECRET_JSON=$(aws secretsmanager get-secret-value \
+      --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+      --query 'SecretString' \
+      --output text 2>/dev/null)
+
+    if [ -z "${SECRET_JSON}" ]; then
+      echo "ERROR: Failed to retrieve passwords secret from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+      exit 2
+    fi
+
+    if echo "${SECRET_JSON}" | jq -e --arg k "{{ oracle_goldengate_dbuser }}" '.[$k] // "" | length > 0' >/dev/null 2>&1; then
+      echo "PRESENT"
+      exit 0
+    else
+      echo "ABSENT"
+      exit 1
+    fi
+  register: check_user_output
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  args:
+    executable: /bin/bash
+  changed_when: false
+  failed_when: check_user_output.rc not in [0, 1]
+
+- name: Set fact whether GoldenGate admin user exists in Secrets Manager
+  ansible.builtin.set_fact:
+    gg_dbuser_exists_in_secrets_manager: "{{ check_user_output.rc == 0 }}"
+
+- name: Skip GoldenGate admin user creation (already present in Secrets Manager)
+  ansible.builtin.debug:
+    msg: "{{ oracle_goldengate_dbuser }} already present in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}, skipping database user creation tasks."
+  when: gg_dbuser_exists_in_secrets_manager
+  
+- name: Create GoldenGate database admin user when local database is configured
+  when:
+    - oracle_goldengate_local_db_sid is defined
+    - oracle_goldengate_local_db_sid in [oracle_goldengate_group.source.tns_alias, oracle_goldengate_group.auditdata.tns_alias, oracle_goldengate_group.mis.tns_alias]
+    - not gg_dbuser_exists_in_secrets_manager
   block:
-    - name: Generate random password for ggadmin user
+    - name: Generate random password for {{ oracle_goldengate_dbuser }} user
       ansible.builtin.set_fact:
-        ggadmin_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+        gg_dbuser_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
         gg_oms_schema_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
       no_log: true
 
@@ -51,7 +110,7 @@
           
           -- Create GoldenGate user
           PROMPT Creating GoldenGate user {{ oracle_goldengate_dbuser }}...
-          CREATE USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ ggadmin_password }}"
+          CREATE USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ gg_dbuser_password }}"
             DEFAULT TABLESPACE USERS
             TEMPORARY TABLESPACE TEMP
             QUOTA UNLIMITED ON USERS;
@@ -133,7 +192,7 @@
           - "GoldenGate user: {{ oracle_goldengate_dbuser }}"
           - "Status: {{ 'Created successfully' if create_user_output.changed else 'Already exists or error' }}"
 
-    - name: Store ggadmin password in AWS Secrets Manager
+    - name: Store {{ oracle_goldengate_dbuser }} password in AWS Secrets Manager
       ansible.builtin.shell: |
         . ~/.bash_profile
 
@@ -148,21 +207,21 @@
           exit 1
         fi
 
-        # Check if ggadmin password already exists
-        if echo "$CURRENT_SECRET" | jq -e 'has("ggadmin")' >/dev/null; then
-          # If ggadmin exists, check if the password needs updating
-          CURRENT_PASSWORD=$(echo "$CURRENT_SECRET" | jq -r '.ggadmin')
-          if [ "$CURRENT_PASSWORD" != "{{ ggadmin_password }}" ]; then
-            echo "Updating existing ggadmin password in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
-            UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ ggadmin_password }}" '.ggadmin = $pwd')
+        # Check if {{ oracle_goldengate_dbuser }} password already exists
+        if echo "$CURRENT_SECRET" | jq -e 'has("{{ oracle_goldengate_dbuser }}")' >/dev/null; then
+          # If {{ oracle_goldengate_dbuser }} exists, check if the password needs updating
+          CURRENT_PASSWORD=$(echo "$CURRENT_SECRET" | jq -r '.{{ oracle_goldengate_dbuser }}')
+          if [ "$CURRENT_PASSWORD" != "{{ gg_dbuser_password }}" ]; then
+            echo "Updating existing {{ oracle_goldengate_dbuser }} password in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ gg_dbuser_password }}" '.{{ oracle_goldengate_dbuser }} = $pwd')
           else
-            echo "ggadmin password is already up-to-date in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            echo "{{ oracle_goldengate_dbuser }} password is already up-to-date in AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
             exit 0
           fi
         else
-          # Add ggadmin password to the existing secret
-          echo "Adding ggadmin password to AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
-          UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ ggadmin_password }}" '. + {ggadmin: $pwd}')
+          # Add {{ oracle_goldengate_dbuser }} password to the existing secret
+          echo "Adding {{ oracle_goldengate_dbuser }} password to AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+          UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ gg_dbuser_password }}" '. + { "{{ oracle_goldengate_dbuser }}": $pwd }')
         fi
         
         # Update the secret with the new value
@@ -176,7 +235,7 @@
 
     - name: Display secret storage confirmation
       ansible.builtin.debug:
-        msg: "GoldenGate ggadmin password stored in AWS Secrets Manager at /oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords (ggadmin key)"
+        msg: "GoldenGate {{ oracle_goldengate_dbuser }} password stored in AWS Secrets Manager at /oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords ({{ oracle_goldengate_dbuser }} key)"
 
     - name: Clean up temporary SQL script
       ansible.builtin.file:
@@ -323,8 +382,3 @@
         executable: /bin/bash
       changed_when: "'TABLE' in create_tables_output.stdout"
       failed_when: create_tables_output.rc != 0
-
-    # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
-    - name: Pause after installation for verification
-      ansible.builtin.pause:
-        prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."

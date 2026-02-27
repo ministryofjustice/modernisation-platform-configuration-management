@@ -10,7 +10,6 @@
   
 - name: Detect local Oracle database instance
   import_tasks: detect_local_database.yml
-  when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
   tags: 
     - always
     - detect-database
