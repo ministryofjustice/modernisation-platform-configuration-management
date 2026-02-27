@@ -422,7 +422,7 @@ Expected output:
 ```
 playbook: site.yml
 
-  play #1 (goldengate_hosts): Configure GoldenGate	TAGS: []
+  play #1 (goldengate_hosts): Configure GoldenGate TAGS: []
       TASK TAGS: [always, configure-asm, configure-credentials, configure-db-params,
                  configure-home, create-dbusers, deploy-auditdata, deploy-auditdata-objects,
                  deploy-auditref, deploy-auditref-objects, deploy-mis, deploy-mis-objects,
