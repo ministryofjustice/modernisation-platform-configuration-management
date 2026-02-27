@@ -41,11 +41,36 @@
         executable: /bin/bash
       register: slack_pkg_result
 
+    - name: Create DDL Capture Trigger Installation Script
+      template:
+        src: create_ddl_notifier_trigger.sql.j2
+        dest: "{{ stage }}/create_ddl_notifier_trigger.sql"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+      vars:
+        notification_schema: "{{ ddl_notifier.notification_schema }}"
+        tracked_schemas: "{{ ddl_notifier.tracked_schemas }}"
+
+    - name: Install DDL Capture Trigger
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export PATH=$PATH:/usr/local/bin
+        . oraenv <<< "${ORACLE_SID}"
+        sqlplus -s / as sysdba @{{ stage }}/create_ddl_notifier_trigger.sql
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "{{ database_name }}"
+      args:
+        executable: /bin/bash
+      register: ddl_trigger_result
+
   always:
-    - name: Clean up Slack Notification SQL scripts
+    - name: Clean up SQL scripts
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop:
-        - "{{ stage }}/create_slack_notifier_package.sql"
-        - "{{ stage }}/create_slack_notifier_package.plb"
+        - "{{ stage }}/create_slack_notification_package.sql"
+        - "{{ stage }}/create_slack_notification_package.plb"
+        - "{{ stage }}/create_ddl_notifier_trigger.sql"

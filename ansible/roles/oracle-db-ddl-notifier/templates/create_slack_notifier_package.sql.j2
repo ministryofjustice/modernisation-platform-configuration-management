@@ -9,7 +9,7 @@ CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
   gc_application           VARCHAR2(1000)  := '{{ application }}';
   gc_target_environment    VARCHAR2(1000)  := '{{ target_environment }}';
   gc_target_db_name        VARCHAR2(1000)  := '{{ target_db_name }}';
-  gc_environment_type      VARCHAR2(1000)  := '{{ environment_type }}';
+  gc_application_tier      VARCHAR2(1000)  := '{{ application_tier }}';
   gc_account_name          VARCHAR2(1000)  := '{{ account_name }}';
 END slack_notifier;
 /
@@ -25,9 +25,13 @@ CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
     l_response   VARCHAR2(32767);
   BEGIN
     l_payload := '{"channel":"' || gc_channel || '",'||
-                  '"text":"Environment: *'|| gc_target_environment || '* ' || REPLACE(p_text, '"', '\"') || '",' ||
                   '"username":"'|| gc_application ||' DDL Notifier",' ||
-                  '"icon_emoji":"dbschema"}';
+                  '"icon_emoji":"dbschema",' ||
+                  '"blocks":[' ||
+                    '{"type":"section","fields":[{"type":"mrkdwn","text":"*Application:* ' || gc_application || '\n*Tier:* ' || gc_application_tier || '\n*Database:* ' || gc_target_db_name || '"},{"type":"mrkdwn","text":"*Timestamp:* ' || TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') || '"}]},' ||
+                    '{"type":"divider"},' ||
+                    '{"type":"section","text":{"type":"mrkdwn","text":"' || REPLACE(p_text, '"', '\"') || '"}}' ||
+                  ']}';
 
     UTL_HTTP.set_wallet(gc_wallet);
     l_http_req := UTL_HTTP.begin_request(gc_url, 'POST', 'HTTP/1.1');
