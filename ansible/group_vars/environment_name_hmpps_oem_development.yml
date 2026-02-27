@@ -55,6 +55,10 @@ db_configs:
         }
     service:
       - { name: EMREP_TAF, role: PRIMARY }
+    ddl_notifier:
+      notification_schema: 'BBUCHAN_DBA'
+      slack_channel: "#delius-aws-oracle-dev-alerts-test"
+      tracked_schemas: ['SYSMAN']
 
 emcli: /u01/app/oracle/product/mw135/bin/emcli
 emctl_oem: /u01/app/oracle/product/mw135/bin/emctl
