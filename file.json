@@ -1,0 +1,158 @@
+{
+  "RCVCAT": {
+    "rcvcat_db_name": "PRCVCAT"
+  },
+  "PCNOM": {
+    "db_name": "PCNOM"
+  },
+  "PDCNOM": {
+    "db_name": "PDCNOM",
+    "db_unique_name": "PDCNOM",
+    "instance_name": "PDCNOM",
+    "host_name": "prod-nomis-db-1-a.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "PDCNOM",
+    "service": [
+      {
+        "name": "OR_TAF",
+        "role": "PRIMARY"
+      },
+      {
+        "name": "NOMIS_TAF",
+        "role": "PRIMARY"
+      },
+      {
+        "name": "OLDNOMIS_TAF",
+        "role": "PRIMARY"
+      },
+      {
+        "name": "NOMIS_APIRO",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "PDNDH": {
+    "db_name": "NDHP",
+    "db_unique_name": "PDNDH",
+    "instance_name": "PDNDH",
+    "host_name": "prod-nomis-db-1-a.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "PDNDH",
+    "service": [
+      {
+        "name": "NDH_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "PDTRDAT": {
+    "db_name": "TRDATP",
+    "db_unique_name": "PDTRDAT",
+    "instance_name": "PDTRDAT",
+    "host_name": "prod-nomis-db-1-a.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "PDTRDAT",
+    "service": [
+      {
+        "name": "TRDAT_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "PDMIS": {
+    "db_name": "MISP",
+    "db_unique_name": "PDMIS",
+    "instance_name": "PDMIS",
+    "host_name": "prod-nomis-db-1-a.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "PDMIS",
+    "service": [
+      {
+        "name": "MIS_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "PDCNMAUD": {
+    "db_name": "CNOMAUDP",
+    "db_unique_name": "PDCNMAUD",
+    "instance_name": "PDCNMAUD",
+    "host_name": "prod-nomis-db-1-a.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "PDCNMAUD",
+    "service": [
+      {
+        "name": "CNMAUD_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "DRCNOM": {
+    "db_name": "CNOMP",
+    "db_unique_name": "DRCNOM",
+    "instance_name": "DRCNOM",
+    "host_name": "prod-nomis-db-1-b.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "DRCNOM",
+    "service": [
+      {
+        "name": "NOMIS_TAF",
+        "role": "PRIMARY"
+      },
+      {
+        "name": "OLDNOMIS_TAF",
+        "role": "PRIMARY"
+      },
+      {
+        "name": "NOMIS_APIRO_TAF",
+        "role": "PHYSICAL_STANDBY"
+      },
+      {
+        "name": "OR_TAF",
+        "role": "PHYSICAL_STANDBY"
+      }
+    ]
+  },
+  "DRNDH": {
+    "db_name": "NDHP",
+    "db_unique_name": "DRNDH",
+    "instance_name": "DRNDH",
+    "host_name": "prod-nomis-db-1-b.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "DRNDH",
+    "service": [
+      {
+        "name": "NDH_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "DRTRDAT": {
+    "db_name": "TRDATP",
+    "db_unique_name": "DRTRDAT",
+    "instance_name": "DRTRDAT",
+    "host_name": "prod-nomis-db-1-b.production.nomis.service.justice.gov.uk",
+    "port": 1521,
+    "tns_name": "DRTRDAT",
+    "service": [
+      {
+        "name": "TRDAT_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  },
+  "DRMIS": {
+    "db_name": "MISP",
+    "db_unique_name": "DRMIS",
+    "instance_name": "DRMIS",
+    "host_name": "prod-nomis-db-2-b",
+    "port": 1521,
+    "tns_name": "DRMIS",
+    "service": [
+      {
+        "name": "MIS_TAF",
+        "role": "PRIMARY"
+      }
+    ]
+  }
+}

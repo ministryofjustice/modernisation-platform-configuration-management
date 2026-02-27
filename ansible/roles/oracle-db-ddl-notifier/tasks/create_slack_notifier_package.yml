@@ -1,0 +1,51 @@
+---
+- name: Download and Install Slack Notifier Package
+  become: yes
+  become_user: oracle
+  block:
+    # Restrict privileges on this script as it contains Slack Token - should only be readable by oracle
+    - name: Create Slack Notification Installation Script
+      template:
+        src: create_slack_notifier_package.sql.j2
+        dest: "{{ stage }}/create_slack_notification_package.sql"
+        mode: "0700"
+        owner: oracle
+        group: oinstall
+      vars:
+        notification_schema: "{{ ddl_notifier.notification_schema }}"
+        channel_name: "{{ ddl_notifier.slack_channel }}"
+
+    - name: Create a wrapped file to encrypt the Slack Notification Package
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export PATH=$PATH:/usr/local/bin
+        . oraenv <<< "${ORACLE_SID}"
+        wrap iname={{ stage }}/create_slack_notification_package.sql oname={{ stage }}/create_slack_notification_package.plb
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "{{ database_name }}"
+      args:
+        executable: /bin/bash
+
+    - name: Compile Slack Notification Package
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export PATH=$PATH:/usr/local/bin
+        . oraenv <<< "${ORACLE_SID}"
+        -- sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
+        sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
+      environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "{{ database_name }}"
+      args:
+        executable: /bin/bash
+      register: slack_pkg_result
+
+  always:
+    - name: Clean up Slack Notification SQL scripts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ stage }}/create_slack_notifier_package.sql"
+        - "{{ stage }}/create_slack_notifier_package.plb"

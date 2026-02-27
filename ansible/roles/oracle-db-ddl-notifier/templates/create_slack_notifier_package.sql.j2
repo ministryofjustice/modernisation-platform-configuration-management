@@ -1,0 +1,53 @@
+CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
+  PROCEDURE send_message(
+    p_text    IN VARCHAR2
+  );
+  gc_url            VARCHAR2(2000)  := 'https://slack.com/api/chat.postMessage';
+  gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
+  gc_wallet         VARCHAR2(1000)  := 'file:{{ app_dir }}/wallets/slack_wallet';
+  gc_channel        VARCHAR2(1000)  := '{{ channel_name }}';
+  gc_application           VARCHAR2(1000)  := '{{ application }}';
+  gc_target_environment    VARCHAR2(1000)  := '{{ target_environment }}';
+  gc_target_db_name        VARCHAR2(1000)  := '{{ target_db_name }}';
+  gc_environment_type      VARCHAR2(1000)  := '{{ environment_type }}';
+  gc_account_name          VARCHAR2(1000)  := '{{ account_name }}';
+END slack_notifier;
+/
+
+CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
+
+  PROCEDURE send_message(
+    p_text    IN VARCHAR2
+  ) IS
+    l_http_req   UTL_HTTP.req;
+    l_http_resp  UTL_HTTP.resp;
+    l_payload    VARCHAR2(32767);
+    l_response   VARCHAR2(32767);
+  BEGIN
+    l_payload := '{"channel":"' || gc_channel || '",'||
+                  '"text":"Environment: *'|| gc_target_environment || '* ' || REPLACE(p_text, '"', '\"') || '",' ||
+                  '"username":"'|| gc_application ||' DDL Notifier",' ||
+                  '"icon_emoji":"dbschema"}';
+
+    UTL_HTTP.set_wallet(gc_wallet);
+    l_http_req := UTL_HTTP.begin_request(gc_url, 'POST', 'HTTP/1.1');
+    UTL_HTTP.set_header(l_http_req, 'Content-Type', 'application/json; charset=utf-8');
+    UTL_HTTP.set_header(l_http_req, 'Authorization', 'Bearer ' || gc_token);
+    UTL_HTTP.set_header(l_http_req, 'Content-Length', LENGTH(l_payload));
+    UTL_HTTP.write_text(l_http_req, l_payload);
+
+    l_http_resp := UTL_HTTP.get_response(l_http_req);
+    BEGIN
+      LOOP
+        UTL_HTTP.read_text(l_http_resp, l_response);
+        -- Optionally, log or process l_response
+      END LOOP;
+    EXCEPTION
+      WHEN UTL_HTTP.end_of_body THEN
+        NULL;
+    END;
+    UTL_HTTP.end_response(l_http_resp);
+  END send_message;
+
+END slack_notifier;
+/

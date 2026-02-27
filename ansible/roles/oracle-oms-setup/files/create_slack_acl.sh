@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Specify the principal for the ACL
+PRINCIPAL=$1
+
 . ~/.bash_profile
 export PATH=$PATH:/usr/local/bin
 . oraenv
@@ -27,7 +30,7 @@ BEGIN
     DBMS_NETWORK_ACL_ADMIN.create_acl (
       acl          => 'slack.xml', 
       description  => 'Access to slack api',
-      principal    => 'SYSMAN',
+      principal    => '${PRINCIPAL}',
       is_grant     => TRUE, 
       privilege    => 'connect',
       start_date   => NUll,
@@ -39,7 +42,7 @@ BEGIN
   -- Add the privilege to resolve 
   DBMS_NETWORK_ACL_ADMIN.add_privilege (
     acl          => 'slack.xml',
-    principal    => 'SYSMAN',
+    principal    => '${PRINCIPAL}',
     is_grant     => TRUE, 
     privilege    => 'resolve');
   COMMIT;
@@ -47,7 +50,7 @@ BEGIN
   -- Add the privilege to resolve 
   DBMS_NETWORK_ACL_ADMIN.add_privilege (
     acl          => 'slack.xml',
-    principal    => 'SYSMAN',
+    principal    => '${PRINCIPAL}',
     is_grant     => TRUE,
     privilege    => 'connect');
   COMMIT;

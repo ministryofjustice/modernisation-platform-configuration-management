@@ -63,6 +63,12 @@ oracle_ru_patch: JUL2024
 # Restricted schema to use for DBA Operations
 dba_ops_schema: DELIUS_USER_SUPPORT
 
+# Define Slack Notifications of DDL Changes
+ddl_notifier:
+   notification_schema: "{{ dba_ops_schema }}"
+   slack_channel: "#delius-aws-oracle-dev-alerts-test"
+   tracked_schemas: ['DELIUS_APP_SCHEMA','BBUCHAN_DBA']
+
 # We increase the frequency of HAS Resource Status collection from default of once per 24
 # hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
 # shortly after the host is restarted each morning.
