@@ -3,6 +3,11 @@
   become: yes
   become_user: oracle
   block:
+
+    - name: Get Notifier Variables for this Database
+      set_fact:
+         this_db_ddl_notifier: "{{ ddl_notifier if (application in ['delius-core','delius-mis']) else db_configs[target_db_name].ddl_notifier }}"
+
     # Restrict privileges on this script as it contains Slack Token - should only be readable by oracle
     - name: Create Slack Notification Installation Script
       template:
@@ -12,8 +17,8 @@
         owner: oracle
         group: oinstall
       vars:
-        notification_schema: "{{ ddl_notifier.notification_schema }}"
-        channel_name: "{{ ddl_notifier.slack_channel }}"
+        notification_schema: "{{ this_db_ddl_notifier.notification_schema }}"
+        channel_name: "{{ this_db_ddl_notifier.slack_channel }}"
 
     - name: Create a wrapped file to encrypt the Slack Notification Package
       ansible.builtin.shell: |
@@ -33,7 +38,8 @@
         export PATH=$PATH:/usr/local/bin
         . oraenv <<< "${ORACLE_SID}"
         sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.plb
-        -- sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
+        # Do not install plain text version of this package as it contains the Slack token
+        # sqlplus -s / as sysdba @{{ stage }}/create_slack_notification_package.sql
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "{{ database_name }}"
@@ -49,8 +55,8 @@
         owner: oracle
         group: oinstall
       vars:
-        notification_schema: "{{ ddl_notifier.notification_schema }}"
-        tracked_schemas: "{{ ddl_notifier.tracked_schemas }}"
+        notification_schema: "{{ this_db_ddl_notifier.notification_schema }}"
+        tracked_schemas: "{{ this_db_ddl_notifier.tracked_schemas }}"
 
     - name: Install DDL Capture Trigger
       ansible.builtin.shell: |

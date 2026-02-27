@@ -3,7 +3,6 @@ CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
     p_text    IN VARCHAR2
   );
   gc_url            VARCHAR2(2000)  := 'https://slack.com/api/chat.postMessage';
-  gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
   gc_wallet         VARCHAR2(1000)  := 'file:{{ app_dir }}/wallets/slack_wallet';
   gc_channel        VARCHAR2(1000)  := '{{ channel_name }}';
   gc_application           VARCHAR2(1000)  := '{{ application }}';
@@ -15,6 +14,8 @@ END slack_notifier;
 /
 
 CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
+
+  gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
 
   PROCEDURE send_message(
     p_text    IN VARCHAR2
