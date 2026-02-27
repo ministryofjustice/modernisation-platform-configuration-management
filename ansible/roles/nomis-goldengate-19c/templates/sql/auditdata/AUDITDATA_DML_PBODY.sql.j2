@@ -797,50 +797,60 @@ BEGIN
 
   PROCEDURE apply_dml_conf
   IS
-  /*
-  Summary
-  ==============
-  Sets all dml handlers for all tables in selected schema
-  NB if the assemble_lobs parameter needs changing after the initial running of this script,
-  it must be done one table and operation at a time, as this script won't change it
+    /*
+    Summary
+    ==============
+    Sets all dml handlers for all tables in selected schema
+    NB if the assemble_lobs parameter needs changing after the initial running of this script,
+    it must be done one table and operation at a time, as this script won't change it
 
-  Change History
-  ===========
-  Version/Date/Author:  1  17/10/2008  J Smith
-  Change Summary:  New procedure
-  Version/Date/Author:  2  05/11/2008  R Taylor
-  Change Summary:  Use global variables to derive names, log current applied scn
-  */
-  TYPE table_list IS TABLE OF VARCHAR2(30);
-  v_tab_list  table_list;
-  v_plsql   varchar2(2000);
-  v_handler   varchar2(80) := g_data_owner || '.AUDITDATA_DML_PKG.' || g_handler_name;
-  v_dblink   varchar2(128) := 'T1CNOM.REGRESS.RDBMS.DEV.US.ORACLE.COM';
-  v_scn     number := null;
-  v_table   varchar2(30) := null;
-  v_date     date := null;
+    Change History
+    ===========
+    Version/Date/Author:  1  17/10/2008  J Smith
+    Change Summary:  New procedure
+    Version/Date/Author:  2  05/11/2008  R Taylor
+    Change Summary:  Use global variables to derive names, log current applied scn
+    */
+    TYPE table_list IS TABLE OF VARCHAR2(30);
+    v_tab_list  table_list;
+    v_plsql   varchar2(2000);
+    v_handler   varchar2(80) := auditdata_gen_pkg.g_data_owner || '.AUDITDATA_DML_PKG.' || g_handler_name;
+    v_dblink   varchar2(128);
+    v_scn     number := null;
+    v_table   varchar2(30) := null;
+    v_date     date := null;
+    v_db_link_owner varchar2(30) := '{{ oracle_goldengate_sql_owner }}';
   BEGIN
-  --get source database link name
---  v_plsql := 'select db_link from dba_db_links where owner = :user and username = :ggint';
+    --get source database link name
+    v_plsql := 'select db_link from dba_db_links where owner = UPPER(''' || v_db_link_owner || ''') and username = UPPER(''' || g_queue_owner || ''') and host = UPPER(''' || g_source_db || ''') and rownum = 1';
+-- original streams version:
 --    'SELECT source_database, applied_message_number, APPLIED_MESSAGE_CREATE_TIME' ||
 --     ' FROM all_apply_progress' ||
 --    ' WHERE apply_name = :apply_name';  
 --  execute immediate v_plsql into v_dblink, v_scn, v_date using g_apply_name;
---  execute immediate v_plsql into v_dblink, v_scn, v_date using user, 'GGINT';
+  --DBMS_OUTPUT.PUT_LINE('Executing: ' || v_plsql);
+  begin
+     execute immediate v_plsql into v_dblink;
+  EXCEPTION
+    when no_data_found then
+      raise_application_error(-20001, 'Database link not found for ' || g_source_db || '. Check that the source database name is correct and that a database link exists with the correct owner and username');
+  END;
   --create an array of tables in the selected schema
   v_plsql := 
     'SELECT table_name FROM all_tables@' || v_dblink 
     || ' WHERE owner = ''' || g_source_owner || '''';  
   execute immediate v_plsql bulk collect into v_tab_list;
 
-  if v_tab_list.count > 0 then
+  if v_tab_list.count = 0 then
+    DBMS_OUTPUT.PUT_LINE('No tables found over Database Link ' || v_dblink);
+  else
     for i in 1..v_tab_list.count
     loop
       v_table := v_tab_list(i);
       --dbms_output.put_line('Creating handlers for ' || v_tab_list(i));
       --create insert handler
       -- The error_handler parameter defines whether the handler replaces normal apply processing or only execute for error handling.
-      -- If we set apply_name to NULL then the handler is used for ALL apply & inbound servers
+      -- If we set apply_name to NULL then the handler is used for ALL apply and inbound servers
       v_plsql := 
         'begin
         dbms_apply_adm.set_dml_handler(

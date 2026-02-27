@@ -1,0 +1,54 @@
+---
+# Get current SCN from database for reference
+# Useful when you need to know the current SCN before registering/adding an extract
+
+- name: Get current SCN from source database
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+    sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    SELECT CURRENT_SCN FROM V\$DATABASE;
+    EXIT;
+    EOF
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: source_current_scn_output
+  changed_when: false
+  failed_when: source_current_scn_output.rc != 0
+
+- name: Display current SCN from source database
+  ansible.builtin.debug:
+    msg: "Source Database ({{ oracle_goldengate_group.source.tns_alias }}) Current SCN: {{ source_current_scn_output.stdout | trim }}"
+
+- name: Get current SCN from local database
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    SELECT CURRENT_SCN FROM V\$DATABASE;
+    EXIT;
+    EOF
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: local_current_scn_output
+  changed_when: false
+  failed_when: local_current_scn_output.rc != 0
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+
+- name: Display current SCN from local database
+  ansible.builtin.debug:
+    msg: "Local Database ({{ oracle_goldengate_local_db_sid }}) Current SCN: {{ local_current_scn_output.stdout | trim }}"
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+
+- name: Set fact for source SCN
+  ansible.builtin.set_fact:
+    oracle_goldengate_source_current_scn: "{{ source_current_scn_output.stdout | trim }}"
+
+- name: Set fact for local SCN
+  ansible.builtin.set_fact:
+    oracle_goldengate_local_current_scn: "{{ local_current_scn_output.stdout | trim }}"
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""

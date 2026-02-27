@@ -1,7 +1,7 @@
 # if deploying audit then use the audit_db alias to connect to the database and create the checkpoint table, otherwise use the mis_db alias. This is because the capture and replicat processes for both audit and mis streams will use the same checkpoint table, so we just need to create it once using either alias.
 - name: Set fact for which DB alias to use for checkpoint table creation
   ansible.builtin.set_fact:
-    checkpoint_table_db_alias: "{{ oracle_goldengate_db.audit.credential_alias if oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref else oracle_goldengate_db.mis.credential_alias }}"
+    checkpoint_table_db_alias: "{{ oracle_goldengate_group.auditdata.credential_alias if oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref else oracle_goldengate_group.mis.credential_alias }}"
 
 - name: Create checkpoint and heartbeat tables using ggsci
   ansible.builtin.shell: |

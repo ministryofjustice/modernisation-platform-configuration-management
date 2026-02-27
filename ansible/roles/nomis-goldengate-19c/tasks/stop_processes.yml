@@ -1,0 +1,110 @@
+---
+# Stop GoldenGate Extract and Replicat processes
+
+- name: Stop AUDITDATA Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditdata_extract
+  changed_when: "'STOPPED' in stop_auditdata_extract.stdout or 'ABENDED' in stop_auditdata_extract.stdout"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Stop AUDITDATA Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditdata_replicat
+  changed_when: "'STOPPED' in stop_auditdata_replicat.stdout or 'ABENDED' in stop_auditdata_replicat.stdout"
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Stop AUDITREF Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditref_extract
+  changed_when: "'STOPPED' in stop_auditref_extract.stdout or 'ABENDED' in stop_auditref_extract.stdout"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Stop AUDITREF Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditref_replicat
+  changed_when: "'STOPPED' in stop_auditref_replicat.stdout or 'ABENDED' in stop_auditref_replicat.stdout"
+  when: oracle_goldengate_deploy_auditref
+
+- name: Stop MIS Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+    INFO EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_mis_extract
+  changed_when: "'STOPPED' in stop_mis_extract.stdout or 'ABENDED' in stop_mis_extract.stdout"
+  when: oracle_goldengate_deploy_mis
+
+- name: Stop MIS Replicat process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    STOP REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
+    INFO REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_mis_replicat
+  changed_when: "'STOPPED' in stop_mis_replicat.stdout or 'ABENDED' in stop_mis_replicat.stdout"
+  when: oracle_goldengate_deploy_mis

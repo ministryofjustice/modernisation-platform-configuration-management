@@ -40,18 +40,53 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
         p_staging_owner IN     varchar2,
         p_continue   OUT    boolean);
 
-    -- Packaged procedure stop_extract stops audit capture process
-    PROCEDURE stop_extract (p_force IN BOOLEAN  DEFAULT FALSE);
 
-    -- Packaged procedure start_extract starts audit capture process
-    PROCEDURE start_extract;
+    -- Packaged procedure start_extract starts all extract processes
+    -- or those associated with a particular staging table owner (if supplied)
+    -- Will raise an exception if source or target tables are missing or have
+    -- incompatible column types (data dictionaries are re-compared).
+    -- Resets capture rules and transforms before starting capture unless default overridden.
+    PROCEDURE start_extract(
+        p_staging_owner IN     varchar2 DEFAULT NULL,
+        p_refresh_flag 	IN     BOOLEAN  DEFAULT TRUE);
 
-    -- Packaged procedure stop_replicat stops audit apply process
-    PROCEDURE stop_replicat (p_force IN BOOLEAN DEFAULT FALSE);
 
-    -- Packaged procedure start_replicat starts audit apply process
-    -- first resets apply handlers and checks for errors
-    PROCEDURE start_replicat (p_refresh_flag IN BOOLEAN DEFAULT TRUE);
+    -- Packaged procedure stop_extract stops all extract processes
+    -- or those associated with a particular staging table owner (if supplied)
+    PROCEDURE stop_extract(
+        p_staging_owner IN     varchar2 DEFAULT NULL,
+        p_force 	IN     BOOLEAN  DEFAULT FALSE);
+
+
+    -- Packaged procedure drop_extract drops all extract processes
+    -- or those associated with a particular staging table owner (if supplied)
+    PROCEDURE drop_extract(
+        p_staging_owner IN     varchar2 DEFAULT NULL);
+
+
+    -- Packaged procedure start_replicat starts all apply processes
+    -- or those associated with a particular staging table owner (if supplied)
+    -- Will raise an exception if source or target tables are missing or have
+    -- incompatible column types (data dictionaries are re-compared),
+    -- or if there are LCRs held in the apply error queue.
+    -- Resets apply keys and handlers before starting apply unless default overridden.
+    PROCEDURE start_replicat(
+        p_staging_owner IN     varchar2 DEFAULT NULL,
+        p_refresh_flag 	IN     BOOLEAN  DEFAULT TRUE);
+
+
+    -- Packaged procedure stop_replicat stops all apply processes
+    -- or those associated with a particular staging table owner (if supplied)
+    PROCEDURE stop_replicat(
+        p_staging_owner IN     varchar2 DEFAULT NULL,
+        p_force  	IN     BOOLEAN  DEFAULT FALSE);
+
+
+    -- Packaged procedure drop_replicat drops all apply processes
+    -- or those associated with a particular staging table owner (if supplied)
+    PROCEDURE drop_replicat(
+        p_staging_owner IN     varchar2 DEFAULT NULL);
+
 
 END MIS_GG_CTRL_PKG;
 /

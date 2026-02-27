@@ -50,12 +50,12 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId1 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o
   where  o.offender_id = to_number(icolvalue);
         RETURN refid;
     EXCEPTION
@@ -65,13 +65,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId2 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b
   where  b.offender_id =  o.offender_id
   and    b.offender_book_id = to_number(icolvalue);
         RETURN refid;
@@ -82,14 +82,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId3 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_cases)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_cases)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_cases c
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_cases c
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = c.offender_book_id
   and    c.case_id = to_number(icolvalue);
@@ -101,14 +101,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId4 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_program_profiles)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_program_profiles)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_program_profiles r
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_program_profiles r
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = r.offender_book_id
   and    r.off_prgref_id = to_number(icolvalue);
@@ -120,14 +120,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId5 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_curfews)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-        from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_curfews c
+        from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews c
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = c.offender_book_id
   and    c.offender_curfew_id = to_number(icolvalue);
@@ -139,16 +139,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId6 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, 
-         AUDITREF.offender_curfews, AUDITREF.hdc_request_referrals)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews, {{ oracle_goldengate_group.auditref.target_schema }}.hdc_request_referrals)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-        from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_curfews c, 
-         AUDITREF.hdc_request_referrals h
+        from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews c, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.hdc_request_referrals h
   where  o.offender_id = b.offender_id
   and    b.offender_book_id = c.offender_book_id
   and    c.offender_curfew_id = h.offender_curfew_id
@@ -161,13 +161,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId7 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_deductions)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_deductions)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-        from   AUDITREF.offenders o, 
-         AUDITREF.offender_deductions d
+        from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_deductions d
   where  o.offender_id = d.offender_id
   and    d.offender_deduction_id = to_number(icolvalue);
         RETURN refid;
@@ -178,14 +178,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId8 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_case_notes)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_case_notes)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-        from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_case_notes n
+        from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_case_notes n
   where  o.offender_id = b.offender_id
   and    b.offender_book_id = n.offender_book_id
   and    n.case_note_id = to_number(icolvalue);
@@ -197,16 +197,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId9 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings,
-         AUDITREF.agency_incident_parties, AUDITREF.oic_hearings)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings,
+         {{ oracle_goldengate_group.auditref.target_schema }}.agency_incident_parties, {{ oracle_goldengate_group.auditref.target_schema }}.oic_hearings)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-        from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.agency_incident_parties p, 
-         AUDITREF.oic_hearings h
+        from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.agency_incident_parties p, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.oic_hearings h
   where  o.offender_id = b.offender_id
   and    b.offender_book_id = p.offender_book_id
   and    p.oic_incident_id = h.oic_incident_id
@@ -219,15 +219,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId10 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.agency_incident_parties)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.agency_incident_parties)
     IS
   refid     number := null;
     BEGIN
         -- function will return null if multiple values occur
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.agency_incident_parties p
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.agency_incident_parties p
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = p.offender_book_id
   and    p.agency_incident_id = to_number(icolvalue);
@@ -241,16 +241,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId11 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings,
-         AUDITREF.offender_curfews, AUDITREF.curfew_addresses)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews, {{ oracle_goldengate_group.auditref.target_schema }}.curfew_addresses)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_curfews c, 
-         AUDITREF.curfew_addresses a
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_curfews c, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.curfew_addresses a
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = c.offender_book_id
   and    c.offender_curfew_id = a.offender_curfew_id
@@ -263,14 +263,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId12 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_health_problems)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_health_problems)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_health_problems p
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_health_problems p
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = p.offender_book_id
   and    p.offender_health_problem_id = to_number(icolvalue);
@@ -282,14 +282,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId13 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_contact_persons)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_contact_persons)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_contact_persons p
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_contact_persons p
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = p.offender_book_id
   and    p.offender_contact_person_id = to_number(icolvalue);
@@ -301,14 +301,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId14 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_ppty_containers)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_ppty_containers)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_ppty_containers p
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_ppty_containers p
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = p.offender_book_id
   and    p.property_container_id = to_number(icolvalue);
@@ -320,14 +320,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId15 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.offender_visit_orders)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.offender_visit_orders)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o,
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_visit_orders v
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_visit_orders v
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = v.offender_book_id
   and    v.offender_visit_order_id = to_number(icolvalue);
@@ -339,16 +339,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId16 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings,
-         AUDITREF.offender_cases, AUDITREF.offender_charges)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings,
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_cases, {{ oracle_goldengate_group.auditref.target_schema }}.offender_charges)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_cases c, 
-         AUDITREF.offender_charges oc
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_cases c, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_charges oc
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = c.offender_book_id
   and    c.case_id = oc.case_id
@@ -361,14 +361,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId17 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.orders)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.orders)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.orders o2
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.orders o2
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = o2.offender_book_id
   and    o2.order_id = to_number(icolvalue);
@@ -380,14 +380,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FUNCTION getOffId18 (
         icolvalue IN varchar2
     ) RETURN number RESULT_CACHE
-    RELIES_ON (AUDITREF.offenders, AUDITREF.offender_bookings, AUDITREF.orders)
+    RELIES_ON ({{ oracle_goldengate_group.auditref.target_schema }}.offenders, {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings, {{ oracle_goldengate_group.auditref.target_schema }}.orders)
     IS
   refid     number := null;
     BEGIN
   select o.offender_id into refid
-  from   AUDITREF.offenders o, 
-         AUDITREF.offender_bookings b, 
-         AUDITREF.offender_rehab_decisions d
+  from   {{ oracle_goldengate_group.auditref.target_schema }}.offenders o, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_bookings b, 
+         {{ oracle_goldengate_group.auditref.target_schema }}.offender_rehab_decisions d
   where  o.offender_id =  b.offender_id
   and    b.offender_book_id = d.offender_book_id
   and    d.offender_rehab_decision_id = to_number(icolvalue);
@@ -467,7 +467,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
   PRAGMA AUTONOMOUS_TRANSACTION;
   -- procedure populate_offender_refs
   -- will insert offender cross-reference entries for up to p_table_row_limit
-  -- rows from AUDITDATA.AUDIT_TABLE, based on values in AUDIT_COLUMN
+  -- rows from {{ oracle_goldengate_sql_owner }}.AUDIT_TABLE, based on values in AUDIT_COLUMN
 
     l_start_seq   number := 0;
     l_start_time   date := sysdate-g_historic_days;
@@ -483,7 +483,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     l_source_object := 'AUDIT_OFFENDER_REF';
     select nvl(max(audit_table_seq),0), nvl(max(lcr_source_time),sysdate-g_historic_days)
     into   l_start_seq, l_start_time
-    from   auditdata.AUDIT_OFFENDER_REF;
+    from   {{ oracle_goldengate_sql_owner }}.AUDIT_OFFENDER_REF;
 
     -- get low watermark for transactions applied to reference tables
     l_source_object := 'ALL_APPLY_PROGRESS';
@@ -499,7 +499,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     FOR c_table_row IN
        (select audit_table_seq, lcr_source_time, rownum
         from  (select audit_table_seq, lcr_source_time
-               from   auditdata.AUDIT_TABLE
+               from   {{ oracle_goldengate_sql_owner }}.AUDIT_TABLE
                where  audit_table_seq > l_start_seq
                and    lcr_source_time >= l_start_time
                and    lcr_source_time <= l_limit_time
@@ -510,14 +510,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
         l_source_time := c_table_row.lcr_source_time;
         l_source_object := 'AUDIT_COLUMN';
         -- derive offender references from audit column values
-        insert into auditdata.AUDIT_OFFENDER_REF
+        insert into {{ oracle_goldengate_sql_owner }}.AUDIT_OFFENDER_REF
            (offender_id, audit_table_seq, lcr_source_time)
         select distinct getOffId(C.LCR_COLUMN_NAME,
-                   CONVERT_ANYDATA_TO_VARCHAR2(C.LCR_COLUMN_VALUE)),
+                   AUDITDATA_CONV_PKG.CONVERT_ANYDATA_TO_VARCHAR2(C.LCR_COLUMN_VALUE)),
                    C.AUDIT_TABLE_SEQ, C.LCR_SOURCE_TIME
-        from   AUDITDATA.AUDIT_COLUMN C
+        from   {{ oracle_goldengate_sql_owner }}.AUDIT_COLUMN C
         where  getOffId(C.LCR_COLUMN_NAME,
-                   CONVERT_ANYDATA_TO_VARCHAR2(C.LCR_COLUMN_VALUE)) is not null
+                   AUDITDATA_CONV_PKG.CONVERT_ANYDATA_TO_VARCHAR2(C.LCR_COLUMN_VALUE)) is not null
         and    C.AUDIT_TABLE_SEQ = c_table_row.audit_table_seq
         and    C.LCR_SOURCE_TIME = l_source_time;
 
@@ -531,7 +531,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
 
   EXCEPTION
     WHEN OTHERS THEN
-        log_audit_error ('populate_offender_refs', p_src_time => l_source_time,
+        AUDITDATA_GEN_PKG.log_audit_error ('populate_offender_refs', p_src_time => l_source_time,
                 p_src_object => l_source_object, p_tgt_object => 'AUDIT_OFFENDER_REF',
                 p_command_type => null, p_row_scn => null, p_commit_scn => null,
                 p_error_code => SQLCODE, p_message => SQLERRM);
@@ -545,21 +545,21 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
   /*
   Summary
   ==============
-  Extracts binary data (images and documents) for a specified transactrion from the NOMIS audit database;
+  Extracts binary data (images and documents) for a specified transaction from the NOMIS audit database;
   Requires creation of g_binary_dir DIRECTORY to receive output files;
   */
 
     e_missing_parameter  exception;
 
-    v_lcr_commit_scn    auditdata.audit_table.lcr_commit_scn%type := null;
-    v_lcr_source_time    auditdata.audit_table.lcr_source_time%type := null;
-    v_lcr_object_name    auditdata.audit_table.lcr_object_name%type := null;
-    v_lcr_column_name    auditdata.audit_column.lcr_column_name%type := null;
-    v_lcr_column_value    auditdata.audit_column.lcr_column_value%type := null;
+    v_lcr_commit_scn    {{ oracle_goldengate_sql_owner }}.audit_table.lcr_commit_scn%type := null;
+    v_lcr_source_time    {{ oracle_goldengate_sql_owner }}.audit_table.lcr_source_time%type := null;
+    v_lcr_object_name    {{ oracle_goldengate_sql_owner }}.audit_table.lcr_object_name%type := null;
+    v_lcr_column_name    {{ oracle_goldengate_sql_owner }}.audit_column.lcr_column_name%type := null;
+    v_lcr_column_value    {{ oracle_goldengate_sql_owner }}.audit_column.lcr_column_value%type := null;
 
-    v_lcr_commit_scn_prev  auditdata.audit_table.lcr_commit_scn%type := 0;
-    v_lcr_object_name_prev  auditdata.audit_table.lcr_object_name%type := '';
-    v_lcr_column_name_prev  auditdata.audit_column.lcr_column_name%type := '';
+    v_lcr_commit_scn_prev  {{ oracle_goldengate_sql_owner }}.audit_table.lcr_commit_scn%type := 0;
+    v_lcr_object_name_prev  {{ oracle_goldengate_sql_owner }}.audit_table.lcr_object_name%type := '';
+    v_lcr_column_name_prev  {{ oracle_goldengate_sql_owner }}.audit_column.lcr_column_name%type := '';
 
     type v_blob_tab is table of blob index by binary_integer;
     v_blobs      v_blob_tab;
@@ -578,7 +578,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     CURSOR c_chunks (p_lcr_commit_scn IN number) IS
   SELECT   t.lcr_commit_scn, t.lcr_source_time, t.lcr_object_name,
     c.lcr_column_name, c.lcr_column_value
-  FROM auditdata.audit_table t, auditdata.audit_column c
+  FROM {{ oracle_goldengate_sql_owner }}.audit_table t, {{ oracle_goldengate_sql_owner }}.audit_column c
   WHERE t.audit_table_seq = c.audit_table_seq
   AND t.lcr_command_type = 'LOB WRITE'
   AND c.lcr_column_value.GETTYPENAME() = 'SYS.RAW'
@@ -638,19 +638,19 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     END LOOP;
     
     -- log completion
-    log_audit_error ('export_binary_data', p_src_time => v_lcr_source_time,
+    AUDITDATA_GEN_PKG.log_audit_error ('export_binary_data', p_src_time => v_lcr_source_time,
         p_src_object => null, p_tgt_object => null,
         p_command_type => null, p_row_scn => null, p_commit_scn => p_lcr_commit_scn,
         p_error_code => SQLCODE, p_message => v_blobs.count || ' binary file(s) created.');
 
   EXCEPTION
     WHEN e_missing_parameter THEN
-        log_audit_error ('export_binary_data', p_src_time => null,
+        AUDITDATA_GEN_PKG.log_audit_error ('export_binary_data', p_src_time => null,
                 p_src_object => null, p_tgt_object => null,
                 p_command_type => null, p_row_scn => null, p_commit_scn => p_lcr_commit_scn,
                 p_error_code => SQLCODE, p_message => 'No Commit SCN specified');
     WHEN OTHERS THEN
-        log_audit_error ('export_binary_data', p_src_time => v_lcr_source_time,
+        AUDITDATA_GEN_PKG.log_audit_error ('export_binary_data', p_src_time => v_lcr_source_time,
                 p_src_object => v_lcr_object_name, p_tgt_object => null,
                 p_command_type => null, p_row_scn => null, p_commit_scn => p_lcr_commit_scn,
                 p_error_code => SQLCODE, p_message => SQLERRM);

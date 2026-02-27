@@ -101,7 +101,7 @@ goldengate (ALL TASKS)
 │   ├── goldengate-credentials (Credential store)
 │   ├── goldengate-database-objects (Packages/tables)
 │   ├── goldengate-processes (Extract & Replicat)
-│   │   ├── goldengate-capture (Extract processes)
+│   │   ├── goldengate-extract (Extract processes)
 │   │   └── goldengate-replicat (Replicat processes)
 │   └── goldengate-scripts (Control scripts)
 ```
@@ -117,9 +117,9 @@ goldengate (ALL TASKS)
 | Create GG DB User | `goldengate`, `goldengate-install`, `goldengate-database-config`, `goldengate-dbuser`, `goldengate-audit`, `goldengate-mis` |
 | Configure Credentials | `goldengate`, `goldengate-install`, `goldengate-config`, `goldengate-credentials`, `goldengate-audit`, `goldengate-mis` |
 | Deploy DB Objects | `goldengate`, `goldengate-config`, `goldengate-database-objects`, `goldengate-audit`, `goldengate-mis` |
-| Configure Capture (Audit) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-audit`, `goldengate-capture` |
+| Configure Extract (Audit) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-audit`, `goldengate-extract` |
 | Configure Replicat (Audit) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-audit`, `goldengate-replicat` |
-| Configure Capture (MIS) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-mis`, `goldengate-capture` |
+| Configure Extract (MIS) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-mis`, `goldengate-extract` |
 | Configure Replicat (MIS) | `goldengate`, `goldengate-config`, `goldengate-processes`, `goldengate-mis`, `goldengate-replicat` |
 | Deploy Control Scripts | `goldengate`, `goldengate-config`, `goldengate-scripts`, `goldengate-audit`, `goldengate-mis` |
 
@@ -186,12 +186,12 @@ ansible-playbook site.yml \
 # Update Extract processes on Audit host
 ansible-playbook site.yml \
   --limit audit_db_hosts \
-  --tags goldengate-capture,goldengate-audit
+  --tags goldengate-extract,goldengate-audit
 
 # Update Extract processes on MIS host
 ansible-playbook site.yml \
   --limit mis_db_hosts \
-  --tags goldengate-capture,goldengate-mis
+  --tags goldengate-extract,goldengate-mis
 ```
 
 ### Scenario 7: Update Replicat Processes Only
@@ -290,7 +290,7 @@ all:
 The role uses these conditions to determine what to deploy:
 
 ```yaml
-# In tasks/configure_capture.yml
+# In tasks/configure_extract.yml
 when: oracle_goldengate_deploy_auditdata
 when: oracle_goldengate_deploy_auditref
 when: oracle_goldengate_deploy_mis

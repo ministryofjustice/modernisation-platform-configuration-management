@@ -221,7 +221,20 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
     END IF;
   END;
 
-
+  FUNCTION get_capture_name(
+    p_source_owner IN varchar2
+  ) RETURN varchar2 RESULT_CACHE
+  IS
+  -- packaged function get_capture_name returns the streams capture process name
+  -- for the supplied source table owner
+    v_length 		number := length(p_source_owner);
+  BEGIN
+    IF v_length > 22 THEN
+        return substr(upper(p_source_owner), v_length-21, 22)||'_CAPTURE';
+    ELSE
+        return upper(p_source_owner)||'_CAPTURE';
+    END IF;
+  END;
 
   FUNCTION get_capture_list(
     p_staging_owner   IN     varchar2 DEFAULT NULL

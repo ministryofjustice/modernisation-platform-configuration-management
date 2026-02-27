@@ -64,13 +64,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
     -- stop capture process
     DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
     BEGIN
       --  SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
       DBMS_SCHEDULER.create_job(
         job_name            => l_job_name,
         job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_extract_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
         number_of_arguments => 0,
         enabled             => FALSE,
         auto_drop           => TRUE
@@ -89,14 +89,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
                 SYS.DBMS_LOCK.SLEEP(g_sleep1);
                 v_retry_txt := ' on second attempt';
             execute immediate v_plsql into v_msg_number using g_capture_name;
-                SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+-- need to change this                SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
             EXCEPTION
                 WHEN timeout_stopping_process THEN
                 BEGIN
                     SYS.DBMS_LOCK.SLEEP(g_sleep2);
                     v_retry_txt := ' on third attempt';
                 execute immediate v_plsql into v_msg_number using g_capture_name;
-                    SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+-- need to change this                    SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
                 EXCEPTION
                     WHEN timeout_stopping_process THEN RAISE;
                 END;
@@ -113,14 +113,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
   PROCEDURE start_extract IS
   -- packaged procedure start_extract starts audit capture process
-    l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+    l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
   BEGIN
     -- start capture processes
     --      SYS.DBMS_CAPTURE_ADM.start_extract(g_capture_name);
     DBMS_SCHEDULER.create_job(
       job_name            => l_job_name,
       job_type            => 'EXECUTABLE',
-      job_action          => '{{ oracle_goldengate_scripts_dir }}/start_extract_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+      job_action          => '{{ oracle_goldengate_scripts_dir }}/start_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
       number_of_arguments => 0,
       enabled             => FALSE,
       auto_drop           => TRUE
@@ -161,13 +161,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
     -- stop audit apply process
     DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_oracle_goldengate_stream) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
     BEGIN
       --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
       DBMS_SCHEDULER.create_job(
         job_name            => l_job_name,
         job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
         number_of_arguments => 0,
         enabled             => FALSE,
         auto_drop           => TRUE
@@ -188,7 +188,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
                 v_retry_txt := ' on second attempt';
                 execute immediate v_plsql into v_msg_number, v_msg_date
                 using g_apply_name;
-                SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+-- need to change this                SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
             EXCEPTION
                 WHEN timeout_stopping_process THEN
                 BEGIN
@@ -196,7 +196,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
                     v_retry_txt := ' on third attempt';
                     execute immediate v_plsql into v_msg_number, v_msg_date
                     using g_apply_name;
-                    SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+-- need to change this                    SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
                 EXCEPTION
                     WHEN timeout_stopping_process THEN RAISE;
                 END;
@@ -224,7 +224,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
     IF (p_refresh_flag = TRUE) THEN
         -- set apply DML handlers
-        apply_dml_conf;
+        auditdata_dml_pkg.apply_dml_conf;
     END IF;
 
     -- count apply process errors
@@ -235,17 +235,17 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
     -- determine if any messages queued in apply error queue
     IF v_apply_error_count > 0 THEN
-        RAISE AUD_STREAMS_QUEUE_EXCEPTION;
+        RAISE AUDITDATA_DML_PKG.AUD_STREAMS_QUEUE_EXCEPTION;
     END IF;
 
     DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
     BEGIN
       --  SYS.DBMS_APPLY_ADM.start_replicat(g_apply_name);
       DBMS_SCHEDULER.create_job(
         job_name            => l_job_name,
         job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/start_replicat_' || auditdata_gen_pkg.g_oracle_goldengate_stream || '.sh',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
         number_of_arguments => 0,
         enabled             => FALSE,
         auto_drop           => TRUE
@@ -265,7 +265,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
          null, null, null, null, null, null, 'start_replicat');
 
   EXCEPTION
-    WHEN AUD_STREAMS_QUEUE_EXCEPTION THEN
+    WHEN AUDITDATA_DML_PKG.AUD_STREAMS_QUEUE_EXCEPTION THEN
   audit_log_error(SQLCODE, 'Apply error queue contains ' || v_apply_error_count || ' messages',
       null, null, null, null, null, null, 'start_replicat');
         RAISE;

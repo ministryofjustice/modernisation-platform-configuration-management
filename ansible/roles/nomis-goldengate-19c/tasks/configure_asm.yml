@@ -12,7 +12,7 @@
         export ORACLE_SID=+ASM
         export ORAENV_ASK=NO
         . oraenv
-        asmcmd mkdir +DATA/{{ oracle_goldengate_db.source.tns_alias }}
+        asmcmd mkdir +DATA/{{ oracle_goldengate_group.source.tns_alias }}
         asmcmd mkdir {{ oracle_goldengate_asm_dir }}
       register: create_asm_directory
       failed_when: create_asm_directory.rc != 0 and "is already used" not in create_asm_directory.stderr

@@ -1,0 +1,126 @@
+---
+# Register and manage AUDITDATA Extract process
+
+- name: Set AUDITDATA Extract BEGIN clause
+  ansible.builtin.set_fact:
+    auditdata_begin_clause: >-
+      {% if oracle_goldengate_extract_start_mode == 'csn' and oracle_goldengate_extract_start_csn != '' %}
+      BEGIN CSN {{ oracle_goldengate_extract_start_csn }}
+      {% elif oracle_goldengate_extract_start_mode == 'scn' and oracle_goldengate_extract_start_scn != '' %}
+      BEGIN SCN {{ oracle_goldengate_extract_start_scn }}
+      {% elif oracle_goldengate_extract_start_mode == 'time' and oracle_goldengate_extract_start_time != '' %}
+      BEGIN TIME '{{ oracle_goldengate_extract_start_time }}'
+      {% else %}
+      BEGIN NOW
+      {% endif %}
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Set AUDITDATA Extract REGISTER SCN clause
+  ansible.builtin.set_fact:
+    auditdata_register_scn_clause: >-
+      {% if oracle_goldengate_register_start_mode == 'scn' and oracle_goldengate_register_start_scn != '' %}
+      SCN {{ oracle_goldengate_register_start_scn }}
+      {% else %}
+      {% endif %}
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Register AUDITDATA Extract process in GoldenGate
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.auditdata.credential_alias }}
+    REGISTER EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }} DATABASE {{ auditdata_register_scn_clause }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: register_auditdata_extract
+  failed_when: register_auditdata_extract.rc != 0 and "already registered" not in register_auditdata_extract.stderr
+  changed_when: register_auditdata_extract.rc == 0 and "already registered" not in register_auditdata_extract.stderr
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Add AUDITDATA Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.auditdata.credential_alias }}
+    ADD EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}, INTEGRATED TRANLOG, {{ auditdata_begin_clause }}
+    ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}, MEGABYTES 500
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: add_auditdata_extract
+  failed_when: add_auditdata_extract.rc != 0 and "already exists" not in add_auditdata_extract.stderr
+  changed_when: add_auditdata_extract.rc == 0 and "already exists" not in add_auditdata_extract.stderr
+  when: oracle_goldengate_deploy_auditdata
+
+- name: Set AUDITREF Extract BEGIN clause
+  ansible.builtin.set_fact:
+    auditref_begin_clause: >-
+      {% if oracle_goldengate_extract_start_mode == 'csn' and oracle_goldengate_extract_start_csn != '' %}
+      BEGIN CSN {{ oracle_goldengate_extract_start_csn }}
+      {% elif oracle_goldengate_extract_start_mode == 'scn' and oracle_goldengate_extract_start_scn != '' %}
+      BEGIN SCN {{ oracle_goldengate_extract_start_scn }}
+      {% elif oracle_goldengate_extract_start_mode == 'time' and oracle_goldengate_extract_start_time != '' %}
+      BEGIN TIME '{{ oracle_goldengate_extract_start_time }}'
+      {% else %}
+      BEGIN NOW
+      {% endif %}
+  when: oracle_goldengate_deploy_auditref
+
+- name: Set AUDITREF Extract REGISTER SCN clause
+  ansible.builtin.set_fact:
+    auditref_register_scn_clause: >-
+      {% if oracle_goldengate_register_start_mode == 'scn' and oracle_goldengate_register_start_scn != '' %}
+      SCN {{ oracle_goldengate_register_start_scn }}
+      {% else %}
+      {% endif %}
+  when: oracle_goldengate_deploy_auditref
+
+- name: Register AUDITREF Extract process in GoldenGate
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.auditref.credential_alias }}
+    REGISTER EXTRACT {{ oracle_goldengate_group.auditref.extract_name }} DATABASE {{ auditref_register_scn_clause }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: register_auditref_extract
+  failed_when: register_auditref_extract.rc != 0 and "already registered" not in register_auditref_extract.stderr
+  changed_when: register_auditref_extract.rc == 0 and "already registered" not in register_auditref_extract.stderr
+  when: oracle_goldengate_deploy_auditref
+
+- name: Add AUDITREF Extract process
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci << EOF
+    dblogin alias {{ oracle_goldengate_group.auditref.credential_alias }}
+    ADD EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}, INTEGRATED TRANLOG, {{ auditref_begin_clause }}
+    ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}, MEGABYTES 500
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: add_auditref_extract
+  failed_when: add_auditref_extract.rc != 0 and "already exists" not in add_auditref_extract.stderr
+  changed_when: add_auditref_extract.rc == 0 and "already exists" not in add_auditref_extract.stderr
+  when: oracle_goldengate_deploy_auditref

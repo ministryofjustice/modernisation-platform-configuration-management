@@ -139,7 +139,7 @@ The role supports granular control via tags for different deployment scenarios:
 - `goldengate-mis` - Tasks for MIS database hosts
 
 ### Process-Specific Tags
-- `goldengate-capture` - Extract/capture process configuration
+- `goldengate-extract` - Extract/extract process configuration
 - `goldengate-replicat` - Replicat process configuration
 - `goldengate-database-config` - Database parameter configuration
 - `goldengate-dbuser` - GoldenGate database user creation

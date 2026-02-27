@@ -45,51 +45,46 @@ oracle_goldengate_directories:
   - "{{ oracle_goldengate_sql_dir }}"
   - "{{ oracle_goldengate_log_dir }}"
 
-oracle_goldengate_asm_dir: "+DATA/{{ oracle_goldengate_db.source.tns_alias }}/GG_ARCHIVELOGS"
+oracle_goldengate_asm_dir: "+DATA/{{ oracle_goldengate_group.source.tns_alias }}/GG_ARCHIVELOGS"
 
 # Logical names for each group
+# (override via inventory/group vars)
 oracle_goldengate_group:
+  source:
+    tns_alias: T1CNOM
+    schema_owner: OMS_OWNER
+    credential_alias: SOURCE_DB
+    oracle_home: "{{ oracle11g_home }}"
   auditdata:
+    tns_alias: T1CAUDG
+    schema_owner: AUDITDATA
+    credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home }}"
     extract_name: AUDDTEXT
     replicat_name: AUDTREP
     trail_prefix: dt
     target_schema: AUDITDATA
     dummy_target_schema: AUDITDATA_OMS_OWNER
   auditref:
+    tns_alias: T1CAUDG
+    schema_owner: AUDITREF
+    credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home }}"
     extract_name: AUDRFEXT
     replicat_name: AUDRREP
     trail_prefix: rf
     target_schema: AUDITREF
     dummy_target_schema:
   mis:
+    tns_alias: T1CMISG
+    schema_owner: BODISTAGING
+    credential_alias: MIS_DB
+    oracle_home: "{{ oracle11g_home }}"
     extract_name: MISEXT
     replicat_name: MISREP
     trail_prefix: ms
     target_schema: BODISTAGING
     dummy_target_schema:
-
-# DB connection defaults (override via inventory/group vars)
-oracle_goldengate_db:
-  source:
-    tns_alias: T1CNOMxx
-    schema_owner: OMS_OWNER
-    credential_alias: SOURCE_DB
-    oracle_home: "{{ oracle11g_home }}"
-  audit:
-    tns_alias: T1CAUDG
-    schema_owner: AUDITDATA
-    credential_alias: AUDIT_DB
-    oracle_home: "{{ oracle11g_home }}"
-  auditref:
-    tns_alias: T1CAUDG
-    schema_owner: AUDITREF
-    credential_alias: AUDIT_DB
-    oracle_home: "{{ oracle11g_home }}"
-  mis:
-    tns_alias: T1CMISG
-    schema_owner: BODISTAGING
-    credential_alias: MIS_DB
-    oracle_home: "{{ oracle11g_home }}"
   
 # Define which database instance is running on this host
 # This controls which GoldenGate components are deployed
@@ -100,9 +95,27 @@ oracle_goldengate_local_db_sid: ""
 # Automatically determine which streams to deploy based on local database
 # AUDITDATA and AUDITREF are deployed on hosts running the audit database (T1CAUDG)
 # MIS is deployed on hosts running the MIS database (T1CMISG)
-oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.audit.tns_alias }}"
-oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.auditref.tns_alias }}"
-oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_db.mis.tns_alias }}"
+oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
+oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
+oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias }}"
+
+# Extract start options - control when Extract begins processing
+# Mode options: now (default), csn, scn, time
+# - now: Start from current point in redo logs (BEGIN NOW)
+# - csn: Start from specific Commit Sequence Number (BEGIN CSN <number>)
+# - scn: Start from specific System Change Number (BEGIN SCN <number>)
+# - time: Start from specific timestamp (BEGIN TIME '<timestamp>')
+oracle_goldengate_extract_start_mode: "now"
+oracle_goldengate_extract_start_csn: ""
+oracle_goldengate_extract_start_scn: ""
+oracle_goldengate_extract_start_time: ""
+
+# REGISTER EXTRACT start options - control registration starting point
+# Mode options: current (default), scn
+# - current: Register from current point (no SCN clause)
+# - scn: Register from specific SCN (REGISTER ... SCN <number>)
+oracle_goldengate_register_start_mode: "current"
+oracle_goldengate_register_start_scn: ""
 
 # full path to the home directory
 gg_env:

@@ -6,7 +6,7 @@
 # As auditdata and auditref streams both connect to the same audit database, they can use the same ggadmin user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
 
 - name: Create GoldenGate database user when local database is configured
-  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_db.source.tns_alias, oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.mis.tns_alias]
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid in [oracle_goldengate_group.source.tns_alias, oracle_goldengate_group.auditdata.tns_alias, oracle_goldengate_group.mis.tns_alias]
   block:
     - name: Generate random password for ggadmin user
       ansible.builtin.set_fact:
@@ -16,12 +16,12 @@
 
     # CAPTURE priv is still needed for the source db user as the downstream capture process will connect remotely using this user, ßbut we don't need to grant APPLY privileges on the source database as the replicat process won't be connecting to the source database
     - name: Set GoldenGate admin privileges based on database type 
-      when: oracle_goldengate_local_db_sid in [oracle_goldengate_db.source.tns_alias]
+      when: oracle_goldengate_local_db_sid in [oracle_goldengate_group.source.tns_alias]
       ansible.builtin.set_fact: 
         gg_privilege_type: 'CAPTURE'
 
     - name: Set GoldenGate admin privileges based on database type 
-      when: oracle_goldengate_local_db_sid in [oracle_goldengate_db.audit.tns_alias, oracle_goldengate_db.auditref.tns_alias, oracle_goldengate_db.mis.tns_alias]
+      when: oracle_goldengate_local_db_sid in [oracle_goldengate_group.auditdata.tns_alias, oracle_goldengate_group.auditref.tns_alias, oracle_goldengate_group.mis.tns_alias]
       ansible.builtin.set_fact: 
         gg_privilege_type: '*'
 
@@ -95,11 +95,11 @@
       ansible.builtin.shell: |
         . ~/.bash_profile
         export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
-        export ORACLE_HOME="{{ oracle_goldengate_db.source.oracle_home }}"
+        export ORACLE_HOME="{{ oracle_goldengate_group.source.oracle_home }}"
         export PATH="${ORACLE_HOME}/bin:${PATH}"
 
         LOCAL_DB_SID="{{ oracle_goldengate_local_db_sid }}"
-        SOURCE_DB_SID="{{ oracle_goldengate_db.source.tns_alias }}"
+        SOURCE_DB_SID="{{ oracle_goldengate_group.source.tns_alias }}"
 
         if [ "${LOCAL_DB_SID}" = "${SOURCE_DB_SID}" ]; then
           SYS_PASSWORD=$(aws secretsmanager get-secret-value \
@@ -187,8 +187,8 @@
       when: oracle_goldengate_deploy_auditdata
       ansible.builtin.shell: |
         . ~/.bash_profile
-        export ORACLE_SID={{ oracle_goldengate_db.audit.tns_alias }}
-        export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+        export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
         export PATH=${ORACLE_HOME}/bin:$PATH
         
         sqlplus -s / as sysdba <<EOF
@@ -239,8 +239,8 @@
       ansible.builtin.shell: |
         . ~/.bash_profile
         -- connect to source database as sysdba to generate DDL for the source tables, replacing the schema name with the target schema name in the output so that we can create the same table structures in the target database for the replicat MAP to work, and then execute the generated DDL in the target database to create the tables
-        export ORACLE_SID={{ oracle_goldengate_db.source.tns_alias }}
-        export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+        export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
         export PATH=${ORACLE_HOME}/bin:$PATH
 
         # Retrieve SYS password from AWS Secrets Manager
@@ -279,9 +279,9 @@
         END;
         /
 
-        SELECT replace(DBMS_METADATA.get_ddl (o.object_type, o.object_name, o.owner),'{{ oracle_goldengate_db.source.schema_owner }}','{{ oracle_goldengate_group.auditdata.dummy_target_schema }}') c1
+        SELECT replace(DBMS_METADATA.get_ddl (o.object_type, o.object_name, o.owner),'{{ oracle_goldengate_group.source.schema_owner }}','{{ oracle_goldengate_group.auditdata.dummy_target_schema }}') c1
         FROM   dba_objects o
-        WHERE  o.owner      = '{{ oracle_goldengate_db.source.schema_owner }}'
+        WHERE  o.owner      = '{{ oracle_goldengate_group.source.schema_owner }}'
         AND    o.object_type in ('TABLE','CLUSTER')
         AND    EXISTS 
           (SELECT 1 FROM dual d 

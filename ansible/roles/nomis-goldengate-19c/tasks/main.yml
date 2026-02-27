@@ -1,4 +1,8 @@
 ---
+# GoldenGate Role Main Task File
+# Each task has unique tags for independent testing
+# See TAG_BEST_PRACTICES.md for details
+
 - name: Set deployment target host as a fact for use in templates
   ansible.builtin.set_fact:
     target_host: "{{ inventory_hostname }}"
@@ -7,79 +11,119 @@
 - name: Detect local Oracle database instance
   import_tasks: detect_local_database.yml
   when: oracle_goldengate_local_db_sid is not defined or oracle_goldengate_local_db_sid == ""
-  tags: always
-  
+  tags: 
+    - always
+    - detect-database
+
 - name: Install Oracle GoldenGate binaries
-  import_tasks: install.yml
+  import_tasks: install_software.yml
   tags:
     - goldengate
     - goldengate-install
+    - goldengate-software
+    - install-software
 
 - name: Install Oracle GoldenGate patches
   import_tasks: install_patches.yml
   tags:
     - goldengate
     - goldengate-install
+    - goldengate-software
     - goldengate-patches
+    - install-patches
 
 - name: Configure Oracle ASM
   import_tasks: configure_asm.yml
   tags:
     - goldengate
-#    - goldengate-install
+    - goldengate-install
     - goldengate-config
+    - configure-asm
 
 - name: Configure GoldenGate home subdirectories and mgr
   import_tasks: configure_gg_home.yml
   tags:
     - goldengate
-#    - goldengate-install
+    - goldengate-install
     - goldengate-config
+    - configure-home
 
 - name: Configure Oracle database parameters for GoldenGate
   import_tasks: configure_database_parameters.yml
   tags:
     - goldengate
-#    - goldengate-install
+    - goldengate-install
+    - goldengate-config
     - goldengate-database-config
+    - configure-db-params
 
-- name: Create GoldenGate database administrator user
-  import_tasks: create_gg_dbuser.yml
+- name: Create GoldenGate database administrator and schema users
+  import_tasks: create_gg_dbusers.yml
   when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
   tags:
     - goldengate
-#    - goldengate-install
+    - goldengate-install
     - goldengate-database-config
     - goldengate-dbuser
+    - create-dbusers
 
 - name: Configure GoldenGate credential store
   import_tasks: configure_credential_store.yml
   tags:
     - goldengate
-#    - goldengate-install
+    - goldengate-install
     - goldengate-config
     - goldengate-credentials
+    - configure-credentials
 
 # Database-specific deployment tasks
-- name: Deploy GoldenGate database objects (packages, control tables)
-  import_tasks: deploy_db_objects.yml
+- name: Deploy Source GoldenGate database objects (packages, control tables)
+  import_tasks: deploy_db_objects_source.yml
   tags:
     - goldengate
+    - goldengate-install
     - goldengate-config
-    - goldengate-database-objects
-    - goldengate-audit
-    - goldengate-mis
+    - deploy-source
+    - deploy-source-objects
+
+- name: Deploy AuditRef GoldenGate database objects (packages, control tables)
+  import_tasks: deploy_db_objects_auditref.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - deploy-auditref
+    - deploy-auditref-objects
+
+- name: Deploy AuditData GoldenGate database objects (packages, control tables)
+  import_tasks: deploy_db_objects_auditdata.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - deploy-auditdata
+    - deploy-auditdata-objects
+
+- name: Deploy MIS GoldenGate database objects (packages, control tables)
+  import_tasks: deploy_db_objects_mis.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - deploy-mis
+    - deploy-mis-objects
 
 # Audit database processes (AUDITDATA and AUDITREF)
-- name: Install GoldenGate capture processes (Audit databases)
-  import_tasks: install_audit_capture.yml
+- name: Install GoldenGate extract processes (Audit databases)
+  import_tasks: install_audit_extract.yml
   when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
   tags:
     - goldengate
     - goldengate-config
     - goldengate-processes
     - goldengate-audit
-    - goldengate-capture
+    - goldengate-extract
+    - install-audit-extract
 
 - name: Install GoldenGate replicat processes (Audit databases)
   import_tasks: install_audit_replicat.yml
@@ -90,17 +134,19 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-replicat
+    - install-audit-replicat
 
 # MIS database processes
-- name: Install GoldenGate capture processes (MIS database)
-  import_tasks: install_mis_capture.yml
+- name: Install GoldenGate extract processes (MIS database)
+  import_tasks: install_mis_extract.yml
   when: oracle_goldengate_deploy_mis
   tags:
     - goldengate
     - goldengate-config
     - goldengate-processes
     - goldengate-mis
-    - goldengate-capture
+    - goldengate-extract
+    - install-mis-extract
 
 - name: Install GoldenGate replicat processes (MIS database)
   import_tasks: install_mis_replicat.yml
@@ -111,6 +157,7 @@
     - goldengate-processes
     - goldengate-mis
     - goldengate-replicat
+    - install-mis-replicat
 
 # Control scripts (deploy on all hosts)
 - name: Deploy GoldenGate control scripts
@@ -121,13 +168,30 @@
     - goldengate-scripts
     - goldengate-audit
     - goldengate-mis
+    - deploy-scripts
 
-# To do:
-# - Add packages for supporting DML handlers and database jobs
-# - Implement capture and replicat update processes (e.g. using Ansible to deploy updated parameter files and then restart the processes to pick up changes)
-# - Implement foreign archive log cleanup processes to manage storage in the ASM directory used for source archive logs (e.g. use RMAN)
-# - Configure GoldenGate error handling and alerting (e.g. email notifications on process failures, automated restarts, etc.)
-# - Configure GoldenGate monitoring (e.g. Oracle Enterprise Manager, Grafana dashboards using GoldenGate metrics, or custom monitoring scripts)
-# - Implement any necessary security hardening for the GoldenGate installation (e.g. encrypting trail files)
-# - Implement backup and recovery processes for GoldenGate configuration and metadata (e.g. regular backups of the credential store, parameter files, etc.)?
-# - Implement processes for applying GoldenGate software patches and updates
+# Process management tasks
+- name: Start GoldenGate processes
+  import_tasks: start_processes.yml
+  tags:
+    - goldengate
+    - goldengate-start
+    - goldengate-processes
+    - never
+
+- name: Stop GoldenGate processes
+  import_tasks: stop_processes.yml
+  tags:
+    - goldengate
+    - goldengate-stop
+    - goldengate-processes
+    - never
+
+# Helper tasks
+- name: Get current SCN from databases
+  import_tasks: get_current_scn.yml
+  tags:
+    - goldengate
+    - goldengate-info
+    - get-current-scn
+    - never

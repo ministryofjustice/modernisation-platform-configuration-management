@@ -1,6 +1,3 @@
-- name: Get Ora version
-  import_tasks: get_ora_version.yml
-
 - name: Apply GoldenGate software patches
   when: oracle_goldengate_software_patches[response_file_version] is defined
   block:

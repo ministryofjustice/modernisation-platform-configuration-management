@@ -21,7 +21,7 @@ DBOPTIONS SUPPRESSTRIGGERS
 DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
 
 -- Map MIS staging tables
-MAP "{{ oracle_goldengate_db.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.mis.target_schema }}"."STG_*", &
+MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.mis.target_schema }}"."STG_*", &
     COLMAP (
       USEDEFAULTS, &
       MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &

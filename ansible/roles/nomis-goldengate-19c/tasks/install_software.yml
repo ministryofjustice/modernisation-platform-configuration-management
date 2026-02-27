@@ -2,17 +2,6 @@
 # GoldenGate software installation uses existing oracle user and oinstall group
 # These should already exist on the host
 
-# Check if this is the source host as that doesn't need the binaries installed as the capture process will connect remotely to the source database and binaries are only needed on the target hosts for replication
-- name: Source host check
-  ansible.builtin.command: >
-    pgrep -f "ora_pmon_{{ oracle_goldengate_db.source.tns_alias }}"
-  register: db_check
-  changed_when: false
-  failed_when: false
-
-- ansible.builtin.set_fact:
-    host_is_source: "{{ db_check.rc == 0 }}"
-
 - name: Skip GoldenGate installation on source host since binaries are only needed on target hosts for replication 
   ansible.builtin.debug: 
     msg: "This host is the source host, skipping GoldenGate software installation since binaries are only needed on target hosts for replication." 
@@ -73,9 +62,6 @@
         loop:
           - "{{ oracle_goldengate_software }}"
         no_log: true
-
-      - name: Get Ora version
-        import_tasks: get_ora_version.yml
 
       - name: Create GoldenGate response file from template
         ansible.builtin.template:

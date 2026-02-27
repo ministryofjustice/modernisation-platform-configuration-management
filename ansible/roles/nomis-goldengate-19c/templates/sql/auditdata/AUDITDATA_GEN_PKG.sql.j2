@@ -18,9 +18,9 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG AS
  */
 
     -- package level variable declarations
-    g_oracle_goldengate_stream VARCHAR2(30) := '{{ oracle_goldengate_stream }}';
-    g_replicat_name VARCHAR2(30) := '{{ oracle_goldengate_group.audit.replicat_name }}';
-    g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.target_schema }}';
+    g_ogg_group_name VARCHAR2(30) := '{{ oracle_goldengate_group_name }}';
+    g_replicat_name VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.replicat_name }}';
+    g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.target_schema }}';
     g_log_dir    varchar2(30) := 'AUD_ERRORLOG_DIR';
     g_binary_dir  varchar2(30) := 'AUD_BINARY_DIR';
     g_historic_days   CONSTANT NUMBER := 793;
@@ -52,3 +52,5 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG AS
 
 END AUDITDATA_GEN_PKG;
 /
+
+show errors

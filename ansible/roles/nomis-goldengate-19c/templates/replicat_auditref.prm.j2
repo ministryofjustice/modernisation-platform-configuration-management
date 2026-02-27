@@ -20,7 +20,7 @@ DBOPTIONS DEFERREFCONST
 DBOPTIONS SUPPRESSTRIGGERS
 DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
 
-MAP "{{ oracle_goldengate_db.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditref.target_schema }}"."*", &
+MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditref.target_schema }}"."*", &
     COLMAP (
       USEDEFAULTS, &
       MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &

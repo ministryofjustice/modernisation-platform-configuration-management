@@ -108,17 +108,19 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     TYPE tab_seq_list is TABLE OF NUMBER;
     TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
     TYPE procedure_list IS TABLE OF all_apply_dml_handlers.user_procedure%type;
+    TYPE rule_list IS TABLE OF all_streams_rules.rule_name%type;
     TYPE string_list is TABLE OF VARCHAR2(4000);
     TYPE scn_list is TABLE OF NUMBER;
 
     -- package level variable declarations
     g_version      VARCHAR2(20) := '1.0e.59';
-    g_mis_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
+    g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.mis.schema_owner }}';
 --    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
     g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_dbuser }}';
-    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_db.source.schema_owner }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';
     
-    g_oracle_goldengate_stream VARCHAR2(30) := '{{ oracle_goldengate_stream }}';
+    g_ogg_group_name VARCHAR2(30) := '{{ oracle_goldengate_group_name }}';
+    g_ogg_scripts_dir VARCHAR2(200) := '{{ oracle_goldengate_scripts_dir }}';
 
     g_ogg_extract   VARCHAR2(30) := '{{ oracle_goldengate_capture_process_name }}';
     g_capture_name VARCHAR2(30) := 'OGG$CAP_'||g_ogg_extract;
@@ -164,8 +166,6 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     PRAGMA EXCEPTION_INIT(MIS_STREAMS_CTRL_EXCEPTION, -20005);
 
     -- define error conditions for exception handling
-    rule_set_exists EXCEPTION;
-    PRAGMA EXCEPTION_INIT(rule_set_exists, -24153);
     invalid_column EXCEPTION;
     PRAGMA EXCEPTION_INIT(invalid_column, -23607);
     duplicate_column_name EXCEPTION;
@@ -232,6 +232,9 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
         p_staging_owner IN     varchar2) 
     RETURN varchar2 RESULT_CACHE;
 
+    FUNCTION get_capture_name(
+        p_source_owner IN varchar2
+    ) RETURN varchar2 RESULT_CACHE;
 
     -- Packaged function get_capture_list returns a list of all capture processes
     -- or those associated with a particular staging table owner (if supplied)

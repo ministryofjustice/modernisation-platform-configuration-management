@@ -19,16 +19,16 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
 
     -- package level variable declarations
 --    g_queue_owner   VARCHAR2(30) := USER; this would be right if the package was installed in ggint but its now in auditdata
-    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_db_user }}';
-    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_db.source.schema_owner }}';
-    g_capture_name   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.extract_name }}';
+    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_dbuser }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';
+    g_source_db   VARCHAR2(30) := '{{ oracle_goldengate_group.source.tns_alias }}';
+    g_capture_name   VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.extract_name }}';
     g_consumer_name   VARCHAR2(30) := 'OGG$CAP_'||g_capture_name;
 --    g_capture_rs_name   VARCHAR2(30) := 'RS_C_OMS_AUDIT';
 --    g_capture_nrs_name   VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
     g_apply_name   VARCHAR2(30) := 'OGG$'||auditdata_gen_pkg.g_replicat_name;
     g_apply_rs_name VARCHAR2(30) := 'RS_A_'||auditdata_gen_pkg.g_replicat_name;
     g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||auditdata_gen_pkg.g_replicat_name;
-    g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.audit.target_schema }}';
 --    g_queue_name   VARCHAR2(30) := 'Q_AUDITDATA';
     g_handler_name   VARCHAR2(30) := 'AUDIT_PROCESS_ROW';
 
@@ -37,23 +37,11 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
     TYPE table_list IS TABLE OF all_tables.table_name%type;
     TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
 
-    -- sleep before retry period: times in seconds to wait after timeout before retry
-    g_sleep1   NUMBER := 180;
-    g_sleep2   NUMBER := 540;
-
     -- define exceptions
     AUD_STREAMS_EXCEPTION EXCEPTION;
     PRAGMA EXCEPTION_INIT(AUD_STREAMS_EXCEPTION, -20020);
     AUD_STREAMS_QUEUE_EXCEPTION EXCEPTION;
     PRAGMA EXCEPTION_INIT(AUD_STREAMS_QUEUE_EXCEPTION, -20021);
-
-    -- define error conditions for exception handling
-    rule_set_exists EXCEPTION;
-    PRAGMA EXCEPTION_INIT(rule_set_exists, -24153);
-    timeout_stopping_process EXCEPTION;
-    PRAGMA EXCEPTION_INIT(timeout_stopping_process, -26672);
-    cannot_alter_process EXCEPTION;
-    PRAGMA EXCEPTION_INIT(cannot_alter_process, -26666);
 
     -- Packaged procedure audit_process_row
     -- writes details of changes made to NOMIS database to audit database

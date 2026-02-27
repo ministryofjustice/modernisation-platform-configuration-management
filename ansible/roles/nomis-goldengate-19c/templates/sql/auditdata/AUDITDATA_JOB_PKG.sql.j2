@@ -73,14 +73,12 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG AS
 */
 
 
-/* local so no need in spec
     -- Packaged function getOffId
     -- will retrieve offender id assocaiated with column values in NOMIS audit database
     FUNCTION getOffId (
         icolname  IN varchar2,
         icolvalue IN varchar2)
     RETURN VARCHAR2;
-*/
 
     -- Packaged function getRefData
     -- will retrieve display values for internal keys on NOMIS audit database.

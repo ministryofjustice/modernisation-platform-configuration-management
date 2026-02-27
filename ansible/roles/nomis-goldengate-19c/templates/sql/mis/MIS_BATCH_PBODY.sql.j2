@@ -524,11 +524,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         -- clear maximum SCN parameters
         mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
         -- restart apply
-        mis_gg_ctl_pkg.start_replicat(v_staging_owner);
+        mis_gg_ctrl_pkg.start_replicat(v_staging_owner);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
         -- restart capture in case stopped due to SCN limit
         BEGIN
-          mis_gg_ctl_pkg.start_extract(p_staging_owner);
+          mis_gg_ctrl_pkg.start_extract(p_staging_owner);
         EXCEPTION
             WHEN mis_gen_pkg.cannot_alter_process THEN null;
         END;

@@ -7,3 +7,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0644"
+
+# Register Replicat process
+- name: Register MIS Replicat process
+  import_tasks: register_mis_replicat.yml

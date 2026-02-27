@@ -7,7 +7,7 @@
   when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
   block:
     - name: Configure SQL statements for the source database
-      when: oracle_goldengate_local_db_sid == oracle_goldengate_db.source.tns_alias
+      when: oracle_goldengate_local_db_sid == oracle_goldengate_group.source.tns_alias
       block:
         # if the db is the source db then additionally enable supplemental logging which is required for GoldenGate replication
         - name: Set Supplemental Logging
@@ -28,7 +28,7 @@
           ansible.builtin.shell: |
             . ~/.bash_profile
             export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
-            export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+            export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
             export PATH=${ORACLE_HOME}/bin:$PATH
 
             # Retrieve SYS password from AWS Secrets Manager
@@ -101,8 +101,8 @@
           ansible.builtin.set_fact:
             needs_lac_update: >-
               {{
-                (oracle_goldengate_db.audit.tns_alias not in dg_config_list) or
-                (oracle_goldengate_db.mis.tns_alias not in dg_config_list)
+                (oracle_goldengate_group.auditdata.tns_alias not in dg_config_list) or
+                (oracle_goldengate_group.mis.tns_alias not in dg_config_list)
               }}
 
         - name: Build updated DG_CONFIG list (only add missing)
@@ -110,8 +110,8 @@
             dg_config_new: >-
               {{
                 dg_config_list
-                + ([oracle_goldengate_db.audit.tns_alias] if oracle_goldengate_db.audit.tns_alias not in dg_config_list else [])
-                + ([oracle_goldengate_db.mis.tns_alias] if oracle_goldengate_db.mis.tns_alias not in dg_config_list else [])
+                + ([oracle_goldengate_group.auditdata.tns_alias] if oracle_goldengate_group.auditdata.tns_alias not in dg_config_list else [])
+                + ([oracle_goldengate_group.mis.tns_alias] if oracle_goldengate_group.mis.tns_alias not in dg_config_list else [])
               }}
 
         - name: Build updated LOG_ARCHIVE_CONFIG value
@@ -132,7 +132,7 @@
           ansible.builtin.shell: |
             . ~/.bash_profile
             export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
-            export ORACLE_HOME={{ oracle_goldengate_db.source.oracle_home }}
+            export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
             export PATH=${ORACLE_HOME}/bin:$PATH
 
             # Retrieve SYS password from AWS Secrets Manager
@@ -176,7 +176,7 @@
               PROMPT Configure log shipping to target database 
               PROMPT *********************************************
               PROMPT *********** NOT ENABLING FOR NOW ************
-              PROMPT ALTER SYSTEM SET log_archive_dest_8='SERVICE={{ oracle_goldengate_db.audit.tns_alias }} ASYNC NOREGISTER VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) TEMPLATE={{ oracle_goldengate_asm_dir }}/%t_%s_%r.log DB_UNIQUE_NAME={{ oracle_goldengate_db.audit.tns_alias }}' SCOPE=BOTH; 
+              PROMPT ALTER SYSTEM SET log_archive_dest_8='SERVICE={{ oracle_goldengate_group.auditdata.tns_alias }} ASYNC NOREGISTER VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) TEMPLATE={{ oracle_goldengate_asm_dir }}/%t_%s_%r.log DB_UNIQUE_NAME={{ oracle_goldengate_group.auditdata.tns_alias }}' SCOPE=BOTH; 
               PROMPT *********************************************
 
               PROMPT Enable log shipping to target database 
@@ -191,11 +191,11 @@
       ansible.builtin.shell: |
         . ~/.bash_profile
         export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
-        export ORACLE_HOME="{{ oracle_goldengate_db.source.oracle_home }}"
+        export ORACLE_HOME="{{ oracle_goldengate_group.source.oracle_home }}"
         export PATH="${ORACLE_HOME}/bin:${PATH}"
 
         LOCAL_DB_SID="{{ oracle_goldengate_local_db_sid }}"
-        SOURCE_DB_SID="{{ oracle_goldengate_db.source.tns_alias }}"
+        SOURCE_DB_SID="{{ oracle_goldengate_group.source.tns_alias }}"
 
         if [ "${LOCAL_DB_SID}" = "${SOURCE_DB_SID}" ]; then
           SYS_PASSWORD=$(aws secretsmanager get-secret-value \

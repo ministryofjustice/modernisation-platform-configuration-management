@@ -75,6 +75,10 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AUTHID
         p_batch_number   IN     NUMBER DEFAULT null,
         p_tgt_table   IN     VARCHAR2 DEFAULT null);
 
+    FUNCTION apply_error_count(
+        p_staging_owner   IN     varchar2 DEFAULT NULL
+    ) RETURN number;
+
 END MIS_BATCH_PKG;
 /
 
