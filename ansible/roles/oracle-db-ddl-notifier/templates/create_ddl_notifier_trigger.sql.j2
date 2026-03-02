@@ -1,0 +1,48 @@
+WHENEVER SQLERROR EXIT FAILURE;
+
+GRANT CREATE ANY TRIGGER TO {{ notification_schema }};
+GRANT ADMINISTER DATABASE TRIGGER TO {{ notification_schema }};
+
+CREATE OR REPLACE TRIGGER {{ notification_schema }}.capture_ddl
+after create or alter or drop on database
+DISABLE -- Initially disabled in case there is an error
+declare
+   l_string   varchar2(32000);
+   l_sql_text ora_name_list_t;
+   l_n        number;
+   l_message  varchar2(32000);
+begin
+  --
+  --
+  if ora_dict_obj_owner in ({% for schema in tracked_schemas %}'{{ schema }}'{% if not loop.last %},{% endif %}{% endfor %})
+  then
+
+    if ora_dict_obj_type not in ({{ excluded_objects | default("'PACKAGE','PROCEDURE','FUNCTION','PACKAGE BODY','INDEX'") }})
+    and ora_dict_obj_name not like 'Z\_%' escape '\'
+    and ora_dict_obj_name not like 'Z_\_%' escape '\'
+    and ora_dict_obj_name not like 'BIN$%'    
+    then 
+
+       l_n := ora_sql_txt(l_sql_text);
+       for i in 1..l_n
+       loop
+          l_string := l_string || l_sql_text(i);
+       end loop;
+
+        l_message :=
+           ' `'||sys_context('USERENV','OS_USER')||'` '||sys_context('USERENV','MODULE')||' '||
+           ' ('||ora_dict_obj_type||') '||ora_dict_obj_owner||'.'||ora_dict_obj_name||'\n'||     
+           ' ```'||SUBSTR(l_string,1,LENGTH(l_string)-1)||'```';
+    
+        slack_notifier.send_message(l_message);
+
+     end if;
+
+  end if;
+exception
+  when others then null;  -- we will not STOP the ddl if we fail to track it
+end;
+/
+
+-- Assuming we haven't tripped the SQLERROR condition we can enable the TRIGGER
+ALTER TRIGGER {{ notification_schema }}.capture_ddl ENABLE;
