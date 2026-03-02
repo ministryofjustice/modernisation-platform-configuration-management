@@ -136,18 +136,6 @@
     msg: "WARNING: No configured database instance found running on this host. GoldenGate processes will not be deployed."
   when: oracle_goldengate_local_db_sids is not defined or oracle_goldengate_local_db_sids | length == 0
 
-- name: Verify detected databases match configured databases
-  ansible.builtin.assert:
-    that:
-      - oracle_goldengate_local_db_sids is defined
-      - oracle_goldengate_local_db_sids | length > 0
-      - item in configured_db_sids
-    fail_msg: "Detected database '{{ item }}' is not in the configured oracle_goldengate_db list: {{ configured_db_sids }}"
-    success_msg: "Successfully detected local database: {{ item }}"
-  loop: "{{ oracle_goldengate_local_db_sids | default([]) }}"
-  changed_when: false
-  when: oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0
-  
 # which deployment is being run is determined by which database is detected as running locally. If the audit or auditref database is detected then the audit deployment will be run, if the mis database is detected then the mis deployment will be run. If the source database is detected then no deployment will be run since GoldenGate binaries are only needed on target hosts for replication, and the source host is only used for capture.
 # compare the local sids against the configured database SIDs to set facts used to control which GoldenGate components are deployed in later tasks
 

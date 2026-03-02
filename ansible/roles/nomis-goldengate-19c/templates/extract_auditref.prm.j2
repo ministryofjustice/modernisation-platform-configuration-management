@@ -4,7 +4,7 @@ EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
 NOUSERID
 
 -- Use a mining user on the downstream (local) database
-TRANLOGOPTIONS MININGUSERALIAS AUDIT_DB
+MININGDBLOGIN USERIDALIAS AUDIT_DB
 
 EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}
 

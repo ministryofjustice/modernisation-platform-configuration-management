@@ -3,7 +3,7 @@ REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
 GETENV (NLS_LANG)
 
 -- Use credential store alias instead of hardcoded credentials
-USERIDALIAS MIS_DB
+DBLOGIN USERIDALIAS MIS_DB
 
 ASSUMETARGETDEFS
 

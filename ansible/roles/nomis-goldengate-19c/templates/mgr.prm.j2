@@ -1,15 +1,7 @@
 -- manager port
 PORT 7809
 
--- Security rules for Manager process. These rules are evaluated in order, so the most specific rules should be listed first and the most general rules last. The default rule is to deny all access, so if no rules are specified or if no rules match, access will be denied.
--- 1) Always allow local administration
-ACCESSRULE, IPADDR 127.0.0.1, ALLOW
-
--- 2) Not receiving pumped trails, so block the Collector (SERVER)
-ACCESSRULE, PROG SERVER, IPADDR *, DENY
-
--- 3) Default deny
-ACCESSRULE, PROG *, IPADDR *, DENY
+PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/*, USECHECKPOINTS, MINKEEPDAYS 2
 
 -- Manager checks for Extract and Replicat lag.
 LAGREPORTMINUTES 5

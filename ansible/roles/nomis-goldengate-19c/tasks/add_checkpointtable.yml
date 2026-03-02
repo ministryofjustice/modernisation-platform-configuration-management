@@ -8,8 +8,9 @@
     export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
+    cd {{ oracle_goldengate_home }}
     ./ggsci << EOF
-    dblogin alias {{ checkpoint_table_db_alias }}
+    dblogin useridalias {{ checkpoint_table_db_alias }}
     ADD CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
     ADD HEARTBEATTABLE {{ oracle_goldengate_dbuser }}.HEARTBEATS
     EXIT
@@ -18,6 +19,7 @@
     chdir: "{{ oracle_goldengate_home }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
+  environment: "{{ gg_env }}"
   register: create_checkpointtable
   failed_when: create_checkpointtable.rc != 0 and "already exists" not in create_checkpointtable.stderr
-  
+  changed_when: create_checkpointtable.rc == 0 and "already exists" not in create_checkpointtable.stderr

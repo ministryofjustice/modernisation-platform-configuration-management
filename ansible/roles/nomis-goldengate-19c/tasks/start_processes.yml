@@ -3,16 +3,19 @@
 
 - name: Start AUDITDATA Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
     INFO EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditdata_extract
@@ -21,16 +24,19 @@
 
 - name: Start AUDITDATA Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
     INFO REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditdata_replicat
@@ -39,16 +45,19 @@
 
 - name: Start AUDITREF Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
     INFO EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditref_extract
@@ -57,16 +66,19 @@
 
 - name: Start AUDITREF Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
     INFO REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditref_replicat
@@ -75,16 +87,19 @@
 
 - name: Start MIS Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
     INFO EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_mis_extract
@@ -93,16 +108,19 @@
 
 - name: Start MIS Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     START REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
     INFO REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_mis_replicat

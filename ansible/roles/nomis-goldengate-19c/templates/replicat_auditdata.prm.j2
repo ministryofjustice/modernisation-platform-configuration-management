@@ -3,7 +3,7 @@ REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
 GETENV (NLS_LANG)
 
 -- Use credential store alias instead of hardcoded credentials
-USERIDALIAS AUDIT_DB
+DBLOGIN USERIDALIAS AUDIT_DB
 
 ASSUMETARGETDEFS
 

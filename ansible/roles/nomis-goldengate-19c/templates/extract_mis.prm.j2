@@ -4,7 +4,7 @@ EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
 NOUSERID
 
 -- Use a mining user on the downstream (local) database
-TRANLOGOPTIONS MININGUSERALIAS MIS_DB
+MININGDBLOGIN USERIDALIAS MIS_DB
 
 EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }}
 

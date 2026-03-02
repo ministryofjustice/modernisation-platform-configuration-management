@@ -13,8 +13,7 @@
   become_user: "{{ oracle_goldengate_owner }}"
   environment: "{{ gg_env }}"
   when: 
-    - gg_home_exists
-    - not gg_trail_dir_exists
+    - ((gg_home_exists is defined and gg_home_exists) and not gg_trail_dir_exists) or override_check
   block:
     # Ideally at least the trail directory will be located in the ASM storage mounted as a volume on the host, but for simplicity we are creating all GoldenGate subdirectories under the home directory using the standard ggsci command which will create them with the correct permissions and ownership. To locate them elsewhere override the directory variables to point to different locations e.g.
     #- name: Create GoldenGate subdirectories
@@ -57,20 +56,17 @@
         group: "{{ oracle_goldengate_osgroup }}"
         mode: "0644"
 
+    - name: Stop Manager if it is already running before applying new configuration
+      import_tasks: stop_mgr.yml
+
     - name: Start GoldenGate Manager
-      ansible.builtin.shell: |
-        export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
-        export ORAENV_ASK=NO
-        . oraenv > /dev/null 2>&1
-        ./ggsci <<< "start manager"
-      args:
-        chdir: "{{ oracle_goldengate_home }}"
-      register: start_manager
-      failed_when: start_manager.rc != 0 and ("started" not in start_manager.stdout or "is already running" not in start_manager.stdout)
+      import_tasks: start_mgr.yml
 
-    # stop here so we can check the installation before proceeding with configuration which will be done in a separate task that can be re-run without re-installing the software
-    - name: Pause after installation for verification
-      ansible.builtin.pause:
-        prompt: "Oracle GoldenGate installation completed. Please verify the installation was successful by checking the installation log in /u01/app/oraInventory/logs. Press Enter to continue when ready or Ctrl+C then 'A' to abort."
+    - name: Check GoldenGate Manager status
+      import_tasks: mgr_status.yml
 
-      
+    - name: Fail if Manager failed to start
+      ansible.builtin.fail:
+        msg: "GoldenGate Manager failed to start."
+      when: not manager_is_running | default(false)
+

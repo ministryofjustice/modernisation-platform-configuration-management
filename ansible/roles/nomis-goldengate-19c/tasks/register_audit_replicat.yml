@@ -3,11 +3,11 @@
 
 - name: Add AUDITDATA Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
+    export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
-    dblogin alias {{ oracle_goldengate_group.auditdata.credential_alias }}
+    dblogin useridalias {{ oracle_goldengate_group.auditdata.credential_alias }}
     ADD REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}
     EXIT
     EOF
@@ -22,11 +22,11 @@
 
 - name: Add AUDITREF Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
+    export ORACLE_SID={{ oracle_goldengate_group.auditref.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
-    dblogin alias {{ oracle_goldengate_group.auditref.credential_alias }}
+    dblogin useridalias {{ oracle_goldengate_group.auditref.credential_alias }}
     ADD REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}
     EXIT
     EOF
