@@ -56,9 +56,26 @@
     - goldengate-database-config
     - configure-db-params
 
-- name: Create GoldenGate database administrator and schema users
+# call task passing in oracle_goldengate_db.mis.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to MIS database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task
+- name: Create GoldenGate database administrator and schema users 
   import_tasks: create_gg_dbusers.yml
-  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+  when: oracle_goldengate_deploy_mis is defined and oracle_goldengate_deploy_mis == true
+  vars:
+    oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.mis.tns_alias }}"
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-database-config
+    - goldengate-dbuser
+    - create-dbusers
+
+# Call task passing in oracle_goldengate_db.auditref.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to AUDITREF database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task.
+# Both audit processes (AUDITDATA and AUDITREF) use the same database users, so only need to run the create_dbusers task once if either auditdata or auditref deployment is being run.
+- name: Create GoldenGate database administrator and schema users 
+  import_tasks: create_gg_dbusers.yml
+  when: (oracle_goldengate_deploy_auditref is defined and oracle_goldengate_deploy_auditref == true) or (oracle_goldengate_deploy_auditdata is defined and oracle_goldengate_deploy_auditdata == true)
+  vars:
+    oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.auditref.tns_alias }}"
   tags:
     - goldengate
     - goldengate-install

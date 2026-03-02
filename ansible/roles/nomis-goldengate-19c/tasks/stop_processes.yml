@@ -3,7 +3,7 @@
 
 - name: Stop AUDITDATA Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -21,7 +21,7 @@
 
 - name: Stop AUDITDATA Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -39,7 +39,7 @@
 
 - name: Stop AUDITREF Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -57,7 +57,7 @@
 
 - name: Stop AUDITREF Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -75,7 +75,7 @@
 
 - name: Stop MIS Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -93,7 +93,7 @@
 
 - name: Stop MIS Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.mis.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF

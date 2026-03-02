@@ -26,7 +26,7 @@
 
 - name: Register AUDITDATA Extract process in GoldenGate
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -45,7 +45,7 @@
 
 - name: Add AUDITDATA Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditdata.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -88,7 +88,7 @@
 
 - name: Register AUDITREF Extract process in GoldenGate
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
@@ -107,7 +107,7 @@
 
 - name: Add AUDITREF Extract process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORACLE_SID={{ oracle_goldengate_db.auditref.tns_alias }}
     export ORAENV_ASK=NO
     . oraenv > /dev/null 2>&1
     ./ggsci << EOF
