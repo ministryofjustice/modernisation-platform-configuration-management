@@ -122,7 +122,7 @@
       vars:
         - filename: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/tag.env
           machine_name: AdminServerMachine
-          server_name: rep_server1
+          server_name: "{{ reports_server_name }}"
           tools_instance_name: reptools1
           rwserver_conf_filenames:
             - /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/{{ server_name }}/rwserver.conf
@@ -215,5 +215,13 @@
         #        - WLS_AUTOLOGOFF
         - WLS_TAGSAR
         - WLS_HOTPAGE
+
+    - import_tasks: enable-weblogic-services.yml
+      vars:
+        services_to_manage:
+          - NOMIS_REPORTS_SERVER
+      tags:
+        - ec2provision
+        - weblogic_enable_reports_server
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
