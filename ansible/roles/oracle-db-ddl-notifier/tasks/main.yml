@@ -1,0 +1,49 @@
+
+- name: Get Slack Token
+  include_tasks: get_facts.yml
+
+- name: Extract Database Name from target_db_names
+  set_fact:
+     target_db_name: "{{ ( database_primary_sid | default(database_standby_sid) ) if (application in ['delius-core','delius-mis'] ) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
+
+# primary_database_name is left undefined if this is not a primary host
+- name: Set Primary Database Name (Only if this is a primary host)
+  set_fact:
+     primary_database_name: "{{ target_db_name }}"
+  when:    (    application in ['delius-core','delius-mis'] and database_primary_sid is defined)
+        or (not application in ['delius-core','delius-mis'] and (target_db_name[:2] != "DR"))
+
+# We do not care what the wallet password is because we never use it.  However, a password is required as part of
+# the PKCS#12 specification so we do need a password; but we never use it to access the wallet and
+# will simply create a new wallet if required.   Therefore a long random string may be used.
+- name: Create Slack Wallet for HTTPS Connection to slack.com
+  include_tasks: ../oracle-oms-setup/tasks/create_slack_wallet.yml
+  vars:
+    oracle_install_user: oracle
+    artefact_dir: /u02
+    temp: "{{ artefact_dir }}/temp"
+    app_dir: "{{ oracle_base_output.stdout }}"
+    slack_wallet_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}"
+  tags: create_slack_wallet
+
+# We only need to run the ACL Setup on the Primary
+# (For Delius, where the database_primary_sid is set; otherwise if the database name does not have a DR Prefix)
+- name: Setup ACL to Contact Slack
+  script: ../oracle-oms-setup/files/create_slack_acl.sh {{ ddl_notifier.notification_schema }}
+  when: primary_database_name is defined
+  become: true
+  become_user: oracle
+  environment:
+        ORAENV_ASK: "NO"
+        ORACLE_SID: "{{ primary_database_name }}"
+  tags: setup_acl
+
+- name: Create Slack Notifier Package
+  include_tasks: create_slack_notifier_package.yml
+  when: primary_database_name is defined
+  vars:
+     stage: "/u02/stage"
+     database_name: "{{ primary_database_name }}"
+     app_dir: "{{ oracle_base_output.stdout }}"
+  tags: create_slack_notifier_package
+

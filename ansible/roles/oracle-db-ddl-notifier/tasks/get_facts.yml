@@ -1,0 +1,22 @@
+
+- name: Get ORACLE_BASE environment variable
+  shell: |
+         . ~/.bash_profile
+         echo $ORACLE_BASE
+  register: oracle_base_output
+  changed_when: false
+  become: true
+  become_user: oracle
+
+- name: Get OEM secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ oem_secretsmanager_passwords }}"
+  no_log: true
+  tags: secretsmanager-passwords
+
+- name: Set password facts
+  set_fact:
+    slack_token: "{{ secretsmanager_passwords_dict['emrep_shared'].passwords['slack_token'] }}"
+  no_log: true

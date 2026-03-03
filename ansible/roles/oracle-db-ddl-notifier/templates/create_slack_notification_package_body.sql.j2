@@ -1,0 +1,42 @@
+CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
+
+  gc_token          VARCHAR2(1000)  := '{{ slack_token }}';
+
+  PROCEDURE send_message(
+    p_text    IN VARCHAR2
+  ) IS
+    l_http_req   UTL_HTTP.req;
+    l_http_resp  UTL_HTTP.resp;
+    l_payload    VARCHAR2(32767);
+    l_response   VARCHAR2(32767);
+  BEGIN
+    l_payload := '{"channel":"' || gc_channel || '",'||
+                  '"username":"'|| gc_application ||' DDL Notifier",' ||
+                  '"icon_emoji":"dbschema",' ||
+                  '"blocks":[' ||
+                    '{"type":"section","fields":[{"type":"mrkdwn","text":"*Application:* ' || gc_application || '\n*Tier:* ' || gc_application_tier || '\n*Database:* ' || gc_target_db_name || '"},{"type":"mrkdwn","text":":clock1: ' || TO_CHAR(SYSDATE, 'DD-MM-YYYY HH24:MI:SS') || '"}]},' ||
+                    '{"type":"section","text":{"type":"mrkdwn","text":"' || REPLACE(p_text, '"', '\"') || '"}}' ||
+                  ']}';
+
+    UTL_HTTP.set_wallet(gc_wallet);
+    l_http_req := UTL_HTTP.begin_request(gc_url, 'POST', 'HTTP/1.1');
+    UTL_HTTP.set_header(l_http_req, 'Content-Type', 'application/json; charset=utf-8');
+    UTL_HTTP.set_header(l_http_req, 'Authorization', 'Bearer ' || gc_token);
+    UTL_HTTP.set_header(l_http_req, 'Content-Length', LENGTH(l_payload));
+    UTL_HTTP.write_text(l_http_req, l_payload);
+
+    l_http_resp := UTL_HTTP.get_response(l_http_req);
+    BEGIN
+      LOOP
+        UTL_HTTP.read_text(l_http_resp, l_response);
+        -- Optionally, log or process l_response
+      END LOOP;
+    EXCEPTION
+      WHEN UTL_HTTP.end_of_body THEN
+        NULL;
+    END;
+    UTL_HTTP.end_response(l_http_resp);
+  END send_message;
+
+END slack_notifier;
+/

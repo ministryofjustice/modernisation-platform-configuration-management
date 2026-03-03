@@ -14,12 +14,17 @@
 
     - name: Get Path to ORAPKI Utility
       shell: |
-        export PATH=$PATH:/usr/local/bin
-        . oraenv >/dev/null
+        . ~/.bash_profile
+        # Set the environment for EMREP if that database is
+        # available, otherwise use the default database
+        if [[ -f /etc/oratab ]] && grep -q "^EMREP:" /etc/oratab
+        then
+           ORACLE_SID=EMREP
+           ORAENV_ASK=NO
+           export PATH=$PATH:/usr/local/bin
+           . oraenv >/dev/null
+        fi
         which orapki
-      environment:
-        ORAENV_ASK: "NO"
-        ORACLE_SID: EMREP
       register: get_orapki
       changed_when: false
 
