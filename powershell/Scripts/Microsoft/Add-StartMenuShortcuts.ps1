@@ -41,6 +41,11 @@ $Configs = @{
         "Prison-Nomis/DEV"      = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11G"    = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11R"    = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "NDMIS/Dev Reporting CMC"        = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Dev Reporting BI"         = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/BI"
+        "NDMIS/Dev Reporting AdminTools" = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/AdminTools"
+        "NDMIS/Dev BODS CMC"             = "https://ndl-dis.dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Dev BODS DataServices"    = "https://ndl-dis.dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/DataServices"
       }
     }
   }
