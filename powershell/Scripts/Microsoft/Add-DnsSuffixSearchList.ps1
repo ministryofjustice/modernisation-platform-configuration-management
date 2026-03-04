@@ -29,6 +29,7 @@ $Configs = @{
     "eu-west-2.compute.internal",
     "eu-west-2.ec2-utilities.amazonaws.com",
     "azure.noms.root",
+    "delius-mis-dev.internal",
     "hmpps-oem.hmpps-development.modernisation-platform.internal",
     "nomis.hmpps-development.modernisation-platform.internal"
   )
@@ -37,7 +38,6 @@ $Configs = @{
     "eu-west-2.compute.internal",
     "eu-west-2.ec2-utilities.amazonaws.com",
     "azure.noms.root",
-    "delius-mis-dev.internal",
     "hmpps-oem.hmpps-test.modernisation-platform.internal",
     "nomis.hmpps-test.modernisation-platform.internal",
     "nomis-combined-reporting.hmpps-test.modernisation-platform.internal",
