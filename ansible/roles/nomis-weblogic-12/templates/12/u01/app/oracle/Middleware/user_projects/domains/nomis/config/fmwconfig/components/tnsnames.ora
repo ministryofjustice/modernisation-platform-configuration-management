@@ -1,6 +1,7 @@
+{% if weblogic_db_hostname_b == "none" %}
 {{ tnsnames_qa19c_service_name }} =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_a }})(PORT = {{ tnsnames_port }}))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
       (SERVICE_NAME = {{ tnsnames_qa19c_service_name }})
@@ -9,9 +10,38 @@
 
 {{ tnsnames_qa11g_service_name }} =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ tnsnames_hostname }})(PORT = {{ tnsnames_port }}))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_a }})(PORT = {{ tnsnames_port }}))
     (CONNECT_DATA =
       (SERVER = DEDICATED)
       (SERVICE_NAME = {{ tnsnames_qa11g_service_name }})
     )
   )
+{% else %}
+{{ tnsnames_qa19c_service_name }} =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_a }})(PORT = {{ tnsnames_port }}))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_b }})(PORT = {{ tnsnames_port }}))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = {{ tnsnames_qa19c_service_name }})
+      (FAILOVER_MODE =
+       (TYPE = SELECT)
+       (METHOD = BASIC)
+      )
+    )
+  )
+
+{{ tnsnames_qa11g_service_name }} =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_a }})(PORT = {{ tnsnames_port }}))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ weblogic_db_hostname_b }})(PORT = {{ tnsnames_port }}))
+    (FAILOVER = YES)
+    (CONNECT_DATA =
+      (SERVICE_NAME = {{ tnsnames_qa11g_service_name }})
+      (FAILOVER_MODE =
+       (TYPE = SELECT)
+       (METHOD = BASIC)
+      )
+    )
+  )
+{% endif %}
