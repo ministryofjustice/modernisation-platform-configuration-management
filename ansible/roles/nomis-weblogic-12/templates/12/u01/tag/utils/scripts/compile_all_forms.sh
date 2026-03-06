@@ -6,6 +6,7 @@ sleep_between_successful_compilations=2
 sleep_between_unsuccessful_compilations=60
 max_attempts=4
 start_index=0
+parallel_jobs=1
 
 fmb_files=(/u01/tag/FormsSources/*.fmb)
 mmb_files=(/u01/tag/FormsSources/*.mmb)
@@ -18,6 +19,7 @@ for arg in "$@"; do
         batch_size=*) batch_size="${arg#*=}" ;;
         batch_sleep=*) batch_sleep="${arg#*=}" ;;
         max_attempts=*) max_attempts="${arg#*=}" ;;
+        parallel_jobs=*) parallel_jobs="${arg#*=}" ;;
         password=*) password="${arg#*=}" ;;
         start_index=*) start_index="${arg#*=}" ;;
         sleep_between_successful_compilations=*) sleep_between_successful_compilations="${arg#*=}" ;;
@@ -42,7 +44,7 @@ validate_non_negative_integer() {
     fi
 }
 
-for var_name in start_index batch_size batch_sleep sleep_between_successful_compilations sleep_between_unsuccessful_compilations max_attempts; do
+for var_name in start_index batch_size batch_sleep sleep_between_successful_compilations sleep_between_unsuccessful_compilations max_attempts parallel_jobs; do
     validate_non_negative_integer "${!var_name}" "$var_name"
 done
 
@@ -56,6 +58,7 @@ done
 total_forms=${#forms_to_compile[@]}
 echo "Total forms to compile: $total_forms"
 echo "Starting at index: $start_index"
+echo "Parallel jobs: $parallel_jobs"
 
 if (( start_index >= total_forms )); then
     echo "Start index ($start_index) >= total forms ($total_forms). Nothing to do."
@@ -74,7 +77,7 @@ compile_form() {
 
         if (( attempt == max_attempts )); then
             echo "$form failed after $max_attempts attempts, exiting..."
-            exit 1
+            return 1
         fi
 
         echo "$form failed (attempt $attempt, rc=$rc). Sleeping $sleep_time seconds..."
@@ -84,17 +87,33 @@ compile_form() {
     done
 }
 
+running_jobs=0
 for (( i=start_index; i<total_forms; i++ )); do
     form="${forms_to_compile[i]}"
     item=$(( i + 1 ))
     echo "Processing item $item of $total_forms - form: $form"
-    compile_form "$form"
-    echo "Successfully processed $form"
-    sleep "$sleep_between_successful_compilations"
+    if (( parallel_jobs > 1 )); then
+        compile_form "$form" &
+        ((running_jobs++))
 
-    if (( item % batch_size == 0 && item < total_forms )); then
-        echo "Processed $item forms, sleeping $batch_sleep seconds before next batch..."
+        if (( running_jobs >= parallel_jobs )); then
+            wait -n || { echo "Compilation failed"; exit 1; }
+            ((running_jobs--))
+        fi
+    else
+        compile_form "$form" || exit 1
+        echo "Successfully processed $form"
+        sleep "$sleep_between_successful_compilations"
+    fi
+
+    if (( batch_size > 0 && item % batch_size == 0 && item < total_forms )); then
+        echo "Processed $item forms, waiting for running jobs..."
+        wait
+        running_jobs=0
+        echo "Sleeping $batch_sleep seconds before next batch..."
         sleep "$batch_sleep"
     fi
 done
+wait
+echo "All compilations finished"
 {% endraw %}
