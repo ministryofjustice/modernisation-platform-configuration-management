@@ -1,0 +1,96 @@
+---
+# create oracle_goldengate_sql_dir directory if it doesn't exist
+- name: Ensure GoldenGate SQL directory exists
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_sql_dir }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
+
+- name: Deploy MIS database objects
+  when: 
+    - oracle_goldengate_deploy_mis is defined and oracle_goldengate_deploy_mis
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    # set fact oracle_goldengate_sql_owner to the database schema owner for the MIS stream, this is used in the SQL templates to set the correct schema for the created objects
+    - name: Set facts for MIS stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.mis.schema_owner }}"
+        oracle_goldengate_group_name: "mis"
+        oracle_goldengate_group_extract_name: "{{ oracle_goldengate_group.mis.extract_name }}"
+        oracle_goldengate_group_replicat_name: "{{ oracle_goldengate_group.mis.replicat_name }}"
+        oracle_goldengate_group_trail_prefix: "{{ oracle_goldengate_group.mis.trail_prefix }}"
+        oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.mis.target_schema }}"
+        oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.mis.dummy_target_schema }}"
+        # Set the capture and apply process names for the MIS stream based on the logical stream name defined in defaults/main.yml, this is used in the SQL templates to create the correct database objects for the stream
+        oracle_goldengate_capture_process_name: "OGG$CAP_{{ oracle_goldengate_group.mis.extract_name }}"
+        oracle_goldengate_apply_process_name: "OGG$APPLY_{{ oracle_goldengate_group.mis.replicat_name }}"
+
+    - name: Ensure MIS SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/mis"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    # copy all scripts in templates/sql/mis directory to the GoldenGate home directory on the host, preserving ownership and permissions. These include the support package installation script and the control table creation script.
+    - name: Deploy MIS support packages
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ oracle_goldengate_sql_dir }}/mis/{{ item | basename | regex_replace('\\.j2$', '') }}"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+      loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/mis/*.j2', wantlist=True) }}"
+
+    - name: Run MIS support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/mis
+        sqlplus -s / as sysdba @install_mis_packages.sql
+      args:
+        executable: /bin/bash
+      register: mis_config_output
+      failed_when: mis_config_output.rc != 0
+
+    - name: Show output of MIS package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['MIS package install output:'] + (mis_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of MIS package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+
+    - name: Run MIS configuration script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/mis
+        sqlplus -s / as sysdba @install_mis_jobs.sql
+      args:
+        executable: /bin/bash
+      register: mis_config_output
+      failed_when: mis_config_output.rc != 0
+
+    - name: Show output of MIS package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['MIS package install output:'] + (mis_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of MIS package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+

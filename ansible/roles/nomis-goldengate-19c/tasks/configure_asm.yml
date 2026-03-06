@@ -1,0 +1,22 @@
+---
+# Create a directory in ASM for the archive logs sent from the source database for GoldenGate replication. This is required for the downstream integrated capture process to be able to read the archived redo logs for replication.
+- name: Configure Oracle ASM for GoldenGate
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  environment: "{{ gg_env }}"
+  when: gg_home_exists
+  block:
+    # Log into ASM and create directory for archive logs sent from the source database.
+    - name: Create ASM directory
+      ansible.builtin.shell: |
+        export ORACLE_SID=+ASM
+        export ORAENV_ASK=NO
+        . oraenv
+        asmcmd mkdir +DATA/{{ oracle_goldengate_group.source.tns_alias }}
+        asmcmd mkdir {{ oracle_goldengate_asm_dir }}
+      register: create_asm_directory
+      failed_when: create_asm_directory.rc != 0 and "is already used" not in create_asm_directory.stderr
+
+    # Possible future work:
+    # Ideally at least the trail directory will be located in the ASM storage mounted as a volume on the host as the /u01 volume isn't very large. For simplicity all GoldenGate subdirectories are currently being created under the GG home directory using the standard ggsci command.
+

@@ -1,0 +1,10 @@
+- name: Stop GoldenGate Manager
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci <<< "stop manager !"
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  register: stop_manager
+  failed_when: stop_manager.rc != 0 and ("stopped" not in stop_manager.stdout or "is not running" not in stop_manager.stdout)

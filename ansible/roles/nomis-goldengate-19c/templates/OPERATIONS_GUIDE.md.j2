@@ -1,0 +1,272 @@
+# Oracle GoldenGate 19c Operations Guide
+
+## Overview
+This guide covers the operation of Oracle GoldenGate 19c for the three replication streams:
+- **AUDITDATA** - Audit table and column data
+- **AUDITREF** - Audit reference data
+- **MIS** - MIS staging tables
+
+## Database Configuration
+
+The following database parameters are configured during installation:
+- `ENABLE_GOLDENGATE_REPLICATION = TRUE` - Enables GoldenGate replication features
+- `SUPPLEMENTAL LOG DATA` - Enables minimal supplemental logging
+
+These parameters are set on both source and target databases and do not require database restart.
+
+### Verify Database Configuration
+```bash
+sqlplus / as sysdba << EOF
+SHOW PARAMETER enable_goldengate_replication
+SELECT supplemental_log_data_min FROM v\$database;
+EXIT
+EOF
+```
+
+## Process Names
+| Stream | Extract Name | Replicat Name |
+|--------|--------------|---------------|
+| AUDITDATA | EXTAUDD | REPAUDD |
+| AUDITREF | EXTAUDR | REPAUDR |
+| MIS | EXTMIS | REPMIS |
+
+## Control Scripts Location
+All control scripts are located in: `{{ oracle_goldengate_home }}/scripts/`
+
+## Using the Master Control Script
+
+The `ogg_control.sh` script provides a unified interface for managing all GoldenGate processes.
+
+### Syntax
+```bash
+ogg_control.sh {start|stop|status|restart} {all|auditdata|auditref|mis} {extract|replicat|both}
+```
+
+### Examples
+
+**Start all processes:**
+```bash
+cd {{ oracle_goldengate_home }}/scripts
+./ogg_control.sh start all both
+```
+
+**Stop only AUDITDATA extract:**
+```bash
+./ogg_control.sh stop auditdata extract
+```
+
+**Restart MIS replicat:**
+```bash
+./ogg_control.sh restart mis replicat
+```
+
+**Check status of all processes:**
+```bash
+./ogg_control.sh status all
+```
+
+**Start AUDITREF processes (both extract and replicat):**
+```bash
+./ogg_control.sh start auditref both
+```
+
+## Using Individual Control Scripts
+
+### Starting Processes
+```bash
+cd {{ oracle_goldengate_home }}/scripts
+
+# Start extracts
+./start_extract_auditdata.sh
+./start_extract_auditref.sh
+./start_extract_mis.sh
+
+# Start replicats
+./start_replicat_auditdata.sh
+./start_replicat_auditref.sh
+./start_replicat_mis.sh
+```
+
+### Stopping Processes
+```bash
+cd {{ oracle_goldengate_home }}/scripts
+
+# Stop replicats (should be stopped before extracts)
+./stop_replicat_auditdata.sh
+./stop_replicat_auditref.sh
+./stop_replicat_mis.sh
+
+# Stop extracts
+./stop_extract_auditdata.sh
+./stop_extract_auditref.sh
+./stop_extract_mis.sh
+```
+
+## Manual GGSCI Commands
+
+You can also use GGSCI directly for more advanced operations:
+
+```bash
+cd {{ oracle_goldengate_home }}
+./ggsci
+
+# View all processes
+GGSCI> INFO ALL
+
+# Start specific extract
+GGSCI> START EXTRACT EXTAUDD
+
+# Stop specific replicat
+GGSCI> STOP REPLICAT REPAUDD
+
+# View extract statistics
+GGSCI> STATS EXTRACT EXTAUDD
+
+# View replicat lag
+GGSCI> LAG REPLICAT REPAUDD
+
+# View extract details
+GGSCI> INFO EXTRACT EXTAUDD, DETAIL
+
+# Check manager status
+GGSCI> INFO MANAGER
+
+# Start manager
+GGSCI> START MANAGER
+
+# Exit GGSCI
+GGSCI> EXIT
+```
+
+## Credential Store
+
+Database credentials are stored securely in the GoldenGate credential store with the following aliases:
+
+| Alias | Description |
+|-------|-------------|
+| SOURCE_DB | Source database connection (OMS_OWNER) |
+| AUDIT_DB | Audit database connection (AUDITDATA) |
+| AUDITREF_DB | Audit Reference database connection (AUDITREF) |
+| MIS_DB | MIS database connection (BODISTAGING) |
+| GGADMIN | GoldenGate administrator user for local database |
+
+These aliases are used in the Extract and Replicat parameter files via the `USERIDALIAS` directive.
+
+### GoldenGate Administrator User (ggadmin)
+
+The `ggadmin` user is a dedicated database user created for GoldenGate operations:
+- **Username**: ggadmin (default, configurable)
+- **Privileges**: DBA (required for GoldenGate replication)
+- **Purpose**: Used for GoldenGate administration and monitoring
+- **Password Location**: AWS Secrets Manager at `/oracle/database/${ORACLE_SID}/passwords` (ggadmin key)
+- **Credential Alias**: GGADMIN (in GoldenGate credential store)
+
+### View Credential Store
+```bash
+cd {{ oracle_goldengate_home }}
+./ggsci
+
+GGSCI> INFO CREDENTIALSTORE
+
+# Should show aliases: SOURCE_DB, AUDIT_DB, AUDITREF_DB, MIS_DB, GGADMIN
+```
+
+### Test GGADMIN Connection
+```bash
+cd {{ oracle_goldengate_home }}
+./ggsci
+
+GGSCI> DBLOGIN USERIDALIAS GGADMIN
+# Should show: Successfully logged into database
+```
+
+## Common Troubleshooting
+
+### Check Process Status
+```bash
+./ogg_control.sh status all
+```
+
+### View Process Logs
+```bash
+# Extract logs
+view {{ oracle_goldengate_home }}/ggserr.log
+tail -f {{ oracle_goldengate_home }}/dirrpt/EXTAUDD.rpt
+
+# Replicat logs
+tail -f {{ oracle_goldengate_home }}/dirrpt/REPAUDD.rpt
+```
+
+### Check for Errors
+```bash
+cd {{ oracle_goldengate_home }}
+grep -i "error" ggserr.log
+grep -i "error" dirrpt/*.rpt
+```
+
+### Restart a Stuck Process
+```bash
+# Using master control script
+./scripts/ogg_control.sh restart auditdata extract
+
+# Or manually with GGSCI
+cd {{ oracle_goldengate_home }}
+./ggsci
+GGSCI> STOP EXTRACT EXTAUDD
+GGSCI> START EXTRACT EXTAUDD
+GGSCI> INFO EXTRACT EXTAUDD
+```
+
+## Best Practices
+
+1. **Always check status before making changes**
+   ```bash
+   ./ogg_control.sh status all
+   ```
+
+2. **Stop replicats before extracts**
+   - This prevents data loss and ensures clean shutdown
+
+3. **Monitor lag regularly**
+   ```bash
+   cd {{ oracle_goldengate_home }}
+   ./ggsci
+   GGSCI> LAG EXTRACT *
+   GGSCI> LAG REPLICAT *
+   ```
+
+4. **Review logs after restart**
+   ```bash
+   tail -100 {{ oracle_goldengate_home }}/dirrpt/EXTAUDD.rpt
+   ```
+
+5. **Keep manager running**
+   ```bash
+   cd {{ oracle_goldengate_home }}
+   ./ggsci
+   GGSCI> INFO MANAGER
+   # If stopped:
+   GGSCI> START MANAGER
+   ```
+
+## Emergency Procedures
+
+### Stop All Processes Immediately
+```bash
+./scripts/ogg_control.sh stop all both
+```
+
+### Restart All Processes
+```bash
+# Stop all
+./scripts/ogg_control.sh stop all both
+
+# Wait for clean shutdown
+sleep 5
+
+# Start all
+./scripts/ogg_control.sh start all both
+
+# Verify
+./scripts/ogg_control.sh status all
+```

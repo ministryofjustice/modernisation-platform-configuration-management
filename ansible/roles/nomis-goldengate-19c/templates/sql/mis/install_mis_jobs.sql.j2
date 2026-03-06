@@ -1,0 +1,8 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_jobs.log
+
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Recreate jobs owned by STRMADMIN 
+
+PROMPT Completed installation of MIS jobs
+spool off

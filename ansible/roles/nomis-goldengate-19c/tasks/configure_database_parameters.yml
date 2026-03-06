@@ -1,0 +1,254 @@
+---
+# Configure Oracle database parameters for GoldenGate replication
+# This task enables ENABLE_GOLDENGATE_REPLICATION parameter on source and target databases
+# Note: This parameter change does not require database restart
+
+- name: Create GoldenGate database user when local database is configured
+  when: oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != ""
+  block:
+    - name: Configure SQL statements for the source database
+      when: oracle_goldengate_local_db_sid == oracle_goldengate_group.source.tns_alias
+      block:
+        # if the db is the source db then additionally enable supplemental logging which is required for GoldenGate replication
+        - name: Set Supplemental Logging
+          ansible.builtin.set_fact: 
+            supplemental_logging_sql: | 
+              -- Show current value
+              PROMPT Supplemental logging value:
+              SELECT supplemental_log_data_min FROM v$database;
+
+              -- Enable minimal supplemental logging
+              ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+              
+              -- Show supplemental logging status
+              PROMPT Supplemental logging enabled:
+              SELECT supplemental_log_data_min FROM v$database;
+
+        - name: Read LOG_ARCHIVE_CONFIG
+          ansible.builtin.shell: |
+            . ~/.bash_profile
+            export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+            export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+            export PATH=${ORACLE_HOME}/bin:$PATH
+
+            # Retrieve SYS password from AWS Secrets Manager
+            SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+              --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+              --query 'SecretString' \
+              --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+            
+            if [ -z "$SYS_PASSWORD" ]; then
+              echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+              exit 1
+            fi
+
+            sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba << 'EOSQL'
+            SET ECHO OFF
+            SET FEEDBACK OFF
+            SET HEADING OFF
+            SET PAGESIZE 0
+            SET TRIMSPOOL ON
+            WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+            SELECT value FROM v$parameter WHERE name = 'log_archive_config';
+
+            EXIT
+            EOSQL
+          args:
+            executable: /bin/bash
+          register: log_archive_config_output
+          become: yes
+          become_user: "{{ oracle_goldengate_owner }}"
+          environment: "{{ gg_env }}"
+          changed_when: false
+          failed_when: log_archive_config_output.rc != 0
+
+        - name: Debug LOG_ARCHIVE_CONFIG output
+          ansible.builtin.debug:
+            msg: "LOG_ARCHIVE_CONFIG value: '{{ log_archive_config_output.stdout }}'"
+
+        - name: Normalise LOG_ARCHIVE_CONFIG (lac)
+          ansible.builtin.set_fact:
+            lac: "{{ log_archive_config_output.stdout | default('') | trim }}"
+
+        - name: Extract DG_CONFIG inner value (safe)
+          ansible.builtin.set_fact:
+            dg_config_inner: >-
+              {{
+                (
+                  lac
+                  | regex_findall('DG_CONFIG\s*=\s*\(([^)]*)\)')
+                  | first
+                ) | default('')
+              }}
+
+        - name: Debug DG_CONFIG inner value
+          ansible.builtin.debug:
+            msg: "DG_CONFIG inner: '{{ dg_config_inner }}'"
+
+        - name: Extract DG_CONFIG entries as a clean list
+          ansible.builtin.set_fact:
+            dg_config_list: >-
+              {{
+                dg_config_inner
+                .split(',')
+                | map('trim')
+                | reject('equalto', '')
+                | list
+              }}
+
+        - name: Decide if LOG_ARCHIVE_CONFIG update is needed (audit/mis missing)
+          ansible.builtin.set_fact:
+            needs_lac_update: >-
+              {{
+                (oracle_goldengate_group.auditdata.tns_alias not in dg_config_list) or
+                (oracle_goldengate_group.mis.tns_alias not in dg_config_list)
+              }}
+
+        - name: Build updated DG_CONFIG list (only add missing)
+          ansible.builtin.set_fact:
+            dg_config_new: >-
+              {{
+                dg_config_list
+                + ([oracle_goldengate_group.auditdata.tns_alias] if oracle_goldengate_group.auditdata.tns_alias not in dg_config_list else [])
+                + ([oracle_goldengate_group.mis.tns_alias] if oracle_goldengate_group.mis.tns_alias not in dg_config_list else [])
+              }}
+
+        - name: Build updated LOG_ARCHIVE_CONFIG value
+          ansible.builtin.set_fact:
+            log_archive_config_new: "DG_CONFIG=({{ dg_config_new | join(', ') }})"
+
+        - name: Debug LOG_ARCHIVE_CONFIG and DG_CONFIG values
+          ansible.builtin.debug:
+            msg: |
+              Current LOG_ARCHIVE_CONFIG: {{ lac }}
+              Current DG_CONFIG list: {{ dg_config_list }}
+              Updated DG_CONFIG list: {{ dg_config_new }}
+              New LOG_ARCHIVE_CONFIG: {{ log_archive_config_new }}
+              Needs LOG_ARCHIVE_CONFIG update: {{ needs_lac_update }}
+
+        - name: Update LOG_ARCHIVE_CONFIG to include MIS and Audit if missing
+          when: needs_lac_update
+          ansible.builtin.shell: |
+            . ~/.bash_profile
+            export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+            export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+            export PATH=${ORACLE_HOME}/bin:$PATH
+
+            # Retrieve SYS password from AWS Secrets Manager
+            SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+              --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+              --query 'SecretString' \
+              --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+            
+            if [ -z "$SYS_PASSWORD" ]; then
+              echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+              exit 1
+            fi
+
+            sqlplus -s sys/"${SYS_PASSWORD}"@{{ oracle_goldengate_local_db_sid }} as sysdba << 'EOSQL'
+            SET ECHO OFF
+            SET FEEDBACK ON
+            WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+            PROMPT *********************************************
+            PROMPT *********** NOT ENABLING FOR NOW ************
+            PROMPT ALTER SYSTEM SET LOG_ARCHIVE_CONFIG='{{ log_archive_config_new }}' SCOPE=BOTH;
+
+            EXIT
+            EOSQL
+          args:
+            executable: /bin/bash
+          register: lac_update_output
+          become: yes
+          become_user: "{{ oracle_goldengate_owner }}"
+          failed_when: lac_update_output.rc != 0
+
+        # WHY IS MIS EXTRACT WORKING WITHOUT HAVING THE ADDITIONAL DEST CONFIG WITH TEMPLATE? IS IT USING THE ARCHIVE LOGS SENT FROM SOURCE THAT WERE CONFIGURED FOR STREAMS USE?
+        # MAYBE AUDIT EXTRACT WILL WORK WITHOUT THE ADDITIONAL DEST CONFIG AS WELL? NEED TO TEST THIS. IF SO THEN MAYBE THE ADDITIONAL DEST CONFIG FOR THE SOURCE DB ISN'T ACTUALLY NEEDED UNLESS WE WANT TO USE IT FOR SOME REASON OTHER THAN GOLDENGATE REPLICATION (E.G. RMAN BACKUPS OF THE ARCHIVE LOGS OR SOMETHING)
+        - name: Set Log Archiving
+          ansible.builtin.set_fact: 
+            log_archive_dest_sql: | 
+              PROMPT Current Log Archiving value:
+              SELECT DEST_ID, STATUS, DESTINATION FROM v$archive_dest WHERE DEST_ID = 8;
+              SELECT value FROM v$parameter WHERE name = 'log_archive_dest_8'; 
+              
+              PROMPT Configure log shipping to target database 
+              PROMPT *********************************************
+              PROMPT *********** NOT ENABLING FOR NOW ************
+              PROMPT ALTER SYSTEM SET log_archive_dest_8='SERVICE={{ oracle_goldengate_group.auditdata.tns_alias }} ASYNC NOREGISTER VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) TEMPLATE={{ oracle_goldengate_asm_dir }}/%t_%s_%r.log DB_UNIQUE_NAME={{ oracle_goldengate_group.auditdata.tns_alias }}' SCOPE=BOTH; 
+              PROMPT *********************************************
+
+              PROMPT Enable log shipping to target database 
+              ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_8=ENABLE SCOPE=BOTH;
+
+              PROMPT New Log archiving configuration: 
+              SELECT DEST_ID, STATUS, DESTINATION FROM v$archive_dest WHERE DEST_ID = 8;
+              SELECT value FROM v$parameter WHERE name = 'log_archive_dest_8'; 
+    # end of block for source database specific parameter configuration
+
+    - name: Configure parameters in the database
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
+        export ORACLE_HOME="{{ oracle_goldengate_group.source.oracle_home }}"
+        export PATH="${ORACLE_HOME}/bin:${PATH}"
+
+        LOCAL_DB_SID="{{ oracle_goldengate_local_db_sid }}"
+        SOURCE_DB_SID="{{ oracle_goldengate_group.source.tns_alias }}"
+
+        if [ "${LOCAL_DB_SID}" = "${SOURCE_DB_SID}" ]; then
+          SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+            --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
+            --query 'SecretString' \
+            --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+          if [ -z "${SYS_PASSWORD}" ]; then
+            echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
+            exit 1
+          fi
+
+          SQL_CONNECT_STR="sys/${SYS_PASSWORD}@{{ oracle_goldengate_local_db_sid }} as sysdba"
+        else
+          SQL_CONNECT_STR="/ as sysdba"
+        fi
+
+        sqlplus -s "${SQL_CONNECT_STR}" << 'EOSQL'
+        SET ECHO OFF
+        SET FEEDBACK ON
+        SET HEADING OFF
+        SET PAGESIZE 0
+        
+        WHENEVER SQLERROR EXIT SQL.SQLCODE
+        
+        PROMPT Current ENABLE_GOLDENGATE_REPLICATION value:
+        SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+        
+        PROMPT Enable GoldenGate replication
+        ALTER SYSTEM SET ENABLE_GOLDENGATE_REPLICATION=TRUE SCOPE=BOTH;
+        
+        PROMPT New ENABLE_GOLDENGATE_REPLICATION value:
+        SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+        
+        {{ supplemental_logging_sql | default('') }}
+
+        {{ log_archive_dest_sql | default('') }}
+        
+        EXIT
+        EOSQL
+      args:
+        executable: /bin/bash
+      register: sql_output
+      become: yes 
+      become_user: "{{ oracle_goldengate_owner }}"
+      
+    - name: Display SQL output for {{ oracle_goldengate_local_db_sid }}
+      ansible.builtin.debug:
+        var: sql_output.stdout_lines
+      when: sql_output is defined
+
+    - name: Check if SQL execution was successful for {{ oracle_goldengate_local_db_sid }}
+      ansible.builtin.fail:
+        msg: "Failed to configure database parameters for GoldenGate replication on {{ oracle_goldengate_local_db_sid }}. SQL output: {{ sql_output.stdout_lines }}"
+      when: sql_output is defined and sql_output.rc != 0
+
