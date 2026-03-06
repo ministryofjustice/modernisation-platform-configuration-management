@@ -4,6 +4,7 @@ batch_size=20
 batch_sleep=10
 sleep_between_successful_compilations=2
 sleep_between_unsuccessful_compilations=60
+sleep_between_file_types=30
 max_attempts=4
 start_index=0
 parallel_jobs=1
@@ -24,6 +25,7 @@ for arg in "$@"; do
         start_index=*) start_index="${arg#*=}" ;;
         sleep_between_successful_compilations=*) sleep_between_successful_compilations="${arg#*=}" ;;
         sleep_between_unsuccessful_compilations=*) sleep_between_unsuccessful_compilations="${arg#*=}" ;;
+        sleep_between_file_types=*) sleep_between_file_types="${arg#*=}" ;;
         target_db=*) target_db="${arg#*=}" ;;
         username=*) username="${arg#*=}" ;;
     esac
@@ -44,11 +46,11 @@ validate_non_negative_integer() {
     fi
 }
 
-for var_name in start_index batch_size batch_sleep sleep_between_successful_compilations sleep_between_unsuccessful_compilations max_attempts parallel_jobs; do
+for var_name in start_index batch_size batch_sleep sleep_between_successful_compilations sleep_between_unsuccessful_compilations sleep_between_file_types max_attempts parallel_jobs; do
     validate_non_negative_integer "${!var_name}" "$var_name"
 done
 
-for f in "${pll_files[@]}" "${mmb_files[@]}" "${fmb_files[@]}"; do
+for f in "${pll_files[@]}" "${fmb_files[@]}" "${mmb_files[@]}"; do
     [[ -e "$f" ]] || continue
     base="${f##*/}"
     base="${base%.*}"
@@ -88,9 +90,29 @@ compile_form() {
 }
 
 running_jobs=0
+previous_type=""
 for (( i=start_index; i<total_forms; i++ )); do
     form="${forms_to_compile[i]}"
     item=$(( i + 1 ))
+
+    if [[ -f "/u01/tag/FormsSources/$form.pll" ]]; then
+        current_type="PLL"
+    elif [[ -f "/u01/tag/FormsSources/$form.mmb" ]]; then
+        current_type="MMB"
+    else
+        current_type="FMB"
+    fi
+
+    if [[ -n "$previous_type" && "$current_type" != "$previous_type" ]]; then
+        echo "Finished $previous_type files. Waiting for running jobs..."
+        wait
+        running_jobs=0
+        echo "Sleeping $sleep_between_file_types seconds before starting $current_type files..."
+        sleep "$sleep_between_file_types"
+    fi
+
+    previous_type="$current_type"
+
     echo "Processing item $item of $total_forms - form: $form"
     if (( parallel_jobs > 1 )); then
         compile_form "$form" &
