@@ -17,10 +17,13 @@ begin
   if ora_dict_obj_owner in ({% for schema in tracked_schemas %}'{{ schema }}'{% if not loop.last %},{% endif %}{% endfor %})
   then
 
+    -- Ignore PL/SQL objects, working tables with Z prefixes,
+    -- recycle bin objects and scheduler activities
     if ora_dict_obj_type not in ({{ excluded_objects | default("'PACKAGE','PROCEDURE','FUNCTION','PACKAGE BODY','INDEX'") }})
     and ora_dict_obj_name not like 'Z\_%' escape '\'
     and ora_dict_obj_name not like 'Z_\_%' escape '\'
-    and ora_dict_obj_name not like 'BIN$%'    
+    and ora_dict_obj_name not like 'BIN$%'
+    and sys_context('USERENV','MODULE') != 'DBMS_SCHEDULER'
     then 
 
        l_n := ora_sql_txt(l_sql_text);
