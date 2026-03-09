@@ -116,10 +116,6 @@
   loop: "{{ rweng_check.results }}"
   when: item.changed
 
-#- import_tasks: enable-weblogic-services.yml
-#  vars:
-#    service_state: restarted
-
 - name: Remove WLST NM connect block from start/stop scripts
   ansible.builtin.blockinfile:
     path: "{{ item }}"
