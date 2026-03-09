@@ -198,7 +198,7 @@ Add these unique tags to each task in `main.yml`:
 # Process installation - Audit
 - name: Install GoldenGate extract processes (Audit databases)
   import_tasks: install_audit_extract.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -209,7 +209,7 @@ Add these unique tags to each task in `main.yml`:
 
 - name: Install GoldenGate replicat processes (Audit databases)
   import_tasks: install_audit_replicat.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -221,7 +221,7 @@ Add these unique tags to each task in `main.yml`:
 # Process installation - MIS
 - name: Install GoldenGate extract processes (MIS database)
   import_tasks: install_mis_extract.yml
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
   tags:
     - goldengate
     - goldengate-config
@@ -232,7 +232,7 @@ Add these unique tags to each task in `main.yml`:
 
 - name: Install GoldenGate replicat processes (MIS database)
   import_tasks: install_mis_replicat.yml
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
   tags:
     - goldengate
     - goldengate-config

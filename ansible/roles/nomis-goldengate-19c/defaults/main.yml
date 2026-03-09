@@ -92,12 +92,12 @@ oracle_goldengate_group:
 # Valid values: T1CAUDG (for audit databases) or T1CMISG (for MIS database)
 oracle_goldengate_local_db_sid: ""
 
-# Automatically determine which streams to deploy based on local database
+# Automatically determine which groups to run based on local database
 # AUDITDATA and AUDITREF are deployed on hosts running the audit database (T1CAUDG)
 # MIS is deployed on hosts running the MIS database (T1CMISG)
-oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
-oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
-oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias }}"
+run_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
+run_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
+run_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias }}"
 
 # Extract start options - control when Extract begins processing
 # Mode options: now (default), csn, scn, time

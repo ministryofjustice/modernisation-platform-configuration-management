@@ -77,9 +77,9 @@ oracle_goldengate_local_db_sid: T1CMISG  # Deploys: MIS only
 Based on `oracle_goldengate_local_db_sid`, these flags are automatically set:
 
 ```yaml
-oracle_goldengate_deploy_auditdata: true/false
-oracle_goldengate_deploy_auditref: true/false
-oracle_goldengate_deploy_mis: true/false
+run_auditdata: true/false
+run_auditref: true/false
+run_mis: true/false
 ```
 
 ---
@@ -291,14 +291,14 @@ The role uses these conditions to determine what to deploy:
 
 ```yaml
 # In tasks/configure_extract.yml
-when: oracle_goldengate_deploy_auditdata
-when: oracle_goldengate_deploy_auditref
-when: oracle_goldengate_deploy_mis
+when: run_auditdata
+when: run_auditref
+when: run_mis
 
 # These are computed from:
-oracle_goldengate_deploy_auditdata: "{{ oracle_goldengate_local_db_sid == 'T1CAUDG' }}"
-oracle_goldengate_deploy_auditref: "{{ oracle_goldengate_local_db_sid == 'T1CAUDG' }}"
-oracle_goldengate_deploy_mis: "{{ oracle_goldengate_local_db_sid == 'T1CMISG' }}"
+run_auditdata: "{{ oracle_goldengate_local_db_sid == 'T1CAUDG' }}"
+run_auditref: "{{ oracle_goldengate_local_db_sid == 'T1CAUDG' }}"
+run_mis: "{{ oracle_goldengate_local_db_sid == 'T1CMISG' }}"
 ```
 
 ### What Gets Deployed Where

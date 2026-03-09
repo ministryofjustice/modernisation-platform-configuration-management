@@ -3,38 +3,54 @@
 
 - name: Add AUDITDATA Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     dblogin useridalias {{ oracle_goldengate_group.auditdata.credential_alias }}
-    ADD REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}
+    ADD REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }} CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: add_auditdata_replicat
-  failed_when: add_auditdata_replicat.rc != 0 and "already exists" not in add_auditdata_replicat.stderr
-  changed_when: add_auditdata_replicat.rc == 0 and "already exists" not in add_auditdata_replicat.stderr
-  when: oracle_goldengate_deploy_auditdata
+  failed_when: '"ERROR" in add_auditdata_replicat.stdout'
+  changed_when: '"added" in add_auditdata_replicat.stdout'
+  when: run_auditdata
+
+- name: Display stdout for AUDITDATA Replicat registration
+  ansible.builtin.debug:
+    msg: "{{ add_auditdata_replicat.stdout }}"
+  when: run_auditdata
 
 - name: Add AUDITREF Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_group.auditref.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     dblogin useridalias {{ oracle_goldengate_group.auditref.credential_alias }}
-    ADD REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}
+    ADD REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }} CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: add_auditref_replicat
-  failed_when: add_auditref_replicat.rc != 0 and "already exists" not in add_auditref_replicat.stderr
-  changed_when: add_auditref_replicat.rc == 0 and "already exists" not in add_auditref_replicat.stderr
-  when: oracle_goldengate_deploy_auditref
+  failed_when: '"ERROR" in add_auditref_replicat.stdout'
+  changed_when: '"added" in add_auditref_replicat.stdout'
+  when: run_auditref
+
+- name: Display stdout for AUDITREF Replicat registration
+  ansible.builtin.debug:
+    msg: "{{ add_auditref_replicat.stdout }}"
+  when: run_auditref

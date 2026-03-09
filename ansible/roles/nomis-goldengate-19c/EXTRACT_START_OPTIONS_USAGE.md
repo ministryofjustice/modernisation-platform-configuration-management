@@ -152,15 +152,15 @@ ansible-playbook site.yml --tags install-audit-extract \
 ```bash
 # Start AUDITDATA from specific SCN
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_deploy_auditdata=true \
-                oracle_goldengate_deploy_auditref=false \
+  --extra-vars "run_auditdata=true \
+                run_auditref=false \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=111111111"
 
 # Start AUDITREF from different SCN
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_deploy_auditdata=false \
-                oracle_goldengate_deploy_auditref=true \
+  --extra-vars "run_auditdata=false \
+                run_auditref=true \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=222222222"
 

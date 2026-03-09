@@ -24,7 +24,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
 
 - name: Deploy AUDITDATA Extract stop script
   ansible.builtin.template:
@@ -33,7 +33,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
 
 # Deploy Extract control scripts - AUDITREF
 - name: Deploy AUDITREF Extract start script
@@ -43,7 +43,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
 
 - name: Deploy AUDITREF Extract stop script
   ansible.builtin.template:
@@ -52,7 +52,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
 
 # Deploy Extract control scripts - MIS
 - name: Deploy MIS Extract start script
@@ -62,7 +62,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
 
 - name: Deploy MIS Extract stop script
   ansible.builtin.template:
@@ -71,7 +71,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
 
 # Deploy Replicat control scripts - AUDITDATA
 - name: Deploy AUDITDATA Replicat start script
@@ -81,7 +81,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
 
 - name: Deploy AUDITDATA Replicat stop script
   ansible.builtin.template:
@@ -90,7 +90,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
 
 # Deploy Replicat control scripts - AUDITREF
 - name: Deploy AUDITREF Replicat start script
@@ -100,7 +100,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
 
 - name: Deploy AUDITREF Replicat stop script
   ansible.builtin.template:
@@ -109,7 +109,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
 
 # Deploy Replicat control scripts - MIS
 - name: Deploy MIS Replicat start script
@@ -119,7 +119,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
 
 - name: Deploy MIS Replicat stop script
   ansible.builtin.template:
@@ -128,7 +128,7 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0750"
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
 
 # Deploy Operations Guide
 - name: Deploy operations guide

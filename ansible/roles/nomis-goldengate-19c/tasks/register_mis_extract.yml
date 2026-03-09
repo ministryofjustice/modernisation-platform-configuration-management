@@ -1,7 +1,7 @@
 ---
 # Register and manage MIS Extract process
 - name: Register MIS Extract process
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
   block:
     - name: Set MIS Extract BEGIN clause
       ansible.builtin.set_fact:

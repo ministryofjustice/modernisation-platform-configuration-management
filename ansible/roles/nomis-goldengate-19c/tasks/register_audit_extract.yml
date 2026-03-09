@@ -1,7 +1,7 @@
 ---
 # Register and manage AUDITDATA Extract process
 - name: Register AUDITDATA Extract process
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
   block:
     - name: Set AUDITDATA Extract BEGIN clause
       ansible.builtin.set_fact:
@@ -48,7 +48,7 @@
       changed_when: add_auditdata_extract.rc == 0 and "already exists" not in add_auditdata_extract.stderr
 
 - name: Register AUDITREF Extract process
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
   block:
     - name: Set AUDITREF Extract BEGIN clause
       ansible.builtin.set_fact:

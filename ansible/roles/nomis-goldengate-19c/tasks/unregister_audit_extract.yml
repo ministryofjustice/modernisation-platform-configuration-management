@@ -1,7 +1,7 @@
 ---
 # Unregister and manage AUDITDATA Extract process
 - name: Unregister AUDITDATA Extract process
-  when: oracle_goldengate_deploy_auditdata
+  when: run_auditdata
   block:
     - name: Unregister AUDITDATA Extract process
       ansible.builtin.shell: |
@@ -27,7 +27,7 @@
       changed_when: remove_auditdata_extract.rc == 0 and "already exists" not in remove_auditdata_extract.stderr
 
 - name: Unregister AUDITREF Extract process
-  when: oracle_goldengate_deploy_auditref
+  when: run_auditref
   block:
     - name: Unregister AUDITREF Extract process
       ansible.builtin.shell: |

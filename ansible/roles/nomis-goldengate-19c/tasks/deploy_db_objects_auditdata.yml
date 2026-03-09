@@ -10,7 +10,7 @@
 
 - name: Deploy AuditData support packages
   when:
-    - oracle_goldengate_deploy_auditdata is defined and oracle_goldengate_deploy_auditdata
+    - run_auditdata is defined and run_auditdata
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
   block:

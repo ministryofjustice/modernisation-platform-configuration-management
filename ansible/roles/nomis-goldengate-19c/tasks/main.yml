@@ -59,7 +59,7 @@
 # call task passing in oracle_goldengate_group.mis.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to MIS database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task
 - name: Create GoldenGate database administrator and schema users 
   import_tasks: create_gg_dbusers.yml
-  when: oracle_goldengate_deploy_mis is defined and oracle_goldengate_deploy_mis == true
+  when: run_mis is defined and run_mis == true
   vars:
     oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.mis.tns_alias }}"
   tags:
@@ -68,12 +68,13 @@
     - goldengate-database-config
     - goldengate-dbuser
     - create-dbusers
+    - create-mis-dbusers
 
 # Call task passing in oracle_goldengate_group.auditref.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to AUDITREF database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task.
 # Both audit processes (AUDITDATA and AUDITREF) use the same database users, so only need to run the create_dbusers task once if either auditdata or auditref deployment is being run.
 - name: Create GoldenGate database administrator and schema users 
   import_tasks: create_gg_dbusers.yml
-  when: (oracle_goldengate_deploy_auditref is defined and oracle_goldengate_deploy_auditref == true) or (oracle_goldengate_deploy_auditdata is defined and oracle_goldengate_deploy_auditdata == true)
+  when: (run_auditref is defined and run_auditref == true) or (run_auditdata is defined and run_auditdata == true)
   vars:
     oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.auditref.tns_alias }}"
   tags:
@@ -132,7 +133,7 @@
 # Audit database processes (AUDITDATA and AUDITREF)
 - name: Install GoldenGate extract processes (Audit databases)
   import_tasks: install_audit_extract.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -144,7 +145,7 @@
 # Unregister Extract processes
 - name: Unregister Audit Extract processes
   import_tasks: unregister_audit_extract.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -156,7 +157,7 @@
 # Register Extract processes
 - name: Register Audit Extract processes
   import_tasks: register_audit_extract.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -167,7 +168,7 @@
 
 - name: Install GoldenGate replicat processes (Audit databases)
   import_tasks: install_audit_replicat.yml
-  when: oracle_goldengate_deploy_auditdata or oracle_goldengate_deploy_auditref
+  when: run_auditdata or run_auditref
   tags:
     - goldengate
     - goldengate-config
@@ -176,10 +177,32 @@
     - goldengate-replicat
     - install-audit-replicat
 
+- name: Register GoldenGate replicat processes (Audit databases)
+  import_tasks: register_audit_replicat.yml
+  when: run_auditdata or run_auditref
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-audit
+    - goldengate-replicat
+    - register-audit-replicat
+
+- name: Unregister GoldenGate replicat processes (Audit databases)
+  import_tasks: unregister_audit_replicat.yml
+  when: run_auditdata or run_auditref
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-audit
+    - goldengate-replicat
+    - unregister-audit-replicat
+
 # MIS database processes
 - name: Install GoldenGate extract processes (MIS database)
   import_tasks: install_mis_extract.yml
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
   tags:
     - goldengate
     - goldengate-config
@@ -190,7 +213,7 @@
 
 - name: Install GoldenGate replicat processes (MIS database)
   import_tasks: install_mis_replicat.yml
-  when: oracle_goldengate_deploy_mis
+  when: run_mis
   tags:
     - goldengate
     - goldengate-config
@@ -198,6 +221,28 @@
     - goldengate-mis
     - goldengate-replicat
     - install-mis-replicat
+
+- name: Unregister MIS Replicat process
+  import_tasks: unregister_mis_replicat.yml
+  when: run_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-replicat
+    - unregister-mis-replicat
+
+- name: Register MIS Replicat process
+  import_tasks: register_mis_replicat.yml
+  when: run_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-replicat
+    - register-mis-replicat
 
 # Control scripts (deploy on all hosts)
 - name: Deploy GoldenGate control scripts

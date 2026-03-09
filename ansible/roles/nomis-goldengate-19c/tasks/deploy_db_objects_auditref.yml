@@ -10,7 +10,7 @@
 
 - name: Deploy Auditref support packages
   when:
-    - oracle_goldengate_deploy_auditref is defined and oracle_goldengate_deploy_auditref
+    - run_auditref is defined and run_auditref
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
   block:

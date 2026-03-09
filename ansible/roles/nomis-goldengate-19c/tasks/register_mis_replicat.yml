@@ -3,19 +3,28 @@
 
 - name: Add MIS Replicat process
   ansible.builtin.shell: |
-    export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+    set -e
+    set -o pipefail
     export ORAENV_ASK=NO
-    . oraenv > /dev/null 2>&1
+    . oraenv > /dev/null
     ./ggsci << EOF
     dblogin useridalias {{ oracle_goldengate_group.mis.credential_alias }}
-    ADD REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }}
+    ADD REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }} CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
     EXIT
     EOF
   args:
+    executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: add_mis_replicat
-  failed_when: add_mis_replicat.rc != 0 and "already exists" not in add_mis_replicat.stderr
-  changed_when: add_mis_replicat.rc == 0 and "already exists" not in add_mis_replicat.stderr
-  when: oracle_goldengate_deploy_mis
+  failed_when: '"ERROR" in add_mis_replicat.stdout'
+  changed_when: '"added" in add_mis_replicat.stdout'
+  when: run_mis
+
+- name: Display stdout for MIS Replicat registration
+  ansible.builtin.debug:
+    msg: "{{ add_mis_replicat.stdout }}"
+  when: run_mis
+
