@@ -1,87 +1,121 @@
+- name: Check if /u01/tag/tagsar/tagsar_dbobjects/ exists
+  ansible.builtin.stat:
+    path: /u01/tag/tagsar/tagsar_dbobjects/
+  register: tagsar_dbobjects_directory_present
+
 - block:
-    - name: Ensure tmp and lib directories exist
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: directory
+    - name: Run TagSar SQL scripts for provisioning
+      ansible.builtin.template:
+        src: 12/u01/tag/utils/scripts/tagsar_sql.j2
+        dest: /u01/tag/utils/scripts/tagsar_sql.sql
         owner: oracle
         group: oinstall
-        mode: '0755'
-      loop:
-        - { path: '/u01/tag/tagsar/deploy/tmp' }
-        - { path: '/u01/tag/tagsar/deploy/tmp/lib' }
+        mode: '0644'
+      become: yes
 
-    - name: Move and extract TAGSAR.ear
+    - name: Run SQL script
       ansible.builtin.shell: |
-        mv /u01/tag/tagsar/deploy/TAGSAR.ear .
-        jar -xvf TAGSAR.ear
-        rm -f TAGSAR.ear
-      become_user: oracle
+        source ~oracle/.bash_profile
+        sqlplus {{ weblogic_db_username }}/{{ weblogic_db_password }}@{{ weblogic_db_name }} @/u01/tag/utils/scripts/tagsar_sql.sql > /tmp/tagsar_sql.log 2>&1
       args:
-        chdir: /u01/tag/tagsar/deploy/tmp
-
-    - name: Download external dependencies
-      ansible.builtin.shell: wget {{ item }}
+        chdir: /u01/tag/tagsar/tagsar_dbobjects/
       become_user: oracle
-      args:
-        chdir: /u01/tag/tagsar/deploy/tmp
-        creates: "{{ item | basename }}"
-      loop:
-        - https://archive.apache.org/dist/logging/log4j/1.2.17/log4j-1.2.17.jar
-        - https://archive.apache.org/dist/xmlgraphics/fop/binaries/fop-1.1-bin.tar.gz
+      register: result
+      failed_when: result.rc != 0
 
-    - name: Prepare libraries (log4j + FOP)
-      ansible.builtin.shell: |
-        mv log4j-1.2.17.jar lib/
-        tar -xzf fop-1.1-bin.tar.gz
-        cp fop-1.1/lib/*.jar lib/
-        cp fop-1.1/build/fop.jar lib/
-      become_user: oracle
-      args:
-        chdir: /u01/tag/tagsar/deploy/tmp
-
-    - name: Create TAGSAREjb directory
+    - name: Remove /u01/tag/tagsar/tagsar_dbobjects/
       ansible.builtin.file:
-        path: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
-        state: directory
-        owner: oracle
-        group: oinstall
-        mode: '0755'
-
-    - name: Move and extract TAGSAREjb.jar
-      ansible.builtin.shell: |
-        mv ../TAGSAREjb.jar .
-        jar -xvf TAGSAREjb.jar
-        rm -f TAGSAREjb.jar
-      become_user: oracle
-      args:
-        chdir: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
-
-    - name: Update <method-name>, repack TAGSAREjb.jar and move back to tmp
-      ansible.builtin.shell: |
-        sed -i 's/\(<method-name>\s*\)<\/method-name>/\1onMessage<\/method-name>/' META-INF/weblogic-ejb-jar.xml
-        jar -cvf TAGSAREjb.jar META-INF syscon
-        mv TAGSAREjb.jar /u01/tag/tagsar/deploy/tmp/
-      become_user: oracle
-      args:
-        chdir: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
-
-    - name: Repack TAGSAR.ear and move it back to deploy
-      ansible.builtin.shell: |
-        jar -cvf TAGSAR.ear META-INF adf lib TAGSAREjb.jar
-        mv TAGSAR.ear /u01/tag/tagsar/deploy/
-      become_user: oracle
-      args:
-        chdir: /u01/tag/tagsar/deploy/tmp
-
-    - name: Copy all JAR files to NOMIS domain lib directory
-      ansible.builtin.shell: |
-        cp /u01/tag/tagsar/applib/*.jar .
-      become_user: oracle
-      args:
-        chdir: /u01/app/oracle/Middleware/user_projects/domains/nomis/lib/
-
-  always:
-    - name: Clean up tmp directory
-      ansible.builtin.file:
-        path: /u01/tag/tagsar/deploy/tmp
+        path: "{{ item }}"
         state: absent
+      loop:
+        - /u01/tag/tagsar/tagsar_dbobjects/
+#        - /var/log/tagsar_sql.log
+  when: tagsar_dbobjects_directory_present.stat.exists
+
+#- block:
+#    - name: Ensure tmp and lib directories exist
+#      ansible.builtin.file:
+#        path: "{{ item.path }}"
+#        state: directory
+#        owner: oracle
+#        group: oinstall
+#        mode: '0755'
+#      loop:
+#        - { path: '/u01/tag/tagsar/deploy/tmp' }
+#        - { path: '/u01/tag/tagsar/deploy/tmp/lib' }
+#
+#    - name: Move and extract TAGSAR.ear
+#      ansible.builtin.shell: |
+#        mv /u01/tag/tagsar/deploy/TAGSAR.ear .
+#        jar -xvf TAGSAR.ear
+#        rm -f TAGSAR.ear
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp
+#
+#    - name: Download external dependencies
+#      ansible.builtin.shell: wget {{ item }}
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp
+#        creates: "{{ item | basename }}"
+#      loop:
+#        - https://archive.apache.org/dist/logging/log4j/1.2.17/log4j-1.2.17.jar
+#        - https://archive.apache.org/dist/xmlgraphics/fop/binaries/fop-1.1-bin.tar.gz
+#
+#    - name: Prepare libraries (log4j + FOP)
+#      ansible.builtin.shell: |
+#        mv log4j-1.2.17.jar lib/
+#        tar -xzf fop-1.1-bin.tar.gz
+#        cp fop-1.1/lib/*.jar lib/
+#        cp fop-1.1/build/fop.jar lib/
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp
+#
+#    - name: Create TAGSAREjb directory
+#      ansible.builtin.file:
+#        path: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
+#        state: directory
+#        owner: oracle
+#        group: oinstall
+#        mode: '0755'
+#
+#    - name: Move and extract TAGSAREjb.jar
+#      ansible.builtin.shell: |
+#        mv ../TAGSAREjb.jar .
+#        jar -xvf TAGSAREjb.jar
+#        rm -f TAGSAREjb.jar
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
+#
+#    - name: Update <method-name>, repack TAGSAREjb.jar and move back to tmp
+#      ansible.builtin.shell: |
+#        sed -i 's/\(<method-name>\s*\)<\/method-name>/\1onMessage<\/method-name>/' META-INF/weblogic-ejb-jar.xml
+#        jar -cvf TAGSAREjb.jar META-INF syscon
+#        mv TAGSAREjb.jar /u01/tag/tagsar/deploy/tmp/
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp/TAGSAREjb
+#
+#    - name: Repack TAGSAR.ear and move it back to deploy
+#      ansible.builtin.shell: |
+#        jar -cvf TAGSAR.ear META-INF adf lib TAGSAREjb.jar tagsar-ejb-12.2.0.jar jarcheck-ejb-12.2.0.jar
+#        mv TAGSAR.ear /u01/tag/tagsar/deploy/
+#      become_user: oracle
+#      args:
+#        chdir: /u01/tag/tagsar/deploy/tmp
+
+#    - name: Copy all JAR files to NOMIS domain lib directory
+#      ansible.builtin.shell: |
+#        cp /u01/tag/tagsar/applib/*.jar .
+#      become_user: oracle
+#      args:
+#        chdir: /u01/app/oracle/Middleware/user_projects/domains/nomis/lib/
+
+#  always:
+#    - name: Clean up tmp directory
+#      ansible.builtin.file:
+#        path: /u01/tag/tagsar/deploy/tmp
+#        state: absent

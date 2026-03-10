@@ -20,7 +20,7 @@
     - /u01/tag/tagsar/logs
     - /u01/tag/tagsar/output
     - /u01/tag/HotPage/logs
-#    - /u01/tag/autologoff/logs
+    - /u01/tag/autologoff/logs
 #    - /u01/tag/tmp
 
 #- name: Update weblogic files
@@ -38,10 +38,13 @@
 #      - /u01/tag/static/TAG.gif.tgz
 #      - /u01/tag/static/HELP/2018-07-26.tgz
 #      - "{{ forms_sources_tgz }}"
-      - /u01/tag/tagsar/applib/2008-06-27.tgz
-      - /u01/tag/tagsar/deploy/2012-07-25.tgz
-      - /u01/tag/tagsar/stylesheets/2024-07-29.tgz
-#      - /u01/tag/autologoff/deploy/2013-02-01.tgz
+      #- /u01/tag/tagsar/applib/2008-06-27.tgz
+      - /u01/tag/tagsar/applib/2026-03-10.tgz
+      - /u01/tag/tagsar/deploy/2026-03-23.tgz
+      - /u01/tag/tagsar/tagsar_dbobjects/2026-03-26.tgz
+      - /u01/tag/tagsar/fop_xconf/2026-03-10.tgz
+      - /u01/tag/tagsar/stylesheets/2026-03-10.tgz
+      - /u01/tag/autologoff/deploy/2026-03-12.tgz
       - /u01/tag/HotPage/deploy/2021-01-23.tgz
 #      - /u01/tag/reports/2020-11-10.tgz
 #      - /u01/tag/server/2022-05-07.tgz
@@ -53,3 +56,16 @@
         # -- add webUtilArchive=frmwebutil.jar,jacob.jar,icons.jar,tagClient.jar,frmrwinteg.jar,ssce.jar,livecapture.jar.
         # tag.env: try
         # REPORT_SERVER_NAME=RptSvr_forms_instance
+
+- name: Move fop.xconf to new location
+  ansible.builtin.copy:
+    src: /u01/tag/tagsar/fop_xconf/fop.xconf
+    dest: /u01/tag/tagsar/fop.xconf
+    remote_src: true
+    owner: oracle
+    group: oinstall
+
+- name: Remove old fop.xconf
+  ansible.builtin.file:
+    path: /u01/tag/tagsar/fop_xconf/
+    state: absent
