@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from java.io import FileInputStream
+from java.lang import Thread
 import time
 import getopt
 import sys
@@ -106,7 +107,7 @@ def wait_for_ms_start():
             elif serverState == "SHUTDOWN":
                 print msName + ' is ' + serverState
                 print 'Starting ' + msName
-                cmo.start()
+                start(msName,'Server')
                 Thread.sleep(10000)
                 continue
         except:
@@ -189,6 +190,7 @@ if dsName:
         existingDS = getMBean('/JDBCSystemResources/' + dsName)
         if existingDS:
             print('Data source ' + dsName + ' already exists. Skipping creation.')
+            cancelEdit('y')
             continue
         print('Data source ' + dsName + ' was not found. Creating.')
         cmo.createJDBCSystemResource(dsName)
@@ -225,7 +227,8 @@ if dsName:
         cd('/ServerLifeCycleRuntimes/'+msName)
         # Only start the server if start_managed_server is True
         if start_managed_server:
-            cmo.forceShutdown()
+            shutdown(msName,'Server','true',1000,force='true')
+            start(msName,'Server')
             wait_for_ms_start()
 
 
