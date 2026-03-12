@@ -56,27 +56,8 @@
     - goldengate-database-config
     - configure-db-params
 
-# call task passing in oracle_goldengate_group.mis.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to MIS database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task
 - name: Create GoldenGate database administrator and schema users 
   import_tasks: create_gg_dbusers.yml
-  when: run_mis is defined and run_mis == true
-  vars:
-    oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.mis.tns_alias }}"
-  tags:
-    - goldengate
-    - goldengate-install
-    - goldengate-database-config
-    - goldengate-dbuser
-    - create-dbusers
-    - create-mis-dbusers
-
-# Call task passing in oracle_goldengate_group.auditref.tns_alias as variable value for oracle_goldengate_local_db_sid if deploying to AUDITREF database, otherwise pass in oracle_goldengate_local_db_sid which will be set to the detected local database SID in the detect_local_database.yml task.
-# Both audit processes (AUDITDATA and AUDITREF) use the same database users, so only need to run the create_dbusers task once if either auditdata or auditref deployment is being run.
-- name: Create GoldenGate database administrator and schema users 
-  import_tasks: create_gg_dbusers.yml
-  when: (run_auditref is defined and run_auditref == true) or (run_auditdata is defined and run_auditdata == true)
-  vars:
-    oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.auditref.tns_alias }}"
   tags:
     - goldengate
     - goldengate-install
@@ -140,6 +121,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-extract
+    - install-extracts
     - install-audit-extract
 
 # Unregister Extract processes
@@ -152,6 +134,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-extract
+    - unregister-extracts
     - unregister-audit-extract
 
 # Register Extract processes
@@ -164,6 +147,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-extract
+    - register-extracts
     - register-audit-extract
 
 - name: Install GoldenGate replicat processes (Audit databases)
@@ -175,6 +159,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-replicat
+    - install-replicats
     - install-audit-replicat
 
 - name: Register GoldenGate replicat processes (Audit databases)
@@ -186,6 +171,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-replicat
+    - register-replicats
     - register-audit-replicat
 
 - name: Unregister GoldenGate replicat processes (Audit databases)
@@ -197,6 +183,7 @@
     - goldengate-processes
     - goldengate-audit
     - goldengate-replicat
+    - unregister-replicats
     - unregister-audit-replicat
 
 # MIS database processes
@@ -209,7 +196,34 @@
     - goldengate-processes
     - goldengate-mis
     - goldengate-extract
+    - install-extracts
     - install-mis-extract
+
+# Unregister Extract processes
+- name: Unregister MIS Extract processes
+  import_tasks: unregister_mis_extract.yml
+  when: run_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-extract
+    - unregister-extracts
+    - unregister-mis-extract
+
+# Register Extract processes
+- name: Register MIS Extract processes
+  import_tasks: register_mis_extract.yml
+  when: run_mis
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-mis
+    - goldengate-extract
+    - register-extracts
+    - register-mis-extract
 
 - name: Install GoldenGate replicat processes (MIS database)
   import_tasks: install_mis_replicat.yml
@@ -220,9 +234,10 @@
     - goldengate-processes
     - goldengate-mis
     - goldengate-replicat
+    - install-replicats
     - install-mis-replicat
 
-- name: Unregister MIS Replicat process
+- name: Unregister MIS Replicat processes
   import_tasks: unregister_mis_replicat.yml
   when: run_mis
   tags:
@@ -231,6 +246,7 @@
     - goldengate-processes
     - goldengate-mis
     - goldengate-replicat
+    - unregister-replicats
     - unregister-mis-replicat
 
 - name: Register MIS Replicat process
@@ -242,6 +258,7 @@
     - goldengate-processes
     - goldengate-mis
     - goldengate-replicat
+    - register-replicats
     - register-mis-replicat
 
 # Control scripts (deploy on all hosts)
@@ -256,21 +273,38 @@
     - deploy-scripts
 
 # Process management tasks
-- name: Start GoldenGate processes
-  import_tasks: start_processes.yml
+- name: Start GoldenGate Extract processes
+  import_tasks: start_extracts.yml
   tags:
     - goldengate
     - goldengate-start
-    - goldengate-processes
+    - start-extracts
     - never
 
-- name: Stop GoldenGate processes
-  import_tasks: stop_processes.yml
+- name: Stop GoldenGate Extract processes
+  import_tasks: stop_extracts.yml
   tags:
     - goldengate
     - goldengate-stop
-    - goldengate-processes
+    - stop-extracts
     - never
+
+- name: Start GoldenGate Replicat processes
+  import_tasks: start_replicats.yml
+  tags:
+    - goldengate
+    - goldengate-start
+    - start-replicats
+    - never
+
+- name: Stop GoldenGate Replicat processes
+  import_tasks: stop_replicats.yml
+  tags:
+    - goldengate
+    - goldengate-stop
+    - stop-replicats
+    - never
+
 
 # Helper tasks
 - name: Get current SCN from databases

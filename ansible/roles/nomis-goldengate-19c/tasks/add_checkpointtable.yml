@@ -1,9 +1,6 @@
-# if deploying audit then use the audit_db alias to connect to the database and create the checkpoint table, otherwise use the mis_db alias. This is because the capture and replicat processes for both audit and mis streams will use the same checkpoint table, so we just need to create it once using either alias.
-- name: Set fact for which DB alias to use for checkpoint table creation
-  ansible.builtin.set_fact:
-    checkpoint_table_db_alias: "{{ oracle_goldengate_group.auditdata.credential_alias if run_auditdata or run_auditref else oracle_goldengate_group.mis.credential_alias }}"
-
-- name: Create checkpoint and heartbeat tables using ggsci
+# The checkpoint table is used by replicat processes to track their progress in applying changes to the target database. The extracts use files.
+# The tns alias will be passed in as a var checkpoint_table_db_alias, which will be set to either the auditdata or mis database depending on which replicat processes are being installed. The checkpoint table needs to be created in the database that the replicat processes are connecting to, because the checkpoint table needs to be specified in the replicat parameter files and the replicat processes won't start if the checkpoint table doesn't exist.
+- name: Check if checkpoint table already exists
   ansible.builtin.shell: |
     export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
     export ORAENV_ASK=NO
@@ -11,8 +8,34 @@
     cd {{ oracle_goldengate_home }}
     ./ggsci << EOF
     dblogin useridalias {{ checkpoint_table_db_alias }}
-    ADD CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
-    ADD HEARTBEATTABLE {{ oracle_goldengate_dbuser }}.HEARTBEATS
+    INFO CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.{{ checkpoint_table_name }}
+    EXIT
+    EOF
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  environment: "{{ gg_env }}"
+  register: checkpointtable_info
+  failed_when: false
+  changed_when: false
+
+# if the stdout contains "does not exist" then we know the checkpoint table does not exist and needs to be created, otherwise we assume it already exists and skip creation.
+- name: Create checkpoint table if it does not exist
+  ansible.builtin.debug:
+    msg: "Checkpoint table already exists, skipping creation."
+  when: "'does not exist' not in checkpointtable_info.stdout"
+
+- name: Create checkpoint table using ggsci
+  when: "'does not exist' in checkpointtable_info.stdout"
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    cd {{ oracle_goldengate_home }}
+    ./ggsci << EOF
+    dblogin useridalias {{ checkpoint_table_db_alias }}
+    ADD CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.{{ checkpoint_table_name }}
     EXIT
     EOF
   args:

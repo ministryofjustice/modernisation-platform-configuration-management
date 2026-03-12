@@ -31,10 +31,12 @@
         export ORAENV_ASK=NO
         . oraenv > /dev/null
         ./ggsci << EOF
-        dblogin useridalias {{ oracle_goldengate_group.mis.credential_alias }}
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        add schematrandata {{ oracle_goldengate_group.source.schema_owner }} ALLCOLS
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.mis.credential_alias }}
         REGISTER EXTRACT {{ oracle_goldengate_group.mis.extract_name }} DATABASE {{ mis_register_scn_clause }}
         ADD EXTRACT {{ oracle_goldengate_group.mis.extract_name }}, INTEGRATED TRANLOG, {{ mis_begin_clause }}
-        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.mis.extract_name }}, MEGABYTES 500
+        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_path }}/{{ oracle_goldengate_group.mis.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.mis.extract_name }}, MEGABYTES 500
         EXIT
         EOF
       args:

@@ -6,7 +6,7 @@
   block:
     - name: Check for running Oracle instances
       ansible.builtin.shell: |
-        ps -ef | grep -E '[o]ra_pmon_' | awk '{print $NF}' | sed 's/ora_pmon_//'
+        ps -ef | grep -E '[o]ra_pmon_' | awk '{print $NF}' | sed 's/ora_pmon_//' | grep -v s///
       register: running_instances
       changed_when: false
       failed_when: false
@@ -121,19 +121,14 @@
           }}
       when: matching_preferred_db_sids_normalised | length > 0
 
-    # Running ggsci needs a local database SID to be set in the environment to set the oracle environment so get the first local SID found
-    - name: Set legacy single SID variable for backward compatibility
-      ansible.builtin.set_fact:
-        oracle_goldengate_local_db_sid: "{{ oracle_goldengate_local_db_sids | first }}"
-      when: oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0
-
     - name: Display detected local database SIDs
+      when: oracle_goldengate_debug_detect_local_db | default(false)
       ansible.builtin.debug:
         msg: "Local database SIDs for GoldenGate: {{ oracle_goldengate_local_db_sids | default([]) }}"
 
-    - name: Warn if no matching database found
-      ansible.builtin.debug:
-        msg: "WARNING: No configured database instance found running on this host. GoldenGate processes will not be deployed."
+    - name: Fail if no matching database found
+      ansible.builtin.fail:
+        msg: "No configured database instance found running on this host. GoldenGate processes will not be deployed."
       when: oracle_goldengate_local_db_sids is not defined or oracle_goldengate_local_db_sids | length == 0
 
     # which deployment is being run is determined by which database is detected as running locally. If the audit or auditref database is detected then the audit deployment will be run, if the mis database is detected then the mis deployment will be run. If the source database is detected then no deployment will be run since GoldenGate binaries are only needed on target hosts for replication, and the source host is only used for capture.
@@ -168,6 +163,13 @@
         - oracle_goldengate_local_db_sids is defined
         - oracle_goldengate_local_db_sids | length > 0
         - oracle_goldengate_group.mis.tns_alias in oracle_goldengate_local_db_sids
+
+    # Running ggsci needs a local database SID to be set in the environment to set the oracle environment so get the first local SID found.
+    # Do this last otherwise tasks will be skipped once a local SID is set.
+    - name: Set legacy single SID variable for backward compatibility
+      ansible.builtin.set_fact:
+        oracle_goldengate_local_db_sid: "{{ oracle_goldengate_local_db_sids | first }}"
+      when: oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0
 
 - name: Display planned GoldenGate deployment
   ansible.builtin.debug:

@@ -2,14 +2,9 @@ REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
 
 GETENV (NLS_LANG)
 
--- Use credential store alias instead of hardcoded credentials
-DBLOGIN USERIDALIAS AUDITREF_DB
+USERIDALIAS AUDIT_DB
 
 ASSUMETARGETDEFS
-
--- --- Checkpoint table ---
--- Recommended to ensure restartability
-CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
 
 -- --- Error handling ---
 REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue

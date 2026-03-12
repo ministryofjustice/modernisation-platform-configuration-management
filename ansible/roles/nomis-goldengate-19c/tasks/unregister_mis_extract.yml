@@ -10,7 +10,8 @@
         export ORAENV_ASK=NO
         . oraenv > /dev/null
         ./ggsci << EOF
-        dblogin useridalias {{ oracle_goldengate_group.mis.credential_alias }}
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.mis.credential_alias }}
         STOP EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
         UNREGISTER EXTRACT {{ oracle_goldengate_group.mis.extract_name }} DATABASE
         DELETE EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
@@ -23,5 +24,8 @@
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
       register: remove_mis_extract
-      failed_when: remove_mis_extract.rc != 0 and "already exists" not in remove_mis_extract.stderr
-      changed_when: remove_mis_extract.rc == 0 and "already exists" not in remove_mis_extract.stderr
+      failed_when: remove_mis_extract.rc != 0 or ("Successfully unregistered" not in remove_mis_extract.stdout and "does not exist" not in remove_mis_extract.stdout)
+
+    - name: Display stdout for MIS Extract unregistration
+      ansible.builtin.debug:
+        msg: "{{ remove_mis_extract.stdout }}"

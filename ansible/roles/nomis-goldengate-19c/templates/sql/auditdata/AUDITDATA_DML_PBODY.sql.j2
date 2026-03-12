@@ -353,6 +353,27 @@ BEGIN
   --loop through the column values in the LCR. Depending on column:-
     --either populate the appropriate audit_table 'audit' column variable
     --or save the values into an array for writing later to the audit_column table
+
+  -- do not save any rows that match the Streams negative rule:
+  -- ((((:dml.get_object_owner() = 'OMS_OWNER') 
+  -- and ((:dml.get_command_type() <> 'DELETE') 
+  -- and (:dml.get_object_name() <> 'OMS_DELETED_ROWS') 
+  -- and (:dml.get_value('NEW','"AUDIT_MODULE_NAME"').accessvarchar2() IN ('$$START$$','$$END$$'))))
+  if v_object_owner = 'OMS_OWNER' 
+  and v_command_type <> 'delete' 
+  and v_object_name <> v_deletions_table_name
+  then
+    if v_row_lcr_list_new.count > 0 then
+      for v_row_unit_num in 1..v_row_lcr_list_new.count loop
+        if lower(v_row_lcr_list_new(v_row_unit_num).column_name) = 'audit_module_name' then
+          if v_row_lcr_list_new(v_row_unit_num).data.getvarchar2() in ('$$START$$','$$END$$') then
+            return;
+          end if;
+        end if;
+      end loop;
+    end if;
+  end if;
+
   v_line_number:=60;
   CASE
   WHEN v_command_type = 'delete' THEN

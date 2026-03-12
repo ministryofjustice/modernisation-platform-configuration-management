@@ -16,6 +16,9 @@
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0644"
 
-# Register Replicat processes
-- name: Register Audit Replicat processes
-  import_tasks: register_audit_replicat.yml
+# call task add_checkpointtable.yml to create the checkpoint table used by the replicat processes. We need to create it after deploying the parameter files because the parameter files specify the name of the checkpoint table, and it needs to exist before we can start the processes.
+# Pass in the tns_alias as var checkpoint_table_db_alias
+- name: Create checkpoint table for replicat processes
+  import_tasks: add_checkpointtable.yml
+  vars:
+    checkpoint_table_db_alias: "{{ oracle_goldengate_group.auditdata.credential_alias }}"

@@ -31,10 +31,12 @@
         export ORAENV_ASK=NO
         . oraenv > /dev/null
         ./ggsci << EOF
-        dblogin useridalias {{ oracle_goldengate_group.auditdata.credential_alias }}
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        add schematrandata {{ oracle_goldengate_group.source.schema_owner }} ALLCOLS
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.auditdata.credential_alias }}
         REGISTER EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }} DATABASE {{ auditdata_register_scn_clause }}
         ADD EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}, INTEGRATED TRANLOG, {{ auditdata_begin_clause }}
-        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}, MEGABYTES 500
+        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_path }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}, MEGABYTES 500
         EXIT
         EOF
       args:
@@ -78,10 +80,12 @@
         export ORAENV_ASK=NO
         . oraenv > /dev/null
         ./ggsci << EOF
-        dblogin useridalias {{ oracle_goldengate_group.auditref.credential_alias }}
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        add schematrandata {{ oracle_goldengate_group.source.schema_owner }} ALLCOLS
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.auditref.credential_alias }}
         REGISTER EXTRACT {{ oracle_goldengate_group.auditref.extract_name }} DATABASE {{ auditref_register_scn_clause }}
         ADD EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}, INTEGRATED TRANLOG, {{ auditref_begin_clause }}
-        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}, MEGABYTES 500
+        ADD EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_path }}/{{ oracle_goldengate_group.auditref.trail_prefix }}, EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}, MEGABYTES 500
         EXIT
         EOF
       args:

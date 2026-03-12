@@ -1,12 +1,11 @@
 EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
 
--- Use NOUSERID for Downstream sourceless Extract to avoid connecting to the source database
-NOUSERID
+USERIDALIAS SOURCE_DB
 
 -- Use a mining user on the downstream (local) database
-MININGDBLOGIN USERIDALIAS AUDIT_DB
+TRANLOGOPTIONS MININGUSERALIAS AUDIT_DB
 
-EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_prefix }}
+EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_path }}/{{ oracle_goldengate_group.auditref.trail_prefix }}
 
 REPORTCOUNT EVERY 5 MINUTES, RATE
 WARNLONGTRANS 1H, CHECKINTERVAL 30m
