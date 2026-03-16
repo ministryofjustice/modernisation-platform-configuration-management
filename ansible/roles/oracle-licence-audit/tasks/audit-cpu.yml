@@ -1,11 +1,21 @@
+- name: Check if WebLogic is running
+  shell: ps -ef | grep weblogic | grep -v grep | grep -v oem
+  register: weblogic_process
+  changed_when: false
+
 - name: Get the current caller identity information
   amazon.aws.aws_caller_info:
   register: caller_info
 
-# set the filename to use for audit output as caller_info.account plus inventory_hostname
-- name: Set audit filename based on caller identity
+# if weblogic is running then set the filename to include weblogic, otherwise set it to just account and hostname
+- name: Set audit filename based on WebLogic status
   set_fact:
-    audit_filename: "{{ caller_info.account }}_{{ inventory_hostname }}"    
+    audit_filename: >-
+      {% if weblogic_process.stdout != "" %}
+        {{ caller_info.account }}_{{ inventory_hostname }}_weblogic
+      {% else %}
+        {{ caller_info.account }}_{{ inventory_hostname }}
+      {% endif %}
 
 - name: Set up audit directory
   block:
