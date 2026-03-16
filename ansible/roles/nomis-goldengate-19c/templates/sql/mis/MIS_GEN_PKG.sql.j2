@@ -114,7 +114,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
 
     -- package level variable declarations
     g_version      VARCHAR2(20) := '1.0e.59';
-    g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.mis.schema_owner }}';
+    g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_sql_owner }}';
+    g_etl_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.mis.etl_schema }}';
 --    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
     g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_dbuser }}';
     g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';

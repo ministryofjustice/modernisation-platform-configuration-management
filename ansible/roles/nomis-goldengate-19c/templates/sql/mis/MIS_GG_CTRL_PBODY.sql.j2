@@ -124,7 +124,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     IF l_old_batch_number > 1 THEN
         -- get details of existing active batch
         l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                     'from ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+                     'from ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG ' ||
                     'where load_id = :load_id';  
         execute immediate l_plsql into l_staged_date using l_old_batch_number;
     END IF;

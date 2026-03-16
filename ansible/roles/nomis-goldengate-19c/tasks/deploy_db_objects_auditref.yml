@@ -21,7 +21,7 @@
         oracle_goldengate_group_extract_name: "{{ oracle_goldengate_group.auditref.extract_name }}"
         oracle_goldengate_group_replicat_name: "{{ oracle_goldengate_group.auditref.replicat_name }}"
         oracle_goldengate_group_trail_prefix: "{{ oracle_goldengate_group.auditref.trail_prefix }}"
-        oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.target_schema }}"
+        oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.auditref.dummy_target_schema }}"
         # Set the capture and apply process names for the Auditref stream based on the logical stream name defined in defaults/main.yml, this is used in the SQL templates to create the correct database objects for the stream
         oracle_goldengate_capture_process_name: "OGG$CAP_{{ oracle_goldengate_group.auditref.extract_name }}"

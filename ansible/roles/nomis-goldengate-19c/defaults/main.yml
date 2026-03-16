@@ -62,10 +62,10 @@ oracle_goldengate_group:
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home }}"
     extract_name: AUDDTEXT
-    replicat_name: AUDTREP
+    replicat_name: AUDDTREP
     trail_path: auditdata
     trail_prefix: dt
-    target_schema: AUDITDATA
+    etl_schema: ""
     dummy_target_schema: AUDITDATA_OMS_OWNER
   auditref:
     tns_alias: T1CAUDG
@@ -73,11 +73,11 @@ oracle_goldengate_group:
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home }}"
     extract_name: AUDRFEXT
-    replicat_name: AUDRREP
+    replicat_name: AUDRFREP
     trail_path: auditref
     trail_prefix: rf
-    target_schema: AUDITREF
-    dummy_target_schema:
+    etl_schema: ""
+    dummy_target_schema: ""
   mis:
     tns_alias: T1CMISG
     schema_owner: BODISTAGING
@@ -87,8 +87,8 @@ oracle_goldengate_group:
     replicat_name: MISREP
     trail_path: mis
     trail_prefix: ms
-    target_schema: BODISTAGING
-    dummy_target_schema:
+    etl_schema: BODIMIS
+    dummy_target_schema: ""
   
 # Define which database instance is running on this host
 # This controls which GoldenGate components are deployed

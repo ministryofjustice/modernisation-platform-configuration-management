@@ -53,6 +53,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AUTHID D
     -- will return a VARCHAR2 string containing a package version number
     FUNCTION get_version RETURN varchar2;
 
+    PROCEDURE create_log_purge_job;
+
 END MIS_JOB_PKG;
 /
 

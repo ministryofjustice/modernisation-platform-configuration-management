@@ -32,10 +32,10 @@ grant analyze any to {{ oracle_goldengate_dbuser }};
 DECLARE
 	l_grant varchar2(1000);
 BEGIN
-  FOR i IN (SELECT table_name FROM dba_tables where owner = '{{ oracle_goldengate_group.auditref.target_schema }}' ORDER BY 1) LOOP
-		l_grant := 'grant select on {{ oracle_goldengate_group.auditref.target_schema }}.'||i.table_name||' to {{ oracle_goldengate_sql_owner }}';
+  FOR i IN (SELECT table_name FROM dba_tables where owner = '{{ oracle_goldengate_group.auditref.schema_owner }}' ORDER BY 1) LOOP
+		l_grant := 'grant select on {{ oracle_goldengate_group.auditref.schema_owner }}.'||i.table_name||' to {{ oracle_goldengate_sql_owner }}';
 		EXECUTE IMMEDIATE l_grant;
-		l_grant := 'create or replace public synonym '||i.table_name||' for {{ oracle_goldengate_group.auditref.target_schema }}.'||i.table_name;
+		l_grant := 'create or replace public synonym '||i.table_name||' for {{ oracle_goldengate_group.auditref.schema_owner }}.'||i.table_name;
 		EXECUTE IMMEDIATE l_grant;
 	END LOOP;
 END;

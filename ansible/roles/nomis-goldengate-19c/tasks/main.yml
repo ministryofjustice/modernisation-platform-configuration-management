@@ -90,6 +90,7 @@
     - goldengate
     - goldengate-install
     - goldengate-config
+    - deploy-packages
     - deploy-auditref
     - deploy-auditref-objects
 
@@ -99,6 +100,7 @@
     - goldengate
     - goldengate-install
     - goldengate-config
+    - deploy-packages
     - deploy-auditdata
     - deploy-auditdata-objects
 
@@ -108,6 +110,7 @@
     - goldengate
     - goldengate-install
     - goldengate-config
+    - deploy-packages
     - deploy-mis
     - deploy-mis-objects
 
@@ -260,6 +263,24 @@
     - goldengate-replicat
     - register-replicats
     - register-mis-replicat
+
+- name: Unregister DML Handlers used for Replicat processes
+  import_tasks: unregister_dml_handlers.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-replicat
+    - unregister-dml-handlers
+
+- name: Register DML Handlers used for Replicat processes
+  import_tasks: register_dml_handlers.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-replicat
+    - register-dml-handlers
 
 # Control scripts (deploy on all hosts)
 - name: Deploy GoldenGate control scripts

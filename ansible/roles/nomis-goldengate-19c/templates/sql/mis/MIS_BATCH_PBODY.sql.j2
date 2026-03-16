@@ -33,7 +33,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   BEGIN
     -- determine number of latest open batch for source
     l_plsql := 'select max(load_id) ' ||
-                 'from ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG';
+                 'from ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG';
     IF p_staging_owner IS NOT NULL THEN
         l_plsql := l_plsql ||
                ' where repository_name = ''' || l_staging_owner || '''';
@@ -97,7 +97,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
     IF p_batch_number > 1 THEN
         -- update timestamp on existing active batch
-        l_plsql := 'update ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+        l_plsql := 'update ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG ' ||
                       'set staged_end_datetime = nvl(:end_datetime,staged_end_datetime), ' ||
                           'message = nvl(:message,message), ' ||
                           'error_flag = :error_flag ' ||
@@ -437,7 +437,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
         -- get details of existing active batch
         v_plsql := 'select staged_end_datetime, nvl(error_flag,''N'') ' ||
-                     'from ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+                     'from ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG ' ||
                     'where load_id = :load_id';  
         execute immediate v_plsql into v_staged_end_datetime, v_error_flag
         using v_old_batch_number;
@@ -497,7 +497,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     END IF;
 
     -- insert new active batch row for source
-    v_plsql := 'insert into ' || mis_gen_pkg.g_mis_owner || '.ETL_LOAD_LOG ' ||
+    v_plsql := 'insert into ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG ' ||
                       '(load_id, job_name, repository_name, staged_start_datetime, message) ' ||
                'VALUES (:load_id, :job_name, :repos_name, :start_datetime, ''Batch created'')';  
     execute immediate v_plsql

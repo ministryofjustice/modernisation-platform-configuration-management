@@ -366,7 +366,8 @@ BEGIN
     if v_row_lcr_list_new.count > 0 then
       for v_row_unit_num in 1..v_row_lcr_list_new.count loop
         if lower(v_row_lcr_list_new(v_row_unit_num).column_name) = 'audit_module_name' then
-          if v_row_lcr_list_new(v_row_unit_num).data.getvarchar2() in ('$$START$$','$$END$$') then
+          v_rtn_val := v_row_lcr_list_new(v_row_unit_num).data.getvarchar2(v_audit_module_name);
+          if v_audit_module_name in ('$$START$$','$$END$$') then
             return;
           end if;
         end if;

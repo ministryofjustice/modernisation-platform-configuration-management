@@ -38,31 +38,8 @@ TABLEEXCLUDE OMS_OWNER.MV_OFFENDER_MATCH_DETAILS;
 TABLEEXCLUDE OMS_OWNER.OFFENDER_SCHEDULES;
 TABLEEXCLUDE OMS_OWNER.RE$ACTION_IMP_TAB;
 
--- Negative rule i.e. exclude inserts/updates on tables owned by OMS_OWNER where AUDIT_MODULE_NAME is either $$START$$ or $$END$$, but include deletes and all operations on rows where AUDIT_MODULE_NAME is null (i.e. the column exists but is not populated) or does not exist (i.e. the table does not have that column):
--- ((((:dml.get_object_owner() = 'OMS_OWNER') and ((:dml.get_command_type() <> 'DELETE') AND (:dml.get_object_name() <> 'OMS_DELETED_ROWS') AND (:dml.get_value('NEW','"AUDIT_MODULE_NAME"').accessvarchar2() IN ('$$START$$','$$END$$'))))
-
--- This will be implemented in the DML processing that is run as part of the replicat.
-
--- This is implemented using a combination of TABLEEXCLUDE and a WHERE clause on the wildcard TABLE statement as described in the Oracle GoldenGate documentation for filtering DML based on column values. Note that we have to use @PRESENT and @ABSENT to check for the existence of the AUDIT_MODULE_NAME column because not all tables have it, and we want to include all rows from tables that don't have that column.
--- 1) Always include OMS_DELETED_ROWS (Streams rule explicitly does NOT exclude it)
-TABLE OMS_OWNER.OMS_DELETED_ROWS;
-
--- 2) Exclude it from the wildcard table rule.
+-- Don't include any DML on OMS_DELETED_ROWS as it's not needed in the audit trail. This is a table that contains deleted rows from all tables in the OMS_OWNER schema, and it's only used for auditing purposes within the source database, so we don't need it in the audit trail and it would just add unnecessary volume to the trail.
 TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
 
---     - or column AUDIT_MODULE_NAME is present and it's value is not $$START$$ or $$END$$ and it's not a DELETE operation.
-        -- Include rows where column exists AND the negative rule does NOT match
-TABLE OMS_OWNER.*
-  WHERE (
-        NOT (
-              AUDIT_MODULE_NAME = @PRESENT
-              AND
-              (
-                AUDIT_MODULE_NAME = '$$START$$'
-                OR
-                AUDIT_MODULE_NAME = '$$END$$'
-              )
-              AND @GETENV('TRANSACTION','OPTYPE') <> 'DELETE'
-            )
-       );
-
+-- The original Streams negative rule will be implemented in the DML processing that is run as part of the replicat.
+TABLE OMS_OWNER.*;
