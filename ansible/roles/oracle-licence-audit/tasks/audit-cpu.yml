@@ -11,11 +11,7 @@
 - name: Set audit filename based on WebLogic status
   set_fact:
     audit_filename: >-
-      {% if weblogic_process.stdout != "0" %}
-        {{ caller_info.account }}_{{ inventory_hostname }}_weblogic
-      {% else %}
-        {{ caller_info.account }}_{{ inventory_hostname }}
-      {% endif %}
+      {{ caller_info.account }}_{{ inventory_hostname }}{{ '_weblogic' if weblogic_process.stdout != '0' else '' }}
 
 - name: Set up audit directory
   block:
@@ -58,12 +54,12 @@
     - name: Rename cpu output file to standard name
       shell: |
         cd {{ audit_dir }}
-        mv *ct_cpuq.txt {{ audit_filename }}_ct_cpuq.txt 2>/dev/null || true
+        mv *ct_cpuq.txt {{ audit_filename | trim }}_ct_cpuq.txt
       when: cpuq_stat.stat.exists
 
     - name: Fetch cpu output files
       fetch:
-        src: "{{ audit_dir }}/{{ audit_filename }}_ct_cpuq.txt"
+        src: "{{ audit_dir }}/{{ audit_filename | trim }}_ct_cpuq.txt"
         dest: "{{ audit_dir }}/"
         flat: yes
 
@@ -84,12 +80,12 @@
         aws ec2 describe-instances \
           --instance-ids {{ instance_id }} \
           --query "Reservations[].Instances[].CpuOptions" \
-          --region {{ region }} --output json > {{ audit_dir }}/{{ audit_filename }}_vcpus.txt
+          --region {{ region }} --output json > {{ audit_dir }}/{{ audit_filename | trim }}_vcpus.txt
       ignore_errors: true
 
     - name: Fetch vcpu output files
       fetch:
-        src: "{{ audit_dir }}/{{ audit_filename }}_vcpus.txt"
+        src: "{{ audit_dir }}/{{ audit_filename | trim }}_vcpus.txt"
         dest: "{{ audit_dir }}/"
         flat: yes
       ignore_errors: true
