@@ -1,5 +1,5 @@
 - name: Check if WebLogic is running
-  shell: ps -ef | grep weblogic | grep -v grep | grep -v oem
+  shell: ps -ef | grep weblogic | grep -v grep | grep -v oem | wc -l
   register: weblogic_process
   changed_when: false
 
@@ -11,7 +11,7 @@
 - name: Set audit filename based on WebLogic status
   set_fact:
     audit_filename: >-
-      {% if weblogic_process.stdout != "" %}
+      {% if weblogic_process.stdout != "0" %}
         {{ caller_info.account }}_{{ inventory_hostname }}_weblogic
       {% else %}
         {{ caller_info.account }}_{{ inventory_hostname }}
