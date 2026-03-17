@@ -43,6 +43,14 @@
         - ansible_version.full >= "2.13.0"
         - ansible_distribution in ['RedHat', 'OracleLinux']
         - ansible_distribution_major_version in ['6']
+      tags: never
+
+    - name: Debug print the ansible version
+      ansible.builtin.debug:
+        msg: "Ansible version is {{ ansible_version.full }}, ansible_distribution is {{ ansible_distribution }}, ansible_distribution_major_version is {{ ansible_distribution_major_version }}"
+      when:
+        - ansible_distribution in ['RedHat', 'OracleLinux']
+        - ansible_distribution_major_version in ['6']
       tags: always
 
     - name: Set roles_defined fact
