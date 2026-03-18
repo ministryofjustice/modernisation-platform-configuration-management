@@ -50,6 +50,13 @@ oracle_template_file_config:
   - src: 12/u01/tag/utils/scripts/compile_all_forms.sh
     dest: /u01/tag/utils/scripts/compile_all_forms.sh
 
+tagsar_sql_file_paths:
+  - STOP_TAGSAR_QUEUE.sql
+  - DROP_TAGSAR_Q_TABLE.sql
+  - CR_TAGSAR_Q_TABLE.sql
+  - CR_TAGSAR_Q.sql
+  - TAG_SYSTEM_REPORT.pkg
+
 db_config: "{{ db_configs[weblogic_db_name] }}"
 reports_server_name: rep_server1
 weblogic_admin_username: weblogic

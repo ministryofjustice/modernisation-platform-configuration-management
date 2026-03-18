@@ -10,6 +10,23 @@
         - { path: '/u01/tag/tagsar/deploy/tmp' }
         - { path: '/u01/tag/tagsar/deploy/tmp/lib' }
 
+    - name: Run TagSar SQL scripts for provisioning
+      ansible.builtin.shell: |
+        set -euo pipefail
+        main() {
+          sqlplus -s {{ weblogic_db_username }}/{{ weblogic_db_password }}@{{ weblogic_db_name }} <<'EOF'
+          WHENEVER SQLERROR EXIT SQL.SQLCODE
+          {% for file in sql_files_formatted %}
+          @{{ file }}
+          {% endfor %}
+          EXIT
+        EOF
+        }
+        main 2>&1 | logger -p local3.info -t ansible-weblogic
+      become_user: oracle
+      args:
+        chdir: /u01/tag/tagsar/tagsar_dbobjects/
+
     - name: Move and extract TAGSAR.ear
       ansible.builtin.shell: |
         mv /u01/tag/tagsar/deploy/TAGSAR.ear .
