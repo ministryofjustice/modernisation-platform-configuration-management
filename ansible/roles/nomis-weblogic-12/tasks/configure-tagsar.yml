@@ -1,15 +1,9 @@
-- block:
-    - name: Ensure tmp and lib directories exist
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: directory
-        owner: oracle
-        group: oinstall
-        mode: '0755'
-      loop:
-        - { path: '/u01/tag/tagsar/deploy/tmp' }
-        - { path: '/u01/tag/tagsar/deploy/tmp/lib' }
+- name: Check if /u01/tag/tagsar/tagsar_dbobjects/ exists
+  ansible.builtin.stat:
+    path: /u01/tag/tagsar/tagsar_dbobjects/
+  register: tagsar_dbobjects_directory_present
 
+- block:
     - name: Run TagSar SQL scripts for provisioning
       ansible.builtin.shell: |
         set -euo pipefail
@@ -26,6 +20,24 @@
       become_user: oracle
       args:
         chdir: /u01/tag/tagsar/tagsar_dbobjects/
+
+    - name: Remove /u01/tag/tagsar/tagsar_dbobjects/
+      ansible.builtin.file:
+        path: /u01/tag/tagsar/tagsar_dbobjects/
+        state: absent
+  when: tagsar_dbobjects_directory_present.stat.exists
+
+- block:
+    - name: Ensure tmp and lib directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: '0755'
+      loop:
+        - { path: '/u01/tag/tagsar/deploy/tmp' }
+        - { path: '/u01/tag/tagsar/deploy/tmp/lib' }
 
     - name: Move and extract TAGSAR.ear
       ansible.builtin.shell: |
