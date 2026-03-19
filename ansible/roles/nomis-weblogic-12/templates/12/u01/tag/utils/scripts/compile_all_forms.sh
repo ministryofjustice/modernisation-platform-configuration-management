@@ -1,13 +1,13 @@
 {% raw %}
 #!/usr/bin/env bash
-batch_size=10
-batch_sleep=20
-sleep_between_successful_compilations=2
-sleep_between_unsuccessful_compilations=150
-sleep_between_file_types=30
-max_attempts=4
+batch_size=0
+batch_sleep=0
+sleep_between_successful_compilations=1
+sleep_between_unsuccessful_compilations=120
+sleep_between_file_types=20
+max_attempts=5
 start_index=0
-parallel_jobs=1
+parallel_jobs=2
 
 fmb_files=(/u01/tag/FormsSources/*.fmb)
 mmb_files=(/u01/tag/FormsSources/*.mmb)
@@ -89,53 +89,45 @@ compile_form() {
     done
 }
 
-running_jobs=0
-previous_type=""
-for (( i=start_index; i<total_forms; i++ )); do
-    form="${forms_to_compile[i]}"
-    item=$(( i + 1 ))
+compile_chunk() {
+    local chunk=("$@")
+    local previous_type=""
 
-    if [[ -f "/u01/tag/FormsSources/$form.pll" ]]; then
-        current_type="PLL"
-    elif [[ -f "/u01/tag/FormsSources/$form.mmb" ]]; then
-        current_type="MMB"
-    else
-        current_type="FMB"
-    fi
-
-    if [[ -n "$previous_type" && "$current_type" != "$previous_type" ]]; then
-        echo "Finished $previous_type files. Waiting for running jobs..."
-        wait
-        running_jobs=0
-        echo "Sleeping $sleep_between_file_types seconds before starting $current_type files..."
-        sleep "$sleep_between_file_types"
-    fi
-
-    previous_type="$current_type"
-
-    echo "Processing item $item of $total_forms - form: $form"
-    if (( parallel_jobs > 1 )); then
-        compile_form "$form" &
-        ((running_jobs++))
-
-        if (( running_jobs >= parallel_jobs )); then
-            wait -n || { echo "Compilation failed"; exit 1; }
-            ((running_jobs--))
+    for form in "${chunk[@]}"; do
+        if [[ -f "/u01/tag/FormsSources/$form.pll" ]]; then
+            current_type="PLL"
+        elif [[ -f "/u01/tag/FormsSources/$form.mmb" ]]; then
+            current_type="MMB"
+        else
+            current_type="FMB"
         fi
-    else
-        compile_form "$form" || exit 1
-        echo "Successfully processed $form"
-        sleep "$sleep_between_successful_compilations"
-    fi
 
-    if (( batch_size > 0 && item % batch_size == 0 && item < total_forms )); then
-        echo "Processed $item forms, waiting for running jobs..."
-        wait
-        running_jobs=0
-        echo "Sleeping $batch_sleep seconds before next batch..."
-        sleep "$batch_sleep"
-    fi
+        if [[ -n "$previous_type" && "$current_type" != "$previous_type" ]]; then
+            echo "[Worker $$] Finished $previous_type files, sleeping $sleep_between_file_types seconds..."
+            sleep "$sleep_between_file_types"
+        fi
+
+        previous_type="$current_type"
+
+        echo "[Worker $$] Compiling $form"
+        compile_form "$form" || return 1
+
+        sleep "$sleep_between_successful_compilations"
+    done
+}
+
+chunk_size=$(( (total_forms - start_index + parallel_jobs - 1) / parallel_jobs ))
+pids=()
+
+for ((i=start_index; i<total_forms; i+=chunk_size)); do
+    chunk=( "${forms_to_compile[@]:i:chunk_size}" )
+    compile_chunk "${chunk[@]}" &
+    pids+=($!)
 done
-wait
+
+for pid in "${pids[@]}"; do
+    wait "$pid" || { echo "Compilation failed"; exit 1; }
+done
+
 echo "All compilations finished"
 {% endraw %}
