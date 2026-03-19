@@ -1,0 +1,10 @@
+<TargetCollectionExt EXT_NAME="ME$S3_CURRENT_EXPIRY" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$S3_CURRENT_EXPIRY" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="12" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$S3_CURRENT_EXPIRY">
+		<Condition COLUMN_NAME="EXPIRY_MARGIN_DAYS" CRITICAL="0" OPERATOR="LE" OCCURRENCES="1" MESSAGE="AWS will delete backups before the RMAN recovery window has expired." CLEAR_MESSAGE="AWS will not delete backups before the RMAN recovery window has expired."/>
+		<Condition COLUMN_NAME="EXPIRY_MARGIN_SAFETY_DAYS" CRITICAL="0" OPERATOR="LE" OCCURRENCES="1" MESSAGE="Insufficient margin after RMAN Recovery Window and AWS Lifecycle Deletion of Objects.   We expect a minimum of 2*(RECOVERY_WINDOW+10) days to ensure RMAN has deleted objects before AWS expires them." CLEAR_MESSAGE="Sufficient margin after RMAN Recovery Window and AWS Lifecycle Deletion of Objects."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
