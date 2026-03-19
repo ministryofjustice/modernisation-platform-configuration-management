@@ -2,12 +2,12 @@
 #!/usr/bin/env bash
 batch_size=0
 batch_sleep=0
-sleep_between_successful_compilations=1
-sleep_between_unsuccessful_compilations=120
-sleep_between_file_types=20
+sleep_between_successful_compilations=0
+sleep_between_unsuccessful_compilations=90
+sleep_between_file_types=15
 max_attempts=5
 start_index=0
-parallel_jobs=2
+parallel_jobs=3
 
 fmb_files=(/u01/tag/FormsSources/*.fmb)
 mmb_files=(/u01/tag/FormsSources/*.mmb)
