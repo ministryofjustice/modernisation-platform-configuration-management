@@ -1,9 +1,9 @@
 {% raw %}
 #!/usr/bin/env bash
-batch_size=20
-batch_sleep=10
+batch_size=10
+batch_sleep=20
 sleep_between_successful_compilations=2
-sleep_between_unsuccessful_compilations=60
+sleep_between_unsuccessful_compilations=150
 sleep_between_file_types=30
 max_attempts=4
 start_index=0
