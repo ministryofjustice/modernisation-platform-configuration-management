@@ -123,8 +123,12 @@ collectd_endpoint_monitoring:
     url: https://training.int.oasys.service.justice.gov.uk/eor/f?p=100
 
   # oasys-national-reporting
-  - metric_dimension: onr.oasys.az.justice.gov.uk # Azure
+  - metric_dimension: onr.oasys.az.justice.gov.uk # re-directs to new URL
     url: https://onr.oasys.az.justice.gov.uk/InfoViewApp
+    follow_redirect: 0
+  - metric_dimension: reporting.oasys.service.justice.gov.uk
+    url: https://reporting.oasys.service.justice.gov.uk/keepalive.htm
+    time_ranges: "0.0000-1.0200,1.0210-3.0200,3.0210-5.0200,5.0210-7.0000" # web servers refreshed Mon/Wed/Fri at 2am
 
   # planetfm
   - metric_dimension: cafmtx.planetfm.service.justice.gov.uk
