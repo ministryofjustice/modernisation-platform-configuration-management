@@ -1,0 +1,45 @@
+EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+
+-- Use NOUSERID for Downstream sourceless Extract to avoid connecting to the source database
+-- NOUSERID - had issues with getting extract to start as it was giving ORA-01036: illegal variable name/number error. 
+-- This may be because the extract needs to query the source database for metadata about the tables it is extracting from, 
+-- and if we use NOUSERID then it can't connect to the source database to get that metadata.
+-- So instead we will use USERIDALIAS to specify credentials for a user that has access to the source database.
+USERIDALIAS SOURCE_DB
+
+-- Use a mining user on the downstream (local) database
+TRANLOGOPTIONS MININGUSERALIAS AUDIT_DB
+
+EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_path }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}
+
+REPORTCOUNT EVERY 5 MINUTES, RATE
+WARNLONGTRANS 1H, CHECKINTERVAL 30m
+LOGALLSUPCOLS
+UPDATERECORDFORMAT COMPACT
+TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N)
+
+-- Original Streams rules:
+-- Positive i.e. include only DML on tables owned by OMS_OWNER: 
+-- (:dml.get_object_owner() = 'OMS_OWNER')
+
+--If there are multiple TABLE statements, the first match is considered valid. Place the wildcarded statements at the end.
+
+-- Original Negative Streams rules:
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'CMP3$%' or :dml.get_object_name() like 'CMP4$%'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'MV_OFFENDER_MATCH_DETAILS'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'OFFENDER_SCHEDULES'))
+-- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'RE$ACTION_IMP_TAB'))
+
+-- CMP3$ and CMP4$ are special internal tables used by the Oracle Compression Advisor that we want to exclude completely.
+
+TABLEEXCLUDE OMS_OWNER.CMP3$*;
+TABLEEXCLUDE OMS_OWNER.CMP4$*;
+TABLEEXCLUDE OMS_OWNER.MV_OFFENDER_MATCH_DETAILS;
+TABLEEXCLUDE OMS_OWNER.OFFENDER_SCHEDULES;
+TABLEEXCLUDE OMS_OWNER.RE$ACTION_IMP_TAB;
+
+-- Don't include any DML on OMS_DELETED_ROWS as it's not needed in the audit trail. This is a table that contains deleted rows from all tables in the OMS_OWNER schema, and it's only used for auditing purposes within the source database, so we don't need it in the audit trail and it would just add unnecessary volume to the trail.
+TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
+
+-- The original Streams negative rule will be implemented in the DML processing that is run as part of the replicat.
+TABLE OMS_OWNER.*;

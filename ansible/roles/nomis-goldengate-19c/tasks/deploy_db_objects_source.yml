@@ -1,0 +1,73 @@
+---
+# create oracle_goldengate_sql_dir directory if it doesn't exist
+- name: Ensure GoldenGate SQL directory exists
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_sql_dir }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
+
+# If deploying objects for the source db then run script to add the database job that adds the data dictionary to the archive logs every hour (was originally being done daily around 11.30pm).
+# Could be done in the configure_database_parameters task.
+- name: Deploy source database objects
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for source stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
+        oracle_goldengate_group_name: "source"
+
+    - name: Ensure Source SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/source"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    - name: Deploy Source scripts
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ oracle_goldengate_sql_dir }}/source/{{ item | basename | regex_replace('\\.j2$', '') }}"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+      loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/source/*.j2', wantlist=True) }}"
+
+    - name: Run Source scripts
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/$ORACLE_SID/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        
+        if [ -z "$SYS_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
+          exit 1
+        fi
+
+        cd {{ oracle_goldengate_sql_dir }}/source
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_dictionary_job.sql
+      args:
+        executable: /bin/bash
+      register: source_config_output
+      failed_when: source_config_output.rc != 0
+      
+    - name: Show output of Source package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['Source package install output:'] + (source_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in source_config_output.stdout or 'compilation errors' in source_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of Source package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of Source package install: {{ source_config_output.stdout }}"
+      when: "'ORA-' in source_config_output.stdout or 'compilation errors' in source_config_output.stdout"

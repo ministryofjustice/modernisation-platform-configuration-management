@@ -1,0 +1,37 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_jobs.log
+
+SET SERVEROUTPUT ON
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Recreate jobs owned by STRMADMIN
+DECLARE
+    v_job_name VARCHAR2(30);
+BEGIN
+    FOR rec IN (SELECT job_name FROM dba_scheduler_jobs WHERE owner = 'STRMADMIN') LOOP
+        v_job_name := rec.job_name;
+        DBMS_OUTPUT.PUT_LINE('Dropping job: ' || v_job_name);
+        DBMS_SCHEDULER.DROP_JOB(job_name => 'STRMADMIN.' || v_job_name, force => TRUE);
+    END LOOP;
+END;
+/
+
+PROMPT Creating jobs owned by STRMADMIN
+BEGIN
+    {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.create_log_purge_job;
+    {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.create_audit_reference_job;
+END;
+/
+
+STRMADMIN	WEEKLY_LOG_PURGE PLSQL_BLOCK	"begin
+    strmadmin.MIS_STRM_PKG1.log_purge();
+end;"
+
+STRMADMIN	MIS_PURGE_STAGING_TABLES PLSQL_BLOCK	"begin MIS_STRM_PKG1.PURGE_RECORDS('BODISTAGING');
+end;"
+
+STRMADMIN	DAILY_LOG_PURGE EXECUTABLE	/home/oracle/admin/scripts/streams_archivelog_deletion.sh
+
+
+
+PROMPT Completed installation of MIS jobs
+spool off

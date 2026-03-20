@@ -1,0 +1,15 @@
+-- manager port
+PORT 7809
+
+PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/*, USECHECKPOINTS, MINKEEPDAYS 2
+
+-- Manager checks for Extract and Replicat lag.
+LAGREPORTMINUTES 5
+
+-- Use LAGINFOMINUTES and LAGINFOHOURS to specify the threshold at which
+-- Manager reports Extract and Replicat lag.
+LAGINFOMINUTES 5
+
+-- Use LAGCRITICALSECONDS, LAGCRITICALMINUTES, or LAGCRITICALHOURS to specify a lag
+-- threshold that is considered critical and to force a warning message to the error file (ggserr.log)
+LAGCRITICALMINUTES 15

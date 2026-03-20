@@ -1,0 +1,23 @@
+---
+# Configure Oracle database parameters for GoldenGate replication
+# This task enables ENABLE_GOLDENGATE_REPLICATION parameter on source and target databases
+# Note: This parameter change does not require database restart
+
+# Support both auto-detected databases (oracle_goldengate_local_db_sids) and manual override (oracle_goldengate_local_db_sid)
+- name: Set database SID list for configuration
+  ansible.builtin.set_fact:
+    _db_sids_to_configure: >-
+      {{
+        oracle_goldengate_local_db_sids
+        if (oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0)
+        else ([oracle_goldengate_local_db_sid] if (oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != '') else [])
+      }}
+
+- name: Configure GoldenGate database parameters for each detected database
+  include_tasks: configure_database_parameters_single.yml
+  loop: "{{ _db_sids_to_configure }}"
+  loop_control:
+    loop_var: _current_db_sid
+  vars:
+    oracle_goldengate_local_db_sid: "{{ _current_db_sid }}"
+  when: _db_sids_to_configure is defined and _db_sids_to_configure | length > 0

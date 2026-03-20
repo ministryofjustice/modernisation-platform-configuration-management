@@ -1,0 +1,31 @@
+---
+# Unregister and manage MIS Extract process
+- name: Unregister MIS Extract process
+  when: run_mis
+  block:
+    - name: Unregister MIS Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        ./ggsci << EOF
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.mis.credential_alias }}
+        STOP EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+        UNREGISTER EXTRACT {{ oracle_goldengate_group.mis.extract_name }} DATABASE
+        DELETE EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
+        EXIT
+        EOF
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: remove_mis_extract
+      failed_when: remove_mis_extract.rc != 0 or ("Successfully unregistered" not in remove_mis_extract.stdout and "does not exist" not in remove_mis_extract.stdout)
+
+    - name: Display stdout for MIS Extract unregistration
+      ansible.builtin.debug:
+        msg: "{{ remove_mis_extract.stdout }}"

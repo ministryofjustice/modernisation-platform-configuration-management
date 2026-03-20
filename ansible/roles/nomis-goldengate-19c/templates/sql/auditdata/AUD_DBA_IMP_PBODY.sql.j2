@@ -1,0 +1,624 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1 AS
+/*
+ *  NOMIS Data Audit Trail import code.
+ *  
+ *  Description:  	This script creates procedures to support import of
+ *                      database audit trail and user data for Prison-NOMIS release 1.0e.
+ *  
+ *                      This script should be executed by the AUDITDATA user.
+ *  
+ *  Version: 		1.0e
+ *
+ *  Author:		R. Taylor - EDS UK Ltd.
+ *
+ *  Date:		Thursday, 24 July 2008.
+ * 
+ *  Change History:	Version:  Date:	    Author:	Description:	
+ *
+ *			1.0e.1	  24/07/08  R. Taylor	Initial version
+ *			1.0e.2	  24/07/08  R. Taylor	Clear remote_databases before insert
+ *			1.0e.3	  25/07/08  R. Taylor	Default from date to 01-DEC-06
+ *							Used in interim audit deliverable.
+ *			1.0e.4	  13/08/08  R. Taylor	Retain from timestamp if no data processed.
+ *			1.0e.5	  17/10/08  R. Taylor	Allow deferred load on add remote database.
+ *			1.0e.6	  22/10/08  R. Taylor	Split package and body files.
+ *			1.0e.7	  06/04/09  R. Taylor	Make initial date a parameter.
+ *			1.0e.8	  19/03/10  R. Taylor	Restrict cursor size and logoff updates (Vantive 1883240).
+ *			1.0e.9	  13/04/10  R. Taylor	Truncate temp tables and analyze temp table data.
+ *			1.0e.10	  24/09/10  R. Taylor	Invoke SYS.PRUNE_SYS_AUD to tidy remote audit trails.
+ *			1.0e.11	  17/11/10  R. Taylor	Use parameter for statistics gathering percentage.
+ *			1.0e.12	  14/02/11  R. Taylor	Modify add_remote_database to preserve timestamps.
+ *			1.0e.13	  20/04/11  R. Taylor	Avoid loopback database link for AUDIT import.
+ *			1.0e.14	  12/12/12  R. Taylor	Ignore logoff times for audit trail selection (QC18080).
+ *			                    			Allow for upgrade versions of databases (LSB5).
+ */
+
+  FUNCTION get_version RETURN varchar2 IS
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  BEGIN
+    return g_version;
+  END;
+
+
+  PROCEDURE import_remote_audit(
+    p_remote_db 	IN     varchar2,
+    p_remote_db_link 	IN     varchar2,
+    p_audit_timestamp 	IN     timestamp with time zone
+  ) IS
+  -- local procedure import_remote_audit
+
+    l_remote_db 	remote_databases.REMOTE_DB%TYPE := trim(p_remote_db);
+    l_remote_db_link 	remote_databases.REMOTE_DB_LINK%TYPE := trim(p_remote_db_link);
+    l_link_clause 	varchar2(200) := '@' || l_remote_db_link;
+    l_audit_timestamp 	remote_databases.AUDIT_TIMESTAMP%TYPE :=
+                            nvl(p_audit_timestamp,
+                                cast(g_sys_live_date as timestamp with time zone));
+    l_max_timestamp 	remote_databases.AUDIT_TIMESTAMP%TYPE;
+    l_max_logoff 	remote_databases.AUDIT_TIMESTAMP%TYPE;
+    l_new_timestamp 	remote_databases.AUDIT_TIMESTAMP%TYPE;
+
+    l_plsql 		varchar2(2000);
+    l_errno 		number := 0;
+    l_errmsg 		varchar2(400);
+
+    l_remote_dbs 		RAT_remote_dbs;
+    l_usernames 		RAT_usernames;
+    l_extended_timestamps	RAT_extended_timestamps;
+
+  BEGIN
+
+    -- determine upper bound for selection
+    l_max_timestamp := least(l_audit_timestamp+g_audit_trail_window, systimestamp);
+    -- populate temporary table
+    l_plsql := 'truncate table remote_audit_temp';
+    execute immediate l_plsql;
+    commit;
+    if l_remote_db = g_audit_db then
+       l_link_clause := '';
+    end if;
+    l_plsql :=
+       'insert into remote_audit_temp (' ||
+               'OS_USERNAME, ' ||
+	       'USERNAME, ' ||
+	       'USERHOST, ' ||
+	       'TERMINAL, ' ||
+	       'TIMESTAMP, ' ||
+	       'OWNER, ' ||
+	       'OBJ_NAME, ' ||
+	       'ACTION, ' ||
+	       'ACTION_NAME, ' ||
+	       'NEW_OWNER, ' ||
+	       'NEW_NAME, ' ||
+	       'OBJ_PRIVILEGE, ' ||
+	       'SYS_PRIVILEGE, ' ||
+	       'ADMIN_OPTION, ' ||
+	       'GRANTEE, ' ||
+	       'AUDIT_OPTION, ' ||
+	       'SES_ACTIONS, ' ||
+	       'LOGOFF_TIME, ' ||
+	       'LOGOFF_LREAD, ' ||
+	       'LOGOFF_PREAD, ' ||
+	       'LOGOFF_LWRITE, ' ||
+	       'LOGOFF_DLOCK, ' ||
+	       'COMMENT_TEXT, ' ||
+	       'SESSIONID, ' ||
+	       'ENTRYID, ' ||
+	       'STATEMENTID, ' ||
+	       'RETURNCODE, ' ||
+	       'PRIV_USED, ' ||
+	       'CLIENT_ID, ' ||
+	       'ECONTEXT_ID, ' ||
+	       'SESSION_CPU, ' ||
+	       'EXTENDED_TIMESTAMP, ' ||
+	       'PROXY_SESSIONID, ' ||
+	       'GLOBAL_UID, ' ||
+	       'INSTANCE_NUMBER, ' ||
+	       'OS_PROCESS, ' ||
+	       'TRANSACTIONID, ' ||
+	       'SCN, ' ||
+	       'SQL_BIND, ' ||
+	       'SQL_TEXT) ' ||
+       '(select OS_USERNAME, ' ||
+	       'USERNAME, ' ||
+	       'USERHOST, ' ||
+	       'TERMINAL, ' ||
+	       'TIMESTAMP, ' ||
+	       'OWNER, ' ||
+	       'OBJ_NAME, ' ||
+	       'ACTION, ' ||
+	       'ACTION_NAME, ' ||
+	       'NEW_OWNER, ' ||
+	       'NEW_NAME, ' ||
+	       'OBJ_PRIVILEGE, ' ||
+	       'SYS_PRIVILEGE, ' ||
+	       'ADMIN_OPTION, ' ||
+	       'GRANTEE, ' ||
+	       'AUDIT_OPTION, ' ||
+	       'SES_ACTIONS, ' ||
+	       'LOGOFF_TIME, ' ||
+	       'LOGOFF_LREAD, ' ||
+	       'LOGOFF_PREAD, ' ||
+	       'LOGOFF_LWRITE, ' ||
+	       'LOGOFF_DLOCK, ' ||
+	       'COMMENT_TEXT, ' ||
+	       'SESSIONID, ' ||
+	       'ENTRYID, ' ||
+	       'STATEMENTID, ' ||
+	       'RETURNCODE, ' ||
+	       'PRIV_USED, ' ||
+	       'CLIENT_ID, ' ||
+	       'ECONTEXT_ID, ' ||
+	       'SESSION_CPU, ' ||
+	       'EXTENDED_TIMESTAMP, ' ||
+	       'PROXY_SESSIONID, ' ||
+	       'GLOBAL_UID, ' ||
+	       'INSTANCE_NUMBER, ' ||
+	       'OS_PROCESS, ' ||
+	       'TRANSACTIONID, ' ||
+	       'SCN, ' ||
+	       'SQL_BIND, ' ||
+	       'SQL_TEXT' ||
+         ' from dba_audit_trail' || l_link_clause ||
+        ' where extended_timestamp <= :max_timestamp' ||
+          ' and extended_timestamp > :last_timestamp)';
+    execute immediate l_plsql
+    using   l_max_timestamp, l_audit_timestamp;
+    commit;
+    DBMS_STATS.GATHER_TABLE_STATS (auditdata_gen_pkg.g_data_owner, 'REMOTE_AUDIT_TEMP',
+        estimate_percent => g_stats_percent,
+        method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+        degree => DBMS_STATS.AUTO_DEGREE,
+        cascade => TRUE,
+        no_invalidate => DBMS_STATS.AUTO_INVALIDATE);
+
+    -- get potential new high water mark
+    select max(t.extended_timestamp)
+    into   l_new_timestamp
+    from   remote_audit_temp t;
+
+    -- collect login/logoff updates
+    select l_remote_db, t.USERNAME, max(t.extended_timestamp)
+    bulk collect into 
+       l_remote_dbs, l_usernames, l_extended_timestamps
+    from   remote_audit_temp t
+    where  t.action between 100 and 102
+    group by l_remote_db, t.USERNAME;
+
+    -- apply login/logoff updates
+    FORALL i IN 1..l_remote_dbs.count
+    update remote_users u
+    set    update_datetime = l_extended_timestamps(i)
+    where  u.remote_db = l_remote_dbs(i)
+    and    u.username = l_usernames(i)
+    and    l_extended_timestamps(i) between u.created and u.import_datetime;
+
+    -- insert new audit records
+    insert into remote_audit_trail
+       (remote_db, audit_datetime, -- remote_audit_trail_seq,
+        import_datetime,
+        OS_USERNAME,
+	USERNAME,
+	USERHOST,
+	TERMINAL,
+	TIMESTAMP,
+	OWNER,
+	OBJ_NAME,
+	ACTION,
+	ACTION_NAME,
+	NEW_OWNER,
+	NEW_NAME,
+	OBJ_PRIVILEGE,
+	SYS_PRIVILEGE,
+	ADMIN_OPTION,
+	GRANTEE,
+	AUDIT_OPTION,
+	SES_ACTIONS,
+	LOGOFF_TIME,
+	LOGOFF_LREAD,
+	LOGOFF_PREAD,
+	LOGOFF_LWRITE,
+	LOGOFF_DLOCK,
+	COMMENT_TEXT,
+	SESSIONID,
+	ENTRYID,
+	STATEMENTID,
+	RETURNCODE,
+	PRIV_USED,
+	CLIENT_ID,
+	ECONTEXT_ID,
+	SESSION_CPU,
+	EXTENDED_TIMESTAMP,
+	PROXY_SESSIONID,
+	GLOBAL_UID,
+	INSTANCE_NUMBER,
+	OS_PROCESS,
+	TRANSACTIONID,
+	SCN,
+	SQL_BIND,
+	SQL_TEXT
+       )
+       (select l_remote_db, t.extended_timestamp, -- remote_audit_trail_seq.nextval,
+               cast(systimestamp as timestamp with time zone), 
+               t.OS_USERNAME,
+               t.USERNAME,
+               t.USERHOST,
+               t.TERMINAL,
+               t.TIMESTAMP,
+	       t.OWNER,
+	       t.OBJ_NAME,
+	       t.ACTION,
+	       t.ACTION_NAME,
+	       t.NEW_OWNER,
+	       t.NEW_NAME,
+	       t.OBJ_PRIVILEGE,
+	       t.SYS_PRIVILEGE,
+	       t.ADMIN_OPTION,
+	       t.GRANTEE,
+	       t.AUDIT_OPTION,
+	       t.SES_ACTIONS,
+	       t.LOGOFF_TIME,
+	       t.LOGOFF_LREAD,
+	       t.LOGOFF_PREAD,
+	       t.LOGOFF_LWRITE,
+	       t.LOGOFF_DLOCK,
+	       t.COMMENT_TEXT,
+	       t.SESSIONID,
+	       t.ENTRYID,
+	       t.STATEMENTID,
+	       t.RETURNCODE,
+	       t.PRIV_USED,
+	       t.CLIENT_ID,
+	       t.ECONTEXT_ID,
+	       t.SESSION_CPU,
+	       t.EXTENDED_TIMESTAMP,
+	       t.PROXY_SESSIONID,
+	       t.GLOBAL_UID,
+	       t.INSTANCE_NUMBER,
+	       t.OS_PROCESS,
+	       t.TRANSACTIONID,
+	       t.SCN,
+	       t.SQL_BIND,
+	       t.SQL_TEXT
+        from   remote_audit_temp t
+        where  t.extended_timestamp > l_audit_timestamp
+        and    t.ACTION not in
+              (select c.action_code
+               from   audit_trail_config c
+               where  c.exclude_ind = 1));
+
+    -- update control record
+    update remote_databases
+    set    audit_timestamp = nvl(l_new_timestamp,l_max_timestamp),
+           audit_status = 0,
+           status_message = null
+    where  remote_db = l_remote_db;
+    commit;
+
+   -- tidy up remote audit table
+    l_plsql :=
+       'begin sys.prune_sys_aud' || l_link_clause || '(:timestamp); end;';
+    execute immediate l_plsql using l_audit_timestamp;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+        l_errno := SQLCODE;
+        l_errmsg := substr(trim(SQLERRM),1,400);
+        rollback;
+        update remote_databases
+        set    audit_status = l_errno,
+               status_message = l_errmsg
+        where  remote_db = l_remote_db;
+        commit;
+  END;
+
+  PROCEDURE import_remote_users(
+    p_remote_db 	IN     varchar2,
+    p_remote_db_link 	IN     varchar2,
+    p_users_date 	IN     date
+  ) IS
+  -- local procedure import_remote_users
+
+    l_remote_db 	remote_databases.REMOTE_DB%TYPE := trim(p_remote_db);
+    l_remote_db_link 	remote_databases.REMOTE_DB_LINK%TYPE := trim(p_remote_db_link);
+    l_link_clause 	varchar2(200) := '@' || l_remote_db_link;
+    l_users_date 	remote_databases.USERS_DATE%TYPE := p_users_date;
+    l_new_date 		remote_databases.USERS_DATE%TYPE;
+
+    l_plsql 		varchar2(2000);
+    l_errno 		number := 0;
+    l_errmsg 		varchar2(400);
+
+    l_remote_dbs 		RU_remote_dbs;
+    l_import_datetimes 		RU_import_datetimes;
+    l_usernames 		RU_usernames;
+    l_user_ids 			RU_user_ids;
+    l_account_statuss 		RU_account_statuss;
+    l_lock_dates 		RU_lock_dates;
+    l_expiry_dates 		RU_expiry_dates;
+    l_default_tablespaces 	RU_default_tablespaces;
+    l_temporary_tablespaces 	RU_temporary_tablespaces;
+    l_createds 			RU_createds;
+    l_profiles 			RU_profiles;
+    l_initial_rsrc_cons_groups 	RU_initial_rsrc_cons_groups;
+    l_external_names 		RU_external_names;
+    l_record_existss 		RU_record_existss;
+
+  BEGIN
+
+    -- populate temporary table
+    l_plsql := 'truncate table remote_users_temp';
+    execute immediate l_plsql;
+    commit;
+    if l_remote_db = g_audit_db then
+       l_link_clause := '';
+    end if;
+    l_plsql :=
+       'insert into remote_users_temp (' ||
+               'USERNAME,' ||                       
+              ' USER_ID,' ||                      
+              ' ACCOUNT_STATUS,' ||
+              ' LOCK_DATE,' ||
+              ' EXPIRY_DATE,' ||
+              ' DEFAULT_TABLESPACE,' ||
+              ' TEMPORARY_TABLESPACE,' ||
+              ' CREATED,' ||
+              ' PROFILE,' ||
+              ' INITIAL_RSRC_CONSUMER_GROUP,' ||
+              ' EXTERNAL_NAME) ' ||
+       '(select USERNAME,' ||                       
+              ' USER_ID,' ||                      
+              ' ACCOUNT_STATUS,' ||
+              ' LOCK_DATE,' ||
+              ' EXPIRY_DATE,' ||
+              ' DEFAULT_TABLESPACE,' ||
+              ' TEMPORARY_TABLESPACE,' ||
+              ' CREATED,' ||
+              ' PROFILE,' ||
+              ' INITIAL_RSRC_CONSUMER_GROUP,' ||
+              ' EXTERNAL_NAME' ||
+         ' from dba_users' || l_link_clause || ')';
+    execute immediate l_plsql;
+    commit;
+    DBMS_STATS.GATHER_TABLE_STATS (auditdata_gen_pkg.g_data_owner, 'REMOTE_USERS_TEMP',
+        estimate_percent => g_stats_percent,
+        method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+        degree => DBMS_STATS.AUTO_DEGREE,
+        cascade => TRUE,
+        no_invalidate => DBMS_STATS.AUTO_INVALIDATE);
+
+    l_new_date := sysdate;
+
+    -- collect user updates
+    select l_remote_db,
+       cast(systimestamp as timestamp with time zone),
+       t.USERNAME,
+       t.USER_ID,
+       t.ACCOUNT_STATUS,
+       t.LOCK_DATE,
+       t.EXPIRY_DATE,
+       t.DEFAULT_TABLESPACE,
+       t.TEMPORARY_TABLESPACE,
+       t.CREATED,
+       t.PROFILE,
+       t.INITIAL_RSRC_CONSUMER_GROUP,
+       t.EXTERNAL_NAME, 'Y'
+    bulk collect into 
+       l_remote_dbs, l_import_datetimes,
+       l_usernames, l_user_ids, l_account_statuss, l_lock_dates, l_expiry_dates,
+       l_default_tablespaces, l_temporary_tablespaces, l_createds,
+       l_profiles, l_initial_rsrc_cons_groups, l_external_names, l_record_existss
+    from   remote_users_temp t
+    where (t.user_id, t.username) in
+          (select u.user_id, u.username
+           from   remote_users u
+           where  u.remote_db = l_remote_db);
+
+    -- apply user updates
+    FORALL i IN 1..l_remote_dbs.count
+    update remote_users
+    set    import_datetime = l_import_datetimes(i),
+       ACCOUNT_STATUS = l_account_statuss(i),
+       LOCK_DATE = l_lock_dates(i),
+       EXPIRY_DATE = l_expiry_dates(i),
+       DEFAULT_TABLESPACE = l_default_tablespaces(i),
+       TEMPORARY_TABLESPACE = l_temporary_tablespaces(i),
+       CREATED = l_createds(i),
+       PROFILE = l_profiles(i),
+       INITIAL_RSRC_CONSUMER_GROUP = l_initial_rsrc_cons_groups(i),
+       EXTERNAL_NAME = l_external_names(i),
+       RECORD_EXISTS = l_record_existss(i)
+    where  remote_db = l_remote_dbs(i)
+    and    user_id = l_user_ids(i)
+    and    username = l_usernames(i);
+
+    -- update user records where user has been deleted
+    update remote_users u
+    set    import_datetime = 
+          (select nvl(max(cast(t.created as timestamp with time zone)),
+                      cast(systimestamp as timestamp with time zone))
+           from   remote_users_temp t
+           where  t.username = u.username),
+           record_exists = null
+    where  u.remote_db = l_remote_db
+    and    u.record_exists is not null
+    and    not exists
+          (select null
+           from   remote_users_temp t
+           where  t.user_id = u.user_id
+           and    t.username = u.username);
+
+    -- insert new user records
+    insert into remote_users
+       (remote_db, import_datetime, -- audit_trail_seq,
+        USERNAME,
+        USER_ID,
+        ACCOUNT_STATUS,
+        LOCK_DATE,
+        EXPIRY_DATE,
+        DEFAULT_TABLESPACE,
+        TEMPORARY_TABLESPACE,
+        CREATED,
+        PROFILE,
+        INITIAL_RSRC_CONSUMER_GROUP,
+        EXTERNAL_NAME,
+        record_exists
+       )
+       (select l_remote_db,
+               cast(systimestamp as timestamp with time zone), -- remote_users_seq.nextval,
+               t.USERNAME,
+               t.USER_ID,
+               t.ACCOUNT_STATUS,
+               t.LOCK_DATE,
+               t.EXPIRY_DATE,
+               t.DEFAULT_TABLESPACE,
+               t.TEMPORARY_TABLESPACE,
+               t.CREATED,
+               t.PROFILE,
+               t.INITIAL_RSRC_CONSUMER_GROUP,
+               t.EXTERNAL_NAME, 'Y'
+        from   remote_users_temp t
+        where  not exists
+              (select null
+               from   remote_users u
+               where  u.user_id = t.user_id
+               and    u.username = t.username
+               and    u.remote_db = l_remote_db));
+
+    -- update control record
+    update remote_databases
+    set    users_date = l_new_date,
+           users_status = 0,
+           status_message = null
+    where  remote_db = l_remote_db;
+    commit;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+        l_errno := SQLCODE;
+        l_errmsg := substr(trim(SQLERRM),1,400);
+        rollback;
+        update remote_databases
+        set    users_status = l_errno,
+               status_message = l_errmsg
+        where  remote_db = l_remote_db;
+        commit;
+  END;
+
+
+  PROCEDURE update_remote_audit_records IS
+  -- packaged procedure update_remote_audit_records
+
+  BEGIN
+
+    -- get remote database details and load audit trail and users for each
+
+    for c_db in
+        (select d.remote_db, d.remote_db_link, d.audit_timestamp, d.users_date
+         from   remote_databases d)
+    loop
+
+        import_remote_users(c_db.remote_db, c_db.remote_db_link, c_db.users_date);
+
+        import_remote_audit(c_db.remote_db, c_db.remote_db_link, c_db.audit_timestamp);
+
+    end loop;
+
+  END;
+
+  PROCEDURE add_database_link(
+    p_db_link 	IN     varchar2,
+    p_username 	IN     varchar2,
+    p_password 	IN     varchar2,
+    p_host  	IN     varchar2
+  ) IS
+  -- packaged procedure add_database_link
+    l_plsql 		varchar2(2000);
+    l_dummy 		varchar2(1);
+    l_action 		varchar2(10) := 'replaced';
+  BEGIN
+    BEGIN -- remove old link if it exists
+      l_plsql := 'drop database link ' || p_db_link;
+      execute immediate l_plsql;
+    EXCEPTION
+      WHEN db_link_not_found THEN l_action := 'added';
+    END;
+
+    -- create new link
+    l_plsql := 'create database link ' || p_db_link || ' connect to ' || p_username ||
+              ' identified by "' || p_password || '" using ''' || p_host || '''';
+    execute immediate l_plsql;
+
+    DBMS_OUTPUT.PUT_LINE('Database link ' || p_db_link || ' ' || l_action || '.');
+
+    -- test link
+    l_plsql := 'select dummy from sys.dual@' || p_db_link;
+    execute immediate l_plsql into l_dummy;
+  END;
+
+  PROCEDURE add_remote_database(
+    p_remote_db 	IN     varchar2,
+    p_remote_db_link 	IN     varchar2,
+    p_from_date 	IN     date default null,
+    p_load_now 		IN     boolean default false
+  ) IS
+  -- packaged procedure add_remote_database 
+    l_remote_db 	remote_databases.REMOTE_DB%TYPE := upper(trim(p_remote_db));
+    l_remote_db_link 	remote_databases.REMOTE_DB_LINK%TYPE := upper(trim(p_remote_db_link));
+    l_date 	date := trunc(nvl(p_from_date,g_sys_live_date));
+    l_timestamp	timestamp(6) with time zone := cast(l_date as timestamp with time zone);
+    l_plsql 		varchar2(2000);
+  BEGIN
+
+    -- check remote database details and load audit trail and users
+
+    select db_link into l_remote_db_link
+    from   all_db_links
+    where  db_link = l_remote_db_link;
+
+    BEGIN
+        select greatest(l_timestamp, nvl(audit_timestamp,
+                                         cast(g_sys_live_date as timestamp with time zone))),
+               greatest(l_date, nvl(users_date, g_sys_live_date))
+        into   l_timestamp, l_date
+        from   remote_databases
+        where  REMOTE_DB = l_remote_db;
+
+        l_plsql := 'update remote_databases ' ||
+                      'set REMOTE_DB_LINK = :remote_db_link, ' ||
+                          'AUDIT_TIMESTAMP = :audit_timestamp, ' ||
+                          'AUDIT_STATUS = null, ' ||
+                          'USERS_DATE = :users_date, ' ||
+                          'USERS_STATUS = null, ' ||
+                          'STATUS_MESSAGE = null ' ||
+                    'where REMOTE_DB = :remote_db';
+        execute immediate l_plsql using l_remote_db_link, l_timestamp, l_date, l_remote_db;
+
+        DBMS_OUTPUT.PUT_LINE('Remote Database ' || l_remote_db || ' updated.');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+
+            l_plsql := 'insert into remote_databases ' ||
+                         '(REMOTE_DB, REMOTE_DB_LINK, AUDIT_TIMESTAMP, USERS_DATE) ' ||
+                       'values ' ||
+                         '(:remote_db, :remote_db_link, :audit_timestamp, :users_date)';
+            execute immediate l_plsql using l_remote_db, l_remote_db_link, l_timestamp, l_date;
+
+            DBMS_OUTPUT.PUT_LINE('Remote Database ' || l_remote_db || ' inserted.');
+    END;
+
+    IF p_load_now = TRUE THEN
+
+        import_remote_users(l_remote_db, l_remote_db_link, l_date);
+
+        import_remote_audit(l_remote_db, l_remote_db_link, l_timestamp);
+
+    END IF;
+
+  END;
+
+
+END AUD_DBA_IMP_PKG1;
+/
+
+show errors
