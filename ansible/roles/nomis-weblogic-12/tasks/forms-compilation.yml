@@ -1,8 +1,8 @@
 ---
 - name: Set computed defaults
   set_fact:
-    effective_sleep_between_successful_compilations: "{{ 1 if weblogic_db_name == 'QA11G' else (sleep_between_successful_compilations | default(2)) }}"
-    effective_sleep_between_unsuccessful_compilations: "{{ 120 if weblogic_db_name == 'QA11G' else (sleep_between_successful_compilations | default(60)) }}"
+    effective_sleep_between_successful_compilations: "{{ 1 if weblogic_db_name == 'qa11g' else (sleep_between_successful_compilations | default(2)) }}"
+    effective_sleep_between_unsuccessful_compilations: "{{ 120 if weblogic_db_name == 'qa11g' else (sleep_between_successful_compilations | default(60)) }}"
 
 - name: Run script to compile all forms
   become_user: oracle
