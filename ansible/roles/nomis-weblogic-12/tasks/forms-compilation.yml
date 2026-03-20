@@ -1,11 +1,16 @@
 ---
+- name: Set computed defaults
+  set_fact:
+    effective_sleep_between_successful_compilations: "{{ 1 if target_db == 'QA11G' else (sleep_between_successful_compilations | default(2)) }}"
+    effective_sleep_between_unsuccessful_compilations: "{{ 120 if target_db == 'QA11G' else (sleep_between_successful_compilations | default(60)) }}"
+
 - name: Run script to compile all forms
   become_user: oracle
   ansible.builtin.shell: |
     source ~/.bash_profile
     cd /u01/tag/FormsSources/
     set -o pipefail
-    bash compile_all_forms.sh username="{{ weblogic_db_username }}" password="{{ weblogic_db_password }}" start_index={{ start_index | default(0) }} target_db="{{ weblogic_db_name | upper }}" parallel_jobs={{ parallel_jobs | default(5) }} batch_size={{ batch_size | default(30) }} batch_sleep={{ batch_sleep | default(15) }} | tee /tmp/forms_compilation.log
+    bash compile_all_forms.sh username="{{ weblogic_db_username }}" password="{{ weblogic_db_password }}" start_index={{ start_index | default(0) }} target_db="{{ weblogic_db_name | upper }}" parallel_jobs={{ parallel_jobs | default(2) }} sleep_between_successful_compilations={{ effective_sleep_between_successful_compilations }} sleep_between_unsuccessful_compilations={{ effective_sleep_between_unsuccessful_compilations }} max_attempts={{ max_attempts | default(6) }} | tee /tmp/forms_compilation.log
   args:
     executable: /bin/bash
 

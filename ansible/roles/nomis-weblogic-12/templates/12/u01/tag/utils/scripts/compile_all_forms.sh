@@ -1,7 +1,5 @@
 {% raw %}
 #!/usr/bin/env bash
-batch_size=0
-batch_sleep=0
 sleep_between_successful_compilations=1
 sleep_between_unsuccessful_compilations=120
 sleep_between_file_types=20
@@ -17,8 +15,6 @@ forms_to_compile=()
 
 for arg in "$@"; do
     case $arg in
-        batch_size=*) batch_size="${arg#*=}" ;;
-        batch_sleep=*) batch_sleep="${arg#*=}" ;;
         max_attempts=*) max_attempts="${arg#*=}" ;;
         parallel_jobs=*) parallel_jobs="${arg#*=}" ;;
         password=*) password="${arg#*=}" ;;
@@ -45,7 +41,7 @@ validate_non_negative_integer() {
     fi
 }
 
-for var_name in start_index batch_size batch_sleep sleep_between_successful_compilations sleep_between_unsuccessful_compilations sleep_between_file_types max_attempts parallel_jobs; do
+for var_name in start_index sleep_between_successful_compilations sleep_between_unsuccessful_compilations sleep_between_file_types max_attempts parallel_jobs; do
     validate_non_negative_integer "${!var_name}" "$var_name"
 done
 
