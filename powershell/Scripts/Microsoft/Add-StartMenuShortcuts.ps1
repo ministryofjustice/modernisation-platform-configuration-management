@@ -41,6 +41,11 @@ $Configs = @{
         "Prison-Nomis/DEV"      = "https://c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11G"    = "https://c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/QA11R"    = "https://c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+        "NDMIS/Dev Reporting CMC"        = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Dev Reporting BI"         = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/BI"
+        "NDMIS/Dev Reporting AdminTools" = "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/AdminTools"
+        "NDMIS/Dev BODS CMC"             = "https://ndl-dis.dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Dev BODS DataServices"    = "https://ndl-dis.dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/DataServices"
       }
     }
   }
@@ -95,6 +100,11 @@ $Configs = @{
         "CSR/PreProd Region 3 4" = "http://r3.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
         "CSR/PreProd Region 5 6" = "http://r5.pp.csr.service.justice.gov.uk:7770/isps/index.html?2057"
         "CSR/Prod Training A B"  = "http://traina.csr.service.justice.gov.uk/isps/index.html?2057"
+        "NDMIS/Stage Reporting CMC"        = "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Stage Reporting BI"         = "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/BOE/BI"
+        "NDMIS/Stage Reporting AdminTools" = "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/AdminTools"
+        "NDMIS/Stage BODS CMC"             = "https://ndl-dis.stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/BOE/CMC"
+        "NDMIS/Stage BODS DataServices"    = "https://ndl-dis.stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/DataServices"
         "OASys/PreProd"          = "https://pp-int.oasys.service.justice.gov.uk"
         "OASys National Reporting/PreProd Reporting CMC"        = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/CMC"
         "OASys National Reporting/PreProd Reporting BI"         = "https://preproduction.reporting.oasys.service.justice.gov.uk/BOE/BI"
@@ -103,10 +113,7 @@ $Configs = @{
         "OASys National Reporting/PreProd BODS DataServices"    = "https://pp-bods.test.reporting.oasys.service.justice.gov.uk/DataServices/"
         "PlanetFM/PreProd Web Portal"                           = "https://cafmwebx.pp.planetfm.service.justice.gov.uk/PlanetPortal"
         "PlanetFM/PreProd Remote Desktop"                       = "https://cafmtx.pp.planetfm.service.justice.gov.uk/RDWeb"
-        "Prison-Nomis/LSAST"                          = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/PreProd"                        = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis AB Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis AB Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis AB Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis AB Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis Reporting/PreProd Reporting CMC"        = "https://admin.preproduction.reporting.nomis.service.justice.gov.uk/BOE/CMC"
@@ -195,10 +202,7 @@ $Configs = @{
     }
     "Add" = @{
       "CommonStartMenu" = @{
-        "Prison-Nomis/LSAST"                          = "https://c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis/PreProd"                        = "https://c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis AB Testing/lsast-nomis-web-a"   = "https://lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
-        "Prison-Nomis AB Testing/lsast-nomis-web-b"   = "https://lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis AB Testing/preprod-nomis-web-a" = "https://preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
         "Prison-Nomis AB Testing/preprod-nomis-web-b" = "https://preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
       }

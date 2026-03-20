@@ -51,6 +51,16 @@ sqlnet_parameters:
     SQLNET.ENCRYPTION_TYPES_SERVER: (AES256)
     SQLNET.ALLOW_WEAK_CRYPTO: "FALSE"
     SQLNET.IGNORE_ANO_ENCRYPTION_FOR_TCPS: "TRUE"
+
+# Restricted schema to use for DBA Operations
+dba_ops_schema: DELIUS_USER_SUPPORT
+
+# Define Slack Notifications of DDL Changes
+ddl_notifier:
+   notification_schema: "{{ dba_ops_schema }}"
+   slack_channel: "#delius-aws-oracle-test-ddl"
+   tracked_schemas: ['DELIUS_APP_SCHEMA']
+
 # The oracle_ru_patch is the Oracle Release update to use for *initial build* only.
 # Subsequent patching will use the oracle_software variable defined for
 # the primary database.

@@ -4,8 +4,8 @@
   become_user: "{{ oracle_install_user }}"
   block:
     # ACL script does not contain a password
-    - name: Create ACL for Slack Notifications
-      ansible.builtin.script: create_slack_acl.sh
+    - name: Create ACL for Slack Notifications with SYSMAN as the Principal
+      ansible.builtin.script: create_slack_acl.sh SYSMAN
       environment:
         ORAENV_ASK: "NO"
         ORACLE_SID: "EMREP"

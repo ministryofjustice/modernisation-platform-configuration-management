@@ -116,17 +116,6 @@
   loop: "{{ rweng_check.results }}"
   when: item.changed
 
-- import_tasks: enable-weblogic-services.yml
-  vars:
-    service_state: restarted
-
-- name: Start report server after config updates
-  ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
-  become: yes
-  become_user: oracle
-  args:
-    executable: /bin/bash
-
 - name: Remove WLST NM connect block from start/stop scripts
   ansible.builtin.blockinfile:
     path: "{{ item }}"
