@@ -2,12 +2,12 @@
 #!/usr/bin/env bash
 batch_size=0
 batch_sleep=0
-sleep_between_successful_compilations=0
-sleep_between_unsuccessful_compilations=90
-sleep_between_file_types=15
-max_attempts=5
+sleep_between_successful_compilations=1
+sleep_between_unsuccessful_compilations=120
+sleep_between_file_types=20
+max_attempts=6
 start_index=0
-parallel_jobs=3
+parallel_jobs=2
 
 fmb_files=(/u01/tag/FormsSources/*.fmb)
 mmb_files=(/u01/tag/FormsSources/*.mmb)
@@ -39,7 +39,6 @@ fi
 validate_non_negative_integer() {
     local value="$1"
     local name="$2"
-
     if ! [[ "$value" =~ ^[0-9]+$ ]]; then
         echo "Error: $name must be a non-negative integer"
         exit 1
@@ -66,6 +65,10 @@ if (( start_index >= total_forms )); then
     echo "Start index ($start_index) >= total forms ($total_forms). Nothing to do."
     exit 0
 fi
+
+progress_file="/tmp/compile_progress.txt"
+echo 0 > "$progress_file"
+lock_file="/tmp/compile_progress.lock"
 
 compile_form() {
     local form="$1"
@@ -103,14 +106,21 @@ compile_chunk() {
         fi
 
         if [[ -n "$previous_type" && "$current_type" != "$previous_type" ]]; then
-            echo "[Worker $$] Finished $previous_type files, sleeping $sleep_between_file_types seconds..."
+            echo "[Worker $$] Finished all $previous_type files in this chunk, sleeping $sleep_between_file_types seconds..."
             sleep "$sleep_between_file_types"
         fi
-
         previous_type="$current_type"
 
         echo "[Worker $$] Compiling $form"
         compile_form "$form" || return 1
+
+        {
+            flock 200
+            count=$(< "$progress_file")
+            count=$((count + 1))
+            echo "$count" > "$progress_file"
+            echo "[Worker $$] $form compiled successfully ($count of $total_forms)"
+        } 200>"$lock_file"
 
         sleep "$sleep_between_successful_compilations"
     done
@@ -130,4 +140,5 @@ for pid in "${pids[@]}"; do
 done
 
 echo "All compilations finished"
+rm -f "$progress_file" "$lock_file"
 {% endraw %}
