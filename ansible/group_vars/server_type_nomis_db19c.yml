@@ -1,5 +1,5 @@
 ---
-server_type_roles_list:
+roles_list:
   - get-ec2-facts
   - set-ec2-hostname
   - domain-search
@@ -20,9 +20,6 @@ server_type_roles_list:
   # - xsiam-agent
   # - oracle-tns-entries
   # - nomis-misload
-
-# the below vars are defined in multiple groups.  Keep the values the same to avoid unexpected behaviour
-roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
 packages_yum_install:
   - zip-3.0-23.el8
