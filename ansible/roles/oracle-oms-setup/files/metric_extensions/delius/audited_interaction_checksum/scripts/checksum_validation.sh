@@ -98,8 +98,7 @@ WITH most_recent_resetlogs AS (
         x.start_date_time,
         x.end_date_time,
         x.row_count,
-        x.data_checksum,
-        x.checksum_validated
+        x.data_checksum
     FROM
         delius_audit_dms_pool.audited_interaction_checksum x
     WHERE
@@ -122,7 +121,22 @@ WITH most_recent_resetlogs AS (
             GROUP BY
                 y.client_db
         )
-), monitoring_discontinuities AS (
+), 
+validation_checksum_error AS
+(
+SELECT e.client_db,COUNT(*) error_count
+FROM   delius_audit_dms_pool.audited_interaction_checksum e
+WHERE  e.checksum_validated = 'E'
+AND    e.start_date_time >= (
+    SELECT
+        resetlogs_date_time
+    FROM
+        most_recent_resetlogs r
+    WHERE
+        r.client_db = e.client_db)
+GROUP BY e.client_db
+),
+monitoring_discontinuities AS (
     SELECT
         a.client_db,
         COUNT(*) discontinuities
@@ -174,13 +188,14 @@ SELECT
     || '|'
     || mrr.data_checksum
     || '|'
-    || mrr.checksum_validated
+    || CASE WHEN coalesce(vce.error_count, 0) = 0 THEN 'Y' ELSE 'N' END
     || '|'
     || coalesce(md.discontinuities, 0)
 FROM
          most_recently_validated_ranges mrr
-    INNER JOIN most_recent_resetlogs                 rl ON mrr.client_db = rl.client_db
-    LEFT OUTER JOIN monitoring_discontinuities            md ON mrr.client_db = md.client_db
+    INNER JOIN most_recent_resetlogs                 rl  ON mrr.client_db = rl.client_db
+    LEFT OUTER JOIN validation_checksum_error        vce ON mrr.client_db = vce.client_db
+    LEFT OUTER JOIN monitoring_discontinuities       md  ON mrr.client_db = md.client_db
 GROUP BY
     mrr.client_db,
     rl.resetlogs_date_time,
@@ -188,9 +203,8 @@ GROUP BY
     mrr.end_date_time,
     mrr.row_count,
     mrr.data_checksum,
-    mrr.checksum_validated,
+    vce.error_count,
     md.discontinuities;
-
 
 EXIT
 EOSQL

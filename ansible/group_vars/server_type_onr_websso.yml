@@ -38,12 +38,14 @@ server_type_roles_list:
   - epel
   - disks
   - selinux-config
+  - filesystems
   - sap-bip-4
-  - ncr-bip
+  - onr-bip
   - collectd
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-service-metrics
+  - collectd-textfile-monitoring
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -100,6 +102,7 @@ disks_mount:
     fstype: swap
 
 timezone: "Europe/London"
+filesystems_mount: "{{ sap_web_filesystems_mount|default([]) }}"
 
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
@@ -113,25 +116,30 @@ collectd_monitored_services_servertype:
     shell_cmd: "curl -Ssf -m 5 http://localhost:{{ sap_web_server_port }}/biprws"
 
 sap_bip_responsefile: response.web.ini
-
-sap_web_server_port: 7777
+sap_bip_copy_bip_control_script: true
 sap_web_disable_infoview: "false"
-sap_web_disable_cmcapp: "{{ sap_web_conf.sap_web_disable_cmcapp }}"
-sap_web_java_opts: "{{  sap_web_conf.sap_web_java_opts }}"
+sap_web_disable_cmcapp: "false"
 sap_web_server_connector_maxthreads: 1000
-sap_web_apps: "{{ sap_web_conf.sap_web_apps }}"
+sap_web_apps:
+  - AdminTools
+  - BOE
+  - BusinessProcessBI
+  - bipodata
+  - biprws
+  - clientapi
+  - dswsbobje
+  - webi-websetup
 
-sap_web_bilogon_app_name: Prison-NOMIS Reporting
-sap_web_bilogon_app_name_short: Prison-NOMIS Reporting
+sap_web_bilogon_app_name: OASys Reporting
+sap_web_bilogon_app_name_short: OASys Reporting
 sap_web_bilogon_app_name_greeting: Welcome
-sap_web_bilogon_product_name: Prison-NOMIS
+sap_web_bilogon_product_name: OASys
 sap_web_bilogon_authentication_default: secEnterprise
 sap_web_bilogon_authentication_visible: "false"
 sap_web_bilogon_logon_authentication_visibleList: secEnterprise
 sap_web_bilogon_cms_default: "@{{ sap_bip_cms_cluster_name }}"
 sap_web_bilogon_cms_visible: "false"
 sap_web_bilogon_dialog_prompt_enabled: "false"
-sap_web_bilogon_url_exit: /BIlogoff.jsp
 sap_web_bilogon_disable_locale_preference: "false"
 sap_web_bilogon_notification_enabled: "true"
 sap_web_bilogon_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
@@ -145,31 +153,25 @@ sap_web_cmcapp_cms_visible: "false"
 sap_web_cmcapp_dialog_prompt_enabled: "false"
 sap_web_cmcapp_disclaimer_enabled: "false"
 
-sap_web_fioribi_app_name: Prison-NOMIS Reporting
-sap_web_fioribi_app_name_short: Prison-NOMIS Reporting
+sap_web_fioribi_app_name: OASys Reporting
+sap_web_fioribi_app_name_short: OASys Reporting
 sap_web_fioribi_app_name_greeting: Welcome
-sap_web_fioribi_app_custom_product_name: Prison-NOMIS
-sap_web_fioribi_authentication_default: secEnterprise
-sap_web_fioribi_authentication_visible: "false"
-sap_web_fioribi_logon_authentication_visibleList: secEnterprise
+sap_web_fioribi_app_custom_product_name: OASys
+sap_web_fioribi_logon_webssoauthnetication_framework: OpenId
+sap_web_fioribi_openid_restful_url: "{{ sap_bip_rws_url }}"
 sap_web_fioribi_cms_default: "@{{ sap_bip_cms_cluster_name }}"
-sap_web_fioribi_cms_visible: "false"
 sap_web_fioribi_dialog_prompt_enabled: "false"
-sap_web_fioribi_url_exit: /BIlogoff.jsp
 sap_web_fioribi_disable_locale_preference: "false"
 sap_web_fioribi_notification_enabled: "true"
 sap_web_fioribi_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
 sap_web_fioribi_disclaimer_enabled: "false"
-sap_web_fioribi_theme_enable: custom
 
-sap_web_opendocument_app_name: Prison-NOMIS Reporting OpenDocument
+sap_web_opendocument_app_name: OASys Reporting OpenDocument
 sap_web_opendocument_app_name_short: OpenDocument
-sap_web_opendocument_app_custom_product_name: Prison-NOMIS
-sap_web_opendocument_authentication_default: secEnterprise
-sap_web_opendocument_authentication_visible: "false"
-sap_web_opendocument_logon_authentication_visibleList: secEnterprise
+sap_web_opendocument_app_custom_product_name: OASys
+sap_web_opendocument_logon_webssoauthnetication_framework: OpenId
+sap_web_opendocument_openid_restful_url: "{{ sap_bip_rws_url }}"
 sap_web_opendocument_cms_default: "@{{ sap_bip_cms_cluster_name }}"
-sap_web_opendocument_cms_visible: "false"
 sap_web_opendocument_disclaimer_enabled: "false"
 sap_web_opendocument_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
 
@@ -177,5 +179,3 @@ sap_web_global_allowed_cms: "{{ sap_bip_allowed_cms }}"
 sap_web_global_prefer_root_selected: groupList
 
 sap_web_admintools_allowed_cms: "{{ sap_bip_allowed_cms }}"
-
-ncr_web_server_type: web

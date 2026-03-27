@@ -32,9 +32,9 @@
     export ORACLE_SID={{ db_name }}
     export ORACLE_HOME={{ oracle_home_lookup.stdout }}
     export PATH=$ORACLE_HOME/bin:$PATH
-    cd {{ audit_dir }}
+    cd {{ sql_output_dir }}
     sqlplus -s / as sysdba << EOF
-      @ReviewLite23.3.sql
+      @../ReviewLite23.3.sql
       exit
     EOF
   become: yes

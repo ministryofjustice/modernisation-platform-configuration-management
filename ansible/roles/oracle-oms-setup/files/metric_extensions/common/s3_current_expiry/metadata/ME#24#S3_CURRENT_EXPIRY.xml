@@ -1,0 +1,58 @@
+<TargetMetadataExt EXT_NAME="ME$S3_CURRENT_EXPIRY" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$S3_CURRENT_EXPIRY" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$S3_CURRENT_EXPIRY">S3 Current Expiry</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$S3_CURRENT_EXPIRY">Check if the AWS S3 Bucket lifecycle expiry time for current objects to ensure it is later than their expected RMAN deletion tim</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="BACKUP_BUCKET" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$S3_CURRENT_EXPIRYBACKUP_BUCKET">Backup Bucket</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="AWS_EXPIRATION_DAYS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$S3_CURRENT_EXPIRYAWS_EXPIRATION_DAYS">AWS Expiration Days</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="RMAN_RECOVERY_WINDOW_DAYS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$S3_CURRENT_EXPIRYRMAN_RECOVERY_WINDOW_DAYS">RMAN Recovery Window Days</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="EXPIRY_MARGIN_DAYS" TYPE="NUMBER" COMPUTE_EXPR="AWS_EXPIRATION_DAYS-RMAN_RECOVERY_WINDOW_DAYS">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$S3_CURRENT_EXPIRYEXPIRY_MARGIN_DAYS">Expiry Margin Days</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="EXPIRY_MARGIN_SAFETY_DAYS" TYPE="NUMBER" COMPUTE_EXPR="AWS_EXPIRATION_DAYS-(2*(RMAN_RECOVERY_WINDOW_DAYS+10))">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$S3_CURRENT_EXPIRYEXPIRY_MARGIN_SAFETY_DAYS">Expiry Margin Safety Days</Label>
+<Unit NLSID="mext_unit_nlsid_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/current_expiry.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
