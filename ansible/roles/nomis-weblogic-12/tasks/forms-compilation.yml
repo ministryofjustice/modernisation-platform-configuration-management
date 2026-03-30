@@ -14,6 +14,16 @@
   args:
     executable: /bin/bash
 
+- name: Log sleep message for qa11g
+  ansible.builtin.debug:
+    msg: "weblogic_db_name is qa11g — pausing for 5 minutes before continuing"
+  when: weblogic_db_name == 'qa11g'
+
+- name: Sleep for 5 minutes if running against qa11g
+  ansible.builtin.pause:
+    minutes: 5
+  when: weblogic_db_name == 'qa11g'
+
 - name: Find and remove log/txt files
   ansible.builtin.find:
     paths: "{{ forms_compilation_filepath }}"
