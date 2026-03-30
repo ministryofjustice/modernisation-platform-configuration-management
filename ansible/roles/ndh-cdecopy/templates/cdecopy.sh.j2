@@ -1,4 +1,6 @@
 #!/bin/bash
+CDE_PATTERN="*.dat"
+#CDE_PATTERN="C_NOMIS_OFFENDER_28032026_01.dat" # hardcode filename by temporarily commenting this in or use -f option
 AZURE_STORAGE_ACCOUNT_NAME='{{ ndh_cdecopy_azure_storage_account_name }}'
 AZURE_STORAGE_CONTAINER_NAME='{{ ndh_cdecopy_azure_storage_container_name }}'
 AZURE_SAS_TOKEN_SSM_PARAMETER='/azure/sas_token'
@@ -29,6 +31,7 @@ Where <opts>:
   -a                     Upload to azure
   -d                     Dryrun, i.e. get SAS but don't update SSM parameter
   -s                     Upload to AWS S3
+  -f <filename>          Specify a filename rather than using the latest
 
 ExitCode:
   1 = error
@@ -37,7 +40,7 @@ ExitCode:
 }
 
 get_cde_filename() {
-  filename=$(ls -1t *.dat | head -1)
+  filename=$(ls -1t $CDE_PATTERN | head -1)
   if [[ -z $filename ]]; then
     error "local: no file found in $LOCAL_CDE_DIR"
     return 1
@@ -172,7 +175,7 @@ run() {
   which az >/dev/null
   which zip >/dev/null
 
-  debug "local: finding most recent CDE in $LOCAL_CDE_DIR"
+  debug "local: finding most recent CDE matching $CDE_PATTERN in $LOCAL_CDE_DIR"
   exitcode=0
   cd "$LOCAL_CDE_DIR"
   cde_filename=$(get_cde_filename) || exitcode=$?
@@ -195,7 +198,7 @@ run() {
 main() {
   local exitcode
 
-  while getopts "ads" opt; do
+  while getopts "adsf:" opt; do
       case $opt in
           a)
               if [[ -z $AZURE_STORAGE_ACCOUNT_NAME ]]; then
@@ -206,6 +209,9 @@ main() {
               ;;
           d)
               DRYRUN=1
+              ;;
+          f)
+              CDE_PATTERN=${OPTARG}
               ;;
           s)
               if [[ -z $S3_BUCKET_NAME ]]; then
