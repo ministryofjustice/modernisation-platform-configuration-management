@@ -184,7 +184,7 @@
       loop_control:
         loop_var: weblogic_managed_app
       loop:
-#        - WLS_AUTOLOGOFF
+        - WLS_AUTOLOGOFF
         - WLS_TAGSAR
         - WLS_HOTPAGE
 
@@ -192,6 +192,15 @@
       tags:
         - ec2provision
         - weblogic_logrotate
+
+    - name: Ensure all resources point to Admin Server Machine in config.xml
+      ansible.builtin.replace:
+        path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/config.xml
+        regexp: '(^\s*)(<machine>AdminServerMachine</machine>\n\1)?(<listen-port>(9005|9004|9003)</listen-port>)'
+        replace: '\1<machine>AdminServerMachine</machine>\n\1\3'
+      tags:
+        - ec2provision
+        - weblogic_update_config_for_admin_server_machine
 
     - import_tasks: enable-weblogic-services.yml
       vars:
@@ -212,7 +221,7 @@
       loop_control:
         loop_var: weblogic_managed_app
       loop:
-        #        - WLS_AUTOLOGOFF
+        - WLS_AUTOLOGOFF
         - WLS_TAGSAR
         - WLS_HOTPAGE
 
