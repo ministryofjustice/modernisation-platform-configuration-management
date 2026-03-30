@@ -1,0 +1,8 @@
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+{% for file in tagsar_sql_file_paths %}
+PROMPT Running {{ file }}
+@{{ file }}
+{% endfor %}
+
+EXIT
