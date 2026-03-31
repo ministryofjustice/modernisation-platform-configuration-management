@@ -4,24 +4,24 @@
   register: tagsar_dbobjects_directory_present
 
 - block:
-    - name: Run TagSar SQL scripts for provisioning
-      ansible.builtin.template:
-        src: 12/u01/tag/utils/scripts/tagsar_sql.j2
-        dest: /u01/tag/utils/scripts/tagsar_sql.sql
-        owner: oracle
-        group: oinstall
-        mode: '0644'
-      become: yes
-
-    - name: Run SQL script
-      ansible.builtin.shell: |
-        source ~oracle/.bash_profile
-        sqlplus {{ weblogic_db_username }}/{{ weblogic_db_password }}@{{ weblogic_db_name }} @/u01/tag/utils/scripts/tagsar_sql.sql > /tmp/tagsar_sql.log 2>&1
-      args:
-        chdir: /u01/tag/tagsar/tagsar_dbobjects/
-      become_user: oracle
-      register: result
-      failed_when: result.rc != 0
+#    - name: Run TagSar SQL scripts for provisioning
+#      ansible.builtin.template:
+#        src: 12/u01/tag/utils/scripts/tagsar_sql.j2
+#        dest: /u01/tag/utils/scripts/tagsar_sql.sql
+#        owner: oracle
+#        group: oinstall
+#        mode: '0644'
+#      become: yes
+#
+#    - name: Run SQL script
+#      ansible.builtin.shell: |
+#        source ~oracle/.bash_profile
+#        sqlplus {{ weblogic_db_username }}/{{ weblogic_db_password }}@{{ weblogic_db_name }} @/u01/tag/utils/scripts/tagsar_sql.sql > /tmp/tagsar_sql.log 2>&1
+#      args:
+#        chdir: /u01/tag/tagsar/tagsar_dbobjects/
+#      become_user: oracle
+#      register: result
+#      failed_when: result.rc != 0
 
     - name: Remove /u01/tag/tagsar/tagsar_dbobjects/
       ansible.builtin.file:
