@@ -1,0 +1,9 @@
+# Will need the purge job to purge archive logs sent from the source that are located in +DATA/{{ oracle_goldengate_group.auditdata.tns_alias }}/{{ oracle_goldengate_group.source.tns_alias }}_ARCHIVELOGS and +DATA/{{ oracle_goldengate_group.mis.tns_alias }}/{{ oracle_goldengate_group.source.tns_alias }}_ARCHIVELOGS once they are no longer needed for replication. This is required to prevent the ASM storage from filling up with archive logs over time. The purge job will be scheduled to run regularly (e.g. daily) and will delete archive logs that are older than a certain threshold (e.g. 7 days) or that have been successfully replicated to the target database.
+- name: Install GoldenGate purge job for archive logs
+  ansible.builtin.cron:   
+    name: "Purge old GoldenGate archive logs from ASM"
+    user: "{{ oracle_goldengate_owner }}"
+    minute: "0"
+    hour: "2"
+    job: "find +DATA/{{ oracle_goldengate_group.auditdata.tns_alias }}/{{ oracle_goldengate_group.source.tns_alias }}_ARCHIVELOGS +DATA/{{ oracle_goldengate_group.mis.tns_alias }}/{{ oracle_goldengate_group.source.tns_alias }}_ARCHIVELOGS -type f -name '*.log' -mtime +7 -delete"
+  when: gg_home_exists

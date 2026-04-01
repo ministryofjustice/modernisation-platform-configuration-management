@@ -1,0 +1,60 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_setup.log
+
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Executing grants needed for apply dml handler processing:
+grant select on DBA_APPLY_DML_HANDLERS to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_REGISTERED_ARCHIVED_LOG to {{ oracle_goldengate_sql_owner }};
+grant select on dba_capture to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_APPLY_ADM to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_CAPTURE_ADM to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_APPLY_ADM to {{ oracle_goldengate_sql_owner }};
+grant select on gv_$streams_apply_server to {{ oracle_goldengate_sql_owner }};
+grant select on dba_registered_archived_log to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_UTILITY to {{ oracle_goldengate_sql_owner }};
+
+REM couldn't create packages in {{ oracle_goldengate_sql_owner }} so had to run this:
+grant connect, resource to {{ oracle_goldengate_sql_owner }};
+
+REM couldn't create the dml handler procs without this:
+grant create procedure to {{ oracle_goldengate_sql_owner }};
+
+PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
+@MIS_GEN_PKG.sql
+@MIS_GG_CTRL_PKG.sql
+@MIS_BATCH_PKG.sql
+@MIS_DML_PKG.sql
+@MIS_JOB_PKG.sql
+@MIS_TAB_CTRL_PKG.sql
+
+@MIS_GEN_PBODY.sql
+@MIS_GG_CTRL_PBODY.sql
+@MIS_BATCH_PBODY.sql
+@MIS_DML_PBODY.sql
+@MIS_JOB_PBODY.sql
+@MIS_TAB_CTRL_PBODY.sql
+
+PROMPT Granting execute on packages to {{ oracle_goldengate_dbuser }}:
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PKG to {{ oracle_goldengate_dbuser }};
+
+PROMPT Creating public synonyms as sysdba:
+create or replace public synonym MIS_GEN_PKG for {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG;
+create or replace public synonym MIS_BATCH_PKG for {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG;
+create or replace public synonym MIS_DML_PKG for {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG;
+create or replace public synonym MIS_GG_CTRL_PKG for {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG;
+create or replace public synonym MIS_JOB_PKG for {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG;
+create or replace public synonym MIS_TAB_CTRL_PKG for {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PKG;
+
+PROMPT Executing DML handler configuration procedures:
+-- will be done as part of the start_replicat call
+--EXECUTE {{ oracle_goldengate_sql_owner }}.mis_dml_pkg.clear_apply_handlers(UPPER('{{ oracle_goldengate_sql_owner }}'));
+--EXECUTE {{ oracle_goldengate_sql_owner }}.mis_dml_pkg.set_apply_handlers(UPPER('{{ oracle_goldengate_sql_owner }}'));
+
+PROMPT Completed installation of packages
+spool off
