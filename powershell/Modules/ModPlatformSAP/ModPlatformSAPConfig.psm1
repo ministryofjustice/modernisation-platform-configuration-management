@@ -597,6 +597,55 @@ function Get-ModPlatformSAPConfig {
           }
         }
       }
+      'delius-mis-preprod-bcs' = @{
+        InstallPackages = @{
+          Bip = @{
+            S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
+            S3Path        = 'hmpps/sap-bip-packages/windows'
+            S3File        = 'BIPLATS4208P_1200-80001044_P1.EXE'
+            S3Files       = @('BIPLATS4208P_1200-80001044_P2.RAR')
+            WorkingDir    = 'D:\Software'             # Download installer here
+            ExtractDir    = 'D:\Software\BIPLATS4208P_1200-80001044'
+            SkipIfPresent = 'D:\Software\BIPLATS4208P_1200-80001044\setup.exe'
+          }
+        }
+        Variables = @{
+          InstallDir     = 'D:\BusinessObjects'
+          SysDbName      = 'PREDXB'
+          SysDbUser      = 'b14cms'
+          AudDbName      = 'PREDXB'
+          AudDbUser      = 'b14aud'
+          SiaNameBase    = 'MPCMS00'
+          ServiceUser    = 'delius-mis-prep\SVC_BOSSO-NDL'
+          DomainNameFQDN = 'delius-mis-preprod.internal'
+        }
+        Secrets = @{
+          ClusterKey = @{
+            SecretName = 'delius-mis-preprod-sap-boe-config'
+            Key        = 'cluster_key'
+          }
+          ProductKey = @{
+            SecretName = 'delius-mis-preprod-sap-boe-config'
+            Key        = 'product_key'
+          }
+          SysDbPassword = @{
+            SecretName = 'delius-mis-preprod-sap-boe-passwords'
+            Key        = 'b14cms'
+          }
+          AudDbPassword = @{
+            SecretName = 'delius-mis-preprod-sap-boe-passwords'
+            Key        = 'b14aud'
+          }
+          CmsAdminPassword = @{
+            SecretName = 'delius-mis-preprod-sap-boe-passwords'
+            Key        = 'Administrator'
+          }
+          ServiceUserPassword = @{
+            SecretName = 'delius-mis-preprod-sap-boe-passwords'
+            Key        = 'SVC_BOSSO-NDL'
+          }
+        }
+      }
     }
     'delius-mis-production' = @{
       'delius-mis-prod-dis' = @{
