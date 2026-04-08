@@ -106,6 +106,9 @@ filesystems_domains_by_env:
     azure.hmpp.root:
       secret_name: delius-mis-preprod-sap-boe-passwords
       mount_fs_username: svc_fsx_nart
+    delius-mis-preprod.internal:
+      secret_name: delius-mis-preprod-sap-boe-passwords
+      mount_fs_username: SVC_BOSSO-NDL
 filesystems_domains: "{{ filesystems_domains_by_env[sap_environment] }}"
 
 bip_filesystems_mount_by_env:
@@ -140,6 +143,15 @@ bip_filesystems_mount_by_env:
       opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
       src: //fslinux.azure.hmpp.root/NART$
       # metric_dimension: NART
+      maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
+      state: absent
+      autofs_mount: true
+    - dir: /share
+      uid: bobj
+      gid: binstall
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/delius-mis-preprod.internal.creds
+      src: //share.delius-mis-preprod.internal/share
       maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
       state: absent
       autofs_mount: true
