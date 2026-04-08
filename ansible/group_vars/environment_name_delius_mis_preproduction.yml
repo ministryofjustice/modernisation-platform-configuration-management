@@ -96,7 +96,8 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
+#filesystems_domain_name_fqdn: azure.hmpp.root
+filesystems_domain_name_fqdn: delius-mis-preprod.internal
 filesystems_domains_by_env:
   stage:
     azure.hmpp.root:
@@ -136,16 +137,16 @@ bip_filesystems_mount_by_env:
       gid: binstall
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
       src: "eu-west-2a.fs-0a16ce697adb719d6.efs.eu-west-2.amazonaws.com:/"
-    - dir: /NART
-      uid: bobj
-      gid: binstall
-      fstype: cifs
-      opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
-      src: //fslinux.azure.hmpp.root/NART$
-      # metric_dimension: NART
-      maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
-      state: absent
-      autofs_mount: true
+#    - dir: /NART
+#      uid: bobj
+#      gid: binstall
+#      fstype: cifs
+#      opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+#      src: //fslinux.azure.hmpp.root/NART$
+#      # metric_dimension: NART
+#      maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
+#      state: absent
+#      autofs_mount: true
     - dir: /share
       uid: bobj
       gid: binstall
