@@ -411,7 +411,7 @@ function Install-SAPBIP {
     "-l", "$LogFile"
   )
   $InstallArgsDebug = @(
-    "-r", "$ResponseFile",
+    "-r", "$ResponsePath",
     "-l", "$LogFile"
   )
 
