@@ -1,0 +1,91 @@
+##########################
+# InitDialogs
+#
+SetupUILanguage=en
+
+# requires a trailing slash ..
+InstallDir={InstallDir}\
+
+##################
+# Selected LanguagePacks
+# 
+SelectedLanguagePacks=en
+
+##########################
+# SelectInstancesToInstall
+#
+ProductKey={ProductKey}
+
+InstallType=custom
+
+
+##########################
+# GatherInfoForDUs
+#
+CMSPort=6400
+CMSPassword={CmsAdminPassword}
+ClusterKey={ClusterKey}
+SIAPort=6410
+SIAName={SiaNameBase}{NameTagIndex}
+
+SelectIntegratedDatabase=0
+
+###SQLAnywhereAdminPassword=Password1
+###SQLAnywherePort=2638
+
+TomcatConnectionPort=8080
+TomcatShutdownPort=8005
+TomcatRedirectPort=8443
+
+EnableServers=1
+
+RunMonitorTool=0
+
+LCMName=LCM_repository
+LCMPort=3690
+LCMUserName=LCM
+LCMPassword={LcmPassword}
+NewOrExistingLCM=new
+
+# Choose your existing database types
+UsingCMSDBType=oracle
+UsingAuditDBType=oracle
+
+# Enter appropriate values for the db type
+ExistingCMSDBServer={SysDbName}
+ExistingCMSDBPort=1521
+###ExistingCMSDBDatabase=
+ExistingCMSDBUser={SysDbUser}
+ExistingCMSDBPassword={SysDbPassword}
+ExistingCMSDBReset=0
+
+# Enter appropriate values for the db type
+ExistingAuditingDBServer={AudDbName}
+ExistingAuditingDBPort=1521
+###ExistingAuditingDBDatabase=
+ExistingAuditingDBUser={AudDbUser}
+ExistingAuditingDBPassword={AudDbPassword}
+
+#Enter appropriate values for the Introscope
+###Introscope_ENT_HOST=localhost
+###Introscope_ENT_PORT=6001
+###Introscope_ENT_INSTRUMENTATION=10
+
+#Enter appropriate values for the SMD Agent
+###SMDAgent_HOST=localhost
+###SMDAgent_PORT=6404
+
+#WACS Port
+WACSPort=6405
+
+# The acceptable value of WebAppServerType: tomcat/wacs/manual/none
+WebAppServerType=tomcat
+
+### Choose to Integrate Solution Manager Diagnostics (SMD) Agent: integrate or nointegrate
+choosesmdintegration=nointegrate
+
+#Choose to Integrated Introscope: integrate or nointegrate
+ChooseIntroscopeIntegration=nointegrate
+
+#List the features installed by default
+features=JavaWebApps1,IntegratedTomcat,WebTier,CMS,FRS,PlatformServers.EventServer,AdaptiveProcessingServer,AdaptiveJobServer,Platform.RestWebService,Platform.Action.Framework.backend,Subversion,ConnectionProcService,ConnectionServices,DataFederatorQueryService,DataFederatorServices,MultidimensionalAnalysisServices,CrystalReportsProcServices,CrystalReportSchedulingServices,CrystalReport2011ProcServices,CrystalReport2011SchedulingServices,CrystalReportsServers,WebIProcServer,WebISchedulingServices,WebIServers,XcelsiusServers,MultitenancyManager,UpgradeManager,AdministratorTools,DataAccess.DataFederator,DataAccess.MySQL,DataAccess.GenericJDBC,DataAccess.GenericOLEDB,DataAccess.Microsoft_AnalyticalServices,DataAccess.Microsoft_SQLServer,DataAccess.Microsoft_Access,DataAccess.Oracle,DataAccess.PersonalFiles,DataAccess.JavaBean,DataAccess.OpenConnectivity,DataAccess.Universe,DataAccess.XML,DataAccess.ADO.NET,DataAccess.COMData,DataAccess.DataSet,DataAccess.CDO,DataAccess.FieldDefinitions,DataAccess.FileSystem,DataAccess.NTEventLog,DataAccess.WebActivityLog,DataAccess.UWSC,DataAccess.XMLWebServices,DataAccess.OData,DataAccess.CMSDBDriver
