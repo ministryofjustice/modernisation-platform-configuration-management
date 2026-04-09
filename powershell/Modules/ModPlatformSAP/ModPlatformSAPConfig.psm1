@@ -615,7 +615,7 @@ function Get-ModPlatformSAPConfig {
           SysDbUser      = 'b14cms'
           AudDbName      = 'PREBXC'
           AudDbUser      = 'b14aud'
-          SiaNameBase    = 'MPCMS00'
+          SiaNameBase    = 'CMSTIER00'
           ServiceUser    = 'delius-mis-prep\SVC_BOSSO-NDL'
           DomainNameFQDN = 'delius-mis-preprod.internal'
         }
@@ -639,6 +639,10 @@ function Get-ModPlatformSAPConfig {
           CmsAdminPassword = @{
             SecretName = 'delius-mis-preprod-sap-boe-passwords'
             Key        = 'Administrator'
+          }
+          LcmPassword = @{
+            SecretName = 'delius-mis-preprod-sap-boe-passwords'
+            Key        = 'LCM'
           }
           ServiceUserPassword = @{
             SecretName = 'delius-mis-preprod-sap-boe-passwords'
