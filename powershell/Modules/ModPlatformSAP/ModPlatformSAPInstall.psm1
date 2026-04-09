@@ -407,12 +407,12 @@ function Install-SAPBIP {
   }
 
   $InstallArgs = @(
-    "-r", "`"$ResponseFile`"",
-    "-l", "`"$LogFile`""
+    "-r", "$ResponsePath",
+    "-l", "$LogFile"
   )
   $InstallArgsDebug = @(
-    "-r", "`"$ResponseFile`"",
-    "-l", "`"$LogFile`""
+    "-r", "$ResponseFile",
+    "-l", "$LogFile"
   )
 
   Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
