@@ -371,6 +371,65 @@ function Set-SAPDataServicesServiceControl {
   }
 }
 
+function Install-SAPBIP {
+  param (
+    [Parameter(Mandatory)][string]$ResponseFilename,
+    [Parameter(Mandatory)][hashtable]$InstallPackage
+  )
+
+  #$ExistingDataServices = Get-Package | Where-Object { $_.Name -like 'SAP Data Services*' }
+  #if ($ExistingDataServices) {
+  #  Write-Output "Data Services is already installed: $($ExistingDataServices.Name) v$($ExistingDataServices.Version)"
+  #  return
+  #}
+
+  $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
+  if (-not (Test-Path $File)) {
+    Write-Error "Install file not found: $File"
+  }
+
+  $ResponsePath = Join-Path $InstallPackage.ExtractDir -ChildPath $ResponseFilename
+  $SetupExe     = Join-Path $InstallPackage.ExtractDir -ChildPath "setup.exe"
+  $LogFile      = Join-Path $InstallPackage.ExtractDir -ChildPath "install.log"
+  $LogErrFile   = Join-Path $InstallPackage.ExtractDir -ChildPath "install-error.log"
+
+  if (-not (Test-Path $ResponsePath)) {
+    Write-Error "Response file not found: $ResponsePath"
+  }
+
+  if (-not (Test-Path $SetupExe)) {
+    Write-Error "Setup.exe not found: $SetupExe"
+  }
+
+  if (Test-Path $LogFile) {
+    Write-Output "Remove $LogFile to force re-install"
+    return
+  }
+
+  $InstallArgs = @(
+    "-r", "`"$ResponseFile`"",
+    "-l", "`"$LogFile`""
+  )
+  $InstallArgsDebug = @(
+    "-r", "`"$ResponseFile`"",
+    "-l", "`"$LogFile`""
+  )
+
+  Write-Output "Launching at $(Get-Date): $SetupExe $InstallArgsDebug"
+  "Launching at $(Get-Date): $SetupExe $InstallArgsDebug" | Out-File -FilePath $LogFile -Append
+  $Process = Start-Process -FilePath $SetupExe -ArgumentList $InstallArgs -Wait -NoNewWindow -Verbose -PassThru -RedirectStandardError $LogErrFile
+  $InstallProcessId = $Process.Id
+  $ExitCode = $Process.ExitCode
+
+  "Process ID: $InstallProcessId" | Out-File -FilePath $LogFile -Append
+  "Exit Code: $ExitCode" | Out-File -FilePath $LogFile -Append
+  "Completed at: $(Get-Date)" | Out-File -FilePath $LogFile -Append
+
+  Write-Output "Process ID: $InstallProcessId"
+  Write-Output "Exit Code: $ExitCode"
+  Write-Output "Completed at: $(Get-Date)"
+}
+
 function Install-SAPClient {
   param (
     [Parameter(Mandatory)][string]$ResponseFilename,
@@ -441,4 +500,5 @@ Export-ModuleMember -Function Install-SAPIPS
 Export-ModuleMember -Function Set-SAPIPSServiceControl
 Export-ModuleMember -Function Install-SAPDataServices
 Export-ModuleMember -Function Set-SAPDataServicesServiceControl
+Export-ModuleMember -Function Install-SAPBIP
 Export-ModuleMember -Function Install-SAPClient
