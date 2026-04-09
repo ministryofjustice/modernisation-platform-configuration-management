@@ -611,9 +611,9 @@ function Get-ModPlatformSAPConfig {
         }
         Variables = @{
           InstallDir     = 'D:\BusinessObjects'
-          SysDbName      = 'PREDXB'
+          SysDbName      = 'PREBXC'
           SysDbUser      = 'b14cms'
-          AudDbName      = 'PREDXB'
+          AudDbName      = 'PREBXC'
           AudDbUser      = 'b14aud'
           SiaNameBase    = 'MPCMS00'
           ServiceUser    = 'delius-mis-prep\SVC_BOSSO-NDL'
