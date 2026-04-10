@@ -377,11 +377,11 @@ function Install-SAPBIP {
     [Parameter(Mandatory)][hashtable]$InstallPackage
   )
 
-  #$ExistingDataServices = Get-Package | Where-Object { $_.Name -like 'SAP Data Services*' }
-  #if ($ExistingDataServices) {
-  #  Write-Output "Data Services is already installed: $($ExistingDataServices.Name) v$($ExistingDataServices.Version)"
-  #  return
-  #}
+  $ExistingBipService = Get-Package | Where-Object { $_.Name -like 'SAP BusinessObjects BI platform*' }
+  if ($ExistingBipService) {
+    Write-Output "SAP BIP is already installed: $($ExistingBipService.Name) v$($ExistingBipService.Version)"
+    return
+  }
 
   $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
   if (-not (Test-Path $File)) {
