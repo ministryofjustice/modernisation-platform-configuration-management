@@ -43,7 +43,7 @@
         - ansible_version.full >= "2.13.0"
         - ansible_distribution in ['RedHat', 'OracleLinux']
         - ansible_distribution_major_version in ['6']
-      tags: always
+      tags: never
 
     - name: Set roles_defined fact
       ansible.builtin.set_fact:
