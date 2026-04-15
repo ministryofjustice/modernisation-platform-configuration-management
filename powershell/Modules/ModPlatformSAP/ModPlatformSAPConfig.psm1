@@ -576,11 +576,11 @@ function Get-ModPlatformSAPConfig {
             Key        = 'data_services_product_key'
           }
           SysDbPassword = @{
-            SecretName = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-preprod-sap-dis-passwords'
             Key        = 'ipscms'
           }
           AudDbPassword = @{
-            SecretName = 'delius-mis-preprod-oracle-dsd-db-application-passwords'
+            SecretName = 'delius-mis-preprod-sap-dis-passwords'
             Key        = 'ipsaud'
           }
           CmsAdminPassword = @{
