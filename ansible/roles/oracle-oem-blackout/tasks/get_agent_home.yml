@@ -20,7 +20,7 @@
 
 - name: Set Agent Home
   set_fact:
-     agent_home: "{{ get_agent_binaries_directory_1.stdout | default(get_agent_binaries_directory_2.stdout) | trim }}"
+     agent_home: "{{ get_agent_binaries_directory_1.stdout if (get_agent_binaries_directory_1.stdout is defined and get_agent_binaries_directory_1.stdout != '') else get_agent_binaries_directory_2.stdout | trim }}"
   
 - name: Show Agent Home
   debug:
