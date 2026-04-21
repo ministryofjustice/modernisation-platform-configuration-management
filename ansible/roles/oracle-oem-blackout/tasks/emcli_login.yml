@@ -40,12 +40,6 @@
          java_home: "{{ agent_home }}/oracle_common/jdk/jre"
       when: java_home is not defined or java_home == ''
 
-    - debug:
-        msg: ">>>{{ agent_home }}<<<"
-
-    - debug:
-        msg: ">>>{{ java_home }}<<<"
-
     - name: Perform EMCLI login if needed
       ansible.builtin.shell: |
         . ~/.bash_profile
