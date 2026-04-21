@@ -1,0 +1,27 @@
+# The AGENT_HOME is where the agent binaries are located.  We cannot assume this is in the location
+# pointed to the by OEM_AGENT_VERSION since he Agent may have been deployed by a Gold Image with
+# a directory based on the Gold Image Version Name.  Therefore we query the agent directly to find
+# its home.  This allows us to find the location of the JRE to use with EMCLI.
+- name: Locate Agent Binaries Directory
+  shell: |
+    . ~/.bash_profile
+    {{ emctl_agent }} status agent | awk -F: '/Agent Binaries/{print $2}'
+  register: get_agent_binaries_directory_1
+  changed_when: false  
+
+# Fallback if the Agent is not running the above command will not find the binaries so
+# use a brute-force approach
+- name: Locate Agent Binaries Directory (Static Method)
+  shell: |
+      . ~/.bash_profile
+      find /u01/app/oracle/product -name emctl | grep -v agent_inst | awk -F"/bin" '{print $1}'
+  register: get_agent_binaries_directory_2
+  changed_when: false
+
+- name: Set Agent Home
+  set_fact:
+     agent_home: "{{ get_agent_binaries_directory_1.stdout | default(get_agent_binaries_directory_2.stdout) | trim }}"
+  
+- name: Show Agent Home
+  debug:
+     msg: "Found Agent Home at {{ agent_home }}"

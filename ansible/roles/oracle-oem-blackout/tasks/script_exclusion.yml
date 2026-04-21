@@ -9,21 +9,9 @@
   register: get_agent_host
   changed_when: false
 
-# The AGENT_HOME is where the agent binaries are located.  We cannot assume this is in the location
-# pointed to the by OEM_AGENT_VERSION since he Agent may have been deployed by a Gold Image with
-# a directory based on the Gold Image Version Name.  Therefore we query the agent directly to find
-# its home.  This allows us to find the location of the JRE to use with EMCLI.
-- name: Locate Agent Binaries Directory
-  shell: |
-    . ~/.bash_profile
-    {{ emctl_agent }} status agent | awk -F: '/Agent Binaries/{print $2}'
-  register: get_agent_binaries_directory
-  changed_when: false  
+- name: Get Agent Home
+  include_tasks: get_agent_home.yml
 
-- name: Set Agent Home
-  set_fact:
-     agent_home: "{{ get_agent_binaries_directory.stdout | trim }}"
-  
 - name: Temporarily Exclude Host from Monitoring
   when: action == 'start'
   block:
