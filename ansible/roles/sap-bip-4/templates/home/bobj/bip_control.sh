@@ -35,9 +35,20 @@
 #2. Enable all services
 #1. Start the Web Application Servers (Tomcat or other) / EC2s.
 #0. Disable Maintenance Mode on the LB
+#
+# Pipeline QUICK stop mode - the above process often fails in prod
+# Since we are cutting users of at the load balancer, we can simplify this:
+
+#0. Enable Maintenance Mode on the LB
+#1. Stop the Web Application Server (Tomcat or other) / EC2s.
+#2. Disable all AdaptiveJobServer (to prevent any scheduled jobs)
+#3. Wait for 10 minutes (for existing jobs to complete)
+#8. Stop SIA
 
 DRYRUN=0
 VERBOSE=0
+QUICK_MODE=0
+GAP_SECS=0
 BIPRWS_LOGON_TOKEN=
 LBS="{{ sap_bip_control_lbs }}"
 FORMAT=default
@@ -46,7 +57,7 @@ APPLICATION_NAME="{{ application }}"
 AWS_ENVIRONMENT="{{ aws_environment }}"
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
-CCM_WAIT_FOR_CMD_TIMEOUT_SECS=60
+CCM_WAIT_FOR_CMD_TIMEOUT_SECS=120
 DIFF_START_STATUS_ONLY=0
 DIFF_USE_COMM=0
 STAGE3_WAIT_SECS=600
@@ -70,10 +81,12 @@ Where <opts>:
   -a                        For diff option, only check the entries in <a> match <b>
   -d                        Enable dryrun for maintenance mode commands
   -f default|json|fqdn|sia  Display in given format, if applicable, default is $FORMAT
+  -g <seconds>              The gap to wait between each ccm.sh command
   -l <endpoint>             Select LB endpoint(s), must be one of: $LBS
   -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
+  -q                        Do quick start/stop in pipeline mode, i.e. only disable AdaptiveJobServer
   -s                        For diff option, only compare start/stop status
   -w                        Wait for CCM command
 
@@ -791,6 +804,7 @@ do_ccm() {
           error "ccm '-$cmd' '$fqdn' failed with exitcode $exitcode"
           return $exitcode
         fi
+        sleep $GAP_SECS
       else
         log "DRYRUN: ccm -$cmd $fqdn"
       fi
@@ -1375,7 +1389,7 @@ do_lb() {
 
 main() {
   set -eo pipefail
-  while getopts "3:adf:l:p:svw" opt; do
+  while getopts "3:adf:g:l:p:qsvw" opt; do
       case $opt in
           3)
               STAGE3_WAIT_SECS=${OPTARG}
@@ -1386,6 +1400,9 @@ main() {
           d)
               DRYRUN=1
               ;;
+          g)
+              GAP_SECS=${OPTARG}
+              ;;
           l)
               LBS=${OPTARG}
               ;;
@@ -1394,6 +1411,9 @@ main() {
               ;;
           p)
               LOGPREFIX=${OPTARG}
+              ;;
+          q)
+              QUICK_MODE=1
               ;;
           s)
               DIFF_START_STATUS_ONLY=1
