@@ -86,7 +86,7 @@ Where <opts>:
   -3 wait_secs              Pipeline stage 3 wait time, default is $STAGE3_WAIT_SECS
   -v                        Enable verbose debug
   -p <logprefix>            Prefix all log lines with given prefix
-  -q                        Do quick start/stop in pipeline mode, i.e. only disable AdaptiveJobServer
+  -q                        Do quick stop in pipeline mode, i.e. only disable AdaptiveJobServer
   -s                        For diff option, only compare start/stop status
   -w                        Wait for CCM command
 
@@ -804,7 +804,7 @@ do_ccm() {
           error "ccm '-$cmd' '$fqdn' failed with exitcode $exitcode"
           return $exitcode
         fi
-        sleep $GAP_SECS
+        sleep "$GAP_SECS"
       else
         log "DRYRUN: ccm -$cmd $fqdn"
       fi
@@ -1184,7 +1184,11 @@ do_pipeline() {
       fi
     fi
     if [[ $2 == "all" || $2 == *2* ]]; then
-      step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+      if ((QUICK_MODE == 1)); then
+        step2=$(filter_server_list "$ccm_output_tsv_enabled" AdaptiveJobServer -Disabled | cut -f1 | xargs)
+      else
+        step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+      fi
       if [[ -n $step2 ]]; then
         log "running:  './bip_control.sh -w ccm disable $step2'"
         do_ccm disable "$step2" || true
@@ -1196,12 +1200,20 @@ do_pipeline() {
             log "retrying: './bip_control.sh -w ccm disable $step2'"
             do_ccm disable "$step2"
           else
-            log "complete: all services disabled apart from CMS and FRS"
+            if ((QUICK_MODE == 1)); then
+              log "complete: all AdaptiveJobServers disabled"
+            else
+              log "complete: all services disabled apart from CMS and FRS"
+            fi
           fi
         fi
         date +%s > "$tmp_filename"
       else
-        log "skipping: all services are already disabled apart from CMS and FRS"
+        if ((QUICK_MODE == 1)); then
+          log "skipping: all AdaptiveJobServers are already disabled"
+        else
+          log "skipping: all services are already disabled apart from CMS and FRS"
+        fi
       fi
     fi
     if [[ $2 == "all" || $2 == *3* ]]; then
@@ -1227,83 +1239,99 @@ do_pipeline() {
       fi
     fi
     if [[ $2 == "all" || $2 == *4* ]]; then
-      step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
-      if [[ -n $step4 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstop $step4'"
-        do_ccm managedstop "$step4" || true
-        if ((DRYRUN == 0)); then
-          sleep 2
-          refresh_ccm_server_status || ccm_exitcode=$?
-          step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
-          if [[ -n $step4 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstop $step4'"
-            do_ccm managedstop "$step4"
-          else
-            log "complete: all event servers are stopped"
-          fi
-        fi
+      if ((QUICK_MODE == 1)); then
+        log "skipping: nothing to do in quick mode"
       else
-        log "skipping: all event servers are already stopped"
+        step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
+        if [[ -n $step4 ]]; then
+          log "running:  './bip_control.sh -w ccm managedstop $step4'"
+          do_ccm managedstop "$step4" || true
+          if ((DRYRUN == 0)); then
+            sleep 2
+            refresh_ccm_server_status || ccm_exitcode=$?
+            step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
+            if [[ -n $step4 ]]; then
+              log "retrying: './bip_control.sh -w ccm managedstop $step4'"
+              do_ccm managedstop "$step4"
+            else
+              log "complete: all event servers are stopped"
+            fi
+          fi
+        else
+          log "skipping: all event servers are already stopped"
+        fi
       fi
     fi
     if [[ $2 == "all" || $2 == *5* ]]; then
-      step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
-      if [[ -n $step5 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstop $step5'"
-        do_ccm managedstop "$step5" || true
-        if ((DRYRUN == 0)); then
-          sleep 2
-          refresh_ccm_server_status || ccm_exitcode=$?
-          step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
-          if [[ -n $step5 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstop $step5'"
-            do_ccm managedstop "$step5"
-          else
-            log "complete: all job servers are stopped"
-          fi
-        fi
+      if ((QUICK_MODE == 1)); then
+        log "skipping: nothing to do in quick mode"
       else
-        log "skipping: all job servers are already stopped"
+        step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
+        if [[ -n $step5 ]]; then
+          log "running:  './bip_control.sh -w ccm managedstop $step5'"
+          do_ccm managedstop "$step5" || true
+          if ((DRYRUN == 0)); then
+            sleep 2
+            refresh_ccm_server_status || ccm_exitcode=$?
+            step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
+            if [[ -n $step5 ]]; then
+              log "retrying: './bip_control.sh -w ccm managedstop $step5'"
+              do_ccm managedstop "$step5"
+            else
+              log "complete: all job servers are stopped"
+            fi
+          fi
+        else
+          log "skipping: all job servers are already stopped"
+        fi
       fi
     fi
     if [[ $2 == "all" || $2 == *6* ]]; then
-      step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
-      if [[ -n $step6 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstop $step6'"
-        do_ccm managedstop "$step6" || true
-        if ((DRYRUN == 0)); then
-          sleep 2
-          refresh_ccm_server_status || ccm_exitcode=$?
-          step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
-          if [[ -n $step6 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstop $step6'"
-            do_ccm managedstop "$step6"
-          else
-            log "complete: all processing servers are stopped"
-          fi
-        fi
+      if ((QUICK_MODE == 1)); then
+        log "skipping: nothing to do in quick mode"
       else
-        log "skipping: all processing servers are already stopped"
+        step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
+        if [[ -n $step6 ]]; then
+          log "running:  './bip_control.sh -w ccm managedstop $step6'"
+          do_ccm managedstop "$step6" || true
+          if ((DRYRUN == 0)); then
+            sleep 2
+            refresh_ccm_server_status || ccm_exitcode=$?
+            step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
+            if [[ -n $step6 ]]; then
+              log "retrying: './bip_control.sh -w ccm managedstop $step6'"
+              do_ccm managedstop "$step6"
+            else
+              log "complete: all processing servers are stopped"
+            fi
+          fi
+        else
+          log "skipping: all processing servers are already stopped"
+        fi
       fi
     fi
     if [[ $2 == "all" || $2 == *7* ]]; then
-      step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
-      if [[ -n $step7 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstop $step7'"
-        do_ccm managedstop "$step7" || true
-        if ((DRYRUN == 0)); then
-          sleep 2
-          refresh_ccm_server_status || ccm_exitcode=$?
-          step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
-          if [[ -n $step7 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstop $step7'"
-            do_ccm managedstop "$step7"
-          else
-            log "complete: all non-event/job/processing servers are stopped"
-          fi
-        fi
+      if ((QUICK_MODE == 1)); then
+        log "skipping: nothing to do in quick mode"
       else
-        log "skipping: all non-event/job/processing servers are already stopped"
+        step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
+        if [[ -n $step7 ]]; then
+          log "running:  './bip_control.sh -w ccm managedstop $step7'"
+          do_ccm managedstop "$step7" || true
+          if ((DRYRUN == 0)); then
+            sleep 2
+            refresh_ccm_server_status || ccm_exitcode=$?
+            step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
+            if [[ -n $step7 ]]; then
+              log "retrying: './bip_control.sh -w ccm managedstop $step7'"
+              do_ccm managedstop "$step7"
+            else
+              log "complete: all non-event/job/processing servers are stopped"
+            fi
+          fi
+        else
+          log "skipping: all non-event/job/processing servers are already stopped"
+        fi
       fi
     fi
     if [[ $2 == "all" || $2 == *8* ]]; then
