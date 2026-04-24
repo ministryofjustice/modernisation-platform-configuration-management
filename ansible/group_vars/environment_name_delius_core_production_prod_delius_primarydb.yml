@@ -1,0 +1,57 @@
+---
+# delius_primarydb.yml
+
+database_global_database: PRDNDA
+database_taf_service: PRDNDA_TAF
+database_primary_unique: PRDNDA
+database_primary_sid: PRDNDA
+database_parameters:
+  control_management_pack_access: DIAGNOSTIC+TUNING
+  adg_account_info_tracking: LOCAL
+  sga_max_size: 50G
+  sga_target: 50G
+  pga_aggregate_limit: 40G
+  compatible: 19.14.0
+rman_level_0_backup_duration_target: "12:00"
+rman_uncompressed_backup: Y
+rman_retention_policy: RECOVERY WINDOW OF 366 DAYS
+cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo/shared_files/National/cfo"
+delius_users:
+  nhodgkinson_ro:
+  bbuchan_dba:
+  kmoss_dba:
+  dbelton_dba:
+  smauthoor_sro:
+  acody_sro:
+  worr_sro:
+  jmacbeth_ro:
+  jdundon_ro:
+  mthapa_ro:
+  maspin_ro:
+  mwetherall_ro:
+  mlaskowski_ro:
+  pmiller_ro:
+  pwilson_ro:
+  rmccormack_ro:
+  svalmonte_ro:
+  yfedkiv_ro:
+  abritton_ro:
+  smcallister_ro:
+  jrobson_ro:
+  achimber_sro:
+  mryall_sro:
+  pmcphee_sro:
+  acraik_sro:
+  gwheeler_sro:
+  lnagarur_sro:
+  sbailey_ro:
+fsfo_mode: disabled
+# OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
+# Prevent changing these to unrepresentative statistics.
+database_locked_statistics:
+  - schema_name: DELIUS_APP_SCHEMA
+    table_names:
+      - DOC_MIGRATION_QUEUE_TAB: ALL
+      - OFFENDER_DELTA: ALL
+      - DOMAIN_EVENT: ALL
+awr_retention_days: 40
