@@ -1016,14 +1016,14 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *7* ]]; then
       step7=$(filter_server_list "$target_tsv_status" all -event -job -processing +Running | cut -f1 | xargs)
       if [[ -n $step7 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstart $step7'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstart $step7'"
         do_ccm managedstart "$step7" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
           step7=$(filter_server_list "$target_tsv_status" all -event -job -processing +Running | cut -f1 | xargs)
           if [[ -n $step7 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstart $step7'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstart $step7'"
             do_ccm managedstart "$step7" || true
           else
             log "complete: all non-event/job/processing servers started"
@@ -1036,14 +1036,14 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *6* ]]; then
       step6=$(filter_server_list "$target_tsv_status" processing +Running | cut -f1 | xargs)
       if [[ -n $step6 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstart $step6'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstart $step6'"
         do_ccm managedstart "$step6" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
           step6=$(filter_server_list "$target_tsv_status" processing +Running | cut -f1 | xargs)
           if [[ -n $step6 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstart $step6'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstart $step6'"
             do_ccm managedstart "$step6"
           else
             log "complete: all processing servers started"
@@ -1056,14 +1056,14 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *5* ]]; then
       step5=$(filter_server_list "$target_tsv_status" job +Running | cut -f1 | xargs)
       if [[ -n $step5 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstart $step5'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstart $step5'"
         do_ccm managedstart "$step5" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
           step5=$(filter_server_list "$target_tsv_status" job +Running | cut -f1 | xargs)
           if [[ -n $step5 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstart $step5'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstart $step5'"
             do_ccm managedstart "$step5"
           else
             log "complete: all job servers started"
@@ -1076,14 +1076,14 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *4* ]]; then
       step4=$(filter_server_list "$target_tsv_status" event +Running | cut -f1 | xargs)
       if [[ -n $step4 ]]; then
-        log "running:  './bip_control.sh -w ccm managedstart $step4'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstart $step4'"
         do_ccm managedstart "$step4" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
           step4=$(filter_server_list "$target_tsv_status" event +Running | cut -f1 | xargs)
           if [[ -n $step4 ]]; then
-            log "retrying: './bip_control.sh -w ccm managedstart $step4'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstart $step4'"
             do_ccm managedstart "$step4"
           else
             log "complete: all event servers started"
@@ -1099,14 +1099,14 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *2* ]]; then
       step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
       if [[ -n $step2 ]]; then
-        log "running:  './bip_control.sh -w ccm enable $step2'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm enable $step2'"
         do_ccm enable "$step2" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
           step2=$(filter_server_list "$target_tsv_enabled" Enabled | cut -f1 | xargs)
           if [[ -n $step2 ]]; then
-            log "retrying: './bip_control.sh -w ccm enable $step2'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm enable $step2'"
             do_ccm enable "$step2"
           else
             log "complete: all expected services enabled"
@@ -1131,17 +1131,17 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *0* ]]; then
       if [[ $lb_private_maintenance_mode == "enabled" || $lb_public_maintenance_mode == "enabled" || $lb_admin_maintenance_mode == "enabled" ]]; then
         if [[ $lb_private_maintenance_mode == "enabled" ]]; then
-          log "running:  './bip_control.sh -l private lb maintenance-mode disable'"
+          log "running:  'bip_control.sh -l private lb maintenance-mode disable'"
           set_env_lb "private"
           lb_disable_maintenance_mode
         fi
         if [[ $lb_public_maintenance_mode == "enabled" ]]; then
-          log "running:  './bip_control.sh -l public lb maintenance-mode disable'"
+          log "running:  'bip_control.sh -l public lb maintenance-mode disable'"
           set_env_lb "public"
           lb_disable_maintenance_mode
         fi
         if [[ $lb_admin_maintenance_mode == "enabled" ]]; then
-          log "running:  './bip_control.sh -l admin lb maintenance-mode disable'"
+          log "running:  'bip_control.sh -l admin lb maintenance-mode disable'"
           set_env_lb "admin"
           lb_disable_maintenance_mode
         fi
@@ -1154,17 +1154,17 @@ do_pipeline() {
     if [[ $2 == "all" || $2 == *0* ]]; then
       if [[ $lb_private_maintenance_mode == "disabled" || $lb_public_maintenance_mode == "disabled" || $lb_admin_maintenance_mode == "disabled" ]]; then
         if [[ $lb_private_maintenance_mode == "disabled" ]]; then
-          log "running:  './bip_control.sh -l private lb maintenance-mode enable'"
+          log "running:  'bip_control.sh -l private lb maintenance-mode enable'"
           set_env_lb "private"
           lb_enable_maintenance_mode
         fi
         if [[ $lb_public_maintenance_mode == "disabled" ]]; then
-          log "running:  './bip_control.sh -l public lb maintenance-mode enable'"
+          log "running:  'bip_control.sh -l public lb maintenance-mode enable'"
           set_env_lb "public"
           lb_enable_maintenance_mode
         fi
         if [[ $lb_admin_maintenance_mode == "disabled" ]]; then
-          log "running:  './bip_control.sh -l admin lb maintenance-mode enable'"
+          log "running:  'bip_control.sh -l admin lb maintenance-mode enable'"
           set_env_lb "admin"
           lb_enable_maintenance_mode
         fi
@@ -1190,14 +1190,18 @@ do_pipeline() {
         step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
       fi
       if [[ -n $step2 ]]; then
-        log "running:  './bip_control.sh -w ccm disable $step2'"
+        log "running:  'bip_control.sh -g $GAP_SECS -w ccm disable $step2'"
         do_ccm disable "$step2" || true
         if ((DRYRUN == 0)); then
           sleep 2
           refresh_ccm_server_status || ccm_exitcode=$?
-          step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+          if ((QUICK_MODE == 1)); then
+            step2=$(filter_server_list "$ccm_output_tsv_enabled" AdaptiveJobServer -Disabled | cut -f1 | xargs)
+          else
+            step2=$(filter_server_list "$ccm_output_tsv_enabled" all -cms -frs -Disabled | cut -f1 | xargs)
+          fi
           if [[ -n $step2 ]]; then
-            log "retrying: './bip_control.sh -w ccm disable $step2'"
+            log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm disable $step2'"
             do_ccm disable "$step2"
           else
             if ((QUICK_MODE == 1)); then
@@ -1244,14 +1248,14 @@ do_pipeline() {
       else
         step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
         if [[ -n $step4 ]]; then
-          log "running:  './bip_control.sh -w ccm managedstop $step4'"
+          log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstop $step4'"
           do_ccm managedstop "$step4" || true
           if ((DRYRUN == 0)); then
             sleep 2
             refresh_ccm_server_status || ccm_exitcode=$?
             step4=$(filter_server_list "$ccm_output_tsv_status" event -Stopped | cut -f1 | xargs)
             if [[ -n $step4 ]]; then
-              log "retrying: './bip_control.sh -w ccm managedstop $step4'"
+              log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstop $step4'"
               do_ccm managedstop "$step4"
             else
               log "complete: all event servers are stopped"
@@ -1268,14 +1272,14 @@ do_pipeline() {
       else
         step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
         if [[ -n $step5 ]]; then
-          log "running:  './bip_control.sh -w ccm managedstop $step5'"
+          log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstop $step5'"
           do_ccm managedstop "$step5" || true
           if ((DRYRUN == 0)); then
             sleep 2
             refresh_ccm_server_status || ccm_exitcode=$?
             step5=$(filter_server_list "$ccm_output_tsv_status" job -Stopped | cut -f1 | xargs)
             if [[ -n $step5 ]]; then
-              log "retrying: './bip_control.sh -w ccm managedstop $step5'"
+              log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstop $step5'"
               do_ccm managedstop "$step5"
             else
               log "complete: all job servers are stopped"
@@ -1292,14 +1296,14 @@ do_pipeline() {
       else
         step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
         if [[ -n $step6 ]]; then
-          log "running:  './bip_control.sh -w ccm managedstop $step6'"
+          log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstop $step6'"
           do_ccm managedstop "$step6" || true
           if ((DRYRUN == 0)); then
             sleep 2
             refresh_ccm_server_status || ccm_exitcode=$?
             step6=$(filter_server_list "$ccm_output_tsv_status" processing -Stopped | cut -f1 | xargs)
             if [[ -n $step6 ]]; then
-              log "retrying: './bip_control.sh -w ccm managedstop $step6'"
+              log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstop $step6'"
               do_ccm managedstop "$step6"
             else
               log "complete: all processing servers are stopped"
@@ -1316,14 +1320,14 @@ do_pipeline() {
       else
         step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
         if [[ -n $step7 ]]; then
-          log "running:  './bip_control.sh -w ccm managedstop $step7'"
+          log "running:  'bip_control.sh -g $GAP_SECS -w ccm managedstop $step7'"
           do_ccm managedstop "$step7" || true
           if ((DRYRUN == 0)); then
             sleep 2
             refresh_ccm_server_status || ccm_exitcode=$?
             step7=$(filter_server_list "$ccm_output_tsv_status" all -event -job -processing -cms1 -Stopped | cut -f1 | xargs)
             if [[ -n $step7 ]]; then
-              log "retrying: './bip_control.sh -w ccm managedstop $step7'"
+              log "retrying: 'bip_control.sh -g $GAP_SECS -w ccm managedstop $step7'"
               do_ccm managedstop "$step7"
             else
               log "complete: all non-event/job/processing servers are stopped"
@@ -1338,7 +1342,7 @@ do_pipeline() {
       step8=$(filter_server_list "$ccm_output_tsv_status" all -cms1 -Stopped | cut -f1 | cut -d. -f1 | sort -u | xargs)
       if [[ -n $step8 || $sapbobj_isactive == "active" ]]; then
         if [[ -n $step8 ]]; then
-          log "running:  './bip_control.sh -w ccm stop $step8'"
+          log "running:  'bip_control.sh -g $GAP_SECS -w ccm stop $step8'"
           do_ccm managedstop "$step7"
         fi
         if [[ $sapbobj_isactive == "active" || $ccm_exitcode -eq 0 ]]; then
