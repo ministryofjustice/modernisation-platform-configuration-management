@@ -27,7 +27,8 @@ $Scripts = @(
     "../Oracle/Set-TnsOraFile.ps1",
     "../ModPlatformSAP/Install-SAPClient.ps1",
     "../ModPlatformSAP/Install-SAPClientAsAdministrator.ps1",
-    "../ModPlatformSAP/Install-SAPFlexiLogReaderAsAdministrator.ps1"
+    "../ModPlatformSAP/Install-SAPFlexiLogReaderAsAdministrator.ps1",
+    "../CorporateStaffRostering/Install-CsrClient.ps1"
 )
 
 $ErrorActionPreference = "Stop"
