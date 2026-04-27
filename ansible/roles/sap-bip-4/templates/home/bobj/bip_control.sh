@@ -1048,9 +1048,9 @@ do_pipeline() {
           else
             log "complete: all processing servers started"
           fi
-        else
-          log "skipping: all processing servers already started"
         fi
+      else
+        log "skipping: all processing servers already started"
       fi
     fi
     if [[ $2 == "all" || $2 == *5* ]]; then
