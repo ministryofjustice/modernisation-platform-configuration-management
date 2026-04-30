@@ -191,7 +191,7 @@ identify_source_backup_date () {
         cat > ${DB_SCRIPT_DIR}/identify_source_backup_date.sql <<EOF
         spool ${DB_SCRIPT_DIR}/identify_source_backup_date.log
         set echo off feedback off heading off
-        SELECT 'source_backup_date=' || TO_CHAR(completion_time, 'YYYY-MM-DD HH24:MI:SS') AS completion_time FROM v\$archived_log WHERE sequence# = (SELECT MAX(sequence#) FROM v\$archived_log WHERE backup_count > 0);
+        SELECT 'source_backup_date=' || TO_CHAR(completion_time, 'YYYY-MM-DD HH24:MI:SS') AS completion_time FROM v\$archived_log WHERE sequence# = (SELECT MAX(sequence#) FROM v\$archived_log WHERE backup_count > 0 and dest_id = 1);
         spool off
         exit
 EOF
