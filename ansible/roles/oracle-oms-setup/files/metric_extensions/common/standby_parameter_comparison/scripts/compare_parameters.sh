@@ -277,6 +277,8 @@ WHERE
 AND
     e.name != '_bug32914795_bct_last_dba_buffer_size' -- See MOS Note 3049433.1
 AND
+    e.name != 'audit_trail' -- We do not expect values of audit_trail to be the same on primary and standby
+AND
     e.name NOT LIKE '_dbmsum%'; -- exclude due to xml formatting issues
 
 
