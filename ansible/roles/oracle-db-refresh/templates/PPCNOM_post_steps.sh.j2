@@ -184,6 +184,9 @@ create_metadata_table () {
     cat > "${SQL_FILE}" <<EOF
 set echo off feedback off heading off verify off
 spool ${LOG_FILE}
+
+ALTER USER API_PROXY_USER QUOTA 50M ON users;
+
 CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);
 
 INSERT INTO API_PROXY_USER.refresh_metadata (
