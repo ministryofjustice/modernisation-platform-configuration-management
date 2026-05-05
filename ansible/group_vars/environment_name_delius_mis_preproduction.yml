@@ -17,6 +17,11 @@ sap_bip_db_confs:
     auditing_db_user: b14aud
     cms_db_server: STGBXC
     cms_db_user: b14cms
+  preprod:
+    auditing_db_server: PREBXE
+    auditing_db_user: b14aud
+    cms_db_server: PREBXE
+    cms_db_user: b14cms
 
 sap_bip_db_conf: "{{ sap_bip_db_confs[sap_environment] }}"
 
