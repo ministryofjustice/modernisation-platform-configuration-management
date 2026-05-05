@@ -5,6 +5,9 @@ sap_bip_oracle_client_confs:
   stage:
     sqlnet_ora_source_filename: sqlnet.ora
     tnsnames_ora_source_filename: tnsnames.ora.delius-bip.stage
+  preprod:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.delius-bip.preprod
 
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[sap_environment] }}"
 
