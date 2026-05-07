@@ -171,6 +171,42 @@ streams_setup () {
 	[ `grep ORA- ${DB_SCRIPT_DIR}/streams_setup.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
 	info "Completed streams_setup"
 }
+create_metadata_table () {
+    info "Create metadata table"
+    SRC_DATE=$(grep '^source_backup_date=' \
+               "${DB_SCRIPT_DIR}/identify_source_backup_date.log" \
+               | tail -1 \
+               | cut -d= -f2)
+
+    SQL_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.sql"
+    LOG_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.log"
+
+    cat > "${SQL_FILE}" <<EOF
+set echo off feedback off heading off verify off
+spool ${LOG_FILE}
+
+ALTER USER API_PROXY_USER QUOTA 50M ON users;
+
+CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);
+
+INSERT INTO API_PROXY_USER.refresh_metadata (
+  last_refresh_date,
+  source_backup_date
+)
+SELECT
+  MAX(resetlogs_time),
+  TO_TIMESTAMP('${SRC_DATE}','YYYY-MM-DD HH24:MI:SS')
+FROM v\$database_incarnation;
+
+COMMIT;
+spool off
+exit
+EOF
+
+sqlplus -s "/ as sysdba" @"${SQL_FILE}" > /dev/null
+[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log | wc -l ` -gt 0 ] && error "Failed create table"
+}
+
 
 ####################
 # Main
@@ -208,3 +244,6 @@ db_name_change
 
 # Streams setup
 streams_setup
+
+# create_metadata_table
+create_metadata_table

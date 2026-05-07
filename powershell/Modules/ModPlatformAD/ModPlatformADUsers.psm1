@@ -80,6 +80,24 @@ function Get-ModPlatformADUserConfig {
           ChangePasswordAtLogon = $false
         }
       }
+      "SVC_BOSSO-NDL" = @{
+        Secret = "delius-mis-preprod-sap-boe-passwords"
+        Path   = "DC=Users"
+        ADGroups = @(
+          "AWS Delegated Administrators",
+          "AWS Delegated FSx Administrators"
+        )
+        LocalGroups = @(
+          "Administrators"
+        )
+        Options = @{
+          Description           = "Service user for temporary BCS Win Computer"
+          Enabled               = $true
+          CannotChangePassword  = $true
+          PasswordNeverExpires  = $true
+          ChangePasswordAtLogon = $false
+        }
+      }
     }
   }
 

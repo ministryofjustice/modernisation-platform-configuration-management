@@ -31,6 +31,15 @@
       become_user: oracle
       no_log: true
 
+    - name: Get Agent Home if Not Set
+      include_tasks: get_agent_home.yml
+      when: agent_home is not defined or agent_home == ''
+
+    - name: Get Java Home if Not Set
+      set_fact:
+         java_home: "{{ agent_home }}/oracle_common/jdk/jre"
+      when: java_home is not defined or java_home == ''
+
     - name: Perform EMCLI login if needed
       ansible.builtin.shell: |
         . ~/.bash_profile

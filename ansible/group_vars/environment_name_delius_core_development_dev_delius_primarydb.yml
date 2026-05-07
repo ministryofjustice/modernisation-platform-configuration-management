@@ -29,6 +29,8 @@ delius_users:
   jksiaw_ro:
   sbailey_ro:
     drop_user: true
+  mgeorgiev_ro:
+    drop_user: true
 oracle_software:
   version: "19.28"
   combo_patch: p37952382_190000_Linux-x86-64.zip
@@ -99,3 +101,9 @@ sql_plan_baselines:
      - SQL_be28e221edf92c9c
      - SQL_a4dca55001c01f27
      - SQL_55297a64b8f91421
+
+dbms_scheduler:
+    delius_audit_archive:
+      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'
+    set_last_archive_timestamp:
+      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=30;BYSECOND=0'

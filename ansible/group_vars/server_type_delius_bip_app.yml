@@ -106,6 +106,7 @@ filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_responsefile: response.app.ini
 sap_bip_sia_name_app: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-','') }}" # max length 13
+sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 
 # collectd_monitored_services_servertype:
 #  - metric_name: service_status_os

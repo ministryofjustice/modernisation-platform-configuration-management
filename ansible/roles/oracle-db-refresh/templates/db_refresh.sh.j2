@@ -186,6 +186,19 @@ identify_recovery_point () {
 	[ $(grep ORA- ${DB_SCRIPT_DIR}/identify_recovery_point.log | wc -l) -gt 0 ] && error "Identifying recovery Point script failed."
 }
 
+identify_source_backup_date () {
+        info "Collecting DB source backup date"
+        cat > ${DB_SCRIPT_DIR}/identify_source_backup_date.sql <<EOF
+        spool ${DB_SCRIPT_DIR}/identify_source_backup_date.log
+        set echo off feedback off heading off
+        SELECT 'source_backup_date=' || TO_CHAR(completion_time, 'YYYY-MM-DD HH24:MI:SS') AS completion_time FROM v\$archived_log WHERE sequence# = (SELECT MAX(sequence#) FROM v\$archived_log WHERE backup_count > 0) and dest_id = 1;
+        spool off
+        exit
+EOF
+        sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/identify_source_backup_date.sql > /dev/null
+		[ $(grep ORA- ${DB_SCRIPT_DIR}/identify_source_backup_date.log | wc -l) -gt 0 ] && error "Identifying source backup date script failed"
+}
+
 restore_database () {
 	info "Starting restore of database"
 	echo "run {"  > ${DB_SCRIPT_DIR}/restore_database.cmd
@@ -259,6 +272,9 @@ restore_controlfile
 
 #identify recovery until sequence
 identify_recovery_point
+
+#identify source backup date
+identify_source_backup_date
 
 #Recover database
 restore_database

@@ -8,6 +8,32 @@ function Get-ModPlatformPolicyConfig {
 #>
 
   $ModPlatformPolicyConfigs = @{
+    'DeliusMisBcs' = @(
+      @{
+        # User Account Control: Behavior of the elevation prompt for administrators in Admin Approval Mode -> Elevate without prompting
+        Path  = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
+        Name  = 'ConsentPromptBehaviorAdmin'
+        Value = 0
+      },
+      @{
+        # User Account Control: Switch to the secure desktop when prompting for elevation -> Disabled
+        Path  = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
+        Name  = 'PromptOnSecureDesktop'
+        Value = 0
+      },
+      @{
+        # User Account Control: Run all administrators in Admin Approval Mode -> Enabled
+        Path  = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
+        Name  = 'EnableLUA'
+        Value = 1
+      },
+      @{
+        # User Account Control: Detect application installations and prompt for elevation -> Disabled
+        Path  = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
+        Name  = 'EnableInstallerDetection'
+        Value = 0
+      }
+    )
     'DeliusMisDis' = @(
       @{
         # User Account Control: Behavior of the elevation prompt for administrators in Admin Approval Mode -> Elevate without prompting

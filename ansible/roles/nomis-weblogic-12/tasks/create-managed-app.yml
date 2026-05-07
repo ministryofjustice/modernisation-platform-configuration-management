@@ -6,7 +6,7 @@
 
 - name: "{{ weblogic_managed_app }} Check if managed app already configured"
   ansible.builtin.stat:
-    path: /etc/systemd/system/{{ weblogic_managed_app }}
+    path: /etc/systemd/system/{{ weblogic_managed_app }}.service
   register: weblogic_created_managed_app_check
 
 - name: Configure managed app

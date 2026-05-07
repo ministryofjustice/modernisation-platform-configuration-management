@@ -60,7 +60,7 @@ packages_yum_install:
   - libnsl.i686
   - libnsl2
   - libnsl2.i686
-  - libstdc++.i686
+  - libstdc++-8.5.0-23.el8_10.i686 # latest version runs into dependency issue
   - libstdc++.x86_64
   - glibc.i686
   - glibc.x86_64
@@ -129,6 +129,7 @@ sap_web_apps:
   - clientapi
   - dswsbobje
   - webi-websetup
+sap_web_java_opts: "-Xms{{ sap_bip_conf.sap_web_java_mem }}m -Xmx{{ sap_bip_conf.sap_web_java_mem }}m -Dbobje.disable_audit_ip_lookup"
 
 sap_web_bilogon_app_name: OASys Reporting
 sap_web_bilogon_app_name_short: OASys Reporting

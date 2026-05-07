@@ -44,6 +44,7 @@ delius_users:
   sbailey_ro:
   datkins_ro:
   ascott_ro:
+  mgeorgiev_ro:
 oracle_software:
   version: "19.28"
   combo_patch: p37952382_190000_Linux-x86-64.zip
@@ -97,3 +98,9 @@ host_oem_metrics:
         warning_threshold , 500
         critical_threshold , 1200
         END_RECORD 1
+
+dbms_scheduler:
+    delius_audit_archive:
+      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'
+    set_last_archive_timestamp:
+      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=30;BYSECOND=0'
