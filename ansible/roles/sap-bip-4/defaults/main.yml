@@ -16,6 +16,7 @@ sap_host_agent_exe: SAPCAR_1115-70006178.EXE
 
 # define environment specific settings in group_vars
 #sap_environment:  # t1, t2 etc
+sap_bip_environment_tag: "{{ application }}-environment"
 sap_bip_copy_bip_control_script: false
 sap_bip_is_cms: false
 sap_bip_is_new_install: false # gets set to true if secret set to 'newinstall'
