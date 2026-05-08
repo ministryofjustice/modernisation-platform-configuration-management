@@ -293,6 +293,24 @@
     - goldengate-mis
     - deploy-scripts
 
+# Scheduler jobs migration from STRMADMIN
+- name: Install migrated scheduler jobs (disabled initially)
+  import_tasks: install_migrated_jobs.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-jobs
+    - install-migrated-jobs
+    - never
+
+- name: Switchover from STRMADMIN to migrated jobs
+  import_tasks: switchover_jobs.yml
+  tags:
+    - goldengate
+    - goldengate-jobs
+    - switchover-jobs
+    - never
+
 # Process management tasks
 - name: Start GoldenGate Extract processes
   import_tasks: start_extracts.yml

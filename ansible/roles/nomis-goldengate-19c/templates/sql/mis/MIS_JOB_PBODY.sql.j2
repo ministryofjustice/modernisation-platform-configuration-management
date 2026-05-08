@@ -118,15 +118,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
             null;
         end;
         dbms_scheduler.create_job(
-            job_name => '"'||mis_gen_pkg.g_mis_owner||'"."WEEKLY_LOG_PURGE"',
+            job_name => '"SYS"."WEEKLY_LOG_PURGE"',
             job_type => 'PLSQL_BLOCK',
-            job_action => 'begin mis_job_pkg.log_purge(); end;',
+            job_action => 'begin '||mis_gen_pkg.g_mis_owner||'.MIS_JOB_PKG.log_purge(); end;',
             repeat_interval => 'FREQ=WEEKLY;BYDAY=WED;BYHOUR=22;BYMINUTE=30',
             start_date => systimestamp at time zone 'GB',
             job_class => 'DEFAULT_JOB_CLASS',
             comments => 'Ensure processed source redo logs are purged.',
             auto_drop => FALSE,
-            enabled => TRUE);
+            enabled => FALSE);
     END create_log_purge_job;
 
     PROCEDURE create_audit_reference_job
@@ -153,8 +153,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
                 begin
                     v_plsql := ''alter system flush shared_pool'';
                     execute immediate v_plsql;
-                    MIS_JOB_PKG.log_apply('''||mis_gen_pkg.g_mis_owner||''');
-                    AUDITDATA_JOB_PKG.populate_offender_refs;
+                    '||mis_gen_pkg.g_mis_owner||'.MIS_JOB_PKG.log_apply('''||mis_gen_pkg.g_mis_owner||''');
+                    '||mis_gen_pkg.g_mis_owner||'.AUDITDATA_JOB_PKG.populate_offender_refs;
                 end;',
             start_date => systimestamp at time zone 'GB',
             repeat_interval => 'FREQ=DAILY;BYHOUR='||v_RUN_HOURS_LIST||';BYMINUTE=00;BYSECOND=00',
@@ -268,6 +268,59 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
                         p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END PURGE_RECORDS ;
+
+    -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh
+    -- Called by MIS_BATCH_CONTROL job, which will:
+    --   - set stop points for capture and apply processes associated with the MIS staging tables
+    --   - run the MIS_BATCH_ROLL job 
+    --   - wait for all capture and apply processes associated with the MIS staging tables to stop
+    PROCEDURE mis_batch_control IS
+        v_roll BOOLEAN := FALSE;
+        v_plsql varchar2(200);
+    BEGIN
+        v_plsql := 'alter system flush shared_pool';
+        execute immediate v_plsql;
+        MIS_BATCH_PKG.set_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
+        if v_roll = TRUE then
+            -- wait until stop point reached
+            MIS_BATCH_PKG.wait_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
+            if v_roll = TRUE then -- roll batch number forward
+                --v_plsql := 'begin dbms_scheduler.run_job(''MIS_BATCH_ROLL'',FALSE); end;';
+                --execute immediate v_plsql;
+                mis_batch_roll;
+            else -- timeout or other error - force error condition for scheduler job logs
+                RAISE_APPLICATION_ERROR
+                (MIS_GEN_PKG.g_mis_streams_ctrl_exception,
+                    'Unable to process stop point. Check '||mis_gen_pkg.g_mis_owner||'.STRM_ERROR_LOG for details.');
+            end if;
+        else
+            -- restart apply process if stopped.
+            begin
+                MIS_GG_CTRL_PKG.start_replicat(mis_gen_pkg.g_mis_owner);
+            exception
+                when MIS_GEN_PKG.cannot_alter_process then null;
+            end;
+        end if;
+    END mis_batch_control;
+
+    -- creates a new batch
+    -- Called by MIS_BATCH_ROLL job
+    PROCEDURE mis_batch_roll IS
+        v_more BOOLEAN := FALSE;
+        v_plsql varchar2(200);
+    BEGIN
+        MIS_BATCH_PKG.create_new_batch(mis_gen_pkg.g_mis_owner, TRUE, v_more);
+--        strmadmin.MIS_STRM_PKG1.create_new_batch('BODISTAGING',TRUE,v_more);
+        IF v_more = TRUE THEN
+            --v_plsql := 'begin dbms_scheduler.run_job(''MIS_BATCH_CONTROL'',FALSE); end;';
+            --execute immediate v_plsql;
+            -- Passing FALSE to the above dbms_scheduler.run_job call means that the job will be run in a separate session, so any exceptions raised will be in the context of that session and not this one, which means we can't reliably catch them here. Instead, we'll rely on the job logs to identify any issues with the batch roll. Not sure why it was set to do that but instead we can just call the procedure directly, which will allow us to catch any exceptions here and log them appropriately.
+            mis_batch_control;
+        ELSE
+            v_plsql := 'begin dbms_scheduler.run_job(''MIS_PRE_LOAD'',FALSE); end;';
+            execute immediate v_plsql;
+        END IF;
+    END mis_batch_roll;
 
 
 END MIS_JOB_PKG;

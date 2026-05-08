@@ -99,6 +99,7 @@ oracle_goldengate_local_db_sid: ""
 # Automatically determine which groups to run based on local database
 # AUDITDATA and AUDITREF are deployed on hosts running the audit database (T1CAUDG)
 # MIS is deployed on hosts running the MIS database (T1CMISG)
+run_source: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.source.tns_alias }}"
 run_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
 run_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
 run_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias }}"

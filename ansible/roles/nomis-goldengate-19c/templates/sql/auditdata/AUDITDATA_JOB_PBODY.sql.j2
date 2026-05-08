@@ -657,6 +657,179 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
   END;
 
 
+  PROCEDURE gather_stats_auditdata_tables
+  IS
+  -- Procedure to gather stats on key AUDITDATA tables
+  -- Migrated from STRMADMIN.GATHER_STATS_AUDITDATA_TABS job
+  BEGIN
+    -- Gather stats on main audit tables
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_sql_owner }}',
+      tabname => 'AUDIT_TABLE',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_sql_owner }}',
+      tabname => 'AUDIT_COLUMN',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_sql_owner }}',
+      tabname => 'AUDIT_OFFENDER_REF',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_sql_owner }}',
+      tabname => 'STRM_ERROR_LOG',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+  EXCEPTION
+    WHEN OTHERS THEN
+      AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables', 
+        p_src_time => SYSDATE,
+        p_src_object => NULL, 
+        p_tgt_object => NULL,
+        p_command_type => NULL, 
+        p_row_scn => NULL, 
+        p_commit_scn => NULL,
+        p_error_code => SQLCODE, 
+        p_message => SQLERRM);
+      RAISE;
+  END gather_stats_auditdata_tables;
+
+
+  PROCEDURE log_purge
+  IS
+  -- Procedure to purge archive logs based on purgeable flag
+  -- Note: Kept for compatibility but deprecated - use ASM-aware script instead
+    g_mis_archived_dir VARCHAR2(50) := 'AUDIT_ARCHIVELOG_DIR';
+    l_base_dir      VARCHAR2(500);
+    l_file          VARCHAR2(500);
+    l_exists        BOOLEAN;
+    l_file_length   NUMBER;
+    l_blocksize     NUMBER;
+  BEGIN
+    FOR c_logs IN
+    (SELECT name
+     FROM   dba_registered_archived_log 
+     WHERE  purgeable = 'YES')
+    LOOP
+      l_base_dir := substr( c_logs.name, 1, 
+                          instr(c_logs.name, '/', -1, 1) -1);
+      l_file := substr( c_logs.name, instr(c_logs.name, '/', -1, 1) +1 );
+      
+      BEGIN
+        utl_file.fgetattr( g_mis_archived_dir, l_file, l_exists, l_file_length, l_blocksize );
+        IF l_exists = TRUE THEN
+          utl_file.fremove( g_mis_archived_dir, l_file );
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          -- Continue on error for individual files
+          NULL;
+      END;
+    END LOOP;
+  EXCEPTION
+    WHEN OTHERS THEN
+      AUDITDATA_GEN_PKG.log_audit_error ('log_purge', 
+        p_src_time => SYSDATE,
+        p_src_object => NULL, 
+        p_tgt_object => NULL,
+        p_command_type => NULL, 
+        p_row_scn => NULL, 
+        p_commit_scn => NULL,
+        p_error_code => SQLCODE, 
+        p_message => SQLERRM);
+      RAISE;
+  END log_purge;
+
+  PROCEDURE ADD_PARTITIONS (
+    P_TABLE_NAME VARCHAR2)
+  IS
+
+    V_COMMAND        VARCHAR2(1000);
+    V_NEW_DATE       DATE;
+    V_NEW_DATE_CHAR  VARCHAR2(30);
+    V_HIGH_VALUE     VARCHAR2(200);
+    V_TABLE_NAME     VARCHAR2(30);
+    V_TABLE_OWNER    VARCHAR2(30) := 'AUDITDATA';
+    V_TS_NAME 	   VARCHAR2(30);
+    e_tablespace_exists 	exception;
+    PRAGMA EXCEPTION_INIT(e_tablespace_exists, -1543);
+    e_missing_datafile 	exception;
+    PRAGMA EXCEPTION_INIT(e_missing_datafile, -2199);
+
+  BEGIN
+
+    V_TABLE_NAME := UPPER(P_TABLE_NAME);
+
+  /***************************************************************************/
+  /*  Get the maximum value for the last non-open partition for the table    */
+  /*  (the partition with the second highest position) and add a week to it. */
+  /***************************************************************************/
+
+    SELECT ATP.HIGH_VALUE
+    INTO   V_HIGH_VALUE
+    FROM   ALL_TAB_PARTITIONS ATP
+    WHERE  ATP.TABLE_NAME = V_TABLE_NAME
+    AND    ATP.PARTITION_POSITION = (
+      SELECT MAX(ATP.PARTITION_POSITION) - 1
+      FROM   ALL_TAB_PARTITIONS ATP
+      WHERE  ATP.TABLE_NAME = V_TABLE_NAME
+      AND    ATP.TABLE_OWNER = V_TABLE_OWNER)
+    AND    ATP.TABLE_OWNER = V_TABLE_OWNER;
+
+    EXECUTE IMMEDIATE
+      'select ' || V_HIGH_VALUE || ' + 7 ' ||
+      'from dual'
+    INTO V_NEW_DATE;
+
+  /***************************************************************************/
+  /*  Split to create new partitions up to 3 weeks in the future.            */
+  /***************************************************************************/
+
+    WHILE V_NEW_DATE <= SYSDATE + 21
+    LOOP
+
+      V_NEW_DATE_CHAR := TO_CHAR(V_NEW_DATE,'YYYYMMDD');
+
+      V_TS_NAME := V_TABLE_OWNER || '_' || V_NEW_DATE_CHAR || '_TBS';
+
+      BEGIN
+          V_COMMAND := 'create bigfile tablespace ' || V_TS_NAME;
+          EXECUTE IMMEDIATE V_COMMAND;
+      EXCEPTION
+          WHEN e_tablespace_exists THEN null; -- no need to recreate if tablespace already exists
+          WHEN e_missing_datafile THEN null; -- must assume that tablespaces are pre-created in non-ASM environments
+      END;
+
+      V_COMMAND :=
+        'alter table ' || V_TABLE_OWNER || '.' || V_TABLE_NAME || ' ' ||
+            'split partition audit_max ' ||
+            'at (to_date(''' || V_NEW_DATE_CHAR || ''',''YYYYMMDD'')) ' ||
+            'into (partition audit_' || V_NEW_DATE_CHAR || ' tablespace ' || V_TS_NAME || ', partition audit_max) ' ||
+            'update indexes';
+
+      EXECUTE IMMEDIATE V_COMMAND;
+
+      V_NEW_DATE := V_NEW_DATE + 7;
+
+    END LOOP;
+
+  END ADD_PARTITIONS;
+
 END AUDITDATA_JOB_PKG;
 /
 

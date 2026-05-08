@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AUTHID DEFINER AS
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AUTHID CURRENT_USER AS
 /*
  *  NOMIS MIS Goldengate code.
  *  
@@ -41,19 +41,27 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AUTHID D
 
     PROCEDURE create_audit_reference_job;
 
-
     -- Packaged procedure PURGE_RECORDS
     -- will delete rows older than p_months months from historical tables
     PROCEDURE PURGE_RECORDS (
         p_staging_owner   IN     varchar2,
         p_months     in integer default 26 );
 
+    -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh
+    -- Called by MIS_BATCH_CONTROL job, which will:
+    --   - set stop points for capture and apply processes associated with the MIS staging tables
+    --   - run the MIS_BATCH_ROLL job 
+    --   - wait for all capture and apply processes associated with the MIS staging tables to stop
+    PROCEDURE mis_batch_control;
+
+    -- creates a new batch
+    -- Called by MIS_BATCH_ROLL job
+    PROCEDURE mis_batch_roll;
+
 
     -- Packaged function get_version
     -- will return a VARCHAR2 string containing a package version number
     FUNCTION get_version RETURN varchar2;
-
-    PROCEDURE create_log_purge_job;
 
 END MIS_JOB_PKG;
 /

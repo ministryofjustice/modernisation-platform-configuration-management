@@ -11,6 +11,8 @@
 # If deploying objects for the source db then run script to add the database job that adds the data dictionary to the archive logs every hour (was originally being done daily around 11.30pm).
 # Could be done in the configure_database_parameters task.
 - name: Deploy source database objects
+  when:
+    - run_source is defined and run_source
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
   block:
@@ -18,6 +20,47 @@
       ansible.builtin.set_fact:
         oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
         oracle_goldengate_group_name: "source"
+
+    - name: Get password secret metadata from AWS Secrets Manager
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: >-
+          {{
+            lookup(
+              'amazon.aws.secretsmanager_secret',
+              '/oracle/database/' ~ oracle_goldengate_group.mis.tns_alias ~ '/passwords'
+            ) | from_json
+          }}
+      no_log: true
+
+    - name: Check sys schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - "'sys' in oracle_goldengate_password_secret.keys()"
+        fail_msg: >-
+          Password key 'sys' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set Source sys password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_source_sys_password: "{{ oracle_goldengate_password_secret['sys'] }}"
+      no_log: true
+      
+    - name: Check MIS schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - oracle_goldengate_group.mis.schema_owner | lower in oracle_goldengate_password_secret
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_group.mis.schema_owner | lower }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set MIS schema password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_mis_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.mis.schema_owner | lower] }}"
+      no_log: true
 
     - name: Ensure Source SQL directory exists
       ansible.builtin.file:
@@ -44,10 +87,7 @@
         export PATH=${ORACLE_HOME}/bin:$PATH
 
         # Retrieve SYS password from AWS Secrets Manager
-        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/$ORACLE_SID/passwords" \
-          --query 'SecretString' \
-          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        SYS_PASSWORD="{{ oracle_goldengate_source_sys_password }}"
         
         if [ -z "$SYS_PASSWORD" ]; then
           echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
@@ -55,7 +95,8 @@
         fi
 
         cd {{ oracle_goldengate_sql_dir }}/source
-        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_dictionary_job.sql
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_source_db_links.sql
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_source_packages.sql
       args:
         executable: /bin/bash
       register: source_config_output

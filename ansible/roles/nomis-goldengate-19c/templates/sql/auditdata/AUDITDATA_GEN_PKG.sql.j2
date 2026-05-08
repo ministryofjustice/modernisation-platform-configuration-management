@@ -18,7 +18,7 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG AS
  */
 
     -- package level variable declarations
-    g_ogg_group_name VARCHAR2(30) := '{{ oracle_goldengate_group_name }}';
+    g_ogg_group_name VARCHAR2(30) := upper('{{ oracle_goldengate_group_name }}');
     g_replicat_name VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.replicat_name }}';
     g_data_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.schema_owner }}';
     g_log_dir    varchar2(30) := 'AUD_ERRORLOG_DIR';

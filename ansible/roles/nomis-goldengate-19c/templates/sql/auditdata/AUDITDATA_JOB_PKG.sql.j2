@@ -96,6 +96,15 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG AS
         p_table_row_limit  IN     NUMBER DEFAULT 2000000,
         p_commit_unit_size  IN     NUMBER DEFAULT 1000 );
 
+    -- Packaged procedure gather_stats_auditdata_tables
+    -- will gather stats on key AUDITDATA tables
+    PROCEDURE gather_stats_auditdata_tables;
+
+    -- Packaged procedure log_purge
+    -- will delete archived logs which are purgable according to the retention policy
+    -- (kept for compatibility but deprecated in favor of ASM-aware scripts)
+    PROCEDURE log_purge;
+
     -- Packaged procedure export_binary_data
     -- extracts binary data (images and documents) for a specified transaction from the NOMIS audit database;
     -- requires creation of g_binary_dir DIRECTORY to receive output files.
@@ -106,6 +115,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG AS
     -- will return a VARCHAR2 string containing a package version number
     FUNCTION get_version RETURN varchar2;
 
+  PROCEDURE ADD_PARTITIONS (
+    P_TABLE_NAME VARCHAR2);
 
 END AUDITDATA_JOB_PKG;
 /
