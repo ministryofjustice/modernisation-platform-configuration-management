@@ -30,7 +30,7 @@
         marker: "# {mark} blockinfile ansible managed modernisation-platform-configuration-management ncr-bip"
         insertafter: "auth.*sufficient.*pam_rootok.so"
         block: |
-          auth [success=1 default=ignore] pam_succeed_if.so user = sapprogram
+          auth [default=1 success=ignore] pam_succeed_if.so user = sapprogram
           auth sufficient pam_succeed_if.so use_uid user = bobj
 
     - name: Create provisioning directories
