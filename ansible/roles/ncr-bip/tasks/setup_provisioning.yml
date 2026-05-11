@@ -15,6 +15,15 @@
       loop:
         - sapprogram
 
+    - name: Allow bobj to sudo without password
+      community.general.sudoers:
+        name: bobj-sapprogram
+        user: bobj
+        state: present
+        runas: sapprogram
+        nopassword: true
+        commands: ALL
+
     - name: Create provisioning directories
       ansible.builtin.file:
         path: "{{ item }}"
