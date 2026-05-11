@@ -27,11 +27,11 @@
     - name: Allow bobj to su to without password
       ansible.builtin.blockinfile:
         path: /etc/pam.d/su
-        insertafter: "auth.*sufficient.*pam_rootok.so"
         marker: "# {mark} blockinfile ansible managed modernisation-platform-configuration-management ncr-bip"
+        insertafter: "auth.*sufficient.*pam_rootok.so"
         block: |
-          auth [success=ignore default=1] pam_succeed_if.so user = bobj
-          auth [success=done default=1] pam_succeed_if.so use_uid user = sapprogram
+          auth [success=1 default=ignore] pam_succeed_if.so user = sapprogram
+          auth sufficient pam_succeed_if.so use_uid user = bobj
 
     - name: Create provisioning directories
       ansible.builtin.file:
