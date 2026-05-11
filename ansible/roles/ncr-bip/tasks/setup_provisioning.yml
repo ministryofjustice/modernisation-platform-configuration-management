@@ -27,7 +27,7 @@
     - name: Allow bobj to su to without password
       ansible.builtin.blockinfile:
         path: /etc/pam.d/su
-        insertbefore: BOF  # Ensures it's at the very beginning of the file
+        insertafter: "auth.*sufficient.*pam_rootok.so"
         marker: "# {mark} blockinfile ansible managed modernisation-platform-configuration-management ncr-bip"
         block: |
           auth [success=ignore default=1] pam_succeed_if.so user = bobj
