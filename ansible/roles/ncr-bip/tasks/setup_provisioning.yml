@@ -15,6 +15,15 @@
       loop:
         - sapprogram
 
+    - name: Copy bobj bash profile
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/{{ item }}"
+        owner: sapprogram
+        group: sapprogram
+      loop:
+        - home/sapprogram/.bash_profile
+
     - name: Allow bobj to sudo without password
       community.general.sudoers:
         name: bobj-sapprogram
