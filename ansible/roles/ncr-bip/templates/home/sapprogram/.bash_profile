@@ -1,5 +1,5 @@
 # .bash_profile managed by modernisation-platform-configuration-management/ansible/roles/ncr-bip
-export JAVA_HOME={{ sap_bip_installation_directory }}/sap_bobj/enterprise_xi40/linux_x64/sapjvm
+export JAVA_HOME={{ ncr_bip_installation_directory }}/sap_bobj/enterprise_xi40/linux_x64/sapjvm
 export PATH="$JAVA_HOME/bin:$PATH"
 # Get the aliases and functions
 if [ -f ~/.bashrc ]; then
