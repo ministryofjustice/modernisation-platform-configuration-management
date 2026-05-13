@@ -10,7 +10,11 @@ export PATH=/usr/local/bin:$PATH
 export SCRIPT_DIR=/home/oracle/admin/rman_scripts
 export LOG_DIR=${SCRIPT_DIR}/logs
 
-mkdir -p ${LOG_DIR} 2>/dev/null
+mkdir -p ${LOG_DIR}
+if [ $? -ne 0 ]
+then
+  error "Failed to create log directory: ${LOG_DIR}"
+fi
 
 info () {
   T=$(date +"%D %T")
@@ -67,7 +71,7 @@ rman_delete_archivelog () {
     info "Deleting archivelogs on  ${ORACLE_SID}"
     echo "delete noprompt force archivelog until time 'sysdate-3';" > ${SCRIPT_DIR}/rman_delete_archivelogs.cmd
     echo "exit" >> ${SCRIPT_DIR}/rman_delete_archivelogs.cmd
-  ${ORACLE_HOME}/bin/rman target / cmdfile=${SCRIPT_DIR}/rman_delete_archivelogs.cmd log=${LOG_DIR}/archivelog_deletion_${TARGET_DB}.log
+  ${ORACLE_HOME}/bin/rman target / cmdfile=${SCRIPT_DIR}/rman_delete_archivelogs.cmd log=${LOG_DIR}/archivelog_deletion_${ORACLE_SID}.log
 }
 
 # ------------------------------------------------------------------------------
