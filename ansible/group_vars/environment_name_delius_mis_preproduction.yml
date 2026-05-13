@@ -127,29 +127,22 @@ sap_bip_confs:
       WebApplicationContainerServer,Stopped,Disabled
       WebIntelligenceProcessingServer,Running,Enabled
     sap_bip_control_cms_servers: |
-      AdaptiveJobServer,Running,Enabled
-      AdaptiveProcessingServer,Stopped,Disabled
-      APS.Analysis,Stopped,Disabled
-      APS.Auditing,Stopped,Disabled
-      APS.Connectivity,Running,Enabled
+      AdaptiveJobServer,Stopped,Disabled
+      APS.Auditing,Running,Enabled
+      APS.Connectivity,Stopped,Disabled
       APS.Core,Running,Enabled
-      APS.Data,Stopped,Disabled
-      APS.DF,Running,Enabled
       APS.Monitoring,Running,Enabled
       APS.PromotionManagement,Running,Enabled
-      APS.Search,Stopped,Disabled
-      APS.Visualization,Running,Enabled
-      APS.Webi,Running,Enabled
-      APS.WebIDSLBridge,Running,Enabled
       CentralManagementServer,Running,Enabled
-      ConnectionServer,Running,Enabled
+      ConnectionServer,Stopped,Disabled
       EventServer,Running,Enabled
       InputFileRepository,Running,Enabled
       OutputFileRepository,Running,Enabled
       WebApplicationContainerServer,Stopped,Disabled
-      WebIntelligenceProcessingServer,Running,Enabled
-    sap_bip_control_cms_server_1:
-    sap_bip_control_cms_server_2:
+    sap_bip_control_cms_server_1: |
+      APS.Search,Stopped,Disabled
+    sap_bip_control_cms_server_2: |
+      APS.Search,Running,Enabled
 
 sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
 sap_bip_config_secret_id: "{{ sap_bip_conf.sap_bip_config_secret_id }}"
