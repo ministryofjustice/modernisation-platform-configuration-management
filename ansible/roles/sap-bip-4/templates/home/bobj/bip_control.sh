@@ -55,6 +55,8 @@ FORMAT=default
 LOGPREFIX=
 APPLICATION_NAME="{{ application }}"
 AWS_ENVIRONMENT="{{ aws_environment }}"
+ENVIRONMENT_TAG="{{ sap_bip_environment_tag }}"
+PASSWORD_SECRET_ID="{{ sap_bip_passwords_secret_id }}"
 CCM_SH="{{ sap_bip_installation_directory }}/sap_bobj/ccm.sh"
 CCM_WAIT_FOR_CMD_ENABLED=0
 CCM_WAIT_FOR_CMD_TIMEOUT_SECS=120
@@ -185,10 +187,10 @@ set_env_instance_id() {
 }
 
 set_env_sap_environment() {
-  debug "aws ec2 describe-tags --filters 'Name=resource-id,Values=$INSTANCE_ID' 'Name=key,Values=$APPLICATION_NAME-environment'"
-  SAP_ENVIRONMENT=$(aws ec2 describe-tags --no-cli-pager --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=$APPLICATION_NAME-environment" --output text | cut -f5)
+  debug "aws ec2 describe-tags --filters 'Name=resource-id,Values=$INSTANCE_ID' 'Name=key,Values=$ENVIRONMENT_TAG'"
+  SAP_ENVIRONMENT=$(aws ec2 describe-tags --no-cli-pager --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=$ENVIRONMENT_TAG" --output text | cut -f5)
   if [[ -z $SAP_ENVIRONMENT ]]; then
-    error "Unable to retrieve $APPLICATION_NAME-environment tag"
+    error "Unable to retrieve $ENVIRONMENT_TAG tag"
     return 1
   fi
 }
@@ -207,8 +209,8 @@ get_ec2_server_names() {
   local ec2id
   local ec2ids
 
-  debug "aws ec2 describe-instances --filters 'Name=tag:$APPLICATION_NAME-environment,Values=$SAP_ENVIRONMENT' 'Name=tag:server-type,Values=$1'"
-  if ! json=$(aws ec2 describe-instances --no-cli-pager --filters "Name=tag:$APPLICATION_NAME-environment,Values=$SAP_ENVIRONMENT" "Name=tag:server-type,Values=$1"); then
+  debug "aws ec2 describe-instances --filters 'Name=tag:$ENVIRONMENT_TAG,Values=$SAP_ENVIRONMENT' 'Name=tag:server-type,Values=$1'"
+  if ! json=$(aws ec2 describe-instances --no-cli-pager --filters "Name=tag:$ENVIRONMENT_TAG,Values=$SAP_ENVIRONMENT" "Name=tag:server-type,Values=$1"); then
     return 1
   fi
   ec2ids=$(jq -r ".Reservations[].Instances[].InstanceId" <<< "$json")
@@ -266,10 +268,10 @@ set_env_lb() {
 }
 
 set_env_admin_password() {
-  debug "aws secretsmanager get-secret-value --secret-id /sap/bip/$SAP_ENVIRONMENT/passwords --query SecretString --output text"
-  ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "/sap/bip/$SAP_ENVIRONMENT/passwords" --query SecretString --output text | jq -r ".Administrator")
+  debug "aws secretsmanager get-secret-value --secret-id $PASSWORD_SECRET_ID --query SecretString --output text"
+  ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$PASSWORD_SECRET_ID" --query SecretString --output text | jq -r ".Administrator")
   if [[ -z $ADMIN_PASSWORD || $ADMIN_PASSWORD == 'null' ]]; then
-    error "Unable to retrieve Administrator password from '/sap/bip/$SAP_ENVIRONMENT/passwords' secret"
+    error "Unable to retrieve Administrator password from '$PASSWORD_SECRET_ID' secret"
     return 1
   fi
 }
