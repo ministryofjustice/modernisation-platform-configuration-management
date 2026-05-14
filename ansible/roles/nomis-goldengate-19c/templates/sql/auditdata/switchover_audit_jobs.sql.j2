@@ -1,0 +1,149 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_jobs_switchover.log
+
+SET SERVEROUTPUT ON
+WHENEVER SQLERROR CONTINUE
+
+PROMPT ========================================================================
+PROMPT AUDIT Scheduler Jobs Switchover Script
+PROMPT ========================================================================
+PROMPT This script will:
+PROMPT   1. Disable all 17 STRMADMIN-owned jobs
+PROMPT   2. Enable 10 migrated jobs owned by AUDITDATA, AUDITREF, and SYS
+PROMPT ========================================================================
+
+DECLARE
+    v_job_name VARCHAR2(100);
+    v_count NUMBER := 0;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 1: Disabling STRMADMIN jobs...');
+    DBMS_OUTPUT.PUT_LINE('----------------------------------------');
+    
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = 'STRMADMIN'
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'TRUE' THEN
+            BEGIN
+                DBMS_SCHEDULER.DISABLE(name => v_job_name, force => TRUE);
+                DBMS_OUTPUT.PUT_LINE('  DISABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR disabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY DISABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Total STRMADMIN jobs disabled: ' || v_count);
+    
+    -- Step 2: Enable migrated jobs
+    v_count := 0;
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 2: Enabling migrated AUDIT jobs...');
+    DBMS_OUTPUT.PUT_LINE('----------------------------------------');
+    
+    -- Enable AUDITDATA jobs (7 jobs)
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'
+                AND job_name IN ('ADD_WKLY_DATA_PARTS', 'ARCH_WKLY_DATA_PARTS', 'AUDIT_DATA_PURGE',
+                                'GATHER_STATS_AUDITDATA_TABS', 'GATHER_STATS_AUDIT_COLUMN', 
+                                'GATHER_STATS_AUDIT_TABLE', 'OFFENDER_CROSS_REFERENCE_UPD')
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'FALSE' THEN
+            BEGIN
+                DBMS_SCHEDULER.ENABLE(name => v_job_name);
+                DBMS_OUTPUT.PUT_LINE('  ENABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR enabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY ENABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    -- Enable AUDITREF jobs (1 job)
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = '{{ oracle_goldengate_group.auditref.schema_owner }}'
+                AND job_name IN ('GATHER_STATS_AUDITREF_TABS')
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'FALSE' THEN
+            BEGIN
+                DBMS_SCHEDULER.ENABLE(name => v_job_name);
+                DBMS_OUTPUT.PUT_LINE('  ENABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR enabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY ENABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    -- Enable SYS jobs (2 jobs)
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = 'SYS'
+                AND job_name IN ('AUDIT_DATA_UPLOAD_TO_S3')
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'FALSE' THEN
+            BEGIN
+                DBMS_SCHEDULER.ENABLE(name => v_job_name);
+                DBMS_OUTPUT.PUT_LINE('  ENABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR enabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY ENABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Total migrated jobs enabled: ' || v_count);
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'NOTE: The following jobs remain DISABLED:');
+    DBMS_OUTPUT.PUT_LINE('  - ORCL_BATCH_STATUS_EXTRACT_JOB (last run 2018)');
+    DBMS_OUTPUT.PUT_LINE('  - REMOTE_AUDIT_IMPORT (last run March 2023)');
+    DBMS_OUTPUT.PUT_LINE('  - AUDIT_WEEKLY_LOG_PURGE (ineffective)');
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Not migrated:');
+    DBMS_OUTPUT.PUT_LINE('  - AUDIT DEQUEUE (procedure no longer exists)');
+    DBMS_OUTPUT.PUT_LINE('  - AUDIT_LOG_IMPORT_CHAIN_JOB (last run 2018)');
+    DBMS_OUTPUT.PUT_LINE('  - AUDIT_REFERENCE (duplicate of OFFENDER_CROSS_REFERENCE_UPD)');
+    DBMS_OUTPUT.PUT_LINE('  - BKUP_WKLY_RO_TABLESPACES (SBT tablespace doesn''t exist)');
+    DBMS_OUTPUT.PUT_LINE('  - DAILY_LOG_PURGE (already in root crontab)');
+    
+END;
+/
+
+PROMPT 
+PROMPT Current status of all scheduler jobs:
+PROMPT ========================================================================
+SELECT 
+    RPAD(owner, 15) AS owner,
+    RPAD(job_name, 40) AS job_name,
+    RPAD(enabled, 8) AS enabled,
+    RPAD(state, 12) AS state,
+    RPAD(NVL(TO_CHAR(last_start_date, 'YYYY-MM-DD HH24:MI'), 'Never'), 17) AS last_run
+FROM dba_scheduler_jobs
+WHERE owner IN ('STRMADMIN', '{{ oracle_goldengate_group.auditdata.schema_owner }}', 
+                '{{ oracle_goldengate_group.auditref.schema_owner }}', 'SYS')
+AND (owner NOT IN ('SYS') OR job_name LIKE 'AUDIT_%')
+ORDER BY owner, job_name;
+
+PROMPT
+PROMPT Switchover completed
+spool off

@@ -1,0 +1,15 @@
+# if response_file_version is not defined or empty run the block
+- name: Determine Oracle version running on the host
+  when: response_file_version is not defined or response_file_version == ""
+  block:
+    # Check if 11.2.0.4 is running on the host and if so use the ORA11g setting in the response file otherwise use ORA19c. This is needed to ensure the correct prerequisite checks are performed during installation and the correct software version is installed for the database version. The response file template will be populated with the appropriate value based on this check.
+    - name: Check for 11g database processes to determine which response file to use
+      ansible.builtin.command: >
+        pgrep -f "11.2.0.4"
+      register: db_check_for_response_file
+      changed_when: false
+      failed_when: false
+
+    - name: Set response file version based on database check
+      ansible.builtin.set_fact:
+        response_file_version: "{{ 'ORA11g' if db_check_for_response_file.rc == 0 else 'ORA19c' }}"

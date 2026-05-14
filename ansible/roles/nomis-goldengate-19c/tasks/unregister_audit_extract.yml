@@ -1,0 +1,61 @@
+---
+# Unregister and manage AUDITDATA Extract process
+- name: Unregister AUDITDATA Extract process
+  when: run_auditdata
+  block:
+    - name: Unregister AUDITDATA Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        ./ggsci << EOF
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.auditdata.credential_alias }}
+        STOP EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+        UNREGISTER EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }} DATABASE
+        DELETE EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
+        EXIT
+        EOF
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: remove_auditdata_extract
+      failed_when: remove_auditdata_extract.rc != 0 or ("Successfully unregistered" not in remove_auditdata_extract.stdout and "does not exist" not in remove_auditdata_extract.stdout)
+
+    - name: Display stdout for AuditData Extract unregistration
+      ansible.builtin.debug:
+        msg: "{{ remove_auditdata_extract.stdout }}"
+
+- name: Unregister AUDITREF Extract process
+  when: run_auditref
+  block:
+    - name: Unregister AUDITREF Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        ./ggsci << EOF
+        dblogin useridalias {{ oracle_goldengate_group.source.credential_alias }}
+        MININGDBLOGIN USERIDALIAS {{ oracle_goldengate_group.auditref.credential_alias }}
+        STOP EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+        UNREGISTER EXTRACT {{ oracle_goldengate_group.auditref.extract_name }} DATABASE
+        DELETE EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
+        EXIT
+        EOF
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: remove_auditref_extract
+      failed_when: remove_auditref_extract.rc != 0 or ("Successfully unregistered" not in remove_auditref_extract.stdout and "does not exist" not in remove_auditref_extract.stdout)
+
+    - name: Display stdout for AuditRef Extract unregistration
+      ansible.builtin.debug:
+        msg: "{{ remove_auditref_extract.stdout }}"
