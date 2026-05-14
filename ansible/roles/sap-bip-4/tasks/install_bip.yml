@@ -112,10 +112,11 @@
         . ~/.bash_profile
         ./setup.sh -InstallDir "{{ sap_bip_installation_directory }}" -r "{{ sap_bip_responsefiles_directory }}/{{ sap_bip_responsefile }}" | logger -p local3.info -t ansible-sap-bip
         exitcode=$?
-        DIR=$(ls -1 {{ sap_bip_installation_directory }}/InstallData/logs/ | tail -1)
-        if [[ -e {{ sap_bip_installation_directory }}/InstallData/logs/$DIR/ErrorsAndWarnings.log ]]; then
-          cat {{ sap_bip_installation_directory }}/InstallData/logs/*/ErrorsAndWarnings.log | logger -p local3.info -t ansible-sap-bip
+        LOG=$(find /tmp {{ sap_bip_installation_directory }}/InstallData -name "ErrorsAndWarnings.log" -printf "%T+ %p\n" 2>/dev/null | sort -r | head -n 1 | awk '{print $2}')
+        if [ -n "$LOG" ]; then
+          cat "$LOG" | logger -p local3.info -t ansible-sap-bip
         fi
+        echo "Check /var/log/messages for install log"
         exit $exitcode
       args:
         chdir: "{{ sap_bip_extraction_directory }}"

@@ -1,10 +1,14 @@
 ---
+sap_bip_environment_tag: delius-environment
 sap_environment: "{{ ec2.tags['delius-environment'] }}"
 
 sap_bip_oracle_client_confs:
   stage:
     sqlnet_ora_source_filename: sqlnet.ora
     tnsnames_ora_source_filename: tnsnames.ora.delius-bip.stage
+  preprod:
+    sqlnet_ora_source_filename: sqlnet.ora
+    tnsnames_ora_source_filename: tnsnames.ora.delius-bip.preprod
 
 sap_bip_oracle_client_conf: "{{ sap_bip_oracle_client_confs[sap_environment] }}"
 
@@ -13,6 +17,11 @@ sap_bip_db_confs:
     auditing_db_server: STGBXC
     auditing_db_user: b14aud
     cms_db_server: STGBXC
+    cms_db_user: b14cms
+  preprod:
+    auditing_db_server: PREBXE
+    auditing_db_user: b14aud
+    cms_db_server: PREBXE
     cms_db_user: b14cms
 
 sap_bip_db_conf: "{{ sap_bip_db_confs[sap_environment] }}"
@@ -32,7 +41,7 @@ sap_bip_confs:
     sap_bip_rws_url: "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_sso_rws_url: "https://sso.stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     web:
-      sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
+      sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
       sap_web_apps:
         - AdminTools
@@ -82,6 +91,58 @@ sap_bip_confs:
       WebIntelligenceProcessingServer,Running,Enabled
     sap_bip_control_cms_server_1:
     sap_bip_control_cms_server_2:
+  preprod:
+    sap_bip_config_secret_id: delius-mis-preprod-sap-boe-config
+    sap_bip_passwords_secret_id: delius-mis-preprod-sap-boe-passwords
+    sap_bip_sysdb_secret_id: delius-mis-preprod-oracle-boe-db-application-passwords
+    sap_bip_auditdb_secret_id: delius-mis-preprod-oracle-boe-db-application-passwords
+    sap_bip_rar_base: "BIPLATS4304P_1400-70002683"
+    sap_bip_rws_url: "https://preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
+    sap_bip_sso_rws_url: "https://sso.preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
+    web:
+      sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
+      sap_web_disable_cmcapp: "false"
+      sap_web_apps:
+        - AdminTools
+        - BOE
+        - BusinessProcessBI
+        - bipodata
+        - biprws
+        - clientapi
+        - dswsbobje
+        - webi-websetup
+    sap_bip_control_lbs: "preprod-mis-alb"
+    sap_bip_control_app_servers: |
+      AdaptiveJobServer,Running,Enabled
+      AdaptiveProcessingServer,Stopped,Disabled
+      APS.Analysis,Stopped,Disabled
+      APS.Connectivity,Running,Enabled
+      APS.Core,Stopped,Disabled
+      APS.DF,Running,Enabled
+      APS.Monitoring,Stopped,Disabled
+      APS.Visualization,Running,Enabled
+      APS.WebI,Running,Enabled
+      APS.WebIDSLBridge,Running,Enabled
+      ConnectionServer,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+      WebIntelligenceProcessingServer,Running,Enabled
+    sap_bip_control_cms_servers: |
+      AdaptiveJobServer,Stopped,Disabled
+      APS.Auditing,Running,Enabled
+      APS.Connectivity,Stopped,Disabled
+      APS.Core,Running,Enabled
+      APS.Monitoring,Running,Enabled
+      APS.PromotionManagement,Running,Enabled
+      CentralManagementServer,Running,Enabled
+      ConnectionServer,Stopped,Disabled
+      EventServer,Running,Enabled
+      InputFileRepository,Running,Enabled
+      OutputFileRepository,Running,Enabled
+      WebApplicationContainerServer,Stopped,Disabled
+    sap_bip_control_cms_server_1: |
+      APS.Search,Stopped,Disabled
+    sap_bip_control_cms_server_2: |
+      APS.Search,Running,Enabled
 
 sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
 sap_bip_config_secret_id: "{{ sap_bip_conf.sap_bip_config_secret_id }}"
@@ -108,20 +169,35 @@ filesystems_domains_by_env:
       mount_fs_username: svc_fsx_nart
 filesystems_domains: "{{ filesystems_domains_by_env[sap_environment] }}"
 
-bip_filesystems_mount:
-  - dir: /opt/data/BusinessObjects
-    fstype: nfs
-    uid: bobj
-    gid: binstall
-    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
-    src: "eu-west-2a.fs-0e6f80027b87246cf.efs.eu-west-2.amazonaws.com:/"
-  - dir: /NART
-    uid: bobj
-    gid: binstall
-    fstype: cifs
-    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
-    src: //fslinux.azure.hmpp.root/NART$
-    # metric_dimension: NART
-    maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
-    state: absent
-    autofs_mount: true
+bip_filesystems_mount_by_env:
+  stage:
+    - dir: /opt/data/BusinessObjects
+      fstype: nfs
+      uid: bobj
+      gid: binstall
+      opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+      src: "eu-west-2a.fs-0e6f80027b87246cf.efs.eu-west-2.amazonaws.com:/"
+    - dir: /NART
+      uid: bobj
+      gid: binstall
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+      src: //fslinux.azure.hmpp.root/NART$
+      maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
+      autofs_mount: true
+  preprod:
+    - dir: /opt/data/BusinessObjects
+      fstype: nfs
+      uid: bobj
+      gid: binstall
+      opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+      src: "eu-west-2a.fs-0a16ce697adb719d6.efs.eu-west-2.amazonaws.com:/"
+    - dir: /NART
+      uid: bobj
+      gid: binstall
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+      src: //fslinux.azure.hmpp.root/NART$
+      maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
+      autofs_mount: true
+bip_filesystems_mount: "{{ bip_filesystems_mount_by_env[sap_environment] }}"
