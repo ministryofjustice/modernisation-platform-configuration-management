@@ -176,13 +176,14 @@ create_metadata_table () {
     SRC_DATE=$(grep '^source_backup_date=' \
                "${DB_SCRIPT_DIR}/identify_source_backup_date.log" \
                | tail -1 \
-               | cut -d= -f2)
+               | cut -d= -f2 \
+			   | xargs)
 
     SQL_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.sql"
     LOG_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.log"
 
     cat > "${SQL_FILE}" <<EOF
-set echo off feedback off heading off verify off
+set echo on feedback on heading off verify off
 spool ${LOG_FILE}
 
 ALTER USER API_PROXY_USER QUOTA 50M ON users;
