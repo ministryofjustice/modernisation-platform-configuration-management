@@ -87,14 +87,14 @@ weblogic_configs:
     weblogic_db_repo_username: "sys"
     weblogic_db_repo_prefix: "nomis"
     # weblogic_domain_template_filename: "template1.jar"
-    weblogic_domain_template_filename: "template2.jar" # template1.jar + ReportsServerComponent
+    weblogic_domain_template_filename: "template4.jar" # template2.jar + template1.jar + ReportsServerComponent
 
   qa11g2:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
     weblogic_db_repo_sid: "qa11g2"
     weblogic_db_repo_username: "sys"
     weblogic_db_repo_prefix: "nomis"
-    weblogic_domain_template_filename: "template2.jar"
+    weblogic_domain_template_filename: "template4.jar"
 
   qa19c:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
@@ -102,7 +102,7 @@ weblogic_configs:
     weblogic_db_repo_username: "sys"
     weblogic_db_repo_prefix: "nomis"
     # weblogic_domain_template_filename: "template1.jar"
-    weblogic_domain_template_filename: "template2.jar" # template1.jar + ReportsServerComponent
+    weblogic_domain_template_filename: "template4.jar" # template2.jar + template1.jar + ReportsServerComponent
 
 weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
 
