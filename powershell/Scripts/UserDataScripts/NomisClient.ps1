@@ -460,17 +460,6 @@ function Add-NomisShortcuts {
   }
 }
 
-function Add-MicrosoftOffice {
-  [CmdletBinding()]
-  param (
-    [hashtable]$Config
-  )
-
-  $ErrorActionPreference = "Continue" # continue if the dependencies fail to install
-  Write-Output "Install Microsoft Office"
-  choco install -y microsoft-office-deployment
-}
-
 function Add-LibreOffice {
   [CmdletBinding()]
   param (
@@ -583,7 +572,6 @@ Add-DnsSuffixSearchList $Config
 Add-NomisShortcuts $Config
 Remove-StartMenuShutdownOption $Config
 Get-PowerShellCommandFromTag -Command Install-WindowsFeature
-Add-MicrosoftOffice $Config
 Add-LibreOffice $Config
 Set-Location $ScriptDir
 . ../AmazonCloudWatchAgent/Install-AmazonCloudWatchAgent.ps1
