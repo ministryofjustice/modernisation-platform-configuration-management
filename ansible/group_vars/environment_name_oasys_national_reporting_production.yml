@@ -41,34 +41,8 @@ sap_web_filesystems_mount:
     state: absent
     autofs_mount: true
 
-db_configs:
-  RCVCAT:
-    rcvcat_db_name: PDRCVCAT
-  PDBOSYS:
-    db_name: PDBOSYS
-    db_unique_name: PDBOSYS
-    instance_name: PDBOSYS
-    host_name: pd-oasys-db-1-a
-    port: 1521
-    tns_name: PDBOSYS
-    asm_disk_groups: DATA
-    service:
-      - { name: BISYS_TAF, role: PRIMARY }
-  PDBOAUD:
-    db_name: PDBOAUD
-    db_unique_name: PDBOAUD
-    instance_name: PDBOAUD
-    host_name: pd-oasys-db-1-a
-    port: 1521
-    tns_name: PDBOAUD
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: BIAUD_TAF, role: PRIMARY }
-
-audit_db_sid: PDBOAUD
-system_db_sid: PDBOSYS
-audit_service_name: BIAUD_TAF
-system_service_name: BISYS_TAF
+# For some reason pd-onr-db-1-a was added to the oasys-production environment instead of this environment.
+# See environment_name_oasys_production.yml for the db_config for the databases.
 
 oracle_client_tnsnames_ora_source_filename: "tnsnames.ora.onr-bip.{{ onr_environment }}"
 oracle_client_sqlnet_ora_source_filename: sqlnet.ora
