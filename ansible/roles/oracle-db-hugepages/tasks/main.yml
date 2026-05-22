@@ -1,0 +1,152 @@
+---
+# This role configures HugePages for an Oracle database host.
+#
+# The role will:
+#   1. Discover all databases registered in Grid Infrastructure
+#   2. Check Oracle memory parameters in each database (read-only, no changes made):
+#      - memory_target must be 0
+#      - memory_max_target must be 0
+#      - sga_target must be non-zero
+#      - sga_max_size must be non-zero
+#      - use_large_pages must be TRUE or ONLY
+#      If any parameters are incorrect the role reports the required ALTER SYSTEM
+#      commands and fails without making any changes to the database.
+#   3. Query the actual SGA size from each database and aggregate the total
+#   4. Calculate the required number of HugePages (total SGA / HugePage size + 10% overhead)
+#   5. Set vm.nr_hugepages in /etc/sysctl.conf and apply immediately
+#   6. Set oracle soft and hard memlock limits to unlimited in /etc/security/limits.conf
+#   7. Verify pam_limits.so is active in /etc/pam.d
+#   8. Verify Transparent HugePages are disabled
+
+- name: Get list of all databases registered in Grid Infrastructure
+  shell: |
+    export PATH=$PATH:/usr/local/bin
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv >/dev/null
+    srvctl config database
+  register: db_list
+  changed_when: false
+  become: true
+  become_user: oracle
+
+- name: Check Oracle memory parameters for each database
+  script: check_db_params.sh
+  register: check_params
+  loop: "{{ db_list.stdout_lines | reject('equalto', '') | list }}"
+  loop_control:
+    loop_var: db_sid
+    label: "{{ db_sid }}"
+  become_user: oracle
+  become: true
+  changed_when: false
+  failed_when: check_params.rc != 0
+  environment:
+    TARGET_DB_NAME: "{{ db_sid }}"
+
+- name: Collect all parameter violations across all databases
+  set_fact:
+    all_violations: >-
+      {{ check_params.results
+         | map(attribute='stdout_lines')
+         | flatten
+         | map('regex_replace', '^BECOME-SUCCESS-[a-z0-9]+\s*', '')
+         | reject('equalto', '')
+         | list }}
+
+- name: Fail if any databases have incorrect parameters
+  fail:
+    msg: |
+      The following Oracle parameters must be corrected before HugePages can be configured.
+      No changes have been made to the database or operating system.
+
+      {{ all_violations | join('\n') }}
+  when: all_violations | length > 0
+
+- name: Get SGA size in KB for each database
+  script: get_sga_size.sh
+  register: get_sga_sizes
+  loop: "{{ db_list.stdout_lines | reject('equalto', '') | list }}"
+  loop_control:
+    loop_var: db_sid
+    label: "{{ db_sid }}"
+  changed_when: false
+  become_user: oracle
+  become: true
+  environment:
+    TARGET_DB_NAME: "{{ db_sid }}"
+
+- name: Calculate total SGA across all databases
+  set_fact:
+    total_sga_kb: >-
+      {{ get_sga_sizes.results
+         | map(attribute='stdout')
+         | map('regex_replace', '^BECOME-SUCCESS-[a-z0-9]+\s*', '')
+         | map('trim')
+         | map('int')
+         | sum }}
+
+- name: Get HugePage size from /proc/meminfo
+  shell: awk '/Hugepagesize/ {print $2}' /proc/meminfo
+  register: hugepage_size_kb
+  changed_when: false
+
+- name: Calculate nr_hugepages with 10% overhead
+  set_fact:
+    nr_hugepages: "{{ ((total_sga_kb | int / hugepage_size_kb.stdout | trim | int) * 1.1) | round(0, 'ceil') | int }}"
+
+- name: Show HugePage calculation
+  debug:
+    msg:
+      - "Databases found:           {{ db_list.stdout_lines | reject('equalto', '') | list | join(', ') }}"
+      - "Total SGA size:            {{ total_sga_kb }} KB"
+      - "HugePage size:             {{ hugepage_size_kb.stdout | trim }} KB"
+      - "HugePages required (+10%): {{ nr_hugepages }}"
+
+- name: Set vm.nr_hugepages in /etc/sysctl.conf
+  ansible.posix.sysctl:
+    name: vm.nr_hugepages
+    value: "{{ nr_hugepages }}"
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
+  become: true
+
+- name: Ensure oracle soft and hard memlock limits are unlimited in /etc/security/limits.conf
+  lineinfile:
+    dest: /etc/security/limits.conf
+    regexp: "^oracle\\s+{{ item }}\\s+memlock"
+    line: "oracle   {{ item }}   memlock   unlimited"
+  loop:
+    - soft
+    - hard
+  become: true
+
+- name: Check pam_limits.so is present in /etc/pam.d
+  shell: grep -rl 'pam_limits.so' /etc/pam.d/
+  register: pam_limits_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail if pam_limits.so is not configured in any /etc/pam.d file
+  fail:
+    msg: "pam_limits.so is not configured in any /etc/pam.d file. Add 'session required pam_limits.so' to the appropriate file (e.g. /etc/pam.d/system-auth)."
+  when: pam_limits_check.stdout == ''
+
+- name: Show pam_limits.so configuration files
+  debug:
+    msg: "pam_limits.so is active in: {{ pam_limits_check.stdout_lines }}"
+  when: pam_limits_check.stdout != ''
+
+- name: Check Transparent HugePages status
+  shell: cat /sys/kernel/mm/transparent_hugepage/enabled
+  register: thp_status
+  changed_when: false
+
+- name: Fail if Transparent HugePages are not disabled
+  fail:
+    msg: >
+      Transparent HugePages must be disabled. Current setting: {{ thp_status.stdout }}.
+      Use the hugepages role to disable via grubby and reboot.
+  when: thp_status.stdout is not search('\[never\]')
