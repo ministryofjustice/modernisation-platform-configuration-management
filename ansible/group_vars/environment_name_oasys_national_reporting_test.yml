@@ -13,35 +13,6 @@ bip_filesystems_mount:
     metric_dimension: t2_onr_sap_share
     maintenance_window:
 
-db_configs:
-  RCVCAT:
-    rcvcat_db_name: T2RCVCAT
-  T2BOSYS:
-    db_name: T2BOSYS
-    db_unique_name: T2BOSYS
-    instance_name: T2BOSYS
-    host_name: t2-oasys-db-a
-    port: 1521
-    tns_name: T2BOSYS
-    asm_disk_groups: DATA
-    service:
-      - { name: BISYS_TAF, role: PRIMARY }
-  T2BOAUD:
-    db_name: T2BOAUD
-    db_unique_name: T2BOAUD
-    instance_name: T2BOAUD
-    host_name: t2-oasys-db-a
-    port: 1521
-    tns_name: T2BOAUD
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: BIAUD_TAF, role: PRIMARY }
-
-audit_db_sid: T2BOAUD
-system_db_sid: T2BOSYS
-audit_service_name: BIAUD_TAF
-system_service_name: BISYS_TAF
-
 oracle_client_tnsnames_ora_source_filename: "tnsnames.ora.onr-bip.{{ onr_environment }}"
 oracle_client_sqlnet_ora_source_filename: sqlnet.ora
 
