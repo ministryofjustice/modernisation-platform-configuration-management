@@ -33,6 +33,8 @@ OEM_AGENT_VERSION: 13.5.0.0.0
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
 recovery_catalog_server: "{{ OMS_SERVER }}"
+# Exclude the standby dbs as the backup script won't run backups on them and this config is needed so that their old archivelogs are deleted.
+exclude_db_backup: "DROASYS"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
@@ -50,6 +52,16 @@ rman_backup_cron:
 db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
+  PDOASYS:
+    db_name: PDOASYS
+    db_unique_name: PDOASYS
+    instance_name: PDOASYS
+    host_name: pd-oasys-db-a
+    port: 1521
+    tns_name: PDOASYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASYS_TAF, role: PRIMARY }
   PDBOSYS:
     db_name: PDBOSYS
     db_unique_name: PDBOSYS
@@ -70,27 +82,14 @@ db_configs:
     asm_disk_groups: DATA,FLASH
     service:
       - { name: BOAUD_TAF, role: PRIMARY }
-  DRBOSYS:
-    db_name: DRBOSYS
-    db_unique_name: DRBOSYS
-    instance_name: DRBOSYS
-    host_name: pd-oasys-db-b
-    port: 1521
-    tns_name: DRBOSYS
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: BOSYS_TAF, role: PRIMARY }
-  DRBOAUD:
-    db_name: DRBOAUD
-    db_unique_name: DRBOAUD
-    instance_name: DRBOAUD
-    host_name: pd-oasys-db-b
-    port: 1521
-    tns_name: DRBOAUD
-    asm_disk_groups: DATA,FLASH
-    service:
-      - { name: BOAUD_TAF, role: PRIMARY }
   PDBIPINF:
+    db_name: PDBIPINF
+    db_unique_name: PDBIPINF
+    instance_name: PDBIPINF
+    host_name: pd-oasys-db-a
+    port: 1521
+    tns_name: PDBIPINF
+    asm_disk_groups: DATA,FLASH
     parameters:
       - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
       - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
@@ -108,6 +107,16 @@ db_configs:
         }
     service:
       - { name: BIPINF_TAF, role: PRIMARY }
+  DROASYS:
+    db_name: DROASYS
+    db_unique_name: DROASYS
+    instance_name: DROASYS
+    host_name: pd-oasys-db-b
+    port: 1521
+    tns_name: DROASYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASHA_TAF, role: PRIMARY }
   PROASYS:
     db_name: OASYSPTC
     db_unique_name: PROASYS
@@ -131,6 +140,14 @@ db_configs:
     service:
       - { name: TRAINING_OASYS_TAF, role: PRIMARY }
   TRBIPINF:
+    db_name: OASYSTRN
+    db_unique_name: TRBIPINF
+    instance_name: TRBIPINF
+    host_name: ptctrn-oasys-db-a.oasys.hmpps-preproduction.modernisation-platform.internal
+    port: 1521
+    tns_name: TRBIPINF
+    s3_bucket: oasys-production20230403093924372800000001
+    asm_disk_groups: DATA,FLASH
     parameters:
       - { name: "_allow_insert_with_update_check", value: TRUE, db_restart_required: 0, scope: both }
       - { name: session_cached_cursors, value: 300, db_restart_required: 0, scope: spfile }
@@ -148,6 +165,57 @@ db_configs:
         }
     service:
       - { name: BIPINF_TAF, role: PRIMARY }
+  # From some reason pd-onr-db-a was added to the oasys-production environment instead of the onr environment, so these dbs are in this environment's config file.
+  PDONRSYS:
+    db_name: PDONRSYS
+    db_unique_name: PDONRSYS
+    instance_name: PDONRSYS
+    host_name: pd-onr-db-a
+    port: 1521
+    tns_name: PDONRSYS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRSYS_TAF, role: PRIMARY }
+  PDONRAUD:
+    db_name: PDONRAUD
+    db_unique_name: PDONRAUD
+    instance_name: PDONRAUD
+    host_name: pd-onr-db-a
+    port: 1521
+    tns_name: PDONRAUD
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRAUD_TAF, role: PRIMARY }
+  PDONRBDS:
+    db_name: ONRBODS
+    db_unique_name: PDONRBDS
+    instance_name: PDONRBDS
+    host_name: pd-onr-db-a
+    port: 1521
+    tns_name: PDONRBDS
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: ONRBODS_TAF, role: PRIMARY }
+  PDOASREP:
+    db_name: PDOASREP
+    db_unique_name: PDOASREP
+    instance_name: PDOASREP
+    host_name: pd-onr-db-a
+    port: 1521
+    tns_name: PDOASREP
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: OASYSREP_TAF, role: PRIMARY }
+  PDMISTRN:
+    db_name: PDMISTRN
+    db_unique_name: PDMISTRN
+    instance_name: PDMISTRN
+    host_name: pd-onr-db-a
+    port: 1521
+    tns_name: PDMISTRN
+    asm_disk_groups: DATA,FLASH
+    service:
+      - { name: MISTRANS_TAF, role: PRIMARY }
 
 nart_business_objects_db_confs:
   pd-oasys-db-a:
