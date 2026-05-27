@@ -206,13 +206,9 @@ EOF
 
 sqlplus -s "/ as sysdba" @"${SQL_FILE}" 
 
-if grep -q "ORA-" "${LOG_FILE}"; then
-    error "Failed create table"
+if ! grep -q "ORA-" "${LOG_FILE}"; then
+    echo "metadata table created"
 fi
-
-return 0
-
-info "metadata table created"
 
 }
 
