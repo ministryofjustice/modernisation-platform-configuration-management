@@ -14,7 +14,7 @@ param (
 
 # Check if package is already installed using choco list first (more reliable)
 Write-Verbose "Checking if $Package is already installed..."
-$installedPackage = choco list --local-only | Where-Object { $_ -match "^$Package\s" }
+$installedPackage = choco list | Where-Object { $_ -match "^$Package\s" }
 
 # Fallback: Check whether Chocolatey PowerShell module is installed
 if (-not $installedPackage) {
