@@ -204,8 +204,16 @@ spool off
 exit
 EOF
 
-sqlplus -s "/ as sysdba" @"${SQL_FILE}" > /dev/null
-[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log | wc -l ` -gt 0 ] && error "Failed create table"
+sqlplus -s "/ as sysdba" @"${SQL_FILE}" 
+
+if grep -q "ORA-" "${LOG_FILE}"; then
+    error "Failed create table"
+fi
+
+return 0
+
+info "metadata table created"
+
 }
 
 
