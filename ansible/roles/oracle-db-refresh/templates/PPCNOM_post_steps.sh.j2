@@ -172,40 +172,36 @@ streams_setup () {
 	info "Completed streams_setup"
 }
 create_metadata_table () {
-    info "Create metadata table"
+
     SRC_DATE=$(grep '^source_backup_date=' \
                "${DB_SCRIPT_DIR}/identify_source_backup_date.log" \
                | tail -1 \
                | cut -d= -f2 \
 			   | xargs)
 
-    SQL_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.sql"
-    LOG_FILE="${DB_SCRIPT_DIR}/crt_refresh_metadata.log"
+echo "set echo on feedback on heading off verify off" > ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+echo "spool ${DB_SCRIPT_DIR}/crt_refresh_metadata.log" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+echo "ALTER USER API_PROXY_USER QUOTA 50M ON users;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-    cat > "${SQL_FILE}" <<EOF
-set echo on feedback on heading off verify off
-spool ${LOG_FILE}
+echo "CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-ALTER USER API_PROXY_USER QUOTA 50M ON users;
-
-CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);
-
-INSERT INTO API_PROXY_USER.refresh_metadata (
+echo "INSERT INTO API_PROXY_USER.refresh_metadata (
   last_refresh_date,
   source_backup_date
 )
 SELECT
   MAX(resetlogs_time),
   TO_TIMESTAMP('${SRC_DATE}','YYYY-MM-DD HH24:MI:SS')
-FROM v\$database_incarnation;
+FROM v\$database_incarnation;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-COMMIT;
-spool off
-exit
-EOF
+echo "COMMIT;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+echo "spool off" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+echo "exit" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-sqlplus -s "/ as sysdba" @"${SQL_FILE}" > /dev/null
-[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log | wc -l ` -gt 0 ] && error "Failed create table"
+sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+
+[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log| wc -l ` -gt 0 ] && error "Failed metadata table create"
+	info "Metadata table created"
 }
 
 
