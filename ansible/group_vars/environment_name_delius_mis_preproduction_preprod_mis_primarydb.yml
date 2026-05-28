@@ -31,3 +31,9 @@ required_patches:
 fsfo_mode: disabled
 awr_retention_days: 40
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
+oracle_software:
+  version: "19.28"
+  combo_patch: p37952382_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.46
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
