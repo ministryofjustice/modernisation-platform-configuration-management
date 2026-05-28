@@ -14,7 +14,7 @@ param (
 
 # Check if package is already installed using choco list first (more reliable)
 Write-Verbose "Checking if $Package is already installed..."
-$installedPackages = & choco list --local-only | Where-Object { $_ -match "^$Package\s" }
+$installedPackages = & choco list | Where-Object { $_ -match "^$Package\s" }
 
 if ($installedPackages) {
     $installedVersion = ($installedPackages -split '\s+')[1]

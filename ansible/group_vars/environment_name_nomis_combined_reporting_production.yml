@@ -22,6 +22,8 @@ OEM_AGENT_VERSION: 13.5.0.0.0
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
 recovery_catalog_server: "{{ OMS_SERVER }}"
+# Exclude the standby dbs as the backup script won't run backups on them and this config is needed so that their old archivelogs are deleted.
+exclude_db_backup: "DRBIAUD|DRBIPSYS|DRBIPAUD|DRBISYS"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
@@ -48,6 +50,8 @@ housekeeping_cron:
       # job: command generated in
 
 db_configs:
+  RCVCAT:
+    rcvcat_db_name: PRCVCAT
   PDBIPSYS:
     db_name: BIPSYSP
     db_unique_name: PDBIPSYS
