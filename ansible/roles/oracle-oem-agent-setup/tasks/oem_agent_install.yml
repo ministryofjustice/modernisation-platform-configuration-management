@@ -43,16 +43,6 @@
         dest: "{{ agent_install_response_file }}"
         mode: "0600"
 
-    - name: Echo Response File Contents for Debug
-      ansible.builtin.shell: |
-        cat "{{ agent_install_response_file }}"
-      register: response_file_contents
-      changed_when: false
-
-    - name: Display Response File Contents
-      ansible.builtin.debug:
-        var: response_file_contents.stdout
-
     # We can either use the default Agent image that comes with OEM or a Gold Image
     # that we have created for the environment.  We prefer to use the Gold Image if
     # it exists, so check for availability.
