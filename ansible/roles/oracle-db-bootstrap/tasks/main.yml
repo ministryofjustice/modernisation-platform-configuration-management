@@ -2,3 +2,6 @@
 - name: Run Bootstrap on Primary Only
   include_tasks: bootstrap_primary_database.yml
   when: database_primary_sid is defined
+  tags:
+    - ec2provision
+    - oracle_19c_install
