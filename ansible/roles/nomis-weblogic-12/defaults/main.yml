@@ -97,11 +97,11 @@ weblogic_secretsmanager_passwords:
     users:
       - tagsar:
       - oms_owner:
+      - wls_schemas: auto
   db_repo:
-    secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
+    secret: "/oracle/database/{{ weblogic_db_repo_sid }}/passwords"
     users:
       - "{{ weblogic_db_repo_password_secret | items2dict }}"
-      - wls_schemas: auto
   weblogic:
     secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
     users:
