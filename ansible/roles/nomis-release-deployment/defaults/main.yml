@@ -9,7 +9,7 @@ db_config: "{{ db_configs[app_db_name] }}"
 
 app_secretsmanager_passwords:
   db:
-    secret: "/oracle/database/{{ db_config.db_name }}/weblogic-passwords"
+    secret: "/oracle/database/{{ db_config.db_name }}/passwords"
     users:
       - oms_owner:
 
