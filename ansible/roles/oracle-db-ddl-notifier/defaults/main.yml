@@ -6,4 +6,23 @@ oem_secretsmanager_passwords:
     users:
       - slack_token:
 
-excluded_objects: "'PACKAGE','PROCEDURE','FUNCTION','PACKAGE BODY','INDEX','VIEW','TRIGGER','JAVA','SUMMARY'"
+excluded_objects: "'TYPE','PACKAGE','PROCEDURE','FUNCTION','PACKAGE BODY','INDEX','VIEW','TRIGGER','JAVA','SUMMARY'"
+
+# Exclude specific objects by name and type (in addition to excluded_objects above).
+# Each entry specifies a schema, object type, and one or more object names to exclude.
+# Example:
+#   excluded_objects_by_name:
+#     - schema: MY_SCHEMA
+#       type: TABLE
+#       names:
+#         - MYTABLE
+#         - STAGING_TABLE
+#     - schema: MY_SCHEMA
+#       type: INDEX
+#       names:
+#         - IDX_TEMP
+excluded_objects_by_name:
+      - schema: DELIUS_APP_SCHEMA
+        type: TABLE
+        names:
+            - SPG_JAVA_OBJECTS

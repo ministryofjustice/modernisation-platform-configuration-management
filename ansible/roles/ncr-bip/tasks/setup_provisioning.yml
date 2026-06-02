@@ -15,6 +15,33 @@
       loop:
         - sapprogram
 
+    - name: Copy bobj bash profile
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "/{{ item }}"
+        owner: sapprogram
+        group: sapprogram
+      loop:
+        - home/sapprogram/.bash_profile
+
+    - name: Allow bobj to sudo without password
+      community.general.sudoers:
+        name: bobj-sapprogram
+        user: bobj
+        state: present
+        runas: sapprogram
+        nopassword: true
+        commands: ALL
+
+    - name: Allow bobj to su to without password
+      ansible.builtin.blockinfile:
+        path: /etc/pam.d/su
+        marker: "# {mark} blockinfile ansible managed modernisation-platform-configuration-management ncr-bip"
+        insertafter: "auth.*sufficient.*pam_rootok.so"
+        block: |
+          auth [default=1 success=ignore] pam_succeed_if.so user = sapprogram
+          auth sufficient pam_succeed_if.so use_uid user = bobj
+
     - name: Create provisioning directories
       ansible.builtin.file:
         path: "{{ item }}"
