@@ -14,7 +14,7 @@ param (
 
 # Check if package is installed using choco list first (more reliable)
 Write-Verbose "Checking if $Package is installed..."
-$installedPackages = & choco list --local-only --exact $Package | Where-Object { $_ -match "^$Package\s" }
+$installedPackages = & choco list --exact $Package | Where-Object { $_ -match "^$Package\s" }
 
 if (-not $installedPackages) {
     Write-Output "$Package is not installed"
