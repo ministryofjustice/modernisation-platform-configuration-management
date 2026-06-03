@@ -46,6 +46,7 @@ BEGIN
     
     -- Job 2: END_OF_MIS_DAY
     -- NOTE: This job is complex and requires migration of:
+    --   - Renamed to END_OF_MIS_DAY_JOB as there is a program called END_OF_MIS_DAY which is part of a chain and calls the job, so we need to rename the job to avoid confusion. The program that calls it will be updated to call the new job name.
     --   - strmadmin.mis_stop_point table
     --   - add_mis_stop_point procedure
     --   - MIS_STRM_LINK database link
@@ -56,11 +57,11 @@ BEGIN
         SELECT COUNT(*) INTO v_exists 
         FROM dba_scheduler_jobs 
         WHERE owner = '{{ oracle_goldengate_group.source.schema_owner }}' 
-        AND job_name = 'END_OF_MIS_DAY';
+        AND job_name = 'END_OF_MIS_DAY_JOB';
         
         IF v_exists = 0 THEN
             DBMS_SCHEDULER.CREATE_JOB (
-                job_name         => '{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY',
+                job_name         => '{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB',
                 job_type         => 'PLSQL_BLOCK',
                 job_action       => 'BEGIN {{ oracle_goldengate_group.source.schema_owner }}.MIS_END_OF_DAY_PKG.run_batch; END;',
                 start_date       => SYSTIMESTAMP,
@@ -68,21 +69,22 @@ BEGIN
                 enabled          => FALSE,
                 auto_drop        => FALSE,
                 comments         => 'Migrated - Job to trigger MIS end of day processing on downstream database.');
-            DBMS_OUTPUT.PUT_LINE('Created job: END_OF_MIS_DAY (disabled - is needed)');
+            DBMS_OUTPUT.PUT_LINE('Created job: END_OF_MIS_DAY_JOB (disabled - is needed)');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Job END_OF_MIS_DAY already exists');
+            DBMS_OUTPUT.PUT_LINE('Job END_OF_MIS_DAY_JOB already exists');
         END IF;
     END;
 
-    -- Need to use dbms_scheduler.set_attribute to change the 'program_action' attribute of the program to run OMS_OWNER.END_OF_MIS_DAY.
-        -- Note: This job is part of the CNOMIS_FINANCE_MON_SAT_CHAIN chain and is triggered by the END_OF_DAY_MIS_STEP step in that chain, so it doesn't need to be enabled as it's not scheduled to run on its own. It will be triggered by the chain when the time comes.
-        -- DBMS_SCHEDULER.SET_ATTRIBUTE('CNOMIS_FINANCE_MON_SAT_CHAIN', 'program_action', 'OMS_OWNER.END_OF_DAY_MIS');
-   -- do this in the switchover instead - how do we test it? dbms_scheduler.set_attribute(
-        name => 'CNOMIS_FINANCE_MON_SAT_CHAIN',
-        attribute => 'program_action',
-        value => 'BEGIN DBMS_SCHEDULER.RUN_JOB('''{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY''',FALSE); END;'
-    );
-    DBMS_OUTPUT.PUT_LINE('Updated program_action for CNOMIS_FINANCE_MON_SAT_CHAIN to call {{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY');
+    -- Need to use dbms_scheduler.set_attribute to change the 'program_action' attribute of the program END_OF_DAY_MIS to run OMS_OWNER.END_OF_MIS_DAY_JOB.
+        -- Note: This program is part of the CNOMIS_FINANCE_MON_SAT_CHAIN chain and is triggered by the END_OF_DAY_MIS_STEP step in that chain. The jobs it calls don't need to be enabled as it will be triggered/run by the chain when the time comes.
+    BEGIN
+        DBMS_SCHEDULER.SET_ATTRIBUTE (
+            name         => 'OMS_OWNER.END_OF_DAY_MIS'
+            attribute => 'program_action',
+            value       => 'BEGIN DBMS_SCHEDULER.RUN_JOB(''STRMADMIN.END_OF_MIS_DAY'',FALSE); DBMS_SCHEDULER.RUN_JOB(''{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB'',FALSE); END;');
+    END;
+    -- in switchover we will update the program action to call the new job in the goldengate schema instead of the old job in strmadmin, but we can update it now to call both the old and new job so that it's ready to go and tested that it can call the new job, then at switchover we just need to remove the call to the old job.
+    DBMS_OUTPUT.PUT_LINE('Updated program_action for END_OF_DAY_MIS to call both STRMADMIN.END_OF_MIS_DAY and {{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB for testing - will update to call only {{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB at switchover');
     
     -- Job 3: ORCL_BATCH_STATUS_EXTRACT_JOB (disabled, last run 2018)
     BEGIN
