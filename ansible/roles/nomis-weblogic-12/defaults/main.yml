@@ -72,11 +72,11 @@ weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 # weblogic_db_repo_hostname:
 # weblogic_db_repo_sid:
 # weblogic_db_repo_prefix:
-#weblogic_db_repo_username: "sys"
+weblogic_db_repo_username: "sys"
 
-#weblogic_db_repo_password_secret:
-#  - key: "{{ weblogic_db_repo_username }}"
-#    value:
+weblogic_db_repo_password_secret:
+  - key: "{{ weblogic_db_repo_username }}"
+    value:
 
 weblogic_admin_password_secret:
   - key: "{{ weblogic_admin_username }}"
@@ -99,7 +99,7 @@ weblogic_secretsmanager_passwords:
   db_repo:
     secret: "/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords"
     users:
-#      - "{{ weblogic_db_repo_password_secret | items2dict }}"
+      - "{{ weblogic_db_repo_password_secret | items2dict }}"
       - wls_schemas: auto
   weblogic:
     secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
