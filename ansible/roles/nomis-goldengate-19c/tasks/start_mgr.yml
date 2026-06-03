@@ -1,0 +1,10 @@
+- name: Start GoldenGate Manager
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci <<< "start manager"
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  register: start_manager
+  failed_when: start_manager.rc != 0 and ("started" not in start_manager.stdout or "is already running" not in start_manager.stdout)

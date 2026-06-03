@@ -1,0 +1,25 @@
+---
+# Create GoldenGate administrator database user
+# This user is created in the source and target databases with appropriate privileges
+# Password retrieved from AWS Secrets Manager
+
+# As auditdata and auditref streams both connect to the same audit database, they can use the same {{ oracle_goldengate_dbuser }} user and password for simplicity, so we only need to retrieve one password for both in this task and can reuse it when configuring the credential store
+
+# Support both auto-detected databases (oracle_goldengate_local_db_sids) and manual override (oracle_goldengate_local_db_sid)
+- name: Set database SID list for user creation
+  ansible.builtin.set_fact:
+    _db_sids_to_configure: >-
+      {{
+        oracle_goldengate_local_db_sids
+        if (oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0)
+        else ([oracle_goldengate_local_db_sid] if (oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != '') else [])
+      }}
+
+- name: Create GoldenGate database users for each detected database
+  include_tasks: create_gg_dbusers_single.yml
+  loop: "{{ _db_sids_to_configure }}"
+  loop_control:
+    loop_var: _current_db_sid
+  vars:
+    oracle_goldengate_local_db_sid: "{{ _current_db_sid }}"
+  when: _db_sids_to_configure is defined and _db_sids_to_configure | length > 0

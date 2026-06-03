@@ -1,0 +1,117 @@
+---
+# GoldenGate software installation uses existing oracle user and oinstall group
+# These should already exist on the host
+
+- name: Skip GoldenGate installation on source host since binaries are only needed on target hosts for replication 
+  ansible.builtin.debug: 
+    msg: "This host is the source host, skipping GoldenGate software installation since binaries are only needed on target hosts for replication." 
+  when: host_is_source is defined and host_is_source
+
+- name: Install GoldenGate software on target hosts only
+  when: host_is_source is not defined or not host_is_source
+  block:
+
+  - name: Check if Oracle GoldenGate is already installed 
+    ansible.builtin.stat: 
+      path: "{{ oracle_goldengate_home }}" 
+    register: gg_home_exists 
+
+  - name: Set GoldenGate home exists as a fact for use elsewhere
+    ansible.builtin.set_fact:
+      gg_home_exists: "{{ gg_home_exists }}"
+
+  - name: Skip installation if GoldenGate home directory already exists 
+    ansible.builtin.debug: 
+      msg: "Oracle GoldenGate is already installed at {{ oracle_goldengate_home }}, skipping installation." 
+    when: gg_home_exists.stat.exists 
+
+  - name: Install Oracle GoldenGate software
+    become: true
+    become_user: "{{ oracle_goldengate_owner }}"
+    environment: "{{ gg_env }}"
+    when: not gg_home_exists.stat.exists
+    block:
+      - name: Create GoldenGate home and software directories
+        ansible.builtin.file:
+          path: "{{ item }}"
+          state: directory
+          owner: "{{ oracle_goldengate_owner }}"
+          group: "{{ oracle_goldengate_osgroup }}"
+          mode: "0755"
+        loop:
+          - "{{ oracle_goldengate_home }}"
+          - "{{ oracle_goldengate_software_dir }}"
+
+      - name: Download GoldenGate software from S3
+        amazon.aws.aws_s3:
+          bucket: "{{ artefacts_s3_bucket_name }}"
+          object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+          dest: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+          mode: get
+          overwrite: latest
+        loop:
+          - "{{ oracle_goldengate_software }}"
+
+      - name: Unzip GoldenGate software
+        ansible.builtin.unarchive:
+          src: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+          dest: "{{ oracle_goldengate_software_dir }}"
+          owner: "{{ oracle_goldengate_owner }}"
+          group: "{{ oracle_goldengate_osgroup }}"
+          remote_src: yes
+        loop:
+          - "{{ oracle_goldengate_software }}"
+        no_log: true
+
+      - name: Create GoldenGate response file from template
+        ansible.builtin.template:
+          src: "ogg_install_response.rsp.j2"
+          dest: "{{ oracle_goldengate_software_dir }}/ogg_install_response.rsp"
+          owner: "{{ oracle_goldengate_owner }}"
+          group: "{{ oracle_goldengate_osgroup }}"
+          mode: "0644"
+
+      - name: Find GoldenGate shiphome directory
+        ansible.builtin.find:
+          paths: "{{ oracle_goldengate_software_dir }}"
+          file_type: directory
+          patterns: "*shiphome"
+          recurse: yes
+        register: goldengate_shiphome_dirs
+
+      - name: Fail if GoldenGate shiphome directory not found
+        ansible.builtin.fail:
+          msg: "GoldenGate shiphome directory not found under {{ oracle_goldengate_software_dir }}"
+        when: goldengate_shiphome_dirs.matched | default(0) | int == 0
+
+      - name: Set GoldenGate shiphome path
+        ansible.builtin.set_fact:
+          goldengate_shiphome_dir: "{{ goldengate_shiphome_dirs.files[0].path }}"
+        when: goldengate_shiphome_dirs.matched | default(0) | int > 0
+
+      - name: Install GoldenGate software
+        ansible.builtin.command: |
+          ./runInstaller -silent -showProgress -waitforcompletion -responseFile {{ oracle_goldengate_software_dir }}/ogg_install_response.rsp
+        become: yes
+        become_user: "{{ oracle_goldengate_owner }}"
+        args:
+          chdir: "{{ goldengate_shiphome_dir }}/Disk1"
+        register: install_output
+        failed_when: install_output.rc != 0 and "Installation completed successfully" not in install_output.stdout
+
+      - name: Update user .bash_profile
+        blockinfile:
+          insertafter: EOF
+          block: "{{ bash_profile }}"
+          dest: "/home/{{ oracle_goldengate_owner }}/.bash_profile"
+          owner: "{{ oracle_goldengate_owner }}"
+          group: "{{ oracle_goldengate_osgroup }}"
+
+      - name: Clean up GoldenGate software files
+        ansible.builtin.file:
+          path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
+          state: absent
+        loop:
+          - "{{ oracle_goldengate_software }}"
+          - "ogg_install_response.rsp"
+          - "{{ goldengate_shiphome_dir }}"

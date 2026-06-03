@@ -1,0 +1,32 @@
+REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+
+GETENV (NLS_LANG)
+
+USERIDALIAS AUDIT_DB
+
+ASSUMETARGETDEFS
+
+-- --- Error handling ---
+REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditref.replicat_name }}.dsc, APPEND, MEGABYTES 500
+REPORTCOUNT EVERY 5 MINUTES, RATE
+
+DBOPTIONS DEFERREFCONST
+DBOPTIONS SUPPRESSTRIGGERS
+DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
+
+MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditref.schema_owner }}"."*", &
+    COLMAP (
+      USEDEFAULTS, &
+      MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &
+      MIS_COMMAND_FLAG = @CASE(
+        @GETENV('GGHEADER', 'OPTYPE'), 
+          'INSERT', 'I', 
+          'UPDATE', 'U', 
+          'PK UPDATE', 'U', 
+          'SQL COMPUPDATE', 'U', 
+          'DELETE', 'D', 
+          'TRUNCATE', 'D', 
+          '?'), &
+      MIS_SCN = @GETENV('TRANSACTION', 'CSN'));
+

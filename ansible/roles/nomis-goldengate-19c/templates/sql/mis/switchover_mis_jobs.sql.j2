@@ -1,0 +1,99 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_jobs_switchover.log
+
+SET SERVEROUTPUT ON
+WHENEVER SQLERROR CONTINUE
+
+PROMPT ========================================================================
+PROMPT MIS Scheduler Jobs Switchover Script
+PROMPT ========================================================================
+PROMPT This script will:
+PROMPT   1. Disable all 8 STRMADMIN-owned jobs
+PROMPT   2. Enable 2 migrated jobs owned by BODISTAGING
+PROMPT ========================================================================
+
+DECLARE
+    v_job_name VARCHAR2(100);
+    v_count NUMBER := 0;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 1: Disabling STRMADMIN jobs...');
+    DBMS_OUTPUT.PUT_LINE('----------------------------------------');
+    
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = 'STRMADMIN'
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'TRUE' THEN
+            BEGIN
+                DBMS_SCHEDULER.DISABLE(name => v_job_name, force => TRUE);
+                DBMS_OUTPUT.PUT_LINE('  DISABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR disabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY DISABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Total STRMADMIN jobs disabled: ' || v_count);
+    
+    -- Step 2: Enable migrated jobs
+    v_count := 0;
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 2: Enabling migrated MIS jobs...');
+    DBMS_OUTPUT.PUT_LINE('----------------------------------------');
+    
+    -- Enable jobs owned by BODISTAGING (only 2 jobs to enable)
+    FOR rec IN (SELECT owner, job_name, enabled 
+                FROM dba_scheduler_jobs 
+                WHERE owner = '{{ oracle_goldengate_sql_owner }}'
+                AND job_name IN ('MIS_PURGE_STAGING_TABLES', 'WEEKLY_LOG_PURGE')
+                ORDER BY job_name) LOOP
+        v_job_name := rec.owner || '.' || rec.job_name;
+        
+        IF rec.enabled = 'FALSE' THEN
+            BEGIN
+                DBMS_SCHEDULER.ENABLE(name => v_job_name);
+                DBMS_OUTPUT.PUT_LINE('  ENABLED: ' || v_job_name);
+                v_count := v_count + 1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('  ERROR enabling ' || v_job_name || ': ' || SQLERRM);
+            END;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('  ALREADY ENABLED: ' || v_job_name);
+        END IF;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Total migrated jobs enabled: ' || v_count);
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'NOTE: The following jobs remain DISABLED:');
+    DBMS_OUTPUT.PUT_LINE('  - MIS_BATCH_CONTROL (disabled job)');
+    DBMS_OUTPUT.PUT_LINE('  - MIS_BATCH_ROLL (disabled job)');
+    DBMS_OUTPUT.PUT_LINE('  - MIS_PRE_LOAD (disabled job)');
+    DBMS_OUTPUT.PUT_LINE('  - ORCL_BATCH_STATUS_EXTRACT_JOB (last run 2018)');
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Not migrated (use cron jobs instead):');
+    DBMS_OUTPUT.PUT_LINE('  - DAILY_LOG_PURGE (already in root crontab)');
+    DBMS_OUTPUT.PUT_LINE('  - MISLOAD_FAILURE_CHECK (should be cron job)');
+    
+END;
+/
+
+PROMPT 
+PROMPT Current status of all scheduler jobs:
+PROMPT ========================================================================
+SELECT 
+    RPAD(owner, 15) AS owner,
+    RPAD(job_name, 40) AS job_name,
+    RPAD(enabled, 8) AS enabled,
+    RPAD(state, 12) AS state,
+    RPAD(NVL(TO_CHAR(last_start_date, 'YYYY-MM-DD HH24:MI'), 'Never'), 17) AS last_run
+FROM dba_scheduler_jobs
+WHERE owner IN ('STRMADMIN', '{{ oracle_goldengate_sql_owner }}')
+ORDER BY owner, job_name;
+
+PROMPT
+PROMPT Switchover completed
+spool off

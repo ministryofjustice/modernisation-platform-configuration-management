@@ -1,0 +1,62 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG AS
+
+    -- package version
+    g_version      VARCHAR2(20) := '1.0e.1';
+
+/*
+ *  NOMIS AuditData GoldenGate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle GoldenGate processes for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_sql_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e audit based on AUD_STRM_PKG2
+ */
+
+    -- package level variable declarations
+--    g_queue_owner   VARCHAR2(30) := USER; this would be right if the package was installed in ggint but its now in auditdata
+    g_queue_owner   VARCHAR2(30) := '{{ oracle_goldengate_dbuser }}';
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';
+    g_capture_name   VARCHAR2(30) := '{{ oracle_goldengate_group.auditdata.extract_name }}';
+    g_consumer_name   VARCHAR2(30) := 'OGG$CAP_'||g_capture_name;
+--    g_capture_rs_name   VARCHAR2(30) := 'RS_C_OMS_AUDIT';
+--    g_capture_nrs_name   VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
+    g_apply_name   VARCHAR2(30) := 'OGG$'||auditdata_gen_pkg.g_replicat_name;
+    g_apply_rs_name VARCHAR2(30) := 'RS_A_'||auditdata_gen_pkg.g_replicat_name;
+    g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||auditdata_gen_pkg.g_replicat_name;
+
+
+    -- sleep before retry period: times in seconds to wait after timeout before retry
+    g_sleep1   NUMBER := 180;
+    g_sleep2   NUMBER := 540;
+
+    -- define error conditions for exception handling
+    timeout_stopping_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(timeout_stopping_process, -26672);
+
+    -- Packaged procedure stop_extract stops audit capture process
+    PROCEDURE stop_extract (p_force IN BOOLEAN  DEFAULT FALSE);
+
+    -- Packaged procedure start_extract starts audit capture process
+    PROCEDURE start_extract;
+
+    -- Packaged procedure stop_replicat stops audit apply process
+    PROCEDURE stop_replicat (p_force IN BOOLEAN DEFAULT FALSE);
+
+    -- Packaged procedure start_replicat starts audit apply process
+    -- first resets apply handlers and checks for errors
+    PROCEDURE start_replicat (p_refresh_flag IN BOOLEAN DEFAULT TRUE);
+
+    -- Packaged function get_version
+    -- will return a VARCHAR2 string containing a package version number
+    FUNCTION get_version RETURN varchar2;
+
+END AUDITDATA_GG_CTL_PKG;
+/
+
+show errors
+

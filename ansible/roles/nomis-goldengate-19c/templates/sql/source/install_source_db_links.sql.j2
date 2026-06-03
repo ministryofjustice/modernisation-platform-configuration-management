@@ -1,0 +1,19 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_db_links.log
+
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Installing database link to '{{ oracle_goldengate_group.mis.tns_alias }}' as {{ oracle_goldengate_group.mis.schema_owner }}
+
+declare
+    v_count integer;
+begin
+    select count(*) into v_count from dba_db_links where db_link like 'CNOM_MIS_LINK%';
+    if v_count = 1 then
+        execute immediate 'DROP DATABASE LINK CNOM_MIS_LINK';
+    end if;
+    execute immediate 'CREATE DATABASE LINK CNOM_MIS_LINK CONNECT TO {{ oracle_goldengate_group.mis.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_mis_schema_password }} USING ''{{ oracle_goldengate_group.mis.tns_alias }}''';
+end;
+/
+
+PROMPT Completed installation of db links
+spool off
