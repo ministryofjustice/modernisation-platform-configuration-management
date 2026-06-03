@@ -1,0 +1,96 @@
+from java.lang import String
+from javax.management import ObjectName
+
+oracleHome = '{{ weblogic_oracle_home }}'
+domainHome = '{{ weblogic_domain_home }}'
+domainName = '{{ weblogic_domain_name }}'
+adminUser = '{{ weblogic_admin_username }}'
+adminPassword = '{{ weblogic_admin_password }}'
+machineName = '{{ weblogic_domain_hostname }}'
+
+templates = [
+{% for template in weblogic_allowed_domain_templates %}
+    '{{ template }}',
+{% endfor %}
+]
+
+for template in templates:
+    if 'coherence' in template.lower():
+        raise Exception('Refusing to use Coherence template: ' + template)
+
+print('Creating domain ' + domainName + ' at ' + domainHome)
+
+readTemplate(templates[0])
+
+for template in templates[1:]:
+    print('Adding Oracle supplied template: ' + template)
+    addTemplate(template)
+
+cd('/Security/base_domain/User/weblogic')
+cmo.setName(adminUser)
+cmo.setPassword(adminPassword)
+
+cd('/Server/AdminServer')
+cmo.setName('{{ weblogic_admin_server_name }}')
+cmo.setListenAddress('{{ weblogic_admin_listen_address }}')
+cmo.setListenPort({{ weblogic_admin_listen_port }})
+
+create('{{ weblogic_admin_server_name }}', 'SSL')
+cd('/Server/{{ weblogic_admin_server_name }}/SSL/{{ weblogic_admin_server_name }}')
+set('Enabled', 'false')
+
+cd('/')
+create(machineName, 'Machine')
+cd('/Machines/' + machineName)
+create(machineName, 'NodeManager')
+cd('/Machines/' + machineName + '/NodeManager/' + machineName)
+set('ListenAddress', machineName)
+set('ListenPort', 5556)
+set('NMType', 'SSL')
+
+{% for cluster in weblogic_domain_clusters %}
+cd('/')
+if getMBean('/Clusters/{{ cluster }}') is None:
+    create('{{ cluster }}', 'Cluster')
+    cd('/Clusters/{{ cluster }}')
+    cmo.setClusterMessagingMode('unicast')
+{% endfor %}
+
+{% for server in weblogic_domain_servers %}
+{% if server.name != weblogic_admin_server_name %}
+cd('/')
+if getMBean('/Servers/{{ server.name }}') is None:
+    create('{{ server.name }}', 'Server')
+cd('/Servers/{{ server.name }}')
+cmo.setListenAddress('{{ server.listen_address }}')
+cmo.setListenPort({{ server.listen_port }})
+{% if server.cluster | default('') %}
+cmo.setCluster(getMBean('/Clusters/{{ server.cluster }}'))
+{% endif %}
+cmo.setMachine(getMBean('/Machines/' + machineName))
+create('{{ server.name }}', 'SSL')
+cd('/Servers/{{ server.name }}/SSL/{{ server.name }}')
+set('Enabled', 'false')
+{% endif %}
+
+cd('/Servers/{{ server.name }}')
+if getMBean('/Servers/{{ server.name }}/ServerStart/{{ server.name }}') is None:
+    create('{{ server.name }}', 'ServerStart')
+cd('/Servers/{{ server.name }}/ServerStart/{{ server.name }}')
+cmo.setArguments('{{ (server.jvm_args | default([])) | join(" ") }}')
+
+cd('/Servers/{{ server.name }}')
+if getMBean('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}') is not None:
+    cd('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}')
+    cmo.setPanicAction('no-action')
+    cmo.setFailureAction('no-action')
+{% endfor %}
+
+setOption('ServerStartMode', 'prod')
+setOption('OverwriteDomain', 'false')
+
+writeDomain(domainHome)
+closeTemplate()
+
+print('Domain created successfully')
+exit()

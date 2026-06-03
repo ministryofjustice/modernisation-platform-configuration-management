@@ -188,6 +188,14 @@
         - WLS_TAGSAR
         - WLS_HOTPAGE
 
+    - import_tasks: configure-server-runtime.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - weblogic_configure_runtime
+        - weblogic_disable_overload_protection
+        - weblogic_crash_on_oome
+
     - import_tasks: logging.yml
       tags:
         - ec2provision

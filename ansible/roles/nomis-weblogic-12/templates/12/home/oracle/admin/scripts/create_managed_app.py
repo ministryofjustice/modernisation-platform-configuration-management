@@ -47,6 +47,7 @@ msName = configProps.get("ms.name")
 msAddress = configProps.get("ms.address")
 msPort = configProps.get("ms.port")
 msCluster = configProps.get("ms.cluster")
+msStartArg = configProps.get("ms.startarg")
 
 # Data Source
 dsName = configProps.get("ds.name")
@@ -150,12 +151,33 @@ if msName:
         cmo.setRedirectStdoutToServerLogEnabled(true)
         cmo.setMemoryBufferSeverity('Debug')
         cd('/Servers/' + msName)
+        overload = getMBean('/Servers/' + msName + '/OverloadProtection/' + msName)
+        if overload is not None:
+            cd('/Servers/' + msName + '/OverloadProtection/' + msName)
+            cmo.setPanicAction('no-action')
+            cmo.setFailureAction('no-action')
+        cd('/Servers/' + msName)
         cmo.setCluster(getMBean('/Clusters/' + msCluster))
         machine = getMBean('/Machines/' + msAddress)
         if machine:
             cmo.setMachine(machine)
         else:
             print 'Machine ' + msAddress + ' not found. Skipping machine assignment.'
+        cd('/Servers/' + msName)
+        serverStart = getMBean('/Servers/' + msName + '/ServerStart/' + msName)
+        if serverStart is None:
+            create(msName, 'ServerStart')
+
+        cd('/Servers/' + msName + '/ServerStart/' + msName)
+        if msStartArg:
+            currentArgs = cmo.getArguments()
+            if currentArgs is None:
+                currentArgs = ''
+            mergedArgs = currentArgs
+            for arg in msStartArg.split():
+                if arg not in mergedArgs.split():
+                    mergedArgs = (mergedArgs + ' ' + arg).strip()
+            cmo.setArguments(mergedArgs)
         save()
         activate()
     # Only start the server if start_managed_server is True

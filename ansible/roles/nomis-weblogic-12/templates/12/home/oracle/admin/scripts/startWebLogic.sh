@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+
+export USER_MEM_ARGS="${USER_MEM_ARGS:-} {{ weblogic_common_jvm_args | join(' ') }}"
+
 echo "/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startWebLogic.sh"
 nohup /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startWebLogic.sh &
 echo "Waiting for RUNNING"
