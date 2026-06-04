@@ -26,11 +26,15 @@ for template in templates[1:]:
     print('Adding Oracle supplied template: ' + template)
     addTemplate(template)
 
-cd('/JDBCSystemResource/opss-audit-DBDS/JdbcResource/opss-audit-DBDS/JDBCDriverParams/NO_NAME')
-set('Url', '{{ weblogic_opss_audit_db_url }}')
-set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
-cd('/JDBCSystemResource/opss-audit-DBDS/JdbcResource/opss-audit-DBDS/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
-set('Value', '{{ weblogic_db_repo_prefix }}_STB')
+def configure_jdbc_datasource(datasource_name, url, username, password):
+    cd('/JDBCSystemResource/' + datasource_name + '/JdbcResource/' + datasource_name + '/JDBCDriverParams/NO_NAME')
+    set('Url', url)
+    set('PasswordEncrypted', password)
+    cd('/JDBCSystemResource/' + datasource_name + '/JdbcResource/' + datasource_name + '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
+    set('Value', username)
+
+configure_jdbc_datasource('opss-audit-DBDS', '{{ weblogic_opss_audit_db_url }}', '{{ weblogic_db_repo_prefix }}_STB', '{{ weblogic_db_repo_schema_password }}')
+configure_jdbc_datasource('opss-data-source', '{{ weblogic_opss_audit_db_url }}', '{{ weblogic_db_repo_prefix }}_STB', '{{ weblogic_db_repo_schema_password }}')
 
 cd('/Security/base_domain/User/weblogic')
 cmo.setName(adminUser)
