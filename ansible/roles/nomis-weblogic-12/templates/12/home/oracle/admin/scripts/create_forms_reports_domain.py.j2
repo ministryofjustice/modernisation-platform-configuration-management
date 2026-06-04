@@ -60,8 +60,10 @@ cmo.setClusterMessagingMode('unicast')
 
 {% for server in weblogic_domain_servers %}
 {% if server.name != weblogic_admin_server_name %}
-cd('/')
-if getMBean('/Servers/{{ server.name }}') is None:
+cd('/Servers')
+serverMap = ls(returnMap='true')
+if '{{ server.name }}' not in serverMap:
+    cd('/')
     create('{{ server.name }}', 'Server')
 cd('/Servers/{{ server.name }}')
 cmo.setListenAddress('{{ server.listen_address }}')
@@ -70,7 +72,9 @@ cmo.setListenPort({{ server.listen_port }})
 cmo.setCluster(getMBean('/Clusters/{{ server.cluster }}'))
 {% endif %}
 cmo.setMachine(getMBean('/Machines/' + machineName))
-create('{{ server.name }}', 'SSL')
+
+if getMBean('/Servers/{{ server.name }}/SSL/{{ server.name }}') is None:
+    create('{{ server.name }}', 'SSL')
 cd('/Servers/{{ server.name }}/SSL/{{ server.name }}')
 set('Enabled', 'false')
 {% endif %}
