@@ -34,13 +34,24 @@
         - ec2provision
         - weblogic_install_forms
 
-    # only needs to be done once per build
+    - import_tasks: set-rcu-prefix.yml
+      tags:
+        - ec2provision
+        - weblogic_create_db_repo
+        - weblogic_install_domain
+
+    # Must run before domain creation because JRF/Forms/Reports templates require
+    # the RCU-created STB/OPSS schemas.
     - import_tasks: create-db-repo.yml
       tags:
+        - ec2provision
         - weblogic_create_db_repo
-        - never
-      when: weblogic_db_repo_prefix is defined
-
+        - weblogic_install_domain
+      when:
+        - weblogic_db_repo_prefix is defined
+        - weblogic_db_repo_hostname is defined
+        - weblogic_db_repo_sid is defined
+        
     - import_tasks: install-domain.yml
       tags:
         - ec2provision

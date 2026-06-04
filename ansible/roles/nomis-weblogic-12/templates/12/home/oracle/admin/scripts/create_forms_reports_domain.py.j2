@@ -105,6 +105,18 @@ if getMBean('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}') i
 setOption('ServerStartMode', 'prod')
 setOption('OverwriteDomain', 'false')
 
+print('Configuring RCU repository database defaults')
+setOption('RCUDbInfo', {
+    'Database Type': 'ORACLE',
+    'Host Name': '{{ weblogic_db_repo_hostname }}',
+    'Port': '1521',
+    'Database Name': '{{ weblogic_db_repo_sid }}',
+    'Database User': '{{ weblogic_db_repo_prefix }}_STB',
+    'Database Password': '{{ weblogic_db_repo_schema_password }}',
+    'Schema Prefix': '{{ weblogic_db_repo_prefix }}'
+})
+getDatabaseDefaults()
+
 writeDomain(domainHome)
 closeTemplate()
 

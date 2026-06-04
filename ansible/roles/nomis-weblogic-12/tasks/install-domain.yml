@@ -38,6 +38,23 @@
     - /home/oracle/admin/scripts
   when: not weblogic_domain_installed_check.stat.exists
 
+- name: Fail if RCU repository details are not configured
+  ansible.builtin.assert:
+    that:
+      - weblogic_db_repo_hostname is defined
+      - weblogic_db_repo_hostname | length > 0
+      - weblogic_db_repo_sid is defined
+      - weblogic_db_repo_sid | length > 0
+      - weblogic_db_repo_prefix is defined
+      - weblogic_db_repo_prefix | length > 0
+      - weblogic_db_repo_schema_password is defined
+      - weblogic_db_repo_schema_password | length > 0
+    fail_msg: >-
+      RCU repository details are required before creating the WebLogic
+      Forms and Reports domain. Ensure create-db-repo.yml has run and
+      weblogic_db_repo_hostname, weblogic_db_repo_sid, weblogic_db_repo_prefix,
+      and weblogic_db_repo_schema_password are set.
+      
 - name: Copy WLST domain creation script
   ansible.builtin.template:
     src: "12/home/oracle/admin/scripts/create_forms_reports_domain.py.j2"

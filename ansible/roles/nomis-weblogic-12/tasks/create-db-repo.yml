@@ -1,4 +1,26 @@
 ---
+- name: Check existing domain RCU prefix marker
+  ansible.builtin.stat:
+    path: /u01/software/weblogic/.rcu_prefix
+  register: weblogic_existing_rcu_prefix_marker
+
+- name: Read existing domain RCU prefix marker
+  ansible.builtin.slurp:
+    path: /u01/software/weblogic/.rcu_prefix
+  register: weblogic_existing_rcu_prefix_marker_content
+  when: weblogic_existing_rcu_prefix_marker.stat.exists
+
+- name: Fail if requested RCU prefix differs from existing local marker
+  ansible.builtin.assert:
+    that:
+      - weblogic_db_repo_prefix == (weblogic_existing_rcu_prefix_marker_content.content | b64decode | trim)
+    fail_msg: >-
+      Refusing to change RCU prefix for this WebLogic instance.
+      Existing prefix is {{ weblogic_existing_rcu_prefix_marker_content.content | b64decode | trim }},
+      requested prefix is {{ weblogic_db_repo_prefix }}.
+      Changing the prefix would create a new set of RCU schemas and may orphan the existing domain.
+  when: weblogic_existing_rcu_prefix_marker.stat.exists
+
 - name: Copy repository database config
   ansible.builtin.template:
     src: "12{{ item }}"
@@ -8,6 +30,29 @@
     mode: '0600'
   loop:
     - /u01/software/weblogic/rcu.rsp
+
+- name: Check whether RCU service table schema already exists
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    source ~oracle/.bash_profile
+    sqlplus -s /nolog <<'SQL'
+    connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521:{{ weblogic_db_repo_sid }} as sysdba
+    set heading off feedback off verify off echo off pagesize 0
+    select count(*)
+    from dba_users
+    where username = upper('{{ weblogic_db_repo_prefix }}_STB');
+    exit
+    SQL
+  args:
+    executable: /bin/bash
+  register: rcu_stb_schema_check
+  changed_when: false
+  no_log: true
+  
+- name: Set RCU repository exists fact
+  ansible.builtin.set_fact:
+    weblogic_rcu_repository_exists: "{{ (rcu_stb_schema_check.stdout | trim | int) > 0 }}"
 
 - name: Create repository database using rcu
   become_user: oracle
@@ -21,18 +66,25 @@
     timeout: 180
   failed_when: false
   register: create_db_repo
+  when: not weblogic_rcu_repository_exists
 
 - name: Debug rcu stdout
   ansible.builtin.debug:
     var: create_db_repo.stdout_lines
-  when: create_db_repo.stdout_lines is defined
+  when: 
+    - create_db_repo is defined
+    - create_db_repo.stdout_lines is defined
 
 - name: Debug rcu stderr
   ansible.builtin.debug:
     var: create_db_repo.stderr_lines
-  when: create_db_repo.stderr_lines is defined
+  when: 
+    - create_db_repo is defined
+    - create_db_repo.stderr_lines is defined
 
 - name: Fail on rcu error
   ansible.builtin.fail:
     msg: "Could not create repository database with rcu, exit code {{ create_db_repo.rc|default(-1) }}"
-  when: create_db_repo.rc|default(-1) != 0
+  when: 
+    - create_db_repo is defined
+    - create_db_repo.rc|default(-1) != 0

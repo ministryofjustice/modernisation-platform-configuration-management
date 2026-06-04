@@ -1,0 +1,61 @@
+
+- name: Derive RCU prefix from EC2 Name tag
+  set_fact:
+    weblogic_db_repo_prefix: >-
+      {{
+        (
+          ec2.tags.Name
+          | regex_replace('^([^-]+)-.*-([a-z])$', '\1W\2')
+          | upper
+          | regex_replace('[^A-Z0-9]', '')
+        )
+      }}
+
+- name: Validate derived RCU prefix
+  assert:
+    that:
+      - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{1,11}$')
+    fail_msg: >-
+      Derived RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid.
+      Expected EC2 Name tag format like qa11g-nomis-web12-a.
+
+- name: Ensure WebLogic software directory exists
+  ansible.builtin.file:
+    path: /u01/software/weblogic
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+
+- name: Check for existing local RCU prefix marker
+  ansible.builtin.stat:
+    path: /u01/software/weblogic/.rcu_prefix
+  register: weblogic_rcu_prefix_marker
+
+- name: Read existing local RCU prefix marker
+  ansible.builtin.slurp:
+    path: /u01/software/weblogic/.rcu_prefix
+  register: weblogic_rcu_prefix_marker_content
+  when: weblogic_rcu_prefix_marker.stat.exists
+
+- name: Fail if derived RCU prefix differs from existing local marker
+  ansible.builtin.assert:
+    that:
+      - weblogic_db_repo_prefix == (weblogic_rcu_prefix_marker_content.content | b64decode | trim)
+    fail_msg: >-
+      Refusing to change RCU prefix for this WebLogic instance.
+      Existing prefix is {{ weblogic_rcu_prefix_marker_content.content | b64decode | trim }},
+      derived prefix is {{ weblogic_db_repo_prefix }}.
+      Changing this would create a different set of RCU schemas.
+  when: weblogic_rcu_prefix_marker.stat.exists
+
+- name: Persist local RCU prefix marker
+  ansible.builtin.copy:
+    content: "{{ weblogic_db_repo_prefix }}\n"
+    dest: /u01/software/weblogic/.rcu_prefix
+    owner: oracle
+    group: oinstall
+    mode: "0600"
+    force: false
+  when: not weblogic_rcu_prefix_marker.stat.exists
+  
