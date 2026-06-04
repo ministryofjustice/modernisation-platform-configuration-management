@@ -49,11 +49,13 @@ set('ListenPort', 5556)
 set('NMType', 'SSL')
 
 {% for cluster in weblogic_domain_clusters %}
-cd('/')
-if getMBean('/Clusters/{{ cluster }}') is None:
+cd('/Clusters')
+clusterMap = ls(returnMap='true')
+if '{{ cluster }}' not in clusterMap:
+    cd('/')
     create('{{ cluster }}', 'Cluster')
-    cd('/Clusters/{{ cluster }}')
-    cmo.setClusterMessagingMode('unicast')
+cd('/Clusters/{{ cluster }}')
+cmo.setClusterMessagingMode('unicast')
 {% endfor %}
 
 {% for server in weblogic_domain_servers %}
