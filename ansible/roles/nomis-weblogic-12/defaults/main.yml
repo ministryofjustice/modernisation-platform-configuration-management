@@ -109,6 +109,7 @@ weblogic_secretsmanager_passwords:
 weblogic_domain_name: nomis
 weblogic_domain_home: /u01/app/oracle/Middleware/user_projects/domains/nomis
 weblogic_oracle_home: /u01/app/oracle/Middleware
+weblogic_opss_audit_db_url: "jdbc:oracle:thin:@//{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid | upper }}"
 weblogic_admin_server_name: AdminServer
 weblogic_admin_listen_port: 7001
 weblogic_admin_listen_address: "{{ weblogic_domain_hostname }}"

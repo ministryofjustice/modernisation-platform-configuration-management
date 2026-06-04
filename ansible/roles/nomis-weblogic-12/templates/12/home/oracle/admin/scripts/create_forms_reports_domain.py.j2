@@ -26,6 +26,12 @@ for template in templates[1:]:
     print('Adding Oracle supplied template: ' + template)
     addTemplate(template)
 
+cd('/JDBCSystemResource/opss-audit-DBDS/JdbcResource/opss-audit-DBDS/JDBCDriverParams/NO_NAME')
+set('Url', '{{ weblogic_opss_audit_db_url }}')
+set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
+cd('/JDBCSystemResource/opss-audit-DBDS/JdbcResource/opss-audit-DBDS/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
+set('Value', '{{ weblogic_db_repo_prefix }}_STB')
+
 cd('/Security/base_domain/User/weblogic')
 cmo.setName(adminUser)
 cmo.setPassword(adminPassword)
