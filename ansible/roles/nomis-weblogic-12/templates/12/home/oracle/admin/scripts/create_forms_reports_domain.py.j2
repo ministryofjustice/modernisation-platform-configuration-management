@@ -106,15 +106,30 @@ setOption('ServerStartMode', 'prod')
 setOption('OverwriteDomain', 'false')
 
 print('Configuring RCU repository database defaults')
-setOption('RCUDbInfo', {
-    'Database Type': 'ORACLE',
-    'Host Name': '{{ weblogic_db_repo_hostname }}',
-    'Port': '1521',
-    'Database Name': '{{ weblogic_db_repo_sid }}',
-    'Database User': '{{ weblogic_db_repo_prefix }}_STB',
-    'Database Password': '{{ weblogic_db_repo_schema_password }}',
-    'Schema Prefix': '{{ weblogic_db_repo_prefix }}'
-})
+
+def cd_first(paths):
+    for p in paths:
+        try:
+            cd(p)
+            return p
+        except:
+            pass
+    raise Exception('Could not cd to any of: ' + str(paths))
+
+print('Configuring RCU service table datasource')
+cd_first([
+    '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0',
+    '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME'
+])
+set('DriverName', 'oracle.jdbc.OracleDriver')
+set('URL', 'jdbc:oracle:thin:@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }}')
+set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
+cd_first([
+    '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0/Properties/NO_NAME_0/Property/user',
+    '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user'
+])
+set('Value', '{{ weblogic_db_repo_prefix }}_STB')
+
 getDatabaseDefaults()
 
 writeDomain(domainHome)
