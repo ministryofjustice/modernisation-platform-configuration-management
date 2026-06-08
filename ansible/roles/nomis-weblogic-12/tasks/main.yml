@@ -36,7 +36,7 @@
 
     - import_tasks: set-rcu-prefix.yml
       tags:
-        - ec2provision
+#        - ec2provision
         - weblogic_create_db_repo
         - weblogic_install_domain
 
@@ -44,7 +44,7 @@
     # the RCU-created STB/OPSS schemas.
     - import_tasks: create-db-repo.yml
       tags:
-        - ec2provision
+#        - ec2provision
         - weblogic_create_db_repo
         - weblogic_install_domain
       when:
@@ -56,7 +56,6 @@
       tags:
         - ec2provision
         - weblogic_install_domain
-        - weblogic_install_domain_only # TODO: Review
 
     - import_tasks: packages.yml
       tags:
