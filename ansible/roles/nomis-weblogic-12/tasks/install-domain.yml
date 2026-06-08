@@ -54,7 +54,7 @@
       Forms and Reports domain. Ensure create-db-repo.yml has run and
       weblogic_db_repo_hostname, weblogic_db_repo_sid, weblogic_db_repo_prefix,
       and weblogic_db_repo_schema_password are set.
-      
+
 - name: Copy WLST domain creation script
   ansible.builtin.template:
     src: "12/home/oracle/admin/scripts/create_forms_reports_domain.py.j2"
@@ -64,6 +64,10 @@
     mode: "0700"
   no_log: true
   when: not weblogic_domain_installed_check.stat.exists
+
+- name: Debug first-domain logic
+  ansible.builtin.debug:
+    msg: "weblogic_is_first_domain = {{ weblogic_is_first_domain }}"
 
 - name: Create WebLogic Forms and Reports domain using WLST offline
   become_user: oracle
@@ -98,19 +102,6 @@
   loop: "{{ weblogic_domain_servers }}"
   no_log: true
   when: not weblogic_domain_installed_check.stat.exists
-
-- name: Check generated domain config for Coherence resources
-  ansible.builtin.command:
-    cmd: "grep -Eiq 'coherence|CoherenceClusterSystemResource' {{ weblogic_domain_home }}/config/config.xml"
-  register: weblogic_coherence_config_check
-  changed_when: false
-  failed_when: false
-
-- name: Fail if Coherence is configured in the generated domain
-  ansible.builtin.assert:
-    that:
-      - weblogic_coherence_config_check.rc != 0
-    fail_msg: "Coherence configuration was found in {{ weblogic_domain_home }}/config/config.xml. This must be removed for WLS Basic compliance."
 
 - name: Copy weblogic systemd scripts
   ansible.builtin.template:

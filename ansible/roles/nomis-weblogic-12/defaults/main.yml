@@ -71,7 +71,8 @@ weblogic_domain_hostname: "{{ ansible_facts.hostname }}"
 # Set these in appropriate group vars:
 # weblogic_db_repo_hostname:
 # weblogic_db_repo_sid:
-# weblogic_db_repo_prefix:
+# Shared RCU configuration (must be identical across all EC2s)
+weblogic_db_repo_prefix: NOMISWLS
 weblogic_db_repo_username: "sys"
 
 weblogic_db_repo_password_secret:

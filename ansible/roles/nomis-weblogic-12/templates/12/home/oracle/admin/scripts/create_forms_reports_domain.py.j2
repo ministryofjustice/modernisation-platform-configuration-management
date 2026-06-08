@@ -4,9 +4,13 @@ from javax.management import ObjectName
 oracleHome = '{{ weblogic_oracle_home }}'
 domainHome = '{{ weblogic_domain_home }}'
 domainName = '{{ weblogic_domain_name }}'
+
 adminUser = '{{ weblogic_admin_username }}'
 adminPassword = '{{ weblogic_admin_password }}'
+
 machineName = '{{ weblogic_domain_hostname }}'
+
+isFirstDomain = {{ 'true' if weblogic_is_first_domain else 'false' }}
 
 templates = [
 {% for template in weblogic_allowed_domain_templates %}
@@ -14,32 +18,50 @@ templates = [
 {% endfor %}
 ]
 
+# ✅ Safety: block Coherence templates
 for template in templates:
     if 'coherence' in template.lower():
         raise Exception('Refusing to use Coherence template: ' + template)
 
 print('Creating domain ' + domainName + ' at ' + domainHome)
 
+# ✅ Load templates
 readTemplate(templates[0])
-
 for template in templates[1:]:
     print('Adding Oracle supplied template: ' + template)
     addTemplate(template)
 
-def configure_jdbc_datasource(datasource_name, url, username, password):
-    cd('/JDBCSystemResource/' + datasource_name + '/JdbcResource/' + datasource_name + '/JDBCDriverParams/NO_NAME')
+# ✅ Helper: configure JDBC datasource
+def configure_jdbc_datasource(ds_name, url, username, password):
+    cd('/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME')
     set('Url', url)
     set('PasswordEncrypted', password)
-    cd('/JDBCSystemResource/' + datasource_name + '/JdbcResource/' + datasource_name + '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
+
+    cd('/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name +
+       '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
     set('Value', username)
 
-configure_jdbc_datasource('opss-audit-DBDS', '{{ weblogic_opss_audit_db_url }}', '{{ weblogic_db_repo_prefix }}_OPSS', '{{ weblogic_db_repo_schema_password }}')
-configure_jdbc_datasource('opss-data-source', '{{ weblogic_opss_audit_db_url }}', '{{ weblogic_db_repo_prefix }}_OPSS', '{{ weblogic_db_repo_schema_password }}')
+# ✅ Configure OPSS + Audit datasources ONLY (no init here)
+configure_jdbc_datasource(
+    'opss-audit-DBDS',
+    '{{ weblogic_opss_audit_db_url }}',
+    '{{ weblogic_db_repo_prefix }}_OPSS',
+    '{{ weblogic_db_repo_schema_password }}'
+)
 
+configure_jdbc_datasource(
+    'opss-data-source',
+    '{{ weblogic_opss_audit_db_url }}',
+    '{{ weblogic_db_repo_prefix }}_OPSS',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+# ✅ Admin user
 cd('/Security/base_domain/User/weblogic')
 cmo.setName(adminUser)
 cmo.setPassword(adminPassword)
 
+# ✅ Admin server
 cd('/Server/AdminServer')
 cmo.setName('{{ weblogic_admin_server_name }}')
 cmo.setListenAddress('{{ weblogic_admin_listen_address }}')
@@ -49,64 +71,80 @@ create('{{ weblogic_admin_server_name }}', 'SSL')
 cd('/Server/{{ weblogic_admin_server_name }}/SSL/{{ weblogic_admin_server_name }}')
 set('Enabled', 'false')
 
+# ✅ Machine / NodeManager
 cd('/')
 create(machineName, 'Machine')
+
 cd('/Machines/' + machineName)
 create(machineName, 'NodeManager')
+
 cd('/Machines/' + machineName + '/NodeManager/' + machineName)
 set('ListenAddress', machineName)
 set('ListenPort', 5556)
 set('NMType', 'SSL')
 
+# ✅ Clusters
 {% for cluster in weblogic_domain_clusters %}
 cd('/Clusters')
 clusterMap = ls(returnMap='true')
 if '{{ cluster }}' not in clusterMap:
     cd('/')
     create('{{ cluster }}', 'Cluster')
+
 cd('/Clusters/{{ cluster }}')
 cmo.setClusterMessagingMode('unicast')
 {% endfor %}
 
+# ✅ Servers
 {% for server in weblogic_domain_servers %}
 {% if server.name != weblogic_admin_server_name %}
 cd('/Servers')
 serverMap = ls(returnMap='true')
+
 if '{{ server.name }}' not in serverMap:
     cd('/')
     create('{{ server.name }}', 'Server')
+
 cd('/Servers/{{ server.name }}')
 cmo.setListenAddress('{{ server.listen_address }}')
 cmo.setListenPort({{ server.listen_port }})
-{% if server.cluster | default('') %}
+
+{% if server.cluster %}
 cmo.setCluster(getMBean('/Clusters/{{ server.cluster }}'))
 {% endif %}
+
 cmo.setMachine(getMBean('/Machines/' + machineName))
 
 if getMBean('/Servers/{{ server.name }}/SSL/{{ server.name }}') is None:
     create('{{ server.name }}', 'SSL')
+
 cd('/Servers/{{ server.name }}/SSL/{{ server.name }}')
 set('Enabled', 'false')
 {% endif %}
 
 cd('/Servers/{{ server.name }}')
+
 if getMBean('/Servers/{{ server.name }}/ServerStart/{{ server.name }}') is None:
     create('{{ server.name }}', 'ServerStart')
+
 cd('/Servers/{{ server.name }}/ServerStart/{{ server.name }}')
 cmo.setArguments('{{ (server.jvm_args | default([])) | join(" ") }}')
 
 cd('/Servers/{{ server.name }}')
+
 if getMBean('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}') is not None:
     cd('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}')
     cmo.setPanicAction('no-action')
     cmo.setFailureAction('no-action')
+
 {% endfor %}
 
+# ✅ Set options BEFORE DB interaction
 setOption('ServerStartMode', 'prod')
 setOption('OverwriteDomain', 'false')
+setOption('RCUData', 'true')
 
-print('Configuring RCU repository database defaults')
-
+# ✅ Configure RCU STB datasource explicitly
 def cd_first(paths):
     for p in paths:
         try:
@@ -116,23 +154,34 @@ def cd_first(paths):
             pass
     raise Exception('Could not cd to any of: ' + str(paths))
 
-print('Configuring RCU service table datasource')
+print('Configuring RCU Service Table datasource')
+
 cd_first([
     '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0',
     '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME'
 ])
+
 set('DriverName', 'oracle.jdbc.OracleDriver')
 set('URL', 'jdbc:oracle:thin:@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }}')
 set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
+
 cd_first([
     '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0/Properties/NO_NAME_0/Property/user',
     '/JDBCSystemResource/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user'
 ])
+
 set('Value', '{{ weblogic_db_repo_prefix }}_STB')
 
-getDatabaseDefaults()
+# ✅ CRITICAL LOGIC
+if isFirstDomain:
+    print('First domain detected - performing OPSS/MDS initialization')
+    getDatabaseDefaults()
+else:
+    print('Schemas already initialized - skipping OPSS/MDS initialization')
 
+# ✅ Write domain
 writeDomain(domainHome)
+
 closeTemplate()
 
 print('Domain created successfully')
