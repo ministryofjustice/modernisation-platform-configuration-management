@@ -1,0 +1,26 @@
+adminUser = '{{ weblogic_admin_username }}'
+adminPassword = '{{ weblogic_admin_password }}'
+adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
+
+componentName = '{{ weblogic_ohs_component_name | default("ohs1") }}'
+machineName = '{{ weblogic_domain_hostname }}'
+listenPort = '{{ weblogic_ohs_listen_port | default(7777) }}'
+sslPort = '{{ weblogic_ohs_ssl_port | default(4443) }}'
+
+connect(adminUser, adminPassword, adminURL)
+
+existing = getMBean('/SystemComponents/' + componentName)
+if existing is None:
+    print('Creating OHS instance ' + componentName)
+    ohs_createInstance(
+        instanceName=componentName,
+        machine=machineName,
+        listenPort=listenPort,
+        sslPort=sslPort
+    )
+    print('CHANGED')
+else:
+    print('OHS instance ' + componentName + ' already exists')
+
+disconnect()
+exit()

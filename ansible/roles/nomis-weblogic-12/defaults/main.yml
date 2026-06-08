@@ -60,6 +60,9 @@ tagsar_sql_file_paths:
 
 db_config: "{{ db_configs[weblogic_db_name] }}"
 reports_server_name: rep_server1
+weblogic_ohs_component_name: ohs1
+weblogic_ohs_listen_port: 7777
+weblogic_ohs_ssl_port: 4443
 weblogic_admin_username: weblogic
 weblogic_db_name: "{{ ec2.tags['oracle-db-name'] }}"
 weblogic_db_hostname_a: "{{ ec2.tags['oracle-db-hostname-a'] }}"
@@ -143,6 +146,7 @@ weblogic_allowed_domain_templates:
   - "{{ weblogic_oracle_home }}/wlserver/common/templates/wls/wls.jar"
   - "{{ weblogic_oracle_home }}/oracle_common/common/templates/wls/oracle.jrf_template.jar"
   - "{{ weblogic_oracle_home }}/forms/common/templates/wls/forms_template.jar"
+  - "{{ weblogic_oracle_home }}/ReportsServerComponent/common/templates/wls/oracle.reports_server_template.jar"
   - "{{ weblogic_oracle_home }}/reports/common/templates/wls/oracle.reports_app_template.jar"
   - "{{ weblogic_oracle_home }}/ohs/common/templates/wls/ohs_managed_template.jar"
 

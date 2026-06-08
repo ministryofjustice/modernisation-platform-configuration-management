@@ -115,6 +115,46 @@
     - /etc/systemd/system/WLS_FORMS.service
     - /etc/systemd/system/WLS_REPORTS.service
 
+- name: Copy OHS instance creation script
+  ansible.builtin.template:
+    src: "12/home/oracle/admin/scripts/create_ohs_instance.py.j2"
+    dest: "/home/oracle/admin/scripts/create_ohs_instance.py"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  no_log: true
+
+- name: Check whether OHS instance already exists
+  ansible.builtin.stat:
+    path: "{{ weblogic_domain_home }}/config/fmwconfig/components/OHS/instances/{{ weblogic_ohs_component_name | default('ohs1') }}"
+  register: weblogic_ohs_instance_check
+
+- name: Start Node Manager before creating OHS instance
+  ansible.builtin.service:
+    name: weblogic-node-manager
+    state: started
+    daemon_reload: true
+  when: not weblogic_ohs_instance_check.stat.exists
+
+- name: Start Admin Server before creating OHS instance
+  ansible.builtin.service:
+    name: weblogic-server
+    state: started
+    daemon_reload: true
+  when: not weblogic_ohs_instance_check.stat.exists
+
+- name: Create OHS system component instance
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    {{ weblogic_oracle_home }}/oracle_common/common/bin/wlst.sh \
+      /home/oracle/admin/scripts/create_ohs_instance.py
+  args:
+    executable: /bin/bash
+  register: create_ohs_instance_result
+  changed_when: "'CHANGED' in create_ohs_instance_result.stdout"
+  when: not weblogic_ohs_instance_check.stat.exists
+  
 - name: Copy WLS_REPORTS systemd script with reports server name
   ansible.builtin.template:
     src: "12{{ item }}.j2"

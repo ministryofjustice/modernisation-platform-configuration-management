@@ -31,14 +31,29 @@ for template in templates[1:]:
     print('Adding Oracle supplied template: ' + template)
     addTemplate(template)
 
+# ✅ Configure RCU STB datasource explicitly
+def cd_first(paths):
+    for p in paths:
+        try:
+            cd(p)
+            return p
+        except:
+            pass
+    raise Exception('Could not cd to any of: ' + str(paths))
+
 # ✅ Helper: configure JDBC datasource
 def configure_jdbc_datasource(ds_name, url, username, password):
-    cd('/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME')
+    cd_first([
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME_0',
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME'
+    ])
     set('Url', url)
     set('PasswordEncrypted', password)
 
-    cd('/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name +
-       '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user')
+    cd_first([
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name +
+        '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user'
+    ])
     set('Value', username)
 
 # ✅ Configure OPSS + Audit datasources ONLY (no init here)
@@ -102,8 +117,15 @@ cd('/Servers')
 serverMap = ls(returnMap='true')
 
 if '{{ server.name }}' not in serverMap:
+{% if server.name in ['WLS_FORMS', 'WLS_REPORTS'] %}
+    raise Exception(
+        'Expected Oracle Forms/Reports template to create {{ server.name }}, '
+        + 'but it was not found. Check Forms/Reports templates and template load order.'
+    )
+{% else %}
     cd('/')
     create('{{ server.name }}', 'Server')
+{% endif %}
 
 cd('/Servers/{{ server.name }}')
 cmo.setListenAddress('{{ server.listen_address }}')
@@ -143,16 +165,6 @@ if getMBean('/Servers/{{ server.name }}/OverloadProtection/{{ server.name }}') i
 setOption('ServerStartMode', 'prod')
 setOption('OverwriteDomain', 'false')
 setOption('RCUData', 'true')
-
-# ✅ Configure RCU STB datasource explicitly
-def cd_first(paths):
-    for p in paths:
-        try:
-            cd(p)
-            return p
-        except:
-            pass
-    raise Exception('Could not cd to any of: ' + str(paths))
 
 print('Configuring RCU Service Table datasource')
 
