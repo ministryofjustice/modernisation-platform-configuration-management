@@ -11,10 +11,7 @@ BIN_DIR="$DOMAIN_HOME/bin"
 SERVER_NAME="$1"
 WLST_USERCONFIG="/u01/tmp/wlst.userconfig"
 WLST_USERKEY="/u01/tmp/wlst.userkey"
-
-generate_credentials() {
-  /home/oracle/admin/scripts/createCredentialsFiles.sh
-}
+WLS_HOSTNAME="{{ weblogic_domain_hostname }}"
 
 inject_nm_block() {
   FILE="$BIN_DIR/stopComponent.sh"
@@ -24,7 +21,7 @@ inject_nm_block() {
 echo \"  nmConnect(\" >> \"\${PY_LOC}\"\n\
 echo \"    userConfigFile='$WLST_USERCONFIG',\" >> \"\${PY_LOC}\"\n\
 echo \"    userKeyFile='$WLST_USERKEY',\" >> \"\${PY_LOC}\"\n\
-echo \"    host='localhost',\" >> \"\${PY_LOC}\"\n\
+echo \"    host='$WLS_HOSTNAME',\" >> \"\${PY_LOC}\"\n\
 echo \"    port=5556,\" >> \"\${PY_LOC}\"\n\
 echo \"    domainName='nomis',\" >> \"\${PY_LOC}\"\n\
 echo \"    nmType='ssl'\" >> \"\${PY_LOC}\"\n\
@@ -42,10 +39,8 @@ check_state() {
 
 cleanup() {
   sed -i '/# BEGIN WLST NM CONNECT/,/# END WLST NM CONNECT/d' "$BIN_DIR/stopComponent.sh"
-  rm -f "$WLST_USERCONFIG" "$WLST_USERKEY"
 }
 
-generate_credentials
 inject_nm_block
 
 STATE=$(check_state)

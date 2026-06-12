@@ -2,6 +2,7 @@
 oracle_file_config:
   - src: /home/oracle/sysconsoftware/12c_setup_config/signedjava/
     dest: /u01/app/oracle/Middleware/forms/java
+    mode: '0755'
   - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb.res
     dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/FORMS/instances/forms1/admin/resource/US/fmrweb.res
   - src: /home/oracle/sysconsoftware/12c_setup_config/fmrweb_utf8.res
@@ -25,8 +26,6 @@ oracle_file_config:
   - src: /u01/app/oracle/Middleware/forms/webutil.pll
     dest: /u01/tag/FormsSources/WEBUTIL.pll
 oracle_template_file_config:
-  - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
-    dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_REPORTS/applications/reports_12.2.1/configuration/rwservlet.properties
   - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
     dest: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/instances/ohs1/ssl.conf
   - src: 12/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/OHS/ssl.conf
@@ -111,9 +110,9 @@ weblogic_secretsmanager_passwords:
       - "{{ weblogic_admin_password_secret | items2dict }}"
 
 weblogic_domain_name: nomis
-weblogic_domain_home: /u01/app/oracle/Middleware/user_projects/domains/nomis
+weblogic_domain_home: /u01/app/oracle/Middleware/user_projects/domains/{{ weblogic_domain_name }}
 weblogic_oracle_home: /u01/app/oracle/Middleware
-weblogic_opss_audit_db_url: "jdbc:oracle:thin:@//{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid | upper }}"
+weblogic_db_repo_url: "jdbc:oracle:thin:@//{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid | upper }}"
 weblogic_admin_server_name: AdminServer
 weblogic_admin_listen_port: 7001
 weblogic_admin_listen_address: "{{ weblogic_domain_hostname }}"

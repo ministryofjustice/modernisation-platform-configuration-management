@@ -116,9 +116,8 @@ def wait_for_ms_start():
             Thread.sleep(10000)
             continue
 
-
 # Connect to the AdminServer.
-connect(adminUsername, adminPassword, adminURL)
+connect(userConfigFile='/u01/tmp/wlst.userconfig', userKeyFile='/u01/tmp/wlst.userkey', url=adminURL)
 
 if clusterName:
     existingCluster = getMBean('/Clusters/' + clusterName)

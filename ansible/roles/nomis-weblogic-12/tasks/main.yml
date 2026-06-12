@@ -1,13 +1,24 @@
 ---
 - name: Rhel8
   block:
+    # is this role being run on a container or a provisioned EC2? If container, then when copying files, use remote_src: true and set appropriate permissions. If EC2, then files should be in place so remote_src is not needed and permissions should already be correct. This is a bit of a hack to avoid having to maintain separate tasks for container vs EC2 provisioning, but it should work as long as the oracle_file_config variable is set correctly in each case (i.e. with correct src paths and permissions for container vs EC2).
+    - name: Set file copy mode based on environment
+      set_fact:
+        oracle_file_copy_remote_src: "{{ 'true' if ansible_facts['container'] else 'false' }}"
+
     - import_tasks: get-facts.yml
       tags:
+        - always
+
+    - import_tasks: disable-weblogic-services.yml
+      tags:
         - ec2provision
-        - weblogic_get_facts
-        - weblogic_setup_oracle_user
-        - weblogic_create_db_repo
-        - weblogic_install_domain
+        - weblogic_disable_services
+
+    - import_tasks: uninstall-weblogic.yml
+      tags:
+        - ec2provision
+        - weblogic_uninstall
 
     - import_tasks: setup-oracle-user.yml
       tags:
@@ -19,10 +30,10 @@
         - ec2provision
         - weblogic_install_jdk
 
-    - import_tasks: update-sysctl.yml
+    - import_tasks: sysctl-update.yml
       tags:
         - ec2provision
-        - weblogic_update_sysctl
+        - weblogic_sysctl_update
 
     - import_tasks: install-server.yml
       tags:
@@ -44,25 +55,29 @@
       tags:
         - ec2provision
         - weblogic_create_db_repo
-        - weblogic_install_domain
-        
+
     - import_tasks: install-domain.yml
       tags:
         - ec2provision
         - weblogic_install_domain
 
-    - import_tasks: packages.yml
+    - import_tasks: configure-domain-security.yml
       tags:
-        - amibuild
         - ec2provision
-        - weblogic_packages
+        - weblogic_configure_domain
+        - weblogic_install_domain
+
+    - import_tasks: install-ohs.yml
+      tags:
+        - ec2provision
+        - weblogic_install_ohs
 
     - import_tasks: extract-s3-zip-files.yml
       tags:
         - ec2provision
         - weblogic_extract_s3_zip_files
 
-    - name: Copy report server config
+    - name: Copy server config files
       ansible.builtin.template:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -88,6 +103,10 @@
       ansible.builtin.copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
+        remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
+        owner: "{{ item.owner | default('oracle') }}"
+        group: "{{ item.group | default('oinstall') }}"
+        mode: "{{ item.mode | default('0640') }}"
       loop: "{{ oracle_file_config }}"
       tags:
         - ec2provision
@@ -160,6 +179,8 @@
         - weblogic_copy_managed_server_files
         - weblogic_copy_managed_server_files_tgz
 
+# Should this really be run every time an instance is provisioned, or just on first instance? If the latter, then we need to add a check to only run if not already done (e.g. check for existence of the database objects that would be created by this task and only run if those don't exist).
+# In fact it should be made to be idempotent by checking for the existence of the database objects before attempting to create them, and skipping if they already exist. This way it can be safely run on every instance without causing issues.
     - import_tasks: configure-tagsar.yml
       tags:
         - ec2provision
@@ -244,5 +265,10 @@
       tags:
         - ec2provision
         - weblogic_enable_reports_server
+
+    - import_tasks: overload-protection.yml
+      tags:
+        - ec2provision
+        - weblogic_overload_protection
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

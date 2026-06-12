@@ -1,6 +1,6 @@
 ---
 - name: Ensure that the initial target directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ item.directory_path }}"
     state: directory
     mode: '0755'
@@ -18,7 +18,8 @@
   loop: "{{ oracle_setup_config }}"
 
 - name: Unzip contents
-  unarchive:
+  ansible.builtin.unarchive:
     src: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     dest: "{{ item.extract_path }}"
+    remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
   loop: "{{ oracle_setup_config }}"

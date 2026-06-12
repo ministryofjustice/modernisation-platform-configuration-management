@@ -55,6 +55,21 @@
       weblogic_db_repo_hostname, weblogic_db_repo_sid, weblogic_db_repo_prefix,
       and weblogic_db_repo_schema_password are set.
 
+# if weblogic_is_first_domain is not defined, default to true for backward compatibility
+- name: Set weblogic_is_first_domain fact if not defined
+  ansible.builtin.set_fact:
+    weblogic_is_first_domain: true
+  when: weblogic_is_first_domain is not defined
+  
+- name: Debug first-domain logic
+  ansible.builtin.debug:
+    msg: "weblogic_is_first_domain = {{ weblogic_is_first_domain }}"
+
+# debug msg output of weblogic_db_repo_prefix
+- name: Debug RCU prefix
+  ansible.builtin.debug:
+    msg: "Using RCU prefix '{{ weblogic_db_repo_prefix }}' for WebLogic domain"
+
 - name: Copy WLST domain creation script
   ansible.builtin.template:
     src: "12/home/oracle/admin/scripts/create_forms_reports_domain.py.j2"
@@ -62,106 +77,23 @@
     owner: oracle
     group: oinstall
     mode: "0700"
-  no_log: true
   when: not weblogic_domain_installed_check.stat.exists
-
-- name: Debug first-domain logic
-  ansible.builtin.debug:
-    msg: "weblogic_is_first_domain = {{ weblogic_is_first_domain }}"
 
 - name: Create WebLogic Forms and Reports domain using WLST offline
   become_user: oracle
   ansible.builtin.shell: |
     set -eo pipefail
     {{ weblogic_oracle_home }}/oracle_common/common/bin/wlst.sh \
-      /home/oracle/admin/scripts/create_forms_reports_domain.py
+      /home/oracle/admin/scripts/create_forms_reports_domain.py > /home/oracle/admin/scripts/create_forms_reports_domain.log 2>&1
   args:
     executable: /bin/bash
   register: create_weblogic_domain_result
   changed_when: true
   when: not weblogic_domain_installed_check.stat.exists
 
-- name: Create weblogic domain security directories
+- name: Remove /home/oracle/admin/scripts/create_forms_reports_domain.py
   ansible.builtin.file:
-    path: "{{ weblogic_domain_home }}/servers/{{ item.name }}/security"
-    state: directory
-    owner: oracle
-    group: oinstall
-    mode: "0755"
-  loop: "{{ weblogic_domain_servers }}"
-  when: not weblogic_domain_installed_check.stat.exists
+    path: /home/oracle/admin/scripts/create_forms_reports_domain.py
+    state: absent
 
-- name: Copy weblogic domain security files
-  ansible.builtin.template:
-    src: "12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties"
-    dest: "{{ weblogic_domain_home }}/servers/{{ item.name }}/security/boot.properties"
-    owner: oracle
-    group: oinstall
-    mode: "0600"
-    force: false
-  loop: "{{ weblogic_domain_servers }}"
-  no_log: true
-  when: not weblogic_domain_installed_check.stat.exists
 
-- name: Copy weblogic systemd scripts
-  ansible.builtin.template:
-    src: "12{{ item }}"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /etc/systemd/system/weblogic-node-manager.service
-    - /etc/systemd/system/weblogic-server.service
-    - /etc/systemd/system/weblogic-ohs.service
-    - /etc/systemd/system/WLS_FORMS.service
-    - /etc/systemd/system/WLS_REPORTS.service
-
-- name: Copy OHS instance creation script
-  ansible.builtin.template:
-    src: "12/home/oracle/admin/scripts/create_ohs_instance.py.j2"
-    dest: "/home/oracle/admin/scripts/create_ohs_instance.py"
-    owner: oracle
-    group: oinstall
-    mode: "0700"
-  no_log: true
-
-- name: Check whether OHS instance already exists
-  ansible.builtin.stat:
-    path: "{{ weblogic_domain_home }}/config/fmwconfig/components/OHS/instances/{{ weblogic_ohs_component_name | default('ohs1') }}"
-  register: weblogic_ohs_instance_check
-
-- name: Start Node Manager before creating OHS instance
-  ansible.builtin.service:
-    name: weblogic-node-manager
-    state: started
-    daemon_reload: true
-  when: not weblogic_ohs_instance_check.stat.exists
-
-- name: Start Admin Server before creating OHS instance
-  ansible.builtin.service:
-    name: weblogic-server
-    state: started
-    daemon_reload: true
-  when: not weblogic_ohs_instance_check.stat.exists
-
-- name: Create OHS system component instance
-  become_user: oracle
-  ansible.builtin.shell: |
-    set -eo pipefail
-    {{ weblogic_oracle_home }}/oracle_common/common/bin/wlst.sh \
-      /home/oracle/admin/scripts/create_ohs_instance.py
-  args:
-    executable: /bin/bash
-  register: create_ohs_instance_result
-  changed_when: "'CHANGED' in create_ohs_instance_result.stdout"
-  when: not weblogic_ohs_instance_check.stat.exists
-  
-- name: Copy WLS_REPORTS systemd script with reports server name
-  ansible.builtin.template:
-    src: "12{{ item }}.j2"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /etc/systemd/system/NOMIS_REPORTS_SERVER.service
-  vars:
-    reports_server: "{{ reports_server_name }}"
-    

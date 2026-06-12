@@ -29,6 +29,7 @@
     mode: '0600'
   loop:
     - /u01/software/weblogic/rcu.rsp
+    - /u01/software/weblogic/droprcu.rsp
 
 # ✅ Check if RCU schemas exist (more robust check)
 - name: Check whether RCU schemas already exist
@@ -41,39 +42,57 @@
     set heading off feedback off verify off echo off pagesize 0
     select count(*)
     from dba_users
-    where username in (
-      upper('{{ weblogic_db_repo_prefix }}_STB'),
-      upper('{{ weblogic_db_repo_prefix }}_OPSS'),
-      upper('{{ weblogic_db_repo_prefix }}_MDS')
-    );
+    where username = upper('{{ weblogic_db_repo_prefix }}_STB');
     exit
     SQL
   args:
     executable: /bin/bash
   register: rcu_schema_check
   changed_when: false
-  no_log: true
+
+- name: Set RCU schema count fact
+  ansible.builtin.set_fact:
+    rcu_schema_count: "{{ (rcu_schema_check.stdout | replace('\t', '') | replace('\n', '') | trim | int) }}"
 
 - name: Set RCU repository exists fact
   ansible.builtin.set_fact:
-    weblogic_rcu_repository_exists: "{{ (rcu_schema_check.stdout | trim | int) >= 3 }}"
+    weblogic_rcu_repository_exists: "{{ (rcu_schema_count | int) >= 1 }}"
 
-# ✅ Run RCU ONLY if schemas missing AND lock acquired
+#write the sys and schema passwords to a temporary file to avoid exposing them in the process list
+- name: Create temporary password file for RCU
+  ansible.builtin.copy:
+    content: "{{ weblogic_db_repo_password }}\n{{ weblogic_db_repo_schema_password }}\n"
+    dest: /u01/software/weblogic/passwordfile.txt
+    owner: oracle
+    group: oinstall
+    mode: "0600"
+  when: weblogic_rcu_repository_exists
+  register: rcu_password_file
+
+- name: Drop repository database objects using rcu
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    source ~oracle/.bash_profile
+    /u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/droprcu.rsp < /u01/software/weblogic/passwordfile.txt
+  register: drop_db_repo
+  when: weblogic_rcu_repository_exists
+
 - name: Create repository database using rcu
   become_user: oracle
-  ansible.builtin.expect:
-    command: '/u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/rcu.rsp'
-    responses:
-      "Enter the database password":
-        - "{{ weblogic_db_repo_password }}"
-      "Enter the schema password":
-        - "{{ weblogic_db_repo_schema_password }}"
-    timeout: 600
+  ansible.builtin.shell: |
+    set -eo pipefail
+    source ~oracle/.bash_profile
+    /u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/rcu.rsp < /u01/software/weblogic/passwordfile.txt
   register: create_db_repo
-  when:
-    - not weblogic_rcu_repository_exists
 
-# ✅ Check if RCU schemas exist (more robust check)
+# remove /u01/software/weblogic/passwordfile.txt after use to minimize risk of password exposure
+- name: Remove temporary password file for RCU
+  ansible.builtin.file:
+    path: /u01/software/weblogic/passwordfile.txt
+    state: absent
+  when: rcu_password_file is defined and rcu_password_file.changed
+
 - name: Check whether RCU schemas now exist
   become_user: oracle
   ansible.builtin.shell: |
@@ -84,11 +103,7 @@
     set heading off feedback off verify off echo off pagesize 0
     select count(*)
     from dba_users
-    where username in (
-      upper('{{ weblogic_db_repo_prefix }}_STB'),
-      upper('{{ weblogic_db_repo_prefix }}_OPSS'),
-      upper('{{ weblogic_db_repo_prefix }}_MDS')
-    );
+    where username = upper('{{ weblogic_db_repo_prefix }}_STB');
     exit
     SQL
   args:
@@ -104,8 +119,13 @@
       RCU schemas for prefix {{ weblogic_db_repo_prefix }} were not found
       after attempted creation. Deployment cannot continue.
   when:
-    - (rcu_schema_check.stdout | default('0') | trim | int) == 0
+    - (rcu_schema_check.stdout  | replace('\t', '') | replace('\n', '') | default('0') | trim | int) == 0
 
-- name: Set fact to indicate if this is the first domain using the schemas
-  ansible.builtin.set_fact:
-    weblogic_is_first_domain: "{{ not weblogic_rcu_repository_exists }}"
+#- name: Set fact to indicate if this is the first domain using the schemas
+#  ansible.builtin.set_fact:
+#    weblogic_is_first_domain: "{{ not weblogic_rcu_repository_exists }}"
+
+# debug msg output of weblogic_db_repo_prefix
+- name: Debug RCU prefix
+  ansible.builtin.debug:
+    msg: "Using RCU prefix '{{ weblogic_db_repo_prefix }}' for WebLogic domain"

@@ -1,0 +1,41 @@
+---
+# Use key files for Node Manager and Admin Server connections to avoid storing passwords in plain text in the domain configuration files.
+- name: Create weblogic domain security directories
+  ansible.builtin.file:
+    path: "{{ weblogic_domain_home }}/servers/{{ item.name }}/security"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop: "{{ weblogic_domain_servers }}"
+
+- name: Copy weblogic domain security files
+  ansible.builtin.template:
+    src: "12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties"
+    dest: "{{ weblogic_domain_home }}/servers/{{ item.name }}/security/boot.properties"
+    owner: oracle
+    group: oinstall
+    mode: "0600"
+    force: false
+  loop: "{{ weblogic_domain_servers }}"
+  no_log: true
+
+- name: Copy WLST script to create key files for Node Manager and Admin Server connections
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  loop:
+    - src: 12/home/oracle/admin/scripts/createCredentialsFiles.sh.j2
+      dest: /home/oracle/admin/scripts/createCredentialsFiles.sh
+
+- name: Generate credentials files
+  become_user: oracle
+  command: bash /home/oracle/admin/scripts/createCredentialsFiles.sh
+
+- name: Remove creds script after generating credentials files
+  ansible.builtin.file:
+    path: /home/oracle/admin/scripts/createCredentialsFiles.sh
+    state: absent

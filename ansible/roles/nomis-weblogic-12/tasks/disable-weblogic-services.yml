@@ -1,0 +1,34 @@
+- name: Stop all weblogic services
+  ansible.builtin.service:
+    daemon_reload: true
+    name: "{{ item }}"
+    enabled: false
+    state: "{{ service_state | default('stopped') }}"
+  loop: "{{ services_to_manage | default([
+              'weblogic-node-manager',
+              'weblogic-server',
+              'WLS_FORMS',
+              'WLS_REPORTS',
+              'weblogic-ohs'
+            ]) }}"
+  register: service_stop_result
+
+- name: Wait for weblogic services to stop
+  ansible.builtin.pause:
+    seconds: 5
+  when: service_stop_result is changed
+
+- name: Verify weblogic services are stopped
+  ansible.builtin.service_facts:
+
+- name: Fail if any service is still running
+  ansible.builtin.fail:
+    msg: "Service {{ item }} is still running"
+  loop: "{{ services_to_manage | default([
+              'weblogic-node-manager',
+              'weblogic-server',
+              'WLS_FORMS',
+              'WLS_REPORTS',
+              'weblogic-ohs'
+            ]) }}"
+  when: ansible_facts.services[item + '.service'] is defined and ansible_facts.services[item + '.service']['state'] == 'running'

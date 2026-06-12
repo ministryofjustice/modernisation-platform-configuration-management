@@ -3,11 +3,11 @@ adminPassword = '{{ weblogic_admin_password }}'
 adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
 
 componentName = '{{ weblogic_ohs_component_name | default("ohs1") }}'
-machineName = '{{ weblogic_domain_hostname }}'
+machineName = '{{ weblogic_machine_name | default("AdminServerMachine") }}'
 listenPort = '{{ weblogic_ohs_listen_port | default(7777) }}'
 sslPort = '{{ weblogic_ohs_ssl_port | default(4443) }}'
 
-connect(adminUser, adminPassword, adminURL)
+connect(userConfigFile='/u01/tmp/wlst.userconfig', userKeyFile='/u01/tmp/wlst.userkey', url=adminURL)
 
 existing = getMBean('/SystemComponents/' + componentName)
 if existing is None:
@@ -21,6 +21,22 @@ if existing is None:
     print('CHANGED')
 else:
     print('OHS instance ' + componentName + ' already exists')
+
+# Enter edit mode
+edit()
+startEdit()
+
+# Navigate to the domain's Security Configuration
+cd('SecurityConfiguration/nomis')
+
+# Set the Node Manager credsentials for the domain (required for OHS to work)
+# otherwise they get set to random values when run in prod mode and we can't connect to the Node Manager to start OHS
+set('NodeManagerUsername', adminUser)
+set('NodeManagerPassword', adminPassword)
+
+# Save and Activate changes
+save()
+activate(block="true")
 
 disconnect()
 exit()

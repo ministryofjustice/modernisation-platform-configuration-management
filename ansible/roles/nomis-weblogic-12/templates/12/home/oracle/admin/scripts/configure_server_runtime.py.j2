@@ -1,5 +1,3 @@
-adminUser = '{{ weblogic_admin_username }}'
-adminPassword = '{{ weblogic_admin_password }}'
 adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
 
 servers = {
@@ -13,7 +11,7 @@ servers = {
 
 changed = False
 
-connect(adminUser, adminPassword, adminURL)
+connect(userConfigFile='/u01/tmp/wlst.userconfig', userKeyFile='/u01/tmp/wlst.userkey', url=adminURL)
 
 edit()
 startEdit()

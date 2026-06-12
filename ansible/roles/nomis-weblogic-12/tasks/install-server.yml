@@ -49,3 +49,15 @@
 
   # block
   when: not weblogic_server_installed_check.stat.exists
+
+- name: Copy weblogic systemd scripts
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    mode: "0644"
+  loop:
+    - /etc/systemd/system/weblogic-node-manager.service
+    - /etc/systemd/system/weblogic-server.service
+    - /etc/systemd/system/weblogic-ohs.service
+    - /etc/systemd/system/WLS_FORMS.service
+    - /etc/systemd/system/WLS_REPORTS.service

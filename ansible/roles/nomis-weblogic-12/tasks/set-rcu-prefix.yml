@@ -38,15 +38,9 @@
   register: weblogic_rcu_prefix_marker_content
   when: weblogic_rcu_prefix_marker.stat.exists
 
-- name: Fail if derived RCU prefix differs from existing local marker
-  ansible.builtin.assert:
-    that:
-      - weblogic_db_repo_prefix == (weblogic_rcu_prefix_marker_content.content | b64decode | trim)
-    fail_msg: >-
-      Refusing to change RCU prefix for this WebLogic instance.
-      Existing prefix is {{ weblogic_rcu_prefix_marker_content.content | b64decode | trim }},
-      derived prefix is {{ weblogic_db_repo_prefix }}.
-      Changing this would create a different set of RCU schemas.
+- name: Use existing local RCU prefix marker if present
+  ansible.builtin.set_fact:
+    weblogic_db_repo_prefix: "{{ weblogic_rcu_prefix_marker_content.content | b64decode | trim }}"
   when: weblogic_rcu_prefix_marker.stat.exists
 
 - name: Persist local RCU prefix marker
@@ -58,4 +52,3 @@
     mode: "0600"
     force: false
   when: not weblogic_rcu_prefix_marker.stat.exists
-  
