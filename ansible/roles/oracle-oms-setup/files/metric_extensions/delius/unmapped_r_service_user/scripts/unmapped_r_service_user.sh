@@ -5,8 +5,8 @@
 #
 # The R_SERVICE_USER table is used to identify which Integration Service is adding or updating a
 # row and uses the Oracle database username as the source of this identity.  R_SERVICE_USER is
-# intended to map this Oracle database username to a Delius user.  However we allow missing
-# mappings (USER_ is null) to avoid services failing if the Delius user is unknown.   However
+# intended to map this Oracle database username to a Delius user. However, we allow missing
+# mappings (USER_ID is NULL) to avoid services failing if the Delius user is unknown. However,
 # this is only tolerated for a temporary period until the mapping is added, which is why this
 # metric alert identifies the situation rather than an application or database error being
 # used to block the action altogether.
