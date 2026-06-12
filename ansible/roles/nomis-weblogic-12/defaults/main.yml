@@ -115,24 +115,24 @@ weblogic_oracle_home: /u01/app/oracle/Middleware
 weblogic_db_repo_url: "jdbc:oracle:thin:@//{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid | upper }}"
 weblogic_admin_server_name: AdminServer
 weblogic_admin_listen_port: 7001
-weblogic_admin_listen_address: "{{ weblogic_domain_hostname }}"
+weblogic_admin_listen_address: "" # Listen on all interfaces
 
 weblogic_common_jvm_args:
   - "-XX:+CrashOnOutOfMemoryError"
 
 weblogic_domain_servers:
   - name: AdminServer
-    listen_address: "{{ weblogic_domain_hostname }}"
+    listen_address: "" # Listen on all interfaces
     listen_port: 7001
     cluster: ""
     jvm_args: "{{ weblogic_common_jvm_args }}"
   - name: WLS_FORMS
-    listen_address: "{{ weblogic_domain_hostname }}"
+    listen_address: "" # Listen on all interfaces
     listen_port: 9001
     cluster: cluster_forms
     jvm_args: "{{ weblogic_common_jvm_args }}"
   - name: WLS_REPORTS
-    listen_address: "{{ weblogic_domain_hostname }}"
+    listen_address: "" # Listen on all interfaces
     listen_port: 9002
     cluster: cluster_reports
     jvm_args: "{{ weblogic_common_jvm_args }}"
