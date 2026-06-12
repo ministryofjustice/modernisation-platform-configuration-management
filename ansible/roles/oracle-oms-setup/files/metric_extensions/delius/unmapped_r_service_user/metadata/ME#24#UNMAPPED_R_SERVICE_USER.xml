@@ -1,0 +1,26 @@
+<TargetMetadataExt EXT_NAME="ME$UNMAPPED_R_SERVICE_USER" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$UNMAPPED_R_SERVICE_USER" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$UNMAPPED_R_SERVICE_USER">Unmapped R_SERVICE_USER</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$UNMAPPED_R_SERVICE_USER">Find rows in R_SERVICE_USER where USER_ID is unset</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="NUMBER_OF_UNMAPPED_R_SERICE_USERS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$UNMAPPED_R_SERVICE_USERNUMBER_OF_UNMAPPED_R_SERICE_USERS">Number of Unmapped R_SERVICE_USERS</Label>
+<Unit NLSID="mext_unit_nlsid_OTHER">OTHER</Unit>
+<UnitCategory>ZOTHER</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/unmapped_r_service_user.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>
