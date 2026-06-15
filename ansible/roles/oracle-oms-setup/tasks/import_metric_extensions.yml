@@ -37,7 +37,7 @@
 
 - name: Populate List of Metric Extensions
   set_fact:
-    metric_extensions: "{{ get_metric_extensions.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
+    metric_extensions: "{{ get_metric_extensions.results | map(attribute='files') | flatten | map(attribute='path') | list | sort }}"
 
 - debug:
     var: metric_extensions
