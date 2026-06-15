@@ -64,8 +64,8 @@ for i in `find ${ORACLE_BASE}/admin -name "adump"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
-	find ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
-	find ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find -L ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find -L ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
 done
 }
 
