@@ -108,12 +108,13 @@ configure_jdbc_datasource(
     '{{ weblogic_db_repo_schema_password }}'
 )
 
-configure_jdbc_datasource(
-    'mds-owsm',
-    '{{ weblogic_db_repo_url }}',
-    '{{ weblogic_db_repo_prefix }}_MDS',
-    '{{ weblogic_db_repo_schema_password }}'
-)
+# Looks like this one is only needed for BIP
+#configure_jdbc_datasource(
+#    'mds-owsm',
+#    '{{ weblogic_db_repo_url }}',
+#    '{{ weblogic_db_repo_prefix }}_MDS',
+#    '{{ weblogic_db_repo_schema_password }}'
+#)
 
 print('Configuring Admin user')
 # When the domain is first created the default name is base_domain, but it gets renamed to nomis when the domain is written (based on the path).
