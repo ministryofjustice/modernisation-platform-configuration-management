@@ -64,8 +64,8 @@ for i in `find ${ORACLE_BASE}/admin -name "adump"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
-	find ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
-	find ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find -L ${i} -name "*.aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+	find -L ${i} -name "*.xml" -mtime +${ADUMP_RET} -print -exec rm  {} \;
 done
 }
 
@@ -74,7 +74,7 @@ for i in `find ${ORACLE_BASE}/diag -name "trace"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
-	find ${i} -name "sbtio_*.log" -mtime +${SBTIO_RET} -print -exec rm  {} \;
+	find -L ${i} -name "sbtio_*.log" -mtime +${SBTIO_RET} -print -exec rm  {} \;
 done
 }
 
@@ -83,9 +83,9 @@ for i in `find ${ORACLE_BASE}/product/oem-agent/agent_inst/sysman -name "log"`
 do
 	echo "Performing housekeeping on " ${i}
 	echo "*********************************************************************"
-	find ${i} -name "heapDump*.hprof" -mtime +${OEM_RET} -print -exec rm  {} \;
-	find ${i} -name "emdctlj.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
-	find ${i} -name "gcagent.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
+	find -L ${i} -name "heapDump*.hprof" -mtime +${OEM_RET} -print -exec rm  {} \;
+	find -L ${i} -name "emdctlj.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
+	find -L ${i} -name "gcagent.log.*" -mtime +${OEM_RET} -print -exec rm  {} \;
 done
 }
 
@@ -93,7 +93,7 @@ asm_adump_cleanup() {
 set_ora_env +ASM
 echo "Performing housekeeping on " ${ORACLE_HOME}/rdbms/audit
 echo "*********************************************************************"
-find ${ORACLE_HOME}/rdbms/audit -name "+ASM_ora_*aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
+find -L ${ORACLE_HOME}/rdbms/audit -name "+ASM_ora_*aud" -mtime +${ADUMP_RET} -print -exec rm  {} \;
 }
 
 asm_adrci_cleanup () {
