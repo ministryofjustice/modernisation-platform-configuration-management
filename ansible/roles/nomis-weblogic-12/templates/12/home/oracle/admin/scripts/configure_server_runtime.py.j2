@@ -2,10 +2,11 @@ adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | 
 
 servers = {
 {% for server in weblogic_domain_servers %}
-    '{{ server.name }}': '{{ (server.jvm_args | default(weblogic_common_jvm_args)) | join(" ") }}',
+{% set jvm_args = server.jvm_args | default(weblogic_common_jvm_args) %}
+    '{{ server.name }}': '{{ jvm_args if jvm_args is string else jvm_args | join(" ") }}',
 {% endfor %}
 {% for app in ['WLS_AUTOLOGOFF', 'WLS_HOTPAGE', 'WLS_TAGSAR'] %}
-    '{{ app }}': '{{ weblogic_common_jvm_args | join(" ") }}',
+    '{{ app }}': '{{ weblogic_common_jvm_args if weblogic_common_jvm_args is string else weblogic_common_jvm_args | join(" ") }}',
 {% endfor %}
 }
 

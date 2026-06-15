@@ -48,6 +48,12 @@
       dest: /home/oracle/admin/scripts/createReportsServerInstance.sh
   when: not report_server_config_dir.stat.exists
 
+- import_tasks: enable-weblogic-services.yml
+  vars:
+    services_to_manage:
+      - weblogic-node-manager
+      - weblogic-server
+
 - name: Create the initial report server
   become_user: oracle
   command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
@@ -66,6 +72,12 @@
   become_user: oracle
   args:
     executable: /bin/bash
+
+- import_tasks: disable-weblogic-services.yml
+  vars:
+    services_to_manage:
+      - weblogic-server
+      - weblogic-node-manager
 
 - name: Configure report tools name
   ansible.builtin.lineinfile:

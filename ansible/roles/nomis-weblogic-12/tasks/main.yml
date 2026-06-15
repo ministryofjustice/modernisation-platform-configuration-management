@@ -195,12 +195,12 @@
 
     - import_tasks: enable-weblogic-services.yml
       vars:
-        service_state: restarted
         services_to_manage:
           - weblogic-node-manager
+          - weblogic-server
       tags:
         - ec2provision
-        - weblogic_restart_nodemanager
+        - weblogic_start_nodemanager
 
     - include_tasks:
         file: create-managed-app.yml

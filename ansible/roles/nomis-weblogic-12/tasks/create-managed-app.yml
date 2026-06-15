@@ -6,13 +6,13 @@
 
 - name: "{{ weblogic_managed_app }} Check if managed app already configured"
   ansible.builtin.stat:
-    path: /etc/systemd/system/{{ weblogic_managed_app }}.service
+    path: /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/{{ weblogic_managed_app }}
   register: weblogic_created_managed_app_check
+
+- import_tasks: enable-weblogic-services.yml
 
 - name: Configure managed app
   block:
-    - import_tasks: enable-weblogic-services.yml
-
     - name: "{{ weblogic_managed_app }} Copy managed app configuration files"
       ansible.builtin.template:
         src: "12{{ item }}"
@@ -73,20 +73,17 @@
         dest: "/etc/systemd/system/{{ weblogic_managed_server_name }}.service"
         mode: "0644"
 
-    - name: "{{ weblogic_managed_app }} Reload systemd daemon"
-      ansible.builtin.systemd:
-        daemon_reload: yes
-
     # this ensures values in boot.properties become encrypted
     - name: "{{ weblogic_managed_app }} Restart service"
-      ansible.builtin.service:
+      ansible.builtin.systemd:
         name: "{{ weblogic_managed_app }}"
+        daemon_reload: yes
         state: restarted
       async: 1200
       poll: 20
 
   always:
-    - name: "{{ weblogic_managed_app }} Remove temporary forms configuration files"
+    - name: "{{ weblogic_managed_app }} Remove temporary configuration files"
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent

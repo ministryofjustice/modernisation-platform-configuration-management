@@ -5,11 +5,11 @@
     enabled: false
     state: "{{ service_state | default('stopped') }}"
   loop: "{{ services_to_manage | default([
-              'weblogic-node-manager',
-              'weblogic-server',
+              'weblogic-ohs',
               'WLS_FORMS',
               'WLS_REPORTS',
-              'weblogic-ohs'
+              'weblogic-server',
+              'weblogic-node-manager'
             ]) }}"
   register: service_stop_result
 

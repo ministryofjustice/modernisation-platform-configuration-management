@@ -121,21 +121,21 @@ weblogic_common_jvm_args:
   - "-XX:+CrashOnOutOfMemoryError"
 
 weblogic_domain_servers:
-  - name: AdminServer
-    listen_address: "" # Listen on all interfaces
-    listen_port: 7001
+  - name: "{{ weblogic_admin_server_name }}"
+    listen_address: "{{ weblogic_admin_listen_address }}"
+    listen_port: "{{ weblogic_admin_listen_port }}"
     cluster: ""
-    jvm_args: "-Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m {{ weblogic_common_jvm_args }}"
+    jvm_args: "-Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m {{ weblogic_common_jvm_args | join(' ') }}"
   - name: WLS_FORMS
     listen_address: "" # Listen on all interfaces
     listen_port: 9001
     cluster: cluster_forms
-    jvm_args: "-Xms1024m -Xmx1536m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m {{ weblogic_common_jvm_args }}"
+    jvm_args: "-Xms1024m -Xmx1536m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m {{ weblogic_common_jvm_args | join(' ') }}"
   - name: WLS_REPORTS
     listen_address: "" # Listen on all interfaces
     listen_port: 9002
     cluster: cluster_reports
-    jvm_args: "-Xms1024m -Xmx1536m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m {{ weblogic_common_jvm_args }}"
+    jvm_args: "-Xms1024m -Xmx1536m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m {{ weblogic_common_jvm_args | join(' ') }}"
 
 weblogic_domain_clusters:
   - cluster_forms
