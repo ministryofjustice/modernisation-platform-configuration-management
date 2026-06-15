@@ -73,6 +73,17 @@
         - ec2provision
         - weblogic_install_ohs
 
+    # Need to start Forms and Reports domain before configuring the managed apps, otherwise the WLST scripts will fail as certain directories,
+    # such as applications, won't yet exist.
+    - import_tasks: enable-weblogic-services.yml
+      tags:
+        - ec2provision
+        - weblogic_enable_services
+
+    - import_tasks: disable-weblogic-services.yml
+      tags:
+        - ec2provision
+
     - import_tasks: extract-s3-zip-files.yml
       tags:
         - ec2provision
@@ -136,11 +147,6 @@
       tags:
         - ec2provision
         - weblogic_enable_web_plugin
-
-    - import_tasks: enable-weblogic-services.yml
-      tags:
-        - ec2provision
-        - weblogic_enable_services
 
     - import_tasks: configure-report-server.yml
       vars:
