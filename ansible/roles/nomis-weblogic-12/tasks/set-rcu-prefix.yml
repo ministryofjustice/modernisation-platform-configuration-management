@@ -1,24 +1,3 @@
-# TODO: Validate derived RCU prefix
-#- name: Derive RCU prefix from EC2 Name tag
-#  set_fact:
-#    weblogic_db_repo_prefix: >-
-#      {{
-#        (
-#          (ec2.tags.Name | lower).split('-')[0] ~
-#          'W' ~
-#          (ec2.tags.Name | lower).split('-')[-1]
-#        )
-#        | upper
-#      }}
-#
-#- name: Validate derived RCU prefix
-#  assert:
-#    that:
-#      - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{1,11}$')
-#    fail_msg: >-
-#      Derived RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid.
-#      Expected EC2 Name tag format like qa11g-nomis-web12-a.
-
 - name: Ensure WebLogic software directory exists
   ansible.builtin.file:
     path: /u01/software/weblogic
@@ -27,21 +6,103 @@
     group: oinstall
     mode: "0755"
 
-- name: Check for existing local RCU prefix marker
+- name: Read existing local RCU prefix marker if present
   ansible.builtin.stat:
     path: /u01/software/weblogic/.rcu_prefix
-  register: weblogic_rcu_prefix_marker
+  register: rcu_prefix_marker
 
-- name: Read existing local RCU prefix marker
+- name: Load existing local RCU prefix marker
   ansible.builtin.slurp:
-    path: /u01/software/weblogic/.rcu_prefix
-  register: weblogic_rcu_prefix_marker_content
-  when: weblogic_rcu_prefix_marker.stat.exists
+    src: /u01/software/weblogic/.rcu_prefix
+  register: rcu_prefix_marker_contents
+  when: rcu_prefix_marker.stat.exists
 
-- name: Use existing local RCU prefix marker if present
+- name: Reuse existing local RCU prefix if present
   ansible.builtin.set_fact:
-    weblogic_db_repo_prefix: "{{ weblogic_rcu_prefix_marker_content.content | b64decode | trim }}"
-  when: weblogic_rcu_prefix_marker.stat.exists
+    weblogic_db_repo_prefix: "{{ rcu_prefix_marker_contents.content | b64decode | trim }}"
+  when: rcu_prefix_marker.stat.exists
+
+- name: Derive base RCU prefix from EC2 Name tag
+  ansible.builtin.set_fact:
+    rcu_prefix_base: >-
+      {{
+        (
+          (ec2.tags.Name | lower).split('-')[0] ~
+          'W' ~
+          (ec2.tags.Name | lower).split('-')[-1]
+        )
+        | upper
+        | regex_replace('[^A-Z0-9]', '')
+      }}
+  when: not rcu_prefix_marker.stat.exists
+
+- name: Validate base RCU prefix
+  ansible.builtin.assert:
+    that:
+      - rcu_prefix_base is match('^[A-Z][A-Z0-9]{0,11}$')
+    fail_msg: >-
+      Derived RCU prefix base '{{ rcu_prefix_base }}' is invalid.
+      It must start with a letter, contain only A-Z and 0-9, and be 1-12 characters long.
+      Expected EC2 Name tag format like qa11g-nomis-web12-a.
+  when: not rcu_prefix_marker.stat.exists
+
+- name: Build candidate RCU prefixes
+  ansible.builtin.set_fact:
+    rcu_prefix_candidates: >-
+      {%- set candidates = [rcu_prefix_base[:12]] -%}
+      {%- for n in range(1, 100) -%}
+      {%-   set _ = candidates.append((rcu_prefix_base[:10] ~ '%02d'|format(n))[:12]) -%}
+      {%- endfor -%}
+      {{ candidates }}
+  when: not rcu_prefix_marker.stat.exists
+
+- name: Check candidate RCU prefixes in database
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    source ~oracle/.bash_profile
+
+    sqlplus -s /nolog <<'SQL'
+    connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
+    set heading off feedback off verify off echo off pagesize 0 trimspool on
+
+    select count(*)
+    from schema_version_registry
+    where mrc_name = upper('{{ item }}');
+
+    exit
+    SQL
+  args:
+    executable: /bin/bash
+  loop: "{{ rcu_prefix_candidates }}"
+  register: rcu_prefix_candidate_checks
+  changed_when: false
+  no_log: true
+  when: not rcu_prefix_marker.stat.exists
+
+- name: Select first unused RCU prefix
+  ansible.builtin.set_fact:
+    weblogic_db_repo_prefix: "{{ item.item }}"
+  loop: "{{ rcu_prefix_candidate_checks.results }}"
+  when:
+    - not rcu_prefix_marker.stat.exists
+    - weblogic_db_repo_prefix is not defined
+    - item.stdout | trim == "0"
+
+- name: Fail if no unused RCU prefix was found
+  ansible.builtin.fail:
+    msg: >-
+      Could not find an unused RCU prefix from candidates derived from '{{ rcu_prefix_base }}'.
+      Tried: {{ rcu_prefix_candidates | join(', ') }}
+  when:
+    - not rcu_prefix_marker.stat.exists
+    - weblogic_db_repo_prefix is not defined
+
+- name: Final validation of selected RCU prefix
+  ansible.builtin.assert:
+    that:
+      - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{0,11}$')
+    fail_msg: "Selected RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid."
 
 - name: Persist local RCU prefix marker
   ansible.builtin.copy:
@@ -51,4 +112,3 @@
     group: oinstall
     mode: "0600"
     force: false
-  when: not weblogic_rcu_prefix_marker.stat.exists
