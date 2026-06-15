@@ -1,3 +1,4 @@
+{% raw %}
 #!/usr/bin/env bash
 
 set -u
@@ -311,3 +312,4 @@ fi
 
 echo "All compilations finished successfully"
 exit 0
+{% endraw %}
