@@ -20,6 +20,12 @@
   loop: "{{ weblogic_domain_servers }}"
   no_log: true
 
+- name: Start Admin Server before generating credentials files
+  ansible.builtin.service:
+    name: weblogic-server
+    state: started
+    daemon_reload: true
+    
 - name: Copy WLST script to create key files for Node Manager and Admin Server connections
   ansible.builtin.template:
     src: "{{ item.src }}"
