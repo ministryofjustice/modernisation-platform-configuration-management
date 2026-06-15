@@ -17,3 +17,87 @@ required_patches:
     description: "ORA-00600 [QERIXGETKEY OPTDESC] WITH FUNCTION BASED INDEX ON SUBSTR"
     grid_patch: false
     database_patch: true
+all_oem_metrics:
+   host:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme1n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 1
+        START_RECORD 2
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme1n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 2
+        START_RECORD 3
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme4n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 3
+        START_RECORD 4
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme4n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 4
+        START_RECORD 5
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme6n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 5
+        START_RECORD 6
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme6n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 6
+        START_RECORD 7
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme8n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 7
+        START_RECORD 8
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme8n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 8
+        START_RECORD 9
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme10n1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 9
+        START_RECORD 10
+        metric , DiskActivity
+        column , DiskActivitybusy
+        key_columns , nvme10n1p1;
+        warning_threshold , 85
+        critical_threshold , 95
+        occurrences , 12
+        END_RECORD 10
