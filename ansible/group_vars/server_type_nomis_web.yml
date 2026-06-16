@@ -22,6 +22,8 @@ roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_lis
 
 xsiam_agent_state: "{{ xsiam_agent_web_state }}" # set in environment group_vars
 
+users_and_groups_regular: "{{ users_and_groups_regular_web }}"
+
 collectd_monitored_services_servertype:
   - metric_name: service_status_os
     metric_dimension: chronyd
