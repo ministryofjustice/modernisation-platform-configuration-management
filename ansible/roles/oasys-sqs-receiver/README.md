@@ -55,7 +55,7 @@ no_proxy="*" ansible-playbook site.yml --limit t1-oasys-db-a -e force_role=oasys
 
 # Updating to a New Release
 
-Upload the new release zip to S3 and update:
+Upload the new release zip to S3 and update in the group_vars environment file e.g. environment_name_oasys_development.yml:
 
 ```yaml
 oasys_sqs_release_version: "7.9.1.1"
