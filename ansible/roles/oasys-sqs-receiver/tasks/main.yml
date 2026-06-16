@@ -1,10 +1,16 @@
 ---
-- name: Install Amazon Corretto 8
+- name: Install Java 8
   yum:
-    name: java-1.8.0-amazon-corretto
+    name: java-1.8.0-openjdk
     state: present
   become: true
 
+- name: Verify Java is OpenJDK 8
+  command: /usr/bin/java -version
+  register: java_version
+  changed_when: false
+  failed_when: "'1.8.0' not in java_version.stderr"
+  
 - name: Create SQS base directories
   file:
     path: "{{ item }}"
