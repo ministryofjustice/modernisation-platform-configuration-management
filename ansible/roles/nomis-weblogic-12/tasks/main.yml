@@ -10,15 +10,15 @@
       tags:
         - always
 
-#    - import_tasks: disable-weblogic-services.yml
-#      tags:
-#        - ec2provision
-#        - weblogic_disable_services
-#
-#    - import_tasks: uninstall-weblogic.yml
-#      tags:
-#        - ec2provision
-#        - weblogic_uninstall
+    - import_tasks: disable-weblogic-services.yml
+      tags:
+        - ec2provision
+        - weblogic_disable_services
+
+    - import_tasks: uninstall-weblogic.yml
+      tags:
+        - ec2provision
+        - weblogic_uninstall
 
     - import_tasks: setup-oracle-user.yml
       tags:
@@ -123,6 +123,15 @@
       tags:
         - ec2provision
         - weblogic_copy_file_to_location
+
+    - name: Ensure formsweb.cfg points to the database
+      ansible.builtin.lineinfile:
+        path: /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/servers/WLS_FORMS/applications/formsapp_12.2.1/config/formsweb.cfg
+        regexp: '^\s*userid='
+        line: "userid=@{{ weblogic_db_name | lower }}"
+      tags:
+        - ec2provision
+        - weblogic_update_formsweb
 
     - import_tasks: forms-compilation.yml
       vars:
