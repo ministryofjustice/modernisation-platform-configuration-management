@@ -1,0 +1,127 @@
+---
+- name: Install Amazon Corretto 8
+  yum:
+    name: java-1.8.0-amazon-corretto
+    state: present
+  become: true
+
+- name: Create SQS base directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    mode: "0755"
+  loop:
+    - "{{ oasys_sqs_base_dir }}"
+    - "{{ oasys_sqs_base_dir }}/releases"
+    - "{{ oasys_sqs_log_dir }}"
+  become: true
+
+- name: Create stage directories
+  ansible.builtin.file:
+    owner: oracle
+    group: oinstall
+    path: "{{ stage }}"
+    state: directory
+    mode: "0755"
+
+- name: Get SQS file from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ oasys_sqs_source_bucket }}/{{ oasys_sqs_zip_src }}"
+    dest: "{{ stage }}/{{ oasys_sqs_zip_src }}"
+    mode: get
+
+- name: Stop SQS receiver before deploying new release
+  systemd:
+    name: "{{ oasys_sqs_service_name }}"
+    state: stopped
+  failed_when: false
+  become: true
+
+- name: Remove existing target release directory
+  file:
+    path: "{{ oasys_sqs_release_dir }}"
+    state: absent
+  become: true
+
+- name: Create target release directory
+  file:
+    path: "{{ oasys_sqs_release_dir }}"
+    state: directory
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    mode: "0755"
+  become: true
+
+- name: Deploy SqsReceiveMessage release zip
+  unarchive:
+    src: "{{ stage }}/{{ oasys_sqs_zip_src }}"
+    dest: "{{ oasys_sqs_release_dir }}"
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    remote_src: true
+  become: true
+  notify: Restart oasys sqs receiver
+
+- name: Check whether zip created nested SqsReceiveMessage directory
+  stat:
+    path: "{{ oasys_sqs_release_dir }}/SqsReceiveMessage"
+  register: oasys_sqs_nested_dir
+
+- name: Set deployed application directory
+  set_fact:
+    oasys_sqs_app_dir: >-
+      {{
+        oasys_sqs_release_dir ~ '/SqsReceiveMessage'
+        if oasys_sqs_nested_dir.stat.exists
+        else oasys_sqs_release_dir
+      }}
+
+- name: Ensure deployed release ownership
+  file:
+    path: "{{ oasys_sqs_release_dir }}"
+    state: directory
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    recurse: true
+  become: true
+
+- name: Ensure list_termination_messages.sh is executable
+  file:
+    path: "{{ oasys_sqs_app_dir }}/messages/list_termination_messages.sh"
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    mode: "0755"
+  become: true
+
+- name: Update current symlink
+  file:
+    src: "{{ oasys_sqs_app_dir }}"
+    dest: "{{ oasys_sqs_current_dir }}"
+    state: link
+    owner: "{{ oasys_sqs_user }}"
+    group: "{{ oasys_sqs_group }}"
+    force: true
+  become: true
+  notify: Restart oasys sqs receiver
+
+- name: Install systemd service
+  template:
+    src: oasys-sqs-receiver.service.j2
+    dest: "/etc/systemd/system/{{ oasys_sqs_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd
+    - Restart oasys sqs receiver
+
+- name: Enable and start SQS receiver service
+  systemd:
+    name: "{{ oasys_sqs_service_name }}"
+    enabled: true
+    state: started
+  become: true

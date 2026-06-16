@@ -1,0 +1,21 @@
+stage: /u01/stage
+oracle_home: "{{ database_home }}"
+
+oasys_sqs_user: oracle
+oasys_sqs_group: oinstall
+
+oasys_sqs_base_dir: /home/oracle/oasys-sqs
+oasys_sqs_release_version: "7.9.1.0"
+oasys_sqs_release_dir: "{{ oasys_sqs_base_dir }}/releases/{{ oasys_sqs_release_version }}"
+oasys_sqs_current_dir: "{{ oasys_sqs_base_dir }}/current"
+
+oasys_sqs_source_bucket: "OASYS_RELEASES"
+oasys_sqs_zip_src: SqsReceiveMessage.zip
+
+oasys_sqs_java_bin: /usr/lib/jvm/java-1.8.0-amazon-corretto/bin/java
+
+oasys_sqs_secret_path: /delius_oasys/dev/queue
+oasys_sqs_poll_interval_seconds: 300
+
+oasys_sqs_service_name: oasys-sqs-receiver
+oasys_sqs_log_dir: /var/log/oasys-sqs-receiver
