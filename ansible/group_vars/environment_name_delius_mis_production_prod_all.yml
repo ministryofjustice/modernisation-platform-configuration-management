@@ -12,7 +12,7 @@ ansible_aws_ssm_bucket_name: delius-mis-prod-ssm-sessions20260615145757116900000
 dependencies_bucket:
   name: mod-platform-image-artefact-bucket20230203091453221500000001
   arn: arn:aws:s3:::mod-platform-image-artefact-bucket20230203091453221500000001
-# Only used for dupicating databases from source during migration using the oracle-db-duplicate role
+# Only used for duplicating databases from source during migration using the oracle-db-duplicate role
 # Eventually these will be removed once the RMAN catalog database has been migrated across
 catalog_tns: "(DESCRIPTION=(LOAD_BALANCE=OFF)(FAILOVER=ON)(CONNECT_TIMEOUT=10)(RETRY_COUNT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=10.160.98.88)(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=PCAT_TAF)))"
 s3_source_bucket: "eu-west-2-del-prod-oracledb-backups"
@@ -31,7 +31,7 @@ oem_secret_role: EC2OracleEnterpriseManagementSecretsRole
 # Enable Oracle Native Network Encryption (ignored for TCPS connections)
 # Note that
 # (1) These parameters must be set in the database sqlnet.ora file, not the grid one
-# (2) Add time of writing there is an Oracle documentation bug - docs omit mandatory SQLNET prefix for IGNORE_ANO_ENCRYPTION_FOR_TCPS
+# (2) At time of writing there is an Oracle documentation bug - docs omit mandatory SQLNET prefix for IGNORE_ANO_ENCRYPTION_FOR_TCPS
 sqlnet_parameters:
   database:
     SQLNET.ENCRYPTION_SERVER: REQUIRED
@@ -47,7 +47,7 @@ oracle_ru_patch: JUL2024
 # hours to every 15 minutes.   This is to ensure that the correct (Up) status is detected
 # shortly after the host is restarted each morning.
 #
-# clusterware_alerts.ocrErrStack has been changes so that it ignores CRS-10134.
+# clusterware_alerts.ocrErrStack has been changed so that it ignores CRS-10134.
 # This should not be reported. See:
 #    SR 3-35688785101 : CRS-10134: Unsupported configuration detected for real-time scheduling requirements.
 # It is expected that this will be fixed in the 19.23 RU.  Revise afterwards.
