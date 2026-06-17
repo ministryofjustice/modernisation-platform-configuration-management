@@ -33,6 +33,9 @@
 #
 #   # Run all tasks with ec2provision tag
 #   ansible-playbook site.yml --tags ec2provision
+#
+#   # Skip the RHEL6 version check
+#   ansible-playbook site.yml --skip-tags ansible_version_check
 
 - hosts: "{{ target | default('all') }}"
   tasks:
@@ -43,7 +46,9 @@
         - ansible_version.full >= "2.13.0"
         - ansible_distribution in ['RedHat', 'OracleLinux']
         - ansible_distribution_major_version in ['6']
-      tags: always
+      tags:
+        - always
+        - ansible_version_check
 
     - name: Set roles_defined fact
       ansible.builtin.set_fact:
