@@ -32,7 +32,7 @@ Running via a container is simplest:
 
 #### Install Podman
 
-Skip this is you are using Docker. For M1, M2, M3 chipsets, install podman as follows:
+Skip this if you are using Docker. For M1, M2, M3 chipsets, install podman as follows:
 
 ```
 brew install vfkit
