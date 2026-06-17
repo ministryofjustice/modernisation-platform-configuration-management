@@ -1,0 +1,29 @@
+---
+database_global_database: PRDBOE
+database_taf_service: PRDBOE_TAF
+database_primary_unique: PRDBOE
+database_primary_sid: PRDBOE
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  pga_aggregate_target: 1500M
+  pga_aggregate_limit: 3G
+rman_retention_policy: RECOVERY WINDOW OF 366 DAYS
+oracle_osbws_chunk_size: 104857600
+database_autotasks:
+  statistics_advisor: disabled
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+    drop_user: true
+  kmoss_dba:
+  dbelton_dba:
+rman_level_0_backup_duration_target: "06:00"
+fsfo_mode: disabled
+db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
+oracle_software:
+  version: "19.28"
+  combo_patch: p37952382_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.46
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
