@@ -27,9 +27,11 @@ tnsnames_qa11g2_service_name: QA11G2
 zip_file_temp_dir: /tmp
 winrm_domain_name_fqdn: azure.noms.root
 
-users_and_groups_regular:
+users_and_groups_regular_web:
   - group: studio-webops
   - group: syscon-nomis
+
+users_and_groups_regular: "{{ users_and_groups_regular_web }}"
 
 weblogic_additional_form_servers: []
 
