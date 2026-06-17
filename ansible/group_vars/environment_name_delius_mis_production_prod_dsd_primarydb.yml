@@ -1,0 +1,34 @@
+---
+database_global_database: PREDSD
+database_taf_service: PRDDSD_TAF
+database_primary_unique: PRDDSD
+database_primary_sid: PRDDSD
+oracle_osbws_chunk_size: 52428800
+database_parameters:
+  sga_max_size: 5G
+  sga_target: 5G
+  db_recovery_file_dest_size: 150G
+  compatible: 19.14.0
+rman_retention_policy: RECOVERY WINDOW OF 366 DAYS
+sqlnet_parameters:
+  grid:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+  database:
+    SQLNET.INBOUND_CONNECT_TIMEOUT: 300
+listener_parameters:
+  grid:
+    INBOUND_CONNECT_TIMEOUT_LISTENER: 300
+delius_users:
+  bbuchan_dba:
+  rsingh_dba:
+    drop_user: true
+  kmoss_dba:
+  dbelton_dba:
+fsfo_mode: disabled
+db_backup_s3_bucket_name: "{{ environment_name }}-oracle-dsd-db-backups"
+oracle_software:
+  version: "19.28"
+  combo_patch: p37952382_190000_Linux-x86-64.zip
+  opatch:
+    version: 12.2.0.1.46
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
