@@ -1,6 +1,29 @@
 #!/bin/bash
 set -e
 
+PROFILE=""
+IMAGE="ansible-2.13.13"
+
+while getopts "6v:" opt; do
+  case ${opt} in
+    6 )
+      IMAGE="ansible-2.11.12"
+      ;;
+    v )
+      PROFILE=$OPTARG
+      ;;
+    \? )
+      echo "Usage: $0 [-v <aws-profile>] [command...]"
+      echo "Where: "
+      echo " command        : specify a command and args (e.g. ansible-inventory --graph)"
+      echo " -6             : use container compatible with RHEL6 instances"
+      echo " -v aws-profile : dynamically set aws-profile permissions via aws-vault"
+      echo "If no command specified, drop into interactive shell"
+      exit 1
+      ;;
+  esac
+done
+
 if command -v podman &> /dev/null; then
   ENGINE="podman"
 elif command -v docker &> /dev/null; then
@@ -10,28 +33,10 @@ else
   exit 1
 fi
 
-if ! $ENGINE image inspect mac-ansible &> /dev/null; then
-  echo "# Building mac-ansible using $ENGINE..."
-  $ENGINE build -t mac-ansible .
+if ! $ENGINE image inspect $IMAGE &> /dev/null; then
+  echo "# Building $IMAGE using $ENGINE..."
+  $ENGINE build -t $IMAGE -f Dockerfile.$IMAGE .
 fi
-
-PROFILE=""
-
-while getopts "v:" opt; do
-  case ${opt} in
-    v )
-      PROFILE=$OPTARG
-      ;;
-    \? )
-      echo "Usage: $0 [-v <aws-profile>] [command...]"
-      echo "Where: "
-      echo " command        : specify a command and args (e.g. ansible-inventory --graph)"
-      echo " -v aws-profile : dynamically set aws-profile permissions via aws-vault"
-      echo "If no command specified, drop into interactive shell"
-      exit 1
-      ;;
-  esac
-done
 
 shift $((OPTIND -1))
 if [ $# -eq 0 ]; then
@@ -49,7 +54,7 @@ if [ -n "$PROFILE" ]; then
     -e AWS_SECRET_ACCESS_KEY \
     -e AWS_SESSION_TOKEN \
     -e AWS_SECURITY_TOKEN \
-    mac-ansible $CMD
+    $IMAGE $CMD
 else
   echo "# Executing with local AWS variables (using $ENGINE)"
   
@@ -61,5 +66,5 @@ else
     -e AWS_SECURITY_TOKEN \
     -e AWS_PROFILE \
     -e AWS_DEFAULT_REGION \
-    mac-ansible $CMD
+    $IMAGE $CMD
 fi
