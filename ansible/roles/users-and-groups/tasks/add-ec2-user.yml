@@ -12,4 +12,5 @@
   ansible.builtin.user:
     name: ec2-user
     password: "*"
+    password_expire_max: -1
   when: getent_passwd["ec2-user"] is defined
