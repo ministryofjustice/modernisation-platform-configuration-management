@@ -5,8 +5,9 @@ FROM rockylinux:8
 ARG ANSIBLE_DIR=/opt/ansible
 ENV ANSIBLE_DIR=${ANSIBLE_DIR}
 
-# Install build tools, zip tools, and dependencies
-RUN dnf install -y \
+# Install build tools, zip tools, and dependencies but no docs to save space
+RUN echo "tsflags=nodocs" >> /etc/dnf/dnf.conf \
+    && dnf install -y \
     gcc \
     wget \
     unzip \
@@ -23,7 +24,8 @@ RUN dnf install -y \
     xz-devel \
     expat-devel \
     make \
-    && dnf clean all
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /usr/share/doc /usr/share/man
 
 # Build Python 3.9.6 from source
 WORKDIR /tmp
@@ -31,9 +33,9 @@ RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz \
     && tar xzf Python-3.9.6.tgz \
     && cd Python-3.9.6 \
     && sed -i 's/^#zlib/zlib/' Modules/Setup \
-    && ./configure --enable-optimizations \
+    && ./configure \
     && make altinstall \
-    && rm -rf /tmp/Python-3.9.6*
+    && rm -rf /tmp/Python-3.9.6* /root/.cache/pip
 
 # Install AWS CLI v2 dynamically based on architecture
 RUN ARCH=$(uname -m) \
