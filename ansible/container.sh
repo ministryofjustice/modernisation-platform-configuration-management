@@ -33,6 +33,14 @@ else
   exit 1
 fi
 
+if [ "$ENGINE" = "podman" ]; then
+  # Set up a temporary directory for podman to use, since it uses /var/tmp by default which will fill up quickly in a container environment. This is a workaround.
+  export TMPDIR="${TMPDIR:-/tmp/podman}"
+  export TMP="$TMPDIR"
+  export TEMP="$TMPDIR"
+  mkdir -p "$TMPDIR"
+fi
+
 if ! $ENGINE image inspect $IMAGE &> /dev/null; then
   echo "# Building $IMAGE using $ENGINE..."
   $ENGINE build -t $IMAGE -f Dockerfile.$IMAGE .
