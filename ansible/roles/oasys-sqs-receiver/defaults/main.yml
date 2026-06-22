@@ -14,8 +14,10 @@ oasys_sqs_zip_src: SqsReceiveMessage.zip
 
 oasys_sqs_java_bin: /usr/bin/java
 
-oasys_sqs_secret_path: /delius_oasys/dev/queue
+oasys_sqs_secret_path: "/delius_oasys/{{ app_env }}/queue"
 oasys_sqs_poll_interval_seconds: 300
 
 oasys_sqs_service_name: "{{ oracle_sid }}-oasys-sqs-receiver"
 oasys_sqs_log_dir: "/var/log/{{ oracle_sid }}-oasys-sqs-receiver"
+
+
