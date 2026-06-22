@@ -1,0 +1,10 @@
+---
+database_standby_unique: PRDBOES1
+database_standby_sid: PRDBOES1
+database_parameters:
+  sga_max_size: 3G
+  sga_target: 3G
+  pga_aggregate_target: 1500M
+  pga_aggregate_limit: 3G
+db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
+oracle_osbws_chunk_size: 104857600

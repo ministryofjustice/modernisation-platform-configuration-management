@@ -5,4 +5,4 @@
     - ec2patch
   when:
     - ansible_distribution in ['RedHat', 'OracleLinux']
-    - ec2.tags['connectivity-tests'] is defined
+    - connectivity_test_targets is defined
