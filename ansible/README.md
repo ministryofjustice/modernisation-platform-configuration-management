@@ -28,6 +28,7 @@ For example:
 Running via a container is simplest:
 - install PodMan
 - paste in credentials or use aws-vault
+- disconnect from the VPN
 - use ./container.sh wrapper script to run ansible
 
 #### Install Podman
@@ -37,9 +38,18 @@ Skip this if you are using Docker. For M1, M2, M3 chipsets, install podman as fo
 ```
 brew install vfkit
 brew install podman
-sudo /opt/homebrew/Cellar/podman/5.8.0/bin/podman-mac-helper install
+sudo /opt/homebrew/Cellar/podman/$(podman --version | awk '{print $3}')/bin/podman-mac-helper install
 export CONTAINERS_MACHINE_PROVIDER=applehv
-podman machine init
+podman machine init  --disk-size 80
+podman machine start
+```
+
+If podman has already been installed, stop the default machine and extend the disk to avoid disk space issues:
+
+```
+podman machine stop
+podman machine rm
+podman machine init --disk-size 80
 podman machine start
 ```
 
@@ -56,6 +66,9 @@ podman machine ssh "sudo touch /etc/containers/enable-rosetta"
 podman machine stop
 podman machine start
 ```
+
+#### VPN
+Being connected to the Prisma VPN results in tls certificate errors when attempting to download the inital rockylinux image. Therefore it is best to disconnect from the VPN while creating the local container.
 
 #### Credentials Environment Variables
 
@@ -215,4 +228,12 @@ Use requirements.rhel6.yml instead.  Example error:
 # [WARNING]: Skipping Galaxy server https://galaxy.ansible.com/api/. Got an unexpected error when getting available versions of collection amazon.aws:
 # '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
 # ERROR! Unexpected Exception, this is probably a bug: '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
+```
+
+### Removing the local container
+If using podman you can remove the image (depending on which you built) so it builds again next time the container.sh script is run:
+
+```
+podman image rm localhost/ansible-2.11.12
+podman image rm localhost/ansible-2.13.13
 ```
