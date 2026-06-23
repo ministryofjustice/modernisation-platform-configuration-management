@@ -4,7 +4,7 @@ Use this role to install and configure the OASys SQS Message Receiver on an OASy
 
 The role:
 
-- Installs Amazon Corretto 8
+- Installs java-1.8.0-openjdk
 - Downloads the SqsReceiveMessage release from S3
 - Deploys the application files to the server
 - Configures permissions required by Oracle
@@ -21,7 +21,7 @@ Ensure:
 - OASys is installed on the database server
 - The server has access to AWS Secrets Manager
 - The server has access to the S3 bucket containing the SqsReceiveMessage release zip
-- The Amazon Corretto repository is configured on the server
+- The  repository to downlod OpenJDK is configured on the server
 - The Oracle user has read/write access to the deployment directory
 - Required variables are defined in inventory or group_vars
 
@@ -41,7 +41,7 @@ Example:
 ```yaml
 oasys_sqs_release_version: "7.9.1.0"
 oasys_sqs_zip_src: "SqsReceiveMessage.zip"
-oasys_sqs_secret_path: "/delius_oasys/dev/queue"
+oasys_sqs_secret_path: "/delius_oasys/{{ app_env }}/queue"
 oasys_sqs_poll_interval_seconds: 300
 ```
 
@@ -53,7 +53,7 @@ Deploy the OASys SQS Message Receiver:
 
 ```
  no_proxy="*" ansible-playbook site.yml --limit t2-oasys-db-a -e force_role=oasys-sqs-receiver -e oracle_sid=T2OASYS -e app_env=t2
- 
+
  #  oracle_sid provided since 2 oasys test databases T2OASYS and T2OASYS2 exist on  t2-oasys-db-a
  #  app_env provided and must match app_env in oasys_sqs_secret_path 
 
@@ -72,8 +72,8 @@ Re-run the role. The existing service will be stopped, the new release deployed 
 The daemon is installed as a systemd service:
 
 ```bash
-systemctl status oasys-sqs-receiver
-systemctl restart oasys-sqs-receiver
+systemctl status {{ oracle_sid }}-oasys-sqs-receiver
+systemctl restart {{ oracle_sid }}-oasys-sqs-receiver
 ```
 
 Application logs are written to:
@@ -87,13 +87,13 @@ Application logs are written to:
 Verify the daemon is running:
 
 ```bash
-systemctl status oasys-sqs-receiver
+systemctl status {{ oracle_sid }}-oasys-sqs-receiver
 ```
 
 Verify Java installation:
 
 ```bash
-/usr/lib/jvm/java-1.8.0-amazon-corretto/bin/java -version
+
 ```
 /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.492.b09-1.0.1.el8.x86_64/jre/bin/java -version
 
