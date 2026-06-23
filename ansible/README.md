@@ -25,109 +25,52 @@ For example:
 
 ## Installing on Mac
 
-Choose which version of python and ansible-core to use. The below
-example uses python3.9 and ansible-core 2.12 as this is compatible with some
-older OS.
+Running via a container is simplest:
+- install PodMan
+- paste in credentials or use aws-vault
+- disconnect from the VPN
+- use ./container.sh wrapper script to run ansible
 
-This can be problematic. If you run into issues:
-- uninstall all existing python3.9 / ansible installations via brew. `brew list` and `brew uninstall ansible` for example
-- check no other installation of python3.9 `which python3.9`. If there is delete it.
-- install python via brew `brew install python@3.9`
-- check `which python3.9` matches the recent installation
-- ensure certs are up to date `brew reinstall ca-certificates`
-- list all pip packages `python3.9 -m pip list`
-- uninstall any existing ansible installs `python3.9 -m pip uninstall ansible`
-- install ansible `python3.9 -m pip install ansible-core==2.12`
-- install ansible requirements as per step 4 below
+#### Install Podman
 
-1. Optionally install a specific python versoin
+Skip this if you are using Docker. For M1, M2, M3 chipsets, install podman as follows:
 
 ```
-brew install python@3.9
+brew install vfkit
+brew install podman
+sudo /opt/homebrew/Cellar/podman/$(podman --version | awk '{print $3}')/bin/podman-mac-helper install
+export CONTAINERS_MACHINE_PROVIDER=applehv
+podman machine init  --disk-size 80
+podman machine start
 ```
 
-Ensure CA certs are up-to-date
+If podman has already been installed, stop the default machine and extend the disk to avoid disk space issues:
 
 ```
-brew install ca-certificates
+podman machine stop
+podman machine rm
+podman machine init --disk-size 80
+podman machine start
 ```
 
-2. Install ansible using pip
+Check rosetta is configured correctly
 
 ```
-python3.9 -m pip install ansible-core==2.12
+podman machine ssh "cat /proc/sys/fs/binfmt_misc/rosetta"
 ```
 
-Check ansible is in current path and correct version using `ansible --version`.
-Check for matching core and python versions.
+If this returns, "No such file or directory", fix by
 
 ```
-ansible [core 2.12.0]
-  python version = 3.9.6 (default, Nov 10 2023, 13:38:27) [Clang 15.0.0 (clang-1500.1.0.2.5)]
+podman machine ssh "sudo touch /etc/containers/enable-rosetta"
+podman machine stop
+podman machine start
 ```
 
-3. Optionally update PATH
+#### VPN
+Being connected to the Prisma VPN results in tls certificate errors when attempting to download the inital rockylinux image. Therefore it is best to disconnect from the VPN while creating the local container.
 
-If ansible is not in the current path, or is showing an unexpected version,
-check where the installation by using uninstall option. Don't proceed with
-the uninstall when given the option.
-
-```
-python3.9 -m pip uninstall ansible-core
-
-Found existing installation: ansible-core 2.12.0
-Uninstalling ansible-core-2.12.0:
-  Would remove:
-    /opt/homebrew/bin/ansible
-...
-Proceed (Y/n)? n
-```
-
-Ensure the directory containing ansible binaries is in your path, e.g.
-Add following to  `~/.bash_profile`
-
-```
-PATH=/opt/homebrew/bin:$PATH
-```
-
-Open a new terminal window and re-check Step 2.
-
-4. Install requirements
-
-Install python dependencies. Either:
-
-```
-python3.9 -m pip install -r requirements.txt
-```
-
-or if python installed at a user level:
-
-```
-python3.9 -m pip install -r requirements.txt --user
-```
-
-Install ansible dependencies:
-
-```
-ansible-galaxy role install -r requirements.yml
-ansible-galaxy collection install -r requirements.yml
-```
-
-If `ansible-galaxy collection install -r requirements.yml` fails, try:
-
-```
-ansible-galaxy collection install -r requirements.rhel6.yml
-```
-
-Check boto and botocore installed:
-
-```
-python3.9 -m pip list
-```
-
-5. Configure local environment
-
-5.1. Paste in credentials
+#### Credentials Environment Variables
 
 Sign into relevant AWS account via [AWS SSO](https://moj.awsapps.com/start/) and select access keys.
 Use Option 1: Set AWS environment variables.
@@ -136,16 +79,10 @@ Click to copy these commands and paste into terminal.
 Check you can access the dynamic inventory
 
 ```
-no_proxy="*" ansible-inventory  --graph
+./container.sh ansible-inventory --graph
 ```
 
-This should show a list of EC2s in the account grouped by various tags. Run `ansible-playbook` like this:
-
-```
-no_proxy="*" ansible-playbook site.yml --check
-```
-
-5.2. Use aws-vault
+#### Credentials via aws-vault
 
 Use `aws-vault` to avoid having to paste in AWS environment variables:
 
@@ -157,8 +94,53 @@ to protect the keychain. You will need to enter this password from time to time
 when using aws-vault. Note you can adjust the password timeout in KeyChain settings.
 
 ```
-export no_proxy="*"
-aws-vault exec nomis-development -- ansible-inventory  --graph
+./container.sh -v nomis-development ansible-inventory --graph
+```
+
+#### Using container.sh script
+
+Use the `container.sh` script to run ansible in a container.
+
+Examples to run against RHEL7+ instances
+
+```
+# use credentials pasted into shell
+./container.sh ansible-inventory --graph
+./container.sh ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+
+# use nomis-test AWS profile (using aws-vault)
+./container.sh -v nomis-test ansible-inventory --graph
+./container.sh ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+```
+
+Or to drop into an interactive shell just
+```
+# use credentials pasted into shell
+./container.sh
+
+# use nomis-test AWS profile (using aws-vault)
+./container.sh -v nomis-test
+```
+
+Examples to run against RHEL6 instances
+
+```
+# use credentials pasted into shell
+./container.sh -6 ansible-inventory --graph
+./container.sh -6 ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+
+# use nomis-test AWS profile (using aws-vault)
+./container.sh -6 -v nomis-test ansible-inventory --graph
+./container.sh -6 ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+```
+
+Or to drop into an interactive shell just
+```
+# use credentials pasted into shell
+./container.sh -6
+
+# use nomis-test AWS profile (using aws-vault)
+./container.sh -6 -v nomis-test
 ```
 
 ## Running ansible against an EC2 instance post build
@@ -246,4 +228,12 @@ Use requirements.rhel6.yml instead.  Example error:
 # [WARNING]: Skipping Galaxy server https://galaxy.ansible.com/api/. Got an unexpected error when getting available versions of collection amazon.aws:
 # '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
 # ERROR! Unexpected Exception, this is probably a bug: '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
+```
+
+### Removing the local container
+If using podman you can remove the image (depending on which you built) so it builds again next time the container.sh script is run:
+
+```
+podman image rm localhost/ansible-2.11.12
+podman image rm localhost/ansible-2.13.13
 ```

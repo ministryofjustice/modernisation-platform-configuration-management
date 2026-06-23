@@ -120,7 +120,7 @@
 # Check dataguard configured for non-OEM enviroments
 - name: Check Dataguard Configured
   set_fact:
-    dataguard_configured: "{{ high_availability_count[group_names | select('match','.*_dbs') | first | regex_replace('^.*_(.*)_dbs', '\\1') | regex_replace('^(dsd|boe)$', 'mis\\1') ] | int > 0 }}"
+    dataguard_configured: "{{ high_availability_count[group_names | select('match','.*_dbs') | first | regex_replace('^.*_(.*)_dbs', '\\1') ] | int > 0 }}"
   when: 
     - high_availability_count is defined
     - not 'server_type_hmpps_oem' in group_names

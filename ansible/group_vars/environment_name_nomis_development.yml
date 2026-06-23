@@ -19,7 +19,7 @@ oracle_setup_config:
     group: oinstall
     owner: oracle
     s3_bucket_path: nomis-weblogic-12
-    zip_file_name: tag.zip
+    zip_file_name: u01_tag_config.zip
 tnsnames_port: 1521
 tnsnames_qa19c_service_name: QA19C
 tnsnames_qa11g_service_name: QA11G
@@ -27,9 +27,11 @@ tnsnames_qa11g2_service_name: QA11G2
 zip_file_temp_dir: /tmp
 winrm_domain_name_fqdn: azure.noms.root
 
-users_and_groups_regular:
+users_and_groups_regular_web:
   - group: studio-webops
   - group: syscon-nomis
+
+users_and_groups_regular: "{{ users_and_groups_regular_web }}"
 
 weblogic_additional_form_servers: []
 

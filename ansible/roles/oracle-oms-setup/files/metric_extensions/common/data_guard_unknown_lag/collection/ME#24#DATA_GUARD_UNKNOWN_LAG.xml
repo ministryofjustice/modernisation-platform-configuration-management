@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$DATA_GUARD_UNKNOWN_LAG" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$DATA_GUARD_UNKNOWN_LAG" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="1" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$DATA_GUARD_UNKNOWN_LAG">
+		<Condition COLUMN_NAME="LAG_VALUE" CRITICAL="(unknown)" OPERATOR="MATCH" OCCURRENCES="1" MESSAGE="There is unknown lag in Data Guard for the %keyValue% database." CLEAR_MESSAGE="Data Guard lags are known."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
