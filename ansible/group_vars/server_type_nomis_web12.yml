@@ -86,19 +86,19 @@ weblogic_configs:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
     weblogic_db_repo_sid: "qa11g"
     weblogic_db_repo_username: "sys"
-    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}D"
+    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}E"
 
   qa11g2:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
     weblogic_db_repo_sid: "qa11g2"
     weblogic_db_repo_username: "sys"
-    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}D"
+    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}E"
 
   qa19c:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
     weblogic_db_repo_sid: "qa19c"
     weblogic_db_repo_username: "sys"
-    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}D"
+    weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}E"
 
 weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
 
