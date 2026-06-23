@@ -50,8 +50,12 @@ oasys_sqs_poll_interval_seconds: 300
 Deploy the OASys SQS Message Receiver:
 
 ```bash
-no_proxy="*" ansible-playbook site.yml --limit t1-oasys-db-a -e force_role=oasys-sqs-receiver
+
 ```
+ no_proxy="*" ansible-playbook site.yml --limit t2-oasys-db-a -e force_role=oasys-sqs-receiver -e oracle_sid=T2OASYS -e app_env=t2
+ 
+ #  oracle_sid provided since 2 oasys test databases T2OASYS and T2OASYS2 exist on  t2-oasys-db-a
+ #  app_env provided and must match app_env in oasys_sqs_secret_path 
 
 # Updating to a New Release
 
@@ -91,6 +95,7 @@ Verify Java installation:
 ```bash
 /usr/lib/jvm/java-1.8.0-amazon-corretto/bin/java -version
 ```
+/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.492.b09-1.0.1.el8.x86_64/jre/bin/java -version
 
 Review daemon logs:
 
