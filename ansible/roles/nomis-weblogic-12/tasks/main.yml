@@ -234,8 +234,6 @@
         - ec2provision
         - ec2patch
         - weblogic_configure_runtime
-        - weblogic_disable_overload_protection
-        - weblogic_crash_on_oome
 
     - import_tasks: logging.yml
       tags:
@@ -281,10 +279,5 @@
       tags:
         - ec2provision
         - weblogic_enable_reports_server
-
-    - import_tasks: overload-protection.yml
-      tags:
-        - ec2provision
-        - weblogic_overload_protection
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"

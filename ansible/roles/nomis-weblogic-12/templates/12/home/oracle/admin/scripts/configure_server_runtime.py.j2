@@ -10,6 +10,14 @@ servers = {
 {% endfor %}
 }
 
+clusters = [
+    'cluster_forms',
+    'cluster_reports',
+    'cluster_autologoff',
+    'cluster_hotpage',
+    'cluster_tagsar',
+]
+
 changed = False
 
 connect(userConfigFile='/u01/tmp/wlst.userconfig', userKeyFile='/u01/tmp/wlst.userkey', url=adminURL)
@@ -22,42 +30,24 @@ for serverName, requiredArgs in servers.items():
     if server is None:
         print('Server ' + serverName + ' does not exist. Skipping.')
         continue
+    print '- Configuring overload protection for server ' + serverName
+    overloadProtection = server.getOverloadProtection()
+    overloadProtection.setFailureAction('no-action')
+    overloadProtection.setPanicAction('no-action')
+    changed = True
 
-    cd('/Servers/' + serverName)
-
-    overload = getMBean('/Servers/' + serverName + '/OverloadProtection/' + serverName)
-    if overload is not None:
-        cd('/Servers/' + serverName + '/OverloadProtection/' + serverName)
-
-        if cmo.getPanicAction() != 'no-action':
-            print('Setting panicAction=no-action for ' + serverName)
-            cmo.setPanicAction('no-action')
-            changed = True
-
-        if cmo.getFailureAction() != 'no-action':
-            print('Setting failureAction=no-action for ' + serverName)
-            cmo.setFailureAction('no-action')
-            changed = True
-
-    cd('/Servers/' + serverName)
-    serverStart = getMBean('/Servers/' + serverName + '/ServerStart/' + serverName)
-    if serverStart is None:
-        create(serverName, 'ServerStart')
-
-    cd('/Servers/' + serverName + '/ServerStart/' + serverName)
-    currentArgs = cmo.getArguments()
-    if currentArgs is None:
-        currentArgs = ''
-
-    mergedArgs = currentArgs
-    for arg in requiredArgs.split():
-        if arg not in mergedArgs.split():
-            mergedArgs = (mergedArgs + ' ' + arg).strip()
-
-    if mergedArgs != currentArgs:
-        print('Updating JVM arguments for ' + serverName + ': ' + mergedArgs)
-        cmo.setArguments(mergedArgs)
+for clusterName in clusters:
+    cluster = getMBean('/Clusters/' + clusterName)
+    if cluster is None:
+        print('Cluster ' + clusterName + ' does not exist. Skipping.')
+        continue
+    print '- Configuring overload protection for cluster ' + clusterName
+    overloadProtection = cluster.getOverloadProtection()
+    if overloadProtection is not None:
+        overloadProtection.setPanicAction('no-action')
         changed = True
+    else:
+        print 'No overload protection MBean for ' + clusterName
 
 if changed:
     save()

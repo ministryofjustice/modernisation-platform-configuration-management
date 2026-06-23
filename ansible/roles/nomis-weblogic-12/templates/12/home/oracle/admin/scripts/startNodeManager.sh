@@ -3,7 +3,6 @@ set -e
 SERVER="weblogic.NodeManager"
 export JAVA_OPTIONS="${JAVA_OPTIONS} -Djava.net.preferIPv4Stack=true"
 export USER_MEM_ARGS="${USER_MEM_ARGS} -Djava.security.egd=file:/dev/./urandom"
-export USER_MEM_ARGS="${USER_MEM_ARGS:-} {{ weblogic_common_jvm_args | join(' ') }}"
 
 is_server_running() {
   pgrep -u oracle -f "$1" > /dev/null 2>&1

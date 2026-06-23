@@ -205,12 +205,12 @@ assign('Server', '{{ server.name }}', 'Machine', machineName)
 #set('Enabled', 'false')
 {% endif %}
 
-print('Configuring ServerStart for server {{ server.name }}')
-cd('/Servers/{{ server.name }}')
-create('{{ server.name }}', 'ServerStart')
-
-cd('/Servers/{{ server.name }}/ServerStart/{{ server.name }}')
-cmo.setArguments('{{ (server.jvm_args | default([])) | join(" ") }}')
+# Commented out because we are now using the weblogic_common_jvm_args variable to set the JVM args for all servers, including Forms and Reports, in a single place, and this was inserting the args with spaces between each letter.
+#print('Configuring ServerStart for server {{ server.name }}')
+#cd('/Servers/{{ server.name }}')
+#create('{{ server.name }}', 'ServerStart')
+#cd('/Servers/{{ server.name }}/ServerStart/{{ server.name }}')
+#cmo.setArguments('{{ (server.jvm_args | default([])) | join(" ") }}')
 
 {% endfor %}
 

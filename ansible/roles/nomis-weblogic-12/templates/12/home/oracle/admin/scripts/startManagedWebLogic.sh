@@ -1,7 +1,19 @@
 #!/bin/bash
 set -e
 SERVER="$1"
-export USER_MEM_ARGS="${USER_MEM_ARGS:-} {{ weblogic_common_jvm_args | join(' ') }}"
+
+case "$SERVER" in
+{% for server in weblogic_domain_servers %}
+  "{{ server.name }}")
+    SERVER_JVM_ARGS="{{ server.jvm_args | default(weblogic_common_jvm_args) if (server.jvm_args | default(weblogic_common_jvm_args)) is string else (server.jvm_args | default(weblogic_common_jvm_args) | join(' ')) }}"
+    ;;
+{% endfor %}
+  *)
+    SERVER_JVM_ARGS="{{ weblogic_common_jvm_args if weblogic_common_jvm_args is string else weblogic_common_jvm_args | join(' ') }}"
+    ;;
+esac
+
+export USER_MEM_ARGS="${USER_MEM_ARGS:-} ${SERVER_JVM_ARGS}"
 
 is_server_running() {
   pgrep -u oracle -f "weblogic.Name=$SERVER " > /dev/null 2>&1
