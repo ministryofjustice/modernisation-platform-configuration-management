@@ -1,5 +1,5 @@
 - name: Apply GoldenGate software patches
-  when: oracle_goldengate_software_patches[response_file_version] is defined
+  when: oracle_goldengate_software_patches[ora_version] is defined
   block:
     # check if patch is already applied by running opatch lsinventory and looking for the patch number in the output.
     - name: Check if GoldenGate patches are already applied
@@ -39,7 +39,7 @@
       when:
         - patch_id | length > 0
         - patch_id not in applied_patches
-      loop: "{{ oracle_goldengate_software_patches[response_file_version] }}"
+      loop: "{{ oracle_goldengate_software_patches[ora_version] }}"
           
     - name: Show list of patches to apply in logs
       ansible.builtin.debug:
@@ -160,7 +160,7 @@
             state: absent
           loop: >-
             {{
-              (oracle_goldengate_software_patches[response_file_version] | default([]))
+              (oracle_goldengate_software_patches[ora_version] | default([]))
               + (extracted_patch_dirs | default([]))
               + [oracle_opatch_software]
             }}

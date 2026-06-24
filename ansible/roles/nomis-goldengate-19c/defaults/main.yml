@@ -16,6 +16,9 @@ oracle_goldengate_software_patches:
 
 oracle_inventory: /u01/app/oraInventory
 oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"
+oracle19c_home: "/u01/app/oracle/product/19c/db_1"
+# This variable is set in the detect_ora_version.yml task and used to determine which Oracle home to use for GoldenGate installation and configuration. It is also used to determine which GoldenGate software patch to install based on the Oracle version.
+ora_version: ""
   
 oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
 oracle_goldengate_software_dir: /u02/stage/goldengate
@@ -55,12 +58,12 @@ oracle_goldengate_group:
     tns_alias: T1CNOM
     schema_owner: OMS_OWNER
     credential_alias: SOURCE_DB
-    oracle_home: "{{ oracle11g_home }}"
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
   auditdata:
     tns_alias: T1CAUDG
     schema_owner: AUDITDATA
     credential_alias: AUDIT_DB
-    oracle_home: "{{ oracle11g_home }}"
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
     extract_name: AUDDTEXT
     replicat_name: AUDDTREP
     trail_path: auditdata
@@ -71,7 +74,7 @@ oracle_goldengate_group:
     tns_alias: T1CAUDG
     schema_owner: AUDITREF
     credential_alias: AUDIT_DB
-    oracle_home: "{{ oracle11g_home }}"
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
     extract_name: AUDRFEXT
     replicat_name: AUDRFREP
     trail_path: auditref
@@ -82,7 +85,7 @@ oracle_goldengate_group:
     tns_alias: T1CMISG
     schema_owner: BODISTAGING
     credential_alias: MIS_DB
-    oracle_home: "{{ oracle11g_home }}"
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
     extract_name: MISEXT
     replicat_name: MISREP
     trail_path: mis
@@ -125,7 +128,8 @@ oracle_goldengate_register_start_scn: ""
 # full path to the home directory
 gg_env:
   GG_HOME: "{{ oracle_goldengate_home }}"
-  ORACLE_HOME: "{{ oracle11g_home }}"
+  # if ora_version = ORA11g then use 11g home, else use 19c home
+  ORACLE_HOME: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
   PATH: "${ORACLE_HOME}/bin:${GG_HOME}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
 
 bash_profile: |
