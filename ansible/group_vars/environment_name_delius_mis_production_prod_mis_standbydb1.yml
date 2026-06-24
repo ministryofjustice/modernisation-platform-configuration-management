@@ -6,6 +6,7 @@ database_parameters:
   sga_target: 175G
   pga_aggregate_target: 35G
   pga_aggregate_limit: 70G
+  compatible: 19.14.0
 data_guard_parameters:
   ApplyLagThreshold: 1000
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-mis-db-backups"
