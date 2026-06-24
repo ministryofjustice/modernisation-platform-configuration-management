@@ -152,6 +152,15 @@ The role supports granular control via tags for different deployment scenarios:
 - `goldengate-credentials` - Credential store setup
 - `goldengate-database-objects` - Database packages and control tables
 
+### Scheduler Jobs Migration Tags
+- `goldengate-jobs` - All scheduler jobs tasks (includes both tags below)
+- `install-migrated-jobs` - Install migrated jobs from STRMADMIN (disabled initially)
+- `switchover-jobs` - Switchover from STRMADMIN jobs to migrated jobs
+
+**Note:** Job migration tags include `never` and must be explicitly specified.
+
+See `SCHEDULER_JOBS_MIGRATION.md` for detailed information about the jobs migration process.
+
 ### Tag Usage Examples
 
 ```bash
@@ -184,6 +193,16 @@ ansible-playbook site.yml --tags goldengate-start-extract
 
 # Stop specific process
 ansible-playbook site.yml --tags stop-mis-replicat
+
+# Install migrated scheduler jobs (disabled for testing)
+ansible-playbook site.yml --tags install-migrated-jobs
+
+# Switchover from STRMADMIN to migrated jobs
+ansible-playbook site.yml --tags switchover-jobs
+
+# Install and switchover jobs for specific database
+ansible-playbook site.yml --tags install-migrated-jobs --limit cnom_servers
+ansible-playbook site.yml --tags switchover-jobs --limit cnom_servers
 ```
 
 ## Prerequisites
