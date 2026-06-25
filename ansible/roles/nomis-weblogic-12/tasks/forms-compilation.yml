@@ -3,25 +3,17 @@
   become_user: oracle
   ansible.builtin.shell: |
     source ~/.bash_profile
-    cd /u01/tag/FormsSources/
     set -o pipefail
-    bash compile_all_forms.sh username="{{ weblogic_db_username }}" password="{{ weblogic_db_password }}" start_index={{ start_index | default(0) }} target_db="{{ weblogic_db_name | upper }}" parallel_jobs={{ parallel_jobs | default(5) }} batch_size={{ batch_size | default(30) }} batch_sleep={{ batch_sleep | default(15) }} | tee /tmp/forms_compilation.log
+    cd /u01/tag/FormsSources/
+    timeout -k 30s 20m bash compile_all_forms.sh username="{{ weblogic_db_username }}" password="{{ weblogic_db_password }}" target_db="{{ weblogic_db_name | upper }}" parallel_jobs=10 batch_size={{ batch_size | default(30) }} batch_sleep={{ batch_sleep | default(1) }} | tee /tmp/forms_compilation.log
   args:
     executable: /bin/bash
-
-- name: Find and remove log/txt files
-  ansible.builtin.find:
-    paths: "{{ forms_compilation_filepath }}"
-    patterns: "*.log,*.txt"
-    recurse: no
-  register: forms_sources_files_to_remove
+  async: 1800
+  poll: 30
 
 - name: Remove log/txt files
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: absent
-  loop: "{{ forms_sources_files_to_remove.files }}"
-  when: forms_sources_files_to_remove.matched > 0
+  ansible.builtin.shell: find "{{ forms_compilation_filepath }}" -maxdepth 1 -type f \( -name "*.log" -o -name "*.txt" \) -delete
+  failed_when: false
 
 - name: Remove forms compilation log file
   ansible.builtin.file:
@@ -54,8 +46,7 @@
 - name: Move compiled form files to FormsObjects
   shell: mv /u01/tag/FormsSources/*.{mmx,plx,fmx} /u01/tag/FormsObjects/
   args:
-    warn: false
-  failed_when: false
+    executable: /bin/bash
 
 - name: Ensure ownership of moved form files
   file:
@@ -71,5 +62,5 @@
     owner: oracle
     group: oinstall
     mode: preserve
-    remote_src: true
+    remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
   when: copy_forms_objects | default(true) | bool

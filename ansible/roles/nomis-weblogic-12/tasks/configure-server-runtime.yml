@@ -1,0 +1,20 @@
+---
+- name: Copy WebLogic runtime compliance script
+  ansible.builtin.template:
+    src: "12/home/oracle/admin/scripts/configure_server_runtime.py.j2"
+    dest: "/home/oracle/admin/scripts/configure_server_runtime.py"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  no_log: true
+
+- name: Configure overload protection and JVM crash-on-OOME arguments
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    {{ weblogic_oracle_home }}/oracle_common/common/bin/wlst.sh \
+      /home/oracle/admin/scripts/configure_server_runtime.py
+  args:
+    executable: /bin/bash
+  register: configure_weblogic_runtime_result
+  changed_when: "'CHANGED' in configure_weblogic_runtime_result.stdout"

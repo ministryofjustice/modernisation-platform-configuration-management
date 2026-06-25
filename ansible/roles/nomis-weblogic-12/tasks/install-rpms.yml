@@ -1,6 +1,9 @@
 ---
-- name: Check installed packages
-  ansible.builtin.package_facts:
+- name: Check if jdk is installed
+  ansible.builtin.command: rpm -qa | grep jdk | wc -l
+  register: jdk_check
+  failed_when: false
+  changed_when: false
 
 - block:
     - name: Create rpms directory
@@ -32,4 +35,5 @@
         - jdk/jdk-8u411-linux-x64.rpm
 
   # block
-  when: ansible_facts.packages['jdk'] is not defined
+  # run when jdk is not found
+  when: jdk_check.stdout|int == 0

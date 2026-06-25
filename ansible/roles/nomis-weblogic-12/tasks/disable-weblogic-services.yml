@@ -1,0 +1,48 @@
+- name: Set default service list
+  ansible.builtin.set_fact:
+    weblogic_services_to_manage: "{{ services_to_manage | default([
+              'weblogic-ohs',
+              'WLS_FORMS',
+              'WLS_REPORTS',
+              'weblogic-server',
+              'weblogic-node-manager'
+            ]) }}"
+
+- name: Verify weblogic services exist
+  ansible.builtin.service_facts:
+
+- name: Stop weblogic services that exist
+  ansible.builtin.service:
+    daemon_reload: true
+    name: "{{ item }}"
+    enabled: false
+    state: "{{ service_state | default('stopped') }}"
+  loop: "{{ weblogic_services_to_manage }}"
+  when:
+    - item + '.service' in ansible_facts.services
+    - ansible_facts.services[item + '.service'].status != 'not-found'
+  register: service_stop_result
+
+- name: Wait for weblogic services to stop (up to 30 seconds)
+  ansible.builtin.shell: |
+    for service in {{ weblogic_services_to_manage | join(' ') }}; do
+      systemctl is-active --quiet "$service" && exit 1
+    done
+  register: services_stopped
+  until: services_stopped.rc == 0
+  retries: 30
+  delay: 1
+  failed_when: false
+  when: service_stop_result is changed
+
+- name: Refresh service facts
+  ansible.builtin.service_facts:
+
+- name: Fail if any service is still running
+  ansible.builtin.fail:
+    msg: "Service {{ item }} is still running"
+  loop: "{{ weblogic_services_to_manage }}"
+  when:
+    - item + '.service' in ansible_facts.services
+    - ansible_facts.services[item + '.service'].status != 'not-found'
+    - ansible_facts.services[item + '.service'].state == 'running'
