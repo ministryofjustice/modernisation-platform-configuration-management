@@ -13,17 +13,18 @@ export ORACLE_HOME=/u01/app/oracle/Middleware
 export DOMAIN_BASE=$ORACLE_HOME/user_projects/domains
 export DOMAIN_HOME=$DOMAIN_BASE/nomis
 export OHS_INST=$DOMAIN_HOME/config/fmwconfig/components/OHS/instances/ohs1
-. $DOMAIN_HOME/bin/setDomainEnv.sh
-
+if [ -f $DOMAIN_HOME/bin/setDomainEnv.sh ]; then
+        . $DOMAIN_HOME/bin/setDomainEnv.sh > /dev/null
+fi
 
 export PATH=$PATH:$ORACLE_HOME/bin:/u01/tag/utils/scripts
 
 
-export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/lib:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64/server:/u01/app/oracle/Middleware/oracle_common/jdk/jre/lib/amd64/native_threads
+export LD_LIBRARY_PATH=${ORACLE_HOME}/lib:${ORACLE_HOME}/oracle_common/jdk/jre/lib/amd64:${ORACLE_HOME}/oracle_common/jdk/jre/lib/amd64/server:${ORACLE_HOME}/oracle_common/jdk/jre/lib/amd64/native_threads
 
-export PRODUCT_HOME=/u01/app/oracle/Middleware/ohs
-export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/ohs/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/u01/app/oracle/Middleware/oracle_common/lib:$LD_LIBRARY_PATH
-export ORACLE_INSTANCE=/u01/app/oracle/Middleware/user_projects/domains/nomis
+export PRODUCT_HOME=${ORACLE_HOME}/ohs
+export LD_LIBRARY_PATH=${PRODUCT_HOME}/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${ORACLE_HOME}/oracle_common/lib:$LD_LIBRARY_PATH
+export ORACLE_INSTANCE=${ORACLE_HOME}/user_projects/domains/nomis
 export COMPONENT_NAME=ohs1
 export COMPONENT_TYPE=OHS

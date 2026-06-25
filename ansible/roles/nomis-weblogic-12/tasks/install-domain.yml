@@ -1,97 +1,99 @@
 ---
 - name: Check if weblogic domain already installed
   ansible.builtin.stat:
-    path: /u01/app/oracle/Middleware/user_projects/domains/nomis
+    path: "{{ weblogic_domain_home }}"
   register: weblogic_domain_installed_check
 
-- block:
-    - name: Create weblogic domain directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: oracle
-        group: oinstall
-        mode: "0755"
-      loop:
-        - /u01/software/domain
+- name: Check Oracle supplied domain templates exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ weblogic_allowed_domain_templates }}"
+  register: weblogic_domain_template_stats
 
-    # creat a template by first manually installing via config.sh wizard and then run pack:
-    # /u01/app/oracle/Middleware/oracle_common/common/bin/pack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template /u01/software/domain/template1.jar -template_name template1
-    # aws s3 cp /u01/software/domain/template1.jar s3://ec2-image-builder-nomis20220314103938567000000001/weblogic-software-12/domain/template1.jar --acl bucket-owner-full-control
-    - name: Get weblogic domain template from S3 bucket
-      amazon.aws.aws_s3:
-        bucket: "{{ image_builder_s3_bucket_name }}"
-        object: "weblogic-software-12/domain/{{ item }}"
-        dest: "/u01/software/domain/{{ item }}"
-        mode: get
-        overwrite: latest
-      loop:
-        - "{{ weblogic_domain_template_filename }}"
+- name: Fail if required Oracle supplied templates are missing
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required Oracle supplied WebLogic template is missing: {{ item.item }}"
+  loop: "{{ weblogic_domain_template_stats.results }}"
 
-    - name: Update ownership of weblogic domain template
-      ansible.builtin.file:
-        path: "/u01/software/domain/{{ item }}"
-        owner: oracle
-        group: oinstall
-      loop:
-        - "{{ weblogic_domain_template_filename }}"
+- name: Fail if a forbidden Coherence template is configured
+  ansible.builtin.assert:
+    that:
+      - weblogic_allowed_domain_templates
+        | select('search', '(?i)coherence')
+        | list
+        | length == 0
+    fail_msg: "Coherence template detected in weblogic_allowed_domain_templates. Remove it for WLS Basic compliance."
 
-    - name: Unpack weblogic domain template
-      become_user: oracle
-      ansible.builtin.shell: |
-        set -eo pipefail
-        main() {
-          echo "# /u01/app/oracle/Middleware/oracle_common/common/bin/unpack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template /u01/software/domain/{{ weblogic_domain_template_filename }} -user_name weblogic -password xxxx"
-          /u01/app/oracle/Middleware/oracle_common/common/bin/unpack.sh -domain /u01/app/oracle/Middleware/user_projects/domains/nomis -template "/u01/software/domain/{{ weblogic_domain_template_filename }}" -user_name weblogic -password "{{ weblogic_admin_password }}"
-        }
-        main 2>&1 | logger -p local3.info -t ansible-weblogic
-
-    - name: Create weblogic domain security directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: oracle
-        group: oinstall
-        mode: "0755"
-      loop:
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_FORMS/security
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security
-
-    # the boot.properties file is automatically updated by the weblogic server
-    - name: Copy weblogic domain security files
-      ansible.builtin.template:
-        src: "12/u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties"
-        dest: "{{ item }}"
-        owner: oracle
-        group: oinstall
-        force: false
-      loop:
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/AdminServer/security/boot.properties
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_FORMS/security/boot.properties
-        - /u01/app/oracle/Middleware/user_projects/domains/nomis/servers/WLS_REPORTS/security/boot.properties
-
-  # block
+- name: Create weblogic domain directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+  loop:
+    - /u01/software/domain
+    - /home/oracle/admin/scripts
   when: not weblogic_domain_installed_check.stat.exists
 
-- name: Copy weblogic init.d scripts
-  ansible.builtin.template:
-    src: "12{{ item }}"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /etc/systemd/system/weblogic-node-manager.service
-    - /etc/systemd/system/weblogic-server.service
-    - /etc/systemd/system/weblogic-ohs.service
-    - /etc/systemd/system/WLS_FORMS.service
-    - /etc/systemd/system/WLS_REPORTS.service
+- name: Fail if RCU repository details are not configured
+  ansible.builtin.assert:
+    that:
+      - weblogic_db_repo_hostname is defined
+      - weblogic_db_repo_hostname | length > 0
+      - weblogic_db_repo_sid is defined
+      - weblogic_db_repo_sid | length > 0
+      - weblogic_db_repo_prefix is defined
+      - weblogic_db_repo_prefix | length > 0
+      - weblogic_db_repo_schema_password is defined
+      - weblogic_db_repo_schema_password | length > 0
+    fail_msg: >-
+      RCU repository details are required before creating the WebLogic
+      Forms and Reports domain. Ensure create-db-repo.yml has run and
+      weblogic_db_repo_hostname, weblogic_db_repo_sid, weblogic_db_repo_prefix,
+      and weblogic_db_repo_schema_password are set.
 
-- name: Copy WLS_REPORTS init.d script with reports server name
+# if weblogic_is_first_domain is not defined, default to true for backward compatibility
+- name: Set weblogic_is_first_domain fact if not defined
+  ansible.builtin.set_fact:
+    weblogic_is_first_domain: true
+  when: weblogic_is_first_domain is not defined
+  
+- name: Debug first-domain logic
+  ansible.builtin.debug:
+    msg: "weblogic_is_first_domain = {{ weblogic_is_first_domain }}"
+
+# debug msg output of weblogic_db_repo_prefix
+- name: Debug RCU prefix
+  ansible.builtin.debug:
+    msg: "Using RCU prefix '{{ weblogic_db_repo_prefix }}' for WebLogic domain"
+
+- name: Copy WLST domain creation script
   ansible.builtin.template:
-    src: "12{{ item }}.j2"
-    dest: "{{ item }}"
-    mode: "0644"
-  loop:
-    - /etc/systemd/system/NOMIS_REPORTS_SERVER.service
-  vars:
-    reports_server: "{{ reports_server_name }}"
+    src: "12/home/oracle/admin/scripts/create_forms_reports_domain.py.j2"
+    dest: "/home/oracle/admin/scripts/create_forms_reports_domain.py"
+    owner: oracle
+    group: oinstall
+    mode: "0700"
+  when: not weblogic_domain_installed_check.stat.exists
+
+- name: Create WebLogic Forms and Reports domain using WLST offline
+  become_user: oracle
+  ansible.builtin.shell: |
+    set -eo pipefail
+    {{ weblogic_oracle_home }}/oracle_common/common/bin/wlst.sh \
+      /home/oracle/admin/scripts/create_forms_reports_domain.py > /home/oracle/admin/scripts/create_forms_reports_domain.log 2>&1
+  args:
+    executable: /bin/bash
+  register: create_weblogic_domain_result
+  changed_when: true
+  when: not weblogic_domain_installed_check.stat.exists
+
+- name: Remove /home/oracle/admin/scripts/create_forms_reports_domain.py
+  ansible.builtin.file:
+    path: /home/oracle/admin/scripts/create_forms_reports_domain.py
+    state: absent
+
+

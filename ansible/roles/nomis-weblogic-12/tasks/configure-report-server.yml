@@ -6,29 +6,18 @@
     line: "REPORT_SERVER_NAME={{ server_name }}"
     state: present
 
-- name: Template Reports scripts
-  ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    owner: oracle
-    group: oinstall
-    mode: '0755'
-  loop:
-    - src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
-      dest: /home/oracle/admin/scripts/createReportsServerInstance.sh
-    - src: 12/home/oracle/admin/scripts/createCredentialsFiles.sh.j2
-      dest: /home/oracle/admin/scripts/createCredentialsFiles.sh
-
-- name: Generate credentials files
-  become_user: oracle
-  command: bash /home/oracle/admin/scripts/createCredentialsFiles.sh
+# check if /u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/rep_server1 directory exists to determine if the report server configuration files need to be copied
+- name: Check if report server configuration directory exists
+  ansible.builtin.stat:
+    path: "/u01/app/oracle/Middleware/user_projects/domains/nomis/config/fmwconfig/components/ReportsServerComponent/rep_server1"
+  register: report_server_config_dir
 
 - name: Insert WLST nmConnect block for start/stop scripts
   vars:
     sh_indent: "\t"
     domain_name: "nomis"
     nm_port: 5556
-    nm_host: "localhost"
+    nm_host: "{{ weblogic_domain_hostname }}"
     nm_type: "ssl"
   ansible.builtin.blockinfile:
     path: "{{ item }}"
@@ -47,9 +36,28 @@
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
     - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
 
+- name: Template Reports scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  loop:
+    - src: 12/home/oracle/admin/scripts/createReportsServerInstance.sh.j2
+      dest: /home/oracle/admin/scripts/createReportsServerInstance.sh
+  when: not report_server_config_dir.stat.exists
+
+- import_tasks: enable-weblogic-services.yml
+  vars:
+    services_to_manage:
+      - weblogic-node-manager
+      - weblogic-server
+
 - name: Create the initial report server
   become_user: oracle
   command: bash /home/oracle/admin/scripts/createReportsServerInstance.sh
+  when: not report_server_config_dir.stat.exists
 
 - name: Start report server
   ansible.builtin.shell: /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh {{ server_name }}
@@ -64,6 +72,12 @@
   become_user: oracle
   args:
     executable: /bin/bash
+
+- import_tasks: disable-weblogic-services.yml
+  vars:
+    services_to_manage:
+      - weblogic-server
+      - weblogic-node-manager
 
 - name: Configure report tools name
   ansible.builtin.lineinfile:
@@ -116,19 +130,12 @@
   loop: "{{ rweng_check.results }}"
   when: item.changed
 
-- name: Remove WLST NM connect block from start/stop scripts
-  ansible.builtin.blockinfile:
-    path: "{{ item }}"
-    marker: "# {mark} ANSIBLE WLST NM CONNECT"
-    state: absent
+- name: Copy WLS_REPORTS systemd script with reports server name
+  ansible.builtin.template:
+    src: "12{{ item }}.j2"
+    dest: "{{ item }}"
+    mode: "0644"
   loop:
-    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/startComponent.sh
-    - /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopComponent.sh
-
-- name: Remove WLST userConfig and userKey files
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /u01/tmp/wlst.userconfig
-    - /u01/tmp/wlst.userkey
+    - /etc/systemd/system/NOMIS_REPORTS_SERVER.service
+  vars:
+    reports_server: "{{ reports_server_name }}"

@@ -26,8 +26,8 @@
 - name: Download archives from S3 bucket into /u01/archives
   amazon.aws.aws_s3:
     bucket: "{{ image_builder_s3_bucket_name }}"
-    object: "/weblogic-software-12{{ item }}"
-    dest: "/u01/archives/{{ item.split('/')[1:] | join('_') }}"
+    object: "weblogic-software-12{{ item }}"
+    dest: "/u01/archives/{{ item | regex_replace('^/', '') | replace('/', '_') }}"
     mode: get
     overwrite: latest
   loop: "{{ weblogic_s3_archives }}"
@@ -36,9 +36,9 @@
   ansible.builtin.unarchive:
     owner: oracle
     group: oinstall
-    src: "/u01/archives/{{ item.split('/')[1:] | join('_') }}"
+    src: "/u01/archives/{{ item | regex_replace('^/', '') | replace('/', '_') }}"
     dest: "{{ item.split('/')[:-1] | join('/') }}"
-    remote_src: true
+    remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
     keep_newer: true
   loop: "{{ weblogic_s3_archives }}"
   when: not ansible_check_mode

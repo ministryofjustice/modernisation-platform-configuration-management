@@ -1,9 +1,0 @@
----
-- name: Update sysctl
-  sysctl:
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-    state: present
-    reload: yes
-  loop:
-    - { name: "kernel.shmmax", value: "4294967295" }
