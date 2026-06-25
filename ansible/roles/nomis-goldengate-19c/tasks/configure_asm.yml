@@ -1,6 +1,7 @@
 ---
 # Create a directory in ASM for the archive logs sent from the source database for GoldenGate replication. This is required for the downstream integrated capture process to be able to read the archived redo logs for replication.
 - name: Configure Oracle ASM for GoldenGate
+  when: host_is_source is not defined or not host_is_source
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
   environment: "{{ gg_env }}"

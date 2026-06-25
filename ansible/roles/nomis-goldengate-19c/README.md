@@ -8,26 +8,23 @@ This role installs and configures Oracle GoldenGate for the Nomis Streams replac
 
 ## Deployment Architecture
 
-The role supports deployment to **two separate GoldenGate hosts**:
-
-1. **Audit Database Host (T1CAUDG)**: Runs AUDITDATA and AUDITREF replication processes
-2. **MIS Database Host (T1CMISG)**: Runs MIS replication process
+The role deploys to a **single GoldenGate target host** which runs both the Audit (T1CAUDG) and MIS (T1CMISG) databases. A single playbook run will detect all running Oracle instances and deploy the relevant GoldenGate components for each — no separate runs required.
 
 The **source database (T1CNOMG/Nomis)** runs on a separate host and does not require GoldenGate installation.
 
 ### Stream-Specific Deployment
 
-The role automatically detects which database is running locally and deploys only the relevant GoldenGate components:
-- **Auto-Detection**: The role checks for running Oracle instances (`ora_pmon_*` processes) and matches them against databases defined in `oracle_goldengate_db`
-- **Manual Override**: You can manually set `oracle_goldengate_local_db_sid` if needed (e.g., `T1CAUDG` or `T1CMISG`)
-- AUDITDATA and AUDITREF processes are deployed only on hosts running the Audit database (T1CAUDG)
-- MIS processes are deployed only on hosts running the MIS database (T1CMISG)
+The role automatically detects which databases are running locally and deploys all relevant GoldenGate components in one pass:
+- **Auto-Detection (default)**: The role checks for running Oracle instances (`ora_pmon_*` processes), matches them against all `tns_alias` values in `oracle_goldengate_group`, and sets deployment flags for every matched database. If both T1CAUDG and T1CMISG are running, all three streams (AUDITDATA, AUDITREF, MIS) are deployed in a single run.
+- **Manual Override (optional)**: Set `oracle_goldengate_local_db_sid` to `T1CAUDG` or `T1CMISG` to restrict deployment to a single database's streams — useful for targeted updates or troubleshooting.
+- AUDITDATA and AUDITREF components are deployed when the Audit database (T1CAUDG) is detected or targeted
+- MIS components are deployed when the MIS database (T1CMISG) is detected or targeted
 
 **Detection Logic:**
 1. Checks for running Oracle instances on the host
-2. Compares running instances with configured databases in `oracle_goldengate_db`
-3. Sets `oracle_goldengate_local_db_sid` to the matching database
-4. Deploys only the relevant GoldenGate components
+2. Compares running instances with all configured `tns_alias` values in `oracle_goldengate_group`
+3. Sets `run_auditdata`, `run_auditref`, and `run_mis` flags for every matching database
+4. Deploys all relevant GoldenGate components in one run
 
 ### Shared Package Code
 
@@ -135,8 +132,8 @@ The role supports granular control via tags for different deployment scenarios:
 - `goldengate-scripts` - Control script deployment
 
 ### Host-Specific Tags
-- `goldengate-audit` - Tasks for Audit database hosts (AUDITDATA + AUDITREF)
-- `goldengate-mis` - Tasks for MIS database hosts
+- `goldengate-audit` - Tasks for the Audit database (AUDITDATA + AUDITREF)
+- `goldengate-mis` - Tasks for the MIS database
 
 ### Process-Specific Tags
 - `goldengate-extract` - Extract process configuration
@@ -164,10 +161,10 @@ See `SCHEDULER_JOBS_MIGRATION.md` for detailed information about the jobs migrat
 ### Tag Usage Examples
 
 ```bash
-# Install and configure GoldenGate on Audit database hosts only
+# Deploy AUDITDATA and AUDITREF streams (T1CAUDG)
 ansible-playbook site.yml --tags goldengate-audit
 
-# Install and configure GoldenGate on MIS database hosts only
+# Deploy MIS stream (T1CMISG)
 ansible-playbook site.yml --tags goldengate-mis
 
 # Deploy only the control scripts
@@ -185,7 +182,7 @@ ansible-playbook site.yml --tags goldengate-install --skip-tags goldengate-confi
 # Start all Extract and Replicat processes
 ansible-playbook site.yml --tags goldengate-start
 
-# Stop all processes on Audit database host
+# Stop all Audit database processes
 ansible-playbook site.yml --tags goldengate-stop,goldengate-audit
 
 # Start only Extract processes

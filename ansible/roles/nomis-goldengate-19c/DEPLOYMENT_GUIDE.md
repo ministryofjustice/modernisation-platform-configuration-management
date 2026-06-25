@@ -3,28 +3,28 @@
 ## Deployment Architecture
 
 ### Overview
-The Oracle GoldenGate 19c installation supports three replication streams across **two GoldenGate hosts**:
+The Oracle GoldenGate 19c installation supports three replication streams. GoldenGate is installed on a **single target host** which runs both the Audit (T1CAUDG) and MIS (T1CMISG) databases. A single playbook run detects all running Oracle instances and deploys all matching stream components automatically.
 
 ```
-┌─────────────────┐        ┌──────────────────┐        ┌─────────────────┐
-│  Source Host    │        │ Audit DB Host    │        │  MIS DB Host    │
-│  (Nomis)        │───────>│  (T1CAUDG)       │        │  (T1CMISG)      │
-│                 │   │    │                  │        │                 │
-│  T1CNOMG        │   │    │  GoldenGate:     │        │  GoldenGate:    │
-│  (OMS_OWNER)    │   │    │  - AUDITDATA     │        │  - MIS          │
-│                 │   │    │  - AUDITREF      │        │                 │
-│  NO GG INSTALL  │   └───>│                  │        │                 │
-└─────────────────┘         └──────────────────┘        └─────────────────┘
+┌─────────────────┐        ┌──────────────────────────────────────┐
+│  Source Host    │        │  GoldenGate Target Host              │
+│  (Nomis)        │───────>│                                      │
+│                 │   │    │  T1CAUDG (Audit DB)                  │
+│  T1CNOMG        │   │    │  GoldenGate: AUDITDATA, AUDITREF     │
+│  (OMS_OWNER)    │   │    │                                      │
+│                 │   │    │  T1CMISG (MIS DB)                    │
+│  No GG Install  │   └───>│  GoldenGate: MIS                     │
+└─────────────────┘        └──────────────────────────────────────┘
 ```
 
-### Hosts and Their Processes
+### Databases and Their Processes
 
-#### 1. Source Database Host (Nomis - T1CNOMG)
+#### 1. Source Database (Nomis - T1CNOMG)
 - **No GoldenGate Installation Required**
 - Database parameters configured only (ENABLE_GOLDENGATE_REPLICATION)
 - Source for all three replication streams
 
-#### 2. Audit Database Host (T1CAUDG)
+#### 2. Audit Database (T1CAUDG) — on the GoldenGate target host
 **Deploys Two GoldenGate Processes:**
 - **AUDITDATA** - Replicates to AUDITDATA.AUDIT_TABLE and AUDIT_COLUMN
   - Extract: EXTAUDD
@@ -35,10 +35,10 @@ The Oracle GoldenGate 19c installation supports three replication streams across
 
 **Shared Characteristics:**
 - AUDITREF shares database package code with MIS process
-- Use same target database (T1CAUDG)
+- Both use T1CAUDG as their target database
 - Different schemas (AUDITDATA vs AUDITREF)
 
-#### 3. MIS Database Host (T1CMISG)
+#### 3. MIS Database (T1CMISG) — on the GoldenGate target host
 **Deploys One GoldenGate Process:**
 - **MIS** - Replicates to BODISTAGING.STG_* tables
   - Extract: EXTMIS
@@ -54,14 +54,16 @@ The Oracle GoldenGate 19c installation supports three replication streams across
 
 ### Critical Variable: oracle_goldengate_local_db_sid
 
-This variable controls which processes are deployed on each host:
+This variable is **optional**. By default the role auto-detects all running Oracle instances and deploys components for every matching database in one pass. Set this variable only when you want to restrict a run to a specific database's streams — for example, when applying a targeted update or troubleshooting a single stream.
 
 ```yaml
-# Auto-detected by checking running Oracle instances
-# The role will detect which database (T1CAUDG or T1CMISG) is running
+# Default (not set): auto-detects both T1CAUDG and T1CMISG, deploys all streams
+# oracle_goldengate_local_db_sid: ""
 
-# Manual override (if needed):
-oracle_goldengate_local_db_sid: T1CAUDG  # Deploys: AUDITDATA + AUDITREF
+# Override: restrict to Audit database streams only
+oracle_goldengate_local_db_sid: T1CAUDG  # Deploys: AUDITDATA + AUDITREF only
+
+# Override: restrict to MIS stream only
 oracle_goldengate_local_db_sid: T1CMISG  # Deploys: MIS only
 ```
 
@@ -127,20 +129,25 @@ goldengate (ALL TASKS)
 
 ## Common Deployment Scenarios
 
-### Scenario 1: Full Deployment to Both Hosts
+### Scenario 1: Full Deployment to the Target Host
 
-**Audit Database Host:**
+With both databases running, a single run deploys all streams automatically:
+
 ```bash
 ansible-playbook site.yml \
-  --limit audit_db_hosts \
-  --tags goldengate-audit \
-  --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG"
+  --tags goldengate
 ```
 
-**MIS Database Host:**
+To restrict to one database's streams only:
+
 ```bash
+# Audit database streams only
 ansible-playbook site.yml \
-  --limit mis_db_hosts \
+  --tags goldengate-audit \
+  --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG"
+
+# MIS stream only
+ansible-playbook site.yml \
   --tags goldengate-mis \
   --extra-vars "oracle_goldengate_local_db_sid=T1CMISG"
 ```
@@ -148,7 +155,6 @@ ansible-playbook site.yml \
 ### Scenario 2: Install Software Only (No Configuration)
 
 ```bash
-# Install on both hosts
 ansible-playbook site.yml \
   --tags goldengate-install \
   --skip-tags goldengate-config
@@ -157,9 +163,8 @@ ansible-playbook site.yml \
 ### Scenario 3: Update Configuration Only (No Reinstall)
 
 ```bash
-# Update config on Audit host
+# Updates config for all detected streams
 ansible-playbook site.yml \
-  --limit audit_db_hosts \
   --tags goldengate-config \
   --skip-tags goldengate-install
 ```
@@ -167,7 +172,7 @@ ansible-playbook site.yml \
 ### Scenario 4: Deploy Control Scripts Only
 
 ```bash
-# Update scripts on all GoldenGate hosts
+# Update scripts on the GoldenGate target host
 ansible-playbook site.yml \
   --tags goldengate-scripts
 ```
@@ -183,23 +188,28 @@ ansible-playbook site.yml \
 ### Scenario 6: Update Extract Processes Only
 
 ```bash
-# Update Extract processes on Audit host
+# Update Extract processes for all detected streams
+ansible-playbook site.yml --tags goldengate-extract
+
+# Or restrict to a specific stream
 ansible-playbook site.yml \
-  --limit audit_db_hosts \
+  --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG" \
   --tags goldengate-extract,goldengate-audit
 
-# Update Extract processes on MIS host
 ansible-playbook site.yml \
-  --limit mis_db_hosts \
+  --extra-vars "oracle_goldengate_local_db_sid=T1CMISG" \
   --tags goldengate-extract,goldengate-mis
 ```
 
 ### Scenario 7: Update Replicat Processes Only
 
 ```bash
-# Update Replicat processes on Audit host
+# Update Replicat processes for all detected streams
+ansible-playbook site.yml --tags goldengate-replicat
+
+# Or restrict to Audit database streams
 ansible-playbook site.yml \
-  --limit audit_db_hosts \
+  --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG" \
   --tags goldengate-replicat,goldengate-audit
 ```
 
@@ -214,22 +224,19 @@ ansible-playbook site.yml \
 all:
   children:
     goldengate_hosts:
-      children:
-        audit_goldengate:
-          hosts:
-            audit-db-01:
-              # oracle_goldengate_local_db_sid auto-detected from running instances
-              # Database SIDs automatically derived from oracle_goldengate_db
-        
-        mis_goldengate:
-          hosts:
-            mis-db-01:
-              # oracle_goldengate_local_db_sid auto-detected from running instances
-              # Database SIDs automatically derived from oracle_goldengate_db
-    
+      hosts:
+        goldengate-db-01:
+          ansible_host: 10.0.1.10
+          ansible_user: ec2-user
+          # Both T1CAUDG and T1CMISG run on this host.
+          # Always set oracle_goldengate_local_db_sid explicitly via extra-vars
+          # when running the playbook to target a specific database stream.
+
     source_database:
       hosts:
         nomis-db-01:
+          ansible_host: 10.0.1.20
+          ansible_user: ec2-user
           # No GoldenGate installation
           # Only database parameter configuration if needed
 ```
@@ -241,22 +248,12 @@ all:
 ### Workflow 1: Initial Full Deployment
 
 ```yaml
-# Step 1: Configure source database (optional - will be done automatically when deploying to GG hosts)
-# Database parameters are automatically configured based on oracle_goldengate_db structure
-
-# Step 2: Deploy to Audit host
-- name: Deploy GoldenGate to Audit database
-  hosts: audit_goldengate
+# A single play against the target host — auto-detection deploys all streams
+- name: Deploy GoldenGate - all streams
+  hosts: goldengate_hosts
   roles:
     - role: oracle-19c-goldengate
-  tags: goldengate-audit
-
-# Step 3: Deploy to MIS host
-- name: Deploy GoldenGate to MIS database
-  hosts: mis_goldengate
-  roles:
-    - role: oracle-19c-goldengate
-  tags: goldengate-mis
+  tags: goldengate
 ```
 
 ### Workflow 2: Update Process Configuration Only
@@ -301,10 +298,10 @@ run_auditref: "{{ oracle_goldengate_local_db_sid == 'T1CAUDG' }}"
 run_mis: "{{ oracle_goldengate_local_db_sid == 'T1CMISG' }}"
 ```
 
-### What Gets Deployed Where
+### What Gets Deployed When
 
-| Component | Audit Host (T1CAUDG) | MIS Host (T1CMISG) |
-|-----------|---------------------|-------------------|
+| Component | Targeting T1CAUDG | Targeting T1CMISG |
+|-----------|-------------------|-------------------|
 | GoldenGate Software | ✅ Yes | ✅ Yes |
 | Credential Store | ✅ Yes | ✅ Yes |
 | Manager Config | ✅ Yes | ✅ Yes |
@@ -325,7 +322,7 @@ run_mis: "{{ oracle_goldengate_local_db_sid == 'T1CMISG' }}"
 
 ### Verify Correct Deployment
 
-**On Audit Host:**
+**When targeting T1CAUDG:**
 ```bash
 # Should show EXTAUDD, REPAUDD, EXTAUDR, REPAUDR
 cd $GGHOME
@@ -333,7 +330,7 @@ cd $GGHOME
 GGSCI> INFO ALL
 ```
 
-**On MIS Host:**
+**When targeting T1CMISG:**
 ```bash
 # Should show EXTMIS, REPMIS only
 cd $GGHOME
@@ -343,7 +340,7 @@ GGSCI> INFO ALL
 
 ### Check Deployed Scripts
 
-**On Audit Host:**
+**After targeting T1CAUDG:**
 ```bash
 ls -la $GGHOME/scripts/
 # Should have:
@@ -354,7 +351,7 @@ ls -la $GGHOME/scripts/
 # - ogg_control.sh
 ```
 
-**On MIS Host:**
+**After targeting T1CMISG:**
 ```bash
 ls -la $GGHOME/scripts/
 # Should have:
@@ -367,29 +364,28 @@ ls -la $GGHOME/scripts/
 
 ## Best Practices
 
-1. **Always set `oracle_goldengate_local_db_sid`** in inventory or extra-vars
-2. **Use host groups** (audit_goldengate, mis_goldengate) for targeted deployment
+1. **Let auto-detection handle stream selection** — the role detects all running databases and deploys all matching streams in one run; no need to set `oracle_goldengate_local_db_sid` for normal deployments
+2. **Use `oracle_goldengate_local_db_sid`** only when you need to restrict a run to a single stream (e.g. targeted updates, troubleshooting)
 3. **Use tags** to control which parts of the role execute
 4. **Test with `--check` mode** first when possible
-5. **Deploy to one host** at a time initially to validate configuration
-6. **Use `--limit`** to target specific hosts during maintenance
-7. **Keep database SID lists** consistent across environments via config files
+5. **Use `--limit`** to target specific hosts during maintenance
+6. **Keep database SID lists** consistent across environments via config files
 
 ---
 
 ## Troubleshooting
 
-### Issue: Wrong processes deployed to a host
+### Issue: Wrong processes deployed for a stream
 
-**Cause:** `oracle_goldengate_local_db_sid` not set or incorrectly detected
+**Cause:** `oracle_goldengate_local_db_sid` is set to the wrong value, overriding auto-detection.
 
-**Solution:**
-```yaml
-# Check what was detected:
-ansible-playbook site.yml --tags goldengate -v | grep "Local database SID"
+**Solution:** Either clear the override to let auto-detection run all streams, or set the correct SID:
+```bash
+# Let auto-detection handle it (deploys all running streams)
+ansible-playbook site.yml --tags goldengate
 
-# Manually override if needed:
-oracle_goldengate_local_db_sid: T1CAUDG  # or T1CMISG
+# Or explicitly target one stream
+ansible-playbook site.yml --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG"
 ```
 
 ### Issue: Auto-detection fails - no database detected
@@ -412,15 +408,14 @@ oracle_goldengate_local_db_sid: T1CAUDG  # or T1CMISG
    oracle_goldengate_local_db_sid: T1CAUDG
    ```
 
-### Issue: Multiple databases detected on same host
+### Issue: Auto-detection deploys the wrong stream
 
-**Cause:** Host runs multiple Oracle instances
+**Cause:** `oracle_goldengate_local_db_sid` was set (either in inventory or as an extra-var) and is pointing to the wrong database, overriding auto-detection.
 
-**Solution:**
-The role will use the first matching instance found. To control which one:
-```yaml
-# Explicitly set which database to use
-oracle_goldengate_local_db_sid: T1CAUDG
+**Solution:** Remove the override to let auto-detection run, or correct the SID value:
+```bash
+ansible-playbook site.yml --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG"
+ansible-playbook site.yml --extra-vars "oracle_goldengate_local_db_sid=T1CMISG"
 ```
 
 ### Issue: Processes not created in GGSCI
