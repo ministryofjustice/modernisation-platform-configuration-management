@@ -1,6 +1,6 @@
-# oracle-goldengate Ansible Role
+# nomis-goldengate-19c Ansible Role
 
-This role installs and configures Oracle GoldenGate for the Nomis Streams replacement project:
+This role installs and configures Oracle GoldenGate for the Nomis Oracle Streams replacement project:
 
 - Audit Data (AUDITDATA.AUDIT_TABLE/AUDIT_COLUMN)
 - Audit Reference (AUDITREF.*)
@@ -8,9 +8,11 @@ This role installs and configures Oracle GoldenGate for the Nomis Streams replac
 
 ## Deployment Architecture
 
-The role deploys to a **single GoldenGate target host** which runs both the Audit (T1CAUDG) and MIS (T1CMISG) databases. A single playbook run will detect all running Oracle instances and deploy the relevant GoldenGate components for each — no separate runs required.
+The role deploys the GoldenGate software to a **single target host** which runs both the Audit (T1CAUDG) and MIS (T1CMISG) databases. A single playbook run will detect all running Oracle instances and deploy the relevant GoldenGate components for each — no separate runs required.
 
 The **source database (T1CNOMG/Nomis)** runs on a separate host and does not require GoldenGate installation.
+
+The databases can be version 11g, 19c or a mixture of versions e.g. 11g for the source and 19c for the target databases.
 
 ### Stream-Specific Deployment
 
@@ -35,11 +37,11 @@ Note: AUDITREF and MIS processes share the same database package code but differ
 ## What it does
 
 - Creates GoldenGate directories and manager param files
-- **Configures Oracle database parameters (ENABLE_GOLDENGATE_REPLICATION) on source and target databases**
+- Configures Oracle database parameters (ENABLE_GOLDENGATE_REPLICATION) on source and target databases
 - Deploys Extract and Replicat parameter templates per stream
 - Deploys PL/SQL support packages and control tables
-- **Configures credential store for secure database authentication**
-- **Deploys start/stop control scripts for all Extract and Replicat processes**
+- Configures credential store for secure database authentication
+- Deploys start/stop control scripts for all Extract and Replicat processes
 - Provides hooks to convert existing Streams scripts (start/stop, setup) into GoldenGate equivalents
 
 ## Features
@@ -52,16 +54,17 @@ The role automatically configures the required Oracle database parameters for Go
 - **Creates GoldenGate administrator user (`ggadmin`) with DBA privileges**
 - Retrieves SYS passwords securely from AWS Secrets Manager (`/oracle/database/${ORACLE_SID}/passwords`)
 - Verifies parameter configuration after applying changes
+- Configured archive log shipping parameters in the source database to ship logs to the target databases. Parameters log_archive_dest_7 and log_archive_dest_8 are used in the source database.
 
-The role will configure parameters on all unique TNS aliases found in the `oracle_goldengate_db` structure (T1CNOMG, T1CAUDG, T1CMISG).
-
-### GoldenGate Database Administrator User
+### GoldenGate Database Users
 The role creates a dedicated database user (`ggadmin` by default) for GoldenGate operations:
-- Created in both MIS and Audit databases
-- Granted DBA privilege for full GoldenGate functionality
+- Created in all databases
+- Granted privileges through dbms_goldengate_auth for GoldenGate functionality
 - Password auto-generated and stored in AWS Secrets Manager at `/oracle/database/${ORACLE_SID}/passwords` (as `ggadmin` key)
 - Automatically added to GoldenGate credential store with alias `GGADMIN`
 - Used for GoldenGate replication processes and administration
+
+For the Auditdata stream the role creates a dummy schema in the target database and creates the table structures based on the source schema. This is required in order to use MAP in the Replicat param file for mapping because replicat expects to be able to query the target database for metadata about the source tables, and if we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. The dummy tables can be empty because we are not actually replicating any data, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
 
 ### Credential Store
 The role automatically configures an Oracle GoldenGate credential store with aliases for each database connection:
