@@ -64,17 +64,15 @@ The role creates a dedicated database user (`ggadmin` by default) for GoldenGate
 - Automatically added to GoldenGate credential store with alias `GGADMIN`
 - Used for GoldenGate replication processes and administration
 
-For the Auditdata stream the role creates a dummy schema in the target database and creates the table structures based on the source schema. This is required in order to use MAP in the Replicat param file for mapping because replicat expects to be able to query the target database for metadata about the source tables, and if we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. The dummy tables can be empty because we are not actually replicating any data, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
+For the Auditdata stream the role also creates a (locked) schema in the target database and creates tables based on the source schema tables. This is required in order to use MAP in the Replicat param file for mapping because replicat expects the tables to exist in the target database even though the records will be transformed and stored in special audit specific tables. If we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. The dummy tables will be empty because we are not actually replicating any data into them, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
 
 ### Credential Store
 The role automatically configures an Oracle GoldenGate credential store with aliases for each database connection:
 - `SOURCE_DB` - Source database connection
 - `AUDIT_DB` - Audit database connection
-- `AUDITREF_DB` - Audit Reference database connection
 - `MIS_DB` - MIS database connection
-- `GGADMIN` - GoldenGate administrator user for local database
 
-These aliases can be used in your Extract/Replicat parameter files instead of hardcoded credentials.
+These aliases are used in the Extract/Replicat parameter files instead of hardcoded credentials.
 
 ### Process Control Scripts
 The role deploys individual control scripts for each stream and a master control script:
