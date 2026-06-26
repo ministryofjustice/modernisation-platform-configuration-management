@@ -1,3 +1,4 @@
+@ -1,272 +0,0 @@
 # Oracle GoldenGate 19c Operations Guide
 
 ## Overview
@@ -138,28 +139,25 @@ GGSCI> START MANAGER
 GGSCI> EXIT
 ```
 
-## Credential Store
-
-Database credentials are stored securely in the GoldenGate credential store with the following aliases:
-
-| Alias | Description |
-|-------|-------------|
-| SOURCE_DB | Source database connection (OMS_OWNER) |
-| AUDIT_DB | Audit database connection (AUDITDATA) |
-| AUDITREF_DB | Audit Reference database connection (AUDITREF) |
-| MIS_DB | MIS database connection (BODISTAGING) |
-| GGADMIN | GoldenGate administrator user for local database |
-
-These aliases are used in the Extract and Replicat parameter files via the `USERIDALIAS` directive.
-
 ### GoldenGate Administrator User (ggadmin)
 
 The `ggadmin` user is a dedicated database user created for GoldenGate operations:
 - **Username**: ggadmin (default, configurable)
-- **Privileges**: DBA (required for GoldenGate replication)
 - **Purpose**: Used for GoldenGate administration and monitoring
 - **Password Location**: AWS Secrets Manager at `/oracle/database/${ORACLE_SID}/passwords` (ggadmin key)
-- **Credential Alias**: GGADMIN (in GoldenGate credential store)
+
+
+## Credential Store
+
+The `ggadmin` user is used to by GoldenGate to connect to each database. The database credentials are stored securely in the GoldenGate credential store with the following aliases:
+
+| Alias | Description |
+|-------|-------------|
+| SOURCE_DB | Source database connection |
+| AUDIT_DB | Audit database connection |
+| MIS_DB | MIS database connection |
+
+These aliases are used in the Extract and Replicat parameter files via the `USERIDALIAS` directive.
 
 ### View Credential Store
 ```bash

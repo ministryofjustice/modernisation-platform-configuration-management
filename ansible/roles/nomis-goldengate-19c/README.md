@@ -104,8 +104,8 @@ ogg_control.sh status all
 
 ### Deploying to Database Hosts
 
+Override TNS aliases in the group_vars environment config or in defaults/main.yml:
 ```yaml
-    # Override TNS aliases in the group_vars environment config
     oracle_goldengate_db:
       source:
         tns_alias: T1CNOMG
@@ -205,7 +205,7 @@ ansible-playbook site.yml --tags switchover-jobs --limit cnom_servers
 
 ## Prerequisites
 
-- Oracle Database 11g installed and running
+- Oracle Database 11g or 19c installed and running
 - Existing Oracle OS user and group (typically `oracle` and `oinstall`) on the host
 - AWS CLI configured on the target host (for retrieving database passwords)
 - SYS passwords stored in AWS Secrets Manager at `/oracle/database/${ORACLE_SID}/passwords`
