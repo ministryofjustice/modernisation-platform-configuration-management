@@ -7,4 +7,4 @@
   args:
     chdir: "{{ oracle_goldengate_home }}"
   register: stop_manager
-  failed_when: stop_manager.rc != 0 and ("stopped" not in stop_manager.stdout or "is not running" not in stop_manager.stdout)
+  failed_when: stop_manager.rc != 0 and ("stopped" not in stop_manager.stdout and "is not running" not in stop_manager.stdout)
