@@ -7,4 +7,4 @@
   args:
     chdir: "{{ oracle_goldengate_home }}"
   register: start_manager
-  failed_when: start_manager.rc != 0 and ("started" not in start_manager.stdout or "is already running" not in start_manager.stdout)
+  failed_when: start_manager.rc != 0 and ("started" not in start_manager.stdout and "is already running" not in start_manager.stdout)
