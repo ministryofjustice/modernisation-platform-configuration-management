@@ -48,8 +48,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_P
     v_filerror := false;
     BEGIN
       SELECT auditdata.audit_error_seq.nextval INTO v_audit_error_seq from dual;
-          INSERT INTO auditdata.audit_error
-      COLUMNS (
+      INSERT INTO auditdata.audit_error
+      (
         audit_error_seq,
         error_datetime,
         error_code,
@@ -62,13 +62,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_P
         commit_scn,
         lcr_source_time,
         error_location)
-        VALUES (
+      VALUES (
         v_audit_error_seq,
         v_timestamptz,
-              p_errcode,
-              v_text,
-              p_scn,
-              p_object_name,
+        p_errcode,
+        v_text,
+        p_scn,
+        p_object_name,
         p_command_type,
         p_target_object_name,
         p_target_date,
