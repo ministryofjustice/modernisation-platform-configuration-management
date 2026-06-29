@@ -101,4 +101,13 @@ Review daemon logs:
 
 ```bash
 tail -f /var/log/oasys-sqs-receiver/SqsMessageReceiver.log
+
 ```
+# Don't remove the dummy files in the messages folder,  it stops the cartridge from raising any error if there are no messages. 
+
+# The file CREATE_ORADIR.sql which is part of Release 7.9.0.0 creates an external directory from where messages are loaded into the database.
+# A symbolic link can’t be used to point to the messages folder this does not work with oracle external directories.
+# Files are loaded as part of a schedule created by the file, EOR_IMPORT_SQS_JOB.sql which is part of release 7.9.0.0
+# Files loaded can be checked by running select * from TERMINATION_FILE_LIST; as eor on the database.
+
+# https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/6166872865/OASys+Integration+with+Delius+via+SQS+Queue
