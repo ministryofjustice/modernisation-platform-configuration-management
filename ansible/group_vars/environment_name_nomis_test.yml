@@ -21,6 +21,7 @@ OEM_AGENT_VERSION: 13.5.0.0.0
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1
 recovery_catalog_server: "{{ OMS_SERVER }}"
+exclude_db_backup: "T1CAUDG|T1CMISG"
 rman_backup_cron:
   backup_level_0:
     - name: rman_backup_weekly
@@ -101,6 +102,24 @@ db_configs:
     tns_name: T1CNMAUD
     service:
       - { name: CNMAUD_TAF, role: PRIMARY }
+  T1MISG:
+    db_name: T1MISG
+    db_unique_name: T1MISG
+    instance_name: T1MISG
+    host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T1MISG
+    service:
+      - { name: MISG_TAF, role: PRIMARY }
+  T1CAUDG:
+    db_name: T1CAUDG
+    db_unique_name: T1CAUDG
+    instance_name: T1CAUDG
+    host_name: t1-nomis-db-1-b.test.nomis.service.justice.gov.uk
+    port: 1521
+    tns_name: T1CAUDG
+    service:
+      - { name: CAUDG_TAF, role: PRIMARY }
   T2CNOM:
     db_name: T2CNOM
     db_unique_name: T2CNOM
