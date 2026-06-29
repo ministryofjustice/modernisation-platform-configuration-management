@@ -18,18 +18,13 @@
 
   - name: Set GoldenGate home exists as a fact for use elsewhere
     ansible.builtin.set_fact:
-      gg_home_exists: "{{ gg_home_exists }}"
-
-  - name: Skip installation if GoldenGate home directory already exists 
-    ansible.builtin.debug: 
-      msg: "Oracle GoldenGate is already installed at {{ oracle_goldengate_home }}, skipping installation." 
-    when: gg_home_exists.stat.exists 
+      gg_home_exists: "{{ gg_home_exists.stat.exists }}"
 
   - name: Install Oracle GoldenGate software
     become: true
     become_user: "{{ oracle_goldengate_owner }}"
     environment: "{{ gg_env }}"
-    when: not gg_home_exists.stat.exists
+    when: not gg_home_exists
     block:
       - name: Create GoldenGate home and software directories
         ansible.builtin.file:

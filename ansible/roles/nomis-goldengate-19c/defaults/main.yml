@@ -132,6 +132,12 @@ gg_env:
   ORACLE_HOME: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
   PATH: "${ORACLE_HOME}/bin:${GG_HOME}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
 
+# Number of hours to retain foreign archived logs after the oldest GoldenGate
+# Extract recovery checkpoint.  Logs are not deleted until GoldenGate has
+# moved its checkpoint beyond them AND this additional buffer has elapsed.
+# Increase this value if a longer window for manual recovery is needed.
+oracle_goldengate_archivelog_retention_hours: 72
+
 bash_profile: |
   export GG_HOME={{ oracle_goldengate_home }}
   export PATH=$GG_HOME:$PATH

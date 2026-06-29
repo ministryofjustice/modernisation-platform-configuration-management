@@ -1,4 +1,17 @@
 ---
+# if gg_home_exists is not defined, check the gg home directory exists and set to true if it does, else set to false
+- name: Check if Oracle GoldenGate is already installed
+  when: gg_home_exists is not defined
+  block:
+    - name: Check Oracle GoldenGate home installed
+      ansible.builtin.stat:
+        path: "{{ oracle_goldengate_home }}"
+      register: gg_home_stat
+
+    - name: Set gg_home_exists fact
+      ansible.builtin.set_fact:
+        gg_home_exists: "{{ gg_home_stat.stat.exists }}"
+
 # check if {{ oracle_goldengate_trail_dir }} exists and store as a fact for use in the installation task to determine if we need to create it during installation or if it already exists from a previous installation and we can skip creating it again. This allows us to re-run the configuration tasks without re-installing the software which is useful for testing and development.
 - name: Check if GoldenGate trail directory exists and set as fact
   ansible.builtin.stat:

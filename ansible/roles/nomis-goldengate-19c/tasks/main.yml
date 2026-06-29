@@ -293,6 +293,15 @@
     - goldengate-mis
     - deploy-scripts
 
+- name: Install Cronjobs for GoldenGate housekeeping tasks
+  import_tasks: install_cronjobs.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - goldengate-cronjobs
+    - install-cronjobs
+
 # Scheduler jobs migration from STRMADMIN
 - name: Install migrated scheduler jobs (disabled initially)
   import_tasks: install_migrated_jobs.yml
