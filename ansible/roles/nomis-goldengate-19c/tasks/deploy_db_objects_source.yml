@@ -76,7 +76,7 @@
         dest: "{{ oracle_goldengate_sql_dir }}/source/{{ item | basename | regex_replace('\\.j2$', '') }}"
         owner: "{{ oracle_goldengate_owner }}"
         group: "{{ oracle_goldengate_osgroup }}"
-        mode: "0644"
+        mode: "0600"
       loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/source/*.j2', wantlist=True) }}"
 
     - name: Run Source scripts
