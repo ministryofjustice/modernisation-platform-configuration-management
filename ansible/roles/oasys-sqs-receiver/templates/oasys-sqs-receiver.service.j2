@@ -1,0 +1,18 @@
+[Unit]
+Description=OASys SQS Receiver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ oasys_sqs_user }}
+Group={{ oasys_sqs_group }}
+WorkingDirectory={{ oasys_sqs_current_dir }}
+ExecStart={{ oasys_sqs_java_bin }} -cp ".:./sqslib/*" SqsMessageReceiver {{ oasys_sqs_secret_path }} {{ oasys_sqs_poll_interval_seconds }}
+Restart=always
+RestartSec=30
+StandardOutput=append:{{ oasys_sqs_log_dir }}/SqsMessageReceiver.log
+StandardError=append:{{ oasys_sqs_log_dir }}/SqsMessageReceiver.log
+
+[Install]
+WantedBy=multi-user.target

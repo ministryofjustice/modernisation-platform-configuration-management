@@ -1,0 +1,11 @@
+---
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+  become: true
+
+- name: Restart oasys sqs receiver
+  systemd:
+    name: "{{ oasys_sqs_service_name }}"
+    state: restarted
+  become: true
