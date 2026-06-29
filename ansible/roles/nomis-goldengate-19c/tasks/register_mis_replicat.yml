@@ -9,7 +9,7 @@
     . oraenv > /dev/null
     ./ggsci << EOF
     dblogin useridalias {{ oracle_goldengate_group.mis.credential_alias }}
-    ADD REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_prefix }} CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
+    ADD REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}, INTEGRATED, EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_path }}/{{ oracle_goldengate_group.mis.trail_prefix }} CHECKPOINTTABLE {{ oracle_goldengate_dbuser }}.CHECKPOINTS
     EXIT
     EOF
   args:
