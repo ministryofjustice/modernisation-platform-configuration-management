@@ -73,9 +73,9 @@ BEGIN
     -- Remove the call to run job STRMADMIN.END_OF_MIS_DAY in the program END_OF_DAY_MIS, and replace it with a call to run the new job OMS_OWNER.END_OF_MIS_DAY_JOB instead, as part of the switchover. This is because the END_OF_DAY_MIS program is part of the CNOMIS_FINANCE_MON_SAT_CHAIN chain and is triggered by the END_OF_DAY_MIS_STEP step in that chain, so it doesn't need to be enabled as it's not scheduled to run on its own. It will be triggered by the chain when the time comes.
     BEGIN
         DBMS_SCHEDULER.SET_ATTRIBUTE (
-            name         => 'OMS_OWNER.END_OF_DAY_MIS'
+            name      => 'OMS_OWNER.END_OF_DAY_MIS',
             attribute => 'program_action',
-            value       => 'BEGIN DBMS_SCHEDULER.RUN_JOB(''{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB'',FALSE); END;');
+            value     => 'BEGIN DBMS_SCHEDULER.RUN_JOB(''{{ oracle_goldengate_group.source.schema_owner }}.END_OF_MIS_DAY_JOB'',FALSE); END;');
     END;
 
     DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 3: Review migrated CNOM jobs...');
