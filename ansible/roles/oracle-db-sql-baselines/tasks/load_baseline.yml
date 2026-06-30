@@ -6,18 +6,18 @@
         suffix: ".json"
       register: temp_file
 
-    - name: Copy baseline data to the temporary file on the remote host
+    - name: Copy {{ filename }} baseline data to the temporary file on the remote host
       copy:
         src: "{{ filename }}"
         dest: "{{ temp_file.path }}"
         mode: '0644'
 
-    - name: Import Baseline {{ filename }}
+    - name: Import Baseline
       become_user: oracle
       become: true
       block:
 
-        - name: Create Directory for BFile {{ temp_file.path }}
+        - name: Create Directory for BFile
           script: create_baseline_directory.sh $(dirname {{ temp_file.path }})
           environment:
              TARGET_DB_NAME: "{{ target_db_name }}"
