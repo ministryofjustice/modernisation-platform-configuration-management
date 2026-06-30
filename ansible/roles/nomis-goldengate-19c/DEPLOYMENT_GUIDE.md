@@ -70,7 +70,7 @@ oracle_goldengate_local_db_sid: T1CMISG  # Deploys: MIS only
 **Auto-Detection Process:**
 1. Searches for running Oracle processes: `ps -ef | grep ora_pmon_`
 2. Extracts database SIDs from process names
-3. Matches against configured databases in `oracle_goldengate_db`
+3. Matches against configured databases in `oracle_goldengate_group`
 4. Sets `oracle_goldengate_local_db_sid` automatically
 5. If multiple matches, uses the first one found
 
@@ -390,16 +390,16 @@ ansible-playbook site.yml --extra-vars "oracle_goldengate_local_db_sid=T1CAUDG"
 
 ### Issue: Auto-detection fails - no database detected
 
-**Cause:** No Oracle database running or database not in `oracle_goldengate_db`
+**Cause:** No Oracle database running or database not in `oracle_goldengate_group`
 
 **Solution:**
 1. Verify Oracle database is running:
    ```bash
    ps -ef | grep ora_pmon
    ```
-2. Check the SID matches one in `oracle_goldengate_db`:
+2. Check the SID matches one in `oracle_goldengate_group`:
    ```yaml
-   oracle_goldengate_db:
+   oracle_goldengate_group:
      audit:
        tns_alias: T1CAUDG  # Must match running instance
    ```

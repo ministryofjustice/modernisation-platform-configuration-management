@@ -52,8 +52,8 @@ oracle_goldengate_directories:
 checkpoint_table_name: "checkpoints"
 
 # Logical names for each group
-# (override via inventory/group vars)
-oracle_goldengate_group:
+# (override via inventory/group vars using oracle_goldengate_group_overrides)
+oracle_goldengate_group_defaults:
   source:
     tns_alias: T1CNOM
     schema_owner: OMS_OWNER

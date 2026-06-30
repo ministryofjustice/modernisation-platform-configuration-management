@@ -48,8 +48,8 @@ Note: AUDITREF and MIS processes share the same database package code but differ
 
 ### Database Parameter Configuration
 The role automatically configures the required Oracle database parameters for GoldenGate replication:
-- Sets `ENABLE_GOLDENGATE_REPLICATION = TRUE` on all databases defined in `oracle_goldengate_db` (no restart required)
-- Automatically derives unique database SIDs from the `oracle_goldengate_db` configuration
+- Sets `ENABLE_GOLDENGATE_REPLICATION = TRUE` on all databases defined in `oracle_goldengate_group` (no restart required)
+- Automatically derives unique database SIDs from the `oracle_goldengate_group` configuration
 - Enables minimal supplemental logging
 - **Creates GoldenGate administrator user (`ggadmin`) with DBA privileges**
 - Retrieves SYS passwords securely from AWS Secrets Manager (`/oracle/database/${ORACLE_SID}/passwords`)
@@ -104,22 +104,19 @@ ogg_control.sh status all
 
 ### Deploying to Database Hosts
 
-Override TNS aliases in the group_vars environment config or in defaults/main.yml:
+Override TNS aliases in the group_vars environment config:
 ```yaml
-    oracle_goldengate_db:
+    oracle_goldengate_group_overrides:
       source:
         tns_alias: T1CNOMG
-        schema_owner: OMS_OWNER
       audit:
         tns_alias: T1CAUDG
-        schema_owner: AUDITDATA
       auditref:
         tns_alias: T1CAUDG
-        schema_owner: AUDITREF
       mis:
         tns_alias: T1CMISG
-        schema_owner: BODISTAGING
 ```
+Or update oracle_goldengate_group_defaults in defaults/main.yml
 
 ## Ansible Tags
 
