@@ -1,14 +1,10 @@
 #!/bin/bash
 CDE_PATTERN="*.dat"
 #CDE_PATTERN="C_NOMIS_OFFENDER_28032026_01.dat" # hardcode filename by temporarily commenting this in or use -f option
-AZURE_STORAGE_ACCOUNT_NAME='{{ ndh_cdecopy_azure_storage_account_name }}'
-AZURE_STORAGE_CONTAINER_NAME='{{ ndh_cdecopy_azure_storage_container_name }}'
-AZURE_SAS_TOKEN_SSM_PARAMETER='/azure/sas_token'
 S3_BUCKET_NAME='{{ ndh_cdecopy_s3_bucket_name }}'
 LOCAL_CDE_DIR='{{ ndh_cdecopy_source_dir }}'
 LOCAL_TEMP_DIR='{{ ndh_cdecopy_temp_dir }}'
 DRYRUN=0
-AZURE=0
 S3=0
 PATH="$PATH:/usr/local/bin:/sbin:/usr/sbin"
 
@@ -28,7 +24,6 @@ usage() {
   echo "Usage $0: [<opts>]
 
 Where <opts>:
-  -a                     Upload to azure
   -d                     Dryrun, i.e. get SAS but don't update SSM parameter
   -s                     Upload to AWS S3
   -f <filename>          Specify a filename rather than using the latest
@@ -105,47 +100,6 @@ get_cde_zip_filename() {
   fi
 }
 
-upload_cde_to_blob() {
-  local cde_zip_filename
-  local exitcode
-  local sas_token
-
-  debug "local: calculating CDE zip filename from $1"
-  if ! cde_zip_filename=$(get_cde_zip_filename "$1"); then
-    exit 1
-  fi
-
-  debug "$AZURE_STORAGE_ACCOUNT_NAME: retrieving SAS token from SSM parameter $AZURE_SAS_TOKEN_SSM_PARAMETER"
-  if ! sas_token=$(aws ssm get-parameter --name "$AZURE_SAS_TOKEN_SSM_PARAMETER" --with-decryption --query Parameter.Value --output text); then
-    exit 1
-  fi
-
-  debug "$AZURE_STORAGE_ACCOUNT_NAME: checking access to Azure storage blob $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
-  exitcode=0
-  az storage container show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --name "$AZURE_STORAGE_CONTAINER_NAME" --sas-token "$sas_token" > /dev/null
-  az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" >/dev/null 2>&1 || exitcode=$?
-  if ((exitcode == 0)); then
-    debug "$AZURE_STORAGE_ACCOUNT_NAME: zip file $cde_zip_filename.zip already uploaded to blob, nothing to do"
-    return 0
-  elif ((exitcode != 3)); then
-    error "$AZURE_STORAGE_ACCOUNT_NAME: error retrieving blob information for $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename.zip"
-    az storage blob show --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token"
-    exit $exitcode
-  fi
-
-  debug "$AZURE_STORAGE_ACCOUNT_NAME: uploading zip file $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename to blob"
-  exitcode=0
-  debug "az storage blob upload --account-name '$AZURE_STORAGE_ACCOUNT_NAME' --container-name '$AZURE_STORAGE_CONTAINER_NAME' --name '$cde_zip_filename.zip' --sas-token '$sas_token' --file '$LOCAL_TEMP_DIR/$1.zip' --content-type application/octet-stream"
-  if ((DRYRUN == 0)); then
-    az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --container-name "$AZURE_STORAGE_CONTAINER_NAME" --name "$cde_zip_filename.zip" --sas-token "$sas_token" --file "$LOCAL_TEMP_DIR/$1.zip" --content-type application/octet-stream || exitcode=$?
-  fi
-
-  if ((exitcode != 0)); then
-    error "$AZURE_STORAGE_ACCOUNT_NAME: error uploading $AZURE_STORAGE_CONTAINER_NAME/$cde_zip_filename to blob"
-    exit 1
-  fi
-}
-
 upload_cde_to_aws() {
   local json
 
@@ -170,9 +124,8 @@ run() {
   local exitcode
 
   set -eo pipefail
-  debug "local: checking aws and azure cli present"
+  debug "local: checking aws cli present"
   which aws >/dev/null
-  which az >/dev/null
   which zip >/dev/null
 
   debug "local: finding most recent CDE matching $CDE_PATTERN in $LOCAL_CDE_DIR"
@@ -187,9 +140,6 @@ run() {
   clean_local_tmpfiles "$cde_filename"
   create_local_tmpfiles "$cde_filename"
 
-  if (( AZURE == 1 )); then
-    upload_cde_to_blob "$cde_filename"
-  fi
   if (( S3 == 1 )); then
     upload_cde_to_aws "$cde_filename"
   fi
@@ -201,11 +151,7 @@ main() {
   while getopts "adsf:" opt; do
       case $opt in
           a)
-              if [[ -z $AZURE_STORAGE_ACCOUNT_NAME ]]; then
-                debug "skipping azure as AZURE_STORAGE_ACCOUNT_NAME not set"
-              else
-                AZURE=1
-              fi
+              debug "Azure copy no longer supported"
               ;;
           d)
               DRYRUN=1
@@ -246,7 +192,7 @@ main() {
   fi
 
   exitcode=0
-  if ((AZURE+S3 > 0)); then
+  if ((S3 > 0)); then
     (run) || exitcode=$?
   fi
   if [[ -d /opt/textfile_monitoring ]]; then

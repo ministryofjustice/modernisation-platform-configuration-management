@@ -14,13 +14,8 @@
 
 - name: Fail if missing backup parameters
   fail:
-    msg: Ensure either storage_account_name or s3_bucket is defined in the primary db_config
-  when: db_primary.storage_account_name is not defined and db_primary.s3_bucket is not defined
-
-- name: Fail if invalid backup parameters
-  fail:
-    msg: Cannot have both storage_account_name and s3_bucket defined in the primary db_config
-  when: db_primary.storage_account_name is defined and db_primary.s3_bucket is defined
+    msg: Ensure s3_bucket is defined in the primary db_config
+  when: db_primary.s3_bucket is not defined
 
 - name: Get secretsmanager passwords
   import_role:
@@ -33,27 +28,6 @@
   set_fact:
     db_sys_password: "{{ secretsmanager_passwords_dict['db'].passwords['sys'] }}"
   no_log: true
-
-- block:
-    - name: Get Egress Ip
-      ansible.builtin.shell: |
-        curl https://ipecho.net/plain
-      register: internet_egress_ip
-      check_mode: false
-      changed_when: false
-
-    - debug:
-        msg: "{{ internet_egress_ip.stdout }} must be allowed in dso-infra-azure-fixngo:terragrunt/NOMSProduction1/pd-noms-azcopy-orabkup/terraform.tfvars and devtest equivalent"
-
-    - debug:
-        msg: "SAS token must be uploaded /azure/sas_token, use modernisation-platform-environments:/environments/nomis/scripts/update-db-az-sas-token.sh"
-
-    - name: Get SAS Token SSM parameter
-      set_fact:
-        sas_token: "{{ lookup('aws_ssm', '/azure/sas_token', region=ansible_ec2_placement_region) }}"
-
-  # block
-  when: db_primary.storage_account_name is defined
 
 - name: Check parameters
   set_fact:
