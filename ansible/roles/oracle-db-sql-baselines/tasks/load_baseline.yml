@@ -12,12 +12,12 @@
         dest: "{{ temp_file.path }}"
         mode: '0644'
 
-    - name: Import Baseline
+    - name: Import Baseline {{ filename }}
       become_user: oracle
       become: true
       block:
 
-        - name: Create Directory for BFile
+        - name: Create Directory for BFile {{ temp_file.path }}
           script: create_baseline_directory.sh $(dirname {{ temp_file.path }})
           environment:
              TARGET_DB_NAME: "{{ target_db_name }}"
