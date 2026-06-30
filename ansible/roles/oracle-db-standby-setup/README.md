@@ -30,7 +30,6 @@ db_configs:
     host_name: T1PDL0009.azure.noms.root
     port: 1521
     tns_name: CNOMT1
-    storage_account_name: strtcmonsazcopyorabkup
     asm_disk_groups: DATA,FLASH
     service:
       - { name: OR_TAF, role: PRIMARY }
@@ -67,9 +66,6 @@ This parameter should be created by terraform and then password set manually aft
 1. Setup primary database to support the new standby database
 
 ```
-# azure example (ansible-monorepo)
-ansible-playbook playbooks/oracle-db-standby-setup.yml -i inventory/inventory-devtest.yml -k -e target_host=T1PDL0009 -e db_primary_name=TRDATT1 -e db_standby_name=T1TRDS1
-
 # aws example (this repo)
 ansible-playbook site.yml --limit t1-nomis-db-1-a -e force_role=oracle-db-standby-setup -e db_primary_name=TRDATT1 -e db_standby_name=T1TRDS1 --tags oracle-db-standby-setup-on-primary
 ```
@@ -77,9 +73,6 @@ ansible-playbook site.yml --limit t1-nomis-db-1-a -e force_role=oracle-db-standb
 2. Take adhoc backup of primary database
 
 ```
-# azure example (ansible-monorepo)
-ansible-playbook playbooks/rman-backup.yml -i inventory/inventory-devtest.yml -k -e target_host=T1PDL0009 -e db_name=TRDATT1 --tags rman-adhoc-backup
-
 # aws example (this repo)
 ansible-playbook site.yml --limit t1-nomis-db-1-b -e force_role=oracle-db-backup -e db_name=TRDATT1 --tags rman-adhoc-backup
 ```
