@@ -55,12 +55,12 @@ checkpoint_table_name: "checkpoints"
 # (override via inventory/group vars using oracle_goldengate_group_overrides)
 oracle_goldengate_group_defaults:
   source:
-    tns_alias: T1CNOM
+    tns_alias: 
     schema_owner: OMS_OWNER
     credential_alias: SOURCE_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
   auditdata:
-    tns_alias: T1CAUDG
+    tns_alias: 
     schema_owner: AUDITDATA
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -71,7 +71,7 @@ oracle_goldengate_group_defaults:
     etl_schema: ""
     dummy_target_schema: AUDITDATA_OMS_OWNER
   auditref:
-    tns_alias: T1CAUDG
+    tns_alias: 
     schema_owner: AUDITREF
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -82,7 +82,7 @@ oracle_goldengate_group_defaults:
     etl_schema: ""
     dummy_target_schema: ""
   mis:
-    tns_alias: T1CMISG
+    tns_alias: 
     schema_owner: BODISTAGING
     credential_alias: MIS_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -96,12 +96,11 @@ oracle_goldengate_group_defaults:
 # Define which database instance is running on this host
 # This controls which GoldenGate components are deployed
 # If not set, will be automatically detected by checking running Oracle instances
-# Valid values: T1CAUDG (for audit databases) or T1CMISG (for MIS database)
 oracle_goldengate_local_db_sid: ""
 
 # Automatically determine which groups to run based on local database
-# AUDITDATA and AUDITREF are deployed on hosts running the audit database (T1CAUDG)
-# MIS is deployed on hosts running the MIS database (T1CMISG)
+# AUDITDATA and AUDITREF are deployed on hosts running the audit database
+# MIS is deployed on hosts running the MIS database
 run_source: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.source.tns_alias }}"
 run_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
 run_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
