@@ -1,3 +1,6 @@
+- name: Get Ora version
+  import_tasks: detect_ora_version.yml
+
 - name: Merge GoldenGate defaults with environment overrides
   ansible.builtin.set_fact:
     oracle_goldengate_group: >-
