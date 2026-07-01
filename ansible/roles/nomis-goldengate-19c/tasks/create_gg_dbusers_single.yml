@@ -75,59 +75,59 @@
     # Create gg db user based on https://docs.oracle.com/en/middleware/goldengate/core/19.1/oracle-db/establishing-oracle-goldengate-credentials.html 
     - name: Create SQL script to create GoldenGate admin user
       ansible.builtin.copy:
-      content: |
-        -- Create GoldenGate Administrator User
-        -- This user will be used for GoldenGate replication processes
-        
-        SET ECHO ON
-        SET FEEDBACK ON
-        
-        WHENEVER SQLERROR EXIT SQL.SQLCODE
-        
-        -- Check if user exists
-        DECLARE
-          v_count NUMBER;
-        BEGIN
-          SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
-          IF v_count > 0 THEN
-            --EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_dbuser }} CASCADE';
-            --DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_dbuser }} dropped');
-            EXECUTE IMMEDIATE 'ALTER USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ gg_dbuser_password }}"';
-            DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_dbuser }} password updated');
-          ELSE
-            DBMS_OUTPUT.PUT_LINE('User {{ oracle_goldengate_dbuser }} does not exist, creating user');
-            EXECUTE IMMEDIATE 'CREATE USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ gg_dbuser_password }}" DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS';
-          END IF;
-        END;
-        /
-        
-        -- Grant additional GoldenGate-specific privileges
-        GRANT CREATE SESSION TO {{ oracle_goldengate_dbuser }};
-        GRANT CREATE VIEW to {{ oracle_goldengate_dbuser }};
-        GRANT CONNECT to {{ oracle_goldengate_dbuser }};
-        GRANT RESOURCE to {{ oracle_goldengate_dbuser }};
-        GRANT ALTER SYSTEM to {{ oracle_goldengate_dbuser }} ;
-        GRANT SELECT ANY DICTIONARY to {{ oracle_goldengate_dbuser }};
-        GRANT SELECT ON v_$database to {{ oracle_goldengate_dbuser }};
+        content: |
+          -- Create GoldenGate Administrator User
+          -- This user will be used for GoldenGate replication processes
+          
+          SET ECHO ON
+          SET FEEDBACK ON
+          
+          WHENEVER SQLERROR EXIT SQL.SQLCODE
+          
+          -- Check if user exists
+          DECLARE
+            v_count NUMBER;
+          BEGIN
+            SELECT COUNT(*) INTO v_count FROM dba_users WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
+            IF v_count > 0 THEN
+              --EXECUTE IMMEDIATE 'DROP USER {{ oracle_goldengate_dbuser }} CASCADE';
+              --DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_dbuser }} dropped');
+              EXECUTE IMMEDIATE 'ALTER USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ gg_dbuser_password }}"';
+              DBMS_OUTPUT.PUT_LINE('Existing user {{ oracle_goldengate_dbuser }} password updated');
+            ELSE
+              DBMS_OUTPUT.PUT_LINE('User {{ oracle_goldengate_dbuser }} does not exist, creating user');
+              EXECUTE IMMEDIATE 'CREATE USER {{ oracle_goldengate_dbuser }} IDENTIFIED BY "{{ gg_dbuser_password }}" DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS';
+            END IF;
+          END;
+          /
+          
+          -- Grant additional GoldenGate-specific privileges
+          GRANT CREATE SESSION TO {{ oracle_goldengate_dbuser }};
+          GRANT CREATE VIEW to {{ oracle_goldengate_dbuser }};
+          GRANT CONNECT to {{ oracle_goldengate_dbuser }};
+          GRANT RESOURCE to {{ oracle_goldengate_dbuser }};
+          GRANT ALTER SYSTEM to {{ oracle_goldengate_dbuser }} ;
+          GRANT SELECT ANY DICTIONARY to {{ oracle_goldengate_dbuser }};
+          GRANT SELECT ON v_$database to {{ oracle_goldengate_dbuser }};
 
-        EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE); 
+          EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE); 
 
-        -- Verify user creation
-        PROMPT
-        PROMPT Verifying user creation:
-        SELECT username, account_status, default_tablespace, created 
-        FROM dba_users 
-        WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
-        
-        PROMPT
-        PROMPT GoldenGate user {{ oracle_goldengate_dbuser }} created successfully!
-        
-        EXIT
-      dest: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
-      owner: "{{ oracle_goldengate_owner }}"
-      group: oinstall
-      mode: "0600"
-      no_log: true
+          -- Verify user creation
+          PROMPT
+          PROMPT Verifying user creation:
+          SELECT username, account_status, default_tablespace, created 
+          FROM dba_users 
+          WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
+          
+          PROMPT
+          PROMPT GoldenGate user {{ oracle_goldengate_dbuser }} created successfully!
+          
+          EXIT
+        dest: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: oinstall
+        mode: "0600"
+        no_log: true
 
     - name: Create GoldenGate database user
       ansible.builtin.shell: |
