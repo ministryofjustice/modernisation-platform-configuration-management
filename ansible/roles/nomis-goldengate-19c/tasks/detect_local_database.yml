@@ -90,6 +90,7 @@
             | map('regex_replace', '[^A-Z0-9]', '')
             | select('truthy')
             | list
+            | unique
           }}
 
     - name: Compute preferred matches
