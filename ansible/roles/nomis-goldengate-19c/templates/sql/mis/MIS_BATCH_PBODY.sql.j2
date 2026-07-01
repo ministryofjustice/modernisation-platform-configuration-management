@@ -427,8 +427,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     v_apply_proc_error_count := MIS_GG_CTRL_PKG.apply_process_error_count(v_staging_owner);
 
     -- Suspend apply processes associated with staging table owner
--- can't stop ogg replicat from the package so needs to be done before calling this procedure
---    stop_apply(v_staging_owner);
+    mis_gg_ctrl_pkg.stop_replicat(v_staging_owner);
     
     -- determine number of latest batch for source
     v_old_batch_number := get_batch_number(v_staging_owner, TRUE);

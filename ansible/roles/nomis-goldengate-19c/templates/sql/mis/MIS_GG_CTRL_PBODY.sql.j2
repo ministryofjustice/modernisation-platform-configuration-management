@@ -803,6 +803,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   -- packaged procedure start_replicat starts all replicat processes
   -- or those associated with a particular staging table owner (if supplied)
   -- first checks table definitions and resets apply keys and handlers
+  --
+  -- This was originally the start_apply procedure but was renamed to avoid 
+  -- confusion with the Oracle Streams apply process.
 
     v_plsql			varchar2(2000); 
     v_apply_name_list 		mis_gen_pkg.apply_list;
