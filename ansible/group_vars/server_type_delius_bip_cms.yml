@@ -106,6 +106,7 @@ filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_is_cms: true
 sap_bip_copy_bip_control_script: true
+sap_bip_hostname_to_sia_sed: "s/-//g; s/delius//g"
 sap_bip_sia_name_cms: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-','') }}" # max length 13
 sap_bip_sia_name_app: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-','') }}" # max length 13
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"

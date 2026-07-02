@@ -114,6 +114,7 @@ collectd_monitored_services_servertype:
     shell_cmd: "curl -Ssf -m 5 http://localhost:{{ sap_web_server_port }}/biprws"
 
 sap_bip_responsefile: response.web.ini
+sap_bip_hostname_to_sia_sed: "s/-//g; s/delius//g"
 sap_bip_copy_bip_control_script: true
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_server_port: 7777

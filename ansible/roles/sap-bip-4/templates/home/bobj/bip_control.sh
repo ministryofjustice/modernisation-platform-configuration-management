@@ -498,20 +498,20 @@ get_expected_servers() {
     fi
     for ec2 in $APP_EC2_NAMES; do
       for server in $APP_SERVERS; do
-        echo "$ec2" | sed 's/-//g; s/delius//g'
+        echo "$ec2.$server" | sed '{{ sap_bip_hostname_to_sia_sed }}'
       done
     done
     for ec2 in $CMS_EC2_NAMES; do
       for server in $CMS_SERVERS; do
-        echo "$ec2" | sed 's/-//g; s/delius//g'
+        echo "$ec2.$server" | sed '{{ sap_bip_hostname_to_sia_sed }}'
       done
       if [[ $ec2 == *1 && $CMS_EC2_NAMES == *\ * ]]; then
         for server in $CMS_SERVERS_1; do
-          echo "$ec2" | sed 's/-//g; s/delius//g'
+          echo "$ec2.$server" | sed '{{ sap_bip_hostname_to_sia_sed }}'
         done
       else
         for server in $CMS_SERVERS_2; do
-          echo "$ec2" | sed 's/-//g; s/delius//g'
+          echo "$ec2.$server" | sed '{{ sap_bip_hostname_to_sia_sed }}'
         done
       fi
     done
