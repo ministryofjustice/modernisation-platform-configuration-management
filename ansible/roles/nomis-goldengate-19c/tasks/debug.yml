@@ -1,0 +1,11 @@
+# Print a debug message with the value of the variable debug_msg.
+# Set the variable when calling e.g.
+#   import_tasks: debug.yml
+#   vars:
+#     debug_msg: "Processing GoldenGate database user for SID: {{ _current_db_sid }}"
+
+- name: Debug
+  ansible.builtin.debug:
+    msg: "DEBUG: {{ debug_msg | default('No debug message provided') }}"
+  tags:
+    - always

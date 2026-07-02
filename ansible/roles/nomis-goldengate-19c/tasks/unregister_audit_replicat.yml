@@ -1,0 +1,61 @@
+---
+# Unregister and manage AuditData Replicat process
+
+- name: Delete AuditData Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null
+    ./ggsci << EOF
+    dblogin useridalias {{ oracle_goldengate_group.auditdata.credential_alias }}
+    STOP REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    DELETE REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    EXIT
+    EOF
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: delete_auditdata_replicat
+  failed_when: '"ERROR" in delete_auditdata_replicat.stdout and "does not exist" not in delete_auditdata_replicat.stdout'
+  changed_when: '"Deleted" in delete_auditdata_replicat.stdout'
+  when: run_auditdata
+
+- name: Display stdout for AuditData Replicat unregistration
+  ansible.builtin.debug:
+    msg: "{{ delete_auditdata_replicat.stdout }}"
+  when: run_auditdata
+
+# Unregister and manage AuditRef Replicat process
+
+- name: Delete AuditRef Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null
+    ./ggsci << EOF
+    dblogin useridalias {{ oracle_goldengate_group.auditref.credential_alias }}
+    STOP REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    DELETE REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    EXIT
+    EOF
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: delete_auditref_replicat
+  failed_when: '"ERROR" in delete_auditref_replicat.stdout and "does not exist" not in delete_auditref_replicat.stdout'
+  changed_when: '"Deleted" in delete_auditref_replicat.stdout'
+  when: run_auditref
+
+- name: Display stdout for AuditRef Replicat unregistration
+  ansible.builtin.debug:
+    msg: "{{ delete_auditref_replicat.stdout }}"
+  when: run_auditref
+

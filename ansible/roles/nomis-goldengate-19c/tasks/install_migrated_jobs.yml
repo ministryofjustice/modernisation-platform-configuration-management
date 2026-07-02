@@ -1,0 +1,152 @@
+---
+# Install migrated scheduler jobs from STRMADMIN to new schema owners
+# Jobs are created in DISABLED state for testing
+# Use switchover tasks to enable these and disable STRMADMIN jobs
+
+- name: Install migrated CNOM jobs (source database)
+  when: 
+    - oracle_goldengate_group.source is defined
+    - oracle_goldengate_group.source.tns_alias is defined
+    - run_source is defined and run_source
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for CNOM jobs
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
+        oracle_goldengate_group_name: "source"
+        target_sid: "{{ oracle_goldengate_group.source.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.source.oracle_home }}"
+
+    - name: Deploy CNOM jobs SQL script
+      ansible.builtin.template:
+        src: "sql/source/install_source_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/source/install_source_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run CNOM jobs installation script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+
+        # Retrieve SYS password from AWS Secrets Manager
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/$ORACLE_SID/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+        
+        if [ -z "$SYS_PASSWORD" ]; then
+          echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
+          exit 1
+        fi
+
+        cd {{ oracle_goldengate_sql_dir }}/source
+        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_source_jobs.sql
+      args:
+        executable: /bin/bash
+      register: cnom_jobs_output
+      failed_when: cnom_jobs_output.rc != 0
+
+    - name: Show output of CNOM jobs install
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['CNOM jobs install output:'] + (cnom_jobs_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: cnom_jobs_output.stdout_lines is defined
+
+    - name: Check for errors in CNOM jobs install
+      ansible.builtin.fail:
+        msg: "Errors found in CNOM jobs install: {{ cnom_jobs_output.stdout }}"
+      when: "'ORA-' in cnom_jobs_output.stdout and 'ORA-00955' not in cnom_jobs_output.stdout and 'ORA-27477' not in cnom_jobs_output.stdout"
+
+- name: Install migrated MIS jobs
+  when: 
+    - run_mis is defined and run_mis
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for MIS jobs
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.mis.schema_owner }}"
+        oracle_goldengate_group_name: "mis"
+        target_sid: "{{ oracle_goldengate_group.mis.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.mis.oracle_home }}"
+
+    - name: Deploy MIS jobs SQL script
+      ansible.builtin.template:
+        src: "sql/mis/install_mis_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/mis/install_mis_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run MIS jobs installation script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ target_sid }}
+        export ORACLE_HOME={{ target_oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/mis
+        sqlplus -s / as sysdba @install_mis_jobs.sql
+      args:
+        executable: /bin/bash
+      register: mis_jobs_output
+      failed_when: mis_jobs_output.rc != 0
+
+    - name: Show output of MIS jobs install
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['MIS jobs install output:'] + (mis_jobs_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: mis_jobs_output.stdout_lines is defined
+
+    - name: Check for errors in MIS jobs install
+      ansible.builtin.fail:
+        msg: "Errors found in MIS jobs install: {{ mis_jobs_output.stdout }}"
+      when: "'ORA-' in mis_jobs_output.stdout and 'ORA-00955' not in mis_jobs_output.stdout and 'ORA-27477' not in mis_jobs_output.stdout"
+
+- name: Install migrated AUDIT jobs
+  when: 
+    - run_auditdata is defined and run_auditdata
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for AUDIT jobs
+      ansible.builtin.set_fact:
+        oracle_goldengate_group_name: "audit"
+        target_sid: "{{ oracle_goldengate_group.auditdata.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.auditdata.oracle_home }}"
+
+    - name: Deploy AUDIT jobs SQL script
+      ansible.builtin.template:
+        src: "sql/auditdata/install_audit_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/auditdata/install_audit_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run AUDIT jobs installation script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ target_sid }}
+        export ORACLE_HOME={{ target_oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/auditdata
+        sqlplus -s / as sysdba @install_audit_jobs.sql
+      args:
+        executable: /bin/bash
+      register: audit_jobs_output
+      failed_when: audit_jobs_output.rc != 0
+
+    - name: Show output of AUDIT jobs install
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['AUDIT jobs install output:'] + (audit_jobs_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: audit_jobs_output.stdout_lines is defined
+
+    - name: Check for errors in AUDIT jobs install
+      ansible.builtin.fail:
+        msg: "Errors found in AUDIT jobs install: {{ audit_jobs_output.stdout }}"
+      when: "'ORA-' in audit_jobs_output.stdout and 'ORA-00955' not in audit_jobs_output.stdout and 'ORA-27477' not in audit_jobs_output.stdout"

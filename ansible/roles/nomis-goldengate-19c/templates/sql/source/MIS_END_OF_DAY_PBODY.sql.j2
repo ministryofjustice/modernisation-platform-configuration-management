@@ -1,0 +1,121 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}.MIS_END_OF_DAY_PKG AS
+
+/*
+ *  NOMIS MIS Refresh Jobs code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      MIS refresh jobs for Prison-NOMIS release  1.0e.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_group.source.schema_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e MIS refresh
+ */
+
+    -- package version
+    g_version      VARCHAR2(20) := '1.0e.1';
+
+    -- create stop points table if it doesn't exist (will be empty if just created, so no risk of setting stop points inappropriately)
+    PROCEDURE ADD_MIS_STOP_POINTS_TABLE IS
+    BEGIN
+        EXECUTE IMMEDIATE 'CREATE TABLE {{ oracle_goldengate_group.source.schema_owner }}.MIS_STOP_POINTS (
+            STOP_POINT_DATE DATE DEFAULT SYSDATE,
+            STOP_SCN NUMBER(38) NOT NULL,
+            AFTER_SCN NUMBER(38),
+            CONSTRAINT MIS_STOP_POINTS_PK PRIMARY KEY (STOP_SCN))';
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE = -955 THEN
+                NULL; -- ignore "table already exists" error
+            ELSE
+                RAISE;
+            END IF;
+    END ADD_MIS_STOP_POINTS_TABLE; 
+
+    PROCEDURE ADD_MIS_STOP_POINT (p_datetime IN DATE DEFAULT NULL)
+    IS
+      v_scn 	NUMBER;
+      v_scn2 	NUMBER;
+      v_plsql   VARCHAR2(4000);
+    BEGIN
+
+      -- insert stop record
+      IF p_datetime IS NULL THEN
+        select max(current_scn)
+        into   v_scn
+        from   v$database;
+
+        -- we use dynamic SQL as the table may not exist when this package is first compiled in the database.
+        v_plsql := 'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points(stop_scn) values(' || v_scn || ')';
+        execute immediate v_plsql;
+      ELSE
+        select timestamp_to_scn(p_datetime)
+        into   v_scn
+        from   dual;
+
+        v_plsql := 'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points (stop_point_date, stop_scn) values (TO_DATE(''' || TO_CHAR(p_datetime, 'YYYY-MM-DD HH24:MI:SS') || ''', ''YYYY-MM-DD HH24:MI:SS''), ' || v_scn || ')';
+        execute immediate v_plsql;
+      END IF;
+
+      commit;
+      
+      -- get new current SCN
+      select max(current_scn)
+      into   v_scn2
+      from   v$database;
+
+      -- update stop record
+      IF p_datetime IS NOT NULL THEN
+        BEGIN
+            select timestamp_to_scn(cast(p_datetime+1/1440 as timestamp))
+            into   v_scn2
+            from   dual;
+        EXCEPTION
+        WHEN OTHERS THEN null;
+        END;
+      END IF;
+      
+      v_plsql := 'update {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points set after_scn = ' || v_scn2 || ' where stop_scn = ' || v_scn;
+      execute immediate v_plsql;
+
+      commit;
+
+    END ADD_MIS_STOP_POINT;
+
+    -- Packaged procedure run_batch
+    -- runs the end of day batch process for MIS refresh, which will:
+    --   - set stop points for capture and apply processes associated with the MIS staging tables
+    --   - run the MIS_BATCH_CONTROL program on the remote database via the MIS_STRM_LINK database link, which will create a new batch and set stop points for the remote capture and apply processes
+    --   - wait for all capture and apply processes associated with the MIS staging tables to stop
+    PROCEDURE run_batch IS
+        v_chk number(1);
+        v_plsql VARCHAR2(4000);
+    BEGIN
+        -- create stop points table if it doesn't exist (will be empty if just created, so no risk of setting stop points inappropriately)
+        ADD_MIS_STOP_POINTS_TABLE;
+
+        -- set stop points for local capture and apply processes
+        ADD_MIS_STOP_POINT();
+
+        -- check if db link exists before proceeding (will raise exception if not)
+        begin
+            v_plsql := 'select 1 from dual@CNOM_MIS_LINK';
+            execute immediate v_plsql into v_chk;
+        exception
+            when others then
+                raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure.');
+        end;
+        
+        v_plsql := 'begin dbms_scheduler.run_job@CNOM_MIS_LINK(''MIS_BATCH_CONTROL'',FALSE); end;';
+        execute immediate v_plsql;
+
+        v_plsql := 'alter system archive log current';
+        execute immediate v_plsql;
+    END run_batch;
+
+END MIS_END_OF_DAY_PKG;
+/
+
+show errors

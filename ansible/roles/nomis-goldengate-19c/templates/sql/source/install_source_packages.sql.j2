@@ -1,0 +1,10 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_packages.log
+
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Compiling packages as {{ oracle_goldengate_group.source.schema_owner }}:
+@MIS_END_OF_DAY_PKG.sql
+@MIS_END_OF_DAY_PBODY.sql
+
+PROMPT Completed installation of packages
+spool off
