@@ -23,3 +23,8 @@
   vars:
     oracle_goldengate_local_db_sid: "{{ _current_db_sid }}"
   when: _db_sids_to_configure is defined and _db_sids_to_configure | length > 0
+
+- name: Create GoldenGate database user for the source database
+  include_tasks: create_gg_dbusers_single.yml
+  vars:
+    oracle_goldengate_local_db_sid: "{{ oracle_goldengate_group.source.tns_alias }}"
