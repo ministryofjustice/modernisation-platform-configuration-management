@@ -1,15 +1,4 @@
 ---
-# set new fact if host_is_source is true
-- name: Set host_is_source fact
-  when: host_is_source is defined and host_is_source
-  ansible.builtin.set_fact:
-    host_is_source_string: "true"
-
-- name: Debug message
-  import_tasks: debug.yml
-  vars:
-    debug_msg: "Configuring Oracle ASM with {{ host_is_source_string }}"
-
 # Create a directory in ASM for the archive logs sent from the source database for GoldenGate replication. This is required for the downstream integrated capture process to be able to read the archived redo logs for replication.
 - name: Configure Oracle ASM for GoldenGate
   when: host_is_source is not defined or not host_is_source

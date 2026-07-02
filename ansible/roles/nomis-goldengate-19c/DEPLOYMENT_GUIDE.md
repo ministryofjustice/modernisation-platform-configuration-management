@@ -156,8 +156,7 @@ ansible-playbook site.yml \
 
 ```bash
 ansible-playbook site.yml \
-  --tags goldengate-install \
-  --skip-tags goldengate-config
+  --tags goldengate-software
 ```
 
 ### Scenario 3: Update Configuration Only (No Reinstall)
