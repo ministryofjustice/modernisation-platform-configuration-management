@@ -280,10 +280,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
     BEGIN
         v_plsql := 'alter system flush shared_pool';
         execute immediate v_plsql;
-        MIS_BATCH_PKG.set_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
+        mis_gg_ctrl_pkg.set_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
         if v_roll = TRUE then
             -- wait until stop point reached
-            MIS_BATCH_PKG.wait_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
+            mis_gg_ctrl_pkg.wait_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
             if v_roll = TRUE then -- roll batch number forward
                 --v_plsql := 'begin dbms_scheduler.run_job(''MIS_BATCH_ROLL'',FALSE); end;';
                 --execute immediate v_plsql;
