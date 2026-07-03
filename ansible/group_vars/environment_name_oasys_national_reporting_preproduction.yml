@@ -82,7 +82,6 @@ sap_bip_confs:
     sap_bip_auditing_db_user: bip_audit_owner
     sap_bip_cms_db_server: PPBOSYS
     sap_bip_cms_db_user: bip_system_owner
-    sap_bip_control_lbs: "public"
     sap_bip_control_app_servers:
     sap_bip_control_cms_servers: |
       AdaptiveJobServer,Running,Enabled
@@ -100,7 +99,7 @@ sap_bip_confs:
 
 sap_environment: "{{ onr_environment }}"
 sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
-sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_public_lb_name: public-lb
 sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
 sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
 sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"

@@ -52,7 +52,7 @@ sap_bip_confs:
         - clientapi
         - dswsbobje
         - webi-websetup
-    sap_bip_control_lbs: "stage-mis-alb"
+    sap_bip_control_public_lb_name: stage-mis-alb
     sap_bip_control_app_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Stopped,Disabled
@@ -111,7 +111,7 @@ sap_bip_confs:
         - clientapi
         - dswsbobje
         - webi-websetup
-    sap_bip_control_lbs: "preprod-mis-alb"
+    sap_bip_control_public_lb_name: preprod-mis-alb
     sap_bip_control_app_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Stopped,Disabled
@@ -149,7 +149,7 @@ sap_bip_config_secret_id: "{{ sap_bip_conf.sap_bip_config_secret_id }}"
 sap_bip_passwords_secret_id: "{{ sap_bip_conf.sap_bip_passwords_secret_id }}"
 sap_bip_sysdb_secret_id: "{{ sap_bip_conf.sap_bip_sysdb_secret_id }}"
 sap_bip_auditdb_secret_id: "{{ sap_bip_conf.sap_bip_auditdb_secret_id }}"
-sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_public_lb_name: "{{ sap_bip_conf.sap_bip_control_public_lb_name }}"
 sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
 sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
 sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
