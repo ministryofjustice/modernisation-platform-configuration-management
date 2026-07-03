@@ -50,7 +50,7 @@ VERBOSE=0
 QUICK_MODE=0
 GAP_SECS=0
 BIPRWS_LOGON_TOKEN=
-LBS="{{ sap_bip_control_lbs }}"
+LBS="{{ sap_bip_control_public_lb_name }} {{ sap_bip_control_private_lb_name }}"
 FORMAT=default
 LOGPREFIX=
 APPLICATION_NAME="{{ application }}"
@@ -145,18 +145,14 @@ error() {
 }
 
 set_env_variables() {
-  PUBLIC_LB_NAME=public-lb
+  PUBLIC_LB_NAME={{ sap_bip_control_public_lb_name }}
   PUBLIC_LB_RULE_MAINTENANCE_PRIORITY=999
   PUBLIC_LB_PORT=443
   PUBLIC_LB_BACKEND_PORT=7777
-  PRIVATE_LB_NAME=private-lb
+  PRIVATE_LB_NAME={{ sap_bip_control_private_lb_name }}
   PRIVATE_LB_RULE_MAINTENANCE_PRIORITY=999
   PRIVATE_LB_PORT=7777
   PRIVATE_LB_BACKEND_PORT=7777
-  ADMIN_LB_NAME=public-lb
-  ADMIN_LB_RULE_MAINTENANCE_PRIORITY=999
-  ADMIN_LB_PORT=443
-  ADMIN_LB_BACKEND_PORT=7010
   CMS_SIA=${INSTANCE_NAME//-/}
 
   BASE_URL=reporting.$(echo "$APPLICATION_NAME" | cut -d- -f1 | tr -s "[:upper:]" "[:lower:]").service.justice.gov.uk
@@ -165,11 +161,9 @@ set_env_variables() {
   fi
 
   if [[ $SAP_ENVIRONMENT == pp || $SAP_ENVIRONMENT == pd ]]; then
-    ADMIN_URL=admin.$BASE_URL
     PUBLIC_LB_URL=$BASE_URL
     PRIVATE_LB_URL=int.$BASE_URL
   else
-    ADMIN_URL=admin.$SAP_ENVIRONMENT.$BASE_URL
     PUBLIC_LB_URL=$SAP_ENVIRONMENT.$BASE_URL
     PRIVATE_LB_URL=$SAP_ENVIRONMENT-int.$BASE_URL
   fi
@@ -243,26 +237,20 @@ set_env_ec2_names() {
 }
 
 set_env_lb() {
-  if [[ $1 == "public" ]]; then
+  if [[ -n $PUBLIC_LB_NAME && ($1 == "public" || $1 == "$PUBLIC_LB_NAME") ]]; then
     LB_NAME=$PUBLIC_LB_NAME
     LB_RULE_MAINTENANCE_PRIORITY=$PUBLIC_LB_RULE_MAINTENANCE_PRIORITY
     LB_PORT=$PUBLIC_LB_PORT
     LB_BACKEND_PORT=$PUBLIC_LB_BACKEND_PORT
     LB_URL=$PUBLIC_LB_URL
-  elif [[ $1 == "private" ]]; then
+  elif [[ -n $PRIVATE_LB_NAME && ($1 == "private" || $1 == "$PRIVATE_LB_NAME") ]]; then
     LB_NAME=$PRIVATE_LB_NAME
     LB_RULE_MAINTENANCE_PRIORITY=$PRIVATE_LB_RULE_MAINTENANCE_PRIORITY
     LB_PORT=$PRIVATE_LB_PORT
     LB_BACKEND_PORT=$PRIVATE_LB_BACKEND_PORT
     LB_URL=$PRIVATE_LB_URL
-  elif [[ $1 == "admin" ]]; then
-    LB_NAME=$ADMIN_LB_NAME
-    LB_RULE_MAINTENANCE_PRIORITY=$ADMIN_LB_RULE_MAINTENANCE_PRIORITY
-    LB_PORT=$ADMIN_LB_PORT
-    LB_BACKEND_PORT=$ADMIN_LB_BACKEND_PORT
-    LB_URL=$ADMIN_URL
   else
-    error "Unexpected lb '$1', expected public or private"
+    error "Unexpected lb '$1', expected one of $PUBLIC_LB_NAME $PRIVATE_LB_NAME"
     return 1
   fi
 }
@@ -498,20 +486,20 @@ get_expected_servers() {
     fi
     for ec2 in $APP_EC2_NAMES; do
       for server in $APP_SERVERS; do
-        echo "${ec2//-/}.$server"
+        echo "$ec2.$server" | sed '{{ sap_bip_control_hostname_to_sia_sed }}'
       done
     done
     for ec2 in $CMS_EC2_NAMES; do
       for server in $CMS_SERVERS; do
-        echo "${ec2//-/}.$server"
+        echo "$ec2.$server" | sed '{{ sap_bip_control_hostname_to_sia_sed }}'
       done
       if [[ $ec2 == *1 && $CMS_EC2_NAMES == *\ * ]]; then
         for server in $CMS_SERVERS_1; do
-          echo "${ec2//-/}.$server"
+          echo "$ec2.$server" | sed '{{ sap_bip_control_hostname_to_sia_sed }}'
         done
       else
         for server in $CMS_SERVERS_2; do
-          echo "${ec2//-/}.$server"
+          echo "$ec2.$server" | sed '{{ sap_bip_control_hostname_to_sia_sed }}'
         done
       fi
     done

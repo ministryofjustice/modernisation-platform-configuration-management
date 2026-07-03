@@ -56,11 +56,13 @@ sap_bip_confs:
     sap_bip_auditing_db_user: bip_audit_owner
     sap_bip_cms_db_server: PDBOSYS
     sap_bip_cms_db_user: bip_system_owner
-    sap_bip_control_lbs: "public"
     sap_bip_control_app_servers:
     sap_bip_control_cms_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Running,Enabled
+      APS.Auditing,Running,Enabled
+      APS.Connectivity,Running,Enabled
+      APS.PromotionManagement,Running,Enabled
       CentralManagementServer,Running,Enabled
       ConnectionServer,Running,Enabled
       EventServer,Running,Enabled
@@ -68,12 +70,15 @@ sap_bip_confs:
       OutputFileRepository,Running,Enabled
       WebApplicationContainerServer,Running,Enabled
       WebIntelligenceProcessingServer,Running,Enabled
-    sap_bip_control_cms_server_1:
-    sap_bip_control_cms_server_2:
+      WebiDSLBridge,Stopped,Disabled
+    sap_bip_control_cms_server_1: |
+      APS.Search,Running,Enabled
+    sap_bip_control_cms_server_2: |
+      APS.Search,Running,Enabled
 
 sap_environment: "{{ onr_environment }}"
 sap_bip_conf: "{{ sap_bip_confs[sap_environment] }}"
-sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_public_lb_name: public-lb
 sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
 sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
 sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
