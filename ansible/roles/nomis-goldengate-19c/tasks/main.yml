@@ -133,6 +133,8 @@
   when: run_auditdata or run_auditref
   tags:
     - goldengate
+    - goldengate-config
+    - goldengate-processes
     - goldengate-audit
     - goldengate-extract
     - unregister-extracts
@@ -180,6 +182,8 @@
   when: run_auditdata or run_auditref
   tags:
     - goldengate
+    - goldengate-config
+    - goldengate-processes
     - goldengate-audit
     - goldengate-replicat
     - unregister-replicats
@@ -239,6 +243,8 @@
   when: run_mis
   tags:
     - goldengate
+    - goldengate-config
+    - goldengate-processes
     - goldengate-mis
     - goldengate-replicat
     - unregister-replicats

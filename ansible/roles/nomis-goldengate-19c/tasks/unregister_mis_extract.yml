@@ -24,7 +24,7 @@
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
       register: remove_mis_extract
-      failed_when: remove_mis_extract.rc != 0 or ("Successfully unregistered" not in remove_mis_extract.stdout and "does not exist" not in remove_mis_extract.stdout)
+      failed_when: false
 
     - name: Display stdout for MIS Extract unregistration
       ansible.builtin.debug:

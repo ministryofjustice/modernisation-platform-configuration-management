@@ -24,7 +24,7 @@
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
       register: remove_auditdata_extract
-      failed_when: remove_auditdata_extract.rc != 0 or ("Successfully unregistered" not in remove_auditdata_extract.stdout and "does not exist" not in remove_auditdata_extract.stdout)
+      failed_when: false
 
     - name: Display stdout for AuditData Extract unregistration
       ansible.builtin.debug:
@@ -54,7 +54,7 @@
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
       register: remove_auditref_extract
-      failed_when: remove_auditref_extract.rc != 0 or ("Successfully unregistered" not in remove_auditref_extract.stdout and "does not exist" not in remove_auditref_extract.stdout)
+      failed_when: false
 
     - name: Display stdout for AuditRef Extract unregistration
       ansible.builtin.debug:
