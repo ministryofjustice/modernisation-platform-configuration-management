@@ -50,7 +50,7 @@ VERBOSE=0
 QUICK_MODE=0
 GAP_SECS=0
 BIPRWS_LOGON_TOKEN=
-LBS="{{ sap_bip_control_lb_public_name }} {{ sap_bip_control_lb_private_name }}"
+LBS="{{ sap_bip_control_public_lb_name }} {{ sap_bip_control_private_lb_name }}"
 FORMAT=default
 LOGPREFIX=
 APPLICATION_NAME="{{ application }}"
@@ -145,11 +145,11 @@ error() {
 }
 
 set_env_variables() {
-  PUBLIC_LB_NAME={{ sap_bip_control_lb_public_name }}
+  PUBLIC_LB_NAME={{ sap_bip_control_public_lb_name }}
   PUBLIC_LB_RULE_MAINTENANCE_PRIORITY=999
   PUBLIC_LB_PORT=443
   PUBLIC_LB_BACKEND_PORT=7777
-  PRIVATE_LB_NAME={{ sap_bip_control_lb_private_name }}
+  PRIVATE_LB_NAME={{ sap_bip_control_private_lb_name }}
   PRIVATE_LB_RULE_MAINTENANCE_PRIORITY=999
   PRIVATE_LB_PORT=7777
   PRIVATE_LB_BACKEND_PORT=7777
