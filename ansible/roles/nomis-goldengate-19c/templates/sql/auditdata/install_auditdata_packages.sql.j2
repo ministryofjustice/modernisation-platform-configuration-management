@@ -7,11 +7,12 @@ PROMPT Executing grants needed for apply dml handler processing:
 grant select on DBA_APPLY_DML_HANDLERS to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_REGISTERED_ARCHIVED_LOG to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_CAPTURE to {{ oracle_goldengate_sql_owner }};
-grant select on dba_db_links to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_DB_LINKS to {{ oracle_goldengate_sql_owner }};
 
--- execute DBMS_STREAMS_AUTH.GRANT_ADMIN_PRIVILEGE('{{ oracle_goldengate_dbuser }}');
-grant execute on sys.dbms_lob to {{ oracle_goldengate_dbuser }};
-grant execute on sys.dbms_reputil2 to {{ oracle_goldengate_dbuser }};
+grant execute on SYS.DBMS_APPLY_ADM to {{ oracle_goldengate_sql_owner }};
+grant execute on SYS.DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
+grant execute on SYS.DBMS_LOB to {{ oracle_goldengate_dbuser }};
+grant execute on SYS.DBMS_REPUTIL2 to {{ oracle_goldengate_dbuser }};
 
 grant dba to {{ oracle_goldengate_dbuser }};
 grant select any table to {{ oracle_goldengate_dbuser }};
@@ -20,7 +21,6 @@ grant update any table to {{ oracle_goldengate_dbuser }};
 grant delete any table to {{ oracle_goldengate_dbuser }};
 grant write on directory AUD_ARCHIVELOG_DIR to {{ oracle_goldengate_dbuser }};
 grant read on directory AUD_ARCHIVELOG_DIR to {{ oracle_goldengate_dbuser }};
-grant execute on sys.dbms_lock to {{ oracle_goldengate_dbuser }};
 grant create any procedure to {{ oracle_goldengate_dbuser }};
 grant alter any procedure to {{ oracle_goldengate_dbuser }};
 grant drop any procedure to {{ oracle_goldengate_dbuser }};
@@ -88,7 +88,7 @@ end;
 /
 
 -- Move this to after the set up of the Replicat
-PROMPT Executing procedures to set up Apply dml handler configuration:
+--PROMPT Executing procedures to set up Apply dml handler configuration:
 -- will be done as part of the start_replicat call
 --EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_deconf;
 --EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_conf;
