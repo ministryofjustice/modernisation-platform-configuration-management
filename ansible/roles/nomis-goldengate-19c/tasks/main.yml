@@ -165,18 +165,6 @@
     - install-replicats
     - install-audit-replicat
 
-- name: Register GoldenGate replicat processes (Audit databases)
-  import_tasks: register_audit_replicat.yml
-  when: run_auditdata or run_auditref
-  tags:
-    - goldengate
-    - goldengate-config
-    - goldengate-processes
-    - goldengate-audit
-    - goldengate-replicat
-    - register-replicats
-    - register-audit-replicat
-
 - name: Unregister GoldenGate replicat processes (Audit databases)
   import_tasks: unregister_audit_replicat.yml
   when: run_auditdata or run_auditref
@@ -188,6 +176,18 @@
     - goldengate-replicat
     - unregister-replicats
     - unregister-audit-replicat
+
+- name: Register GoldenGate replicat processes (Audit databases)
+  import_tasks: register_audit_replicat.yml
+  when: run_auditdata or run_auditref
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-processes
+    - goldengate-audit
+    - goldengate-replicat
+    - register-replicats
+    - register-audit-replicat
 
 # MIS database processes
 - name: Install GoldenGate extract processes (MIS database)
