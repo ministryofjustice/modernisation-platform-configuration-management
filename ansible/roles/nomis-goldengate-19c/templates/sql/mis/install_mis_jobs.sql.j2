@@ -43,8 +43,8 @@ BEGIN
    v_roll BOOLEAN := FALSE;
    v_plsql varchar2(200);
 begin
-   v_plsql := ''alter system flush shared_pool'';
-   execute immediate v_plsql;
+--   v_plsql := ''alter system flush shared_pool'';
+--   execute immediate v_plsql;
    {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.set_stop_points(''{{ oracle_goldengate_sql_owner }}'', v_roll);
 end;',
                 start_date       => SYSTIMESTAMP,

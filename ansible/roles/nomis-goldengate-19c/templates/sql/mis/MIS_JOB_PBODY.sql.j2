@@ -151,8 +151,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
                 'declare
                     v_plsql varchar2(200);
                 begin
-                    v_plsql := ''alter system flush shared_pool'';
-                    execute immediate v_plsql;
+                    -- v_plsql := ''alter system flush shared_pool'';
+                    -- execute immediate v_plsql;
                     '||mis_gen_pkg.g_mis_owner||'.MIS_JOB_PKG.log_apply('''||mis_gen_pkg.g_mis_owner||''');
                     '||mis_gen_pkg.g_mis_owner||'.AUDITDATA_JOB_PKG.populate_offender_refs;
                 end;',
@@ -278,8 +278,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
         v_roll BOOLEAN := FALSE;
         v_plsql varchar2(200);
     BEGIN
-        v_plsql := 'alter system flush shared_pool';
-        execute immediate v_plsql;
+        -- v_plsql := 'alter system flush shared_pool';
+        -- execute immediate v_plsql;
         mis_gg_ctrl_pkg.set_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
         if v_roll = TRUE then
             -- wait until stop point reached

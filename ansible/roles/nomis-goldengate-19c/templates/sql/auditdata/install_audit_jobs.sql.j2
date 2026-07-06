@@ -239,8 +239,8 @@ end;',
                 job_action       => 'declare
     v_plsql varchar2(200);
 begin
-    v_plsql := ''alter system flush shared_pool'';
-    execute immediate v_plsql;
+--    v_plsql := ''alter system flush shared_pool'';
+--    execute immediate v_plsql;
     {{ oracle_goldengate_group.auditdata.schema_owner }}.AUDITDATA_JOB_PKG.populate_offender_refs;
 end;',
                 start_date       => SYSTIMESTAMP,
