@@ -75,6 +75,16 @@ function Get-ModPlatformADConfig {
       "DomainJoinUsername" = "Admin"
       "DomainAdminUsername" = "Admin"
     }
+    "delius-mis-prod.internal" = @{
+      "SecretName" = "delius-mis-prod-sap-dis-passwords"
+      "SecretNames" = @{
+        "Admin" = "delius-mis-prod-ad-admin-password"
+      }
+      "DomainNameFQDN" = "delius-mis-prod.internal"
+      "DomainNameNetbios" = "delius-mis-prod"
+      "DomainJoinUsername" = "Admin"
+      "DomainAdminUsername" = "Admin"
+    }
   }
 
   $ModPlatformADConfigsByEnvironmentName = @{
