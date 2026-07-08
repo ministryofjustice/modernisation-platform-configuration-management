@@ -99,6 +99,25 @@ function Get-ModPlatformADUserConfig {
         }
       }
     }
+    "delius-mis-prod.internal" = @{
+      SVC_DIS_NDL = @{
+        Secret = "delius-mis-prod-sap-dis-passwords"
+        Path   = "DC=Users"
+        ADGroups = @(
+          "AWS Delegated Administrators"
+        )
+        LocalGroups = @(
+          "Administrators"
+        )
+        Options = @{
+          Description           = "Service user for DIS Computer"
+          Enabled               = $true
+          CannotChangePassword  = $true
+          PasswordNeverExpires  = $true
+          ChangePasswordAtLogon = $false
+        }
+      }
+    }
   }
 
   if ($ModPlatformADUsers.ContainsKey($DomainNameFQDN)) {
