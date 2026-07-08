@@ -31,6 +31,10 @@ sap_bip_sia_name_app: "{{ ec2.tags.Name | replace('-','') }}"
 
 oracle_home: /u01/app/oracle/product/19c/client_1
 
+sap_bip_control_hostname_to_sia_sed: "s/-//g"
+sap_bip_control_public_lb_name:
+sap_bip_control_private_lb_name:
+
 sap_bip_config_secret_id: "/sap/bip/{{ sap_environment }}/config"
 sap_bip_passwords_secret_id: "/sap/bip/{{ sap_environment }}/passwords"
 sap_bip_sysdb_secret_id: "/oracle/database/{{ sap_bip_cms_db_server }}/passwords"

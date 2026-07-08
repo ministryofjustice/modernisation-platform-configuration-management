@@ -139,7 +139,6 @@ sap_bip_confs:
         - clientapi
         - dswsbobje
         - webi-websetup
-    sap_bip_control_lbs: "private public"
     sap_bip_control_app_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Stopped,Disabled
@@ -179,7 +178,8 @@ sap_bip_confs:
     sap_bip_control_cms_server_1:
     sap_bip_control_cms_server_2:
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
-sap_bip_control_lbs: "{{ sap_bip_conf.sap_bip_control_lbs }}"
+sap_bip_control_public_lb_name: public-lb
+sap_bip_control_private_lb_name: private-lb
 sap_bip_control_app_servers: "{{ sap_bip_conf.sap_bip_control_app_servers }}"
 sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
 sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"

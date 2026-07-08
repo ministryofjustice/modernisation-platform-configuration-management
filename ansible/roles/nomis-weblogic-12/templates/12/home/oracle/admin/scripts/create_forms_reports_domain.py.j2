@@ -1,0 +1,236 @@
+from java.lang import String
+from javax.management import ObjectName
+
+oracleHome = '{{ weblogic_oracle_home }}'
+domainHome = '{{ weblogic_domain_home }}'
+domainName = '{{ weblogic_domain_name }}'
+
+adminUser = '{{ weblogic_admin_username }}'
+adminPassword = '{{ weblogic_admin_password }}'
+
+machineName = '{{ weblogic_machine_name | default("AdminServerMachine") }}'
+machineListenAddress = '{{ weblogic_domain_hostname }}'
+
+isFirstDomain = {{ 'true' if weblogic_is_first_domain else 'false' }}
+
+templates = [
+{% for template in weblogic_allowed_domain_templates %}
+    '{{ template }}',
+{% endfor %}
+]
+
+# ✅ Safety: block Coherence templates
+for template in templates:
+    if 'coherence' in template.lower():
+        raise Exception('Refusing to use Coherence template: ' + template)
+
+print('Creating domain ' + domainName + ' at ' + domainHome)
+
+# ✅ Load templates
+readTemplate(templates[0])
+for template in templates[1:]:
+    print('Adding Oracle supplied template: ' + template)
+    addTemplate(template)
+
+# ✅ Configure RCU STB datasource explicitly
+def cd_first(paths):
+    for p in paths:
+        try:
+            cd(p)
+            return p
+        except:
+            pass
+    raise Exception('Could not cd to any of: ' + str(paths))
+
+def path_exists(path):
+    try:
+        cd(path)
+        return 1
+    except:
+        return 0
+
+def create_if_missing(parent, name, bean_type):
+    cd(parent)
+    existing = ls(returnMap='true')
+    if name not in existing:
+        cd('/')
+        create(name, bean_type)
+
+# ✅ Helper: configure JDBC datasource
+def configure_jdbc_datasource(ds_name, url, username, password):
+    cd_first([
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME_0',
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name + '/JDBCDriverParams/NO_NAME'
+    ])
+    set('URL', url)
+    set('PasswordEncrypted', password)
+    cd_first([
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name +
+        '/JDBCDriverParams/NO_NAME_0/Properties/NO_NAME_0/Property/user',
+        '/JDBCSystemResource/' + ds_name + '/JdbcResource/' + ds_name +
+        '/JDBCDriverParams/NO_NAME/Properties/NO_NAME/Property/user'
+    ])
+    set('Value', username)
+
+# ✅ Configure datasources
+configure_jdbc_datasource(
+    'WLSSchemaDataSource',
+    '{{ weblogic_db_repo_url }}',
+    '{{ weblogic_db_repo_prefix }}_WLS_RUNTIME',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+configure_jdbc_datasource(
+    'LocalSvcTblDataSource',
+    '{{ weblogic_db_repo_url }}',
+    '{{ weblogic_db_repo_prefix }}_STB',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+configure_jdbc_datasource(
+    'opss-data-source',
+    '{{ weblogic_db_repo_url }}',
+    '{{ weblogic_db_repo_prefix }}_OPSS',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+configure_jdbc_datasource(
+    'opss-audit-DBDS',
+    '{{ weblogic_db_repo_url }}',
+    '{{ weblogic_db_repo_prefix }}_IAU_APPEND',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+configure_jdbc_datasource(
+    'opss-audit-viewDS',
+    '{{ weblogic_db_repo_url }}',
+    '{{ weblogic_db_repo_prefix }}_IAU_VIEWER',
+    '{{ weblogic_db_repo_schema_password }}'
+)
+
+# Looks like this one is only needed for BIP
+#configure_jdbc_datasource(
+#    'mds-owsm',
+#    '{{ weblogic_db_repo_url }}',
+#    '{{ weblogic_db_repo_prefix }}_MDS',
+#    '{{ weblogic_db_repo_schema_password }}'
+#)
+
+print('Configuring Admin user')
+# When the domain is first created the default name is base_domain, but it gets renamed to nomis when the domain is written (based on the path).
+# The standard user is always weblogic though, so we cd to that directly and change the password there.
+cd('/Security/base_domain/User/weblogic')
+cmo.setName(adminUser)
+cmo.setPassword(adminPassword)
+
+print('Configuring Admin server')
+cd('/Server/AdminServer')
+cmo.setName('{{ weblogic_admin_server_name }}')
+cmo.setListenAddress('{{ weblogic_admin_listen_address }}')
+cmo.setListenPort({{ weblogic_admin_listen_port }})
+
+print('Configuring Admin server SSL')
+create('{{ weblogic_admin_server_name }}', 'SSL')
+cd('/Server/{{ weblogic_admin_server_name }}/SSL/{{ weblogic_admin_server_name }}')
+set('Enabled', 'false')
+
+print('Configuring Machine / NodeManager')
+cd('/Machines')
+machineMap = ls(returnMap='true')
+if machineName not in machineMap:
+    cd('/')
+    create(machineName, 'Machine')
+
+cd('/Machines/' + machineName)
+nmMap = ls(returnMap='true')
+if machineName not in nmMap:
+    create(machineName, 'NodeManager')
+
+cd('/Machines/' + machineName + '/NodeManager/' + machineName)
+set('ListenAddress', machineListenAddress)
+set('ListenPort', 5556)
+set('NMType', 'SSL')
+
+# Assign AdminServer to the machine while still offline.
+assign('Server', '{{ weblogic_admin_server_name }}', 'Machine', machineName)
+
+# ✅ Clusters
+{% for cluster in weblogic_domain_clusters %}
+print('Configuring cluster {{ cluster }}')
+cd('/Clusters')
+clusterMap = ls(returnMap='true')
+if '{{ cluster }}' not in clusterMap:
+    cd('/')
+    create('{{ cluster }}', 'Cluster')
+
+cd('/Clusters/{{ cluster }}')
+cmo.setClusterMessagingMode('unicast')
+{% endfor %}
+
+# ✅ Servers
+{% for server in weblogic_domain_servers %}
+print('Configuring server {{ server.name }}')
+{% if server.name != weblogic_admin_server_name %}
+cd('/Servers')
+serverMap = ls(returnMap='true')
+
+if '{{ server.name }}' not in serverMap:
+{% if server.name in ['WLS_FORMS', 'WLS_REPORTS'] %}
+    raise Exception(
+        'Expected Oracle Forms/Reports template to create {{ server.name }}, '
+        + 'but it was not found. Check Forms/Reports templates and template load order.'
+    )
+{% else %}
+    cd('/')
+    create('{{ server.name }}', 'Server')
+{% endif %}
+
+print('Configuring server {{ server.name }}')
+cd('/Servers/{{ server.name }}')
+cmo.setListenAddress('{{ server.listen_address }}')
+cmo.setListenPort({{ server.listen_port }})
+
+print('Assigning server {{ server.name }} to cluster {{ server.cluster }}')
+{% if server.cluster %}
+assign('Server', '{{ server.name }}', 'Cluster', '{{ server.cluster }}')
+{% endif %}
+
+assign('Server', '{{ server.name }}', 'Machine', machineName)
+
+#print('Configuring SSL for server {{ server.name }}')
+#if not path_exists('/Servers/{{ server.name }}/SSL/{{ server.name }}'):
+#    cd('/Servers/{{ server.name }}')
+#    create('{{ server.name }}', 'SSL')
+#cd('/Servers/{{ server.name }}/SSL/{{ server.name }}')
+#set('Enabled', 'false')
+{% endif %}
+
+# Commented out because we are now using the weblogic_common_jvm_args variable to set the JVM args for all servers, including Forms and Reports, in a single place, and this was inserting the args with spaces between each letter.
+#print('Configuring ServerStart for server {{ server.name }}')
+#cd('/Servers/{{ server.name }}')
+#create('{{ server.name }}', 'ServerStart')
+#cd('/Servers/{{ server.name }}/ServerStart/{{ server.name }}')
+#cmo.setArguments('{{ (server.jvm_args | default([])) | join(" ") }}')
+
+{% endfor %}
+
+print('Set options BEFORE DB interaction')
+setOption('ServerStartMode', 'prod')
+setOption('OverwriteDomain', 'false')
+
+print('Configuring RCU Service Table datasource')
+
+cd('/JDBCSystemResources/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0')
+set('URL', 'jdbc:oracle:thin:@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }}')
+set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
+
+cd('Properties/NO_NAME_0/Property/user')
+set('Value', '{{ weblogic_db_repo_prefix }}_STB')
+
+print('Writing domain...')
+writeDomain(domainHome)
+
+closeTemplate()
+
+print('Domain created successfully')
+exit()

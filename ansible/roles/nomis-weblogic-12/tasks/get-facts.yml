@@ -13,22 +13,28 @@
     weblogic_db_repo_password: "{{ secretsmanager_passwords_dict['db_repo'].passwords[weblogic_db_repo_username] }}"
     weblogic_db_repo_schema_password: "{{ secretsmanager_passwords_dict['db_repo'].passwords['wls_schemas'] }}"
 
-#- name: Check all SSM parameters and tags are set
-#  set_fact:
-#    weblogic_all_variables_set: true
-#  when:
-#    - weblogic_admin_username|length > 0
-#    - weblogic_admin_password|length > 0
-#    - weblogic_db_username|length > 0
-#    - weblogic_db_password|length > 0
-#    - weblogic_db_tagsar_username|length > 0
-#    - weblogic_db_hostname_a|length > 0
-#    - weblogic_db_hostname_b|length > 0
-#    - weblogic_rms_hosts|length > 0
+- debug:
+    msg: "Configuring Oracle DB {{ weblogic_db_name }} on {{ weblogic_db_hostname_a }},{{ weblogic_db_hostname_b }} with username {{ weblogic_db_username }}"
+
+- debug:
+    msg: "Configuring Admin console {{ weblogic_domain_hostname }} with username {{ weblogic_admin_username }}"
+
+- name: Check all SSM parameters and tags are set
+  set_fact:
+    weblogic_all_variables_set: true
+  when:
+    - weblogic_admin_username|length > 0
+    - weblogic_admin_password|length > 0
+    - weblogic_db_username|length > 0
+    - weblogic_db_password|length > 0
+    - weblogic_db_tagsar_username|length > 0
+    - weblogic_db_hostname_a|length > 0
+    - weblogic_db_hostname_b|length > 0
+#    - weblogic_rms_hosts|length > 0 -- Used for TAG BO only, not strictly required for WLS
 #    - weblogic_rms_key|length > 0
-#
-#- name: Fail if missing SSM parameters or tags
-#  fail:
-#    msg: Ensure all required SSM parameters and tags are set
-#  when: not weblogic_all_variables_set|default(false)
+
+- name: Fail if missing SSM parameters or tags
+  fail:
+    msg: Ensure all required SSM parameters and tags are set
+  when: not weblogic_all_variables_set|default(false)
 

@@ -9,6 +9,10 @@ dns_search_domains:
   - azure.hmpp.root
 winrm_domain_name_fqdn: azure.hmpp.root
 
+# since ssm broken on web, add user accounts in case ec2-user breaks
+users_and_groups_regular_web:
+  - group: studio-webops
+
 # OEM server
 OMS_SERVER: preprod-oem-a.hmpps-oem.hmpps-preproduction.modernisation-platform.internal
 OEM_AGENT_VERSION: 13.5.0.0.0

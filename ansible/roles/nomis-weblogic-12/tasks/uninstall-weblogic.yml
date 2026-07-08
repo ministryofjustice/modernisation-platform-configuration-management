@@ -1,0 +1,8 @@
+#delete the /u01/app/oracle/Middleware directory and all its contents to uninstall weblogic
+- name: Uninstall WebLogic by deleting Middleware home
+  ansible.builtin.file:
+    path: /u01/app/oracle/Middleware
+    state: absent
+  become: true
+  become_user: root
+  

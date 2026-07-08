@@ -51,10 +51,17 @@ run_ansible() {
     git checkout "$branch"
   else
     cd $ansible_dir/${ansible_repo}
-    git remote prune origin
-    git fetch origin "$branch"
-    git checkout "$branch"
-    git merge --ff-only "origin/${branch}"
+    if ! (git remote prune origin && \
+          git fetch origin "$branch" && \
+          git checkout "$branch" && \
+          git merge --ff-only FETCH_HEAD); then
+      echo "# Git update failed, wiping directory and re-cloning..."
+      cd $ansible_dir || exit 1
+      rm -rf ${ansible_repo:?}
+      git clone "https://github.com/ministryofjustice/${ansible_repo}.git"
+      cd ${ansible_dir}/${ansible_repo} || exit 1
+      git checkout "$branch"
+    fi
   fi
   cd $ansible_dir
 

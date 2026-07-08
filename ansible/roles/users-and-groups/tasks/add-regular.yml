@@ -91,6 +91,7 @@
     create_home: "{{ item.create_home }}"
     home: "{{ item.home }}"
     password: "{{ item.password|default('*') }}"
+    password_expire_max: -1
     state: "{{ item.state }}"
     system: no
   loop_control:

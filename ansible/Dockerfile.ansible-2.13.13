@@ -1,0 +1,84 @@
+# Use Rocky Linux 8 to match RHEL 8.9
+FROM rockylinux:8
+
+# Set up folder variables
+ARG ANSIBLE_DIR=/opt/ansible
+ENV ANSIBLE_DIR=${ANSIBLE_DIR}
+
+# Install build tools, zip tools, and dependencies but no docs to save space
+RUN echo "tsflags=nodocs" >> /etc/dnf/dnf.conf \
+    && dnf install -y \
+    gcc \
+    wget \
+    unzip \
+    ca-certificates \
+    libffi-devel \
+    openssl-devel \
+    zlib-devel \
+    bzip2-devel \
+    ncurses-devel \
+    sqlite-devel \
+    readline-devel \
+    tk-devel \
+    gdbm-devel \
+    xz-devel \
+    expat-devel \
+    make \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /usr/share/doc /usr/share/man
+
+# Build Python 3.9.6 from source
+WORKDIR /tmp
+RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz \
+    && tar xzf Python-3.9.6.tgz \
+    && cd Python-3.9.6 \
+    && sed -i 's/^#zlib/zlib/' Modules/Setup \
+    && ./configure \
+    && make altinstall \
+    && rm -rf /tmp/Python-3.9.6* /root/.cache/pip
+
+# Install AWS CLI v2 dynamically based on architecture
+RUN ARCH=$(uname -m) \
+    && if [ "$ARCH" = "aarch64" ]; then \
+         AWS_URL="https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip"; \
+       else \
+         AWS_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; \
+       fi \
+    && wget "$AWS_URL" -O "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf awscliv2.zip ./aws
+
+# Install Session Manager Plugin dynamically based on architecture
+RUN ARCH=$(uname -m) \
+    && if [ "$ARCH" = "aarch64" ]; then \
+         dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_arm64/session-manager-plugin.rpm; \
+       else \
+         dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm; \
+       fi \
+    && dnf clean all
+
+# Create folders for Ansible and Virtual Env
+RUN mkdir -p ${ANSIBLE_DIR}/venv
+
+# Copy requirements files from your Mac build directory into the container
+COPY requirements.txt requirements.yml ./
+
+# Set up Python virtual environment and Ansible inside the image
+RUN /usr/local/bin/python3.9 -m venv ${ANSIBLE_DIR}/venv/ansible \
+    && source ${ANSIBLE_DIR}/venv/ansible/bin/activate \
+    && pip install --upgrade pip \
+    && pip install ansible==6.0.0 \
+    && pip install -r requirements.txt \
+    && ansible-galaxy role install -r requirements.yml \
+    && ansible-galaxy collection install -r requirements.yml
+
+# Create the entrypoint script to auto-activate the virtual environment
+RUN echo '#!/bin/bash' > /usr/local/bin/entrypoint.sh \
+    && echo 'source /opt/ansible/venv/ansible/bin/activate' >> /usr/local/bin/entrypoint.sh \
+    && echo 'exec "$@"' >> /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh
+
+# Set the working directory to where your Mac code will be mounted
+WORKDIR /ansible
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

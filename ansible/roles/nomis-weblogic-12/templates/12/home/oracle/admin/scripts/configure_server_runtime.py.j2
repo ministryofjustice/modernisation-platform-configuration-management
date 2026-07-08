@@ -1,0 +1,61 @@
+adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
+
+servers = {
+{% for server in weblogic_domain_servers %}
+{% set jvm_args = server.jvm_args | default(weblogic_common_jvm_args) %}
+    '{{ server.name }}': '{{ jvm_args if jvm_args is string else jvm_args | join(" ") }}',
+{% endfor %}
+{% for app in ['WLS_AUTOLOGOFF', 'WLS_HOTPAGE', 'WLS_TAGSAR'] %}
+    '{{ app }}': '{{ weblogic_common_jvm_args if weblogic_common_jvm_args is string else weblogic_common_jvm_args | join(" ") }}',
+{% endfor %}
+}
+
+clusters = [
+    'cluster_forms',
+    'cluster_reports',
+    'cluster_autologoff',
+    'cluster_hotpage',
+    'cluster_tagsar',
+]
+
+changed = False
+
+connect(userConfigFile='/u01/tmp/wlst.userconfig', userKeyFile='/u01/tmp/wlst.userkey', url=adminURL)
+
+edit()
+startEdit()
+
+for serverName, requiredArgs in servers.items():
+    server = getMBean('/Servers/' + serverName)
+    if server is None:
+        print('Server ' + serverName + ' does not exist. Skipping.')
+        continue
+    print '- Configuring overload protection for server ' + serverName
+    overloadProtection = server.getOverloadProtection()
+    overloadProtection.setFailureAction('no-action')
+    overloadProtection.setPanicAction('no-action')
+    changed = True
+
+for clusterName in clusters:
+    cluster = getMBean('/Clusters/' + clusterName)
+    if cluster is None:
+        print('Cluster ' + clusterName + ' does not exist. Skipping.')
+        continue
+    print '- Configuring overload protection for cluster ' + clusterName
+    overloadProtection = cluster.getOverloadProtection()
+    if overloadProtection is not None:
+        overloadProtection.setPanicAction('no-action')
+        changed = True
+    else:
+        print 'No overload protection MBean for ' + clusterName
+
+if changed:
+    save()
+    activate()
+    print('CHANGED')
+else:
+    cancelEdit('y')
+    print('No changes required')
+
+disconnect()
+exit()

@@ -1,0 +1,12 @@
+PRDDSD_TAF =
+  (DESCRIPTION=
+    (LOAD_BALANCE=OFF)
+    (FAILOVER=ON)
+    (CONNECT_TIMEOUT=10)
+    (RETRY_COUNT=3)
+    (ADDRESS_LIST=
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-dsd-db-1.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-dsd-db-2.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+    )
+    (CONNECT_DATA=(SERVICE_NAME=PRDDSD_TAF))
+  )

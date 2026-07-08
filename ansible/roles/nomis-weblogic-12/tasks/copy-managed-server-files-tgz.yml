@@ -60,7 +60,7 @@
   ansible.builtin.copy:
     src: /u01/tag/tagsar/fop_xconf/fop.xconf
     dest: /u01/tag/tagsar/fop.xconf
-    remote_src: true
+    remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
     owner: oracle
     group: oinstall
 

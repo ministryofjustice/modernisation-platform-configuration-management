@@ -6,7 +6,7 @@
         suffix: ".json"
       register: temp_file
 
-    - name: Copy baseline data to the temporary file on the remote host
+    - name: Copy {{ filename }} baseline data to the temporary file on the remote host
       copy:
         src: "{{ filename }}"
         dest: "{{ temp_file.path }}"
