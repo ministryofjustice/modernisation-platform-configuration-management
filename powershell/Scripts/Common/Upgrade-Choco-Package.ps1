@@ -9,7 +9,8 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true, Position = 0)][string]$Package,
-    [Parameter(Mandatory = $false, Position = 1)][string]$Version
+    [Parameter(Mandatory = $false, Position = 1)][string]$Version,
+    [Parameter(Mandatory = $false)][int]$TimeoutSeconds = 2700
 )
 
 # Check if package is already installed using choco list first (more reliable)
@@ -59,22 +60,22 @@ Write-Output 'Proceeding with upgrade...'
 # Proceed with upgrade
 if ($WhatIfPreference) {
     if ($Version) {
-        Write-Output "What-If: Would upgrade $Package version $Version"
-        choco upgrade $Package --version=$Version -y --no-progress --whatif
+        Write-Output "What-If: Would upgrade $Package version $Version (timeout: $TimeoutSeconds seconds)"
+        choco upgrade $Package --version=$Version --execution-timeout=$TimeoutSeconds -y --no-progress --whatif
     }
     else {
-        Write-Output "What-If: Would upgrade $Package (latest version)"
-        choco upgrade $Package -y --no-progress --whatif
+        Write-Output "What-If: Would upgrade $Package (latest version) (timeout: $TimeoutSeconds seconds)"
+        choco upgrade $Package --execution-timeout=$TimeoutSeconds -y --no-progress --whatif
     }
 }
 else {
     if ($Version) {
-        Write-Output "Upgrading $Package version $Version"
-        choco upgrade $Package --version=$Version -y --no-progress
+        Write-Output "Upgrading $Package version $Version (timeout: $TimeoutSeconds seconds)"
+        choco upgrade $Package --version=$Version --execution-timeout=$TimeoutSeconds -y --no-progress
     }
     else {
-        Write-Output "Upgrading $Package (latest version)"
-        choco upgrade $Package -y --no-progress
+        Write-Output "Upgrading $Package (latest version) (timeout: $TimeoutSeconds seconds)"
+        choco upgrade $Package --execution-timeout=$TimeoutSeconds -y --no-progress
     }
 
     # Set exit code based on chocolatey result
