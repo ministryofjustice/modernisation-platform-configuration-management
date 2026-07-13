@@ -19,11 +19,11 @@ start_parallel() {
   [[ -e /etc/systemd/system/weblogic-server.service ]] && systemctl start weblogic-server
   [[ -e /etc/systemd/system/weblogic-ohs.service ]] && systemctl start weblogic-ohs
 
-  managed_services=$(find /etc/systemd/system/ -name 'WLS*' | sort)
+  managed_services=$(find /etc/systemd/system/ -name 'WLS*.service' -exec basename {} \; | sort)
   echo -n $"Starting all WLS services in parallel: "
   i=0
   for managed_service in $managed_services; do
-    $managed_service start > /dev/null 2>&1 &
+    systemctl start "$managed_service" > /dev/null 2>&1 &
     pids[i]=$!
     i=$((i + 1))
   done
@@ -32,8 +32,7 @@ start_parallel() {
   set +e
   i=0
   for managed_service in $managed_services; do
-    key=$(echo "$managed_service" | cut -d/ -f4)
-    echo -n $"Waiting for $key: PID=${pids[i]}"
+    echo -n $"Waiting for $managed_service: PID=${pids[i]}"
     if ! wait ${pids[i]}; then
       echo_failure
       echo
@@ -52,9 +51,9 @@ start_sequential() {
   touch /var/lock/subsys/$prog
   [[ -x /etc/systemd/system/weblogic-node-manager.service ]] && systemctl start weblogic-node-manager
   [[ -x /etc/systemd/system/weblogic-server.service ]] && systemctl start weblogic-server
-  managed_services=$(find /etc/systemd/system/ -name 'WLS*')
+  managed_services=$(find /etc/systemd/system/ -name 'WLS*.service' -exec basename {} \; | sort)
   for managed_service in $managed_services; do
-    $managed_service start
+    systemctl start "$managed_service"
   done
   [[ -x /etc/systemd/system/weblogic-ohs.service ]] && systemctl start weblogic-ohs
 }
@@ -66,9 +65,9 @@ start() {
 stop() {
   echo $"Stopping all weblogic processes: "
   rm -f /var/lock/subsys/$prog
-  managed_services=$(find /etc/systemd/system/ -name 'WLS*' | sort -r)
+  managed_services=$(find /etc/systemd/system/ -name 'WLS*.service' -exec basename {} \; | sort)
   for managed_service in $managed_services; do
-    $managed_service stop
+    systemctl stop "$managed_service"
   done
   [[ -x /etc/systemd/system/weblogic-server.service ]] && systemctl stop weblogic-server
   [[ -x /etc/systemd/system/weblogic-ohs.service ]] && systemctl stop weblogic-ohs
@@ -94,7 +93,7 @@ status() {
       RETVAL=1
     fi
   fi
-  managed_services=$(find /etc/systemd/system/ -name 'WLS*')
+  managed_services=$(find /etc/systemd/system/ -name 'WLS*.service' -exec basename {} \; | sort)
   for managed_service in $managed_services; do
     if ! systemctl status "$managed_service"; then
       RETVAL=1
@@ -112,12 +111,12 @@ restart() {
 get_unhealthy_services() {
   unhealthy=()
   if [[ -x /etc/systemd/system/weblogic-node-manager.service ]]; then
-    if ! systemctl status weblogic-node-manager | head -1 | grep OK > /dev/null; then
+    if ! systemctl is-active --quiet weblogic-node-manager > /dev/null; then
       unhealthy+=(weblogic-node-manager)
     fi
   fi
   if [[ -x /etc/systemd/system/weblogic-ohs.service ]]; then
-    if ! systemctl status weblogic-ohs | head -1 | grep OK > /dev/null; then
+    if ! systemctl is-active --quiet weblogic-ohs > /dev/null; then
       unhealthy+=(weblogic-ohs)
     fi
   fi
@@ -134,10 +133,10 @@ get_unhealthy_services() {
       unhealthy+=(weblogic-server)
     fi
   fi
-  managed_services=$(find /etc/systemd/system/ -name 'WLS*' | grep -v 'WLS_TAGSAR' | cut -d/ -f4)
+  managed_services=$(find /etc/systemd/system/ -name 'WLS*.service' -exec basename {} \; | sort)
   for managed_service in $managed_services; do
     ok=1
-    if ! systemctl status "$managed_service" | head -1 | grep OK > /dev/null; then
+    if ! systemctl is-active --quiet "$managed_service" > /dev/null; then
       ok=0
     fi
     if ! echo "$weblogic_server_status" | grep -w "$managed_service" | grep RUNNING > /dev/null; then
