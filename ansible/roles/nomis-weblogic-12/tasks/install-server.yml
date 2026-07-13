@@ -50,7 +50,15 @@
   # block
   when: not weblogic_server_installed_check.stat.exists
 
-- name: Copy weblogic systemd scripts
+- name: Create weblogic-all systemd override directory
+  file:
+    path: /etc/systemd/system/weblogic-all.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy weblogic systemd and init.d scripts
   ansible.builtin.template:
     src: "12{{ item }}"
     dest: "{{ item }}"
@@ -61,3 +69,12 @@
     - /etc/systemd/system/weblogic-ohs.service
     - /etc/systemd/system/WLS_FORMS.service
     - /etc/systemd/system/WLS_REPORTS.service
+    - /etc/systemd/system/weblogic-all.service.d/override.conf
+
+- name: Copy init.d weblogic-all script
+  ansible.builtin.template:
+    src: "12{{ item }}"
+    dest: "{{ item }}"
+    mode: "0755"
+  loop:
+    - /etc/init.d/weblogic-all

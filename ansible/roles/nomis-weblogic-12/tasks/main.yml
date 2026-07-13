@@ -60,7 +60,7 @@
       tags:
         - ec2provision
         - weblogic_install_domain
-        - weblogic_install_domain_only # TODO: Review
+        - weblogic_install_domain_only
 
     - import_tasks: configure-domain-security.yml
       tags:
@@ -83,6 +83,7 @@
     - import_tasks: disable-weblogic-services.yml
       tags:
         - ec2provision
+        - weblogic_disable_services
 
     - import_tasks: extract-s3-zip-files.yml
       tags:
@@ -249,35 +250,30 @@
         - ec2provision
         - weblogic_update_config_for_admin_server_machine
 
-    - import_tasks: enable-weblogic-services.yml
-      vars:
-        service_state: restarted
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
       tags:
         - ec2provision
-        - weblogic_restart_services
+        - weblogic_reload_systemd_daemon
 
-    - name: "Restart managed apps"
-      ansible.builtin.service:
-        name: "{{ weblogic_managed_app }}"
+    - import_tasks: enable-weblogic-all.yml
+      tags:
+        - ec2provision
+        - weblogic_enable_weblogic_all
+
+    - import_tasks: install-healthcheck.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - weblogic_install_healthcheck
+
+    - name: Restart weblogic-all
+      service:
+        name: weblogic-all
         state: restarted
-      async: 1200
-      poll: 20
       tags:
         - ec2provision
-        - weblogic_restart_managed_apps
-      loop_control:
-        loop_var: weblogic_managed_app
-      loop:
-        - WLS_AUTOLOGOFF
-        - WLS_TAGSAR
-        - WLS_HOTPAGE
-
-    - import_tasks: enable-weblogic-services.yml
-      vars:
-        services_to_manage:
-          - NOMIS_REPORTS_SERVER
-      tags:
-        - ec2provision
-        - weblogic_enable_reports_server
+        - weblogic_restart_weblogic_all
 
   when: ansible_distribution in ['RedHat', 'OracleLinux'] and ansible_distribution_major_version == "8"
