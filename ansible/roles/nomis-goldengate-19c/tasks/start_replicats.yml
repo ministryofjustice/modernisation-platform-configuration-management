@@ -1,6 +1,14 @@
 ---
 # Start GoldenGate Replicat processes
 
+- name: Set AFTERCSN clause
+  ansible.builtin.set_fact:
+    afterscn_clause: >-
+      {% if oracle_goldengate_start_mode == 'scn' and oracle_goldengate_start_scn != '' %}
+      ,AFTERCSN {{ oracle_goldengate_start_scn }}
+      {% else %}
+      {% endif %}
+
 - name: Start AUDITDATA Replicat process
   ansible.builtin.shell: |
     set -e
@@ -9,7 +17,7 @@
     . oraenv > /dev/null
     ./ggsci << EOF
     DBLOGIN USERIDALIAS AUDIT_DB
-    START REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+    START REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }} {{ afterscn_clause }}
     INFO REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
     EXIT
     EOF
@@ -31,7 +39,7 @@
     . oraenv > /dev/null
     ./ggsci << EOF
     DBLOGIN USERIDALIAS AUDIT_DB
-    START REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+    START REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }} {{ afterscn_clause }}
     INFO REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
     EXIT
     EOF
@@ -53,7 +61,7 @@
     . oraenv > /dev/null
     ./ggsci << EOF
     DBLOGIN USERIDALIAS MIS_DB
-    START REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
+    START REPLICAT {{ oracle_goldengate_group.mis.replicat_name }} {{ afterscn_clause }}
     INFO REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
     EXIT
     EOF

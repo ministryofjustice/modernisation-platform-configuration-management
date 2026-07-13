@@ -67,16 +67,16 @@ When registering an integrated extract, you can optionally specify an SCN where 
 
 ```bash
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_register_start_mode=scn \
-                oracle_goldengate_register_start_scn=123456789"
+  --extra-vars "oracle_goldengate_start_mode=scn \
+                oracle_goldengate_start_scn=123456789"
 ```
 
 **Important:** When using REGISTER with SCN, you typically want to use the same SCN for ADD EXTRACT:
 
 ```bash
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_register_start_mode=scn \
-                oracle_goldengate_register_start_scn=123456789 \
+  --extra-vars "oracle_goldengate_start_mode=scn \
+                oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=123456789"
 ```
@@ -117,8 +117,8 @@ ansible-playbook site.yml --tags get-current-scn
 
 # Step 3: Re-register and add with SCN
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_register_start_mode=scn \
-                oracle_goldengate_register_start_scn=123456789 \
+  --extra-vars "oracle_goldengate_start_mode=scn \
+                oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=123456789"
 
@@ -142,8 +142,8 @@ ansible-playbook site.yml --tags install-audit-extract \
 
 # Register and add extract from backup SCN
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_register_start_mode=scn \
-                oracle_goldengate_register_start_scn=987654321 \
+  --extra-vars "oracle_goldengate_start_mode=scn \
+                oracle_goldengate_start_scn=987654321 \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=987654321"
 ```
@@ -192,11 +192,11 @@ oracle_goldengate_extract_start_time: ""
   # Example: "2026-02-27 10:00:00"
 
 # REGISTER EXTRACT SCN clause control
-oracle_goldengate_register_start_mode: "current"
+oracle_goldengate_start_mode: "current"
   # Options: current, scn
   # Default: current (no SCN)
 
-oracle_goldengate_register_start_scn: ""
+oracle_goldengate_start_scn: ""
   # SCN number for REGISTER (when mode=scn)
   # Example: "123456789"
 ```
@@ -306,8 +306,8 @@ ansible-playbook site.yml --tags goldengate-stop
 
 # 4. Rebuild with SCN
 ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_register_start_mode=scn \
-                oracle_goldengate_register_start_scn=123456789 \
+  --extra-vars "oracle_goldengate_start_mode=scn \
+                oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=123456789"
 

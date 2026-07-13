@@ -19,8 +19,8 @@
     - name: Set MIS Extract REGISTER SCN clause
       ansible.builtin.set_fact:
         mis_register_scn_clause: >-
-          {% if oracle_goldengate_register_start_mode == 'scn' and oracle_goldengate_register_start_scn != '' %}
-          SCN {{ oracle_goldengate_register_start_scn }}
+          {% if oracle_goldengate_start_mode == 'scn' and oracle_goldengate_start_scn != '' %}
+          SCN {{ oracle_goldengate_start_scn }}
           {% else %}
           {% endif %}
 
