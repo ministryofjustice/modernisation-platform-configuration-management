@@ -1,0 +1,17 @@
+[Unit]
+Description=weblogic-all
+After=network-online.target
+
+[Service]
+ExecStart=/home/oracle/admin/scripts/weblogic-all.sh start
+ExecStop=/home/oracle/admin/scripts/weblogic-all.sh stop
+Group=oinstall
+RemainAfterExit=yes
+TasksMax=infinity
+Type=oneshot
+User=oracle
+LimitSTACK=10M
+LimitMEMLOCK=1G
+
+[Install]
+WantedBy=multi-user.target
