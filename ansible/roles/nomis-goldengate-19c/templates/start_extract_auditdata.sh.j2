@@ -12,18 +12,27 @@ LOG={{ oracle_goldengate_log_dir }}/start_{{ oracle_goldengate_group.auditdata.e
 
 cd ${GGHOME}
 
-echo "Starting Extract ${EXTRACT_NAME}..."
+# if SCN passed in as an argument, use it to start the extract
+if [ $# -eq 1 ]; then
+    SCN=$1
+    echo "Starting Extract ${EXTRACT_NAME} with SCN ${SCN}..."
+    START="SCN ${SCN}"
+else
+    echo "Starting Extract ${EXTRACT_NAME}..."
+    START="NOW"
+fi
 
 ./ggsci << EOF >"$LOG" 2>&1
+ALTER EXTRACT ${EXTRACT_NAME}, BEGIN ${START}
 START EXTRACT ${EXTRACT_NAME}
 INFO EXTRACT ${EXTRACT_NAME}
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
-    echo "Extract ${EXTRACT_NAME} started successfully"
+    echo "Extract ${EXTRACT_NAME} started successfully with ${START}"
     exit 0
 else
-    echo "Failed to start Extract ${EXTRACT_NAME}"
+    echo "Failed to start Extract ${EXTRACT_NAME} with ${START}"
     exit 1
 fi

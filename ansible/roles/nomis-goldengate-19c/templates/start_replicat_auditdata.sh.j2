@@ -12,18 +12,26 @@ LOG={{ oracle_goldengate_log_dir }}/start_{{ oracle_goldengate_group.auditdata.r
 
 cd ${GGHOME}
 
-echo "Starting Replicat ${REPLICAT_NAME}..."
+# if SCN passed in as an argument, use it to start the replicat
+if [ $# -eq 1 ]; then
+    SCN=$1
+    echo "Starting Replicat ${REPLICAT_NAME} with SCN ${SCN}..."
+    START=", AFTERSCN ${SCN}"
+else
+    echo "Starting Replicat ${REPLICAT_NAME}..."
+    START=""
+fi
 
 ./ggsci << EOF >"$LOG" 2>&1
-START REPLICAT ${REPLICAT_NAME}
+START REPLICAT ${REPLICAT_NAME} ${START}
 INFO REPLICAT ${REPLICAT_NAME}
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
-    echo "Replicat ${REPLICAT_NAME} started successfully"
+    echo "Replicat ${REPLICAT_NAME} started successfully with ${START}"
     exit 0
 else
-    echo "Failed to start Replicat ${REPLICAT_NAME}"
+    echo "Failed to start Replicat ${REPLICAT_NAME} with ${START}"
     exit 1
 fi
