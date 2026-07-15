@@ -138,7 +138,8 @@
                 weblogic_instance_types: >-
                   {{
                     weblogic_ec2_types
-                    | map('regex_replace', '^.+:(.+)$', '\\1')
+                    | map('split', ':')
+                    | map('last')
                     | list
                   }}
               when: weblogic_task_arns | length > 0
