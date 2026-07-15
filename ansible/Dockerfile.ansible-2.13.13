@@ -24,6 +24,7 @@ RUN echo "tsflags=nodocs" >> /etc/dnf/dnf.conf \
     xz-devel \
     expat-devel \
     make \
+    jq \
     && dnf clean all \
     && rm -rf /var/cache/dnf /usr/share/doc /usr/share/man
 
