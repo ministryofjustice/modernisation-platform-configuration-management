@@ -44,7 +44,14 @@ ogg_control.sh {start|stop|status|restart} {all|auditdata|auditref|mis} {extract
 
 ### Examples
 
-**Start all processes:**
+**Start/stop Manager:**
+```bash
+./ogg_control.sh start manager
+./ogg_control.sh stop manager
+./ogg_control.sh status manager
+```
+
+**Start all processes (starts Manager first, then extracts and replicats):**
 ```bash
 cd {{ oracle_goldengate_home }}/scripts
 ./ogg_control.sh start all both
@@ -71,6 +78,17 @@ cd {{ oracle_goldengate_home }}/scripts
 ```
 
 ## Using Individual Control Scripts
+
+### Manager
+```bash
+cd {{ oracle_goldengate_scripts_dir }}
+
+# Start manager (must be running before extracts/replicats)
+./start_manager.sh
+
+# Stop manager
+./stop_manager.sh
+```
 
 ### Starting Processes
 ```bash
@@ -239,11 +257,8 @@ GGSCI> INFO EXTRACT EXTAUDD
 
 5. **Keep manager running**
    ```bash
-   cd {{ oracle_goldengate_home }}
-   ./ggsci
-   GGSCI> INFO MANAGER
-   # If stopped:
-   GGSCI> START MANAGER
+   cd {{ oracle_goldengate_scripts_dir }}
+   ./start_manager.sh
    ```
 
 ## Emergency Procedures

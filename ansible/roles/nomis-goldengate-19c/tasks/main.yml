@@ -289,6 +289,15 @@
     - goldengate-mis
     - deploy-scripts
 
+- name: Ensure GoldenGate Manager is running
+  import_tasks: start_mgr.yml
+  tags:
+    - goldengate
+    - goldengate-config
+    - goldengate-scripts
+    - goldengate-manager
+    - deploy-scripts
+
 - name: Install Cronjobs for GoldenGate housekeeping tasks
   import_tasks: install_cronjobs.yml
   tags:
@@ -317,6 +326,33 @@
     - never
 
 # Process management tasks
+- name: Check GoldenGate Manager status
+  import_tasks: mgr_status.yml
+  tags:
+    - goldengate
+    - goldengate-info
+    - goldengate-manager
+    - mgr-status
+    - never
+
+- name: Start GoldenGate Manager
+  import_tasks: start_mgr.yml
+  tags:
+    - goldengate
+    - goldengate-start
+    - goldengate-manager
+    - start-mgr
+    - never
+
+- name: Stop GoldenGate Manager
+  import_tasks: stop_mgr.yml
+  tags:
+    - goldengate
+    - goldengate-stop
+    - goldengate-manager
+    - stop-mgr
+    - never
+
 - name: Start GoldenGate Extract processes
   import_tasks: start_extracts.yml
   tags:

@@ -7,6 +7,23 @@
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0755"
 
+# Deploy Manager control scripts
+- name: Deploy Manager start script
+  ansible.builtin.template:
+    src: start_manager.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/start_manager.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+
+- name: Deploy Manager stop script
+  ansible.builtin.template:
+    src: stop_manager.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/stop_manager.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+
 # Deploy Master Control Script
 - name: Deploy master OGG control script
   ansible.builtin.template:
