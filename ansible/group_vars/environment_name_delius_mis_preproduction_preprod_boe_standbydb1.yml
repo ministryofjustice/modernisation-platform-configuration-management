@@ -17,3 +17,14 @@ required_patches:
     datapatch_required: true
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
 oracle_osbws_chunk_size: 104857600
+all_oem_metrics:
+   host:
+    all:
+      input_file: |
+        START_RECORD 1
+        metric , ME$RESTORE_POINT_AGE
+        column , max_restore_point_age
+        key_columns , ;
+        warning_threshold , 5
+        critical_threshold , 7
+        END_RECORD 1
