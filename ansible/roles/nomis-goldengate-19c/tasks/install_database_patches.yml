@@ -169,30 +169,39 @@
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
 
-    - name: Run post-install SQL script against the local mining database ({{ oracle_goldengate_local_db_sid }})
+    # Support both auto-detected databases (oracle_goldengate_local_db_sids) and manual override (oracle_goldengate_local_db_sid)
+    - name: Set database SID list for post-install scripts
+      ansible.builtin.set_fact:
+        _db_sids_to_configure: >-
+          {{
+            oracle_goldengate_local_db_sids
+            if (oracle_goldengate_local_db_sids is defined and oracle_goldengate_local_db_sids | length > 0)
+            else ([oracle_goldengate_local_db_sid] if (oracle_goldengate_local_db_sid is defined and oracle_goldengate_local_db_sid != '') else [])
+          }}
+
+    - name: Run post-install SQL script against all mining databases
       ansible.builtin.shell: |
         . ~/.bash_profile
-        export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
+        export ORACLE_SID="{{ item.1 }}"
         export ORACLE_HOME="{{ oracle_goldengate_db_oracle_home }}"
         export PATH="${ORACLE_HOME}/bin:${PATH}"
 
         sqlplus -s /nolog <<EOSQL
         CONNECT / AS SYSDBA
-        @{{ oracle_goldengate_db_oracle_home }}/sqlpatch/{{ item.item }}/postinstall.sql
+        @{{ oracle_goldengate_db_oracle_home }}/sqlpatch/{{ item.0.item }}/postinstall.sql
         EXIT
         EOSQL
       args:
         executable: /bin/bash
       become: yes
       become_user: "{{ oracle_goldengate_owner }}"
-      loop: "{{ postinstall_script_stat.results }}"
+      loop: "{{ postinstall_script_stat.results | selectattr('stat.exists') | list | product(_db_sids_to_configure) | list }}"
       loop_control:
-        label: "patch {{ item.item }}"
-      when: item.stat.exists
+        label: "patch {{ item.0.item }} on {{ item.1 }}"
       register: postinstall_output
       changed_when: true
 
     - name: Show post-install SQL script output in logs
       ansible.builtin.debug:
-        msg: "Post-install SQL output for {{ oracle_goldengate_local_db_sid }}: {{ postinstall_output.results | map(attribute='stdout') | list }}"
+        msg: "Post-install SQL output: {{ postinstall_output.results | map(attribute='stdout') | list }}"
       when: postinstall_output is defined and postinstall_output.results is defined
