@@ -1,6 +1,6 @@
 ---
 artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
-artefacts_s3_bucket_path: hmpps/oracle-19c-software
+artefacts_s3_bucket_path: hmpps/oracle-goldengate-19c
 
 # This is version 19.1.0.0.4
 oracle_goldengate_software: V983658-01.zip
@@ -17,6 +17,16 @@ oracle_goldengate_software_patches:
     #- p38781237_1930000OGGRU_Linux-x86-64.zip
     # 39740001 Oracle GoldenGate 19.32.0.0.260721 for Oracle 19c(Patchset:Linux x86-64)
     - p39740001_1932000OGGRU_Linux-x86-64.zip
+
+# Database (RDBMS Oracle Home) patches, as opposed to oracle_goldengate_software_patches which
+# are applied to the GoldenGate software home. These patches are applied to the mining databases'
+# Oracle Home (mis and aud) and typically also require a post-install SQL script to be run against
+# each mining database instance - see install_database_patches.yml.
+oracle_goldengate_database_patches:
+  ORA11g:
+    # 17030189 Needed in 11g Mining databases to support extended metadata for Integrated Capture with a trail format of RELEASE 12.2 or later.
+    - p17030189_11204230718_Generic.zip
+  ORA19c: []
 
 oracle_inventory: /u01/app/oraInventory
 oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"

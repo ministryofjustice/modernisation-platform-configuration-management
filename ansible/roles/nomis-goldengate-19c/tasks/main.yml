@@ -31,6 +31,15 @@
     - goldengate-patches
     - install-patches
 
+- name: Install Oracle database patches required by GoldenGate
+  import_tasks: install_database_patches.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-software
+    - goldengate-patches
+    - install-database-patches
+
 - name: Configure Oracle ASM
   import_tasks: configure_asm.yml
   tags:

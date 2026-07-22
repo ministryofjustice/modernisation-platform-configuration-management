@@ -1,0 +1,198 @@
+---
+# Apply Oracle RDBMS (database) patches required by GoldenGate to the mining databases' Oracle Home.
+# Unlike install_patches.yml (which patches the GoldenGate software home), these patches must be
+# applied to the database's own Oracle Home and are only relevant on hosts running the mis or
+# auditdata/auditref (aud) mining databases, as they enable Integrated Capture support in the database.
+# After the patch is applied to the Oracle Home, Oracle requires a post-install SQL script
+# (sqlpatch/<patch_id>/postinstall.sql) to be run against each mining database instance as SYSDBA.
+- name: Apply GoldenGate database (RDBMS Oracle Home) patches
+  when:
+    - oracle_goldengate_database_patches[ora_version] is defined
+    - oracle_goldengate_database_patches[ora_version] | length > 0
+    - run_mis or run_auditdata
+  vars:
+    oracle_goldengate_db_oracle_home: "{{ oracle_goldengate_group.mis.oracle_home }}"
+  block:
+    # check if patch is already applied by running opatch lsinventory and looking for the patch number in the output.
+    - name: Check if GoldenGate database patches are already applied
+      ansible.builtin.shell: |
+        export ORACLE_HOME="{{ oracle_goldengate_db_oracle_home }}"
+        export PATH="{{ oracle_goldengate_db_oracle_home }}/OPatch:${PATH}"
+        opatch lsinventory -oh {{ oracle_goldengate_db_oracle_home }} -invPtrLoc {{ oracle_inventory }}/oraInst.loc
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      args:
+        executable: /bin/bash
+      register: db_opatch_inventory_output
+      failed_when: db_opatch_inventory_output.rc != 0
+      changed_when: false
+
+    - name: Show OPatch inventory output in logs
+      ansible.builtin.debug:
+        msg: "OPatch inventory output: {{ db_opatch_inventory_output.stdout }}"
+
+    - name: Set fact with list of already applied database patches
+      ansible.builtin.set_fact:
+        applied_db_patches: "{{ db_opatch_inventory_output.stdout | regex_findall('Patch\\s+(\\d+)') }}"
+
+    - name: Show list of already applied database patches in logs
+      ansible.builtin.debug:
+        msg: "Already applied database patches: {{ applied_db_patches }}"
+
+    - name: Initialise list of database patches to apply
+      ansible.builtin.set_fact:
+        db_patches_to_apply: []
+
+    - name: Build list of database patches to apply by removing already applied patches
+      ansible.builtin.set_fact:
+        db_patches_to_apply: "{{ db_patches_to_apply + [item] }}"
+      vars:
+        patch_id: >-
+          {{
+            (item | regex_findall('^p?([0-9]+)_') | first | default(''))
+            or (item | regex_findall('([0-9]{6,})') | first | default(''))
+          }}
+      when:
+        - patch_id | length > 0
+        - patch_id not in applied_db_patches
+      loop: "{{ oracle_goldengate_database_patches[ora_version] }}"
+
+    - name: Show list of database patches to apply in logs
+      ansible.builtin.debug:
+        msg: "Database patches to apply: {{ db_patches_to_apply }}"
+
+    - name: Skip database patch installation if all patches are already applied
+      ansible.builtin.debug:
+        msg: "All database patches are already applied, skipping patch installation."
+      when: db_patches_to_apply | length == 0
+
+    - name: Install GoldenGate database patches
+      when: db_patches_to_apply | length > 0
+      block:
+        - name: Download GoldenGate database patches from S3
+          amazon.aws.aws_s3:
+            bucket: "{{ artefacts_s3_bucket_name }}"
+            object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+            dest: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+            mode: get
+            overwrite: latest
+          loop: "{{ db_patches_to_apply }}"
+
+        - name: Unzip GoldenGate database patches
+          ansible.builtin.unarchive:
+            src: "{{ oracle_goldengate_software_dir }}/{{ item }}"
+            dest: "{{ oracle_goldengate_software_dir }}"
+            owner: "{{ oracle_goldengate_owner }}"
+            group: "{{ oracle_goldengate_osgroup }}"
+            remote_src: yes
+          loop: "{{ db_patches_to_apply }}"
+          register: db_patch_unarchive_output
+          failed_when: db_patch_unarchive_output.failed
+          no_log: true
+
+        - name: Find extracted database patch directories
+          ansible.builtin.find:
+            paths: "{{ oracle_goldengate_software_dir }}"
+            recurse: yes
+            file_type: file
+            patterns: "actions.xml"
+          register: db_patch_actions_files
+
+        - name: Set extracted database patch directories fact
+          ansible.builtin.set_fact:
+            extracted_db_patch_dirs: >-
+              {{
+                db_patch_actions_files.files
+                | map(attribute='path')
+                | map('dirname')
+                | map('dirname')
+                | map('dirname')
+                | list
+                | unique
+              }}
+
+        - name: Fail if no extracted database patch directories found
+          ansible.builtin.fail:
+            msg: "No extracted database patch directories found under {{ oracle_goldengate_software_dir }} (expected to find */etc/config/actions.xml)"
+          when: extracted_db_patch_dirs | length == 0
+
+        - name: Show extracted database patch directories in logs
+          ansible.builtin.debug:
+            msg: "Extracted database patch directories: {{ extracted_db_patch_dirs }}"
+
+        - name: Install GoldenGate database patches
+          ansible.builtin.command: >-
+            opatch apply -silent -oh {{ oracle_goldengate_db_oracle_home }}
+          become: yes
+          become_user: "{{ oracle_goldengate_owner }}"
+          environment:
+            ORACLE_HOME: "{{ oracle_goldengate_db_oracle_home }}"
+            PATH: "{{ oracle_goldengate_db_oracle_home }}/OPatch:{{ ansible_env.PATH }}"
+          args:
+            chdir: "{{ item }}"
+          loop: "{{ extracted_db_patch_dirs }}"
+          register: db_patch_install_output
+          failed_when: db_patch_install_output.rc != 0 and "OPatch succeeded" not in db_patch_install_output.stdout
+
+        - name: Show database patch installation output in logs
+          ansible.builtin.debug:
+            msg: "Database patch installation output: {{ db_patch_install_output.results | map(attribute='stdout') | list }}"
+
+        - name: Clean up database patch files
+          ansible.builtin.file:
+            path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
+            state: absent
+          loop: >-
+            {{
+              (oracle_goldengate_database_patches[ora_version] | default([]))
+              + (extracted_db_patch_dirs | default([]))
+            }}
+
+    # Regardless of whether the patch was applied on this run, ensure the post-install SQL script has
+    # been run against the local mining database instance - it is safe to re-run (Oracle records it in
+    # the database's patch history and it is a no-op if it has already been applied).
+    - name: Determine database patch numbers requiring a post-install SQL script
+      ansible.builtin.set_fact:
+        database_patch_ids: >-
+          {{
+            oracle_goldengate_database_patches[ora_version]
+            | map('regex_replace', '^p?([0-9]+)_.*$', '\1')
+            | select('match', '^[0-9]+$')
+            | list
+          }}
+
+    - name: Check post-install SQL script exists for each database patch
+      ansible.builtin.stat:
+        path: "{{ oracle_goldengate_db_oracle_home }}/sqlpatch/{{ item }}/postinstall.sql"
+      loop: "{{ database_patch_ids }}"
+      register: postinstall_script_stat
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+
+    - name: Run post-install SQL script against the local mining database ({{ oracle_goldengate_local_db_sid }})
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
+        export ORACLE_HOME="{{ oracle_goldengate_db_oracle_home }}"
+        export PATH="${ORACLE_HOME}/bin:${PATH}"
+
+        sqlplus -s /nolog <<EOSQL
+        CONNECT / AS SYSDBA
+        @{{ oracle_goldengate_db_oracle_home }}/sqlpatch/{{ item.item }}/postinstall.sql
+        EXIT
+        EOSQL
+      args:
+        executable: /bin/bash
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      loop: "{{ postinstall_script_stat.results }}"
+      loop_control:
+        label: "patch {{ item.item }}"
+      when: item.stat.exists
+      register: postinstall_output
+      changed_when: true
+
+    - name: Show post-install SQL script output in logs
+      ansible.builtin.debug:
+        msg: "Post-install SQL output for {{ oracle_goldengate_local_db_sid }}: {{ postinstall_output.results | map(attribute='stdout') | list }}"
+      when: postinstall_output is defined and postinstall_output.results is defined
