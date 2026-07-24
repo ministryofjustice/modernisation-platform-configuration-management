@@ -3,6 +3,24 @@
 - name: Unregister MIS Extract process
   when: run_mis
   block:
+    # stop the extract process then unregister it from the database
+    - name: Stop MIS Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        cd {{ oracle_goldengate_scripts_dir }}
+        ./ogg_control.sh stop mis extract
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: stop_mis_extract
+      failed_when: false
+
     - name: Unregister MIS Extract process
       ansible.builtin.shell: |
         set -e

@@ -37,7 +37,7 @@ ansible-playbook site.yml --tags install-audit-extract \
 Start processing from a specific system change number.
 
 ```bash
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=987654321"
 ```
@@ -51,7 +51,7 @@ ansible-playbook site.yml --tags install-audit-extract \
 Start processing from a specific timestamp.
 
 ```bash
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_extract_start_mode=time \
                 oracle_goldengate_extract_start_time='2026-02-27 10:00:00'"
 ```
@@ -66,7 +66,7 @@ ansible-playbook site.yml --tags install-audit-extract \
 When registering an integrated extract, you can optionally specify an SCN where the LogMiner session will begin.
 
 ```bash
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_start_mode=scn \
                 oracle_goldengate_start_scn=123456789"
 ```
@@ -74,7 +74,7 @@ ansible-playbook site.yml --tags install-audit-extract \
 **Important:** When using REGISTER with SCN, you typically want to use the same SCN for ADD EXTRACT:
 
 ```bash
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_start_mode=scn \
                 oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \

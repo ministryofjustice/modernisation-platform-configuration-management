@@ -7,11 +7,8 @@
     set -o pipefail
     export ORAENV_ASK=NO
     . oraenv > /dev/null
-    ./ggsci << EOF
-    STOP EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
-    INFO EXTRACT {{ oracle_goldengate_group.auditdata.extract_name }}
-    EXIT
-    EOF
+    cd {{ oracle_goldengate_scripts_dir }}
+    ./ogg_control.sh stop auditdata extract
   args:
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
@@ -28,11 +25,8 @@
     set -o pipefail
     export ORAENV_ASK=NO
     . oraenv > /dev/null
-    ./ggsci << EOF
-    STOP EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
-    INFO EXTRACT {{ oracle_goldengate_group.auditref.extract_name }}
-    EXIT
-    EOF
+    cd {{ oracle_goldengate_scripts_dir }}
+    ./ogg_control.sh stop auditref extract
   args:
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
@@ -49,11 +43,8 @@
     set -o pipefail
     export ORAENV_ASK=NO
     . oraenv > /dev/null
-    ./ggsci << EOF
-    STOP EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
-    INFO EXTRACT {{ oracle_goldengate_group.mis.extract_name }}
-    EXIT
-    EOF
+    cd {{ oracle_goldengate_scripts_dir }}
+    ./ogg_control.sh stop mis extract
   args:
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"

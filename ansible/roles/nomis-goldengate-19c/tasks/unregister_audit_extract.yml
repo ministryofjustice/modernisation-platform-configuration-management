@@ -3,6 +3,24 @@
 - name: Unregister AUDITDATA Extract process
   when: run_auditdata
   block:
+    # stop the extract process then unregister it from the database
+    - name: Stop AUDITDATA Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        cd {{ oracle_goldengate_scripts_dir }}
+        ./ogg_control.sh stop auditdata extract
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: stop_auditdata_extract
+      failed_when: false
+
     - name: Unregister AUDITDATA Extract process
       ansible.builtin.shell: |
         set -e
@@ -33,6 +51,24 @@
 - name: Unregister AUDITREF Extract process
   when: run_auditref
   block:
+    # stop the extract process then unregister it from the database
+    - name: Stop AUDITREF Extract process
+      ansible.builtin.shell: |
+        set -e
+        set -o pipefail
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null
+        cd {{ oracle_goldengate_scripts_dir }}
+        ./ogg_control.sh stop auditref extract
+      args:
+        executable: /bin/bash
+        chdir: "{{ oracle_goldengate_home }}"
+      environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+      become: yes
+      become_user: "{{ oracle_goldengate_owner }}"
+      register: stop_auditref_extract
+      failed_when: false
+
     - name: Unregister AUDITREF Extract process
       ansible.builtin.shell: |
         set -e
