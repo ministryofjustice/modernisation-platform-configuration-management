@@ -6,12 +6,10 @@
     - name: Set MIS Extract BEGIN clause
       ansible.builtin.set_fact:
         mis_begin_clause: >-
-          {% if oracle_goldengate_extract_start_mode == 'csn' and oracle_goldengate_extract_start_csn != '' %}
-          BEGIN CSN {{ oracle_goldengate_extract_start_csn }}
-          {% elif oracle_goldengate_extract_start_mode == 'scn' and oracle_goldengate_extract_start_scn != '' %}
-          BEGIN SCN {{ oracle_goldengate_extract_start_scn }}
+          {% if oracle_goldengate_extract_start_mode == 'scn' and oracle_goldengate_extract_start_scn != '' %}
+          SCN {{ oracle_goldengate_extract_start_scn }}
           {% elif oracle_goldengate_extract_start_mode == 'time' and oracle_goldengate_extract_start_time != '' %}
-          BEGIN TIME '{{ oracle_goldengate_extract_start_time }}'
+          BEGIN '{{ oracle_goldengate_extract_start_time }}'
           {% else %}
           BEGIN NOW
           {% endif %}

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide explains how to control when GoldenGate Extract processes begin processing redo logs. You can start from the current point (default), or from a specific point in time using CSN, SCN, or timestamp.
+This guide explains how to control when GoldenGate Extract processes begin processing redo logs. You can start from the current point (default), or from a specific point in time using SCN, or timestamp.
+
+The extracts must be stopped and unregistered before running a new registion task.
 
 ## Extract Start Options
 
@@ -11,7 +13,7 @@ Start processing from the current point in redo logs.
 
 ```bash
 # Default - no extra variables needed
-ansible-playbook site.yml --tags install-audit-extract
+ansible-playbook site.yml --tags register-audit-extract
 ```
 
 **When to use:**
@@ -19,21 +21,7 @@ ansible-playbook site.yml --tags install-audit-extract
 - Starting replication for the first time
 - Don't need historical data
 
-### 2. BEGIN CSN (Commit Sequence Number)
-Start processing from a specific commit sequence number.
-
-```bash
-ansible-playbook site.yml --tags install-audit-extract \
-  --extra-vars "oracle_goldengate_extract_start_mode=csn \
-                oracle_goldengate_extract_start_csn=123456789"
-```
-
-**When to use:**
-- Point-in-time recovery
-- Restarting after extract rebuild
-- Need to replay specific transactions
-
-### 3. BEGIN SCN (System Change Number)
+### 2. BEGIN SCN (System Change Number)
 Start processing from a specific system change number.
 
 ```bash
@@ -45,9 +33,8 @@ ansible-playbook site.yml --tags register-audit-extract \
 **When to use:**
 - Coordinating with database flashback
 - Matching a specific database backup SCN
-- More common than CSN for Oracle operations
 
-### 4. BEGIN TIME (Timestamp)
+### 3. BEGIN TIME (Timestamp)
 Start processing from a specific timestamp.
 
 ```bash
@@ -116,7 +103,7 @@ ansible-playbook site.yml --tags get-current-scn
 # Manual: ggsci> DELETE EXTRACT AUDDTEXT
 
 # Step 3: Re-register and add with SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_start_mode=scn \
                 oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \
@@ -129,7 +116,7 @@ ansible-playbook site.yml --tags goldengate-start
 ### Scenario 3: Rebuild Extract from Specific Point in Time
 ```bash
 # Use timestamp instead of SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_extract_start_mode=time \
                 oracle_goldengate_extract_start_time='2026-02-27 08:00:00'"
 ```
@@ -141,7 +128,7 @@ ansible-playbook site.yml --tags install-audit-extract \
 # Backup SCN: 987654321
 
 # Register and add extract from backup SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_start_mode=scn \
                 oracle_goldengate_start_scn=987654321 \
                 oracle_goldengate_extract_start_mode=scn \
@@ -151,21 +138,21 @@ ansible-playbook site.yml --tags install-audit-extract \
 ### Scenario 5: Different Start Points per Extract
 ```bash
 # Start AUDITDATA from specific SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "run_auditdata=true \
                 run_auditref=false \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=111111111"
 
 # Start AUDITREF from different SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "run_auditdata=false \
                 run_auditref=true \
                 oracle_goldengate_extract_start_mode=scn \
                 oracle_goldengate_extract_start_scn=222222222"
 
 # Start MIS from NOW
-ansible-playbook site.yml --tags install-mis-extract
+ansible-playbook site.yml --tags register-mis-extract
 ```
 
 ## Variables Reference
@@ -175,12 +162,8 @@ ansible-playbook site.yml --tags install-mis-extract
 ```yaml
 # ADD EXTRACT BEGIN clause control
 oracle_goldengate_extract_start_mode: "now"
-  # Options: now, csn, scn, time
+  # Options: now, scn, time
   # Default: now
-
-oracle_goldengate_extract_start_csn: ""
-  # CSN number (when mode=csn)
-  # Example: "123456789"
 
 oracle_goldengate_extract_start_scn: ""
   # SCN number (when mode=scn)
@@ -212,19 +195,13 @@ ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, BEGIN NOW
 ### With SCN
 ```sql
 REGISTER EXTRACT AUDDTEXT DATABASE SCN 123456789
-ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, BEGIN SCN 123456789
-```
-
-### With CSN
-```sql
-REGISTER EXTRACT AUDDTEXT DATABASE
-ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, BEGIN CSN 123456789
+ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, SCN 123456789
 ```
 
 ### With Timestamp
 ```sql
 REGISTER EXTRACT AUDDTEXT DATABASE
-ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, BEGIN TIME '2026-02-27 10:00:00'
+ADD EXTRACT AUDDTEXT, INTEGRATED TRANLOG, BEGIN '2026-02-27 10:00:00'
 ```
 
 ## Troubleshooting
@@ -282,8 +259,8 @@ If REGISTER fails with SCN:
 ## Related Tasks
 
 - `get-current-scn` - Get current SCN from databases
-- `install-audit-extract` - Install AUDITDATA and AUDITREF extracts
-- `install-mis-extract` - Install MIS extract
+- `register-audit-extract` - Install AUDITDATA and AUDITREF extracts
+- `register-mis-extract` - Install MIS extract
 - `goldengate-start` - Start extracts after registration
 - `goldengate-stop` - Stop extracts before rebuild
 
@@ -305,7 +282,7 @@ ansible-playbook site.yml --tags get-current-scn
 ansible-playbook site.yml --tags goldengate-stop
 
 # 4. Rebuild with SCN
-ansible-playbook site.yml --tags install-audit-extract \
+ansible-playbook site.yml --tags register-audit-extract \
   --extra-vars "oracle_goldengate_start_mode=scn \
                 oracle_goldengate_start_scn=123456789 \
                 oracle_goldengate_extract_start_mode=scn \
