@@ -1,0 +1,49 @@
+# Call the database procedure that will unregister the DML handlers for the Replicat processes, which is required for it to function correctly.
+- name: Unregister DML handlers for AuditData Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null
+    sqlplus / as sysdba << EOF
+    BEGIN
+      {{ oracle_goldengate_group.auditdata.schema_owner }}.AUDITDATA_DML_PKG.apply_dml_deconf;
+    END;
+    /
+    EXIT
+    EOF
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: unregister_dml_handlers
+  failed_when: unregister_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in unregister_dml_handlers.stdout
+  when: run_auditdata
+
+- name: Unregister DML handlers for MIS Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null
+    sqlplus / as sysdba << EOF
+    BEGIN
+      {{ oracle_goldengate_group.mis.schema_owner }}.MIS_DML_PKG.clear_apply_handlers (
+        p_tgt_owner => '{{ oracle_goldengate_group.mis.schema_owner }}');
+    END;
+    /
+    EXIT
+    EOF
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: unregister_dml_handlers
+  failed_when: unregister_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in unregister_dml_handlers.stdout
+  when: run_mis
+
+  

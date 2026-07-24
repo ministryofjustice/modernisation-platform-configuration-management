@@ -1,0 +1,48 @@
+---
+# Oracle does not purge foreign archived redo logs shipped to a downstream
+# integrated capture mining database.  A dedicated housekeeping script is
+# required.  Purge decisions are anchored to GoldenGate Extract recovery
+# checkpoints (via GGSCI INFO EXTRACT, DETAIL) rather than file age alone,
+# so logs are never removed before GoldenGate can no longer need them.
+# RMAN is used for the actual deletion; it handles ASM paths natively and
+# keeps control file metadata consistent.
+
+# if gg_home_exists is not defined, check the gg home directory exists and set to true if it does, else set to false
+- name: Check if Oracle GoldenGate is already installed
+  when: gg_home_exists is not defined
+  block:
+    - name: Check Oracle GoldenGate home installed
+      ansible.builtin.stat:
+        path: "{{ oracle_goldengate_home }}"
+      register: gg_home_stat
+
+    - name: Set gg_home_exists fact
+      ansible.builtin.set_fact:
+        gg_home_exists: "{{ gg_home_stat.stat.exists }}"
+
+- name: Deploy GoldenGate archivelog purge script
+  ansible.builtin.template:
+    src: purge_gg_archivelogs.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/purge_gg_archivelogs.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: gg_home_exists
+
+- name: Install GoldenGate MIS archivelog purge cron job
+  ansible.builtin.cron:
+    name: "Purge GoldenGate MIS foreign archived logs from ASM"
+    user: "{{ oracle_goldengate_owner }}"
+    minute: "0"
+    hour: "2"
+    job: "{{ oracle_goldengate_scripts_dir }}/purge_gg_archivelogs.sh {{ oracle_goldengate_group.mis.tns_alias }} >> {{ oracle_goldengate_log_dir }}/purge_archivelogs_cron.log 2>&1"
+  when: gg_home_exists and run_mis
+
+- name: Install GoldenGate AUDITDATA archivelog purge cron job
+  ansible.builtin.cron:
+    name: "Purge GoldenGate AUDITDATA foreign archived logs from ASM"
+    user: "{{ oracle_goldengate_owner }}"
+    minute: "0"
+    hour: "3"
+    job: "{{ oracle_goldengate_scripts_dir }}/purge_gg_archivelogs.sh {{ oracle_goldengate_group.auditdata.tns_alias }} >> {{ oracle_goldengate_log_dir }}/purge_archivelogs_cron.log 2>&1"
+  when: gg_home_exists and run_auditdata

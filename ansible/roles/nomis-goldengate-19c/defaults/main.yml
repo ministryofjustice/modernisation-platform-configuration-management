@@ -1,0 +1,159 @@
+---
+artefacts_s3_bucket_name: mod-platform-image-artefact-bucket20230203091453221500000001
+artefacts_s3_bucket_path: hmpps/oracle-goldengate-19c
+
+# This is version 19.1.0.0.4
+oracle_goldengate_software: V983658-01.zip
+oracle_opatch_software: p6880880_190000_Linux-x86-64.12.2.0.1.48.zip
+
+oracle_goldengate_software_patches:
+  ORA11g:
+    # 38781234 Oracle GoldenGate 19.30.0.0.260120 for Oracle 11g (Patchset)
+    #- p38781234_1930000OGGRU_Linux-x86-64.zip
+    # 39739998 Oracle GoldenGate 19.32.0.0.260721 for Oracle 11g(Patchset:Linux x86-64)
+    - p39739998_1932000OGGRU_Linux-x86-64.zip
+  ORA19c:
+    # 38781237 Oracle GoldenGate 19.30.0.0.260120 for Oracle 19c (Patchset)
+    #- p38781237_1930000OGGRU_Linux-x86-64.zip
+    # 39740001 Oracle GoldenGate 19.32.0.0.260721 for Oracle 19c(Patchset:Linux x86-64)
+    - p39740001_1932000OGGRU_Linux-x86-64.zip
+
+# Database (RDBMS Oracle Home) patches, as opposed to oracle_goldengate_software_patches which
+# are applied to the GoldenGate software home. These patches are applied to the mining databases'
+# Oracle Home (mis and aud) and typically also require a post-install SQL script to be run against
+# each mining database instance - see install_database_patches.yml.
+oracle_goldengate_database_patches:
+  ORA11g:
+    # 17030189 Needed in 11g Mining databases to support extended metadata for Integrated Capture with a trail format of RELEASE 12.2 or later.
+    - p17030189_11204230718_Generic.zip
+  ORA19c: []
+
+oracle_inventory: /u01/app/oraInventory
+oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"
+oracle19c_home: "/u01/app/oracle/product/19c/db_1"
+# This variable is set in the detect_ora_version.yml task and used to determine which Oracle home to use for GoldenGate installation and configuration. It is also used to determine which GoldenGate software patch to install based on the Oracle version.
+ora_version: ""
+  
+oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
+oracle_goldengate_software_dir: /u02/stage/goldengate
+
+# OS user/group for GoldenGate software (must already exist on host)
+oracle_goldengate_owner: oracle
+oracle_goldengate_osgroup: oinstall
+
+# Database user for GoldenGate replication (created in target databases)
+oracle_goldengate_dbuser: ggadmin
+
+# GoldenGate subdirectories under the home directory by default but trail and checkpoint directories can be overridden to point to different storage if needed
+oracle_goldengate_trail_dir: "{{ oracle_goldengate_home }}/dirdat"
+oracle_goldengate_param_dir: "{{ oracle_goldengate_home }}/dirprm"
+oracle_goldengate_report_dir: "{{ oracle_goldengate_home }}/dirrpt"
+oracle_goldengate_checkpoint_dir: "{{ oracle_goldengate_home }}/dirchk"
+oracle_goldengate_scripts_dir: "/home/oracle/admin/goldengate/scripts"
+oracle_goldengate_sql_dir: "/home/oracle/admin/goldengate/sql"
+oracle_goldengate_log_dir: "/home/oracle/admin/goldengate/logs"
+
+oracle_goldengate_directories:
+  - "{{ oracle_goldengate_trail_dir }}"
+  - "{{ oracle_goldengate_param_dir }}"
+  - "{{ oracle_goldengate_report_dir }}"
+  - "{{ oracle_goldengate_checkpoint_dir }}"
+  - "{{ oracle_goldengate_scripts_dir }}"
+  - "{{ oracle_goldengate_sql_dir }}"
+  - "{{ oracle_goldengate_log_dir }}"
+
+# Replicat checkpoint table that will be created in the mining database.
+checkpoint_table_name: "checkpoints"
+
+# Logical names for each group
+# (override via inventory/group vars using oracle_goldengate_group_overrides)
+oracle_goldengate_group_defaults:
+  source:
+    tns_alias: 
+    schema_owner: OMS_OWNER
+    credential_alias: SOURCE_DB
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
+  auditdata:
+    tns_alias: 
+    schema_owner: AUDITDATA
+    credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
+    extract_name: AUDDTEXT
+    replicat_name: AUDDTREP
+    trail_path: auditdata
+    trail_prefix: dt
+    etl_schema: ""
+    dummy_target_schema: AUDITDATA_OMS_OWNER
+  auditref:
+    tns_alias: 
+    schema_owner: AUDITREF
+    credential_alias: AUDIT_DB
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
+    extract_name: AUDRFEXT
+    replicat_name: AUDRFREP
+    trail_path: auditref
+    trail_prefix: rf
+    etl_schema: ""
+    dummy_target_schema: ""
+  mis:
+    tns_alias: 
+    schema_owner: BODISTAGING
+    credential_alias: MIS_DB
+    oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
+    extract_name: MISEXT
+    replicat_name: MISREP
+    trail_path: mis
+    trail_prefix: ms
+    etl_schema: BODIMIS
+    dummy_target_schema: ""
+  
+# Define which database instance is running on this host
+# This controls which GoldenGate components are deployed
+# If not set, will be automatically detected by checking running Oracle instances
+oracle_goldengate_local_db_sid: ""
+
+# Automatically determine which groups to run based on local database
+# AUDITDATA and AUDITREF are deployed on hosts running the audit database
+# MIS is deployed on hosts running the MIS database
+run_source: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.source.tns_alias }}"
+run_auditdata: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditdata.tns_alias }}"
+run_auditref: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.auditref.tns_alias }}"
+run_mis: "{{ oracle_goldengate_local_db_sid == oracle_goldengate_group.mis.tns_alias }}"
+
+# Extract start options - control when Extract begins processing
+# Mode options: now (default), csn, scn, time
+# - now: Start from current point in redo logs (BEGIN NOW)
+# - csn: Start from specific Commit Sequence Number (BEGIN CSN <number>)
+# - scn: Start from specific System Change Number (BEGIN SCN <number>)
+# - time: Start from specific timestamp (BEGIN TIME '<timestamp>')
+oracle_goldengate_extract_start_mode: "now"
+oracle_goldengate_extract_start_csn: ""
+oracle_goldengate_extract_start_scn: ""
+oracle_goldengate_extract_start_time: ""
+
+# REGISTER EXTRACT start options - control registration starting point
+# Mode options: current (default), scn
+# - current: Register from current point (no SCN clause)
+# - scn: Register from specific SCN (REGISTER ... SCN <number>)
+oracle_goldengate_start_mode: "current"
+oracle_goldengate_start_scn: ""
+
+# full path to the home directory
+gg_env:
+  GG_HOME: "{{ oracle_goldengate_home }}"
+  # if ora_version = ORA11g then use 11g home, else use 19c home
+  ORACLE_HOME: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
+  PATH: "${ORACLE_HOME}/bin:${GG_HOME}:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+
+# Number of hours to retain foreign archived logs after the oldest GoldenGate
+# Extract recovery checkpoint.  Logs are not deleted until GoldenGate has
+# moved its checkpoint beyond them AND this additional buffer has elapsed.
+# Increase this value if a longer window for manual recovery is needed.
+oracle_goldengate_archivelog_retention_hours: 72
+
+bash_profile: |
+  export GG_HOME={{ oracle_goldengate_home }}
+  export PATH=$GG_HOME:$PATH
+  export LD_LIBRARY_PATH=$GG_HOME:$ORACLE_HOME/lib
+  alias gg='cd $GG_HOME; ./ggsci'
+  alias cdgg='cd $GG_HOME'
