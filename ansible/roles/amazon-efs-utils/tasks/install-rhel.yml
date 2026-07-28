@@ -1,0 +1,12 @@
+---
+- name: Check if amazon-efs-utils is already installed
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Install amazon-efs-utils via official AWS script
+  when: "'amazon-efs-utils' not in ansible_facts.packages"
+  block:
+    - name: Execute AWS installer script
+      ansible.builtin.shell:
+        cmd: curl https://amazon-efs-utils.aws.com/efs-utils-installer.sh | sh -s -- --install
+      when: not ansible_check_mode
