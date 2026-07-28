@@ -406,6 +406,20 @@ gather_database_stats () {
 	info "DB post setup commands completed."
 }
 
+create_sqs_external_dir () {
+    info "Create sqs_external_dir started "
+    cat /dev/null > ${DB_SCRIPT_DIR}/create_sqs_external_dir.sql
+    echo "spool ${DB_SCRIPT_DIR}/create_sqs_external_dir.log" >> ${DB_SCRIPT_DIR}/create_sqs_external_dir.sql
+    echo "create or replace directory termination_sqs_messages as '/u01/sqsdeamon/PPOASYS/oasys-sqs/releases/7.9.1.0/SqsReceiveMessage/messages';" >> ${DB_SCRIPT_DIR}/create_sqs_external_dir.sql
+    echo "grant read,write,execute on directory termination_sqs_messages to EOR,EORAPP;" >> ${DB_SCRIPT_DIR}/create_sqs_external_dir.sql
+    echo "exit" >> ${DB_SCRIPT_DIR}/create_sqs_external_dir.sql
+
+    sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/create_sqs_external_dir.sql > /dev/null
+    [ $(grep ORA- ${DB_SCRIPT_DIR}/create_sqs_external_dir.log | grep ORA- | wc -l) -gt 0 ] && error "Post steps create_sqs_external_dir failed."
+    info "Create sqs_external_dir completed."
+}
+
+
 ####################
 # Main
 ####################
@@ -452,3 +466,4 @@ switch_ords_roles
 restart_db
 create_restore_point
 gather_database_stats
+create_sqs_external_dir
