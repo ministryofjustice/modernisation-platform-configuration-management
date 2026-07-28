@@ -10,7 +10,7 @@ For cloudwatch monitoring, ensure `collectd-textfile-monitoring` role is include
 Metrics will appear in `CWAgent/InstanceId,type,type_instance` where the
 type_instance metric dimension is set to the value of `metric_dimension` variable.
 
-## Mount EFS file shares
+## Mount EFS file shares without helper
 
 In appropriate `group_vars`, define `filesystem_mount`
 
@@ -32,6 +32,21 @@ filesystems_mount:
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "eu-west-2a.fs-0a170471eea499c2c.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: fs-0a170471eea499c2c
+```
+
+## Mount EFS file shares with helper
+
+Pre-requisite: install amazon-efs-utils
+Pre-requisite: EFS has access point
+
+In appropriate `group_vars`, define `filesystem_mount`
+
+```
+filesystems_mount:
+  - dir: /test
+    fstype: efs
+    opts: n_netdev,tls,accesspoint=fsap-0e208db689f7745ea,nofail
+    src: "fs-0a170471eea499c2c"
 ```
 
 ## Mount FSX windows file shares
