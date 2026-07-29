@@ -1,0 +1,22 @@
+---
+
+# Enable Block Change Tracking After Upgrade
+- name: Check if BCT is Enabled
+  
+  environment: "{{ oracle19c_env }}"
+  become: true
+  become_user: oracle
+  script: get_bct_status.sh
+  changed_when: false
+  register: get_bct_status
+
+# Only enable BCT on Primary 
+- name: Enable BCT
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: toggle_bct.sh enable
+  when:
+     - (get_bct_status.stdout_lines | join(' ')) is search('.*DISABLED.*')
+     - database_role == "primary"
+

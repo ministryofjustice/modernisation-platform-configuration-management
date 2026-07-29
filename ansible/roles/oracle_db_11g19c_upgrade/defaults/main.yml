@@ -1,0 +1,26 @@
+---
+
+oracle_database_11g_oracle_home: /u01/app/oracle/product/11.2.0.4/db_1
+oracle_database_19c_oracle_home: /u01/app/oracle/product/19c/db_1
+oracle_database_19c_grid_home: /u01/app/oracle/product/19c/gridhome_1
+oracle_agent_home: /u01/app/oracle/product/oem-agent/GoldImage_gold_image_v1/agent_13.5.0.0.0
+
+emcli: "/u01/app/oracle/middleware/bin/emcli"
+emctl: "/u01/app/oracle/product/oem-agent/GoldImage_gold_image_v1/agent_13.5.0.0.0/bin/emctl"
+oem_host: "{{ groups['oem_primarydb'] | join('') }}"
+
+oracle11g_env:
+  ORACLE_HOME: "{{ oracle_database_11g_oracle_home }}"
+  ORACLE_SID: "{{ db_name }}"
+  ORACLE_BASE: "/u01/app/oracle"
+  db_name: "{{ db_name }}"
+  PATH: "{{ oracle_database_11g_oracle_home }}/bin:/usr/bin:/bin"
+
+
+oracle19c_env:
+  ORACLE_HOME: "{{ oracle_database_19c_oracle_home }}"
+  ORACLE_SID: "{{ db_name }}"
+  ORACLE_BASE: "/u01/app/oracle"
+  db_name: "{{ db_name }}"
+  PATH: "{{ oracle_database_19c_oracle_home }}/bin:/usr/bin:/bin"
+  

@@ -1,0 +1,78 @@
+---
+
+# Get Current Timezone Version
+- name: Get Current Timezone Version
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: get_timezone_version.sh
+  register: get_timezone_version
+  changed_when: false
+
+- name: Set Current Timezone Version
+  set_fact:
+     current_timezone_version: "{{ get_timezone_version.stdout | int }}"
+
+# Get Latest Timezone Version
+- name: Get Latest Timezone Version
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: get_latest_timezone_version.sh
+  register: get_latest_timezone_version
+  changed_when: false
+
+- name: Set Latest Timezone Version
+  set_fact:
+     latest_timezone_version: "{{ get_latest_timezone_version.stdout | int }}"
+
+- name: Show Timezone Information
+  debug:
+     msg: "Current Timezone Version:  {{ current_timezone_version }};  Latest Timezone Version:  {{ latest_timezone_version }}"
+
+- name: Update Timezone Version
+  block:
+
+     - name: Prepare Timezone update
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: prepare_upgrade_timezone.sh "{{ latest_timezone_version }}"
+     
+     - name: Restart Database in Upgrade Mode
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: startup_database_upgrade.sh
+
+     - name: Begin Timezone Upgrade
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: begin_timezone_upgrade.sh
+    
+     - name: Shutdown Database
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: stop_database.sh
+
+     - name: Startup Database
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: start_database.sh
+
+     - name: Run Upgrade Timezone
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: run_upgrade_timezone.sh
+
+     - name: Wait for Timezone Upgrade
+       become: true
+       become_user: oracle
+       environment: "{{ oracle19c_env }}"
+       script: wait_for_timezone_upgrade.sh 
+    
+  when: current_timezone_version < latest_timezone_version

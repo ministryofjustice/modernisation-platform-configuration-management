@@ -1,0 +1,224 @@
+---
+
+- name: Oracle environment from oratab (database role)
+  shell: "awk -F: '$1 == \"{{ db_name }}\" { print $2; exit }' /etc/oratab"
+  register: oratab_oracle_home_db_role
+  changed_when: false
+  failed_when: (oratab_oracle_home_db_role.stdout | trim) == ""
+  tags:
+    - always
+
+- name: Set runtime Oracle environment (database role)
+  set_fact:
+    oracle_runtime_env_db_role:
+      ORACLE_HOME: "{{ oratab_oracle_home_db_role.stdout | trim }}"
+      ORACLE_SID: "{{ db_name }}"
+      ORACLE_BASE: "/u01/app/oracle"
+      db_name: "{{ db_name }}"
+      PATH: "{{ (oratab_oracle_home_db_role.stdout | trim) }}/bin:/usr/bin:/bin"
+  tags:
+    - always
+
+- name: Get database role
+  script: get_db_role.sh 
+  register: db_role_result
+  changed_when: false
+  become: true
+  become_user: oracle
+  environment: "{{ oracle_runtime_env_db_role }}"
+  tags:
+    - always
+
+- name: Set database_role fact
+  set_fact:
+    database_role: "{{ db_role_result.stdout | default('') | trim }}"
+  tags:
+    - always
+  
+- name: Debug db_role_result
+  debug:
+    var: db_role_result
+  tags:
+    - always
+ 
+# Check if this environment is configured with Dataguard Broker
+- name: Check if DG Configuration is Enabled
+  script: get_dg_configuration_status.sh
+  register: get_dg_configuration_status
+  changed_when: false
+  failed_when:
+    - "'ORA-01034' in get_dg_configuration_status.stdout"
+  become: true
+  become_user: oracle
+  environment: "{{ oracle11g_env }}"
+  tags:
+    - disabledg
+    - dataguard
+    - preflight
+
+- name: Set Dataguard Broker Status
+  set_fact:
+    dataguard_broker: >-
+      {{ not ((get_dg_configuration_status.stdout | default('')) is search('ORA-16525')) }}
+  tags:
+    - disabledg
+    - dataguard
+    - preflight
+
+- name: Debug database_broker
+  debug:
+    msg: "Dataguard broker enabled: {{ dataguard_broker }}"
+  tags:
+    - disabledg
+    - dataguard
+    - preflight
+
+- name: Refresh runtime Oracle environment from oratab (database version)
+  shell: "awk -F: '$1 == \"{{ db_name }}\" { print $2; exit }' /etc/oratab"
+  register: oratab_oracle_home_db_version
+  changed_when: false
+  failed_when: (oratab_oracle_home_db_version.stdout | trim) == ""
+  tags:
+    - always
+
+- name: Set runtime Oracle environment (database version)
+  set_fact:
+    oracle_runtime_env_db_version:
+      ORACLE_HOME: "{{ oratab_oracle_home_db_version.stdout | trim }}"
+      ORACLE_SID: "{{ db_name }}"
+      ORACLE_BASE: "/u01/app/oracle"
+      db_name: "{{ db_name }}"
+      PATH: "{{ (oratab_oracle_home_db_version.stdout | trim) }}/bin:/usr/bin:/bin"
+  tags:
+    - always
+
+- name: Get Current Database Version
+  become: true
+  become_user: oracle
+  environment: "{{ oracle_runtime_env_db_version }}"
+  shell: |
+    sqlplus -s / as sysdba <<EOF
+    set pages 0
+    set feedback off
+    set heading off
+    set verify off
+    select version from v\$instance;
+    exit;
+    EOF
+  changed_when: false
+  register: get_database_version
+  tags:
+    - always
+
+- name: Set Oracle Database Version
+  set_fact:
+    dbversion: "{{ get_database_version.stdout | trim }}"
+  tags:
+    - always
+ 
+
+- name: Show Current Database Version
+  debug:
+    msg: "Database version is {{ dbversion }}"
+  tags:
+    - always
+
+- name: Execute database upgrade
+  become: true
+  become_user: oracle
+  environment: "{{ oracle11g_env }}"
+  block:
+    - name: Run Pre-Upgrade Actions on Primary
+      include_tasks:
+        file: run_preupgrade_actions.yml
+        apply:
+          tags:
+            - preupgrade
+            - preparation
+      when: database_role | upper == "PRIMARY"
+      tags:
+        - preupgrade
+        - preparation
+
+    - name: Run Pre-Upgrade Check on Primary
+      include_tasks:
+        file: run_preupgrade_check.yml
+        apply:
+          tags:
+            - precheck
+            - validation
+      when: database_role | upper == "PRIMARY"
+      tags:
+        - precheck
+        - validation
+
+    - name: Disable Data Guard Broker
+      include_tasks:
+        file: disable_dataguard_broker11g.yml
+        apply:
+          tags:
+            - dataguard
+            - disabledg
+      when: dataguard_broker | bool
+      tags:
+        - dataguard
+        - disabledg
+
+    - name: Run Upgrade
+      include_tasks:
+        file: run_upgrade_actions.yml
+        apply:
+          tags:
+            - upgrade
+            - execute
+      when: dbversion is version('19.0.0.0', '<')
+      tags:
+        - upgrade
+        - execute
+  tags:
+    - upgrade_flow
+
+
+- name: Update Listener Configuration
+  include_tasks:
+    file: update_listener.yml
+    apply:
+      tags:
+        - listener
+        - networking
+  tags:
+    - listener
+    - networking
+
+- name: Post Upgrade Actions
+  include_tasks:
+    file: run_postupgrade_actions.yml
+    apply:
+      tags:
+        - postupgrade
+        - stabilization
+  tags:
+    - always
+    - postupgrade
+    - stabilization
+
+ #- name: Enable Data Guard Broker
+  # include_tasks: enable_dataguard_broker.yml
+  # when: dataguard_broker | bool
+ # tags: enabledg
+
+# Update OEM Configuration
+ # - name: Update Agent Targets
+  #  include_tasks: update_agent_targets.yml
+  #  tags: updateagent
+
+
+
+ 
+
+
+
+
+
+
+ 

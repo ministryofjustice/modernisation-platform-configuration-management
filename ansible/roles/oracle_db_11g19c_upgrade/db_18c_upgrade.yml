@@ -1,0 +1,12 @@
+---
+- hosts: "{{ target_hosts }}"
+  gather_facts: false
+  become: true
+  become_user: oracle
+  max_fail_percentage: 0
+  any_errors_fatal: true
+  roles:
+     - role: db_18c_upgrade
+       tags:
+         - upgrade_11g19c
+         - db_upgrade

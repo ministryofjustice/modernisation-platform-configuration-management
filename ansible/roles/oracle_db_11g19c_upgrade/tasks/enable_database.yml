@@ -1,0 +1,14 @@
+---
+
+- name: Get Database Enabled Status
+  shell: |
+         . ~/.bash_profile
+         srvctl config database -d {{ database_primary_sid | default(database_standby_sid) }} -a | egrep -E "Database is .*abled"
+  register: database_enabled
+  changed_when: false
+
+- name: Enable Database
+  shell: |
+         . ~/.bash_profile
+         srvctl enable database -d {{ database_primary_sid | default(database_standby_sid) }}
+  when: database_enabled.stdout is search("Database is disabled")

@@ -1,0 +1,33 @@
+---
+
+# ACL format changes in 18c so backup existing ACLs in case there
+# is any problem with the automatic conversion
+- name: Define Backup Directory for ACLs
+  set_fact:
+      acl_backup_dir: /u02/stage/{{ db_name }}/acl_backup
+  tags: 
+  - preactions
+  - acl
+- name: Create Backup Directory for ACLs
+  file:
+     path: "{{ acl_backup_dir }}"
+     state: directory
+  tags: 
+  - preactions
+  - acl
+
+- name: Copy ACL Backup Script
+  copy:
+    src: backup_acls.sql
+    dest: "{{ acl_backup_dir }}/backup_acls.sql"
+  tags: 
+  - preactions
+  - acl
+
+- name: Run ACL Backup Script
+  environment: "{{ oracle11g_env }}"
+  script: run_backup_acls.sh 
+  tags: 
+  - preactions
+  - acl
+

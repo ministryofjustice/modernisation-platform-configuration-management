@@ -1,0 +1,17 @@
+---
+- name: Check if CATNOEXF exists
+  environment: "{{ oracle11g_env }}"
+  script: check_catnoexf.sh
+  register: catnoexf_check
+  changed_when: false
+  failed_when: >
+    catnoexf_check.rc != 0 and
+    'PRESENT' not in (catnoexf_check.stdout | default('')) and
+    'ABSENT' not in (catnoexf_check.stdout | default(''))
+
+- name: Remove CATNOEXF if present
+  environment: "{{ oracle11g_env }}"
+  script: run_catnoexf.sh
+  when: "'PRESENT' in (catnoexf_check.stdout | default(''))"
+
+

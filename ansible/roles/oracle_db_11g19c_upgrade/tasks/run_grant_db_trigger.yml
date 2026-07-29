@@ -1,0 +1,25 @@
+---
+
+# grant db trigger
+
+- name: Define Backup Directory for trigger sql script
+  set_fact:
+     backup_dir: /u02/stage/{{ db_name }}/
+  tags: 
+  - preactions
+  - dbtrigger
+- name: Create Backup Directory
+  file:
+     path: "{{ backup_dir }}"
+     state: directory
+  tags: 
+  - preactions
+  - dbtrigger
+
+- name: Run grant dbtrigger  script
+  environment: "{{ oracle11g_env }}"
+  script: run_grant_db_triggger.sh
+  tags: 
+  - preactions
+  - dbtrigger
+

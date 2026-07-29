@@ -1,0 +1,36 @@
+---
+
+# Configure the 19c Home Ready for Upgrade
+- name: Copy the Password File
+  copy:
+    src: "{{ oracle_database_11g_oracle_home }}/dbs/orapw{{db_name}}"
+    dest: "{{ oracle_database_19c_oracle_home }}/dbs"
+    remote_src: true
+  tags: configure19c
+
+- name: Copy the Initialization File
+  copy:
+    src: "{{ oracle_database_11g_oracle_home }}/dbs/init{{db_name}}.ora"
+    dest: "{{ oracle_database_19c_oracle_home }}/dbs"
+    remote_src: true
+  tags: configure19c 
+
+- name: Check if tnsnames.ora is present
+  stat:
+     path: "{{ oracle_database_11g_oracle_home }}/network/admin/tnsnames.ora"
+  register: tnsnames
+  tags: configure19c
+
+- name: Copy the TNSNAMES File
+  copy:
+    src: "{{ oracle_database_11g_oracle_home }}/network/admin/tnsnames.ora"
+    dest: "{{ oracle_database_19c_oracle_home }}/network/admin"
+    remote_src: true
+  when: tnsnames.stat.exists
+  tags: configure19c
+
+
+
+
+
+

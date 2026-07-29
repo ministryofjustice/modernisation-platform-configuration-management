@@ -1,0 +1,25 @@
+---
+
+ - name: Check if EM exists
+   script: check_emconsole.sh
+   environment: "{{ oracle11g_env }}"
+   register: em_check
+   changed_when: false
+   failed_when: >
+     em_check.rc != 0 and
+     'PRESENT' not in (em_check.stdout | default('')) and
+     'ABSENT' not in (em_check.stdout | default(''))
+
+ - name: Copy emremove.sql
+   copy:
+     src: "{{ oracle_database_19c_oracle_home }}/rdbms/admin/emremove.sql"
+     dest: "{{ oracle_database_11g_oracle_home }}/rdbms/admin/emremove.sql"
+     remote_src: yes
+   when: "'PRESENT' in em_check.stdout"
+
+ - name: Remove EM
+   script: remove_emconsole.sh
+   environment: "{{ oracle11g_env }}"
+   when: "'PRESENT' in em_check.stdout"
+
+

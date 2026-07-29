@@ -1,0 +1,33 @@
+---
+
+- name: Get Current Database Compatibility
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script:  get_db_compatibility.sh
+  register: get_db_compatibility
+  changed_when: false
+
+# Update DB Compatibility
+- name: Update DB Compatibility and Restart
+  block:
+
+      - name: Set Database Compatibility
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: set_db_compatibility.sh
+
+      - name: Restart Database to Adjust Compatibility
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: stop_database.sh
+
+      - name: Restart Database
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: start_database.sh
+
+  # when: not ((get_db_compatibility.stdout | join(' ')) is search('.*19*'))

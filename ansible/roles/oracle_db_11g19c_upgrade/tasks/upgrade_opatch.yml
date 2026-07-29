@@ -1,0 +1,46 @@
+---
+
+# OPatch Upgrade
+- name: Get Version of OPatch
+  shell: |
+         {{ oracle_database_18c_oracle_home }}/OPatch/opatch version | grep 'OPatch Version:' | awk '{print $NF}'
+  register: getopatchversion
+  changed_when: false
+
+- name: Set Version of OPatch
+  set_fact:
+     opatchversion: "{{ getopatchversion.stdout }}"
+
+- name: Default Version of OPatch
+  set_fact:
+     opatchversion: "11.2.0.4"
+  when: opatchversion == ""
+
+- name: Show OPatch version
+  debug: var=opatchversion
+
+- name: Upgrade OPatch
+  block:
+
+      - name: Check if Old OPatch Already Exists
+        stat: 
+          path: "{{ oracle_database_18c_oracle_home }}/OPatch.orig"
+        register: oldopatch
+
+      - name: Move old Opatch out of the way
+        shell: mv {{ oracle_database_18c_oracle_home }}/OPatch /{{ oracle_database_18c_oracle_home }}/OPatch.orig
+        when: oldopatch.stat.exists == false
+ 
+      - name: Download Oracle OPatch Upgrade
+        shell: 'aws s3 cp s3://{{ dependencies_bucket_name }}/dependencies/oracle/rdbms/{{ opatch_zip }} {{ oracle_18c_patch_directory }}'
+        args:
+          creates: "{{ oracle_18c_patch_directory }}/{{ opatch_zip }}"
+
+      - name: Unzip new OPatch utility
+        unarchive:
+          src: "{{ oracle_18c_patch_directory }}/{{ opatch_zip }}"
+          dest: "{{ oracle_database_18c_oracle_home }}"
+          remote_src: yes
+        
+  when: opatchversion is version('18.0.0.0','<')  
+   

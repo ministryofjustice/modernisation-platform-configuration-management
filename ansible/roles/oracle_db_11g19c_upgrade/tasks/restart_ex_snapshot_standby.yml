@@ -1,0 +1,102 @@
+---
+
+# If this standby database was previously a snapshot standby
+# it will still be running in the old database home.
+
+# Sometimes we can see the database mount option set incorrectly as read only
+# even after the database has been converted back from snapshot to physical standby
+- name: Ensure this database now has MOUNT as the start option
+  shell: |
+       . ~/.bash_profile
+       srvctl modify database -d {{ database_standby_sid }} -startoption mount
+
+# Ensure the role is physical standby (no longer snapshot standby); as we did not
+# use DG broker to run the conversion we must set this explicitly
+- name: Ensure this database is PHYSICAL STANDBY
+  shell: |
+       . ~/.bash_profile
+       srvctl modify database -d {{ database_standby_sid }} -role PHYSICAL_STANDBY
+
+# Restart in the new database home and set compatibility
+- name: Restart Database
+  script: startup_database_ex_snapshot.sh
+
+- name: Enable Dataguard Broker
+  script: toggle_dg_broker.sh TRUE
+
+- name: Set Database Compatibility
+  script: set_db_compatibility.sh
+
+- name: Restart Database with 18c Compatibility
+  script: startup_database_ex_snapshot.sh
+
+# Now add the database back into Data Guard broker on primary
+- name: Find the name of the Primary Host Group
+  set_fact:
+      primary_host_group: "{{ group_names | select('match','.*_standbydb\\d+') | list | first | regex_replace('^(.*)_standbydb\\d+', '\\1_primarydb') }}"
+
+# Now get the primary Hostname
+- name: Get Hostname of Primary
+  set_fact:
+      primary_host: "{{ groups[primary_host_group][0] }}"
+
+# Get broker status for the primary
+- name: Get DG Broker Status
+  script: get_dg_broker_status.sh
+  changed_when: false
+  register: get_dg_broker_status
+  delegate_to: "{{ primary_host }}"
+
+# Restart primary broker if required
+- name: Start DG Broker
+  script: toggle_dg_broker.sh true
+  when: get_dg_broker_status.stdout is search('FALSE')
+  delegate_to: "{{ primary_host }}"
+
+# Retry this as it sometimes takes a while for the broker to start
+- name: Check if DG Configuration is Enabled
+  script: get_dg_configuration_status.sh
+  changed_when: false
+  register: get_dg_configuration_status
+  retries: 10
+  delay: 6
+  until: not (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*ORA-16525.*')
+  delegate_to: "{{ primary_host }}"
+  
+- name: Enable DG Configuration
+  script: toggle_dg_configuration.sh enable
+  when: (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*Configuration Status:\\s+DISABLED.*')
+  delegate_to: "{{ primary_host }}"
+
+# Check if the former Snapshot Standby Database is still in the Dataguard broker configuration
+# (It should have been removed during the previous upgrade job but check this just in case)
+- name: Determine if a Snapshot Standby exists in Dataguard Configuration
+  script: get_snapshot_db_name.sh
+  register: get_snapshot_db_name
+  delegate_to: "{{ primary_host }}"
+
+# Remove the former Snapshot Standby database from Dataguard broker configuration if it has
+# been left in there by a problem earlier
+- name: Remove Snapshot Standby from Dataguard Configuration
+  script: remove_snapshot_standby_from_dg.sh "{{ get_snapshot_db_name.stdout }}"
+  delegate_to: "{{ primary_host }}"
+  when: get_snapshot_db_name | default('') | length > 1
+
+# Add the former Snapshot Standby Database back into the Dataguard broker configuration
+- name: Add Database to Dataguard Broker Configuration
+  script: add_db_to_dg_config.sh {{ database_standby_sid }}
+  delegate_to: "{{ primary_host }}"
+
+# Wait for the apply lag to drop back to zero
+# We do not strictly need to wait for this but we can get errors opening the database read only
+# if the redo from the upgrade has not yet come through so it is safest to wait here until
+# everything is up to date.
+- name: Wait for Standby to Catch Up redo
+  script: get_db_apply_lag.sh
+  changed_when: false
+  register: get_db_apply_lag
+  retries: 100
+  delay: 10
+  until: get_db_apply_lag.stdout | int == 0
+  delegate_to: "{{ primary_host }}"
+

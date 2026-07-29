@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+
+POSTINSTALL=$1
+
+sqlplus -s /  as sysdba <<EOF
+SET LINES 1000
+SET PAGES 0
+SET FEEDBACK OFF
+SET HEADING OFF
+@${POSTINSTALL}
+EXIT
+EOF

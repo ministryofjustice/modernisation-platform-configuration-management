@@ -1,0 +1,15 @@
+---
+
+- name: Check if APEX exists
+  script: check_apex.sh
+  environment: "{{ oracle11g_env }}"
+  register: apex_check
+  changed_when: false
+  failed_when: false
+
+- name: Remove APEX if present
+  environment: "{{ oracle11g_env }}"
+  script: remove_apex.sh
+  when: "'PRESENT' in apex_check.stdout"
+
+

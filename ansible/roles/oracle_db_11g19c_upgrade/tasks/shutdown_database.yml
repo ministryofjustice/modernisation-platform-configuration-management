@@ -1,0 +1,22 @@
+---
+
+- name: Get Database Status
+  shell: |
+         . ~/.bash_profile
+         srvctl status database -d {{ database_primary_sid | default(database_standby_sid) }}
+  register: database_status
+  changed_when: false
+
+- name: Report Database Status
+  debug: var=database_status.stdout
+
+# Ignore error if database is already shutdown (PRCC-1016)
+- name: Shutdown Database
+  shell: |
+         . ~/.bash_profile
+         srvctl stop database -d {{ database_primary_sid | default(database_standby_sid) }}
+  when: not database_status.stdout is search("Database is not running.")
+  register: stop_database
+  failed_when:
+      - stop_database.rc > 0
+      - not stop_database.stdout is search("PRCC-1016")

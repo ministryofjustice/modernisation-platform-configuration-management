@@ -1,0 +1,109 @@
+---
+
+- name: Set Location for Pre Upgrade Check Output file
+  set_fact:
+     preupgrade_directory: /u01/app/oracle/admin/{{ db_name }}/preupgrade
+  tags:
+    - precheck
+    - filesystem
+
+- name: Create Location for Pre Upgrade Check Output file
+  file:
+     path: "{{ preupgrade_directory }}"
+     state: directory
+  tags:
+    - precheck
+    - filesystem
+  
+# Run Pre-Upgrade Check
+- name: Run Pre-Upgrade Check
+  environment: "{{ oracle11g_env }}"
+  shell: |
+         {{ oracle_database_11g_oracle_home }}/jdk/bin/java -jar {{ oracle_database_19c_oracle_home }}/rdbms/admin/preupgrade.jar FILE TEXT DIR  {{ preupgrade_directory }}
+  tags:
+    - precheck
+    - execute
+
+- name: Get Oracle Component Section
+  shell: |
+         awk '/Oracle Component/{insection=1}
+              /^BEFORE UPGRADE/{insection=0}
+              {if(insection==1){print $0}}' {{ preupgrade_directory }}/preupgrade.log
+  register: oracle_component
+  changed_when: false
+  tags:
+    - precheck
+    - analysis
+
+- name: Report Oracle Components
+  debug: var=oracle_component.stdout_lines
+  tags:
+    - precheck
+    - analysis
+    - debug
+
+# - name: Fail if Invalid Oracle Components Exist
+ #  assert:
+ #    that:  "{{ ( oracle_component.stdout_lines
+ #                | select('match','.*\\s+INVALID.*') 
+ #                 | list | length ) == 0 }}"
+
+- name: Get Required Actions Section
+  shell: |
+         awk '/^BEFORE UPGRADE/{beforeupgrade=1}
+              /REQUIRED ACTIONS/{if(beforeupgrade==1){insection=1;beforeupgrade=0}}
+              /RECOMMENDED ACTIONS/{insection=0}
+              /INFORMATION ONLY/{insection=0}
+              {if(insection==1){print $0}}' {{ preupgrade_directory }}/preupgrade.log
+  register: required_actions
+  changed_when: false
+  tags:
+    - precheck
+    - analysis
+
+- name: Report Required Actions
+  debug: var=required_actions.stdout_lines
+  tags:
+    - precheck
+    - analysis
+    - debug
+
+- name: Fail if Outstanding Required Actions are Not None
+  assert:
+    that:  "{{ ( required_actions.stdout_lines
+                | select('match','\\s+\\d+\\.*') 
+                | list | length ) == 0 }}"
+  tags:
+    - precheck
+    - gate
+
+- name: Get Recommended Actions Section
+  shell: |
+         awk '/^BEFORE UPGRADE/{beforeupgrade=1}
+              /^AFTER UPGRADE/{beforeupgrade=0;insection=0}
+              /RECOMMENDED ACTIONS/{if(beforeupgrade==1){insection=1;beforeupgrade=0}}
+              /INFORMATION ONLY/{insection=0}
+              {if(insection==1){print $0}}' {{ preupgrade_directory }}/preupgrade.log
+  register: recommended_actions
+  changed_when: false
+  tags:
+    - precheck
+    - analysis
+
+- name: Report Recommended Actions
+  debug: var=recommended_actions.stdout_lines
+  tags:
+    - precheck
+    - analysis
+    - debug
+
+# Ignore warning about backing up ACLs as we have already done this previously
+- name: Fail if Outstanding Recommended Actions
+  assert:
+    that:  "{{ ( recommended_actions.stdout_lines
+                | select('match','\\s+\\d+\\.*')      
+                | select('match','\\s+\\d+\\.\\s+((?!Backup the existing ACLs and their assignments for reference\\. Use the new).)*$')   
+                | list | length ) == 0 }}"
+  tags:
+    - precheck
+    - gate

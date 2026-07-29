@@ -1,0 +1,44 @@
+---
+
+# Disable the Data Guard Broker for Upgrade
+- name: Check if DG Configuration is Enabled
+  script: get_dg_configuration_status.sh
+  changed_when: false
+  register: get_dg_configuration_status
+
+- name: Disable DG Configuration
+  script: toggle_dg_configuration.sh disable
+  when: (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*Configuration Status:\\s+SUCCESS.*')
+
+- name: Get DG Broker Status
+  script: get_dg_broker_status.sh
+  changed_when: false
+  register: get_dg_broker_status
+
+- name: Stop DG Broker
+  script: toggle_dg_broker.sh false
+  when: get_dg_broker_status.stdout is search('TRUE')
+
+- name: Define Backup Directory for DG Broker Configuration Files
+  set_fact:
+     dgbroker_backup_dir: /u01/app/oracle/admin/{{ db_name }}/dgbroker_backup
+
+- name: Create Backup Directory for DG Broker Configuration Files
+  file:
+     path: "{{ dgbroker_backup_dir }}"
+     state: directory
+
+- name: Get Status of DG Broker Backup File 1
+  stat:
+     path: "{{ dgbroker_backup_dir }}/dg_broker1.dat"
+  register: dg_broker1
+
+- name: Get Status of DG Broker Backup File 2
+  stat:
+     path: "{{ dgbroker_backup_dir }}/dg_broker2.dat"
+  register: dg_broker2
+
+- name: Backup DG Configuration
+  script: backup_dg_configuration.sh "{{ dgbroker_backup_dir }}"
+  when: not (dg_broker1.stat.exists) or not (dg_broker2.stat.exists)
+

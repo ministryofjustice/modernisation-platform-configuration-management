@@ -1,0 +1,219 @@
+---
+
+# We start by determining the lifecycle status for the new 18c targets we are going to create.   This will be the same as the lifecycle status of
+# the existing 11g targets that they are due to replace.
+- name: Generate Command to List Existing Target Properties
+  shell: |
+    set -o pipefail
+    . ~/.bash_profile
+    {{ emctl }} config agent listtargets | egrep  -e '\[.*\]' | sed 's/^\[//' | sed 's/\]$//' | awk -F, '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+  register: existing_target_properties
+  changed_when: false
+  args:
+    executable: /bin/bash
+
+# We determine existing lifecycle status based on the most commonly used status for all existing targets on the host
+- name: Generate Command to Get Existing Lifecycle Status
+  set_fact:
+     get_lifecycle_status: "({{ existing_target_properties.stdout }}) | grep orcl_gtp_lifecycle_status | uniq -c | sort -n -k1 | head -1 | awk '{print $NF}'"
+
+- name: Get sysman password from ssm parameter store
+  shell: . /etc/environment && aws ssm get-parameters --region ${REGION} --with-decryption --name /${HMPPS_ENVIRONMENT}/${APPLICATION}/oem-database/db/oradb_sysman_password | jq -r '.Parameters[].Value'
+  register: sysman_output
+  delegate_to: "{{ oem_host }}"
+  changed_when: false
+  no_log: true
+  args:
+    executable: /bin/bash
+
+- name: Set fact for sysman password to be used elsewhere
+  set_fact:
+    sysman_password: "{{ sysman_output.stdout }}"
+  no_log: true
+
+- name: Get the Lifecycle Status
+  shell: |
+    set -o pipefail
+    . ~/.bash_profile
+    {{ emcli }} login -username=sysman -password=${SYSMAN_PASSWORD} -force 1>&2
+    {{ emcli }} sync 1>&2
+    {{ get_lifecycle_status }}
+  register: get_lifecycle_status 
+  delegate_to: "{{ oem_host }}"
+  changed_when: false
+  environment:
+     SYSMAN_PASSWORD: "{{ sysman_password }}"
+  no_log: true
+  args:
+    executable: /bin/bash
+
+- name: Set lifecycle status
+  set_fact:
+    lifecycle_status: "{{ get_lifecycle_status.stdout_lines[-1] | default('unknown') }}"
+
+# Fallback to Hard-Coded Lifecycle Status if we cannot find the current one from existing targets.
+# This may happen if the 11g targets have already been deleted or did not have a lifecycle status assigned to them.
+- name: Set fact lifecycle status
+  block:
+
+    - set_fact: lifecycle_status="Development"
+      when: inventory_dir is search("dev")
+
+    - set_fact: lifecycle_status="Test"
+      when: inventory_dir is search("sandpit|test|training|int")
+
+    - set_fact: lifecycle_status="Production"
+      when: inventory_dir is search("pre-prod|perf")
+  
+    - set_fact: lifecycle_status="Stage"
+      when: inventory_dir is search("stage")
+
+    - set_fact: lifecycle_status="MissionCritical"
+      when:  inventory_dir is search("delius-prod")
+
+  when: 
+     - inventory_dir is search("hmpps-env-configs")
+     - lifecycle_status == 'unknown'
+
+- name: Show Lifecycle Status
+  debug: var=lifecycle_status
+
+- name: Set target host name fact 
+  set_fact:
+    hostname: "{{ hostvars[inventory_hostname]['inventory_hostname'] }}"
+
+    
+#########################################################
+#
+# (1)  ORACLE HOME TARGET
+#
+#  Add new Oracle Home target for 18c Oracle Home
+#
+##########################################################
+
+# Find out if we have a target for the 18c Oracle Home and create it if it does not exist
+# (Do not delete the 11g Oracle Home as that will be decommissioned separately)
+- name: Generate Command to List Existing Oracle Home Properties
+  shell: |
+    set -o pipefail
+    . ~/.bash_profile
+    {{ emctl }} config agent listtargets | grep oracle_home | egrep  -e '\[.*\]' | sed 's/^\[//' | sed 's/\]$//' | awk -F, '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+  register: existing_oracle_home_properties
+  changed_when: false
+  args:
+    executable: /bin/bash
+
+- name: Generate Command to Get 18c Database Oracle Home Target if it exists
+  set_fact:
+     get_18c_db_home_cmd: "({{ existing_oracle_home_properties.stdout }}) | grep INSTALL_LOCATION | grep -c {{ oracle_database_18c_oracle_home }} | cat"
+
+- name: Find out if the 18c Database Oracle Home target exists
+  shell: |
+    set -o pipefail
+    . ~/.bash_profile
+    {{ emcli }} login -username=sysman -password=${SYSMAN_PASSWORD} -force
+    {{ emcli }} sync
+    {{ get_18c_db_home_cmd }}
+  register: get_18c_oracle_home_exists 
+  delegate_to: "{{ oem_host }}"
+  changed_when: false
+  environment:
+      SYSMAN_PASSWORD: "{{ sysman_password }}"
+  no_log: true
+  args:
+    executable: /bin/bash
+
+# This block will run if no 18c Database Oracle Home Target already exists
+- name: Create 18c Database Oracle Home Target
+  block:
+
+     # We use the Oracle Inventory to get properties of the new 18c Home
+     - name: Get Properties of 18c Database Oracle Home
+       shell: |
+           set -o pipefail
+           ~/.bash_profile
+           export ORACLE_HOME={{ oracle_agent_home }}
+           export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+           export PERL=$ORACLE_HOME/perl/bin
+           export PERLLIB={{ oracle_agent_home }}/perl/lib/site_perl/5.14.4/x86_64-linux-thread-multi
+           export ORACLE_BASE={{ oracle_agent_home }}
+           $PERL/perl -I $ORACLE_HOME/sysman/admin/scripts -I $PERLLIB $ORACLE_BASE/plugins/oracle.sysman.oh.discovery.plugin_13.3.0.0.0/OracleHomeDiscovery.pl | grep -C2 18.0.0.0
+       register: get_db_18c_oracle_home_properties
+       changed_when: false
+       args:
+         executable: /bin/bash
+
+     # Extract Oracle Home properties from the XML into variables
+     - name: Get Properties
+       set_fact:
+            home_name: "{{ get_db_18c_oracle_home_properties.stdout_lines | select('search','TYPE=\"oracle_home\"') | first | regex_replace('\\s+<Target TYPE=\"oracle_home\" NAME=\"([\\w\\_\\d\\-\\.]+)\" DISPLAY_NAME=\"([\\w\\_\\d\\-\\.]+)\">','\\1')}}"
+            home_type: "{{ get_db_18c_oracle_home_properties.stdout_lines | select('search','HOME_TYPE') | first | regex_replace('\\s+<Property NAME=\"HOME_TYPE\" VALUE=\"([\\w]+)\" />','\\1')}}"
+            install_location: "{{ get_db_18c_oracle_home_properties.stdout_lines | select('search','INSTALL_LOCATION') | first | regex_replace('\\s+<Property NAME=\"INSTALL_LOCATION\" VALUE=\"([\\d\\.\\w/]+)\" />','\\1')}}"
+            inventory: "{{ get_db_18c_oracle_home_properties.stdout_lines | select('search','INVENTORY') | first | regex_replace('\\s+<Property NAME=\"INVENTORY\" VALUE=\"([\\w/]+)\" />','\\1')}}"
+
+     - name: Create Home Name Conversion Pattern based on Inventory Name
+       set_fact:
+           home_name_conversion: "\\1_{{ hostname }}_\\2"
+
+     - name: Convert Home Name to Inventory Name
+       set_fact:
+          home_name: "{{ home_name | regex_replace('([\\w\\_\\d]+)\\_[\\w\\-\\d\\.]+\\_(\\d{4})',home_name_conversion) }}"
+
+     - name: Create Oracle Home Target
+       shell: |
+           set -o pipefail
+           . ~/.bash_profile
+           {{ emcli }} login -username=sysman -password=${SYSMAN_PASSWORD} -force
+           {{ emcli }} sync
+           {{ emcli }} add_target -name="{{ home_name }}" -type="oracle_home" -host="{{ hostname }}" -properties="HOME_TYPE:{{ home_type }};INSTALL_LOCATION:{{ install_location }};INVENTORY:{{ inventory }};orcl_gtp_lifecycle_status:{{ lifecycle_status }}"
+       delegate_to: "{{ oem_host }}"
+       environment:
+          SYSMAN_PASSWORD: "{{ sysman_password }}"
+       no_log: true
+       args:
+         executable: /bin/bash
+
+  when: get_18c_oracle_home_exists.stdout_lines[-1] == "0"
+
+- name: Find Out Oracle Home of Database from Cloud Control
+  shell:  |
+      set -o pipefail
+      . ~/.bash_profile
+      {{ emcli }} login -username=sysman -password=${SYSMAN_PASSWORD} -force
+      {{ emcli }} sync
+      {{ emcli }} list -resource="TargetProperties" -search="TARGET_NAME='{{ database_primary_sid | default(database_standby_sid) }}'" -column="PROPERTY_NAME,PROPERTY_VALUE" -script | grep OracleHome | awk '{print $2}'
+  delegate_to: "{{ oem_host }}"
+  changed_when: false
+  register: db_home_in_cloud
+  environment:
+          SYSMAN_PASSWORD: "{{ sysman_password }}"
+  no_log: true
+  args:
+    executable: /bin/bash
+
+# Get name of Oracle database as registered with the agent.  Note that this is case sensitive and different cases have been used
+# in different environments so we cannot assume which case has been used
+- name: Get Database Target Name
+  shell: |
+    set -o pipefail
+    . ~/.bash_profile
+    {{ emctl }} config agent listtargets | grep oracle_database | egrep  -e '\[.*\]' | sed 's/^\[//' | sed 's/\]$//' | awk -F, '{print $1}'
+  register: database_target_name
+  changed_when: false
+  args:
+    executable: /bin/bash
+
+- name: Assign Database to 18c Home
+  shell:  |
+      set -o pipefail
+      . ~/.bash_profile
+      {{ emcli }} login -username=sysman -password=${SYSMAN_PASSWORD} -force
+      {{ emcli }} sync
+      {{ emcli }} modify_target -name="{{ database_target_name.stdout }}" -type="oracle_database" -properties="OracleHome:{{ oracle_database_18c_oracle_home }}" -on_agent
+  delegate_to: "{{ oem_host }}"
+  environment:
+          SYSMAN_PASSWORD: "{{ sysman_password }}"
+  no_log: true
+  args:
+    executable: /bin/bash
+  when: not ((db_home_in_cloud.stdout_lines | join(' ')) is search(oracle_database_18c_oracle_home))

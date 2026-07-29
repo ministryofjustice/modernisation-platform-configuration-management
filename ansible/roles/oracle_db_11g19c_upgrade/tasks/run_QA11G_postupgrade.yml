@@ -1,0 +1,47 @@
+---
+- name: Install 19c Apex
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: run_Install19cApex.sh
+  tags:
+      - postupgrade
+      - instancespecific
+  when: database_role == "PRIMARY"
+
+- name: Re-set 10g passwords
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: "run_{{ db_name }}_postupgrade.sh"
+  register:  postupgrade_run
+  tags:
+      - postupgrade
+      - instancespecific
+  when: database_role == "PRIMARY"
+
+- name: Install JSON for Nomis API
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: run_InstallJSonNomisAPI.sh
+  tags:
+      - postupgrade
+      - instancespecific      
+  when: database_role == "PRIMARY"
+
+- name: Run Recompile Triggers
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: run_recompile_triggers.sh
+  register: run_recompile
+  tags:
+  - postupgrade
+  - recompile
+- name: Show Recompilation Results
+  debug: var=run_recompile.stdout_lines
+  tags:
+      - postupgrade
+      - recompile
+      - debug

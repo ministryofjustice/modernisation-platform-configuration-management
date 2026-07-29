@@ -1,0 +1,32 @@
+---
+
+# Enable the Data Guard Broker after Upgrade
+- name: Get DG Broker Status
+  script: get_dg_broker_status.sh
+  changed_when: false
+  register: get_dg_broker_status
+
+- name: Start DG Broker
+  script: toggle_dg_broker.sh true
+  when: get_dg_broker_status.stdout is search('FALSE')
+
+# Retry this as it sometimes takes a while for the broker to start
+- name: Check if DG Configuration is Enabled
+  script: get_dg_configuration_status.sh
+  changed_when: false
+  when: database_role == "primary"
+  register: get_dg_configuration_status
+  retries: 10
+  delay: 6
+  until: not (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*ORA-16525.*')
+  
+- debug: var=get_dg_configuration_status.stdout_lines
+  when: database_role == "primary" 
+
+- name: Enable DG Configuration
+  script: toggle_dg_configuration.sh enable
+  when:
+     - database_role == "primary" 
+     - (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*Configuration Status:\\s+DISABLED.*')
+
+

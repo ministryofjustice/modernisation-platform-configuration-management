@@ -1,0 +1,24 @@
+---
+
+# Replace 11g Home in Listener Config with 18c Home
+# Note that the Listener runs from the GI Home.
+# There are 2 possible entries to change.
+- name: Update Listener Config File
+  lineinfile:
+     path: "{{ oracle_database_19c_grid_home }}/network/admin/listener.ora"
+     regexp: "(\\s+)\\(ORACLE_HOME = {{ oracle_database_11g_oracle_home }}\\)\\s+"
+     backrefs: yes
+     line: "\\1(ORACLE_HOME = {{ oracle_database_19c_oracle_home }})"
+  with_sequence: start=0 end=1
+  register: listener
+
+- name: Restart the Listener
+  shell: |
+         . ~/.bash_profile
+         export ORACLE_SID=+ASM
+         export ORAENV_ASK=NO
+         . oraenv
+         srvctl stop listener -l LISTENER
+         srvctl start listener -l LISTENER
+  when: listener.changed
+  

@@ -1,0 +1,54 @@
+---
+
+# Get name of the existing target for the specified target type
+# We only expect to see 1 HAS target, 1 ASM target and 1 Listener target on a given host
+- name: Get Existing Target Name
+  shell: |
+    . ~/.bash_profile
+    {{ emctl }} config agent listtargets | grep {{ target_type }}]$ | sed 's/^\[//' | awk -F, '{print $1}'
+  register: existing_target_name
+  changed_when: false
+
+- name: Generate Command to List Existing Target Properties
+  shell: |
+    . ~/.bash_profile
+    {{ emctl }} config agent listtargets | grep {{ target_type }}]$ | egrep  -e '\[.*\]' | sed 's/^\[//' | sed 's/\]$//' | awk -F, '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+  register: existing_target_properties
+  changed_when: false
+
+- name: Generate Command to Get Current Target Version
+  set_fact:
+     get_target_version_cmd: "({{ existing_target_properties.stdout }}) | grep OracleHome | awk '{print $2}'"
+  when: existing_target_properties.stdout_lines | length > 0
+
+# On the OMS find the version (OracleHome) of the existing target of the specified type
+- name: Find out current Target Version
+  shell: |
+   . ~/.bash_profile
+    {{ emcli }} login -username=sysman -password={{ sysman_password }} -force
+    {{ emcli }} sync
+    {{ get_target_version_cmd }}
+  register: get_target_version 
+  delegate_to: "{{ oem_host }}"
+  no_log: true
+  changed_when: false
+  when: existing_target_properties.stdout_lines | length > 0
+
+# Delete Existing Target if it is not related to the 19c Home
+- name: Delete Existing Target
+  shell: |
+   . ~/.bash_profile
+    {{ emcli }} login -username=sysman -password={{ sysman_password }} -force
+    {{ emcli }} sync
+    {{ emcli }} delete_target -name="{{ existing_target_name.stdout }}" -type="{{ target_type }}"
+  delegate_to: "{{ oem_host }}"
+  no_log: true
+  when: ( get_target_version.stdout_lines[-1] | default(oracle_grid_19c_oracle_home) ) != oracle_grid_19c_oracle_home
+
+# Pause Until OEM has Finished Deleting the Target
+# (Otherwise it will fail when we try to add the new target)
+- name: Wait for Existing Target Deletion
+  script: wait_for_target_deletion.sh {{ existing_target_name.stdout }}
+  delegate_to: "{{ oem_host }}"
+  when: ( get_target_version.stdout_lines[-1] | default(oracle_grid_19c_oracle_home) ) != oracle_grid_19c_oracle_home
+  changed_when: false

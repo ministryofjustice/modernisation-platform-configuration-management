@@ -1,0 +1,121 @@
+---
+
+- name: Get database role
+  script: get_db_role.sh
+  register: db_role_result
+  changed_when: false
+  tags: dbrole
+
+- name: Set database_role fact
+  set_fact:
+    database_role: "{{ db_role_result.stdout | trim }}"
+  tags: dbrole
+
+- name: Debug database_role
+  debug:
+    msg: "Database role is: {{ database_role }}"
+  tags: dbrole
+
+# Check if this environment is configured with Dataguard Broker
+- name: Check if DG Configuration is Enabled
+  script: get_dg_configuration_status.sh
+  changed_when: false
+  register: get_dg_configuration_status
+  tags: disabledg  
+
+- name: Set Dataguard Broker Status False
+  set_fact:
+      dataguard_broker: false
+  when: (get_dg_configuration_status.stdout_lines | join(' ')) is search('.*ORA-16525.*')
+  tags: disabledg
+
+- name: Set Dataguard Broker Status True
+  set_fact:
+      dataguard_broker: true
+  when: dataguard_broker is not defined
+  tags: disabledg
+
+- name: Get Oracle Database Version
+  shell: |  
+    export ORACLE_SID={{ db_name }}
+    export ORACLE_HOME={{ oracle_database_11g_oracle_home }}
+    export PATH=$ORACLE_HOME/bin:$PATH
+
+    sqlplus -v | sed '/^\s*$/d'
+  changed_when: false
+  register: get_database_version
+  tags: always
+
+
+- name: Show Database Version
+  debug:
+     var: get_database_version
+  tags: always
+
+- name: Set Oracle Database Version
+  set_fact:
+     dbversion: "{{ get_database_version.stdout_lines[-1] | regex_replace('^.* ([\\d\\.]+).*$','\\1') }}"
+  tags: always
+
+- name: Show Current Database Version
+  debug: var=dbversion
+  tags: always
+
+# # This block completes various prerequisites prior to running the database upgrade
+- name: Prepare for 19c Upgrade
+  block:
+
+      # Kill any remaining old sqlplus sessions as these can cause opatch or installer to fail
+      - name: Kill sqlplus
+        shell: pkill sqlplus
+        register: pkillsqlplus
+        failed_when: pkillsqlplus.rc > 1
+
+      # Kill any remaining DG broker manager sessions (as above)
+      - name: Kill dgmgrl
+        shell: pkill dgmgrl
+        register: pkilldgmgrl
+        failed_when: pkilldgmgrl.rc > 1
+
+      - name: Configure 19c Home
+        include_tasks: configure_19c_home.yml
+        tags: configure19c
+
+      - name: Run Pre-Upgrade Actions on Primary
+        include_tasks: run_preupgrade_actions.yml
+        when: database_role == "primary"
+        tags: preactions  
+
+      - name: Run Pre-Upgrade Check on Primary
+        include_tasks: run_preupgrade_check.yml
+        when: database_role == "primary"
+        tags: precheck
+
+      - name: Disable Data Guard Broker
+        include_tasks: disable_dataguard_broker.yml
+        when: dataguard_broker | bool
+        tags: disabledg
+
+      - name: Run Upgrade
+        include_tasks: run_upgrade_actions.yml
+        tags: upgrade  
+
+  when: dbversion is version('19.0.0.0','<')  
+
+- name: Update Listener Configuration
+  include_tasks: update_listener.yml
+  tags: listener
+
+- name: Post Upgrade Actions
+  include_tasks: run_postupgrade_actions.yml
+  tags: postactions  
+
+- name: Enable Data Guard Broker
+  include_tasks: enable_dataguard_broker.yml
+  when: dataguard_broker | bool
+  tags: enabledg
+
+# Update OEM Configuration
+- name: Update Agent Targets
+  include_tasks: update_agent_targets.yml
+  tags: updateagent

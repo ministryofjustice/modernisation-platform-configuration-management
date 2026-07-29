@@ -1,0 +1,12 @@
+---
+
+# Disable Block Change Tracking Prior to Upgrade
+- name: Check if BCT is Enabled
+  script: get_bct_status.sh
+  changed_when: false
+  register: get_bct_status
+
+- name: Disable BCT
+  script: toggle_bct.sh disable
+  when: (get_bct_status.stdout_lines | join(' ')) is search('.*ENABLED.*')
+

@@ -1,0 +1,17 @@
+---
+- name: Check if OLAP exists
+  environment: "{{ oracle11g_env }}"
+  script: check_olap.sh
+  register: olap_check
+  changed_when: false
+  failed_when: >
+    olap_check.rc != 0 and
+    'PRESENT' not in (olap_check.stdout | default('')) and
+    'ABSENT' not in (olap_check.stdout | default(''))
+
+- name: Remove OLAP if present
+  environment: "{{ oracle11g_env }}"
+  script: remove_olap.sh
+  when: "'PRESENT' in olap_check.stdout"
+
+

@@ -1,0 +1,118 @@
+---
+
+- name: Disable BCT
+  include_tasks: disable_bct.yml
+  tags:
+    - preupgrade
+    - bct
+
+- name: Backup ACLs
+  include_tasks : 
+    file : run_backup_acls.yml
+  tags: 
+  - preupgrade
+  - acl
+
+- name: Remove APEX
+  include_tasks : remove_apex.yml
+  tags:
+    - preupgrade
+    - apex
+
+- name: Remove OLAP
+  include_tasks : remove_olap.yml
+  tags:
+    - preupgrade
+    - olap
+
+- name: Remove EM console
+  include_tasks : remove_emconsole.yml 
+  tags:
+    - preupgrade
+    - em
+
+- name: Run catnoexf
+  include_tasks : remove_catnoexf.yml
+  register: catnoexf
+  tags:
+    - preupgrade
+    - catnoexf
+
+- name: Grant admin database trigger
+  include_tasks : run_grant_db_trigger.yml
+  register: grant_db_trigger
+  tags:
+    - preupgrade
+    - dbtrigger
+
+- name: Expire 10g format password users
+  include_tasks : run_expire_10g_passwd.yml
+  register: expire_10g_passwords 
+  tags:
+    - preupgrade
+    - 10gpassword
+
+- name: Run instance specific 
+  environment: "{{ oracle11g_env }}"
+  script: "run_{{ db_name }}_preupgrade.sh"
+  vars:
+    ansible_aws_ssm_timeout: 1800
+  register:  preupgrade_run
+  failed_when: >
+    preupgrade_run.rc != 0 and
+      'ORA-32010' not in preupgrade_run.stdout and
+      'ORA-32010' not in preupgrade_run.stderr 
+  tags:
+    - preupgrade
+    - instancespecific
+
+- name: Restart
+  environment: "{{ oracle11g_env }}"
+  script: "restart_database.sh"
+  vars:
+    ansible_aws_ssm_timeout: 1800
+  tags:
+    - preupgrade
+    - restart
+
+- name: Purge DBA Recyclebin 
+  environment: "{{ oracle11g_env }}"
+  script: purge_dba_recyclebin.sh
+  tags:
+    - preupgrade
+    - cleanup
+
+  
+#- name: Lock HIST_AUD$ Statistics
+#  script: lock_hist_aud_stats.sh
+
+- name: Run Recompiliation
+  environment: "{{ oracle11g_env }}"
+  script: run_recompile.sh
+  vars:
+    ansible_aws_ssm_timeout: 1800
+  register: run_recompile
+  tags:
+    - preupgrade
+    - recompile
+
+- name: Get Number of SYS and SYSTEM Invalid Objects
+  set_fact: 
+       sys_invalid_count: "{{ run_recompile.stdout_lines | select('search', '.*INVALID=\\d+.*') | first | regex_replace('INVALID=(\\d+)','\\1') }}"
+  tags:
+    - preupgrade
+    - validation
+
+# Abort if Invalid SYS or SYSTEM Objects
+# - name: Do not Allow Invalid SYS or SYSTEM objects
+ #  assert:
+ #     that: sys_invalid_count == "0"
+
+- name: Gather Dictionary and Fixed Object Statistics
+  environment: "{{ oracle11g_env }}"
+  script: run_gather_statistics.sh
+  vars:
+    ansible_aws_ssm_timeout: 1800
+  tags:
+    - preupgrade
+    - stats

@@ -1,0 +1,6 @@
+- name: Run Post 18c Upgrade Fix Ups
+  script: db_18c_post_upgrade_fix.sh
+  register: db_18c_post_upgrade_fix
+
+- name: Report Fix Output
+  debug: var=db_18c_post_upgrade_fix.stdout_lines

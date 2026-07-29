@@ -1,0 +1,162 @@
+---
+
+- name: Shutdown Database for Upgrade
+  environment: "{{ oracle11g_env }}"
+  script: stop_database.sh
+  tags:
+    - upgrade
+    - shutdown
+
+- name: Prepare Bash profile with New Oracle Home
+  lineinfile:
+    path: /home/oracle/.bash_profile
+    regexp: "export ORACLE_HOME={{ oracle_database_11g_oracle_home }}"
+    line: "export ORACLE_HOME={{ oracle_database_19c_oracle_home }}"
+  tags:
+    - upgrade
+    - config
+
+# Show Environment
+- name: environment
+  debug:
+     msg: "{{ db_name }}:{{ oracle_database_11g_oracle_home }};{{ oracle_database_19c_oracle_home }}"
+  tags:
+    - upgrade
+    - debug
+
+# This must be done as root as it creates a temporary file in /etc
+- name: Update Oratab File
+  lineinfile:
+    path: /etc/oratab
+    regexp: "{{ db_name }}:.*"
+    line: "{{ db_name }}:{{ oracle_database_19c_oracle_home }}:N"
+    owner: oracle
+  become: true
+  become_user: root
+  tags:
+    - upgrade
+    - config
+
+- name: Create a Log Directory for Upgrade
+  file:
+     path: /u01/app/oracle/admin/{{ db_name }}/upgrade
+     state: directory
+  tags:
+    - upgrade
+    - filesystem
+
+- name: Check if the Upgrade Log file already exists
+  stat:
+    path: /u01/app/oracle/admin/{{ db_name }}/upgrade/catupgrd0.log
+  register: catupgrd0
+  tags:
+    - upgrade
+    - precheck
+
+- name: Startup Primary Database for Upgrade
+  environment: "{{ oracle19c_env }}"
+  script: startup_database_upgrade.sh
+  register: startup_database_upgrade
+  when: database_role == "PRIMARY"
+  tags:
+    - upgrade
+    - startup
+
+- name: Report Startup
+  debug: var=startup_database_upgrade.stdout
+  when: database_role == "PRIMARY"
+  tags:
+    - upgrade
+    - debug
+
+# Run upgrade if upgrade log file does not contain
+- name: Start upgrade
+  environment: "{{ oracle19c_env }}"
+  shell: "$ORACLE_HOME/bin/dbupgrade -l ${ORACLE_BASE}/admin/${ORACLE_SID}/upgrade"
+  async: 14400
+  poll: 0
+  register: upgrade_job
+  when: 
+     - not catupgrd0.stat.exists
+     - database_role == "PRIMARY"
+  tags:
+    - upgrade
+    - execute
+
+- name: Stop playbook if Start upgrade is skipped by gating conditions
+  fail:
+    msg: >-
+      Start upgrade did not run because database_role={{ database_role }} (must be PRIMARY)
+      and catupgrd0_exists={{ catupgrd0.stat.exists }} (must be false).
+      Stopping playbook as requested.
+  when: not ((database_role == "PRIMARY") and (not catupgrd0.stat.exists))
+  tags:
+    - upgrade
+    - execute
+     
+- name: Wait for upgrade to finish
+  async_status:
+    jid: "{{ upgrade_job.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 480
+  delay: 30
+  when:
+    - upgrade_job is defined
+    - upgrade_job.ansible_job_id is defined
+  tags:
+    - upgrade
+    - execute
+
+# Check if database has already been upgraded in Oracle Restart
+# - name: Check Oracle Restart Config
+# #   shell: |
+  #        . ~/.bash_profile
+  #        srvctl config database -d {{ db_name }}
+#   register: srvctlconfig
+#   ignore_errors: true
+  
+# If above command produced an error then we need to upgrade the config as it is still pointing to the old home
+# - name: Update Oracle Restart
+ #  shell: |
+  #        . ~/.bash_profile
+  #        srvctl add database -d {{ db_name }} -oraclehome {{ oracle_database_19c_oracle_home }}
+ #  when: srvctlconfig.rc != 0
+
+# - name: Re-Enable Database Service for Oracle Restart
+#  include: enable_database.yml
+
+# Restart database (exclude former Snapshot Standby databases which must initially be opened using SQLPlus)
+# - name: Restart Database normally after Upgrade
+#   include_tasks: startup_database.yml
+#   when: 
+#      - not (snapshot_standby | bool) 
+ #     - not (force_snapshot_standby | default(false) | bool)
+
+ #- name: Shutdown Database 
+  # environment: "{{ oracle19c_env }}"
+  # script: stop_database.sh
+
+- name: Startup Database
+  environment: "{{ oracle19c_env }}"
+  script: start_database.sh       
+  tags:
+    - upgrade
+    - startup
+
+# Get upgrade status for Primary
+- name: Run Upgrade Status Script
+  script: report_upgrade_status.sh
+  register: report_upgrade_status
+  when: database_role == "PRIMARY"
+  tags:
+    - upgrade
+    - validation
+
+- name: Report Upgrade Status
+  debug: var=report_upgrade_status.stdout_lines
+  when: database_role == "PRIMARY"
+  tags:
+    - upgrade
+    - validation
+    - debug

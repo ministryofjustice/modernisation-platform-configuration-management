@@ -1,0 +1,78 @@
+---
+
+- name: Update Database Compatibility
+  include_tasks: update_db_compatibility.yml
+  tags:
+    - postupgrade
+    - compatibility
+
+# - name: Update ASM RDBMS Compatibility
+#   include: update_asm_compatibility_18c.yml
+
+- name: Run Post Tasks on Primary
+  block:
+
+      - name: Run Recompiliation
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: run_recompile.sh
+        register: run_recompile
+        tags:
+          - postupgrade
+          - recompile
+
+      - name: Show Recompilation Results
+        debug: var=run_recompile.stdout_lines
+        tags:
+          - postupgrade
+          - recompile
+          - debug
+
+      - name: Update Timezone File
+        include_tasks: run_upgrade_timezone.yml
+        tags:
+          - postupgrade
+          - timezone
+
+      - name: Gather Dictionary and Fixed Object Statistics
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: run_gather_statistics.sh
+        tags:
+          - postupgrade
+          - stats
+
+      - name: Enable BCT
+        include_tasks: enable_bct.yml
+        tags:
+          - postupgrade
+          - bct
+
+    #  - name: Run Instance Specific Post-Upgrade Actions on Primary
+    #    include_tasks: "{{ db_name }}_postupgrade.yml"
+    #    when: database_role == "primary"
+    #    tags: instancepostactions
+  
+      - name: Unlock HIST_AUD$ Statistics
+        become: true
+        become_user: oracle
+        environment: "{{ oracle19c_env }}"
+        script: unlock_hist_aud_stats.sh
+        tags:
+          - postupgrade
+          - stats
+
+      - name: Run instance specific 
+        include_tasks:
+          file: "run_{{ db_name }}_postupgrade.yml"
+          apply:
+            environment: "{{ oracle19c_env }}"
+        tags:
+        - postupgrade
+        - instancespecific
+  when: database_role == "PRIMARY"
+
+   #- name: Set Default RMAN Tape Channel
+     #script: set_default_rman_channel.sh
