@@ -128,3 +128,10 @@ all_oem_metrics:
         warning_threshold , 5
         critical_threshold , 7
         END_RECORD 11
+        START_RECORD 12
+        metric , ME$LONG_RUNNING_SQL
+        column , LONGEST_CURRENTLY_ACTIVE_SQL
+        key_columns , ;
+        warning_threshold , 15000
+        critical_threshold , 20000
+        END_RECORD 12
