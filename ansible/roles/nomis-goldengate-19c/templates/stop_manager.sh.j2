@@ -7,6 +7,7 @@ ORAENV_ASK=NO
 . oraenv > /dev/null
 
 GGHOME={{ oracle_goldengate_home }}
+LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 
 cd ${GGHOME}
 
@@ -23,17 +24,20 @@ if echo "${STATUS}" | grep -q "Manager is DOWN"; then
 fi
 
 echo "Stopping GoldenGate Manager..."
+echo "$(date '+%Y-%m-%d %H:%M:%S') - STOP MANAGER" >>"$LOG"
 
-./ggsci << EOF
+./ggsci << EOF >>"$LOG" 2>&1
 STOP MANAGER !
 INFO MANAGER
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Manager stopped successfully" >>"$LOG"
     echo "Manager stopped successfully"
     exit 0
 else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to stop Manager" >>"$LOG"
     echo "Failed to stop Manager"
     exit 1
 fi

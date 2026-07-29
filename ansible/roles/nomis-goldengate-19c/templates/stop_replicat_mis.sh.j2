@@ -8,21 +8,25 @@ ORAENV_ASK=NO
 
 GGHOME={{ oracle_goldengate_home }}
 REPLICAT_NAME={{ oracle_goldengate_group.mis.replicat_name }}
+LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 
 cd ${GGHOME}
 
 echo "Stopping Replicat ${REPLICAT_NAME}..."
+echo "$(date '+%Y-%m-%d %H:%M:%S') - STOP REPLICAT ${REPLICAT_NAME}" >>"$LOG"
 
-./ggsci << EOF
+./ggsci << EOF >>"$LOG" 2>&1
 STOP REPLICAT ${REPLICAT_NAME}
 INFO REPLICAT ${REPLICAT_NAME}
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Replicat ${REPLICAT_NAME} stopped successfully" >>"$LOG"
     echo "Replicat ${REPLICAT_NAME} stopped successfully"
     exit 0
 else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to stop Replicat ${REPLICAT_NAME}" >>"$LOG"
     echo "Failed to stop Replicat ${REPLICAT_NAME}"
     exit 1
 fi

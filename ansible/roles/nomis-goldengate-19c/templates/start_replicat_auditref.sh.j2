@@ -8,7 +8,7 @@ ORAENV_ASK=NO
 
 GGHOME={{ oracle_goldengate_home }}
 REPLICAT_NAME={{ oracle_goldengate_group.auditref.replicat_name }}
-LOG={{ oracle_goldengate_log_dir }}/start_{{ oracle_goldengate_group.auditref.replicat_name }}_$(date +%Y%m%d_%H%M%S).log
+LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 
 cd ${GGHOME}
 
@@ -22,16 +22,20 @@ else
     START=""
 fi
 
-./ggsci << EOF >"$LOG" 2>&1
+echo "$(date '+%Y-%m-%d %H:%M:%S') - START REPLICAT ${REPLICAT_NAME} ${START}" >>"$LOG"
+
+./ggsci << EOF >>"$LOG" 2>&1
 START REPLICAT ${REPLICAT_NAME} ${START}
 INFO REPLICAT ${REPLICAT_NAME}
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Replicat ${REPLICAT_NAME} started successfully" >>"$LOG"
     echo "Replicat ${REPLICAT_NAME} started successfully with ${START}"
     exit 0
 else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to start Replicat ${REPLICAT_NAME}" >>"$LOG"
     echo "Failed to start Replicat ${REPLICAT_NAME} with ${START}"
     exit 1
 fi

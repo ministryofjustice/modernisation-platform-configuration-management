@@ -7,7 +7,7 @@ ORAENV_ASK=NO
 . oraenv > /dev/null
 
 GGHOME={{ oracle_goldengate_home }}
-LOG={{ oracle_goldengate_log_dir }}/start_manager_$(date +%Y%m%d_%H%M%S).log
+LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 
 cd ${GGHOME}
 
@@ -24,18 +24,21 @@ if echo "${STATUS}" | grep -q "Manager is running"; then
 fi
 
 echo "Starting GoldenGate Manager..."
+echo "$(date '+%Y-%m-%d %H:%M:%S') - START MANAGER" >>"$LOG"
 
-./ggsci << EOF >"$LOG" 2>&1
+./ggsci << EOF >>"$LOG" 2>&1
 START MANAGER
 INFO MANAGER
 EXIT
 EOF
 
 if [ $? -eq 0 ] && grep -q "Manager is running\|Manager started" "$LOG"; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Manager started successfully" >>"$LOG"
     echo "Manager started successfully"
     exit 0
 else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to start Manager" >>"$LOG"
     echo "Failed to start Manager - check log: $LOG"
-    cat "$LOG"
+    tail -20 "$LOG"
     exit 1
 fi

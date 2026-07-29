@@ -8,7 +8,7 @@ ORAENV_ASK=NO
 
 GGHOME={{ oracle_goldengate_home }}
 EXTRACT_NAME={{ oracle_goldengate_group.auditref.extract_name }}
-LOG={{ oracle_goldengate_log_dir }}/start_{{ oracle_goldengate_group.auditref.extract_name }}_$(date +%Y%m%d_%H%M%S).log
+LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 
 cd ${GGHOME}
 
@@ -22,7 +22,9 @@ else
     START="NOW"
 fi
 
-./ggsci << EOF >"$LOG" 2>&1
+echo "$(date '+%Y-%m-%d %H:%M:%S') - START EXTRACT ${EXTRACT_NAME} BEGIN ${START}" >>"$LOG"
+
+./ggsci << EOF >>"$LOG" 2>&1
 DBLOGIN USERIDALIAS AUDIT_DB
 ALTER EXTRACT ${EXTRACT_NAME}, BEGIN ${START}
 START EXTRACT ${EXTRACT_NAME}
@@ -31,9 +33,11 @@ EXIT
 EOF
 
 if [ $? -eq 0 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Extract ${EXTRACT_NAME} started successfully" >>"$LOG"
     echo "Extract ${EXTRACT_NAME} started successfully with ${START}"
     exit 0
 else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to start Extract ${EXTRACT_NAME}" >>"$LOG"
     echo "Failed to start Extract ${EXTRACT_NAME} with ${START}"
     exit 1
 fi

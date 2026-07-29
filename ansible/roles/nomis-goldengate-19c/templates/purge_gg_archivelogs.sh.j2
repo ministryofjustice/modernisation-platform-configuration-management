@@ -16,9 +16,10 @@
 GG_HOME="{{ oracle_goldengate_home }}"
 LOG_DIR="{{ oracle_goldengate_log_dir }}"
 RETENTION_HOURS="{{ oracle_goldengate_archivelog_retention_hours }}"
+DEFAULT_RECOVERY_CHECKPOINT=""
 LOCAL_SID="$1"
 
-LOG_FILE="${LOG_DIR}/purge_archivelogs_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="${LOG_DIR}/purge_archivelogs_cron.log"
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -43,26 +44,15 @@ export ORAENV_ASK=NO
 get_recovery_checkpoint_time() {
     local extract_name="$1"
 
-    local info_output
-    info_output=$(
-        cd "$GG_HOME" || exit 1
-        ./ggsci <<EOF 2>/dev/null
-INFO EXTRACT ${extract_name}, DETAIL
-EXIT
-EOF
-    )
-
-    # The DETAIL output contains a "Recovery Checkpoint" block.  Grab the
-    # Timestamp line that immediately follows it.
-    # Format: "    Timestamp: YYYY-MM-DD HH:MM:SS.FFFFFF"
+    # log into sqlplus as sys and get the max(first_time) from DBA_REGISTERED_ARCHIVED_LOG for the captured_scn from DBA_CAPTURE
     local chk_time
-    chk_time=$(echo "$info_output" \
-        | grep -A 10 "Recovery Checkpoint" \
-        | grep "Timestamp:" \
-        | head -1 \
-        | awk '{print $2, $3}' \
-        | cut -d'.' -f1)
-
+    chk_time=$(sqlplus -s / as sysdba <<EOF
+SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+SELECT to_char(max(first_time),'YYYY-MM-DD HH:MM:SS') FROM DBA_REGISTERED_ARCHIVED_LOG 
+WHERE first_scn = (SELECT captured_scn FROM DBA_CAPTURE WHERE client_name = UPPER('${extract_name}'));
+EXIT;
+EOF
+)
     echo "$chk_time"
 }
 
@@ -86,15 +76,18 @@ calc_purge_cutoff() {
         chk_time=$(get_recovery_checkpoint_time "$extract")
 
         if [ -z "$chk_time" ]; then
-            echo "ERROR: Cannot determine recovery checkpoint for extract ${extract}" \
-                 "on ${oracle_sid} - aborting purge to avoid data loss" >&2
-            return 1
+            # set DEFAULT_RECOVERY_CHECKPOINT to today minus 7 days if the checkpoint cannot be parsed, to avoid deleting all archived logs
+            DEFAULT_RECOVERY_CHECKPOINT=$(date -d "7 days ago" '+%Y-%m-%d %H:%M:%S')
+            echo "WARNING: Could not parse checkpoint timestamp '${chk_time}' for extract ${extract} on ${oracle_sid}" \
+                 "- using default checkpoint ${DEFAULT_RECOVERY_CHECKPOINT} to avoid deleting all archived logs" >&2
+            chk_time="$DEFAULT_RECOVERY_CHECKPOINT"
         fi
 
         echo "  ${extract} recovery checkpoint : ${chk_time}"
 
         local epoch
         epoch=$(date -d "$chk_time" '+%s' 2>/dev/null)
+
         if [ -z "$epoch" ]; then
             echo "ERROR: Could not parse checkpoint timestamp '${chk_time}'" \
                  "for extract ${extract}" >&2
@@ -120,12 +113,20 @@ purge_foreign_archivelogs() {
     local oracle_sid="$1"
     local cutoff_time="$2"
 
+    # Calculate days between now and cutoff for RMAN SYSDATE-N syntax
+    local cutoff_epoch
+    cutoff_epoch=$(date -d "$cutoff_time" '+%s')
+    local now_epoch
+    now_epoch=$(date '+%s')
+    local diff_seconds=$(( now_epoch - cutoff_epoch ))
+    local diff_days=$(echo "scale=4; ${diff_seconds} / 86400" | bc)
+
     echo ""
     echo "Connecting RMAN to ${oracle_sid}"
-    echo "Deleting foreign archived logs completed before: ${cutoff_time}"
+    echo "Deleting foreign archived logs completed before: ${cutoff_time} (SYSDATE-${diff_days})"
 
     rman target / nocatalog <<EOF
-DELETE NOPROMPT FOREIGN ARCHIVELOG ALL COMPLETED BEFORE TIME "TO_DATE('${cutoff_time}', 'YYYY-MM-DD HH24:MI:SS')";
+DELETE NOPROMPT FOREIGN ARCHIVELOG ALL COMPLETED BEFORE 'SYSDATE-${diff_days}';
 EXIT;
 EOF
     local rc=$?
