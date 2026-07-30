@@ -1,8 +1,9 @@
 #!/bin/bash
 
 get_process_pids() {
-  process_pids1=$(pgrep -u oracle -f "startManagedWebLogic.sh $1$" 2> /dev/null)
-  process_pids2=$(pgrep -u oracle -f "weblogic.Name=$1 " 2> /dev/null)
+  local server="$1"
+  process_pids1=$(pgrep -u oracle -f "startManagedWebLogic.sh[[:space:]]+${server}([[:space:]]|$)" 2>/dev/null)
+  process_pids2=$(pgrep -u oracle -f "([[:space:]]|-)D?weblogic.Name=${server}([[:space:]]|$)" 2>/dev/null)
   [[ -z $process_pids1 && -z $process_pids2 ]] && return 1
   (
     for process_pid in $process_pids1 $process_pids2; do
@@ -12,31 +13,29 @@ get_process_pids() {
 }
 
 stop_process() {
-  if ! get_process_pids $1 > /dev/null; then
+  local server="$1"
+
+  echo "/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopManagedWebLogic.sh $server"
+  /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopManagedWebLogic.sh "$server" || true
+
+  if ! PIDS=$(get_process_pids "$server"); then
     return 0
   fi
 
-  echo "/u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopManagedWebLogic.sh $1"
-  /u01/app/oracle/Middleware/user_projects/domains/nomis/bin/stopManagedWebLogic.sh $1
-
-  if ! PIDS=$(get_process_pids $1); then
-    return 0
-  fi
-
-  echo "kill $PIDS" 
+  echo "kill $PIDS"
   kill $PIDS
   sleep 2
 
-  if ! get_process_pids $1 > /dev/null; then
+  if ! PIDS=$(get_process_pids "$server"); then
     return 0
   fi
   sleep 5
-  if ! PIDS=$(get_process_pids $1); then
+  if ! PIDS=$(get_process_pids "$server"); then
     return 0
   fi
 
-  echo "kill -9 $PIDS" 
+  echo "kill -9 $PIDS"
   kill -9 $PIDS
 }
 
-stop_process $1
+stop_process "$1"

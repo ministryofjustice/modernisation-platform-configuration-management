@@ -1,0 +1,6 @@
+- name: Enable weblogic-all
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - weblogic-all
