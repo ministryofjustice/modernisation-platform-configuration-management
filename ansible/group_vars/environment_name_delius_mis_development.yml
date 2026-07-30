@@ -85,3 +85,7 @@ bip_filesystems_mount:
     gid: binstall
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "eu-west-2a.fs-0606a915262398ef9.efs.eu-west-2.amazonaws.com:/"
+  - dir: /samba.delius-mis-dev.internal/secure/NPS
+    fstype: efs
+    opts: "_netdev,iam,tls,accesspoint=fsap-078f9af6b89311437,nofail"
+    src: fs-92b7c763.efs.eu-west-2.amazonaws.com
