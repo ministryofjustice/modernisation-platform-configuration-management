@@ -123,3 +123,10 @@ all_oem_metrics:
         critical_threshold , 102
         occurrences , 1
         END_RECORD 10
+        START_RECORD 11
+        metric , ME$LONG_RUNNING_SQL
+        column , LONGEST_CURRENTLY_ACTIVE_SQL
+        key_columns , ;
+        warning_threshold , 10800
+        critical_threshold , 11800
+        END_RECORD 11
