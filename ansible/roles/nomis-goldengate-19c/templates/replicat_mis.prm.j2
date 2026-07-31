@@ -4,7 +4,7 @@ GETENV (NLS_LANG)
 
 USERIDALIAS MIS_DB
 
-ASSUMETARGETDEFS
+--ASSUMETARGETDEFS
 
 -- --- Error handling ---
 REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
@@ -15,19 +15,28 @@ DBOPTIONS DEFERREFCONST
 DBOPTIONS SUPPRESSTRIGGERS
 DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
 
--- Map MIS staging tables
-MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.mis.schema_owner }}"."STG_*", &
-    COLMAP (
-      USEDEFAULTS, &
-      MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &
-      MIS_COMMAND_FLAG = @CASE(
-        @GETENV('GGHEADER', 'OPTYPE'), 
-          'INSERT', 'I', 
-          'UPDATE', 'U', 
-          'PK UPDATE', 'U', 
-          'SQL COMPUPDATE', 'U', 
-          'DELETE', 'D', 
-          'TRUNCATE', 'D', 
-          '?'), &
-      MIS_SCN = @GETENV('TRANSACTION', 'CSN'));
--- We don't set MIS_LOAD_ID here. It'll get set by the DML Apply handler package.
+-- All MIS mappings use this macro.
+--
+-- GET_BATCH_VALUE is called once per source transaction. The returned value
+-- is added to the mapped LCR because MIS_LOAD_ID is a target-only primary-key
+-- column and must be present before the DML handler receives the LCR.
+MACRO #MIS_MAP
+PARAMS (#SOURCE_TABLE, #TARGET_TABLE)
+BEGIN
+MAP #SOURCE_TABLE, TARGET #TARGET_TABLE, &
+    COLMAP (USEDEFAULTS, MIS_LOAD_ID = 0);
+END;
+
+-- Exclude tables whose target names do not follow the standard STG_<source>
+-- naming convention.
+{% for line in oms_owner_mis_mapexclude_lines %}
+{{ line }}
+{% endfor %}
+
+-- Explicit mappings for tables with different target names.
+{% for line in oms_owner_mis_mapinclude_lines %}
+{{ line }}
+{% endfor %}
+
+-- Standard mapping for all remaining MIS staging tables.
+#MIS_MAP ("{{ oracle_goldengate_group.source.schema_owner }}"."*", "{{ oracle_goldengate_group.mis.schema_owner }}"."STG_*")

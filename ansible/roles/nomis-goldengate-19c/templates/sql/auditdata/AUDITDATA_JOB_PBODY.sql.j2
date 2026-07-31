@@ -474,10 +474,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     from   {{ oracle_goldengate_sql_owner }}.AUDIT_OFFENDER_REF;
 
     -- get low watermark for transactions applied to reference tables
-    l_source_object := 'ALL_APPLY_PROGRESS';
+    l_source_object := 'DBA_APPLY_PROGRESS';
     select min(p.applied_message_number), min(nvl(p.applied_message_create_time,sysdate))
     into   l_limit_scn, l_limit_time
-    from   all_apply_progress p, all_apply a
+    from   dba_apply_progress p, dba_apply a
     where  p.apply_name = a.apply_name
     --and    a.queue_owner = g_queue_owner
     and    a.queue_name = l_queue_name;

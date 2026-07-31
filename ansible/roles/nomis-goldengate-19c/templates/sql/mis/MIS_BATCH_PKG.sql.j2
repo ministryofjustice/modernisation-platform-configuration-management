@@ -22,7 +22,7 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AUTHID
     -- Packaged function get_batch_number returns the active batch number for
     -- the staging process, derived from the ETL_LOAD_LOG table
     FUNCTION get_batch_number(
-        p_staging_owner   IN varchar2,
+        p_staging_owner   IN varchar2 DEFAULT null,
         p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
     ) RETURN number;
 

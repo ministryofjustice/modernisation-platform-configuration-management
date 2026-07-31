@@ -19,7 +19,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
 
   FUNCTION get_batch_number(
-    p_staging_owner   IN varchar2,
+    p_staging_owner   IN varchar2 DEFAULT null,
     p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
   ) RETURN number
   IS
@@ -71,7 +71,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   BEGIN
     FOR c_db IN
      (select source_database
-      from   all_capture ac
+      from   dba_capture ac
       where  ac.queue_owner = mis_gen_pkg.g_queue_owner
         and  ac.queue_name = mis_gen_pkg.g_capture_queue_name)
     LOOP

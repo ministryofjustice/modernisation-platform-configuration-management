@@ -98,7 +98,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         FOR c_apply IN
            (select aa.apply_name, aa.status, aa.error_number, aa.max_applied_message_number,
                    aap.value maximum_scn
-            from   all_apply_parameters aap, all_apply aa
+            from   dba_apply_parameters aap, dba_apply aa
             where  aa.queue_owner = mis_gen_pkg.g_queue_owner
             and    aa.queue_name = mis_gen_pkg.g_apply_queue_name
             and    aap.apply_name = aa.apply_name
@@ -134,7 +134,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
        (select ac.capture_name, ac.source_database, ac.status, ac.error_number,
                ac.captured_scn, ac.last_enqueued_scn, ac.applied_scn,
                ac.start_scn, ac.first_scn, acp.value maximum_scn
-        from   all_capture_parameters acp, all_capture ac
+        from   dba_capture_parameters acp, dba_capture ac
         where  ac.queue_owner = mis_gen_pkg.g_queue_owner
         and    ac.queue_name = mis_gen_pkg.g_capture_queue_name
         and    acp.capture_name = ac.capture_name
@@ -239,7 +239,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
           l_stopped_count number := 0;
     BEGIN
           select count(1) into l_stopped_count
-          from   all_capture ac
+          from   dba_capture ac
           where  ac.queue_owner = mis_gen_pkg.g_queue_owner
           and    ac.queue_name = p_queue_name
           and    ac.status = 'DISABLED'
@@ -253,7 +253,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         l_error_count   number := 0;
     BEGIN
         select count(1) into l_error_count
-        from   all_capture ac
+        from   dba_capture ac
         where  ac.queue_owner = mis_gen_pkg.g_queue_owner
         and    ac.queue_name = p_queue_name
         and    ac.status != 'ENABLED'
@@ -268,7 +268,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         l_active_count   number := 0;
     BEGIN
         select count(1) into l_active_count
-        from   all_apply aa
+        from   dba_apply aa
         where  aa.queue_owner = mis_gen_pkg.g_queue_owner
         and    aa.queue_name = mis_gen_pkg.g_apply_queue_name
         and    aa.status != 'ENABLED';
@@ -475,7 +475,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     
     -- get SCN value for table instantiation
     select nvl(ac.start_scn, ac.first_scn) into l_scn
-    from   ALL_CAPTURE ac
+    from   DBA_CAPTURE ac
     where  capture_name = l_streams_name;
 
     -- add and configure positive capture rules

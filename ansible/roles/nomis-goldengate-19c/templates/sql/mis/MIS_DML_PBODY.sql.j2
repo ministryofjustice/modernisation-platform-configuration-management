@@ -1031,6 +1031,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     apply_name => ''' || l_apply_name || ''',
     assemble_lobs => false); end;'; 
         execute immediate l_plsql;
+        -- grant execute privilege on the apply handler to the apply user
+        l_plsql := 'grant execute on ' || p_apply_handler || ' to ' || mis_gen_pkg.g_queue_owner;
+        execute immediate l_plsql;
     end;
 
   BEGIN
@@ -1134,6 +1137,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     -- get list of apply processes
     l_apply_name_list := mis_gen_pkg.get_apply_list(l_tgt_owner);
 
+    mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+                    'Found ' || l_apply_name_list.count || ' apply processes for ' || l_tgt_owner || '.');
+
     -- retrieve details of all target tables
     l_plsql := 'select OBJECT_OWNER, OBJECT_NAME, OPERATION_NAME, ' ||
                       'REPLACE(USER_PROCEDURE,''"'','''') USER_PROCEDURE ' ||
@@ -1147,6 +1153,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         execute immediate l_plsql
         bulk collect into l_src_owner_list, l_src_table_list, l_operations_list, l_procedure_list
         using l_apply_name_list(i);
+
+        mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+                        'Found ' || l_src_owner_list.count || ' handlers.');
 
         -- clear handlers for each table
         FOR j in 1..l_src_owner_list.count

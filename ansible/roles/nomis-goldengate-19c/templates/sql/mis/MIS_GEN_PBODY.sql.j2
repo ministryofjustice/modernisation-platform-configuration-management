@@ -235,7 +235,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
     -- get list of capture processes
     v_plsql := 'select capture_name ' ||
-                 'from all_capture ' ||
+                 'from dba_capture ' ||
                 'where queue_owner = :queue_owner';
     IF p_staging_owner IS NULL THEN
         execute immediate v_plsql
@@ -274,6 +274,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
   BEGIN
 
+    select apply_name
+    bulk collect into v_apply_name_list
+    from dba_apply
+    where queue_owner = mis_gen_pkg.g_queue_owner
+    and queue_name = v_queue_name;
+    IF v_apply_name_list.count > 0 THEN
+        return v_apply_name_list;
+    END IF;
+
     -- get list of apply processes
     v_plsql := 'select apply_name ' ||
                  'from all_apply ' ||
@@ -282,6 +291,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
         execute immediate v_plsql
         bulk collect into v_apply_name_list
         using mis_gen_pkg.g_queue_owner;
+        IF v_apply_name_list.count = 0 THEN
+            mis_gen_pkg.log_strm_debug (p_staging_owner, 'get_apply_list 0',
+                      'No apply processes found for ' || mis_gen_pkg.g_queue_owner || '. sql: ' || v_plsql);
+        END IF;
     ELSE
         v_plsql := v_plsql ||
                  ' and queue_name = :queue_name';
@@ -289,8 +302,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
         execute immediate v_plsql
         bulk collect into v_apply_name_list
         using mis_gen_pkg.g_queue_owner, v_queue_name;
+        IF v_apply_name_list.count = 0 THEN
+            mis_gen_pkg.log_strm_debug (p_staging_owner, 'get_apply_list 2',
+                      'No apply processes found for ' || mis_gen_pkg.g_queue_owner || ' and ' || v_queue_name || '. sql: ' || v_plsql);
+        END IF;
     END IF;
-
     return v_apply_name_list;
 
   EXCEPTION

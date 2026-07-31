@@ -1,4 +1,55 @@
 ---
+# Deploy Replicat parameter file
+- name: Generate MAPEXCLUDE lines for MIS
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+    sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF LINESIZE 1000
+    SELECT 'MAPEXCLUDE "' || src_owner || '"."' || src_table || '";'
+    FROM {{ oracle_goldengate_group.mis.schema_owner }}.STRM_TAB_CONTROL
+    WHERE 'STG_'||src_table <> tgt_table
+    ORDER BY 1;
+    EXIT;
+    EOF
+  register: mis_tableexclude_output
+  become: yes
+  become_user: oracle
+  changed_when: false
+  failed_when: mis_tableexclude_output.rc != 0 or 'ORA-' in mis_tableexclude_output.stdout
+
+- name: Set fact splitting stdout into lines
+  ansible.builtin.set_fact:
+    oms_owner_mis_mapexclude_lines: "{{ mis_tableexclude_output.stdout_lines }}"
+
+- name: Generate MAP lines for MIS
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+    sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF LINESIZE 1000
+    SELECT '#MIS_MAP ("' || src_owner || '"."' || src_table ||
+       '", "{{ oracle_goldengate_group.mis.schema_owner }}"."' ||
+       tgt_table || '")'
+    FROM {{ oracle_goldengate_group.mis.schema_owner }}.STRM_TAB_CONTROL
+    WHERE 'STG_'||src_table <> tgt_table
+    ORDER BY 1;
+    EXIT;
+    EOF
+  register: mis_tableinclude_output
+  become: yes
+  become_user: oracle
+  changed_when: false
+  failed_when: mis_tableinclude_output.rc != 0 or 'ORA-' in mis_tableinclude_output.stdout
+
+- name: Set fact splitting stdout into lines
+  ansible.builtin.set_fact:
+    oms_owner_mis_mapinclude_lines: "{{ mis_tableinclude_output.stdout_lines }}"
+
 # Deploy Replicat parameter files based on which database is local
 - name: Deploy Replicat parameter file for MIS
   ansible.builtin.template:
