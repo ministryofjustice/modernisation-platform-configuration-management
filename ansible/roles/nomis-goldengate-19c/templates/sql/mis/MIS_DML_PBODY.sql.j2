@@ -605,7 +605,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     v_row_lcr_list    sys.lcr$_row_list := NULL;
     v_plsql      varchar2(4000); 
 
-    v_batch_number    NUMBER(38,0) := nvl(p_batch_number,-1);
+    v_batch_number    NUMBER(38,0) := mis_batch_pkg.get_batch_number;
     v_source_time    DATE := null;
     v_row_count      number := -1;
     v_max_scn      number := null;

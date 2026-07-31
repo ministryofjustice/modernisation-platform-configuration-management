@@ -102,6 +102,7 @@
           /
           
           -- Grant additional GoldenGate-specific privileges
+          GRANT DBA TO {{ oracle_goldengate_dbuser }};
           GRANT CREATE SESSION TO {{ oracle_goldengate_dbuser }};
           GRANT CREATE VIEW to {{ oracle_goldengate_dbuser }};
           GRANT CONNECT to {{ oracle_goldengate_dbuser }};
