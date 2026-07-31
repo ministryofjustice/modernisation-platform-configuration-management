@@ -880,6 +880,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                 IF (instr(v_proc_flags, 'REF') = 0) THEN
                   -- set old batch number column
                   v_row_lcr.set_value('old', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
+                  v_row_lcr.set_value('new', 'MIS_LOAD_ID', sys.anydata.convertNumber(v_batch_number));
                 END IF;
 
                 IF (v_tag = g_tag2) THEN
