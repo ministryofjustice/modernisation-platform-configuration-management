@@ -8,7 +8,7 @@ ASSUMETARGETDEFS
 
 -- --- Error handling ---
 REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
-DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditref.replicat_name }}.dsc, APPEND, MEGABYTES 500
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditref.replicat_name }}.dsc, APPEND, MEGABYTES 100
 REPORTCOUNT EVERY 5 MINUTES, RATE
 
 DBOPTIONS DEFERREFCONST
