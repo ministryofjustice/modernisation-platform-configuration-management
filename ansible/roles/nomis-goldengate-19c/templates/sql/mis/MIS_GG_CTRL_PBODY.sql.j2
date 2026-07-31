@@ -417,8 +417,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   -- packaged procedure set_capture_pos_rules
   -- will set positive capture rules based on contents of p_tgt_owner.STRM_TAB_CONTROL
 
-    l_streams_name	varchar2(30) := mis_gen_pkg.get_capture_name(p_src_owner);
-    l_queue_name	varchar2(30) := mis_gen_pkg.get_queue_name(p_tgt_owner);
+    l_streams_name	varchar2(30) := mis_gen_pkg.g_capture_name;
+    l_queue_name	varchar2(30) := mis_gen_pkg.g_capture_queue_name;
     l_rule_name_dml	varchar2(65);
     l_rule_name_ddl	varchar2(65);
     l_del_rule_list 	mis_gen_pkg.rule_list;

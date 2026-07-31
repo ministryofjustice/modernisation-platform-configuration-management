@@ -862,12 +862,12 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
             -- These are now done in the Replicat parameter file
             -- add source time
-            --v_row_lcr.add_column('new', 'MIS_SOURCE_TIME', sys.anydata.convertDate(v_source_time));
+            v_row_lcr.add_column('new', 'MIS_SOURCE_TIME', sys.anydata.convertDate(v_source_time));
             -- add command flag column (I/U/D/L)
-            --v_command_flag := substr(v_command_type,1,1);
-            --v_row_lcr.add_column('new', 'MIS_COMMAND_FLAG', sys.anydata.convertChar(v_command_flag));
+            v_command_flag := substr(v_command_type,1,1);
+            v_row_lcr.add_column('new', 'MIS_COMMAND_FLAG', sys.anydata.convertChar(v_command_flag));
             -- add scn column
-            --v_row_lcr.add_column('new', 'MIS_SCN', sys.anydata.convertNumber(v_scn));
+            v_row_lcr.add_column('new', 'MIS_SCN', sys.anydata.convertNumber(v_scn));
 
             IF v_command_type = 'INSERT' THEN
                 IF (instr(v_proc_flags, 'REF') = 0) THEN
@@ -1157,7 +1157,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             -- drop DML Apply procedure for table
             BEGIN
                 l_plsql2 := 'DROP PROCEDURE ' || l_procedure_list(j);
-                dbms_utility.exec_ddl_statement(l_plsql2);
+                --dbms_utility.exec_ddl_statement(l_plsql2);
+                execute immediate l_plsql2;
             EXCEPTION WHEN OTHERS THEN null;
             END;
         END LOOP;
@@ -1169,7 +1170,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
   EXCEPTION
 
     WHEN OTHERS THEN
-        mis_gen_pkg.log_strm_error (l_tgt_owner, 'set_apply_handlers',
+        mis_gen_pkg.log_strm_error (l_tgt_owner, 'clear_apply_handlers',
                         p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
 

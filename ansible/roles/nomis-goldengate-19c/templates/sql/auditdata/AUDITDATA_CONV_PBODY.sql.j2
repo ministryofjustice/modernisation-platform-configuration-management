@@ -99,18 +99,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_CONV_
 
   END;
 
-
-  FUNCTION get_queue_name(
-    p_staging_owner IN varchar2
-  ) RETURN varchar2 RESULT_CACHE
-  IS
-  -- local function get_queue_name returns the queue name
-  -- for the supplied staging table owner
-  BEGIN
-    return 'OGGQ$'||p_staging_owner;
-  END;
-
-
   FUNCTION convert_OBJ_PRIVILEGE (
     p_obj_priv in varchar2
   ) RETURN varchar2 RESULT_CACHE IS

@@ -123,11 +123,11 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     g_ogg_group_name VARCHAR2(30) := upper('{{ oracle_goldengate_group_name }}');
     g_ogg_scripts_dir VARCHAR2(200) := '{{ oracle_goldengate_scripts_dir }}';
 
-    g_ogg_extract   VARCHAR2(30) := '{{ oracle_goldengate_capture_process_name }}';
+    g_ogg_extract   VARCHAR2(30) := '{{ oracle_goldengate_group_extract_name }}';
     g_capture_name VARCHAR2(30) := 'OGG$CAP_'||g_ogg_extract;
     g_capture_queue_name VARCHAR2(30) := 'OGG$Q_'||g_ogg_extract;
 
-    g_ogg_replicat VARCHAR2(30) := '{{ oracle_goldengate_apply_process_name }}';
+    g_ogg_replicat VARCHAR2(30) := '{{ oracle_goldengate_group_replicat_name }}';
     g_apply_name   VARCHAR2(30) := 'OGG$'||g_ogg_replicat;
     g_apply_queue_name VARCHAR2(30) := 'OGGQ$'||g_ogg_replicat;
 
@@ -226,12 +226,6 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
         p_location     IN     varchar2,
         p_text      IN     varchar2,
         p_threshold   IN     number DEFAULT 0);
-
-    -- Packaged function get_queue_name returns the streams queue name
-    -- for the supplied staging table owner
-    FUNCTION get_queue_name(
-        p_staging_owner IN     varchar2) 
-    RETURN varchar2 RESULT_CACHE;
 
     FUNCTION get_capture_name(
         p_source_owner IN varchar2

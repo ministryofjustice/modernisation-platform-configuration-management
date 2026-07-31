@@ -206,21 +206,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
   END;
 
-  FUNCTION get_queue_name(
-    p_staging_owner IN varchar2
-  ) RETURN varchar2 RESULT_CACHE
-  IS
-  -- packaged function get_queue_name returns the queue name
-  -- for the supplied staging table owner
-    v_length     number := length(p_staging_owner);
-  BEGIN
-    IF v_length > 24 THEN -- leave room to use queue name in job name
-        return 'OGG$Q_' || substr(upper(p_staging_owner), v_length-23, 24);
-    ELSE
-        return 'OGG$Q_' || upper(p_staging_owner);
-    END IF;
-  END;
-
   FUNCTION get_capture_name(
     p_source_owner IN varchar2
   ) RETURN varchar2 RESULT_CACHE
@@ -255,15 +240,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
     IF p_staging_owner IS NULL THEN
         execute immediate v_plsql
         bulk collect into v_capture_name_list
-        using g_queue_owner;
+        using mis_gen_pkg.g_queue_owner;
     ELSE
-        v_queue_name := get_queue_name(p_staging_owner);
+        v_queue_name := mis_gen_pkg.g_capture_queue_name;
         v_plsql := v_plsql ||
                  ' and queue_name = :queue_name';
 
         execute immediate v_plsql
         bulk collect into v_capture_name_list
-        using g_queue_owner, v_queue_name;
+        using mis_gen_pkg.g_queue_owner, v_queue_name;
     END IF;
 
     return v_capture_name_list;
@@ -277,8 +262,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
   END;
 
-
-
   FUNCTION get_apply_list(
     p_staging_owner   IN     varchar2 DEFAULT NULL
   ) RETURN apply_list IS
@@ -286,7 +269,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
   -- or those associated with a particular staging table owner (if supplied)
 
     v_plsql          varchar2(2000); 
-    v_queue_name    varchar2(30) := get_queue_name(p_staging_owner);
+    v_queue_name     varchar2(30) := mis_gen_pkg.g_apply_queue_name;
     v_apply_name_list   apply_list := null;
 
   BEGIN
@@ -298,14 +281,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
     IF p_staging_owner IS NULL THEN
         execute immediate v_plsql
         bulk collect into v_apply_name_list
-        using g_queue_owner;
+        using mis_gen_pkg.g_queue_owner;
     ELSE
         v_plsql := v_plsql ||
                  ' and queue_name = :queue_name';
 
         execute immediate v_plsql
         bulk collect into v_apply_name_list
-        using g_queue_owner, v_queue_name;
+        using mis_gen_pkg.g_queue_owner, v_queue_name;
     END IF;
 
     return v_apply_name_list;

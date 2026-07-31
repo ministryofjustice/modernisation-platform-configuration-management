@@ -21,18 +21,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     return g_version;
   END;
 
-
-  FUNCTION get_queue_name(
-    p_staging_owner IN varchar2
-  ) RETURN varchar2 RESULT_CACHE
-  IS
-  -- local function get_queue_name returns the queue name
-  -- for the supplied staging table owner
-  BEGIN
-    return 'OGGQ$'||p_staging_owner;
-  END;
-
-
   FUNCTION getOffId (
     icolname  IN varchar2,
     icolvalue IN varchar2
@@ -475,7 +463,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
     l_limit_time   date := sysdate;
     l_source_time   date := null;
     l_source_object   varchar2(30) := null;
-    l_queue_name   varchar2(30) := get_queue_name(auditdata_gen_pkg.g_replicat_name);
+    l_queue_name   varchar2(30) := auditdata_dml_pkg.g_apply_queue_name;
 
   BEGIN
 

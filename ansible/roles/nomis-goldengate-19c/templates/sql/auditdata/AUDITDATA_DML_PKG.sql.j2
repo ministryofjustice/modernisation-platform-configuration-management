@@ -27,6 +27,7 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
 --    g_capture_rs_name   VARCHAR2(30) := 'RS_C_OMS_AUDIT';
 --    g_capture_nrs_name   VARCHAR2(30) := 'NRS_C_OMS_AUDIT';
     g_apply_name   VARCHAR2(30) := 'OGG$'||auditdata_gen_pkg.g_replicat_name;
+    g_apply_queue_name   VARCHAR2(30) := 'OGGQ$'||auditdata_gen_pkg.g_replicat_name;
     g_apply_rs_name VARCHAR2(30) := 'RS_A_'||auditdata_gen_pkg.g_replicat_name;
     g_apply_nrs_name VARCHAR2(30) := 'NRS_A_'||auditdata_gen_pkg.g_replicat_name;
 --    g_queue_name   VARCHAR2(30) := 'Q_AUDITDATA';

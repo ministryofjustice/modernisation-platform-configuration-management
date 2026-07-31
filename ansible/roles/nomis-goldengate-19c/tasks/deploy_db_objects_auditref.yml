@@ -23,9 +23,6 @@
         oracle_goldengate_group_trail_prefix: "{{ oracle_goldengate_group.auditref.trail_prefix }}"
         oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.auditref.dummy_target_schema }}"
-        # Set the capture and apply process names for the Auditref stream based on the logical stream name defined in defaults/main.yml, this is used in the SQL templates to create the correct database objects for the stream
-        oracle_goldengate_capture_process_name: "OGG$CAP_{{ oracle_goldengate_group.auditref.extract_name }}"
-        oracle_goldengate_apply_process_name: "OGG$APPLY_{{ oracle_goldengate_group.auditref.replicat_name }}"
         
     - name: Ensure Auditref SQL directory exists
       ansible.builtin.file:
