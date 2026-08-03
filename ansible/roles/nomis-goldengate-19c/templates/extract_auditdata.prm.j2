@@ -11,6 +11,7 @@ USERIDALIAS SOURCE_DB
 TRANLOGOPTIONS MININGUSERALIAS AUDIT_DB
 
 EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_path }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}
+NODISCARDFILE
 
 REPORTCOUNT EVERY 5 MINUTES, RATE
 WARNLONGTRANS 1H, CHECKINTERVAL 30m
