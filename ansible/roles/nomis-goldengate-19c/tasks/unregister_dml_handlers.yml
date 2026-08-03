@@ -22,6 +22,30 @@
   failed_when: unregister_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in unregister_dml_handlers.stdout
   when: run_auditdata
 
+- name: Unregister DML handlers for AuditRef Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null
+    sqlplus / as sysdba << EOF
+    BEGIN
+      {{ oracle_goldengate_group.auditref.schema_owner }}.MIS_DML_PKG.clear_apply_handlers (
+        p_tgt_owner => '{{ oracle_goldengate_group.auditref.schema_owner }}');
+    END;
+    /
+    EXIT
+    EOF
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: unregister_dml_handlers
+  failed_when: unregister_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in unregister_dml_handlers.stdout
+  when: run_auditref
+
 - name: Unregister DML handlers for MIS Replicat process
   ansible.builtin.shell: |
     set -e

@@ -87,6 +87,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     l_points_set     boolean := TRUE;
     l_old_batch_number    NUMBER(38,0) := -1;
     l_apply_scn     number;
+    l_etl_owner     varchar2(30);
 
     PROCEDURE set_apply_stop (
         p_staging_owner IN     varchar2,
@@ -117,14 +118,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     END;
 
   BEGIN
-  
+    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
+    execute immediate l_plsql into l_etl_owner;
+ 
     -- determine number of latest batch for source
     l_old_batch_number := MIS_BATCH_PKG.get_batch_number(p_staging_owner, TRUE);
   
     IF l_old_batch_number > 1 THEN
         -- get details of existing active batch
         l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                     'from ' || mis_gen_pkg.g_etl_owner || '.ETL_LOAD_LOG ' ||
+                     'from ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
                     'where load_id = :load_id';  
         execute immediate l_plsql into l_staged_date using l_old_batch_number;
     END IF;

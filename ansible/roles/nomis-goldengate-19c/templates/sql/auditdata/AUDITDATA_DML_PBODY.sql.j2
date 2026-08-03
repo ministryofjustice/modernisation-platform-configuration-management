@@ -876,20 +876,7 @@ BEGIN
       v_plsql := 
         'begin
         dbms_apply_adm.set_dml_handler(
-          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
-          object_type => ''table'',
-          operation_name => ''INSERT'',
-          error_handler => false,
-          user_procedure => ''' || v_handler || ''',
-          apply_database_link => null,
-          apply_name => ''' || g_apply_name || ''',
-          assemble_lobs => false);
-        end;';
-      execute immediate v_plsql;
-      v_plsql := 
-        'begin
-        dbms_apply_adm.set_dml_handler(
-          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_name => ''' || g_dummy_target_schema || '.' || v_tab_list(i) || ''',
           object_type => ''table'',
           operation_name => ''INSERT'',
           error_handler => false,
@@ -904,20 +891,7 @@ BEGIN
       v_plsql := 
         'begin
         dbms_apply_adm.set_dml_handler(
-          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
-          object_type => ''table'',
-          operation_name => ''UPDATE'',
-          error_handler => false,
-          user_procedure => ''' || v_handler || ''',
-          apply_database_link => null,
-          apply_name => ''' || g_apply_name || ''',
-          assemble_lobs => false);
-        end;';
-      execute immediate v_plsql;
-      v_plsql := 
-        'begin
-        dbms_apply_adm.set_dml_handler(
-          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_name => ''' || g_dummy_target_schema || '.' || v_tab_list(i) || ''',
           object_type => ''table'',
           operation_name => ''UPDATE'',
           error_handler => false,
@@ -932,20 +906,7 @@ BEGIN
       v_plsql := 
         'begin
         dbms_apply_adm.set_dml_handler(
-          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
-          object_type => ''table'',
-          operation_name => ''DELETE'',
-          error_handler => false,
-          user_procedure => ''' || v_handler || ''',
-          apply_database_link => null,
-          apply_name => ''' || g_apply_name || ''',
-          assemble_lobs => false);
-        end;';
-      execute immediate v_plsql;
-      v_plsql := 
-        'begin
-        dbms_apply_adm.set_dml_handler(
-          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_name => ''' || g_dummy_target_schema || '.' || v_tab_list(i) || ''',
           object_type => ''table'',
           operation_name => ''DELETE'',
           error_handler => false,
@@ -960,20 +921,7 @@ BEGIN
       v_plsql := 
         'begin
         dbms_apply_adm.set_dml_handler(
-          object_name => ''' || g_source_owner || '.' || v_tab_list(i) || ''',
-          object_type => ''table'',
-          operation_name => ''LOB_UPDATE'',
-          error_handler => false,
-          user_procedure => ''' || v_handler || ''',
-          apply_database_link => null,
-          apply_name => ''' || g_apply_name || ''',
-          assemble_lobs => FALSE);
-        end;';
-      execute immediate v_plsql;
-      v_plsql := 
-        'begin
-        dbms_apply_adm.set_dml_handler(
-          object_name => ''GG_' || g_source_owner || '.' || v_tab_list(i) || ''',
+          object_name => ''' || g_dummy_target_schema || '.' || v_tab_list(i) || ''',
           object_type => ''table'',
           operation_name => ''LOB_UPDATE'',
           error_handler => false,
@@ -1003,7 +951,7 @@ BEGIN
   -- will remove DML handlers for audit apply process
 
     l_line_number   number;
-  l_plsql     varchar2(2000); 
+    l_plsql     varchar2(2000); 
     l_plsql2     varchar2(2000); 
 
     l_src_owner_list    owner_list;
@@ -1011,12 +959,12 @@ BEGIN
     l_operations_list    operations_list;
 
     procedure clear_apply_handler (
-        p_apply_name   IN     VARCHAR2,
-     p_src_owner   IN     VARCHAR2,
-        p_src_table   IN     VARCHAR2,
-     p_command_type   IN     VARCHAR2
+      p_apply_name   IN     VARCHAR2,
+      p_src_owner   IN     VARCHAR2,
+      p_src_table   IN     VARCHAR2,
+      p_command_type   IN     VARCHAR2
     ) is
-        l_plsql   varchar2(2000); 
+      l_plsql   varchar2(2000); 
     begin
       l_line_number := 40;
         l_plsql := 

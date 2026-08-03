@@ -1062,6 +1062,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         execute immediate l_plsql bulk collect into l_del_columns_list
         using l_tgt_table_list(i);
 
+        -- Although the batch number was originally passed in as a parameter, it is now retrieved from the batch control table during the actual LCR transform to ensure that the correct batch number is used for each apply process. That way the DML handlers do not have to be recreated each time the batch number changes. The batch number is still passed in here but won't be used.
         -- create DML Apply procedure for table
         l_plsql := 'CREATE OR REPLACE PROCEDURE ' || l_apply_handler || '(p_in_anydata IN sys.anydata) AS ' ||
             'BEGIN ' ||
