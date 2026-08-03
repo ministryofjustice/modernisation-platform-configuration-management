@@ -1,0 +1,28 @@
+# Managed by ansible modernisation-platform-configuration-management repo, oracle-19c-client role
+PRDBOE_TAF =
+  (DESCRIPTION=
+    (ENABLE=broken)
+    (LOAD_BALANCE=OFF)
+    (FAILOVER=ON)
+    (CONNECT_TIMEOUT=10)
+    (RETRY_COUNT=3)
+    (ADDRESS_LIST=
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-boe-db-1.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-boe-db-2.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+    )
+    (CONNECT_DATA=(SERVICE_NAME=PRDBOE_TAF))
+  )
+
+PRDMIS_TAF =
+  (DESCRIPTION=
+    (ENABLE=broken)
+    (LOAD_BALANCE=OFF)
+    (FAILOVER=ON)
+    (CONNECT_TIMEOUT=10)
+    (RETRY_COUNT=3)
+    (ADDRESS_LIST=
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-mis-db-1.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+      (ADDRESS=(PROTOCOL=tcp)(HOST=delius-mis-prod-mis-db-2.delius-mis.hmpps-production.modernisation-platform.service.justice.gov.uk)(PORT=1521))
+    )
+    (CONNECT_DATA=(SERVICE_NAME=PRDMIS_TAF))
+  )
