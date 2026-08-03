@@ -94,6 +94,12 @@
         - ec2provision
         - sap_bip_setup_cluster_name
 
+    - import_tasks: setup_filesystem_destination_allowlist.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - sap_bip_filesystem_destination_allowlist
+
     - import_tasks: update_jdbc.yml
       tags:
         - ec2provision

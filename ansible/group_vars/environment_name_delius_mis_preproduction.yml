@@ -40,6 +40,9 @@ sap_bip_confs:
     sap_bip_rar_base: "BIPLATS4304P_1400-70002683"
     sap_bip_rws_url: "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_sso_rws_url: "https://sso.stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
+    sap_bip_filesystem_destination_allowlist:
+      - /samba.delius-stage.internal/secure/NPS/
+      - //samba.delius-stage.internal/secure/NPS/
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
@@ -81,6 +84,9 @@ sap_bip_confs:
     sap_bip_rar_base: "BIPLATS4304P_1400-70002683"
     sap_bip_rws_url: "https://preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_sso_rws_url: "https://sso.preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
+    sap_bip_filesystem_destination_allowlist:
+      - /samba.delius-pre-prod.internal/secure/NPS/
+      - //samba.delius-pre-prod.internal/secure/NPS/
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
@@ -137,6 +143,7 @@ sap_bip_control_cms_servers: "{{ sap_bip_conf.sap_bip_control_cms_servers }}"
 sap_bip_control_cms_server_1: "{{ sap_bip_conf.sap_bip_control_cms_server_1 }}"
 sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
+sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
 filesystems_domain_name_fqdn: azure.hmpp.root
@@ -159,6 +166,10 @@ bip_filesystems_mount_by_env:
       gid: binstall
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
       src: "eu-west-2a.fs-0e6f80027b87246cf.efs.eu-west-2.amazonaws.com:/"
+    - dir: /samba.delius-stage.internal/secure/NPS
+      fstype: efs
+      opts: "_netdev,iam,tls,accesspoint=fsap-049609431928ef571,nofail"
+      src: fs-aaef805b.efs.eu-west-2.amazonaws.com
     - dir: /NART
       uid: bobj
       gid: binstall
@@ -174,6 +185,10 @@ bip_filesystems_mount_by_env:
       gid: binstall
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
       src: "eu-west-2a.fs-0a16ce697adb719d6.efs.eu-west-2.amazonaws.com:/"
+    - dir: /samba.delius-pre-prod.internal/secure/NPS
+      fstype: efs
+      opts: "_netdev,iam,tls,accesspoint=fsap-094368b141f48485c,nofail"
+      src: fs-1ef14cef.efs.eu-west-2.amazonaws.com
     - dir: /NART
       uid: bobj
       gid: binstall

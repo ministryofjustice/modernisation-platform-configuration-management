@@ -1,0 +1,12 @@
+---
+- name: Copy bobj bash profile
+  ansible.builtin.template:
+    src: "app/{{ item }}"
+    dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+    owner: bobj
+    group: binstall
+  loop:
+    - sap_bobj/enterprise_xi40/linux_x64/config/Destination_AllowList.txt
+  when:
+    - sap_bip_is_cms or sap_bip_is_app
+    - sap_bip_filesystem_destination_allowlist | length > 0
