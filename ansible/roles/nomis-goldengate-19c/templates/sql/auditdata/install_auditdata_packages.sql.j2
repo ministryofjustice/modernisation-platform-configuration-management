@@ -107,7 +107,7 @@ end;
 --EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_deconf;
 --EXECUTE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG.apply_dml_conf;
 
--- not needed as GG doesn't use these attributes
+-- These can't be used as GG doesn't use these attributes
 --begin 
 --    DBMS_CAPTURE_ADM.INCLUDE_EXTRA_ATTRIBUTE(capture_name => 'OGG$CAP_{{ oracle_goldengate_group.auditdata.extract_name }}', attribute_name => 'USERNAME', include => true);
 --    DBMS_CAPTURE_ADM.INCLUDE_EXTRA_ATTRIBUTE(capture_name => 'OGG$CAP_{{ oracle_goldengate_group.auditdata.extract_name }}', attribute_name => 'SESSION#', include => true);

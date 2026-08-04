@@ -4,26 +4,42 @@ GETENV (NLS_LANG)
 
 USERIDALIAS MIS_DB
 
---ASSUMETARGETDEFS
-
 -- --- Error handling ---
-NODISCARDFILE
---REPERROR (DEFAULT, DISCARD)  -- discard unhandled errors but continue
---DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.mis.replicat_name }}.dsc, APPEND, MEGABYTES 100
-REPORTCOUNT EVERY 5 MINUTES, RATE
-
-DBOPTIONS DEFERREFCONST
-DBOPTIONS SUPPRESSTRIGGERS
-DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_LEVEL 1)
+-- Stop on all unhandled errors. Never silently lose source changes.
+REPERROR (DEFAULT, ABEND)
+-- Stop on errors raised by Integrated Replicat procedural DML handlers.
+REPERROR (PROCEDURE, ABEND)
+-- Retain diagnostic details; this does not cause records to be skipped.
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.mis.replicat_name }}.dsc,APPEND,MEGABYTES 100
+-- Prevent the discard file from filling up and causing the process to abend
+DISCARDROLLOVER ON sunday
+-- Report a count of transaction records processed since startup
+REPORTCOUNT EVERY 10 MINUTES, RATE
+-- Rotate the report file at midnight every day
+REPORTROLLOVER AT 00:00
 
 -- All MIS mappings use this macro.
 --
 -- MIS_LOAD_ID is a target-only primary-key column and must be present before the DML handler receives the LCR.
+-- The SCN isn't stored in the LCR so we need to get it from the environment.
 MACRO #MIS_MAP
 PARAMS (#SOURCE_TABLE, #TARGET_TABLE)
 BEGIN
 MAP #SOURCE_TABLE, TARGET #TARGET_TABLE, &
-    COLMAP (USEDEFAULTS, MIS_LOAD_ID = 0);
+    COLMAP (
+      USEDEFAULTS, &
+      MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &
+      MIS_COMMAND_FLAG = @CASE(
+        @GETENV('GGHEADER', 'OPTYPE'), 
+          'INSERT', 'I', 
+          'UPDATE', 'U', 
+          'PK UPDATE', 'U', 
+          'SQL COMPUPDATE', 'U', 
+          'DELETE', 'D', 
+          'TRUNCATE', 'D', 
+          '?'), &
+      MIS_SCN = @GETENV('TRANSACTION', 'CSN'), &
+      MIS_LOAD_ID = 0);
 END;
 
 -- Exclude tables whose target names do not follow the standard STG_<source>

@@ -862,12 +862,12 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
             -- These are now done in the Replicat parameter file
             -- add source time
-            v_row_lcr.add_column('new', 'MIS_SOURCE_TIME', sys.anydata.convertDate(v_source_time));
+            --v_row_lcr.add_column('new', 'MIS_SOURCE_TIME', sys.anydata.convertDate(v_source_time));
             -- add command flag column (I/U/D/L)
-            v_command_flag := substr(v_command_type,1,1);
-            v_row_lcr.add_column('new', 'MIS_COMMAND_FLAG', sys.anydata.convertChar(v_command_flag));
+            --v_command_flag := substr(v_command_type,1,1);
+            --v_row_lcr.add_column('new', 'MIS_COMMAND_FLAG', sys.anydata.convertChar(v_command_flag));
             -- add scn column
-            v_row_lcr.add_column('new', 'MIS_SCN', sys.anydata.convertNumber(v_scn));
+            --v_row_lcr.add_column('new', 'MIS_SCN', sys.anydata.convertNumber(v_scn));
 
             IF v_command_type = 'INSERT' THEN
                 IF (instr(v_proc_flags, 'REF') = 0) THEN

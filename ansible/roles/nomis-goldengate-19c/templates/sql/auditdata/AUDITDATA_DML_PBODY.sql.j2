@@ -276,42 +276,38 @@ BEGIN
   v_scn := p_row_lcr.get_scn();
   if nvl(v_scn,0) = 0 and v_source_time is not null
   then
-    begin
-      SELECT max(next_scn)
-      into v_scn
-      FROM DBA_REGISTERED_ARCHIVED_LOG 
-      WHERE consumer_name = g_consumer_name
-      AND first_time < v_source_time AND next_time > v_source_time;
-    exception
-    when no_data_found then
+    SELECT max(next_scn)
+    into v_scn
+    FROM DBA_REGISTERED_ARCHIVED_LOG 
+    WHERE consumer_name = g_consumer_name
+    AND v_source_time between first_time AND next_time;
+    if v_scn is null then
       select max(next_scn)
       into v_scn
       FROM DBA_REGISTERED_ARCHIVED_LOG 
       WHERE consumer_name = g_consumer_name;
         audit_log_error(NULL, 'SCN not found for '||to_char(v_source_time,'dd/mm/yyyy hh24:mi:ss')||', current max next_scn is '||v_scn, null, NULL, NULL, NULL, NULL, NULL, NULL);
       return;
-    end;
+    end if;
   end if;
 
 --start v2
   v_commit_scn := p_row_lcr.get_commit_scn();
   if nvl(v_commit_scn,0) = 0 and v_source_time is not null
   then
-    begin
-      SELECT max(next_scn)
-      into v_commit_scn
-      FROM DBA_REGISTERED_ARCHIVED_LOG 
-      WHERE consumer_name = g_consumer_name
-      AND first_time < v_source_time AND next_time > v_source_time;
-    exception
-    when no_data_found then
+    SELECT max(next_scn)
+    into v_commit_scn
+    FROM DBA_REGISTERED_ARCHIVED_LOG 
+    WHERE consumer_name = g_consumer_name
+    AND v_source_time between first_time AND next_time;
+    if v_commit_scn is null then
       select max(next_scn)
       into v_commit_scn
       FROM DBA_REGISTERED_ARCHIVED_LOG 
       WHERE consumer_name = g_consumer_name;
         audit_log_error(NULL, 'Commit SCN not found for '||to_char(v_source_time,'dd/mm/yyyy hh24:mi:ss')||', current max next_scn is '||v_commit_scn, null, NULL, NULL, NULL, NULL, NULL, NULL);
       return;
-    end;
+    end if;
   end if;
 
 --end v2
