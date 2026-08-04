@@ -26,7 +26,7 @@ LOCAL_SID="$1"
 
 LOG_FILE="${LOG_DIR}/purge_archivelogs_cron.log"
 mkdir -p "$LOG_DIR"
-exec > >(tee -a "$LOG_FILE") 2>&1
+exec > "$LOG_FILE" 2>&1
 
 echo "=== GoldenGate Foreign Archivelog Purge: $(date) ==="
 echo "Mining database  : ${LOCAL_SID}"
@@ -40,6 +40,7 @@ export ORACLE_SID="${LOCAL_SID}"
 export ORAENV_ASK=NO
 # shellcheck source=/dev/null
 . oraenv >/dev/null 2>&1
+export PATH=${ORACLE_HOME}/bin:$PATH
 
 # ---------------------------------------------------------------------------
 # get_recovery_checkpoint_time EXTRACT_NAME
@@ -165,7 +166,7 @@ purge_foreign_archivelogs_asmcmd() {
     echo ""
     echo "Querying DBA_REGISTERED_ARCHIVED_LOG for purgeable logs..."
 
-    local purgeable_query="SELECT distinct upper(name) FROM dba_registered_archived_log WHERE source_database IS NOT NULL AND upper(name) like upper('+DATA/${oracle_sid}/${SOURCE_SID}_ARCHIVELOGS/%') AND modified_time < TO_DATE('${cutoff_time}','YYYY-MM-DD HH24:MI:SS') order by upper(name);"
+    local purgeable_query="SELECT distinct upper(name) FROM dba_registered_archived_log WHERE source_database IS NOT NULL AND upper(name) like upper('+DATA/${oracle_sid}/${SOURCE_SID}_ARCHIVELOGS/%') AND modified_time BETWEEN TO_DATE('${cutoff_time}','YYYY-MM-DD HH24:MI:SS')-3 AND TO_DATE('${cutoff_time}','YYYY-MM-DD HH24:MI:SS') order by upper(name);"
     echo "  SQL: ${purgeable_query}"
 
     local purgeable_logs
@@ -188,22 +189,13 @@ EOF
             if [[ ! "$logfile" =~ ^\+ ]]; then
                 continue
             fi
-            #echo "  Removing: ${logfile}"
+            echo "  Removing: ${logfile}"
             # Switch to ASM instance for asmcmd
             export ORACLE_SID=+ASM
             export ORAENV_ASK=NO
             . oraenv >/dev/null 2>&1
             asmcmd rm -f "$logfile" 2>/dev/null
-            local rc=$?
-            # Switch back to mining DB
-            export ORACLE_SID="${oracle_sid}"
-            export ORAENV_ASK=NO
-            . oraenv >/dev/null 2>&1
-            if [ "$rc" -eq 0 ]; then
-                purge_count=$((purge_count + 1))
-            #else
-            #    echo "  WARNING: Failed to remove ${logfile} (rc=${rc})"
-            fi
+            purge_count=$((purge_count + 1))
         done <<< "$purgeable_logs"
     else
         echo "  No purgeable logs found in DBA_REGISTERED_ARCHIVED_LOG"
@@ -211,6 +203,10 @@ EOF
 
     echo ""
     echo "Purge complete for ${oracle_sid}: ${purge_count} items removed"
+    # Switch back to mining DB
+    export ORACLE_SID="${oracle_sid}"
+    export ORAENV_ASK=NO
+    . oraenv >/dev/null 2>&1
     return 0
 }
 

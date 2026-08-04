@@ -53,6 +53,10 @@ oracle_goldengate_scripts_dir: "/home/oracle/admin/goldengate/scripts"
 oracle_goldengate_sql_dir: "/home/oracle/admin/goldengate/sql"
 oracle_goldengate_log_dir: "/home/oracle/admin/goldengate/logs"
 
+# Number of days to retain GoldenGate report and operational log files.
+oracle_goldengate_report_log_retention_days: 30
+oracle_goldengate_admin_log_retention_days: 30
+
 oracle_goldengate_directories:
   - "{{ oracle_goldengate_trail_dir }}"
   - "{{ oracle_goldengate_param_dir }}"

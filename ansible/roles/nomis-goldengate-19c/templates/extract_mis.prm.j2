@@ -5,13 +5,26 @@ USERIDALIAS SOURCE_DB
 -- Use a mining user on the downstream (local) database
 TRANLOGOPTIONS MININGUSERALIAS MIS_DB
 
+-- Trail file location and name. The trail file will be created in the specified directory with the specified prefix.
 EXTTRAIL {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_path }}/{{ oracle_goldengate_group.mis.trail_prefix }}
-NODISCARDFILE
-
-REPORTCOUNT EVERY 5 MINUTES, RATE
-WARNLONGTRANS 1H, CHECKINTERVAL 30m
-LOGALLSUPCOLS
+-- Minimizes trail file size by writing only changed columns instead of full row images during update operations.
 UPDATERECORDFORMAT COMPACT
+-- Rollover the trail file at midnight every day and report the number of records extracted from each table since the last report was generated.
+ROLLOVER AT 00:00 REPORT
+
+-- --- Error handling ---
+-- No need for a discard file as we are not expecting any errors to occur. If an error does occur then we want the extract to stop immediately so that we can investigate, fix the issue and restart it at the point it failed.
+NODISCARDFILE
+-- Rotate the report file at midnight every day
+REPORTROLLOVER AT 00:00
+-- Report a count of transaction records processed since startup
+REPORTCOUNT EVERY 10 MINUTES, RATE
+-- The length of time after which an open transaction is considered to be long-running and the frequency GG checks for long-running transactions
+WARNLONGTRANS 1H, CHECKINTERVAL 30m
+
+-- Force Extract to include before-images of all supplementally logged columns in the trail file for conflict resolution and dependency tracking.
+LOGALLSUPCOLS
+-- Configure downstream deployment to read archived logs instead of mining standby redo logs in real time.
 TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N)
 
 -- Dynamically generated TABLE lines go here for tables that need to be included in the extract

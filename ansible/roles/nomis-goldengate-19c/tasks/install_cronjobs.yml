@@ -29,6 +29,15 @@
     mode: "0750"
   when: gg_home_exists
 
+- name: Deploy GoldenGate report and operational log purge script
+  ansible.builtin.template:
+    src: purge_gg_logs.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/purge_gg_logs.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: gg_home_exists
+
 - name: Install GoldenGate MIS archivelog purge cron job
   ansible.builtin.cron:
     name: "Purge GoldenGate MIS foreign archived logs from ASM"
@@ -46,3 +55,12 @@
     hour: "3"
     job: "{{ oracle_goldengate_scripts_dir }}/purge_gg_archivelogs.sh {{ oracle_goldengate_group.auditdata.tns_alias }} 2>&1"
   when: gg_home_exists and run_auditdata
+
+- name: Install GoldenGate report and operational log purge cron job
+  ansible.builtin.cron:
+    name: "Purge old GoldenGate report and operational logs"
+    user: "{{ oracle_goldengate_owner }}"
+    minute: "30"
+    hour: "1"
+    job: "{{ oracle_goldengate_scripts_dir }}/purge_gg_logs.sh"
+  when: gg_home_exists

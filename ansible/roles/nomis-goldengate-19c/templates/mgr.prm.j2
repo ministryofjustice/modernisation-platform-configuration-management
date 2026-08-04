@@ -1,7 +1,9 @@
 -- manager port
 PORT 7809
 
-PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/*, USECHECKPOINTS, MINKEEPDAYS 2
+PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_path }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
+PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_path }}/{{ oracle_goldengate_group.auditref.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
+PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_path }}/{{ oracle_goldengate_group.mis.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
 
 -- Manager checks for Extract and Replicat lag.
 LAGREPORTMINUTES 5
