@@ -270,7 +270,7 @@ BEGIN
 
   v_line_number:=20;
   --get basic LCR info
-  v_object_owner := replace(p_row_lcr.get_object_owner(),'GG_');
+  v_object_owner := p_row_lcr.get_object_owner();
   v_source_time  := p_row_lcr.get_source_time();
 
   v_scn := p_row_lcr.get_scn();

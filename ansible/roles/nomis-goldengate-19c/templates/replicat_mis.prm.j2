@@ -18,9 +18,7 @@ DBOPTIONS INTEGRATEDPARAMS (COMMIT_SERIALIZATION DEPENDENT_TRANSACTIONS, TRACE_L
 
 -- All MIS mappings use this macro.
 --
--- GET_BATCH_VALUE is called once per source transaction. The returned value
--- is added to the mapped LCR because MIS_LOAD_ID is a target-only primary-key
--- column and must be present before the DML handler receives the LCR.
+-- MIS_LOAD_ID is a target-only primary-key column and must be present before the DML handler receives the LCR.
 MACRO #MIS_MAP
 PARAMS (#SOURCE_TABLE, #TARGET_TABLE)
 BEGIN
