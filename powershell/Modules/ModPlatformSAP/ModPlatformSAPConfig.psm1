@@ -70,7 +70,7 @@ function Get-ModPlatformSAPConfig {
           Client = @{
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/sap-bip-packages'
-            S3File        = 'BIPLATCLNT4304P_1400-70005711'
+            S3File        = 'BIPLATCLNT4304P_1400-70005711.EXE'
             Version       = '14.3.4.NEW'
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
