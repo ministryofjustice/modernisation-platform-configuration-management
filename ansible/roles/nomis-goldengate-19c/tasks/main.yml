@@ -123,6 +123,14 @@
     - deploy-mis
     - deploy-mis-objects
 
+- name: Install and configure GoldenGate Manager
+  import_tasks: install_manager.yml
+  tags:
+    - goldengate
+    - goldengate-install
+    - goldengate-config
+    - install-manager
+
 # Audit database processes (AUDITDATA and AUDITREF)
 - name: Install GoldenGate extract processes (Audit databases)
   import_tasks: install_audit_extract.yml

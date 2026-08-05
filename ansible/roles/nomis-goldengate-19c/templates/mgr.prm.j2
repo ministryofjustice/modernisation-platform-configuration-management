@@ -1,6 +1,10 @@
 -- manager port
 PORT 7809
 
+-- Control connection access to the Manager process and the processes under its control.
+-- Added to avoid OGG-01877 warning in the manager log file. The default is to allow all connections.
+ACCESSRULE, PROG SERVER, ALLOW
+
 PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditdata.trail_path }}/{{ oracle_goldengate_group.auditdata.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
 PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.auditref.trail_path }}/{{ oracle_goldengate_group.auditref.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
 PURGEOLDEXTRACTS {{ oracle_goldengate_trail_dir }}/{{ oracle_goldengate_group.mis.trail_path }}/{{ oracle_goldengate_group.mis.trail_prefix }}*, USECHECKPOINTS, MINKEEPDAYS 2
