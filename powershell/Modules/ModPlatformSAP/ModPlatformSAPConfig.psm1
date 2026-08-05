@@ -24,6 +24,7 @@ function Get-ModPlatformSAPConfig {
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/ncr-packages'
             S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            Version       = '14.3.4.4970'
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
@@ -42,6 +43,7 @@ function Get-ModPlatformSAPConfig {
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/ncr-packages'
             S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            Version       = '14.3.4.4970'
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
@@ -67,8 +69,9 @@ function Get-ModPlatformSAPConfig {
         InstallPackages = @{
           Client = @{
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path        = 'hmpps/ncr-packages'
-            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            S3Path        = 'hmpps/sap-bip-packages'
+            S3File        = 'BIPLATCLNT4304P_1400-70005711'
+            Version       = '14.3.4.NEW'
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
@@ -96,6 +99,7 @@ function Get-ModPlatformSAPConfig {
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/ncr-packages'
             S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            Version       = '14.3.4.4970'
             WorkingDir    = 'C:\Software'             # Download installer here
             ExtractDir    = 'C:\Software\BIP43'
             SkipIfPresent = 'C:\Software\BIP43\setup.exe'
@@ -343,6 +347,7 @@ function Get-ModPlatformSAPConfig {
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
             S3Path        = 'hmpps/ncr-packages'
             S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            Version       = '14.3.4.4970'
             WorkingDir    = 'D:\Software'             # Download installer here
             ExtractDir    = 'D:\Software\BIPLATCLNT4304P_500-70005711'
             SkipIfPresent = 'D:\Software\BIPLATCLNT4304P_500-70005711\setup.exe'
