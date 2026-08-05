@@ -157,6 +157,9 @@
          else 5 if ansible_kernel is version('4.14', '>=')
          else 4 if ansible_kernel is version('4.1', '>=')
          else 3 }}
+
+- name: Derive expected Transparent HugePages mode from UEK release
+  set_fact:
     thp_expected_mode: "{{ 'madvise' if uek_release | int >= 7 else 'disabled ([never])' }}"
     thp_expected_marker: "{{ '\\[madvise\\]' if uek_release | int >= 7 else '\\[never\\]' }}"
 
