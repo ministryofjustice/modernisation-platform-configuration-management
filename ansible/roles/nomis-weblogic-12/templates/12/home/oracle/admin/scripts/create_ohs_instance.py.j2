@@ -1,5 +1,16 @@
+import json
+import subprocess
+
+weblogic_admin_password_secretsmanager_value = subprocess.check_output([
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", "/oracle/weblogic/{{ nomis_environment }}/passwords",
+    "--query", "SecretString",
+    "--output", "text"
+])
+weblogic_admin_password = json.loads(weblogic_admin_password_secretsmanager_value.decode('utf-8').strip())
+
 adminUser = '{{ weblogic_admin_username }}'
-adminPassword = '{{ weblogic_admin_password }}'
+adminPassword = weblogic_admin_password[adminUser]
 adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
 
 componentName = '{{ weblogic_ohs_component_name | default("ohs1") }}'
