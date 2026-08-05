@@ -16,7 +16,8 @@
 #   5. Set vm.nr_hugepages in /etc/sysctl.conf and apply immediately
 #   6. Set oracle soft and hard memlock limits to unlimited in /etc/security/limits.conf
 #   7. Verify pam_limits.so is active in /etc/pam.d
-#   8. Verify Transparent HugePages are disabled
+#   8. Verify Transparent HugePages are set correctly for the running UEK release
+#      UEK release mapping reference: https://docs.oracle.com/en/operating-systems/uek/7/relnotes7.0/uek7-Operating_System_Compatibility.html
 
 - name: Get list of all databases registered in Grid Infrastructure
   shell: |
@@ -144,9 +145,26 @@
   register: thp_status
   changed_when: false
 
-- name: Fail if Transparent HugePages are not disabled
+- name: Derive UEK release and expected Transparent HugePages mode
+  set_fact:
+    # Oracle UEK release mapping is based on upstream kernel versions:
+    # UEK8 -> 6.12, UEK7 -> 5.15, UEK6 -> 5.4, UEK5 -> 4.14, UEK4 -> 4.1.
+    # Reference: https://docs.oracle.com/en/operating-systems/uek/7/relnotes7.0/uek7-Operating_System_Compatibility.html
+    uek_release: >-
+      {{ 8 if ansible_kernel is version('6.12', '>=')
+         else 7 if ansible_kernel is version('5.15', '>=')
+         else 6 if ansible_kernel is version('5.4', '>=')
+         else 5 if ansible_kernel is version('4.14', '>=')
+         else 4 if ansible_kernel is version('4.1', '>=')
+         else 3 }}
+    thp_expected_mode: "{{ 'madvise' if uek_release | int >= 7 else 'disabled ([never])' }}"
+    thp_expected_marker: "{{ '\\[madvise\\]' if uek_release | int >= 7 else '\\[never\\]' }}"
+
+- name: Fail if Transparent HugePages are not set correctly for this UEK version
   fail:
     msg: >
-      Transparent HugePages must be disabled. Current setting: {{ thp_status.stdout }}.
-      Use the hugepages role to disable via grubby and reboot.
-  when: thp_status.stdout is not search('\[never\]')
+      Transparent HugePages must be set to {{ thp_expected_mode }}
+      for kernel {{ ansible_kernel }} (derived UEK release: {{ uek_release }}; see https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/setting-thp-uek.html#GUID-8FBE8A40-14EF-4C79-B05C-03837BE0BF11).
+      Current setting: {{ thp_status.stdout }}.
+      Use the hugepages role to set correctly via grubby and reboot.
+  when: thp_status.stdout is not search(thp_expected_marker)
