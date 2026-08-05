@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 $SAPConfig  = Get-ModPlatformSAPConfig
 $SAPSecrets = Get-ModPlatformSAPSecrets $SAPConfig
 Set-SAPEnvironmentVars $SAPConfig.Variables
-Install-SAPClient "response-install-client.ini" $SAPConfig.InstallPackages.Client
+Install-SAPClient "response-install-client.ini" "response-upgrade-client.ini" $SAPConfig.InstallPackages.Client
 
 $ShortcutDir = Join-Path -Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) -ChildPath "4.3 Client Tools"
 $ShortcutPath = Join-Path -Path $ShortcutDir -ChildPath "Designer.lnk"
