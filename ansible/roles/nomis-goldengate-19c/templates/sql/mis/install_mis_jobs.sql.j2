@@ -23,6 +23,7 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Creating MIS jobs migrated from STRMADMIN...');
     
     -- Job 1: DAILY_LOG_PURGE - Already in crontab, not migrating
+    -- This job purges Streams archive logs
     DBMS_OUTPUT.PUT_LINE('NOTE: DAILY_LOG_PURGE already runs from root crontab - not migrating');
     
     -- Job 2: MISLOAD_FAILURE_CHECK - Should be cron job

@@ -14,7 +14,7 @@ DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditr
 -- Prevent the discard file from filling up and causing the process to abend
 DISCARDROLLOVER ON sunday
 -- Report a count of transaction records processed since startup
-REPORTCOUNT EVERY 10 MINUTES, RATE
+REPORTCOUNT EVERY 15 MINUTES, RATE
 -- Rotate the report file at midnight every day
 REPORTROLLOVER AT 00:00
 
