@@ -432,14 +432,17 @@ function Install-SAPBIP {
 
 function Install-SAPClient {
   param (
-    [Parameter(Mandatory)][string]$ResponseFilename,
+    [Parameter(Mandatory)][string]$ResponseInstallFilename,
+    [Parameter(Mandatory)][string]$ResponseUpgradeFilename,
     [Parameter(Mandatory)][hashtable]$InstallPackage
   )
 
   $ExistingClient = Get-Package | Where-Object { $_.Name -like 'SAP BusinessObjects*Client*' }
   if ($ExistingClient) {
-    Write-Output "Client is already installed: $($ExistingClient.Name) v$($ExistingClient.Version)"
-    return
+    Write-Output "Upgrading existing client $($ExistingClient.Name) v$($ExistingClient.Version) -> $($InstallPackage.Version)"
+    $ResponseFilename = $ResponseUpgradeFilename
+  } else {
+    $ResponseFilename = $ResponseInstallFilename
   }
 
   $File = Join-Path $InstallPackage.WorkingDir -ChildPath $InstallPackage.InstallPackagesFile
