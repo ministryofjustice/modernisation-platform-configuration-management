@@ -228,6 +228,11 @@ create_suppression_list
 # Extend suppression list to include hosts currently in maintenance (temporary exclusions)
 suppress_excluded_hosts
 
+# In shared environments (i.e. stage/pre-prod) the number of suppressed hosts may become very long
+# and exceed string handling limits.  Therefore we strip the domain names from hosts to keep
+# the string size manageable.   Database hostnames are still uniquely identifiable since each
+# AWS account only uses one domain.
+SHORT_HOSTNAME_SUPPRESSION_LIST=$(echo "${SUPPRESSION_LIST}" | awk -F'|' 'BEGIN{OFS="|"} {for(i=2;i<=NF;i++) sub(/\..*/, "", $i); print}')
 
 # We check for any incidents in the last hour (using the annotations to
 # ignore any which have already been dealt with).
@@ -255,7 +260,9 @@ SELECT
     END||'|'||
     CASE WHEN REGEXP_INSTR(
           CASE WHEN UPPER(i.target_name) LIKE '%_SYS* (%)'
-          THEN TRIM(REPLACE(SUBSTR(i.target_name,1,INSTR(i.target_name,' ')),'*',''))
+          THEN
+	  REGEXP_REPLACE(  -- Create short hostnames for matching by stripping off the host domains of all hosts (SYS targets)
+               TRIM(REPLACE(SUBSTR(i.target_name,1,INSTR(i.target_name,' ')),'*',''))
                ||'=>'||    -- If target is a database system then consider it blacked-out if any of its constituent hosts are blacked-out
                (SELECT LISTAGG(DISTINCT mt.host_name,';') OVER (PARTITION BY incident_num)
                 FROM  sysman.mgmt_target_memberships  mtm
@@ -264,9 +271,16 @@ SELECT
                 WHERE TRIM(REPLACE(SUBSTR(i.target_name,1,INSTR(i.target_name,' ')),'*','')) = mtm.composite_target_name
                 AND   mtm.composite_target_type = 'oracle_dbsys'
                 FETCH FIRST ROW ONLY
-                )
-          ELSE SUBSTR(host_name,INSTR(host_name,':server:')+8)
-          END,'${SUPPRESSION_LIST}') > 0 THEN 'Y' ELSE 'N'
+                ),
+             '\.[^; ]+',
+             ''
+             )
+          ELSE
+	     REGEXP_REPLACE(  -- Create short hostname for matching by stripping off the host domain (other targets)
+                 SUBSTR(host_name,INSTR(host_name,':server:')+8),
+		 '\..*$',''
+             )
+          END,'${SHORT_HOSTNAME_SUPPRESSION_LIST}') > 0 THEN 'Y' ELSE 'N'
     END||'|'||
     CASE WHEN REGEXP_INSTR(
           CASE WHEN UPPER(target_name) LIKE '%_SYS* (%)'
