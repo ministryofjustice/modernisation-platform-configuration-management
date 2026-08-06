@@ -1,12 +1,23 @@
 from java.lang import String
 from javax.management import ObjectName
+from java.lang import Runtime
+from java.io import BufferedReader, InputStreamReader
+
+def get_secret_key(secret_id, key):
+    cmd = 'aws secretsmanager get-secret-value --secret-id "' + secret_id + '" --query SecretString --output text | python3 -c "import sys,json; print(json.load(sys.stdin)[\'' + key + '\'])"'
+    proc = Runtime.getRuntime().exec(['/bin/bash', '-c', cmd])
+    result = BufferedReader(InputStreamReader(proc.getInputStream())).readLine()
+    proc.waitFor()
+    return result
+
+adminUser = '{{ weblogic_admin_username }}'
+adminPassword = get_secret_key('/oracle/weblogic/{{ nomis_environment }}/passwords', adminUser)
+weblogic_db_repo_schema_password = get_secret_key('/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords', 'wls_schemas')
+
 
 oracleHome = '{{ weblogic_oracle_home }}'
 domainHome = '{{ weblogic_domain_home }}'
 domainName = '{{ weblogic_domain_name }}'
-
-adminUser = '{{ weblogic_admin_username }}'
-adminPassword = '{{ weblogic_admin_password }}'
 
 machineName = '{{ weblogic_machine_name | default("AdminServerMachine") }}'
 machineListenAddress = '{{ weblogic_domain_hostname }}'
@@ -77,35 +88,35 @@ configure_jdbc_datasource(
     'WLSSchemaDataSource',
     '{{ weblogic_db_repo_url }}',
     '{{ weblogic_db_repo_prefix }}_WLS_RUNTIME',
-    '{{ weblogic_db_repo_schema_password }}'
+    weblogic_db_repo_schema_password
 )
 
 configure_jdbc_datasource(
     'LocalSvcTblDataSource',
     '{{ weblogic_db_repo_url }}',
     '{{ weblogic_db_repo_prefix }}_STB',
-    '{{ weblogic_db_repo_schema_password }}'
+    weblogic_db_repo_schema_password
 )
 
 configure_jdbc_datasource(
     'opss-data-source',
     '{{ weblogic_db_repo_url }}',
     '{{ weblogic_db_repo_prefix }}_OPSS',
-    '{{ weblogic_db_repo_schema_password }}'
+    weblogic_db_repo_schema_password
 )
 
 configure_jdbc_datasource(
     'opss-audit-DBDS',
     '{{ weblogic_db_repo_url }}',
     '{{ weblogic_db_repo_prefix }}_IAU_APPEND',
-    '{{ weblogic_db_repo_schema_password }}'
+    weblogic_db_repo_schema_password
 )
 
 configure_jdbc_datasource(
     'opss-audit-viewDS',
     '{{ weblogic_db_repo_url }}',
     '{{ weblogic_db_repo_prefix }}_IAU_VIEWER',
-    '{{ weblogic_db_repo_schema_password }}'
+    weblogic_db_repo_schema_password
 )
 
 # Looks like this one is only needed for BIP
@@ -113,7 +124,7 @@ configure_jdbc_datasource(
 #    'mds-owsm',
 #    '{{ weblogic_db_repo_url }}',
 #    '{{ weblogic_db_repo_prefix }}_MDS',
-#    '{{ weblogic_db_repo_schema_password }}'
+#    weblogic_db_repo_schema_password
 #)
 
 print('Configuring Admin user')
@@ -222,7 +233,7 @@ print('Configuring RCU Service Table datasource')
 
 cd('/JDBCSystemResources/LocalSvcTblDataSource/JdbcResource/LocalSvcTblDataSource/JDBCDriverParams/NO_NAME_0')
 set('URL', 'jdbc:oracle:thin:@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }}')
-set('PasswordEncrypted', '{{ weblogic_db_repo_schema_password }}')
+set('PasswordEncrypted', weblogic_db_repo_schema_password)
 
 cd('Properties/NO_NAME_0/Property/user')
 set('Value', '{{ weblogic_db_repo_prefix }}_STB')
