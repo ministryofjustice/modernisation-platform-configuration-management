@@ -439,10 +439,6 @@ function Install-SAPClient {
 
   $ExistingClient = Get-Package | Where-Object { $_.Name -like 'SAP BusinessObjects*Client*' }
   if ($ExistingClient) {
-    if ($ExistingClient.Version -eq $InstallPackage.Version) {
-      Write-Output "Client is already installed: $($ExistingClient.Name) v$($ExistingClient.Version)"
-      return
-    }
     Write-Output "Upgrading existing client $($ExistingClient.Name) v$($ExistingClient.Version) -> $($InstallPackage.Version)"
     $ResponseFilename = $ResponseUpgradeFilename
   } else {
