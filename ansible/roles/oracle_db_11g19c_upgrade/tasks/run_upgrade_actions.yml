@@ -7,6 +7,34 @@
     - upgrade
     - shutdown
 
+- name: Copy spfile from 11g home to 19c home
+  copy:
+    src: "{{ oracle_database_11g_oracle_home }}/dbs/spfile{{ db_name }}.ora"
+    dest: "{{ oracle_database_19c_oracle_home }}/dbs/spfile{{ db_name }}.ora"
+    remote_src: true
+    owner: oracle
+    group: oinstall
+    mode: '0640'
+  become: true
+  become_user: oracle
+  tags:
+    - upgrade
+    - config
+
+- name: Copy password file from 11g home to 19c home
+  copy:
+    src: "{{ oracle_database_11g_oracle_home }}/dbs/orapw{{ db_name }}"
+    dest: "{{ oracle_database_19c_oracle_home }}/dbs/orapw{{ db_name }}"
+    remote_src: true
+    owner: oracle
+    group: oinstall
+    mode: '0640'
+  become: true
+  become_user: oracle
+  tags:
+    - upgrade
+    - config
+
 - name: Prepare Bash profile with New Oracle Home
   lineinfile:
     path: /home/oracle/.bash_profile
@@ -144,17 +172,17 @@
     - upgrade
     - startup
 
-# Get upgrade status for Primary
-- name: Run Upgrade Status Script
-  script: report_upgrade_status.sh
-  register: report_upgrade_status
+# Get upgrade status from log file
+- name: Get Upgrade Status from Log
+  command: tail -40 /u01/app/oracle/admin/{{ db_name }}/upgrade/catupgrd0.log
+  register: upgrade_status_log
   when: database_role == "PRIMARY"
   tags:
     - upgrade
     - validation
 
 - name: Report Upgrade Status
-  debug: var=report_upgrade_status.stdout_lines
+  debug: var=upgrade_status_log.stdout_lines
   when: database_role == "PRIMARY"
   tags:
     - upgrade

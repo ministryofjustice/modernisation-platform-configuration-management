@@ -25,6 +25,31 @@
       - instancespecific
   when: database_role == "PRIMARY"
 
+- name: Check Apex Installation Status
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  shell: |
+    $ORACLE_HOME/bin/sqlplus -s / as sysdba <<EOF
+    SET PAGESIZE 50 LINESIZE 120 FEEDBACK OFF
+    SELECT comp_name, version, status FROM dba_registry WHERE comp_id = 'APEX';
+    EXIT;
+    EOF
+  register: apex_install_status
+  when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+      - debug
+
+- name: Report Apex Installation Status
+  debug: var=apex_install_status.stdout_lines
+  when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+      - debug
+
 - name: Run Recompile INDIVIDUAL OBJECTS
   become: true
   become_user: oracle
@@ -41,15 +66,66 @@
       - recompile
       - debug
 
+- name: Create Nomis API stage directory
+  file:
+    path: /u02/stage/{{ db_name }}/nomis_api
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: '0755'
+  become: true
+  become_user: root
+  when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+
+- name: Copy Nomis API zip to stage directory
+  copy:
+    src: Nomis_api.zip
+    dest: /u02/stage/{{ db_name }}/nomis_api/Nomis_api.zip
+    owner: oracle
+    group: oinstall
+    mode: '0644'
+  become: true
+  become_user: oracle
+  when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+
+- name: Unzip Nomis API
+  unarchive:
+    src: /u02/stage/{{ db_name }}/nomis_api/Nomis_api.zip
+    dest: /u02/stage/{{ db_name }}/nomis_api/
+    remote_src: true
+    owner: oracle
+    group: oinstall
+  become: true
+  become_user: oracle
+  when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+
 - name: Install JSON for Nomis API
   become: true
   become_user: oracle
   environment: "{{ oracle19c_env }}"
   script: run_InstallJSonNomisAPI.sh
+  register: install_json_nomis_api
+  when: database_role == "PRIMARY"
   tags:
       - postupgrade
-      - instancespecific      
+      - instancespecific
+
+- name: Report Install JSON for Nomis API
+  debug: var=install_json_nomis_api.stdout_lines
   when: database_role == "PRIMARY"
+  tags:
+      - postupgrade
+      - instancespecific
+      - debug
 
 - name: Run Recompiliation
   become: true

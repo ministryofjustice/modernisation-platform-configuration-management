@@ -24,7 +24,7 @@ BEGIN
 END;
 /
 
-@apexins.sql APEX APEX TEMP02 /i/
+@apexins.sql APEX APEX TEMP /i/
 
 SET SERVEROUTPUT ON
 EXEC SYS.validate_apex;

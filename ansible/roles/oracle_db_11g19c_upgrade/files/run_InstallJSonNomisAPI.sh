@@ -4,11 +4,8 @@ set -euo pipefail
 
 # Install JSON for Nomis API 
 
-cd /u02/stage/${db_name}/nomis_api/
 
-unzip -o nomis_api.zip
-
-cd /u02/stage/QA11R/nomis_api/nomis_api/Database/
+cd /u02/stage/${db_name}/nomis_api/nomis_api/Database/
 
 #:wqexport OMS_OWNER_PWD=$(aws secretsmanager get-secret-value --secret-id "/oracle/database/${ORACLE_SID}/passwords" --query SecretString --output text | jq -r '.oms_owner')
 

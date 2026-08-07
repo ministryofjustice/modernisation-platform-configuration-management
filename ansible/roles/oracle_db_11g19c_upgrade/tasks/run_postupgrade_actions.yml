@@ -6,6 +6,8 @@
     - postupgrade
     - compatibility
 
+
+
 # - name: Update ASM RDBMS Compatibility
 #   include: update_asm_compatibility_18c.yml
 
@@ -76,3 +78,30 @@
 
    #- name: Set Default RMAN Tape Channel
      #script: set_default_rman_channel.sh
+- name: Check if database is registered with srvctl
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  command: srvctl config database -d {{ db_name }}
+  register: srvctl_config
+  failed_when: false
+  changed_when: false
+  tags:
+    - postupgrade
+    - srvctl
+
+#- name: Add database to Oracle Restart if not registered
+#  become: true
+#  become_user: oracle
+##  environment: "{{ oracle19c_env }}"
+  #command: >
+  #  srvctl add database -d {{ db_name }}
+  #  -oraclehome {{ oracle_database_19c_oracle_home }}
+  #  -spfile {{ oracle_database_19c_oracle_home }}/dbs/spfile{{ db_name }}.ora
+  #  -pwfile {{ oracle_database_19c_oracle_home }}/dbs/orapw{{ db_name }}
+  #  -startoption open
+  #  -stopoption immediate
+  #when: srvctl_config.rc != 0
+ # tags:
+  #  - postupgrade
+  #  - srvctl
