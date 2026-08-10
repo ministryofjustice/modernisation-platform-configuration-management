@@ -67,11 +67,11 @@ function Get-ModPlatformSAPConfig {
         InstallPackages = @{
           Client = @{
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'
-            S3Path        = 'hmpps/ncr-packages'
-            S3File        = 'BIPLATCLNT4304P_500-70005711.EXE'
+            S3Path        = 'hmpps/sap-bip-packages'
+            S3File        = 'BIPLATCLNT4304P_1400-70005711.EXE'
             WorkingDir    = 'C:\Software'             # Download installer here
-            ExtractDir    = 'C:\Software\BIP43'
-            SkipIfPresent = 'C:\Software\BIP43\setup.exe'
+            ExtractDir    = 'C:\Software\BIP43_1400'
+            SkipIfPresent = 'C:\Software\BIP43_1400\setup.exe'
           }
           FlexiLogReader = @{
             S3BucketName  = 'mod-platform-image-artefact-bucket20230203091453221500000001'

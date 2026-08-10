@@ -1,5 +1,15 @@
+from java.lang import Runtime
+from java.io import BufferedReader, InputStreamReader
+
+def get_secret_key(secret_id, key):
+    cmd = 'aws secretsmanager get-secret-value --secret-id "' + secret_id + '" --query SecretString --output text | python3 -c "import sys,json; print(json.load(sys.stdin)[\'' + key + '\'])"'
+    proc = Runtime.getRuntime().exec(['/bin/bash', '-c', cmd])
+    result = BufferedReader(InputStreamReader(proc.getInputStream())).readLine()
+    proc.waitFor()
+    return result
+
 adminUser = '{{ weblogic_admin_username }}'
-adminPassword = '{{ weblogic_admin_password }}'
+adminPassword = get_secret_key('/oracle/weblogic/{{ nomis_environment }}/passwords', adminUser)
 adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
 
 componentName = '{{ weblogic_ohs_component_name | default("ohs1") }}'
