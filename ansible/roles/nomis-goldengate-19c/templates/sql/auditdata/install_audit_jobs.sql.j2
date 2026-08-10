@@ -13,6 +13,8 @@ PROMPT ===============================================================
 DECLARE
     v_job_name VARCHAR2(30);
     v_exists NUMBER;
+    v_status VARCHAR2(10);
+    v_enabled BOOLEAN := FALSE;
 BEGIN
     DBMS_OUTPUT.PUT_LINE('Creating AUDIT jobs migrated from STRMADMIN...');
     
@@ -24,7 +26,15 @@ BEGIN
         AND job_name = 'ADD_WKLY_DATA_PARTS';
 
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'ADD_WKLY_DATA_PARTS';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.ADD_WKLY_DATA_PARTS', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -39,9 +49,9 @@ BEGIN
 end;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=SUN; BYHOUR=12; BYMINUTE=0',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.ADD_WKLY_DATA_PARTS - Add new partitions weekly');
+            comments         => 'Add new partitions weekly - Migrated from STRMADMIN.ADD_WKLY_DATA_PARTS');
         DBMS_OUTPUT.PUT_LINE('Created job: ADD_WKLY_DATA_PARTS');
     END;
     
@@ -53,18 +63,26 @@ end;',
         AND job_name = 'ARCH_WKLY_DATA_PARTS';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'ARCH_WKLY_DATA_PARTS';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.ARCH_WKLY_DATA_PARTS', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
             job_name         => '{{ oracle_goldengate_group.auditdata.schema_owner }}.ARCH_WKLY_DATA_PARTS',
             job_type         => 'PLSQL_BLOCK',
-            job_action       => 'begin {{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG1.EXPORT_CONTROL(TRUE); end;',
+            job_action       => 'begin {{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG.EXPORT_CONTROL(TRUE); end;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=MON; BYHOUR=4; BYMINUTE=0',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.ARCH_WKLY_DATA_PARTS - Export partitions to /u02/audit_db/datapump');
+            comments         => 'Archive older weekly partitions from the partitioned tables. Export partitions to /u02/audit_db/datapump - Migrated from STRMADMIN.ARCH_WKLY_DATA_PARTS');
         DBMS_OUTPUT.PUT_LINE('Created job: ARCH_WKLY_DATA_PARTS');
     END;
     
@@ -79,22 +97,30 @@ end;',
         AND job_name = 'AUDIT_DATA_PURGE';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'AUDIT_DATA_PURGE';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.AUDIT_DATA_PURGE', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
             job_name         => '{{ oracle_goldengate_group.auditdata.schema_owner }}.AUDIT_DATA_PURGE',
             job_type         => 'PLSQL_BLOCK',
             job_action       => 'begin
-{{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG1.PURGE_PARTITIONS;
-{{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG1.PURGE_RECORDS;
+{{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG.PURGE_PARTITIONS;
+{{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_ARCH_PKG.PURGE_RECORDS;
 {{ oracle_goldengate_group.auditref.schema_owner }}.AUDITREF_JOB_PKG.PURGE_RECORDS(''{{ oracle_goldengate_group.auditref.schema_owner }}'');
 end;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=TUE; BYHOUR=5; BYMINUTE=0',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.AUDIT_DATA_PURGE - Delete old records and partitions');
+            comments         => 'Delete old records and partitions - Migrated from STRMADMIN.AUDIT_DATA_PURGE');
         DBMS_OUTPUT.PUT_LINE('Created job: AUDIT_DATA_PURGE');
     END;
     
@@ -106,7 +132,15 @@ end;',
         AND job_name = 'AUDIT_DATA_UPLOAD_TO_S3';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'AUDIT_DATA_UPLOAD_TO_S3';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.AUDIT_DATA_UPLOAD_TO_S3', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -115,9 +149,9 @@ end;',
             job_action       => '/home/oracle/admin/scripts/audit_data_s3_upload.sh',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=TUE; BYHOUR=8; BYMINUTE=0',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.AUDIT_DATA_UPLOAD_TO_S3 - Upload to S3 (PDCNMAUD only)');
+            comments         => 'Upload to S3 (PDCNMAUD only) - Migrated from STRMADMIN.AUDIT_DATA_UPLOAD_TO_S3');
         DBMS_OUTPUT.PUT_LINE('Created job: AUDIT_DATA_UPLOAD_TO_S3');
     END;
     
@@ -141,7 +175,15 @@ end;',
         AND job_name = 'GATHER_STATS_AUDITDATA_TABS';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'GATHER_STATS_AUDITDATA_TABS';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.GATHER_STATS_AUDITDATA_TABS', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -150,9 +192,9 @@ end;',
             job_action       => 'BEGIN {{ oracle_goldengate_group.auditdata.schema_owner }}.AUDITDATA_JOB_PKG.gather_stats_auditdata_tables(); END;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=SAT; BYHOUR=4',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.GATHER_STATS_AUDITDATA_TABS');
+            comments         => 'Gather stats on AUDITDATA tables except AUDIT_TABLE and AUDIT_COLUMN. Migrated from STRMADMIN.GATHER_STATS_AUDITDATA_TABS');
         DBMS_OUTPUT.PUT_LINE('Created job: GATHER_STATS_AUDITDATA_TABS');
     END;
     
@@ -164,7 +206,15 @@ end;',
         AND job_name = 'GATHER_STATS_AUDITREF_TABS';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditref.schema_owner }}'  
+            AND job_name = 'GATHER_STATS_AUDITREF_TABS';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditref.schema_owner }}.GATHER_STATS_AUDITREF_TABS', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -173,9 +223,9 @@ end;',
             job_action       => 'BEGIN {{ oracle_goldengate_group.auditref.schema_owner }}.AUDITREF_JOB_PKG.gather_stats_auditref_tables(); END;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=SAT; BYHOUR=4',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.GATHER_STATS_AUDITREF_TABS');
+            comments         => 'Gather stats on AUDITREF schema. Migrated from STRMADMIN.GATHER_STATS_AUDITREF_TABS');
         DBMS_OUTPUT.PUT_LINE('Created job: GATHER_STATS_AUDITREF_TABS');
     END;
     
@@ -187,7 +237,15 @@ end;',
         AND job_name = 'GATHER_STATS_AUDIT_COLUMN';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'GATHER_STATS_AUDIT_COLUMN';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.GATHER_STATS_AUDIT_COLUMN', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -196,9 +254,9 @@ end;',
                 job_action       => 'BEGIN DBMS_STATS.GATHER_TABLE_STATS(''{{ oracle_goldengate_group.auditdata.schema_owner }}'', ''AUDIT_COLUMN''); END;',
                 start_date       => SYSTIMESTAMP,
                 repeat_interval  => 'FREQ=WEEKLY; BYDAY=SAT; BYHOUR=4',
-                enabled          => FALSE,
+                enabled          => v_enabled,
                 auto_drop        => FALSE,
-                comments         => 'Migrated from STRMADMIN.GATHER_STATS_AUDIT_COLUMN');
+                comments         => 'Gather stats on AUDIT_COLUMN. Migrated from STRMADMIN.GATHER_STATS_AUDIT_COLUMN');
         DBMS_OUTPUT.PUT_LINE('Created job: GATHER_STATS_AUDIT_COLUMN');
     END;
     
@@ -210,7 +268,15 @@ end;',
         AND job_name = 'GATHER_STATS_AUDIT_TABLE';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'GATHER_STATS_AUDIT_TABLE';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.GATHER_STATS_AUDIT_TABLE', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -219,9 +285,9 @@ end;',
                 job_action       => 'BEGIN DBMS_STATS.GATHER_TABLE_STATS(''{{ oracle_goldengate_group.auditdata.schema_owner }}'', ''AUDIT_TABLE''); END;',
                 start_date       => SYSTIMESTAMP,
                 repeat_interval  => 'FREQ=DAILY; BYHOUR=4',
-                enabled          => FALSE,
+                enabled          => v_enabled,
                 auto_drop        => FALSE,
-                comments         => 'Migrated from STRMADMIN.GATHER_STATS_AUDIT_TABLE');
+                comments         => 'Gather stats on AUDIT_TABLE. Migrated from STRMADMIN.GATHER_STATS_AUDIT_TABLE');
         DBMS_OUTPUT.PUT_LINE('Created job: GATHER_STATS_AUDIT_TABLE');
     END;
     
@@ -233,7 +299,15 @@ end;',
         AND job_name = 'OFFENDER_CROSS_REFERENCE_UPD';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'OFFENDER_CROSS_REFERENCE_UPD';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.OFFENDER_CROSS_REFERENCE_UPD', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -248,9 +322,9 @@ begin
 end;',
                 start_date       => SYSTIMESTAMP,
                 repeat_interval  => 'FREQ=DAILY; BYHOUR=7,15,23; BYMINUTE=0; BYSECOND=0',
-                enabled          => FALSE,
+                enabled          => v_enabled,
                 auto_drop        => FALSE,
-                comments         => 'Migrated from STRMADMIN.OFFENDER_CROSS_REFERENCE_UPD - Runs at 7am, 3pm, 11pm');
+                comments         => 'Offender Cross Reference Update. Migrated from STRMADMIN.OFFENDER_CROSS_REFERENCE_UPD - Runs at 7am, 3pm, 11pm');
         DBMS_OUTPUT.PUT_LINE('Created job: OFFENDER_CROSS_REFERENCE_UPD');
     END;
     
@@ -262,7 +336,15 @@ end;',
         AND job_name = 'ORCL_BATCH_STATUS_EXTRACT_JOB';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'ORCL_BATCH_STATUS_EXTRACT_JOB';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.ORCL_BATCH_STATUS_EXTRACT_JOB', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -271,9 +353,9 @@ end;',
                 job_action       => 'BEGIN {{ oracle_goldengate_group.auditdata.schema_owner }}.ORCL_BATCH_PKG.EXTRACT_ORCL_JOB_DATA(''audit'', ''ORCL_BATCH_STATUS_EXTRACT_JOB''); END;',
                 start_date       => SYSTIMESTAMP,
                 repeat_interval  => 'FREQ=HOURLY',
-                enabled          => FALSE,
+                enabled          => v_enabled,
                 auto_drop        => FALSE,
-                comments         => 'Migrated from STRMADMIN.ORCL_BATCH_STATUS_EXTRACT_JOB - Last run 2018, keep disabled');
+                comments         => 'Last run 2018, keep disabled - Migrated from STRMADMIN.ORCL_BATCH_STATUS_EXTRACT_JOB');
         DBMS_OUTPUT.PUT_LINE('Created job: ORCL_BATCH_STATUS_EXTRACT_JOB (disabled - last run 2018)'); 
     END;
     
@@ -285,7 +367,15 @@ end;',
         AND job_name = 'REMOTE_AUDIT_IMPORT';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'REMOTE_AUDIT_IMPORT';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.REMOTE_AUDIT_IMPORT', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -294,9 +384,9 @@ end;',
                 job_action       => 'execute immediate ''begin {{ oracle_goldengate_group.auditdata.schema_owner }}.AUD_DBA_IMP_PKG1.update_remote_audit_records; end;'';',
                 start_date       => SYSTIMESTAMP,
                 repeat_interval  => 'FREQ=DAILY; BYHOUR=21; BYMINUTE=0; BYSECOND=0',
-                enabled          => FALSE,
+                enabled          => v_enabled,
                 auto_drop        => FALSE,
-                comments         => 'Migrated from STRMADMIN.REMOTE_AUDIT_IMPORT - Last run March 2023, keep disabled');
+                comments         => 'Last run March 2023, keep disabled. Migrated from STRMADMIN.REMOTE_AUDIT_IMPORT');
         DBMS_OUTPUT.PUT_LINE('Created job: REMOTE_AUDIT_IMPORT (disabled - last run March 2023)');
     END;
     
@@ -308,7 +398,15 @@ end;',
         AND job_name = 'AUDIT_WEEKLY_LOG_PURGE';
         
         IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'  
+            AND job_name = 'AUDIT_WEEKLY_LOG_PURGE';
+            v_enabled := (v_status = 'TRUE');
             DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_group.auditdata.schema_owner }}.AUDIT_WEEKLY_LOG_PURGE', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
         END IF;
 
         DBMS_SCHEDULER.CREATE_JOB (
@@ -317,9 +415,9 @@ end;',
             job_action       => 'begin {{ oracle_goldengate_group.auditdata.schema_owner }}.AUDITDATA_JOB_PKG.log_purge(); end;',
             start_date       => SYSTIMESTAMP,
             repeat_interval  => 'FREQ=WEEKLY; BYDAY=WED; BYHOUR=22; BYMINUTE=30; BYSECOND=0',
-            enabled          => FALSE,
+            enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Migrated from STRMADMIN.WEEKLY_LOG_PURGE - Keep disabled, ineffective');
+            comments         => 'Keep disabled, ineffective. Migrated from STRMADMIN.WEEKLY_LOG_PURGE');
         DBMS_OUTPUT.PUT_LINE('Created job: AUDIT_WEEKLY_LOG_PURGE (disabled - ineffective)');
     END;
     

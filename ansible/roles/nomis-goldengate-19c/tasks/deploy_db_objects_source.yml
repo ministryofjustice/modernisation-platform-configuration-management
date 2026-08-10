@@ -22,14 +22,18 @@
         oracle_goldengate_group_name: "source"
 
     - name: Get password secret metadata from AWS Secrets Manager
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
       ansible.builtin.set_fact:
-        oracle_goldengate_password_secret: >-
-          {{
-            lookup(
-              'amazon.aws.secretsmanager_secret',
-              '/oracle/database/' ~ oracle_goldengate_group.mis.tns_alias ~ '/passwords'
-            ) | from_json
-          }}
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
       no_log: true
 
     - name: Check sys schema password exists in secret

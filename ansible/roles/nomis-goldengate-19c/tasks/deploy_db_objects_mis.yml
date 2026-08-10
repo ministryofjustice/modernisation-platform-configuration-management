@@ -25,6 +25,36 @@
         oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.mis.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.mis.dummy_target_schema }}"
 
+    - name: Get password secret metadata from AWS Secrets Manager to be used for the db link to the source database
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      #no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      #no_log: true
+
+    - name: Check Source schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - oracle_goldengate_group.source.schema_owner | lower in oracle_goldengate_password_secret
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_group.source.schema_owner | lower }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set Source schema password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_source_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.source.schema_owner | lower] }}"
+      #no_log: true
+
     - name: Ensure MIS SQL directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/mis"
@@ -51,6 +81,7 @@
         export PATH=${ORACLE_HOME}/bin:$PATH
         cd {{ oracle_goldengate_sql_dir }}/mis
         sqlplus -s / as sysdba @install_mis_packages.sql
+        sqlplus -s / as sysdba @install_mis_db_links.sql
       args:
         executable: /bin/bash
       register: mis_config_output
@@ -66,28 +97,3 @@
       ansible.builtin.fail:
         msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
       when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
-
-    - name: Run MIS configuration script
-      ansible.builtin.shell: |
-        . ~/.bash_profile
-        export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
-        export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
-        export PATH=${ORACLE_HOME}/bin:$PATH
-        cd {{ oracle_goldengate_sql_dir }}/mis
-        sqlplus -s / as sysdba @install_mis_jobs.sql
-      args:
-        executable: /bin/bash
-      register: mis_config_output
-      failed_when: mis_config_output.rc != 0
-
-    - name: Show output of MIS package install in logs
-      ansible.builtin.debug:
-        msg: "{{ item }}"
-      loop: "{{ ['MIS package install output:'] + (mis_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
-      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
-
-    - name: Fail if ORA errors found in output of MIS package install
-      ansible.builtin.fail:
-        msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
-      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
-

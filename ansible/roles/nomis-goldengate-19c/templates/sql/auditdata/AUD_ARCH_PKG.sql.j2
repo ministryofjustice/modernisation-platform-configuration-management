@@ -1,0 +1,156 @@
+create or replace PACKAGE {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AUTHID DEFINER AS
+
+    -- package level variable declarations
+    g_version 	 	VARCHAR2(20) := '1.0e.22';
+    g_data_owner 	CONSTANT VARCHAR2(30) := 'AUDITDATA';
+    g_export_dir	CONSTANT varchar2(30) := 'AUD_ARCHIVE_DIR';
+    g_import_dir	CONSTANT varchar2(30) := 'AUD_RESTORE_DIR';
+    g_partition_date_fmt	CONSTANT varchar2(8) := 'YYYYMMDD';
+
+    -- number of days old a partition must be before it is archived
+    g_days_old_to_arch 	CONSTANT NUMBER := 105;
+    -- number of weeks worth of partitions that may be restored at once
+    g_weeks_to_restore 	CONSTANT NUMBER := 5;
+    -- number of days old a partition must be before can be dropped
+    g_days_old_to_drop 	CONSTANT NUMBER := 798;
+
+
+    -- define package exceptions
+    g_aud_bad_mode 		CONSTANT NUMBER := -20030;
+    e_aud_bad_mode		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_bad_mode, -20030);
+    g_aud_tablename_missing 	CONSTANT NUMBER := -20031;
+    e_aud_tablename_missing	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_tablename_missing, -20031);
+    g_aud_tablename_invalid 	CONSTANT NUMBER := -20032;
+    e_aud_tablename_invalid	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_tablename_invalid, -20032);
+    g_aud_where_missing 	CONSTANT NUMBER := -20033;
+    e_aud_where_missing		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_where_missing, -20033);
+    g_aud_invalid_parm_comb 	CONSTANT NUMBER := -20034;
+    e_aud_invalid_parm_comb	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_invalid_parm_comb, -20034);
+    g_aud_already_restored 	CONSTANT NUMBER := -20035;
+    e_aud_already_restored	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_already_restored, -20035);
+    g_aud_at_max_partns 	CONSTANT NUMBER := -20036;
+    e_aud_at_max_partns		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_at_max_partns, -20036);
+    g_aud_input_date_too_young 	CONSTANT NUMBER := -20037;
+    e_aud_input_date_too_young	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_input_date_too_young, -20037);
+    g_aud_not_archived 		CONSTANT NUMBER := -20038;
+    e_aud_not_archived		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_not_archived, -20038);
+    g_aud_count_check_error 	CONSTANT NUMBER := -20039;
+    e_aud_count_check_error 	EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_count_check_error, -20039);
+    g_aud_not_truncated 	CONSTANT NUMBER := -20040;
+    e_aud_not_truncated		EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_aud_not_truncated, -20040);
+
+    -- define error conditions for exception handling
+    invalid_argument_value EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_argument_value, -39001);
+    tablespace_exists EXCEPTION;
+    PRAGMA EXCEPTION_INIT(tablespace_exists, -1543);
+    tablespace_read_only EXCEPTION;
+    PRAGMA EXCEPTION_INIT(tablespace_read_only, -1644);
+    tablespace_not_read_only EXCEPTION;
+    PRAGMA EXCEPTION_INIT(tablespace_not_read_only, -1646);
+    cannot_allocate_space EXCEPTION;
+    PRAGMA EXCEPTION_INIT(cannot_allocate_space, -1647);
+    tablespace_not_exists EXCEPTION;
+    PRAGMA EXCEPTION_INIT(tablespace_not_exists, -959);
+    missing_datafile_clause EXCEPTION;
+    PRAGMA EXCEPTION_INIT(missing_datafile_clause, -2199);
+    job_does_not_exist EXCEPTION;
+    PRAGMA EXCEPTION_INIT(job_does_not_exist, -31626);
+    job_already_exists EXCEPTION;
+    PRAGMA EXCEPTION_INIT(job_already_exists, -31634);
+    invalid_file_id EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_file_id, -29282);
+    partition_not_exists EXCEPTION;
+    PRAGMA EXCEPTION_INIT(partition_not_exists, -2149);
+    success_with_info EXCEPTION;
+    PRAGMA EXCEPTION_INIT(success_with_info, -31627);
+
+
+    -- Packaged procedure CHECK_JOB_STATUS
+    -- will log job ststus info for supplied handle
+    PROCEDURE CHECK_JOB_STATUS (
+        h1 		IN     NUMBER );
+
+
+    -- Packaged procedure EXPORT_PROCEDURE
+    -- will export audit data for a given partition date to dump files
+    PROCEDURE EXPORT_PROCEDURE (
+        partition_in 	in     varchar2 ,
+        Count_recs 	out    integer ,
+        Count_exported 	out    integer ,
+        retry_job       in     boolean default false );
+
+
+    -- Packaged procedure TRUNCATE_PARTITION
+    -- will truncate audit data for a given partition date
+    PROCEDURE TRUNCATE_PARTITION (
+        partition_in 	in     varchar2 );
+
+    -- Packaged procedure DROP_PARTITION
+    -- will drop the tablespace for a given partition date
+    PROCEDURE DROP_PARTITION (
+        partition_in 		in     varchar2 ,
+        rebuild_indexes 	in     boolean default true );
+
+
+    -- Packaged procedure EXTEND_CONTROL
+    -- will populate AUDIT_PARTITION_CONTROL control table.
+    PROCEDURE EXTEND_CONTROL;
+
+    -- Packaged procedure EXPORT_CONTROL
+    -- will traverse all unarchived audit data table partitions older than
+    -- g_days_old_to_arch days invoking the export and truncation procedures for each
+    PROCEDURE EXPORT_CONTROL (
+       retry_job        in     boolean default false );
+
+
+    -- Packaged procedure IMPORT_PROCEDURE
+    -- will import audit data from dump files for a given partition date
+    --   Mode_in 	0  =  All Tables
+    --                  1  =  Audit_table, Audit_column ,audit_offender
+    --                  2  =  remote_audit_table , os_log_event
+    --                  3  =  Selective input from one of the 5 tables mentioned above
+    PROCEDURE IMPORT_PROCEDURE (
+        partition_in 	in     varchar2 ,
+        Mode_in 	      in     number,
+	  table_in 	      in     varchar2 default null,
+	  where_in 	      in     varchar2 default null ,
+        retry_job       in     boolean default false );
+
+
+    -- Packaged procedure ALTER_TS_RO_AND_BACKUP
+    -- will set tablespaces older than 1 week to read-only and generate backup commands
+    --   P_FORMAT 	SBT  =  Backup to Tape
+    PROCEDURE ALTER_TS_RO_AND_BACKUP (
+        P_FORMAT       in    varchar2 default 'SBT' );
+    PROCEDURE ALTER_TS_RO_AND_BACKUP (
+        P_FORMAT       in    varchar2 default 'SBT',
+        P_RMAN_FILE    out   varchar2 );
+
+
+    -- Packaged procedure PURGE_RECORDS
+    -- will delete rows older than p_months months from non-partitioned AUDITDATA tables
+    PROCEDURE PURGE_RECORDS (
+        p_months     in integer default 26 );
+
+    -- Packaged procedure PURGE_PARTITIONS
+    -- will drop partitions older than p_months months for partitioned AUDITDATA tables
+    PROCEDURE PURGE_PARTITIONS (
+        p_months     in integer default 27 );
+
+
+    FUNCTION get_version RETURN varchar2;
+
+END AUD_ARCH_PKG;
+/

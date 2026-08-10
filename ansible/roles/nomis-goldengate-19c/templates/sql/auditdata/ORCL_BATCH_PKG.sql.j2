@@ -1,0 +1,20 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.orcl_batch_pkg AS
+
+-- found in preprod audit database
+PROCEDURE add_completed_jobs_log_data (
+	p_subsystem in varchar2,
+	p_output_file in out utl_file.file_type,
+	p_last_start_date in timestamp with time zone);
+
+PROCEDURE add_started_jobs_log_data (
+	p_subsystem in varchar2,
+	p_output_file in out utl_file.file_type,
+	p_last_start_date in timestamp with time zone,
+	p_current_start_date in timestamp with time zone);
+
+PROCEDURE extract_orcl_job_data (
+	p_subsystem in varchar2,
+	p_extract_job_name in varchar2);
+
+END orcl_batch_pkg;
+/

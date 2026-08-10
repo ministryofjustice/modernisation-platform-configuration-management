@@ -10,11 +10,15 @@ grant select on DBA_APPLY_PROGRESS to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_REGISTERED_ARCHIVED_LOG to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_CAPTURE to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_DB_LINKS to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_TAB_PARTITIONS to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_SCHEDULER_RUNNING_JOBS to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_SCHEDULER_JOB_RUN_DETAILS to {{ oracle_goldengate_sql_owner }};
 
 grant execute on SYS.DBMS_APPLY_ADM to {{ oracle_goldengate_sql_owner }};
 grant execute on SYS.DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
 grant execute on SYS.DBMS_LOB to {{ oracle_goldengate_dbuser }};
 grant execute on SYS.DBMS_REPUTIL2 to {{ oracle_goldengate_dbuser }};
+grant execute on SYS.DBMS_DATAPUMP to {{ oracle_goldengate_dbuser }};
 
 grant dba to {{ oracle_goldengate_dbuser }};
 grant select any table to {{ oracle_goldengate_dbuser }};
@@ -50,6 +54,7 @@ PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
 @AUDITDATA_DML_PKG.sql
 @AUDITDATA_JOB_PKG.sql
 @AUD_DBA_IMP_PKG.sql
+@AUD_ARCH_PKG.sql
 
 @AUDITDATA_GEN_PBODY.sql
 @AUDITDATA_GG_CTL_PBODY.sql
@@ -57,6 +62,7 @@ PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
 @AUDITDATA_DML_PBODY.sql
 @AUDITDATA_JOB_PBODY.sql
 @AUD_DBA_IMP_PBODY.sql
+@AUD_ARCH_PBODY.sql
 
 create or replace public synonym AUDITDATA_GEN_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG;
 create or replace public synonym AUDITDATA_GG_CTL_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG;
@@ -64,12 +70,14 @@ create or replace public synonym AUDITDATA_CONV_PKG for {{ oracle_goldengate_sql
 create or replace public synonym AUDITDATA_DML_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG;
 create or replace public synonym AUDITDATA_JOB_PKG for {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG;
 create or replace public synonym AUD_DBA_IMP_PKG1 for {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1;
+create or replace public synonym AUD_ARCH_PKG for {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG;
 grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_GEN_PKG to {{ oracle_goldengate_dbuser }};
 grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CTL_PKG to {{ oracle_goldengate_dbuser }};
 grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_CONV_PKG to {{ oracle_goldengate_dbuser }};
 grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG to {{ oracle_goldengate_dbuser }};
 grant execute on {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_PKG to {{ oracle_goldengate_dbuser }};
 grant execute on {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1 to {{ oracle_goldengate_dbuser }};
+grant execute on {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG to {{ oracle_goldengate_dbuser }};
 
 PROMPT Create new index for performance
 DECLARE

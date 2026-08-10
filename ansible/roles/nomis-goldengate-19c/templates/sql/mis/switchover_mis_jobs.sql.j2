@@ -45,11 +45,11 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Step 2: Enabling migrated MIS jobs...');
     DBMS_OUTPUT.PUT_LINE('----------------------------------------');
     
-    -- Enable jobs owned by BODISTAGING (only 2 jobs to enable)
+    -- Enable jobs owned by BODISTAGING (only 3 jobs to enable)
     FOR rec IN (SELECT owner, job_name, enabled 
                 FROM dba_scheduler_jobs 
                 WHERE owner = '{{ oracle_goldengate_sql_owner }}'
-                AND job_name IN ('MIS_PURGE_STAGING_TABLES', 'WEEKLY_LOG_PURGE')
+                AND job_name IN ('MISLOAD_FAILURE_CHECK', 'MIS_PURGE_STAGING_TABLES', 'WEEKLY_LOG_PURGE')
                 ORDER BY job_name) LOOP
         v_job_name := rec.owner || '.' || rec.job_name;
         
@@ -76,7 +76,6 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('  - ORCL_BATCH_STATUS_EXTRACT_JOB (last run 2018)');
     DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Not migrated (use cron jobs instead):');
     DBMS_OUTPUT.PUT_LINE('  - DAILY_LOG_PURGE (already in root crontab)');
-    DBMS_OUTPUT.PUT_LINE('  - MISLOAD_FAILURE_CHECK (should be cron job)');
     
 END;
 /

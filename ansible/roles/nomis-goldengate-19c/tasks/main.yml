@@ -315,14 +315,14 @@
     - goldengate-cronjobs
     - install-cronjobs
 
-# Scheduler jobs migration from STRMADMIN
-- name: Install migrated scheduler jobs (disabled initially)
-  import_tasks: install_migrated_jobs.yml
+# Database Scheduler jobs migration from STRMADMIN
+- name: Install database scheduler jobs (disabled initially)
+  import_tasks: install_database_jobs.yml
   tags:
     - goldengate
     - goldengate-config
     - goldengate-jobs
-    - install-migrated-jobs
+    - install-database-jobs
     - never
 
 - name: Switchover from STRMADMIN to migrated jobs

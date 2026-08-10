@@ -152,7 +152,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         l_staged_date := nvl(l_staged_date,trunc(sysdate));
         
         -- determine potential stop point
-        l_plsql := 'select min(stop_scn) from MIS_STOP_POINT@' || c_capture.source_database ||
+        l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' || c_capture.source_database ||
                    ' where stop_point_date > :staged_date' ||
                      ' and stop_scn > :capture_scn';
         execute immediate l_plsql
@@ -174,7 +174,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             l_points_set := FALSE;
         ELSE
             -- set stop point
-            l_plsql := 'select after_scn, stop_point_date from MIS_STOP_POINT@' ||
+            l_plsql := 'select after_scn, stop_point_date from MIS_STOP_POINTS@' ||
                        c_capture.source_database ||' where stop_scn = :scn';
             execute immediate l_plsql
             into  l_after_scn, l_stop_date

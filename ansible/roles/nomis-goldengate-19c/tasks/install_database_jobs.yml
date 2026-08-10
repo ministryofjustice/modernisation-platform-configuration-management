@@ -1,9 +1,9 @@
 ---
-# Install migrated scheduler jobs from STRMADMIN to new schema owners
+# Install database scheduler jobs from STRMADMIN to new schema owners
 # Jobs are created in DISABLED state for testing
 # Use switchover tasks to enable these and disable STRMADMIN jobs
 
-- name: Install migrated CNOM jobs (source database)
+- name: Install CNOM database jobs (source database)
   when: 
     - oracle_goldengate_group.source is defined
     - oracle_goldengate_group.source.tns_alias is defined
@@ -62,7 +62,7 @@
         msg: "Errors found in CNOM jobs install: {{ cnom_jobs_output.stdout }}"
       when: "'ORA-' in cnom_jobs_output.stdout and 'ORA-00955' not in cnom_jobs_output.stdout and 'ORA-27477' not in cnom_jobs_output.stdout"
 
-- name: Install migrated MIS jobs
+- name: Install MIS database jobs
   when: 
     - run_mis is defined and run_mis
   become: true
@@ -107,7 +107,16 @@
         msg: "Errors found in MIS jobs install: {{ mis_jobs_output.stdout }}"
       when: "'ORA-' in mis_jobs_output.stdout and 'ORA-00955' not in mis_jobs_output.stdout and 'ORA-27477' not in mis_jobs_output.stdout"
 
-- name: Install migrated AUDIT jobs
+    # deploy misload_failure_check.sh.j2 used in one of the jobs
+    - name: Deploy MIS load failure check script
+      ansible.builtin.template:
+        src: "misload_failure_check.sh.j2"
+        dest: "/home/{{ oracle_goldengate_owner }}/admin/scripts/misload_failure_check.sh"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+- name: Install AUDIT database jobs
   when: 
     - run_auditdata is defined and run_auditdata
   become: true
