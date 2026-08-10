@@ -17,7 +17,7 @@
         export PATH=$PATH:/usr/local/bin
         aws s3 sync s3://{{ bucket_name }}/{{ audit_output }}/ {{ audit_dir }}/ \
           --exclude "*" \
-          --include "*_vcpus.txt" \
+          --include "*_vcpus.json" \
           --include "*options_packs_usage_summary.txt"
 
     - name: Initialize combined text summary
@@ -27,46 +27,47 @@
         force: yes
 
     - name: Build oracle_full_summary.txt (with license counts)
-      shell: |
-        summary="{{ audit_dir }}/oracle_full_summary.txt"
-        > "$summary"
+      shell:
+        cmd: |
+          summary="${AUDIT_DIR}/oracle_full_summary.txt"
+          > "$summary"
 
-        # Loop over each host’s vCPU file
-        find "{{ audit_dir }}" -type f -name "*_vcpus.txt" | sort | while read -r vfile; do
-          host=$(basename "$vfile" _vcpus.txt)
+          # Loop over each host's vCPU file
+          find "${AUDIT_DIR}" -type f -name '*_vcpus.json' | sort | while read -r vfile; do
+            host=$(basename "$vfile" _vcpus.json)
 
-          echo "Hostname: $host"              >> "$summary"
-          echo "vCPU Info:"                   >> "$summary"
-          cat "$vfile"                        >> "$summary"
-          echo ""                             >> "$summary"
+            echo "Hostname: $host"              >> "$summary"
+            echo "vCPU Info:"                   >> "$summary"
+            cat "$vfile"                        >> "$summary"
+            echo ""                             >> "$summary"
 
-          # Parse CoreCount and ThreadsPerCore
-          core=$(grep -m1 '"CoreCount"' "$vfile" | cut -d: -f2 | tr -d ' ,')
-          threads=$(grep -m1 '"ThreadsPerCore"' "$vfile" | cut -d: -f2 | tr -d ' ,')
-          vcpus=$(( core * threads ))
-          if [ "$threads" -eq 1 ]; then
-            licenses=$core
-          else
-            licenses=$(( vcpus / 2 ))
-          fi
+            # Parse vcpus and threads_per_core from JSON
+            vcpus=$(jq -r '.[0].vcpus // 0' "$vfile")
+            threads=$(jq -r '.[0].threads_per_core // 1' "$vfile")
+            if [ "$threads" -eq 1 ]; then
+              licenses=$vcpus
+            else
+              licenses=$(( vcpus / 2 ))
+            fi
 
-          echo "Total vCPUs: $vcpus"           >> "$summary"
-          echo "Oracle Licenses: $licenses"    >> "$summary"
-          echo ""                              >> "$summary"
+            echo "Total vCPUs: $vcpus"           >> "$summary"
+            echo "Oracle Licenses: $licenses"    >> "$summary"
+            echo ""                              >> "$summary"
 
-          # Now for each DB options-summary under that host
-          find "{{ audit_dir }}" -type f -path "*/${host}_*/options_packs_usage_summary.txt" | sort | while read -r opt; do
-            dbname=$(basename "$(dirname "$opt")" | sed -e "s/^${host}_//")
-            echo "Database: $dbname"           >> "$summary"
-            cat "$opt"                         >> "$summary"
-            echo ""                            >> "$summary"
+            # Now for each DB options-summary under that host
+            find "${AUDIT_DIR}" -type f -path "*/${host}_*/options_packs_usage_summary.txt" | sort | while read -r opt; do
+              dbname=$(basename "$(dirname "$opt")" | sed -e "s/^${host}_//")
+              echo "Database: $dbname"           >> "$summary"
+              cat "$opt"                         >> "$summary"
+              echo ""                            >> "$summary"
+            done
+
+            echo "--------------------------------------------------------------------------------" >> "$summary"
+            echo "" >> "$summary"
           done
-
-          echo "--------------------------------------------------------------------------------" >> "$summary"
-          echo "" >> "$summary"
-        done
-      args:
         executable: /bin/bash
+      environment:
+        AUDIT_DIR: "{{ audit_dir }}"
 
     - name: Upload combined summary back to S3
       shell: |
