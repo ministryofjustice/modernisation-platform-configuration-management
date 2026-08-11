@@ -1,0 +1,207 @@
+---
+# Audits a single ECS cluster for weblogic services.
+# Called from audit-weblogic-cluster.yml with loop_var: weblogic_cluster
+
+- name: Get number of registered container instances in {{ weblogic_cluster }}
+  delegate_to: localhost
+  become: no
+  shell: >
+    aws ecs describe-clusters --clusters {{ weblogic_cluster }} --region {{ region }} | jq -r '.clusters[].registeredContainerInstancesCount'
+  register: container_count
+  changed_when: false
+
+- name: Process {{ weblogic_cluster }} if container instances exist
+  when: container_count.stdout | int > 0
+  block:
+
+    - name: List weblogic services in {{ weblogic_cluster }}
+      delegate_to: localhost
+      become: no
+      shell: >
+        aws ecs list-services --cluster {{ weblogic_cluster }} --region {{ region }} | jq -r '.serviceArns[]' | egrep -- "weblogic" | awk -F'/' '{print $NF}'
+      register: weblogic_services
+      changed_when: false
+      failed_when: false
+
+    - name: Process weblogic services in {{ weblogic_cluster }}
+      when: weblogic_services.stdout_lines | default([]) | length > 0
+      block:
+
+        # ------------------------------------------------------------
+        # COLLECT UNIQUE CONTAINER INSTANCES
+        # ------------------------------------------------------------
+
+        - name: Collect RUNNING task ARNs for all weblogic services
+          delegate_to: localhost
+          become: no
+          shell: >
+            aws ecs list-tasks --cluster {{ weblogic_cluster }} --service-name {{ item }} --desired-status RUNNING --region {{ region }} | jq -r '.taskArns[]?'
+          loop: "{{ weblogic_services.stdout_lines }}"
+          register: weblogic_task_arns_by_service
+          changed_when: false
+
+        - name: Flatten task ARNs
+          set_fact:
+            weblogic_task_arns: >-
+              {{
+                weblogic_task_arns_by_service.results
+                | map(attribute='stdout_lines')
+                | list
+                | flatten
+              }}
+
+        - name: Process running tasks in {{ weblogic_cluster }}
+          when: weblogic_task_arns | length > 0
+          block:
+
+            - name: Chunk task ARNs for describe-tasks (max 100)
+              set_fact:
+                weblogic_task_chunks: "{{ weblogic_task_arns | batch(100) | list }}"
+
+            - name: Resolve container instance ARNs from tasks
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ecs describe-tasks --cluster {{ weblogic_cluster }} --tasks {{ item | join(' ') }} --region {{ region }} | jq -r '.tasks[].containerInstanceArn?'
+              loop: "{{ weblogic_task_chunks }}"
+              register: weblogic_ci_arns_raw
+              changed_when: false
+
+            - name: Deduplicate container instance ARNs
+              set_fact:
+                weblogic_container_instances: >-
+                  {{
+                    weblogic_ci_arns_raw.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                    | unique
+                  }}
+
+            - name: Chunk container instances for describe-container-instances
+              set_fact:
+                weblogic_ci_chunks: "{{ weblogic_container_instances | batch(100) | list }}"
+
+            # ------------------------------------------------------------
+            # GET CONTAINER INSTANCE IDS AND EC2 INSTANCE DETAILS
+            # ------------------------------------------------------------
+
+            - name: Get container instance details (EC2 ID and container instance ID)
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ecs describe-container-instances --cluster {{ weblogic_cluster }} --container-instances {{ item | join(' ') }} --region {{ region }}
+                | jq -r '.containerInstances[] | "\(.ec2InstanceId):\(.containerInstanceArn | split("/") | last)"'
+              loop: "{{ weblogic_ci_chunks }}"
+              register: weblogic_ci_details_raw
+              changed_when: false
+
+            - name: Flatten container instance details
+              set_fact:
+                weblogic_ci_details: >-
+                  {{
+                    weblogic_ci_details_raw.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                  }}
+
+            - name: Extract EC2 instance IDs
+              set_fact:
+                weblogic_ec2_ids: "{{ weblogic_ci_details | map('split', ':') | map('first') | list }}"
+
+            - name: Build container instance ID lookup
+              set_fact:
+                weblogic_ci_id_map: >-
+                  {%- set m = {} -%}
+                  {%- for entry in weblogic_ci_details -%}
+                    {%- set parts = entry.split(':') -%}
+                    {%- set _ = m.update({parts[0]: parts[1]}) -%}
+                  {%- endfor -%}
+                  {{ m }}
+
+            - name: Chunk EC2 instance IDs for describe-instances (max 100)
+              set_fact:
+                weblogic_ec2_chunks: "{{ weblogic_ec2_ids | batch(100) | list }}"
+
+            - name: Get EC2 instance details (ID, type, name tag)
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ec2 describe-instances --instance-ids {{ item | join(' ') }} --region {{ region }}
+                | jq -r '.Reservations[].Instances[]
+                | "\(.InstanceId)|\(.InstanceType)|\((.Tags // [] | map(select(.Key == "Name")) | first // {Value: "unnamed"}).Value)"'
+              loop: "{{ weblogic_ec2_chunks }}"
+              register: weblogic_ec2_details_raw
+              changed_when: false
+
+            - name: Flatten EC2 instance details
+              set_fact:
+                weblogic_ec2_details: >-
+                  {{
+                    weblogic_ec2_details_raw.results
+                    | map(attribute='stdout_lines')
+                    | list
+                    | flatten
+                  }}
+
+            # ------------------------------------------------------------
+            # GET INSTANCE TYPE SPECS (vCPUs, threads per core)
+            # ------------------------------------------------------------
+
+            - name: Get unique instance types
+              set_fact:
+                weblogic_unique_types: "{{ weblogic_ec2_details | map('split', '|') | map(attribute=1) | list | unique | sort }}"
+
+            - name: Get instance type specs
+              delegate_to: localhost
+              become: no
+              shell: >
+                aws ec2 describe-instance-types --instance-types {{ weblogic_unique_types | join(' ') }} --region {{ region }}
+                | jq -r '.InstanceTypes[] | "\(.InstanceType)|\(.VCpuInfo.DefaultVCpus)|\(.VCpuInfo.DefaultThreadsPerCore)"'
+              register: weblogic_type_specs
+              changed_when: false
+
+            - name: Build instance type specs lookup
+              set_fact:
+                weblogic_type_specs_map: >-
+                  {%- set m = {} -%}
+                  {%- for line in weblogic_type_specs.stdout_lines -%}
+                    {%- set parts = line.split('|') -%}
+                    {%- set _ = m.update({parts[0]: {'vcpus': parts[1] | int, 'threads_per_core': parts[2] | int}}) -%}
+                  {%- endfor -%}
+                  {{ m }}
+
+            # ------------------------------------------------------------
+            # BUILD JSON AUDIT RECORDS AND APPEND
+            # ------------------------------------------------------------
+
+            - name: Build per-instance audit records for {{ weblogic_cluster }}
+              set_fact:
+                weblogic_audit_records: >-
+                  {%- set records = weblogic_audit_records -%}
+                  {%- for entry in weblogic_ec2_details -%}
+                    {%- set parts = entry.split('|') -%}
+                    {%- set ec2_id = parts[0] -%}
+                    {%- set itype = parts[1] -%}
+                    {%- set iname = parts[2] -%}
+                    {%- set specs = weblogic_type_specs_map[itype] -%}
+                    {%- set ci_id = weblogic_ci_id_map.get(ec2_id, 'unknown') -%}
+                    {%- set record = {
+                      'account_id': caller_info.account,
+                      'account_name': account_name | trim,
+                      'platform_manufacturer': 'Amazon',
+                      'virtualisation': 'EC2',
+                      'ecs_cluster_name': weblogic_cluster,
+                      'instance_name': iname,
+                      'server_model': itype,
+                      'os': 'Linux',
+                      'processor_model': '',
+                      'vcpus': specs.vcpus,
+                      'sockets': '',
+                      'cores_per_socket': '',
+                      'threads_per_core': specs.threads_per_core
+                    } -%}
+                    {%- set _ = records.append(record) -%}
+                  {%- endfor -%}
+                  {{ records }}
