@@ -40,9 +40,15 @@
     sqlplus -s /nolog <<'SQL'
     connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
     set heading off feedback off verify off echo off pagesize 0
-    select count(*)
-    from dba_users
-    where username = upper('{{ weblogic_db_repo_prefix }}_STB');
+    select count(*) from (
+      select 1
+      from schema_version_registry
+      where mrc_name = upper('{{ weblogic_db_repo_prefix }}')
+      union
+      select 1
+      from dba_users
+      where username = upper('{{ weblogic_db_repo_prefix }}_STB')
+    );
     exit
     SQL
   args:
@@ -76,6 +82,8 @@
     /u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/droprcu.rsp < /u01/software/weblogic/passwordfile.txt
   register: drop_db_repo
   when: weblogic_rcu_repository_exists
+  #ignore failures from the drop command, as it may fail if the schemas are already dropped or partially dropped
+  ignore_errors: true
 
 - name: Create repository database using rcu
   become_user: oracle
