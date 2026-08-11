@@ -183,3 +183,6 @@ all_oem_metrics:
         warning_threshold , 100000
         critical_threshold , 500000
         END_RECORD 4
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO COMPRESSED BACKUPSET;"

@@ -53,3 +53,6 @@ dbms_scheduler:
       repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'
     set_last_archive_timestamp:
       repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=30;BYSECOND=0'
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO BACKUPSET;"

@@ -22,3 +22,6 @@ db_backup_s3_bucket_name: "{{ environment_name }}-oracle-dsd-db-backups"
 database_parameters:
   sga_max_size: 1500M
   sga_target: 1500M
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO BACKUPSET;"

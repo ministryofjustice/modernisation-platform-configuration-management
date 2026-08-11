@@ -42,3 +42,6 @@ oracle_software:
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
 source_db: "STGBOE"
 oracle_osbws_chunk_size: 104857600
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO BACKUPSET;"

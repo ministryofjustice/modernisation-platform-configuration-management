@@ -172,3 +172,6 @@ all_oem_metrics:
         critical_threshold , 90
         occurrences , 12
         END_RECORD 11
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 4 BACKUP TYPE TO BACKUPSET;"

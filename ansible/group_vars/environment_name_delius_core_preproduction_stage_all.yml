@@ -145,3 +145,6 @@ disks_partition:
   - ebs_device_name: /dev/sdi
     oracle_group: flash
     oracle_label: FLASH01
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 4 BACKUP TYPE TO BACKUPSET;"

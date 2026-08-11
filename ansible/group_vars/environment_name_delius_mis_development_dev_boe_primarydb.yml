@@ -40,3 +40,6 @@ oracle_software:
     filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
 source_db: "DMDBOE"
 db_backup_s3_bucket_name: "{{ environment_name }}-oracle-boe-db-backups"
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 1 BACKUP TYPE TO BACKUPSET;"

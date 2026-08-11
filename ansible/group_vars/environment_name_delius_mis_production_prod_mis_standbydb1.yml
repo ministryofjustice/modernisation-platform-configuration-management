@@ -18,3 +18,6 @@ required_patches:
       description: "ORA-600 [OPTDESC] ASSERT NEED TO BE INTRODUCED EARLIER IN QKNA INSTEAD OF QERIX"
       grid_patch: false
       database_patch: true
+
+# RMAN OSBWS Parallelism for all hosts for normal backups
+rman_sbt_parallelism: "CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 4 BACKUP TYPE TO BACKUPSET;"
