@@ -100,6 +100,11 @@ weblogic_configs:
     weblogic_db_repo_username: "sys"
     weblogic_db_repo_prefix: "{{ ec2.tags['server-type'] | replace('-', '') | upper }}AK"
 
+  qa:
+    weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
+    weblogic_db_repo_sid: "qa19c"
+    weblogic_db_repo_username: "sys"
+
 weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
 
 weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
