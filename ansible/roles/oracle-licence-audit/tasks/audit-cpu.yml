@@ -1,20 +1,60 @@
-- name: Check if WebLogic is running
-  shell: ps -ef | grep weblogic | grep -v grep | grep -v oem | wc -l
-  register: weblogic_process
+- name: Check platform of instance from localhost
+  delegate_to: localhost
+  become: no
+  shell: |
+    PATH=$PATH:/usr/local/bin
+    aws ec2 describe-instances \
+      --filters "Name=tag:Name,Values={{ inventory_hostname }}" \
+      --query "Reservations[].Instances[].PlatformDetails" \
+      --region {{ region }} --output text
+  register: ec2_platform_check
   changed_when: false
+  ignore_errors: true
 
-- name: Get the current caller identity information
-  amazon.aws.aws_caller_info:
-  register: caller_info
-
-# if weblogic is running then set the filename to include weblogic, otherwise set it to just account and hostname
-- name: Set audit filename based on WebLogic status
-  set_fact:
-    audit_filename: >-
-      {{ caller_info.account }}_{{ inventory_hostname }}{{ '_weblogic' if weblogic_process.stdout != '0' else '' }}
-
-- name: Set up audit directory
+- name: CPU auditing (Linux only)
+  when:
+    - ec2_platform_check is succeeded
+    - "'Linux' in ec2_platform_check.stdout"
   block:
+
+    - name: Check if WebLogic is running
+      shell: ps -ef | grep weblogic | grep -v grep | grep -v oem | wc -l
+      register: weblogic_process
+      changed_when: false
+
+    - name: Get the current caller identity information
+      amazon.aws.aws_caller_info:
+      register: caller_info
+
+    - name: Get instance ID from cloud-init data
+      shell: cat /var/lib/cloud/data/instance-id
+      register: ec2_instance_id
+      changed_when: false
+
+    - name: Set instance ID fact
+      set_fact:
+        instance_id: "{{ ec2_instance_id.stdout }}"
+
+    - name: Get EC2 Name tag
+      shell: |
+        PATH=$PATH:/usr/local/bin
+        aws ec2 describe-tags \
+          --filters "Name=resource-id,Values={{ instance_id }}" "Name=key,Values=Name" \
+          --query "Tags[0].Value" \
+          --region {{ region }} --output text
+      register: ec2_name_tag
+      changed_when: false
+
+    - name: Set instance name fact
+      set_fact:
+        instance_name: "{{ ec2_name_tag.stdout if ec2_name_tag.stdout != '' and ec2_name_tag.stdout != 'None' else inventory_hostname }}"
+
+    # if weblogic is running then set the filename to include weblogic, otherwise set it to just account and hostname
+    - name: Set audit filename based on WebLogic status
+      set_fact:
+        audit_filename: >-
+          {{ caller_info.account }}_{{ instance_name }}{{ '_weblogic' if weblogic_process.stdout != '0' else '' }}
+
     - name: Create work directory on remote host
       file:
         path: "{{ audit_dir }}"
@@ -30,8 +70,6 @@
       loop:
         - cpuq.sh
 
-- name: CPU auditing
-  block:
     - name: Check if cpuq.sh script exists
       stat:
         path: "{{ audit_dir }}/cpuq.sh"
@@ -63,30 +101,56 @@
         dest: "{{ audit_dir }}/"
         flat: yes
 
-    - name: Get instance ID using instance metadata (on remote EC2)
-      # Original approach using curl -s http://169.254.169.254/latest/meta-data/instance-id was not working as expected
-      # on some instances due to network restrictions, so we read from the cloud-init data file instead
-      shell: cat /var/lib/cloud/data/instance-id
-      register: ec2_instance_id
-
-    - name: Set instance ID fact for later use
-      set_fact:
-        instance_id: "{{ ec2_instance_id.stdout }}"
-    
-    - name: Get CPU options from AWS CLI (CoreCount and ThreadsPerCore)
-      # some systems may not have aws cli installed or configured, so ignore errors
+    - name: Get CPU options and instance type from EC2
       shell: |
         PATH=$PATH:/usr/local/bin
         aws ec2 describe-instances \
           --instance-ids {{ instance_id }} \
-          --query "Reservations[].Instances[].CpuOptions" \
-          --region {{ region }} --output json > {{ audit_dir }}/{{ audit_filename | trim }}_vcpus.txt
+          --query "Reservations[].Instances[].[CpuOptions,InstanceType]" \
+          --region {{ region }} --output json
+      register: ec2_cpu_options
+      changed_when: false
       ignore_errors: true
+
+    - name: Build EC2 instance audit record
+      set_fact:
+        ec2_audit_record: >-
+          {%- set result = (ec2_cpu_options.stdout | from_json)[0] -%}
+          {%- set cpu_opts = result[0] -%}
+          {%- set instance_type = result[1] -%}
+          {%- set cores = cpu_opts.CoreCount | int -%}
+          {%- set threads = cpu_opts.ThreadsPerCore | int -%}
+          {%- set vcpus = cores * threads -%}
+          {{
+            {
+              'account_id': caller_info.account,
+              'account_name': account_name | trim,
+              'platform_manufacturer': 'Amazon',
+              'virtualisation': 'EC2',
+              'ecs_cluster_name': '',
+              'instance_name': instance_name,
+              'server_model': instance_type,
+              'os': 'Linux',
+              'processor_model': '',
+              'vcpus': vcpus,
+              'sockets': '',
+              'cores_per_socket': '',
+              'threads_per_core': threads
+            }
+          }}
+      when: ec2_cpu_options is succeeded
+
+    - name: Write audit record as JSON
+      copy:
+        content: "{{ [ec2_audit_record] | to_nice_json }}"
+        dest: "{{ audit_dir }}/{{ audit_filename | trim }}_vcpus.json"
+      when: ec2_audit_record is defined
 
     - name: Fetch vcpu output files
       fetch:
-        src: "{{ audit_dir }}/{{ audit_filename | trim }}_vcpus.txt"
+        src: "{{ audit_dir }}/{{ audit_filename | trim }}_vcpus.json"
         dest: "{{ audit_dir }}/"
         flat: yes
       ignore_errors: true
       changed_when: false
+      when: ec2_audit_record is defined
