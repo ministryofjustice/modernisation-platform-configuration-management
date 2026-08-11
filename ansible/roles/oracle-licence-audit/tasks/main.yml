@@ -3,6 +3,13 @@
   become_user: root
   become_method: sudo
   block:
+    - name: Ensure account_name is provided
+      assert:
+        that:
+          - account_name is defined
+          - account_name | string | trim | length > 0
+        fail_msg: "account_name must be passed in (for example: -e account_name='delius-core-test')."
+
     - import_tasks: get-kms-key.yml
       tags:
         - always
@@ -20,6 +27,7 @@
         - collection
         - databases
         - weblogic
+        - weblogic-ec2
 
     # Upload audit results from the database and/or CPU audits
     - import_tasks: collection-upload.yml
