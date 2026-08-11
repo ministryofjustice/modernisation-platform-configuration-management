@@ -82,6 +82,8 @@
     /u01/app/oracle/Middleware/oracle_common/bin/rcu -silent -responseFile /u01/software/weblogic/droprcu.rsp < /u01/software/weblogic/passwordfile.txt
   register: drop_db_repo
   when: weblogic_rcu_repository_exists
+  #ignore failures from the drop command, as it may fail if the schemas are already dropped or partially dropped
+  ignore_errors: true
 
 - name: Create repository database using rcu
   become_user: oracle
