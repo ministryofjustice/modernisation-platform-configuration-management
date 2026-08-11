@@ -98,6 +98,10 @@ bip_filesystems_mount:
     gid: binstall
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "{{ ansible_ec2_placement_availability_zone }}.fs-07148690a431135ed.efs.eu-west-2.amazonaws.com:/"
+  - dir: /samba.delius-prod.internal/secure/NPS
+    fstype: efs
+    opts: "_netdev,iam,tls,accesspoint=fsap-09782c81f5b00ad9e,nofail"
+    src: fs-8a54e77b.efs.eu-west-2.amazonaws.com
   - dir: /NART
     uid: bobj
     gid: binstall
@@ -106,7 +110,3 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
     autofs_mount: true
-#  - dir: /samba.delius-pre-prod.internal/secure/NPS
-#    fstype: efs
-#    opts: "_netdev,iam,tls,accesspoint=TODO,nofail"
-#    src: TODO.efs.eu-west-2.amazonaws.com
