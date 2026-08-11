@@ -79,7 +79,7 @@
           union
           select 1
           from dba_users
-          where username = upper('{{ item }}')
+          where username = upper('{{ item }}_STB')
         );
 
         exit
