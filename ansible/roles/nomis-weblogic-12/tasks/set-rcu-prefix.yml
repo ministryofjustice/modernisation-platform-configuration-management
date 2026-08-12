@@ -70,17 +70,37 @@
 
         sqlplus -s /nolog <<'SQL'
         connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
-        set heading off feedback off verify off echo off pagesize 0 trimspool on
+        set heading off feedback off verify off echo off pagesize 0 trimspool on serveroutput on
 
-        select count(*) from (
-          select 1
-          from schema_version_registry
-          where mrc_name = upper('{{ item }}')
-          union
-          select 1
+        declare
+          v_count   number := 0;
+          v_tmp     number := 0;
+          v_exists  number := 0;
+          v_prefix  varchar2(12) := upper('{{ item }}');
+        begin
+          -- the following query checks for the existence of the schema_version_registry view and counts the number of entries 
+          -- for the given prefix in that view, as well as checking for the existence of a user with the prefix_STB username. 
+          -- The total count is returned to determine if the prefix is already in use.
+          -- The view may not yet exist if the RCU has not been run, so we check for its existence first.
+          select count(*) into v_exists
+          from dba_views
+          where view_name = 'SCHEMA_VERSION_REGISTRY';
+
+          if v_exists > 0 then
+            execute immediate
+              'select count(*) from schema_version_registry where mrc_name = upper(''' || v_prefix || ''')'
+              into v_tmp;
+            v_count := v_count + v_tmp;
+          end if;
+
+          select count(*) into v_tmp
           from dba_users
-          where username = upper('{{ item }}_STB')
-        );
+          where username = upper(v_prefix || '_STB');
+          v_count := v_count + v_tmp;
+
+          dbms_output.put_line(v_count);
+        end;
+        /
 
         exit
         SQL
@@ -97,6 +117,7 @@
       loop: "{{ rcu_prefix_candidate_checks.results }}"
       when:
         - item.stdout | trim == "0"
+        - new_weblogic_db_repo_prefix is not defined
 
     # Display the selected RCU prefix for debugging purposes
     - name: Debug selected RCU prefix
