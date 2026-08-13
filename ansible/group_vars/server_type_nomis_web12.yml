@@ -111,7 +111,7 @@ oracle_setup_config:
       s3_bucket_path: nomis-weblogic-12
       zip_file_name: u01_tag_config_qa.zip
 
-oracle_config: "{{ oracle_setup_config[oracle_db_name] }}"
+oracle_config: "{{ oracle_setup_config[nomis_environment] }}"
 
 weblogic_configs:
   qa11g:
