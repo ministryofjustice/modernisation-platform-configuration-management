@@ -199,7 +199,7 @@ function Get-ConfigNameByEnvironmentNameTag {
 function New-CompatibilityModeSiteListXml {
   [CmdletBinding()]
   param (
-    [string[]]$CompatibilityModeSiteAllowRedirect,
+    [string[]]$CompatibilityModeSiteListAllowRedirect,
     [string[]]$CompatibilityModeSiteListUrlFalse
   )
   $XmlDoc = New-Object System.Xml.XmlDocument
