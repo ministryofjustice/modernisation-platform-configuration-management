@@ -80,6 +80,36 @@ users_and_groups_create_xauthority: true
 sshd_config_mode: allow_x11
 
 nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
+oracle_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+
+oracle_setup_config:
+  dev:
+    - directory_path: /home/oracle/sysconsoftware/12c_setup_config
+      extract_path: /home/oracle/sysconsoftware/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: 12c_setup_config.zip
+    - directory_path: /u01/tag
+      extract_path: /u01/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: u01_tag_config.zip
+
+  qa:
+    - directory_path: /home/oracle/sysconsoftware/12c_setup_config
+      extract_path: /home/oracle/sysconsoftware/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: 12c_setup_config.zip
+    - directory_path: /u01/tag
+      extract_path: /u01/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: u01_tag_config.zip
 
 weblogic_configs:
   qa11g:
@@ -105,7 +135,7 @@ weblogic_configs:
     weblogic_db_repo_sid: "qa19c"
     weblogic_db_repo_username: "sys"
 
-weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
+weblogic_config: "{{ weblogic_configs[oracle_db_name] }}"
 
 weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
 weblogic_db_repo_sid: "{{ weblogic_config.weblogic_db_repo_sid }}"

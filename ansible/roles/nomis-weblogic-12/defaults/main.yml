@@ -106,7 +106,7 @@ weblogic_secretsmanager_passwords:
       - "{{ weblogic_db_repo_password_secret | items2dict }}"
       - wls_schemas: auto
   weblogic:
-    secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
+    secret: "/oracle/weblogic/{{ oracle_db_name }}/passwords"
     users:
       - "{{ weblogic_admin_password_secret | items2dict }}"
 
