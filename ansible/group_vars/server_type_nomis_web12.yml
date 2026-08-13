@@ -134,7 +134,7 @@ weblogic_configs:
     weblogic_db_repo_sid: "qa19c"
     weblogic_db_repo_username: "sys"
 
-weblogic_config: "{{ weblogic_configs[oracle_db_name] }}"
+weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
 
 weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
 weblogic_db_repo_sid: "{{ weblogic_config.weblogic_db_repo_sid }}"
