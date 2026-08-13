@@ -6,7 +6,7 @@
     mode: '0755'
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
-  loop: "{{ oracle_setup_config }}"
+  loop: "{{ oracle_config }}"
 
 - name: Copy ZIP files from S3 to EC2 Instance
   amazon.aws.aws_s3:
@@ -15,12 +15,12 @@
     dest: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     mode: get
     overwrite: latest
-  loop: "{{ oracle_setup_config }}"
+  loop: "{{ oracle_config }}"
 
 - name: Unzip contents
   ansible.builtin.unarchive:
     src: "{{ zip_file_temp_dir }}/{{ item.zip_file_name }}"
     dest: "{{ item.extract_path }}"
     remote_src: "{{ oracle_file_copy_remote_src | default(true) }}"
-  loop: "{{ oracle_setup_config }}"
+  loop: "{{ oracle_config }}"
   no_log: true

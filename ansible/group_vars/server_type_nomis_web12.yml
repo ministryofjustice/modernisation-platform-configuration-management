@@ -111,6 +111,8 @@ oracle_setup_config:
       s3_bucket_path: nomis-weblogic-12
       zip_file_name: u01_tag_config_qa.zip
 
+oracle_config: "{{ oracle_setup_config[oracle_db_name] }}"
+
 weblogic_configs:
   qa11g:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
