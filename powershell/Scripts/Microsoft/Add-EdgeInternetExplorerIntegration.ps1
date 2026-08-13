@@ -199,7 +199,8 @@ function Get-ConfigNameByEnvironmentNameTag {
 function New-CompatibilityModeSiteListXml {
   [CmdletBinding()]
   param (
-    [string[]]$CompatibilityModeSiteList
+    [string[]]$CompatibilityModeSiteAllowRedirect,
+    [string[]]$CompatibilityModeSiteListUrlFalse
   )
   $XmlDoc = New-Object System.Xml.XmlDocument
   $Root = $XmlDoc.CreateElement("site-list")
@@ -254,12 +255,13 @@ if (-not $Configs.Contains($ConfigName)) {
   Write-Error "Unsupported ConfigName $ConfigName"
 }
 $Config = $Configs[$ConfigName]
-$CompatibilityModeSiteList = $Config.CompatibilityModeSiteList
+$CompatibilityModeSiteListAllowRedirect = $Config.CompatibilityModeSiteListAllowRedirect
+$CompatibilityModeSiteListUrlFalse = $Config.CompatibilityModeSiteListUrlFalse
 $TrustedDomains = $Config.TrustedDomains
 $CompatibilityModeSiteListFilePath = $Config.CompatibilityModeSiteListFilePath
 
 Write-Output "Creating $CompatibilityModeSiteListFilePath"
-$SitesXmlDoc = New-CompatibilityModeSiteListXml -CompatibilityModeSiteList $CompatibilityModeSiteList
+$SitesXmlDoc = New-CompatibilityModeSiteListXml -CompatibilityModeSiteListAllowRedirect $CompatibilityModeSiteListAllowRedirect -CompatibilityModeSiteListUrlFalse $CompatibilityModeSiteListUrlFalse
 $SitesXmlDoc.Save($CompatibilityModeSiteListFilePath) | Out-Null
 
 $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
