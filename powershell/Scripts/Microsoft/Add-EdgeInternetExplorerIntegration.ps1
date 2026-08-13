@@ -38,8 +38,8 @@ $Configs = @{
       "qa11g-nomis-web12-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.development.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "development.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "hmpps-domain-services-test" = @{
@@ -56,8 +56,8 @@ $Configs = @{
       "t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.test.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "test.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "hmpps-domain-services-preproduction" = @{
@@ -81,10 +81,10 @@ $Configs = @{
       "trainb.csr.service.justice.gov.uk"
     )
     "TrustedDomains" = @(
-      "*.preproduction.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal",
-      "*.csr.service.justice.gov.uk",
-      "*.pp.csr.service.justice.gov.uk"
+      "preproduction.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal",
+      "csr.service.justice.gov.uk",
+      "pp.csr.service.justice.gov.uk"
     )
   }
   "hmpps-domain-services-production" = @{
@@ -111,11 +111,11 @@ $Configs = @{
       "r6.csr.service.justice.gov.uk"
     )
     "TrustedDomains" = @(
-      "*.nomis.az.justice.gov.uk",
-      "*.nomis.service.justice.gov.uk",
-      "*.csr.az.justice.gov.uk",
-      "*.csr.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "nomis.az.justice.gov.uk",
+      "nomis.service.justice.gov.uk",
+      "csr.az.justice.gov.uk",
+      "csr.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "nomis-development" = @{
@@ -127,8 +127,8 @@ $Configs = @{
       "qa11g-nomis-web12-a.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.development.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "development.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "nomis-test" = @{
@@ -145,8 +145,8 @@ $Configs = @{
       "t3-nomis-web-b.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.test.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "test.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "nomis-preproduction" = @{
@@ -160,8 +160,8 @@ $Configs = @{
       "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.preproduction.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "preproduction.nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
   "nomis-production" = @{
@@ -174,9 +174,9 @@ $Configs = @{
       "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
     "TrustedDomains" = @(
-      "*.nomis.az.justice.gov.uk",
-      "*.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "nomis.az.justice.gov.uk",
+      "nomis.service.justice.gov.uk",
+      "eu-west-2.compute.internal"
     )
   }
 }
@@ -326,21 +326,59 @@ if (Test-Path "$RegPath") {
 }
 
 $RegPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains"
+
 foreach ($TrustedDomain in $TrustedDomains) {
-  if (!(Test-Path "$RegPath\$TrustedDomain")) {
-    Write-Output "Creating $RegPath\$TrustedDomain"
-    New-Item -Path "$RegPath\$TrustedDomain" -Force | Out-Null
-  }
-  if (Test-Path "$RegPath\$TrustedDomain") {
-    $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name http -ErrorAction SilentlyContinue
-    if ($null -eq $ItemProperty -or $ItemProperty.http -ne 2) {
-      Write-Output "Setting $RegPath\$TrustedDomain\http = 2"
-      New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name http -Value 2 -PropertyType DWORD -Force | Out-Null
+    $DomainPath = Join-Path $RegPath $TrustedDomain
+
+    if (!(Test-Path $DomainPath)) {
+        Write-Output "Creating $DomainPath"
+        New-Item -Path $DomainPath -Force | Out-Null
     }
-    $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -ErrorAction SilentlyContinue
-    if ($null -eq $ItemProperty -or $ItemProperty.https -ne 2) {
-      Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
-      New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
+
+    if (Test-Path $DomainPath) {
+        $ItemProperty = Get-ItemProperty `
+            -Path $DomainPath `
+            -Name "*" `
+            -ErrorAction SilentlyContinue
+
+        if ($null -eq $ItemProperty -or $ItemProperty.'*' -ne 2) {
+            Write-Output "Setting $DomainPath\* = 2"
+            New-ItemProperty `
+                -Path $DomainPath `
+                -Name "*" `
+                -Value 2 `
+                -PropertyType DWORD `
+                -Force | Out-Null
+        }
+
+        $ItemProperty = Get-ItemProperty `
+            -Path $DomainPath `
+            -Name "http" `
+            -ErrorAction SilentlyContinue
+
+        if ($null -eq $ItemProperty -or $ItemProperty.http -ne 2) {
+            Write-Output "Setting $DomainPath\http = 2"
+            New-ItemProperty `
+                -Path $DomainPath `
+                -Name "http" `
+                -Value 2 `
+                -PropertyType DWORD `
+                -Force | Out-Null
+        }
+
+        $ItemProperty = Get-ItemProperty `
+            -Path $DomainPath `
+            -Name "https" `
+            -ErrorAction SilentlyContinue
+
+        if ($null -eq $ItemProperty -or $ItemProperty.https -ne 2) {
+            Write-Output "Setting $DomainPath\https = 2"
+            New-ItemProperty `
+                -Path $DomainPath `
+                -Name "https" `
+                -Value 2 `
+                -PropertyType DWORD `
+                -Force | Out-Null
+        }
     }
-  }
 }
