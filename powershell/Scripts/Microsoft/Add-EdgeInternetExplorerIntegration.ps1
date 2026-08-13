@@ -31,7 +31,7 @@ param (
 $Configs = @{
   "hmpps-domain-services-development" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -44,7 +44,7 @@ $Configs = @{
   }
   "hmpps-domain-services-test" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -62,13 +62,15 @@ $Configs = @{
   }
   "hmpps-domain-services-preproduction" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "CompatibilityModeSiteListUrlFalse" = @(
       "r1.pp.csr.service.justice.gov.uk",
       "r2.pp.csr.service.justice.gov.uk",
       "r3.pp.csr.service.justice.gov.uk",
@@ -87,12 +89,14 @@ $Configs = @{
   }
   "hmpps-domain-services-production" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
       "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+    )
+    "CompatibilityModeSiteListUrlFalse" = @(
       "r1.csr.az.justice.gov.uk",
       "r2.csr.az.justice.gov.uk",
       "r3.csr.az.justice.gov.uk",
@@ -116,7 +120,7 @@ $Configs = @{
   }
   "nomis-development" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -129,7 +133,7 @@ $Configs = @{
   }
   "nomis-test" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -147,7 +151,7 @@ $Configs = @{
   }
   "nomis-preproduction" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -162,7 +166,7 @@ $Configs = @{
   }
   "nomis-production" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
       "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -213,12 +217,24 @@ function New-CompatibilityModeSiteListXml {
   $CreatedByElement.AppendChild($DateCreatedElement) | Out-Null
   $Root.AppendChild($CreatedByElement) | Out-Null
 
-  foreach ($site in $CompatibilityModeSiteList) {
+  foreach ($site in $CompatibilityModeSiteListAllowRedirect) {
     $SiteElement = $XmlDoc.CreateElement("site")
     $SiteElement.SetAttribute('url', $site) | Out-Null
     $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
     $OpenInElement = $XmlDoc.CreateElement("open-in")
     $OpenInElement.SetAttribute('allow-redirect', 'true')
+    $CompatModeElement.InnerText = "Default"
+    $OpenInElement.InnerText = "IE11"
+    $SiteElement.AppendChild($CompatModeElement) | Out-Null
+    $SiteElement.AppendChild($OpenInElement) | Out-Null
+    $Root.AppendChild($SiteElement) | Out-Null
+  }
+  foreach ($site in $CompatibilityModeSiteListUrlFalse) {
+    $SiteElement = $XmlDoc.CreateElement("site")
+    $SiteElement.SetAttribute('url', $site) | Out-Null
+    $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
+    $OpenInElement = $XmlDoc.CreateElement("open-in")
+    $OpenInElement.SetAttribute('url', 'false')
     $CompatModeElement.InnerText = "Default"
     $OpenInElement.InnerText = "IE11"
     $SiteElement.AppendChild($CompatModeElement) | Out-Null
