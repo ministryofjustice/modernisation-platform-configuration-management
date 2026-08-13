@@ -332,6 +332,11 @@ foreach ($TrustedDomain in $TrustedDomains) {
     New-Item -Path "$RegPath\$TrustedDomain" -Force | Out-Null
   }
   if (Test-Path "$RegPath\$TrustedDomain") {
+    $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name http -ErrorAction SilentlyContinue
+    if ($null -eq $ItemProperty -or $ItemProperty.http -ne 2) {
+      Write-Output "Setting $RegPath\$TrustedDomain\http = 2"
+      New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name http -Value 2 -PropertyType DWORD -Force | Out-Null
+    }
     $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -ErrorAction SilentlyContinue
     if ($null -eq $ItemProperty -or $ItemProperty.https -ne 2) {
       Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
