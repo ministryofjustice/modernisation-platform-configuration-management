@@ -68,11 +68,21 @@ $Configs = @{
       "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "r1.pp.csr.service.justice.gov.uk",
+      "r2.pp.csr.service.justice.gov.uk",
+      "r3.pp.csr.service.justice.gov.uk",
+      "r4.pp.csr.service.justice.gov.uk",
+      "r5.pp.csr.service.justice.gov.uk",
+      "r6.pp.csr.service.justice.gov.uk",
+      "traina.csr.service.justice.gov.uk",
+      "trainb.csr.service.justice.gov.uk"
     )
     "TrustedDomains" = @(
       "*.preproduction.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "*.eu-west-2.compute.internal",
+      "*.csr.service.justice.gov.uk",
+      "*.pp.csr.service.justice.gov.uk"
     )
   }
   "hmpps-domain-services-production" = @{
@@ -82,11 +92,25 @@ $Configs = @{
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
       "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
-      "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
+      "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
+      "r1.csr.az.justice.gov.uk",
+      "r2.csr.az.justice.gov.uk",
+      "r3.csr.az.justice.gov.uk",
+      "r4.csr.az.justice.gov.uk",
+      "r5.csr.az.justice.gov.uk",
+      "r6.csr.az.justice.gov.uk",
+      "r1.csr.service.justice.gov.uk",
+      "r2.csr.service.justice.gov.uk",
+      "r3.csr.service.justice.gov.uk",
+      "r4.csr.service.justice.gov.uk",
+      "r5.csr.service.justice.gov.uk",
+      "r6.csr.service.justice.gov.uk"
     )
     "TrustedDomains" = @(
       "*.nomis.az.justice.gov.uk",
       "*.nomis.service.justice.gov.uk",
+      "*.csr.az.justice.gov.uk",
+      "*.csr.service.justice.gov.uk",
       "*.eu-west-2.compute.internal"
     )
   }
