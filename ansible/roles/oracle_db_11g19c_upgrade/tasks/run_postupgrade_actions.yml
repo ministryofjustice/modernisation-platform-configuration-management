@@ -90,6 +90,28 @@
     - postupgrade
     - srvctl
 
+- name: Show srvctl_config
+  debug: var=srvctl_config
+  tags:
+    - postupgrade
+    - srvctl
+    - debug
+
+- name: Check upgrade status
+  become: true
+  become_user: oracle
+  environment: "{{ oracle19c_env }}"
+  script: check_upgrade_status.sh
+  register: upgrade_status
+  tags:
+    - postupgrade
+
+- name: Show upgrade status
+  debug: var=upgrade_status
+  tags:
+    - postupgrade
+    - debug
+
 #- name: Add database to Oracle Restart if not registered
 #  become: true
 #  become_user: oracle
@@ -105,3 +127,4 @@
  # tags:
   #  - postupgrade
   #  - srvctl
+
