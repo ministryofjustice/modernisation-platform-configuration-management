@@ -31,38 +31,7 @@
 - name: Derive base RCU prefix if not already set
   when: not rcu_prefix_marker.stat.exists
   block:
-    - name: Derive base RCU prefix from EC2 Name tag
-      ansible.builtin.set_fact:
-        rcu_prefix_base: >-
-          {{
-            (
-              (ec2.tags.Name | lower).split('-')[0] ~
-              'W' ~
-              (ec2.tags.Name | lower).split('-')[-1]
-            )
-            | upper
-            | regex_replace('[^A-Z0-9]', '')
-          }}
-
-    - name: Validate base RCU prefix
-      ansible.builtin.assert:
-        that:
-          - rcu_prefix_base is match('^[A-Z][A-Z0-9]{0,11}$')
-        fail_msg: >-
-          Derived RCU prefix base '{{ rcu_prefix_base }}' is invalid.
-          It must start with a letter, contain only A-Z and 0-9, and be 1-12 characters long.
-          Expected EC2 Name tag format like qa11g-nomis-web12-a.
-
-    - name: Build candidate RCU prefixes
-      ansible.builtin.set_fact:
-        rcu_prefix_candidates: >-
-          {%- set candidates = [rcu_prefix_base[:12]] -%}
-          {%- for n in range(1, 11) -%}
-          {%-   set _ = candidates.append((rcu_prefix_base[:11] ~ n | string)[:12]) -%}
-          {%- endfor -%}
-          {{ candidates }}
-
-    - name: Check candidate RCU prefixes in database
+    - name: Determine RCU prefix in database
       become_user: oracle
       ansible.builtin.shell: |
         set -eo pipefail
@@ -70,35 +39,130 @@
 
         sqlplus -s /nolog <<'SQL'
         connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
-        set heading off feedback off verify off echo off pagesize 0 trimspool on serveroutput on
+        set heading off feedback off verify off echo off pagesize 0 trimspool on serveroutput on size unlimited
 
         declare
-          v_count   number := 0;
-          v_tmp     number := 0;
-          v_exists  number := 0;
-          v_prefix  varchar2(12) := upper('{{ item }}');
-        begin
-          -- the following query checks for the existence of the schema_version_registry view and counts the number of entries 
-          -- for the given prefix in that view, as well as checking for the existence of a user with the prefix_STB username. 
-          -- The total count is returned to determine if the prefix is already in use.
-          -- The view may not yet exist if the RCU has not been run, so we check for its existence first.
-          select count(*) into v_exists
-          from dba_views
-          where view_name = 'SCHEMA_VERSION_REGISTRY';
+          v_ec2_name              varchar2(255) := q'[{{ ec2.tags.Name }}]';
+          v_first_part            varchar2(255);
+          v_last_part             varchar2(255);
+          v_first_alpha           varchar2(255);
+          v_first_numeric         varchar2(255);
+          v_last_numeric          varchar2(255);
+          v_raw_base              varchar2(255);
+          v_base_prefix           varchar2(12);
+          v_candidate             varchar2(12);
+          v_selected_prefix       varchar2(12);
+          v_registry_exists       number := 0;
+          v_registry_match_count  number := 0;
+          v_stb_user_count        number := 0;
+          v_total_matches         number := 0;
 
-          if v_exists > 0 then
-            execute immediate
-              'select count(*) from schema_version_registry where mrc_name = upper(''' || v_prefix || ''')'
-              into v_tmp;
-            v_count := v_count + v_tmp;
+          procedure debug(p_message in varchar2) is
+          begin
+            dbms_output.put_line('DEBUG: ' || p_message);
+          end;
+        begin
+          v_first_part := regexp_substr(lower(v_ec2_name), '[^-]+', 1, 1);
+          v_last_part := regexp_substr(lower(v_ec2_name), '[^-]+', 1, regexp_count(v_ec2_name, '-') + 1);
+          v_first_alpha := regexp_substr(v_first_part, '^[[:alpha:]]+');
+          v_first_numeric := regexp_substr(v_first_part, '[[:digit:]]+');
+          v_last_numeric := regexp_substr(v_last_part, '[[:digit:]]+');
+          v_raw_base := regexp_replace(
+            upper(
+              nvl(v_first_alpha, '') ||
+              nvl(v_first_numeric, '') ||
+              'W' ||
+              nvl(v_last_numeric, '')
+            ),
+            '[^A-Z0-9]',
+            ''
+          );
+          v_base_prefix := substr(v_raw_base, 1, 12);
+
+          debug('EC2 Name tag: ' || v_ec2_name);
+          debug('Derived first part of EC2 Name tag: ' || v_first_part);
+          debug('Derived last part of EC2 Name tag: ' || v_last_part);
+          debug('Derived alphabetic portion of first part: ' || nvl(v_first_alpha, '<null>'));
+          debug('Derived numeric portion of first part: ' || nvl(v_first_numeric, '<null>'));
+          debug('Derived numeric portion of last part: ' || nvl(v_last_numeric, '<null>'));
+          debug('Derived raw RCU prefix base: ' || v_raw_base);
+          debug('Derived truncated RCU prefix base: ' || v_base_prefix);
+
+          if not regexp_like(v_base_prefix, '^[A-Z][A-Z0-9]{0,11}$') then
+            raise_application_error(
+              -20001,
+              'Derived RCU prefix base "' || v_base_prefix || '" is invalid. ' ||
+              'It must start with a letter, contain only A-Z and 0-9, and be 1-12 characters long. ' ||
+              'Expected EC2 Name tag format like qa11g-nomis-web12-a.'
+            );
           end if;
 
-          select count(*) into v_tmp
-          from dba_users
-          where username = upper(v_prefix || '_STB');
-          v_count := v_count + v_tmp;
+          select count(*)
+          into v_registry_exists
+          from dba_views
+          where owner = user
+            and view_name = 'SCHEMA_VERSION_REGISTRY';
 
-          dbms_output.put_line(v_count);
+          debug('schema_version_registry exists in schema ' || user || ': ' ||
+                case when v_registry_exists > 0 then 'yes' else 'no' end);
+
+          for i in 0 .. 9 loop
+            if i = 0 then
+              v_candidate := substr(v_base_prefix, 1, 12);
+            else
+              v_candidate := substr(substr(v_base_prefix, 1, 10) || lpad(to_char(11 - i), 2, '0'), 1, 12);
+            end if;
+
+            v_registry_match_count := 0;
+            v_stb_user_count := 0;
+
+            if v_registry_exists > 0 then
+              execute immediate
+                'select count(*) from schema_version_registry where mrc_name = :candidate'
+                into v_registry_match_count
+                using upper(v_candidate);
+            end if;
+
+            select count(*)
+            into v_stb_user_count
+            from dba_users
+            where username = upper(v_candidate || '_STB');
+
+            v_total_matches := v_registry_match_count + v_stb_user_count;
+
+            debug(
+              'Candidate ' || v_candidate ||
+              ' => schema_version_registry matches=' || v_registry_match_count ||
+              ', dba_users matches=' || v_stb_user_count ||
+              ', total=' || v_total_matches
+            );
+
+            if v_total_matches = 0 then
+              v_selected_prefix := v_candidate;
+              exit;
+            end if;
+          end loop;
+
+          if v_selected_prefix is null then
+            raise_application_error(
+              -20002,
+              'Could not find an unused RCU prefix from candidates derived from "' || v_base_prefix ||
+              '". Tried: ' ||
+              substr(v_base_prefix, 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '10', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '09', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '08', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '07', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '06', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '05', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '04', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '03', 1, 12) || ', ' ||
+              substr(substr(v_base_prefix, 1, 10) || '02', 1, 12)
+            );
+          end if;
+
+          debug('Selected RCU prefix: ' || v_selected_prefix);
+          dbms_output.put_line(v_selected_prefix);
         end;
         /
 
@@ -106,52 +170,49 @@
         SQL
       args:
         executable: /bin/bash
-      loop: "{{ rcu_prefix_candidates }}"
-      register: rcu_prefix_candidate_checks
+      register: rcu_prefix_selection
       changed_when: false
       no_log: true
 
-    - name: Select first unused RCU prefix
-      ansible.builtin.set_fact:
-        new_weblogic_db_repo_prefix: "{{ item.item }}"
-      loop: "{{ rcu_prefix_candidate_checks.results }}"
-      when:
-        - item.stdout | trim == "0"
-        - new_weblogic_db_repo_prefix is not defined
-
-    # Display the selected RCU prefix for debugging purposes
-    - name: Debug selected RCU prefix
+    - name: Debug RCU prefix selection output
       ansible.builtin.debug:
-        msg: "Selected RCU prefix: {{ new_weblogic_db_repo_prefix }}"
+        var: rcu_prefix_selection.stdout_lines
 
-    - name: Fail if no unused RCU prefix was found
-      ansible.builtin.fail:
-        msg: >-
-          Could not find an unused RCU prefix from candidates derived from '{{ rcu_prefix_base }}'.
-          Tried: {{ rcu_prefix_candidates | join(', ') }}
-      when:
-        - new_weblogic_db_repo_prefix is not defined
-
-    - name: Set new RCU prefix
+    - name: Set selected RCU prefix
       ansible.builtin.set_fact:
-        weblogic_db_repo_prefix: "{{ new_weblogic_db_repo_prefix }}"
+        weblogic_db_repo_prefix: >-
+          {{
+            (
+              rcu_prefix_selection.stdout_lines
+              | reject('match', '^DEBUG:')
+              | reject('match', '^\\s*$')
+              | reject('equalto', '')
+              | list
+              | last
+            )
+            | trim
+          }}
 
-- name: Final validation of selected RCU prefix
-  ansible.builtin.assert:
-    that:
-      - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{0,11}$')
-    fail_msg: "Selected RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid."
+    - name: Debug selected RCU prefix from database
+      ansible.builtin.debug:
+        msg: "Selected RCU prefix from database: {{ weblogic_db_repo_prefix }}"
+
+    - name: Final validation of selected RCU prefix
+      ansible.builtin.assert:
+        that:
+          - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{0,11}$')
+        fail_msg: "Selected RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid."
+
+    - name: Persist local RCU prefix marker
+      ansible.builtin.copy:
+        content: "{{ weblogic_db_repo_prefix }}\n"
+        dest: /u01/software/weblogic/.rcu_prefix
+        owner: oracle
+        group: oinstall
+        mode: "0600"
+        force: false
 
 # Display the final RCU prefix for debugging purposes
 - name: Debug the final RCU prefix
   ansible.builtin.debug:
     msg: "Selected RCU prefix: {{ weblogic_db_repo_prefix }}"
-
-- name: Persist local RCU prefix marker
-  ansible.builtin.copy:
-    content: "{{ weblogic_db_repo_prefix }}\n"
-    dest: /u01/software/weblogic/.rcu_prefix
-    owner: oracle
-    group: oinstall
-    mode: "0600"
-    force: false
