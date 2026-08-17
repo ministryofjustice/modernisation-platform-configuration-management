@@ -3,17 +3,20 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PK
  *  NOMIS MIS Goldengate code.
  *  
  *  Description:    This script creates procedures to support
- *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
+ *                      Oracle Goldengate jobs for Prison-NOMIS release 2.0.
  *  
- *  Version:     1.0e
+ *  Version:     2.0
  *
  *  Author:    
  *
  *  Date:    
  * 
- *  Change History:  Version:  Date:      Author:  Description:  
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
  *
  *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      ...
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
   FUNCTION get_version RETURN varchar2 IS
@@ -617,13 +620,18 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PK
 
     FOR i in 1..l_tgt_table_list.count
     LOOP
-        -- only want to compare on key values
-        DBMS_APPLY_ADM.COMPARE_OLD_VALUES(
-            object_name => l_staging_owner || '.' || l_tgt_table_list(i),
-            column_list => '*',
-            operation => '*',
-            compare => FALSE);
+        -- COMPARE_OLD_VALUES is a Streams Capture setting.
+        -- For GoldenGate Replicat, row change comparison is handled by GG configuration,
+        -- not by PL/SQL. This call is retained as a documented no-op for compatibility.
+        -- DBMS_APPLY_ADM.COMPARE_OLD_VALUES(
+        --     object_name => l_staging_owner || '.' || l_tgt_table_list(i),
+        --     column_list => '*',
+        --     operation => '*',
+        --     compare => FALSE);
+        NULL;
     END LOOP;
+
+    -- raise_application_error(mis_gen_pkg.g_mis_streams_exception,'refresh_apply_keys not completed successfully.');
 
   EXCEPTION
 

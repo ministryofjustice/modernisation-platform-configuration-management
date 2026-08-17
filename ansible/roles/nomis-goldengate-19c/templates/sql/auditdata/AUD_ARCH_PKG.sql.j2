@@ -1,7 +1,7 @@
 create or replace PACKAGE {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AUTHID DEFINER AS
 
     -- package level variable declarations
-    g_version 	 	VARCHAR2(20) := '1.0e.22';
+    g_version 	 	VARCHAR2(20) := '2.0';
     g_data_owner 	CONSTANT VARCHAR2(30) := 'AUDITDATA';
     g_export_dir	CONSTANT varchar2(30) := 'AUD_ARCHIVE_DIR';
     g_import_dir	CONSTANT varchar2(30) := 'AUD_RESTORE_DIR';

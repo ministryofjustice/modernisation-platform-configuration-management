@@ -2,6 +2,24 @@ spool /tmp/{{ oracle_goldengate_group_name }}_db_links.log
 
 WHENEVER SQLERROR EXIT SUCCESS
 
+declare
+  v_env_var varchar2(255) := 'SOURCE_DB_PASSWORD';
+  v_source_db_pwd varchar2(255);
+begin
+  dbms_system.get_env(v_env_var, v_source_db_pwd);
+  -- Recreate the nomis db link as it was connecting with the strmadmin user and should now use the same password as the goldengate db user
+  if v_source_db_pwd is null then
+    raise_application_error(-20001, 'Source database password not found in environment variable '||v_env_var);
+  end if;
+  {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1.add_database_link(
+    p_db_link => '{{ oracle_goldengate_group.source.tns_alias }}.REGRESS.RDBMS.DEV.US.ORACLE.COM',
+    p_username => UPPER('{{ oracle_goldengate_dbuser }}'),
+    p_password => v_source_db_pwd,
+    p_host => '{{ oracle_goldengate_group.source.tns_alias }}'
+  );
+end;
+/
+
 PROMPT Installing database link to '{{ oracle_goldengate_group.source.tns_alias }}' as {{ oracle_goldengate_group.source.schema_owner }}
 
 set serverout on
@@ -21,7 +39,7 @@ begin
         execute immediate v_sql;
     end if;
     v_sql := 'CREATE PUBLIC DATABASE LINK '||v_source_db||' CONNECT TO {{ oracle_goldengate_group.source.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_source_schema_password }} USING ''{{ oracle_goldengate_group.source.tns_alias }}''';
-    execute immediate v_sql;
+    --execute immediate v_sql;
 end;
 /
 

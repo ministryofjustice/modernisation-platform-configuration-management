@@ -315,6 +315,12 @@
     - goldengate-cronjobs
     - install-cronjobs
 
+- name: Create missing AUDITDATA tables
+  import_tasks: create_missing_auditdata_tables.yml
+  tags:
+    - never
+    - create-missing-tables
+
 # Database Scheduler jobs migration from STRMADMIN
 - name: Install database scheduler jobs (disabled initially)
   import_tasks: install_database_jobs.yml

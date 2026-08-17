@@ -52,6 +52,9 @@ TABLEEXCLUDE OMS_OWNER.MV_OFFENDER_MATCH_DETAILS;
 TABLEEXCLUDE OMS_OWNER.OFFENDER_SCHEDULES;
 TABLEEXCLUDE OMS_OWNER.RE$ACTION_IMP_TAB;
 
+-- We don't need to include any DML on MIS_STOP_POINTS as it's not needed in the audit trail. This is a table that contains stop points for the MIS extract. It was originally in the STRMADMIN schema but has been moved to the OMS_OWNER schema as part of the GG migration.
+TABLEEXCLUDE OMS_OWNER.MIS_STOP_POINTS;
+
 -- Don't include any DML on OMS_DELETED_ROWS as it's not needed in the audit trail. This is a table that contains deleted rows from all tables in the OMS_OWNER schema, and it's only used for auditing purposes within the source database, so we don't need it in the audit trail and it would just add unnecessary volume to the trail.
 TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
 

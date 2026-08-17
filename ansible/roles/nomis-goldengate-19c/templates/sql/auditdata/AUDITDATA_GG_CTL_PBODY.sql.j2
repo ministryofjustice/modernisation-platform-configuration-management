@@ -46,6 +46,55 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
         p_message => p_errmsg);
   END;
 
+  FUNCTION replicat_running(
+    p_apply_name 	IN     varchar2 DEFAULT NULL
+  ) RETURN boolean IS
+  -- packaged function replicat_running returns TRUE if the specified replicat process is running
+    l_status varchar2(30);
+  BEGIN
+    select status 
+    into l_status
+    from dba_apply da
+    where da.apply_name = nvl(p_apply_name, g_apply_name);
+
+    IF l_status = 'ENABLED' THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN FALSE;
+    WHEN OTHERS THEN
+      audit_log_error(0, 'Replicat status ' || p_apply_name || ' failure.',
+          null, null, null, null, null, null, 'replicat_running');
+        RAISE;
+  END;
+
+  FUNCTION extract_running(
+    p_capture_name 	IN     varchar2 DEFAULT NULL
+  ) RETURN boolean IS
+  -- packaged function extract_running returns TRUE if any extract processes are running
+    l_status varchar2(30);
+  BEGIN
+    select status 
+    into l_status
+    from dba_capture ac
+    where ac.capture_name = nvl(p_capture_name, g_capture_name);
+
+    IF l_status = 'ENABLED' THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN FALSE;
+    WHEN OTHERS THEN
+      audit_log_error(0, 'Extract status ' || p_capture_name || ' failure.',
+          null, null, null, null, null, null, 'extract_running');
+        RAISE;
+  END;
 
   PROCEDURE stop_extract(
     p_force     IN     BOOLEAN  DEFAULT FALSE
@@ -62,46 +111,48 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     -- get SCN for last redo log record scanned
     execute immediate v_plsql into v_msg_number using g_capture_name;
 
-    -- stop capture process
-    DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
-    BEGIN
-      --  SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
-      DBMS_SCHEDULER.create_job(
-        job_name            => l_job_name,
-        job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
-        number_of_arguments => 0,
-        enabled             => FALSE,
-        auto_drop           => TRUE
-      );
-      
-      DBMS_SCHEDULER.enable(l_job_name);
+    IF extract_running THEN
+      -- stop capture process
+      DECLARE
+        l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      BEGIN
+        --  SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+        DBMS_SCHEDULER.create_job(
+          job_name            => l_job_name,
+          job_type            => 'EXECUTABLE',
+          job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
+          number_of_arguments => 0,
+          enabled             => FALSE,
+          auto_drop           => TRUE
+        );
+        
+        DBMS_SCHEDULER.enable(l_job_name);
 
-      -- Wait for completion (blocks this session)
-      DBMS_SCHEDULER.run_job(
-        job_name            => l_job_name,
-        use_current_session => TRUE
-      );
-    EXCEPTION
-        WHEN timeout_stopping_process THEN
-            BEGIN -- retry stopping capture process
-                SYS.DBMS_LOCK.SLEEP(g_sleep1);
-                v_retry_txt := ' on second attempt';
-            execute immediate v_plsql into v_msg_number using g_capture_name;
--- need to change this                SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
-            EXCEPTION
-                WHEN timeout_stopping_process THEN
-                BEGIN
-                    SYS.DBMS_LOCK.SLEEP(g_sleep2);
-                    v_retry_txt := ' on third attempt';
-                execute immediate v_plsql into v_msg_number using g_capture_name;
--- need to change this                    SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
-                EXCEPTION
-                    WHEN timeout_stopping_process THEN RAISE;
-                END;
-            END;
-    END;
+        -- Wait for completion (blocks this session)
+        DBMS_SCHEDULER.run_job(
+          job_name            => l_job_name,
+          use_current_session => TRUE
+        );
+      EXCEPTION
+          WHEN timeout_stopping_process THEN
+              BEGIN -- retry stopping capture process
+                  SYS.DBMS_LOCK.SLEEP(g_sleep1);
+                  v_retry_txt := ' on second attempt';
+              execute immediate v_plsql into v_msg_number using g_capture_name;
+  -- need to change this                SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+              EXCEPTION
+                  WHEN timeout_stopping_process THEN
+                  BEGIN
+                      SYS.DBMS_LOCK.SLEEP(g_sleep2);
+                      v_retry_txt := ' on third attempt';
+                  execute immediate v_plsql into v_msg_number using g_capture_name;
+  -- need to change this                    SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
+                  EXCEPTION
+                      WHEN timeout_stopping_process THEN RAISE;
+                  END;
+              END;
+      END;
+    END IF;
     -- log message
     audit_log_error(0, 'Capture process ' || g_capture_name || ' stopped' || v_retry_txt || '.',
         v_msg_number, null, null, null, null, null, 'stop_extract');
@@ -115,24 +166,26 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
   -- packaged procedure start_extract starts audit capture process
     l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
   BEGIN
-    -- start capture processes
-    --      SYS.DBMS_CAPTURE_ADM.start_extract(g_capture_name);
-    DBMS_SCHEDULER.create_job(
-      job_name            => l_job_name,
-      job_type            => 'EXECUTABLE',
-      job_action          => '{{ oracle_goldengate_scripts_dir }}/start_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
-      number_of_arguments => 0,
-      enabled             => FALSE,
-      auto_drop           => TRUE
-    );
-    
-    DBMS_SCHEDULER.enable(l_job_name);
+    IF NOT extract_running THEN
+      -- start capture processes
+      --      SYS.DBMS_CAPTURE_ADM.start_extract(g_capture_name);
+      DBMS_SCHEDULER.create_job(
+        job_name            => l_job_name,
+        job_type            => 'EXECUTABLE',
+        job_action          => '{{ oracle_goldengate_scripts_dir }}/start_extract_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
+        number_of_arguments => 0,
+        enabled             => FALSE,
+        auto_drop           => TRUE
+      );
+      
+      DBMS_SCHEDULER.enable(l_job_name);
 
-    -- Wait for completion (blocks this session)
-    DBMS_SCHEDULER.run_job(
-      job_name            => l_job_name,
-      use_current_session => TRUE
-    );
+      -- Wait for completion (blocks this session)
+      DBMS_SCHEDULER.run_job(
+        job_name            => l_job_name,
+        use_current_session => TRUE
+      );
+    END IF;
     -- log message
     audit_log_error(0, 'Capture process ' || g_capture_name || ' started.',
          null, null, null, null, null, null, 'start_extract');
@@ -159,49 +212,51 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     execute immediate v_plsql into v_msg_number, v_msg_date
     using g_apply_name;
 
-    -- stop audit apply process
-    DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
-    BEGIN
-      --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
-      DBMS_SCHEDULER.create_job(
-        job_name            => l_job_name,
-        job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
-        number_of_arguments => 0,
-        enabled             => FALSE,
-        auto_drop           => TRUE
-      );
-      
-      DBMS_SCHEDULER.enable(l_job_name);
+    IF replicat_running THEN
+      -- stop audit apply process
+      DECLARE
+        l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      BEGIN
+        --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
+        DBMS_SCHEDULER.create_job(
+          job_name            => l_job_name,
+          job_type            => 'EXECUTABLE',
+          job_action          => '{{ oracle_goldengate_scripts_dir }}/stop_replicat_' || LOWER(auditdata_gen_pkg.g_ogg_group_name) || '.sh',
+          number_of_arguments => 0,
+          enabled             => FALSE,
+          auto_drop           => TRUE
+        );
+        
+        DBMS_SCHEDULER.enable(l_job_name);
 
-      -- Wait for completion (blocks this session)
-      DBMS_SCHEDULER.run_job(
-        job_name            => l_job_name,
-        use_current_session => TRUE
-      );
+        -- Wait for completion (blocks this session)
+        DBMS_SCHEDULER.run_job(
+          job_name            => l_job_name,
+          use_current_session => TRUE
+        );
 
-    EXCEPTION
-        WHEN timeout_stopping_process THEN
-            BEGIN -- retry stopping apply process
-                SYS.DBMS_LOCK.SLEEP(g_sleep1);
-                v_retry_txt := ' on second attempt';
-                execute immediate v_plsql into v_msg_number, v_msg_date
-                using g_apply_name;
--- need to change this                SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
-            EXCEPTION
-                WHEN timeout_stopping_process THEN
-                BEGIN
-                    SYS.DBMS_LOCK.SLEEP(g_sleep2);
-                    v_retry_txt := ' on third attempt';
-                    execute immediate v_plsql into v_msg_number, v_msg_date
-                    using g_apply_name;
--- need to change this                    SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
-                EXCEPTION
-                    WHEN timeout_stopping_process THEN RAISE;
-                END;
-            END;
-    END;
+      EXCEPTION
+          WHEN timeout_stopping_process THEN
+              BEGIN -- retry stopping apply process
+                  SYS.DBMS_LOCK.SLEEP(g_sleep1);
+                  v_retry_txt := ' on second attempt';
+                  execute immediate v_plsql into v_msg_number, v_msg_date
+                  using g_apply_name;
+  -- need to change this                SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
+              EXCEPTION
+                  WHEN timeout_stopping_process THEN
+                  BEGIN
+                      SYS.DBMS_LOCK.SLEEP(g_sleep2);
+                      v_retry_txt := ' on third attempt';
+                      execute immediate v_plsql into v_msg_number, v_msg_date
+                      using g_apply_name;
+  -- need to change this                    SYS.DBMS_APPLY_ADM.stop_apply(g_apply_name, p_force);
+                  EXCEPTION
+                      WHEN timeout_stopping_process THEN RAISE;
+                  END;
+              END;
+      END;
+    END IF;
 
     -- log message
     audit_log_error(0, 'Apply process ' || g_apply_name || ' stopped' || v_retry_txt || '.',
@@ -238,27 +293,29 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
         RAISE AUDITDATA_DML_PKG.AUD_STREAMS_QUEUE_EXCEPTION;
     END IF;
 
-    DECLARE
-      l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
-    BEGIN
-      --  SYS.DBMS_APPLY_ADM.start_replicat(g_apply_name);
-      DBMS_SCHEDULER.create_job(
-        job_name            => l_job_name,
-        job_type            => 'EXECUTABLE',
-        job_action          => '{{ oracle_goldengate_scripts_dir }}/start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '.sh',
-        number_of_arguments => 0,
-        enabled             => FALSE,
-        auto_drop           => TRUE
-      );
-      
-      DBMS_SCHEDULER.enable(l_job_name);
+    IF NOT replicat_running THEN
+      DECLARE
+        l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+      BEGIN
+        --  SYS.DBMS_APPLY_ADM.start_apply(g_apply_name);
+        DBMS_SCHEDULER.create_job(
+          job_name            => l_job_name,
+          job_type            => 'EXECUTABLE',
+          job_action          => '{{ oracle_goldengate_scripts_dir }}/start_replicat_' || LOWER(auditdata_gen_pkg.g_ogg_group_name) || '.sh',
+          number_of_arguments => 0,
+          enabled             => FALSE,
+          auto_drop           => TRUE
+        );
+        
+        DBMS_SCHEDULER.enable(l_job_name);
 
-      -- Wait for completion (blocks this session)
-      DBMS_SCHEDULER.run_job(
-        job_name            => l_job_name,
-        use_current_session => TRUE
-      );
-    END;
+        -- Wait for completion (blocks this session)
+        DBMS_SCHEDULER.run_job(
+          job_name            => l_job_name,
+          use_current_session => TRUE
+        );
+      END;
+    END IF;
     
     -- log message
     audit_log_error(0, 'Apply process ' || g_apply_name || ' started.',

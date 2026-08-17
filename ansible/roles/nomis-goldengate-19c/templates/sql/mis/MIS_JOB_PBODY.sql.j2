@@ -3,17 +3,20 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
  *  NOMIS MIS Goldengate code.
  *  
  *  Description:    This script creates procedures to support
- *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
+ *                      Oracle Goldengate jobs for Prison-NOMIS release 2.0.
  *  
- *  Version:     1.0e
+ *  Version:     2.0
  *
  *  Author:    
  *
  *  Date:    
  * 
- *  Change History:  Version:  Date:      Author:  Description:  
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
  *
  *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      ...
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
   FUNCTION get_version RETURN varchar2 IS
@@ -269,7 +272,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
         RAISE;
   END PURGE_RECORDS ;
 
-    -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh
+    -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh.
     -- Called by MIS_BATCH_CONTROL job, which will:
     --   - set stop points for capture and apply processes associated with the MIS staging tables
     --   - run the MIS_BATCH_ROLL job 
@@ -295,15 +298,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
             end if;
         else
             -- restart apply process if stopped.
+            -- do not refresh handlers as they are now deployment-time setup only.
             begin
-                MIS_GG_CTRL_PKG.start_replicat(mis_gen_pkg.g_mis_owner);
+                MIS_GG_CTRL_PKG.start_replicat(mis_gen_pkg.g_mis_owner, false);
             exception
                 when MIS_GEN_PKG.cannot_alter_process then null;
             end;
         end if;
     END mis_batch_control;
 
-    -- creates a new batch
+    -- Creates a new batch and calls the external BO process to start the ETL processing.
     -- Called by MIS_BATCH_ROLL job
     PROCEDURE mis_batch_roll IS
         v_more BOOLEAN := FALSE;
@@ -317,6 +321,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
             -- Passing FALSE to the above dbms_scheduler.run_job call means that the job will be run in a separate session, so any exceptions raised will be in the context of that session and not this one, which means we can't reliably catch them here. Instead, we'll rely on the job logs to identify any issues with the batch roll. Not sure why it was set to do that but instead we can just call the procedure directly, which will allow us to catch any exceptions here and log them appropriately.
             mis_batch_control;
         ELSE
+            -- run the trigger_mis_load.sh script to start the ETL processing
             v_plsql := 'begin dbms_scheduler.run_job(''MIS_PRE_LOAD'',FALSE); end;';
             execute immediate v_plsql;
         END IF;

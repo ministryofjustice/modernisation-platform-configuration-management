@@ -70,6 +70,14 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_PKG AS
     -- will return a VARCHAR2 string containing a package version number
     FUNCTION get_version RETURN varchar2;
 
+    -- Packaged function get_metadata_over_dblink
+    -- will return a VARCHAR2 string containing the DDL metadata for the specified object
+    -- from the source database over a database link to the source database
+    FUNCTION get_metadata_over_dblink(pi_object_type VARCHAR2,
+                                      pi_object_owner VARCHAR2,
+                                      pi_object_name VARCHAR2)
+    RETURN varchar2;
+
 END AUDITDATA_DML_PKG;
 /
 

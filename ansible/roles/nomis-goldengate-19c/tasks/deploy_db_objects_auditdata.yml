@@ -17,8 +17,39 @@
     - name: Set facts for Audit stream used in packages
       ansible.builtin.set_fact:
         oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.auditdata.schema_owner }}"
+        oracle_goldengate_source_schema_owner: "{{ oracle_goldengate_group.source.schema_owner | lower }}"
         oracle_goldengate_group_name: "auditdata"
 
+    - name: Get Source password secret metadata from AWS Secrets Manager
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      no_log: true
+
+    - name: Check sys schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - "'{{ oracle_goldengate_source_schema_owner }}' in oracle_goldengate_password_secret.keys()"
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_source_schema_owner }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set Source sys password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_source_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_source_schema_owner] }}"
+      no_log: true
+      
     - name: Ensure AuditData SQL directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/auditdata"
@@ -42,6 +73,7 @@
         export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
         export ORACLE_HOME={{ oracle_goldengate_group.auditdata.oracle_home }}
         export PATH=${ORACLE_HOME}/bin:$PATH
+
         # Retrieve the Source {{ oracle_goldengate_dbuser }} password from AWS Secrets Manager for creating the new db link
         export SOURCE_DB_PASSWORD=$(aws secretsmanager get-secret-value \
           --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
@@ -55,6 +87,7 @@
 
         cd {{ oracle_goldengate_sql_dir }}/auditdata
         sqlplus -s / as sysdba @install_auditdata_packages.sql
+        sqlplus -s / as sysdba @install_auditdata_db_links.sql
       args:
         executable: /bin/bash
       register: audit_config_output

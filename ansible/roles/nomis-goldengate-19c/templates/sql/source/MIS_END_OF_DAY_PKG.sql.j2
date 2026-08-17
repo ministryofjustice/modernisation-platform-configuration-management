@@ -4,18 +4,18 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_group.source.schema_owner }}.MIS_
  *  NOMIS MIS Refresh Jobs code.
  *  
  *  Description:    This script creates procedures to support
- *                      MIS refresh jobs for Prison-NOMIS release  1.0e.
+ *                      MIS refresh jobs for Prison-NOMIS release  2.0.
  *  
  *                  This script should be compiled by the {{ oracle_goldengate_group.source.schema_owner }} user.
  *  
  *  Change History:  
  *          Version:  Date:      Author:      Description:  
  *
- *      1.0e.1    15/01/26  D. Belton  Initial version for 1.0e MIS refresh
+ *      2.0.1    15/01/26  D. Belton  Initial version for 2.0 MIS refresh
  */
 
     -- package version
-    g_version      VARCHAR2(20) := '1.0e.1';
+    g_version      VARCHAR2(20) := '2.0.1';
 
     -- Packaged procedure run_batch
     -- runs the end of day batch process for MIS refresh, which will:

@@ -3,21 +3,24 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PKG AUT
  *  NOMIS MIS Goldengate code.
  *  
  *  Description:    This script creates procedures to support
- *                      Oracle Goldengate jobs for Prison-NOMIS release 1.0e.
+ *                      Oracle Goldengate jobs for Prison-NOMIS release 2.0.
  *  
- *  Version:     1.0e
+ *  Version:     2.0
  *
  *  Author:    
  *
  *  Date:    
  * 
- *  Change History:  Version:  Date:      Author:  Description:  
+ *  Change History:
+ *      Version:  Date:      Author:  Description:  
  *
  *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      ...
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
     -- package level variable declarations
-    g_version      VARCHAR2(20) := '1.0e.59';
+    g_version      VARCHAR2(20) := '2.0';
 
 
     -- Packaged function get_version

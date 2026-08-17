@@ -21,10 +21,10 @@
         oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
         oracle_goldengate_group_name: "source"
 
-    - name: Get password secret metadata from AWS Secrets Manager
+    - name: Get Source password secret metadata from AWS Secrets Manager
       ansible.builtin.shell: |
         aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords" \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
           --query SecretString \
           --output text
       register: oracle_goldengate_password_secret_raw
@@ -51,6 +51,21 @@
         oracle_goldengate_source_sys_password: "{{ oracle_goldengate_password_secret['sys'] }}"
       no_log: true
       
+    - name: Get MIS password secret metadata from AWS Secrets Manager
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      no_log: true
+
     - name: Check MIS schema password exists in secret
       ansible.builtin.assert:
         that:
@@ -64,6 +79,36 @@
     - name: Set MIS schema password fact
       ansible.builtin.set_fact:
         oracle_goldengate_mis_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.mis.schema_owner | lower] }}"
+      no_log: true
+
+    - name: Get AUDITDATA password secret metadata from AWS Secrets Manager
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      no_log: true
+
+    - name: Check AUDITDATA schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - oracle_goldengate_group.auditdata.schema_owner | lower in oracle_goldengate_password_secret
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_group.auditdata.schema_owner | lower }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set AUDITDATA schema password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_auditdata_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.auditdata.schema_owner | lower] }}"
       no_log: true
 
     - name: Ensure Source SQL directory exists

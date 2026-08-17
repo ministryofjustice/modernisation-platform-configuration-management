@@ -3,20 +3,23 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
  *  NOMIS MIS Goldengate code.
  *  
  *  Description:    This script creates procedures to support
- *                      Oracle Goldengate control processes for Prison-NOMIS release 1.0e.
+ *                      Oracle Goldengate control processes for Prison-NOMIS release 2.0.
  *                  Based on MIS_STRM_PKG1
  *  
  *                      This script should be executed by the MIS user.
  *  
- *  Version:     1.0e
+ *  Version:     2.0
  *
  *  Author:    R. Taylor - EDS UK Ltd.
  *
  *  Date:    Monday, 21 May 2007.
  * 
- *  Change History:  Version:  Date:      Author:  Description:  
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
  *
  *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ *      ...
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
     -- Packaged function apply_process_error_count returns the number of apply processes
@@ -40,6 +43,15 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
         p_staging_owner IN     varchar2,
         p_continue   OUT    boolean);
 
+    -- Packaged function replicat_running returns TRUE if the specified replicat process is running.
+    FUNCTION replicat_running(
+        p_apply_name 	IN     varchar2 DEFAULT NULL
+    ) RETURN boolean;
+
+    -- Packaged function extract_running returns TRUE if the specified extract process is running.
+    FUNCTION extract_running(
+        p_capture_name 	IN     varchar2 DEFAULT NULL
+    ) RETURN boolean;
 
     -- Packaged procedure start_extract starts all extract processes
     -- or those associated with a particular staging table owner (if supplied)

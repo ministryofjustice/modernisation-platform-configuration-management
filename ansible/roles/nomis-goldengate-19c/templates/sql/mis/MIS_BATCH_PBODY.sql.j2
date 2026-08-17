@@ -3,18 +3,21 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
  *  NOMIS MIS Goldengate code.
  *  
  *  Description:    This script creates procedures to support
- *                      Oracle Goldengate batch id processes for Prison-NOMIS release 1.0e.
+ *                      Oracle Goldengate batch id processes for Prison-NOMIS release 2.0.
  *                  Based on MIS_STRM_PKG1
  *  
- *  Version:     1.0e
+ *  Version:     2.0
  *
  *  Author:    R. Taylor - EDS UK Ltd.
  *
  *  Date:    Monday, 21 May 2007.
  * 
- *  Change History:  Version:  Date:      Author:  Description:  
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
  *
  *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ *      ...
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
 
@@ -361,7 +364,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     p_staging_owner   IN     varchar2,
     p_scn     IN     number
   ) RETURN date IS
-  -- local function capture_log_date returns the next date (end of log) for logs
+  -- local function capture_log_date returns the next date (end of log) for archive logs
   -- registered to capture processes associated with a particular staging table owner
   -- containing data for a given SCN
 
@@ -435,7 +438,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     v_apply_proc_error_count := MIS_GG_CTRL_PKG.apply_process_error_count(v_staging_owner);
 
     -- Suspend apply processes associated with staging table owner
-    mis_gg_ctrl_pkg.stop_replicat(v_staging_owner);
+    -- mis_gg_ctrl_pkg.stop_replicat(v_staging_owner);
     
     -- determine number of latest batch for source
     v_old_batch_number := get_batch_number(v_staging_owner, TRUE);
@@ -461,6 +464,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
 
     -- determine number of inactive capture processes
+    -- There shouldn't be any inactive capture processes, but if there are, we need to flag the new batch as having an error
     v_capture_error_count := capture_inactive_count(v_staging_owner);
     IF v_capture_error_count > 0 THEN
         v_error_flag := 'Y';
@@ -489,6 +493,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         MIS_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
                         v_apply_scn || ' is not a currently valid system change number at source;' ||
                         ' will check registered log dates instead.', -1);
+        -- get the next date (end of log) of the archive logs
+        -- registered to the capture process containing data for a given SCN
         v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
     END;
     ELSE
@@ -527,24 +533,27 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         renumber_old_batch_rows(p_staging_owner, v_new_batch_number);
     END IF;
 
-    -- Reset and resume Streams processes associated with staging table owner
+    -- Reset and resume GoldenGate processes associated with staging table owner
     -- (as long as there are no queued apply errors and the capture processes have not aborted)
     IF (p_restart = TRUE) AND (v_apply_error_count = 0) AND
        (v_apply_proc_error_count = 0) AND (v_capture_error_count = 0) THEN
-        -- clear maximum SCN parameters
+        -- set stop points
         mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
-        -- restart apply
-        mis_gg_ctrl_pkg.start_replicat(v_staging_owner);
+        -- restart replicat
+        -- do not refresh handlers as they are now deployment-time setup only.
+        mis_gg_ctrl_pkg.start_replicat(v_staging_owner, false);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
-        -- restart capture in case stopped due to SCN limit
+        -- restart extract in case stopped due to SCN limit
         BEGIN
           mis_gg_ctrl_pkg.start_extract(p_staging_owner);
         EXCEPTION
             WHEN mis_gen_pkg.cannot_alter_process THEN null;
         END;
     ELSE
-        -- not restarting so clear apply handlers (force error if apply started directly)
-        mis_dml_pkg.clear_apply_handlers(p_staging_owner);
+        -- Not restarting; do not clear handlers as they are now deployment-time setup only.
+        -- Handlers are persistent across batch rollovers and retrieve batch ID dynamically.
+        mis_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
+                        'Not restarting GoldenGate processes due to errors or restart flag.');
     END IF;
 
     -- log message
@@ -717,7 +726,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   ) IS
   -- packaged procedure unload_tables
   -- will delete entries for (latest) batch in p_tgt_owner.p_tgt_table
-  -- where mis_scn >= p_stop_scn.
+  -- and where mis_scn >= p_stop_scn.
 
     l_plsql   varchar2(2000); 
     l_tgt_owner  varchar2(30) := mis_gen_pkg.strip_input(p_tgt_owner,30);

@@ -1173,6 +1173,53 @@ null;
     RAISE;
   END;
 
+  -- Packaged function get_metadata_over_dblink
+  -- will return a VARCHAR2 string containing the DDL metadata for the specified object
+  -- from the source database over a database link to the source database.
+  -- This avoids the "ORA-06553: PLS-564" error with 11g when trying to run DBMS_METADATA.get_ddl@<db_link>.
+  FUNCTION get_metadata_over_dblink(pi_object_type VARCHAR2,
+                                    pi_object_owner VARCHAR2,
+                                    pi_object_name VARCHAR2)
+  RETURN varchar2 IS
+    v_doc    varchar2(4000);
+    v_schema varchar2(30);
+    h        number;
+    th       number;
+    partial  number;
+  BEGIN
+    -- check it exists in the remote database before trying to get the metadata
+    SELECT DISTINCT OWNER
+      INTO v_schema
+      FROM all_objects@{{ oracle_goldengate_group.source.tns_alias }}
+    where object_name = UPPER(pi_object_name)
+      AND owner = UPPER(pi_object_owner)
+      AND object_type = UPPER(pi_object_type);
+
+    h := DBMS_METADATA.OPEN@{{ oracle_goldengate_group.source.tns_alias }}(UPPER(pi_object_type));
+    DBMS_METADATA.SET_FILTER@{{ oracle_goldengate_group.source.tns_alias }}(h, 'SCHEMA', v_schema);
+    DBMS_METADATA.SET_FILTER@{{ oracle_goldengate_group.source.tns_alias }}(h, 'NAME', UPPER(pi_object_name));
+    th := DBMS_METADATA.ADD_TRANSFORM@{{ oracle_goldengate_group.source.tns_alias }}(h, 'MODIFY');
+    th := DBMS_METADATA.ADD_TRANSFORM@{{ oracle_goldengate_group.source.tns_alias }}(h, 'DDL');
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SQLTERMINATOR', true);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'PRETTY', true);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SIZE_BYTE_KEYWORD', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SEGMENT_ATTRIBUTES', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'STORAGE', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'REF_CONSTRAINTS', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'TABLESPACE', false);
+    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'PARTITIONING', false);
+    LOOP
+      BEGIN
+        v_doc := v_doc ||
+              to_char(DBMS_METADATA.fetch_ddl_text@{{ oracle_goldengate_group.source.tns_alias }}(h, partial));
+        EXIT WHEN partial = 0;
+      END;
+    END LOOP;
+    DBMS_METADATA.CLOSE@{{ oracle_goldengate_group.source.tns_alias }}(h);
+
+    RETURN v_doc;
+
+  END get_metadata_over_dblink;
 
 END AUDITDATA_DML_PKG;
 /

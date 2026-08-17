@@ -12,7 +12,6 @@ grant select on DBA_CAPTURE to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_DB_LINKS to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_TAB_PARTITIONS to {{ oracle_goldengate_sql_owner }};
 grant select on DBA_SCHEDULER_RUNNING_JOBS to {{ oracle_goldengate_sql_owner }};
-grant select on DBA_SCHEDULER_JOB_RUN_DETAILS to {{ oracle_goldengate_sql_owner }};
 
 grant execute on SYS.DBMS_APPLY_ADM to {{ oracle_goldengate_sql_owner }};
 grant execute on SYS.DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
@@ -89,24 +88,6 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE INDEX {{ oracle_goldengate_sql_owner }}.audit_error_datetime_indx ON {{ oracle_goldengate_sql_owner }}.audit_error(error_datetime)';
   END IF;
 END;
-/
-
-declare
-  v_env_var varchar2(255) := 'SOURCE_DB_PASSWORD';
-  v_source_db_pwd varchar2(255);
-begin
-  dbms_system.get_env(v_env_var, v_source_db_pwd);
-  -- Recreate the nomis db link as it was connecting with the strmadmin user and should now use the same password as the goldengate db user
-  if v_source_db_pwd is null then
-    raise_application_error(-20001, 'Source database password not found in environment variable '||v_env_var);
-  end if;
-  {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1.add_database_link(
-    p_db_link => '{{ oracle_goldengate_group.source.tns_alias }}.REGRESS.RDBMS.DEV.US.ORACLE.COM',
-    p_username => UPPER('{{ oracle_goldengate_dbuser }}'),
-    p_password => v_source_db_pwd,
-    p_host => '{{ oracle_goldengate_group.source.tns_alias }}'
-  );
-end;
 /
 
 -- Move this to after the set up of the Replicat
