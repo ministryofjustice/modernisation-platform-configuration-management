@@ -31,7 +31,7 @@ param (
 $Configs = @{
   "hmpps-domain-services-development" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -44,7 +44,7 @@ $Configs = @{
   }
   "hmpps-domain-services-test" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -62,7 +62,7 @@ $Configs = @{
   }
   "hmpps-domain-services-preproduction" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -70,29 +70,57 @@ $Configs = @{
       "preprod-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "preprod-nomis-web-b.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
+    "CompatibilityModeSiteListUrlFalse" = @(
+      "r1.pp.csr.service.justice.gov.uk",
+      "r2.pp.csr.service.justice.gov.uk",
+      "r3.pp.csr.service.justice.gov.uk",
+      "r4.pp.csr.service.justice.gov.uk",
+      "r5.pp.csr.service.justice.gov.uk",
+      "r6.pp.csr.service.justice.gov.uk",
+      "traina.csr.service.justice.gov.uk",
+      "trainb.csr.service.justice.gov.uk"
+    )
     "TrustedDomains" = @(
       "*.preproduction.nomis.service.justice.gov.uk",
-      "*.eu-west-2.compute.internal"
+      "*.eu-west-2.compute.internal",
+      "*.csr.service.justice.gov.uk",
+      "*.pp.csr.service.justice.gov.uk"
     )
   }
   "hmpps-domain-services-production" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
       "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "prod-nomis-web-a.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "prod-nomis-web-b.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag"
     )
+    "CompatibilityModeSiteListUrlFalse" = @(
+      "r1.csr.az.justice.gov.uk",
+      "r2.csr.az.justice.gov.uk",
+      "r3.csr.az.justice.gov.uk",
+      "r4.csr.az.justice.gov.uk",
+      "r5.csr.az.justice.gov.uk",
+      "r6.csr.az.justice.gov.uk",
+      "r1.csr.service.justice.gov.uk",
+      "r2.csr.service.justice.gov.uk",
+      "r3.csr.service.justice.gov.uk",
+      "r4.csr.service.justice.gov.uk",
+      "r5.csr.service.justice.gov.uk",
+      "r6.csr.service.justice.gov.uk"
+    )
     "TrustedDomains" = @(
       "*.nomis.az.justice.gov.uk",
       "*.nomis.service.justice.gov.uk",
+      "*.csr.az.justice.gov.uk",
+      "*.csr.service.justice.gov.uk",
       "*.eu-west-2.compute.internal"
     )
   }
   "nomis-development" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-dev.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11g.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-qa11r.development.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -105,7 +133,7 @@ $Configs = @{
   }
   "nomis-test" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-t1.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t2.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c-t3.test.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -123,7 +151,7 @@ $Configs = @{
   }
   "nomis-preproduction" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c-lsast.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "lsast-nomis-web-a.preproduction.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -138,7 +166,7 @@ $Configs = @{
   }
   "nomis-production" = @{
     "CompatibilityModeSiteListFilePath" = "C:\IECompatibilitySiteList.xml"
-    "CompatibilityModeSiteList" = @(
+    "CompatibilityModeSiteListAllowRedirect" = @(
       "c.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
       "c.nomis.az.justice.gov.uk/forms/frmservlet?config=tag",
       "c.production.nomis.service.justice.gov.uk/forms/frmservlet?config=tag",
@@ -171,7 +199,8 @@ function Get-ConfigNameByEnvironmentNameTag {
 function New-CompatibilityModeSiteListXml {
   [CmdletBinding()]
   param (
-    [string[]]$CompatibilityModeSiteList
+    [string[]]$CompatibilityModeSiteListAllowRedirect,
+    [string[]]$CompatibilityModeSiteListUrlFalse
   )
   $XmlDoc = New-Object System.Xml.XmlDocument
   $Root = $XmlDoc.CreateElement("site-list")
@@ -189,12 +218,24 @@ function New-CompatibilityModeSiteListXml {
   $CreatedByElement.AppendChild($DateCreatedElement) | Out-Null
   $Root.AppendChild($CreatedByElement) | Out-Null
 
-  foreach ($site in $CompatibilityModeSiteList) {
+  foreach ($site in $CompatibilityModeSiteListAllowRedirect) {
     $SiteElement = $XmlDoc.CreateElement("site")
     $SiteElement.SetAttribute('url', $site) | Out-Null
     $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
     $OpenInElement = $XmlDoc.CreateElement("open-in")
     $OpenInElement.SetAttribute('allow-redirect', 'true')
+    $CompatModeElement.InnerText = "Default"
+    $OpenInElement.InnerText = "IE11"
+    $SiteElement.AppendChild($CompatModeElement) | Out-Null
+    $SiteElement.AppendChild($OpenInElement) | Out-Null
+    $Root.AppendChild($SiteElement) | Out-Null
+  }
+  foreach ($site in $CompatibilityModeSiteListUrlFalse) {
+    $SiteElement = $XmlDoc.CreateElement("site")
+    $SiteElement.SetAttribute('url', $site) | Out-Null
+    $CompatModeElement = $XmlDoc.CreateElement("compat-mode")
+    $OpenInElement = $XmlDoc.CreateElement("open-in")
+    $OpenInElement.SetAttribute('url', 'false')
     $CompatModeElement.InnerText = "Default"
     $OpenInElement.InnerText = "IE11"
     $SiteElement.AppendChild($CompatModeElement) | Out-Null
@@ -214,12 +255,13 @@ if (-not $Configs.Contains($ConfigName)) {
   Write-Error "Unsupported ConfigName $ConfigName"
 }
 $Config = $Configs[$ConfigName]
-$CompatibilityModeSiteList = $Config.CompatibilityModeSiteList
+$CompatibilityModeSiteListAllowRedirect = $Config.CompatibilityModeSiteListAllowRedirect
+$CompatibilityModeSiteListUrlFalse = $Config.CompatibilityModeSiteListUrlFalse
 $TrustedDomains = $Config.TrustedDomains
 $CompatibilityModeSiteListFilePath = $Config.CompatibilityModeSiteListFilePath
 
 Write-Output "Creating $CompatibilityModeSiteListFilePath"
-$SitesXmlDoc = New-CompatibilityModeSiteListXml -CompatibilityModeSiteList $CompatibilityModeSiteList
+$SitesXmlDoc = New-CompatibilityModeSiteListXml -CompatibilityModeSiteListAllowRedirect $CompatibilityModeSiteListAllowRedirect -CompatibilityModeSiteListUrlFalse $CompatibilityModeSiteListUrlFalse
 $SitesXmlDoc.Save($CompatibilityModeSiteListFilePath) | Out-Null
 
 $RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
@@ -291,9 +333,25 @@ foreach ($TrustedDomain in $TrustedDomains) {
   }
   if (Test-Path "$RegPath\$TrustedDomain") {
     $ItemProperty = Get-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -ErrorAction SilentlyContinue
+    if ($null -eq $ItemProperty -or $ItemProperty.http -ne 2) {
+      Write-Output "Setting $RegPath\$TrustedDomain\http = 2"
+      New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name http -Value 2 -PropertyType DWORD -Force | Out-Null
+    }
     if ($null -eq $ItemProperty -or $ItemProperty.https -ne 2) {
       Write-Output "Setting $RegPath\$TrustedDomain\https = 2"
       New-ItemProperty -Path "$RegPath\$TrustedDomain" -Name https -Value 2 -PropertyType DWORD -Force | Out-Null
     }
+  }
+}
+
+$RegPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\2"
+if (Test-Path $RegPath) {
+  $CurrentFlags = (Get-ItemProperty -Path $RegPath -Name Flags -ErrorAction SilentlyContinue).Flags
+
+  # Binary check: If bit value 4 is set, remove it to disable the HTTPS requirement
+  if ($CurrentFlags -band 4) {
+    $NewFlags = $CurrentFlags -bxor 4
+    Write-Output "Unsetting HTTPS verification for trusted sites"
+    Set-ItemProperty -Path $RegPath -Name Flags -Value $NewFlags -Type DWord -Force | Out-Null
   }
 }
