@@ -42,16 +42,9 @@
         set heading off feedback off verify off echo off pagesize 0 trimspool on serveroutput on size unlimited
 
         declare
-          v_ec2_name              varchar2(255) := q'[{{ ec2.tags.Name }}]';
-          v_first_part            varchar2(255);
-          v_last_part             varchar2(255);
-          v_first_alpha           varchar2(255);
-          v_first_numeric         varchar2(255);
-          v_last_numeric          varchar2(255);
-          v_raw_base              varchar2(255);
-          v_base_prefix           varchar2(12);
-          v_candidate             varchar2(12);
-          v_selected_prefix       varchar2(12);
+          v_instance_id           varchar2(255) := q'[{{ ansible_ec2_instance_id }}]';
+          v_instance_id_tail      varchar2(10);
+          v_primary_candidate     varchar2(12);
           v_registry_exists       number := 0;
           v_registry_match_count  number := 0;
           v_stb_user_count        number := 0;
@@ -62,38 +55,20 @@
             dbms_output.put_line('DEBUG: ' || p_message);
           end;
         begin
-          v_first_part := regexp_substr(lower(v_ec2_name), '[^-]+', 1, 1);
-          v_last_part := regexp_substr(lower(v_ec2_name), '[^-]+', 1, regexp_count(v_ec2_name, '-') + 1);
-          v_first_alpha := regexp_substr(v_first_part, '^[[:alpha:]]+');
-          v_first_numeric := regexp_substr(v_first_part, '[[:digit:]]+');
-          v_last_numeric := regexp_substr(v_last_part, '[[:digit:]]+');
-          v_raw_base := regexp_replace(
-            upper(
-              nvl(v_first_alpha, '') ||
-              nvl(v_first_numeric, '') ||
-              'W' ||
-              nvl(v_last_numeric, '')
-            ),
-            '[^A-Z0-9]',
-            ''
-          );
-          v_base_prefix := substr(v_raw_base, 1, 8);
+          v_instance_id_tail := substr(v_instance_id, -10);
+          v_primary_candidate := regexp_replace(upper('I' || nvl(v_instance_id_tail, '')), '[^A-Z0-9]', '');
+          v_primary_candidate := substr(v_primary_candidate, 1, 12);
 
-          debug('EC2 Name tag: ' || v_ec2_name);
-          debug('Derived first part of EC2 Name tag: ' || v_first_part);
-          debug('Derived last part of EC2 Name tag: ' || v_last_part);
-          debug('Derived alphabetic portion of first part: ' || nvl(v_first_alpha, '<null>'));
-          debug('Derived numeric portion of first part: ' || nvl(v_first_numeric, '<null>'));
-          debug('Derived numeric portion of last part: ' || nvl(v_last_numeric, '<null>'));
-          debug('Derived raw RCU prefix base: ' || v_raw_base);
-          debug('Derived truncated RCU prefix base (8 chars max): ' || v_base_prefix);
+          debug('EC2 instance ID: ' || v_instance_id);
+          debug('Derived last 10 chars of EC2 instance ID: ' || nvl(v_instance_id_tail, '<null>'));
+          debug('Derived primary RCU prefix candidate: ' || v_primary_candidate);
 
-          if not regexp_like(v_base_prefix, '^[A-Z][A-Z0-9]{0,7}$') then
+          if not regexp_like(v_primary_candidate, '^[A-Z][A-Z0-9]{0,11}$') then
             raise_application_error(
               -20001,
-              'Derived RCU prefix base "' || v_base_prefix || '" is invalid. ' ||
-              'It must start with a letter, contain only A-Z and 0-9, and be 1-8 characters long. ' ||
-              'Expected EC2 Name tag format like qa11g-nomis-web12-a.'
+              'Derived primary RCU prefix candidate "' || v_primary_candidate || '" is invalid. ' ||
+              'It must start with a letter, contain only A-Z and 0-9, and be 1-12 characters long. ' ||
+              'Expected ansible_ec2_instance_id to provide at least 10 useful characters.'
             );
           end if;
 
@@ -106,55 +81,38 @@
           debug('schema_version_registry exists in schema ' || user || ': ' ||
                 case when v_registry_exists > 0 then 'yes' else 'no' end);
 
-          for i in 0 .. 9999 loop
-            if i = 0 then
-              v_candidate := substr(v_base_prefix, 1, 12);
-            else
-              v_candidate := substr(v_base_prefix, 1, 8) || lpad(to_char(i), 4, '0');
-            end if;
+          if v_registry_exists > 0 then
+            execute immediate
+              'select count(*) from schema_version_registry where mrc_name = :candidate'
+              into v_registry_match_count
+              using upper(v_primary_candidate);
+          end if;
 
-            v_registry_match_count := 0;
-            v_stb_user_count := 0;
+          select count(*)
+          into v_stb_user_count
+          from dba_users
+          where username = upper(v_primary_candidate || '_STB');
 
-            if v_registry_exists > 0 then
-              execute immediate
-                'select count(*) from schema_version_registry where mrc_name = :candidate'
-                into v_registry_match_count
-                using upper(v_candidate);
-            end if;
+          v_total_matches := v_registry_match_count + v_stb_user_count;
 
-            select count(*)
-            into v_stb_user_count
-            from dba_users
-            where username = upper(v_candidate || '_STB');
+          debug(
+            'Candidate ' || v_primary_candidate ||
+            ' => schema_version_registry matches=' || v_registry_match_count
+          );
+          debug(
+            ', dba_users matches=' || v_stb_user_count ||', total=' || v_total_matches
+          );
 
-            v_total_matches := v_registry_match_count + v_stb_user_count;
-
-            debug(
-              'Candidate ' || v_candidate ||
-              ' => schema_version_registry matches=' || v_registry_match_count ||
-              ', dba_users matches=' || v_stb_user_count ||
-              ', total=' || v_total_matches
-            );
-
-            if v_total_matches = 0 then
-              v_selected_prefix := v_candidate;
-              exit;
-            end if;
-          end loop;
-
-          if v_selected_prefix is null then
+          if v_total_matches > 0 then
             raise_application_error(
               -20002,
-              'Could not find an unused RCU prefix from candidates derived from "' || v_base_prefix ||
-              '". Tried ' || v_base_prefix || ', ' ||
-              v_base_prefix || '0001 through ' || v_base_prefix || '9999. ' ||
-              'All candidates are in use in schema_version_registry or dba_users.'
+              'RCU prefix "' || v_primary_candidate || '" already exists in schema_version_registry or dba_users. ' ||
+              'Run the droprcu process for this instance before retrying.'
             );
           end if;
 
-          debug('Selected RCU prefix: ' || v_selected_prefix);
-          dbms_output.put_line(v_selected_prefix);
+          debug('Selected RCU prefix: ' || v_primary_candidate);
+          dbms_output.put_line(v_primary_candidate);
         end;
         /
 
