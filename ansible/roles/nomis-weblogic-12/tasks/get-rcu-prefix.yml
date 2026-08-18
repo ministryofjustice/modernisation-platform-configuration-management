@@ -1,0 +1,168 @@
+- name: Ensure WebLogic software directory exists
+  ansible.builtin.file:
+    path: /u01/software/weblogic
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: "0755"
+
+- name: Read existing local RCU prefix marker if present
+  ansible.builtin.stat:
+    path: /u01/software/weblogic/.rcu_prefix
+  register: rcu_prefix_marker
+
+- name: Load existing local RCU prefix marker
+  ansible.builtin.slurp:
+    src: /u01/software/weblogic/.rcu_prefix
+  register: rcu_prefix_marker_contents
+  when: rcu_prefix_marker.stat.exists
+
+# display the contents of the marker file for debugging purposes
+- name: Debug existing local RCU prefix marker contents
+  ansible.builtin.debug:
+    msg: "Existing local RCU prefix marker contents: {{ rcu_prefix_marker_contents.content | b64decode | trim }}"
+  when: rcu_prefix_marker.stat.exists
+
+- name: Reuse existing local RCU prefix if present
+  ansible.builtin.set_fact:
+    weblogic_db_repo_prefix: "{{ rcu_prefix_marker_contents.content | b64decode | trim }}"
+  when: rcu_prefix_marker.stat.exists
+
+- name: Derive base RCU prefix if not already set
+  when: not rcu_prefix_marker.stat.exists
+  block:
+    - name: Determine RCU prefix in database
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        source ~oracle/.bash_profile
+
+        sqlplus -s /nolog <<'SQL'
+        connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
+        set heading off feedback off verify off echo off pagesize 0 trimspool on serveroutput on size unlimited
+
+        declare
+          v_instance_id           varchar2(255) := q'[{{ ansible_ec2_instance_id }}]';
+          v_instance_id_tail      varchar2(10);
+          v_primary_candidate     varchar2(12);
+          v_registry_exists       number := 0;
+          v_registry_match_count  number := 0;
+          v_stb_user_count        number := 0;
+          v_total_matches         number := 0;
+
+          procedure debug(p_message in varchar2) is
+          begin
+            dbms_output.put_line('DEBUG: ' || p_message);
+          end;
+        begin
+          v_instance_id_tail := substr(v_instance_id, -10);
+          v_primary_candidate := regexp_replace(upper('I' || nvl(v_instance_id_tail, '')), '[^A-Z0-9]', '');
+          v_primary_candidate := substr(v_primary_candidate, 1, 12);
+
+          debug('EC2 instance ID: ' || v_instance_id);
+          debug('Derived last 10 chars of EC2 instance ID: ' || nvl(v_instance_id_tail, '<null>'));
+          debug('Derived primary RCU prefix candidate: ' || v_primary_candidate);
+
+          if not regexp_like(v_primary_candidate, '^[A-Z][A-Z0-9]{0,11}$') then
+            raise_application_error(
+              -20001,
+              'Derived primary RCU prefix candidate "' || v_primary_candidate || '" is invalid. ' ||
+              'It must start with a letter, contain only A-Z and 0-9, and be 1-12 characters long. ' ||
+              'Expected ansible_ec2_instance_id to provide at least 10 useful characters.'
+            );
+          end if;
+
+          select count(*)
+          into v_registry_exists
+          from dba_views
+          where owner = user
+            and view_name = 'SCHEMA_VERSION_REGISTRY';
+
+          debug('schema_version_registry exists in schema ' || user || ': ' ||
+                case when v_registry_exists > 0 then 'yes' else 'no' end);
+
+          if v_registry_exists > 0 then
+            execute immediate
+              'select count(*) from schema_version_registry where mrc_name = :candidate'
+              into v_registry_match_count
+              using upper(v_primary_candidate);
+          end if;
+
+          select count(*)
+          into v_stb_user_count
+          from dba_users
+          where username = upper(v_primary_candidate || '_STB');
+
+          v_total_matches := v_registry_match_count + v_stb_user_count;
+
+          debug(
+            'Candidate ' || v_primary_candidate ||
+            ' => schema_version_registry matches=' || v_registry_match_count
+          );
+          debug(
+            ', dba_users matches=' || v_stb_user_count ||', total=' || v_total_matches
+          );
+
+          if v_total_matches > 0 then
+            raise_application_error(
+              -20002,
+              'RCU prefix "' || v_primary_candidate || '" already exists in schema_version_registry or dba_users. ' ||
+              'Run the droprcu process for this instance before retrying.'
+            );
+          end if;
+
+          debug('Selected RCU prefix: ' || v_primary_candidate);
+          dbms_output.put_line(v_primary_candidate);
+        end;
+        /
+
+        exit
+        SQL
+      args:
+        executable: /bin/bash
+      register: rcu_prefix_selection
+      changed_when: false
+      no_log: true
+
+    - name: Debug RCU prefix selection output
+      ansible.builtin.debug:
+        var: rcu_prefix_selection.stdout_lines
+
+    - name: Set selected RCU prefix
+      ansible.builtin.set_fact:
+        weblogic_db_repo_prefix: >-
+          {{
+            (
+              rcu_prefix_selection.stdout_lines
+              | reject('match', '^DEBUG:')
+              | reject('match', '^\\s*$')
+              | reject('equalto', '')
+              | list
+              | last
+            )
+            | trim
+          }}
+
+    - name: Debug selected RCU prefix from database
+      ansible.builtin.debug:
+        msg: "Selected RCU prefix from database: {{ weblogic_db_repo_prefix }}"
+
+    - name: Final validation of selected RCU prefix
+      ansible.builtin.assert:
+        that:
+          - weblogic_db_repo_prefix is match('^[A-Z][A-Z0-9]{0,11}$')
+        fail_msg: "Selected RCU prefix '{{ weblogic_db_repo_prefix }}' is invalid."
+
+    - name: Persist local RCU prefix marker
+      ansible.builtin.copy:
+        content: "{{ weblogic_db_repo_prefix }}\n"
+        dest: /u01/software/weblogic/.rcu_prefix
+        owner: oracle
+        group: oinstall
+        mode: "0600"
+        force: false
+
+# Display the final RCU prefix for debugging purposes
+- name: Debug the final RCU prefix
+  ansible.builtin.debug:
+    msg: "Selected RCU prefix: {{ weblogic_db_repo_prefix }}"
