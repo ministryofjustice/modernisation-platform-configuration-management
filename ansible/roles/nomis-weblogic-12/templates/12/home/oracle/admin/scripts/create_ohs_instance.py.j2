@@ -9,7 +9,7 @@ def get_secret_key(secret_id, key):
     return result
 
 adminUser = '{{ weblogic_admin_username }}'
-adminPassword = get_secret_key('/oracle/weblogic/{{ nomis_environment }}/passwords', adminUser)
+adminPassword = get_secret_key('/oracle/weblogic/{{ oracle_db_name }}/passwords', adminUser)
 adminURL = 't3://{{ weblogic_domain_hostname }}:{{ weblogic_admin_listen_port | default(7001) }}'
 
 componentName = '{{ weblogic_ohs_component_name | default("ohs1") }}'

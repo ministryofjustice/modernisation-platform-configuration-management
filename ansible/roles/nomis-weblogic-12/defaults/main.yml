@@ -75,7 +75,6 @@ weblogic_servername: "{{ ansible_facts.hostname }}"
 # weblogic_db_repo_hostname:
 # weblogic_db_repo_sid:
 # Shared RCU configuration (must be identical across all EC2s)
-weblogic_db_repo_prefix: NOMISWLS
 weblogic_db_repo_username: "sys"
 
 weblogic_db_repo_password_secret:
@@ -106,7 +105,7 @@ weblogic_secretsmanager_passwords:
       - "{{ weblogic_db_repo_password_secret | items2dict }}"
       - wls_schemas: auto
   weblogic:
-    secret: "/oracle/weblogic/{{ nomis_environment }}/passwords"
+    secret: "/oracle/weblogic/{{ oracle_db_name }}/passwords"
     users:
       - "{{ weblogic_admin_password_secret | items2dict }}"
 

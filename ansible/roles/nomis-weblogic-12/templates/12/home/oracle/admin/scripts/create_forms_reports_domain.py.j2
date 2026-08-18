@@ -11,7 +11,7 @@ def get_secret_key(secret_id, key):
     return result
 
 adminUser = '{{ weblogic_admin_username }}'
-adminPassword = get_secret_key('/oracle/weblogic/{{ nomis_environment }}/passwords', adminUser)
+adminPassword = get_secret_key('/oracle/weblogic/{{ oracle_db_name }}/passwords', adminUser)
 weblogic_db_repo_schema_password = get_secret_key('/oracle/database/{{ weblogic_db_repo_sid }}/weblogic-passwords', 'wls_schemas')
 
 
