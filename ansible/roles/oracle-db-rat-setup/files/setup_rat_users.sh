@@ -75,7 +75,7 @@ declare
 begin
   create_or_unlock_user('RAT_CAPTURE', decode_password('${rat_capture_password_base64}'));
   grant_common_privileges('RAT_CAPTURE');
-  execute immediate 'grant execute on DBMS_WORKLOAD_CAPTURE to RAT_PLAYBACK';
+  execute immediate 'grant execute on DBMS_WORKLOAD_CAPTURE to RAT_CAPTURE';
 
   create_or_unlock_user('RAT_PLAYBACK', decode_password('${rat_playback_password_base64}'));
   grant_common_privileges('RAT_PLAYBACK');
