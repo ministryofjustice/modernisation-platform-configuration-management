@@ -60,6 +60,11 @@
      TARGET_DB_NAME: "{{ target_db_name }}"
   when: rat_capture_action == 'stop'
 
+- name: Set RAT capture S3 location
+  set_fact:
+     rat_capture_s3_location: "s3://{{ rat_capture_s3_bucket_name }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
+  when: rat_capture_action == 'stop'
+
 - name: Upload RAT capture files to S3
   command:
      argv:
@@ -68,7 +73,12 @@
         - sync
         - --no-progress
         - "{{ rat_capture_base_dir }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
-        - "s3://{{ rat_capture_s3_bucket_name }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
+        - "{{ rat_capture_s3_location }}"
   become: true
   become_user: oracle
+  when: rat_capture_action == 'stop'
+
+- name: Report RAT capture S3 location
+  debug:
+     msg: "RAT capture files uploaded to {{ rat_capture_s3_location }}"
   when: rat_capture_action == 'stop'
