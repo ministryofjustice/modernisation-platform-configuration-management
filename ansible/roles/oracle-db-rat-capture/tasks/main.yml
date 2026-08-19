@@ -2,6 +2,10 @@
   set_fact:
      target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
 
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
 - name: Validate RAT capture action
   assert:
      that:
@@ -50,6 +54,8 @@
   environment:
      TARGET_DB_NAME: "{{ target_db_name }}"
      RAT_CAPTURE_SCHEMAS: "{{ application_schemas[application] | join(',') }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
   when: rat_capture_action == 'start'
 
 - name: Stop RAT capture
@@ -58,6 +64,8 @@
   become_user: oracle
   environment:
      TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
   when: rat_capture_action == 'stop'
 
 - name: Set RAT capture S3 location
