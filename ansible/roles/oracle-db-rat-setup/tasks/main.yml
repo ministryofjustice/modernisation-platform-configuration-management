@@ -12,7 +12,11 @@
   script: setup_rat_users.sh
   become: true
   become_user: oracle
+  register: setup_rat_users
   environment:
     TARGET_DB_NAME: "{{ target_db_name }}"
     RAT_SECRET_ID: "{{ secret_name }}"
     AWS_REGION: "{{ region }}"
+
+- debug:
+    var: setup_rat_users
