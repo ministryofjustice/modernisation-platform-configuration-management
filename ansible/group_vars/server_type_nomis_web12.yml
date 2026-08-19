@@ -81,6 +81,7 @@ sshd_config_mode: allow_x11
 
 nomis_environment: "{{ ec2.tags['nomis-environment'] }}"
 oracle_db_name: "{{ ec2.tags['oracle-db-name'] }}"
+weblogic_config_target: "{{ ec2.tags['weblogic-config-target'] }}"
 
 oracle_setup_config:
   dev:
@@ -134,7 +135,7 @@ weblogic_configs:
     weblogic_db_repo_sid: "qa19c"
     weblogic_db_repo_username: "sys"
 
-weblogic_config: "{{ weblogic_configs[nomis_environment] }}"
+weblogic_config: "{{ weblogic_configs[weblogic_config_target] }}"
 
 weblogic_db_repo_hostname: "{{ weblogic_config.weblogic_db_repo_hostname }}"
 weblogic_db_repo_sid: "{{ weblogic_config.weblogic_db_repo_sid }}"
