@@ -3,18 +3,31 @@
 
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-  echo "Usage: $0 <directory_name> <directory_path> <replay_name>" >&2
+if [[ $# -ne 4 ]]; then
+  echo "Usage: $0 <directory_name> <directory_path> <replay_name> <tns_alias>" >&2
   exit 1
 fi
 
 replay_directory_name="$1"
 replay_directory_path="$2"
 replay_name="$3"
+tns_alias="$4"
 target_db_name="${TARGET_DB_NAME:-${ORACLE_SID:-}}"
+rat_secret_id="${RAT_SECRET_ID:-}"
+aws_region="${AWS_REGION:-}"
 
 if [[ -z "${target_db_name}" ]]; then
   echo "Set TARGET_DB_NAME or ORACLE_SID before running this script." >&2
+  exit 1
+fi
+
+if [[ -z "${tns_alias}" ]]; then
+  echo "Set tns_alias before running this script." >&2
+  exit 1
+fi
+
+if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
+  echo "Set RAT_SECRET_ID and AWS_REGION before running this script." >&2
   exit 1
 fi
 
@@ -24,12 +37,24 @@ echo "Replay name: ${replay_name}"
 echo "Target database name: ${target_db_name}"
 
 export PATH="$PATH:/usr/local/bin"
+rat_playback_password="$(aws secretsmanager get-secret-value \
+  --secret-id "${rat_secret_id}" \
+  --region "${aws_region}" \
+  --query SecretString \
+  --output text | jq -er '.rat_playback')"
+
+if [[ -z "${rat_playback_password}" ]]; then
+  echo "RAT_PLAYBACK password is empty in secret ${rat_secret_id}." >&2
+  exit 1
+fi
+
 export ORAENV_ASK=NO
 export ORACLE_SID="${target_db_name}"
 . oraenv -s
 
-sqlplus -s / as sysdba <<EOF
+sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
+connect RAT_PLAYBACK/${rat_playback_password}@${tns_alias}
 set serveroutput on
 declare
 begin

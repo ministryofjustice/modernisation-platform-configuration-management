@@ -45,7 +45,6 @@ declare
   type privileges_t is table of varchar2(100);
   common_privileges privileges_t := privileges_t(
     'create session',
-    'execute on DBMS_WORKLOAD_CAPTURE',
     'create any directory',
     'select_catalog_role');
 
@@ -57,12 +56,10 @@ declare
 
   procedure create_or_unlock_user(user_name varchar2, user_password varchar2) is
   begin
-    dbms_output.put_line('create user ' || user_name || ' identified by ' || user_password);
     execute immediate 'create user ' || user_name || ' identified by ' || user_password;
   exception
     when others then
       if sqlcode = -1920 then
-        dbms_output.put_line('alter user ' || user_name || ' identified by ' || user_password || ' account unlock');
         execute immediate 'alter user ' || user_name || ' identified by ' || user_password || ' account unlock';
       else
         raise;
@@ -78,9 +75,11 @@ declare
 begin
   create_or_unlock_user('RAT_CAPTURE', decode_password('${rat_capture_password_base64}'));
   grant_common_privileges('RAT_CAPTURE');
+  execute immediate 'grant execute on DBMS_WORKLOAD_CAPTURE to RAT_PLAYBACK';
 
   create_or_unlock_user('RAT_PLAYBACK', decode_password('${rat_playback_password_base64}'));
   grant_common_privileges('RAT_PLAYBACK');
+  execute immediate 'grant execute on DBMS_WORKLOAD_PLAYBACK to RAT_PLAYBACK';
   execute immediate 'grant become user to RAT_PLAYBACK';
 
 end;

@@ -2,16 +2,21 @@
   set_fact:
      target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
 
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
 - name: Validate RAT playback inputs
   assert:
     that:
       - rat_playback_s3_location | length > 0
       - rat_playback_s3_location is match('^s3://')
       - rat_playback_synchronization in ['SCN', 'OBJECT_ID']
-      - rat_playback_wrc_connection | length > 0
+      - tns_alias is defined
+      - tns_alias | length > 0
       - rat_playback_wrc_client_count | int > 0
       - rat_playback_wrc_client_startup_delay | int >= 0
-    fail_msg: "Define rat_playback_s3_location as an S3 URI, rat_playback_wrc_connection, a positive rat_playback_wrc_client_count, and set rat_playback_synchronization to SCN or OBJECT_ID"
+    fail_msg: "Define rat_playback_s3_location as an S3 URI, tns_alias, a positive rat_playback_wrc_client_count, and set rat_playback_synchronization to SCN or OBJECT_ID"
 
 - name: Build RAT playback names
   set_fact:
@@ -45,23 +50,28 @@
      msg: "RAT capture files downloaded from {{ rat_playback_s3_location }} to {{ rat_playback_directory_path }}"
 
 - name: Initialize RAT playback
-  script: initialize_rat_playback.sh "{{ rat_playback_directory_name }}" "{{ rat_playback_directory_path }}" "{{ rat_playback_name }}"
+  script: initialize_rat_playback.sh "{{ rat_playback_directory_name }}" "{{ rat_playback_directory_path }}" "{{ rat_playback_name }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
      TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
 
 - name: Calibrate RAT playback clients
-  script: calibrate_rat_playback.sh "{{ rat_playback_directory_path }}" "{{ rat_playback_wrc_client_count }}" "{{ rat_playback_wrc_client_startup_delay }}"
+  script: calibrate_rat_playback.sh "{{ rat_playback_directory_path }}" "{{ rat_playback_wrc_client_count }}" "{{ rat_playback_wrc_client_startup_delay }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
-      TARGET_DB_NAME: "{{ target_db_name }}"
-      RAT_PLAYBACK_WRC_CONNECTION: "{{ rat_playback_wrc_connection }}"
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
 
 - name: Prepare and start RAT playback
-  script: start_rat_playback.sh "{{ rat_playback_synchronization }}"
+  script: start_rat_playback.sh "{{ rat_playback_synchronization }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
-      TARGET_DB_NAME: "{{ target_db_name }}"
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
