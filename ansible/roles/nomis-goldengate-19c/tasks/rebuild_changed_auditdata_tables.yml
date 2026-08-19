@@ -1,0 +1,153 @@
+---
+# Rebuild AUDITDATA tables when source and target visible column definitions differ
+
+- name: Rebuild changed AUDITDATA tables if local database is the audit database
+  when: run_auditdata
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    # connect to auditdata database as sysdba to compare source and target table structures and rebuild drifted tables
+    export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.auditdata.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+
+    # Retrieve SYS password from AWS Secrets Manager for source database access
+    SOURCE_SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+      --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+      --query 'SecretString' \
+      --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+    if [ -z "$SOURCE_SYS_PASSWORD" ]; then
+      echo "ERROR: Cannot retrieve SYS password for {{ oracle_goldengate_group.source.tns_alias }}"
+      exit 1
+    fi
+
+    sqlplus -s / as sysdba <<EOF
+    column c1 format a4000
+    set wrap on
+    SET LONG 2000000
+    SET PAGESIZE 0
+    SET LINESIZE 9999
+    SET FEEDBACK OFF
+    SET HEADING OFF
+    SET ECHO OFF
+    SET TRIMSPOOL ON
+    SET TERMOUT OFF
+    SET SERVEROUTPUT ON
+
+    BEGIN
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PRETTY', true);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SIZE_BYTE_KEYWORD', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SEGMENT_ATTRIBUTES', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'STORAGE', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'REF_CONSTRAINTS', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'TABLESPACE', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PARTITIONING', false);
+    END;
+    /
+
+    spool /tmp/rebuild_changed_auditdata_tables.sql
+
+    WITH source_tables AS (
+      SELECT o.owner, o.object_name, o.object_type
+      FROM   dba_objects@{{ oracle_goldengate_group.source.tns_alias }} o
+      WHERE  o.owner = '{{ oracle_goldengate_group.source.schema_owner }}'
+      AND    o.object_type IN ('TABLE', 'CLUSTER')
+      AND    EXISTS
+               (SELECT 1 FROM dual d
+                 WHERE o.object_type = 'CLUSTER'
+                UNION
+                SELECT 1 FROM dba_tables@{{ oracle_goldengate_group.source.tns_alias }} t
+                 WHERE o.object_type = 'TABLE'
+                   AND t.owner = o.owner
+                   AND t.table_name = o.object_name
+                   AND (t.tablespace_name IS NOT NULL OR (t.tablespace_name IS NULL AND t.partitioned = 'YES'))
+               )
+    ),
+    source_signatures AS (
+      SELECT c.table_name,
+             LISTAGG(
+               c.column_id || ':' ||
+               c.column_name || ':' ||
+               c.data_type || ':' ||
+               NVL(TO_CHAR(c.data_length), '-') || ':' ||
+               NVL(TO_CHAR(c.data_precision), '-') || ':' ||
+               NVL(TO_CHAR(c.data_scale), '-') || ':' ||
+               NVL(c.char_used, '-') || ':' ||
+               NVL(TO_CHAR(c.char_length), '-') || ':' ||
+               c.nullable,
+               '|'
+             ) WITHIN GROUP (ORDER BY c.column_id) AS column_signature
+      FROM   dba_tab_cols@{{ oracle_goldengate_group.source.tns_alias }} c
+      JOIN   source_tables s
+        ON   s.object_type = 'TABLE'
+       AND   s.owner = c.owner
+       AND   s.object_name = c.table_name
+      WHERE  c.hidden_column = 'NO'
+      GROUP BY c.table_name
+    ),
+    target_signatures AS (
+      SELECT c.table_name,
+             LISTAGG(
+               c.column_id || ':' ||
+               c.column_name || ':' ||
+               c.data_type || ':' ||
+               NVL(TO_CHAR(c.data_length), '-') || ':' ||
+               NVL(TO_CHAR(c.data_precision), '-') || ':' ||
+               NVL(TO_CHAR(c.data_scale), '-') || ':' ||
+               NVL(c.char_used, '-') || ':' ||
+               NVL(TO_CHAR(c.char_length), '-') || ':' ||
+               c.nullable,
+               '|'
+             ) WITHIN GROUP (ORDER BY c.column_id) AS column_signature
+      FROM   dba_tab_cols c
+      WHERE  c.owner = '{{ oracle_goldengate_group.auditdata.dummy_target_schema }}'
+      AND    c.hidden_column = 'NO'
+      GROUP BY c.table_name
+    ),
+    changed_tables AS (
+      SELECT s.object_name
+      FROM   source_tables s
+      JOIN   dba_objects t
+        ON   t.owner = '{{ oracle_goldengate_group.auditdata.dummy_target_schema }}'
+       AND   t.object_name = s.object_name
+       AND   t.object_type = s.object_type
+      LEFT JOIN source_signatures ss
+        ON   ss.table_name = s.object_name
+      LEFT JOIN target_signatures ts
+        ON   ts.table_name = s.object_name
+      WHERE  s.object_type = 'TABLE'
+      AND    NVL(ss.column_signature, 'NO_SOURCE_COLUMNS') <> NVL(ts.column_signature, 'NO_TARGET_COLUMNS')
+    )
+    SELECT 'DROP TABLE {{ oracle_goldengate_group.auditdata.dummy_target_schema }}."' || object_name || '" CASCADE CONSTRAINTS;' || chr(10) ||
+           replace(
+             auditdata_dml_pkg.get_metadata_over_dblink('TABLE', '{{ oracle_goldengate_group.source.schema_owner }}', object_name),
+             '{{ oracle_goldengate_group.source.schema_owner }}',
+             '{{ oracle_goldengate_group.auditdata.dummy_target_schema }}'
+           ) AS c1
+    FROM   changed_tables
+    ORDER BY object_name
+    /
+
+    spool off
+    EXIT;
+    EOF
+
+    # run the generated SQL script in the target database to rebuild structurally drifted tables and then refresh DML handlers
+    sqlplus -s / as sysdba <<EOF
+    SET SERVEROUTPUT ON
+    
+    WHENEVER SQLERROR EXIT SQL.SQLCODE
+    spool /tmp/rebuild_changed_auditdata_tables.log
+    @/tmp/rebuild_changed_auditdata_tables.sql
+    exec auditdata_dml_pkg.apply_dml_conf;
+    spool off
+    EXIT;
+    EOF
+  register: rebuild_tables_output
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  args:
+    executable: /bin/bash
+  changed_when: "'DROP TABLE' in rebuild_tables_output.stdout or 'CREATE TABLE' in rebuild_tables_output.stdout"
+  failed_when: rebuild_tables_output.rc != 0

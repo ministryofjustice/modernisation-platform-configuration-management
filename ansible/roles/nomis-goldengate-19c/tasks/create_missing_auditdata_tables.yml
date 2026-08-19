@@ -34,6 +34,18 @@
     SET TERMOUT OFF
     SET SERVEROUTPUT ON
 
+    BEGIN
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PRETTY', true);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SIZE_BYTE_KEYWORD', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'SEGMENT_ATTRIBUTES', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'STORAGE', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'REF_CONSTRAINTS', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'TABLESPACE', false);
+      DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PARTITIONING', false);
+    END;
+    /
+    
     SELECT replace(auditdata_dml_pkg.get_metadata_over_dblink(o.object_type, o.owner, o.object_name),'{{ oracle_goldengate_group.source.schema_owner }}','{{ oracle_goldengate_group.auditdata.dummy_target_schema }}') c1
     FROM   dba_objects@{{ oracle_goldengate_group.source.tns_alias }} o
     WHERE  o.owner      = '{{ oracle_goldengate_group.source.schema_owner }}'

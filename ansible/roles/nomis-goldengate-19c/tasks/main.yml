@@ -321,6 +321,12 @@
     - never
     - create-missing-tables
 
+- name: Rebuild changed AUDITDATA tables
+  import_tasks: rebuild_changed_auditdata_tables.yml
+  tags:
+    - never
+    - rebuild-changed-tables
+
 # Database Scheduler jobs migration from STRMADMIN
 - name: Install database scheduler jobs (disabled initially)
   import_tasks: install_database_jobs.yml
