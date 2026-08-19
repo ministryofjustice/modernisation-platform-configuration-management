@@ -34,14 +34,14 @@ echo "Synchronization: ${synchronization}"
 echo "Target database name: ${target_db_name}"
 
 export PATH="$PATH:/usr/local/bin"
-rat_playback_password="$(aws secretsmanager get-secret-value \
+rat_replay_password="$(aws secretsmanager get-secret-value \
   --secret-id "${rat_secret_id}" \
   --region "${aws_region}" \
   --query SecretString \
-  --output text | jq -er '.rat_playback')"
+  --output text | jq -er '.rat_replay')"
 
-if [[ -z "${rat_playback_password}" ]]; then
-  echo "RAT_PLAYBACK password is empty in secret ${rat_secret_id}." >&2
+if [[ -z "${rat_replay_password}" ]]; then
+  echo "RAT_REPLAY password is empty in secret ${rat_secret_id}." >&2
   exit 1
 fi
 
@@ -51,7 +51,7 @@ export ORACLE_SID="${target_db_name}"
 
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
-connect RAT_PLAYBACK/${rat_playback_password}@${tns_alias}
+connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
 set serveroutput on
 begin
   DBMS_WORKLOAD_REPLAY.PREPARE_REPLAY(

@@ -36,18 +36,18 @@ echo "Target database name: ${target_db_name}"
 echo "WRC replay client count: ${client_count}"
 
 export PATH="$PATH:/usr/local/bin"
-rat_playback_password="$(aws secretsmanager get-secret-value \
+rat_replay_password="$(aws secretsmanager get-secret-value \
   --secret-id "${rat_secret_id}" \
   --region "${aws_region}" \
   --query SecretString \
-  --output text | jq -er '.rat_playback')"
+  --output text | jq -er '.rat_replay')"
 
-if [[ -z "${rat_playback_password}" ]]; then
-  echo "RAT_PLAYBACK password is empty in secret ${rat_secret_id}." >&2
+if [[ -z "${rat_replay_password}" ]]; then
+  echo "RAT_REPLAY password is empty in secret ${rat_secret_id}." >&2
   exit 1
 fi
 
-wrc_connection="RAT_PLAYBACK/${rat_playback_password}@${tns_alias}"
+wrc_connection="RAT_REPLAY/${rat_replay_password}@${tns_alias}"
 export ORAENV_ASK=NO
 export ORACLE_SID="${target_db_name}"
 . oraenv -s

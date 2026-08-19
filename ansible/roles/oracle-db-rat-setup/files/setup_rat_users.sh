@@ -23,14 +23,14 @@ rat_capture_password_base64="$(aws secretsmanager get-secret-value \
   --region "${aws_region}" \
   --query SecretString \
   --output text | jq -er '.rat_capture' | base64 | tr -d '\n')"
-rat_playback_password_base64="$(aws secretsmanager get-secret-value \
+rat_replay_password_base64="$(aws secretsmanager get-secret-value \
   --secret-id "${rat_secret_id}" \
   --region "${aws_region}" \
   --query SecretString \
-  --output text | jq -er '.rat_playback' | base64 | tr -d '\n')"
+  --output text | jq -er '.rat_replay' | base64 | tr -d '\n')"
 
-if [[ -z "${rat_capture_password_base64}" || -z "${rat_playback_password_base64}" ]]; then
-  echo "RAT_CAPTURE or RAT_PLAYBACK password is empty in secret ${rat_secret_id}." >&2
+if [[ -z "${rat_capture_password_base64}" || -z "${rat_replay_password_base64}" ]]; then
+  echo "RAT_CAPTURE or RAT_REPLAY password is empty in secret ${rat_secret_id}." >&2
   exit 1
 fi
 
@@ -77,10 +77,10 @@ begin
   grant_common_privileges('RAT_CAPTURE');
   execute immediate 'grant execute on DBMS_WORKLOAD_CAPTURE to RAT_CAPTURE';
 
-  create_or_unlock_user('RAT_PLAYBACK', decode_password('${rat_playback_password_base64}'));
-  grant_common_privileges('RAT_PLAYBACK');
-  execute immediate 'grant execute on DBMS_WORKLOAD_PLAYBACK to RAT_PLAYBACK';
-  execute immediate 'grant become user to RAT_PLAYBACK';
+  create_or_unlock_user('RAT_REPLAY', decode_password('${rat_replay_password_base64}'));
+  grant_common_privileges('RAT_REPLAY');
+  execute immediate 'grant execute on DBMS_WORKLOAD_REPLAY to RAT_REPLAY';
+  execute immediate 'grant become user to RAT_REPLAY';
 
 end;
 /
