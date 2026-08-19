@@ -40,6 +40,7 @@ export ORACLE_SID="${target_db_name}"
 
 sqlplus -s / as sysdba <<EOF
 whenever sqlerror exit failure
+set serverout on
 declare
   type privileges_t is table of varchar2(100);
   common_privileges privileges_t := privileges_t(
@@ -56,10 +57,12 @@ declare
 
   procedure create_or_unlock_user(user_name varchar2, user_password varchar2) is
   begin
+    dbms_output.put_line('create user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '"');
     execute immediate 'create user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '"';
   exception
     when others then
       if sqlcode = -1920 then
+        dbms_output.put_line('alter user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '" account unlock');
         execute immediate 'alter user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '" account unlock';
       else
         raise;
