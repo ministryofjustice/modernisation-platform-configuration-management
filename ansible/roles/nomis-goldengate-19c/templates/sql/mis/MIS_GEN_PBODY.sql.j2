@@ -257,7 +257,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
   -- Packaged function get_source_database_name returns the name of the source database.
   FUNCTION get_source_database_name 
   RETURN varchar2 IS
-    l_source_database_name varchar2(30);
+    l_source_database_name varchar2(128);
   BEGIN
     select source_database 
     into l_source_database_name
@@ -267,7 +267,79 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
     return l_source_database_name;
   END;
 
+  -- New debug config procedure to create the MIS_DEBUG_CONFIG table if it does not exist and ensure a row exists for this package.
+  PROCEDURE ensure_debug_config IS
+    l_exists NUMBER := 0;
+  BEGIN
+    SELECT COUNT(*)
+      INTO l_exists
+      FROM user_tables
+    WHERE table_name = 'MIS_DEBUG_CONFIG';
 
+    IF l_exists = 0 THEN
+      EXECUTE IMMEDIATE q'[
+        CREATE TABLE MIS_DEBUG_CONFIG (
+          config_key   VARCHAR2(100) PRIMARY KEY,
+          debug_level  NUMBER(1)      NOT NULL,
+          updated_at   DATE           DEFAULT SYSDATE NOT NULL
+        )
+      ]';
+    END IF;
+
+    EXECUTE IMMEDIATE q'[
+      MERGE INTO MIS_DEBUG_CONFIG t
+      USING (SELECT 'MIS_DML_PKG' AS config_key, 0 AS debug_level FROM dual) s
+        ON (t.config_key = s.config_key)
+      WHEN NOT MATCHED THEN
+        INSERT (config_key, debug_level, updated_at)
+        VALUES (s.config_key, s.debug_level, SYSDATE)
+    ]';
+  END ensure_debug_config;
+
+  PROCEDURE refresh_debug_level_cache(p_config_key IN VARCHAR2) IS
+    l_debug_level NUMBER;
+  BEGIN
+    EXECUTE IMMEDIATE
+      'SELECT debug_level FROM MIS_DEBUG_CONFIG WHERE config_key = :1'
+      INTO l_debug_level
+      USING p_config_key;
+
+    g_debug_level_cached    := NVL(l_debug_level, 0);
+    g_debug_cache_loaded    := TRUE;
+    g_debug_cache_loaded_at := SYSDATE;
+
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      g_debug_level_cached    := 0;
+      g_debug_cache_loaded    := TRUE;
+      g_debug_cache_loaded_at := SYSDATE;
+    WHEN OTHERS THEN
+      IF SQLCODE = -942 THEN
+        g_debug_level_cached    := 0;
+        g_debug_cache_loaded    := TRUE;
+        g_debug_cache_loaded_at := SYSDATE;
+      ELSE
+        -- transient/other error: keep previous cache if present
+        IF NOT g_debug_cache_loaded THEN
+          g_debug_level_cached    := 0;
+          g_debug_cache_loaded    := TRUE;
+          g_debug_cache_loaded_at := SYSDATE;
+        END IF;
+      END IF;
+  END refresh_debug_level_cache;
+
+  FUNCTION get_debug_level(p_config_key IN VARCHAR2) RETURN NUMBER IS
+    l_ttl_days CONSTANT NUMBER := g_debug_cache_ttl_mins / 1440;
+  BEGIN
+    IF (NOT g_debug_cache_loaded)
+      OR g_debug_cache_loaded_at IS NULL
+      OR (SYSDATE - g_debug_cache_loaded_at) >= l_ttl_days
+    THEN
+      refresh_debug_level_cache(p_config_key);
+    END IF;
+
+    RETURN NVL(g_debug_level_cached, 0);
+  END get_debug_level;
 
 END MIS_GEN_PKG;
 /

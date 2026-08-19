@@ -15,18 +15,19 @@ begin
 end;
 /
 
-PROMPT Installing database link to '{{ oracle_goldengate_group.auditdata.tns_alias }}' as {{ oracle_goldengate_group.auditdata.schema_owner }}
+REM Can't remember why this was added but the password for auditdata.schema_owner doesn't exist in Secrets Manager so if this is needed in future we might need to use ggadmin users, or add the password for auditdata.schema_owner.
+REM PROMPT Installing database link to '{{ oracle_goldengate_group.auditdata.tns_alias }}' as {{ oracle_goldengate_group.auditdata.schema_owner }}
 
-declare
-    v_count integer;
-begin
-    select count(*) into v_count from dba_db_links where db_link like 'CNOM_AUD_LINK%' and owner = 'PUBLIC';
-    if v_count = 1 then
-        execute immediate 'DROP PUBLIC DATABASE LINK CNOM_AUD_LINK';
-    end if;
-    execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_AUD_LINK CONNECT TO {{ oracle_goldengate_group.auditdata.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_auditdata_schema_password }} USING ''{{ oracle_goldengate_group.auditdata.tns_alias }}''';
-end;
-/
+REM declare
+REM     v_count integer;
+REM begin
+REM     select count(*) into v_count from dba_db_links where db_link like 'CNOM_AUD_LINK%' and owner = 'PUBLIC';
+REM     if v_count = 1 then
+REM         execute immediate 'DROP PUBLIC DATABASE LINK CNOM_AUD_LINK';
+REM     end if;
+REM     execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_AUD_LINK CONNECT TO {{ oracle_goldengate_group.auditdata.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_auditdata_schema_password }} USING ''{{ oracle_goldengate_group.auditdata.tns_alias }}''';
+REM end;
+REM /
 
 PROMPT Completed installation of db links
 spool off

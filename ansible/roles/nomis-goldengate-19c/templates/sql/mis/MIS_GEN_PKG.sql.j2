@@ -55,8 +55,13 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     g_apply_name   VARCHAR2(30) := 'OGG$'||g_ogg_replicat;
     g_apply_queue_name VARCHAR2(30) := 'OGGQ$'||g_ogg_replicat;
 
-    -- debug flag: positive value to log debug messages
+    -- debug flag: No longer needs to be set to 1 for debug messages to be logged, as the debug level is now controlled by the MIS_DEBUG_CONFIG table.
     g_debug NUMBER := 1;
+    g_debug_mis_dml VARCHAR2(30) := 'MIS_DML_PKG';
+    g_debug_level_cached      NUMBER := 0;
+    g_debug_cache_loaded      BOOLEAN := FALSE;
+    g_debug_cache_loaded_at   DATE;
+    g_debug_cache_ttl_mins    CONSTANT PLS_INTEGER := 10;
 
     -- retry limit: number of times to loop when waiting for stop point processing
     --              wait time for each loop is g_retry_limit * g_sleep1
@@ -182,6 +187,10 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     -- Packaged function get_source_database_name returns the name of the source database.
     FUNCTION get_source_database_name RETURN varchar2;
 
+    -- New debug config procedures for MIS_GEN_PKG
+    PROCEDURE ensure_debug_config;
+    PROCEDURE refresh_debug_level_cache(p_config_key IN VARCHAR2);
+    FUNCTION get_debug_level(p_config_key IN VARCHAR2) RETURN NUMBER;
 
 END MIS_GEN_PKG;
 /

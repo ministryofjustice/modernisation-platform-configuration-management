@@ -18,6 +18,12 @@ grant connect, resource to {{ oracle_goldengate_sql_owner }};
 REM couldn't create the dml handler procs without this:
 grant create procedure to {{ oracle_goldengate_sql_owner }};
 
+REM Needed for the dml handler procs to run dbms_scheduler jobs for starting/stopping extract and replicat processes:
+grant execute on DBMS_SCHEDULER to {{ oracle_goldengate_sql_owner }};
+grant create job to {{ oracle_goldengate_sql_owner }};
+grant create external job to {{ oracle_goldengate_sql_owner }};
+
+
 PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
 @MIS_GEN_PKG.sql
 @MIS_GG_CTRL_PKG.sql
@@ -48,6 +54,12 @@ create or replace public synonym MIS_DML_PKG for {{ oracle_goldengate_sql_owner 
 create or replace public synonym MIS_GG_CTRL_PKG for {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG;
 create or replace public synonym MIS_JOB_PKG for {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG;
 create or replace public synonym MIS_TAB_CTRL_PKG for {{ oracle_goldengate_sql_owner }}.MIS_TAB_CTRL_PKG;
+
+PROMPT Create new debug config table
+BEGIN
+  mis_gen_pkg.ensure_debug_config;
+END;
+/
 
 PROMPT Executing DML handler configuration procedures:
 REM Handlers are now deployed once during installation and remain persistent.

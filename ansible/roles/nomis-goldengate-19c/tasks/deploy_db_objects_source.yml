@@ -81,7 +81,7 @@
         oracle_goldengate_mis_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.mis.schema_owner | lower] }}"
       no_log: true
 
-    - name: Get AUDITDATA password secret metadata from AWS Secrets Manager
+    - name: Get password secret metadata from AWS Secrets Manager for AUDITDATA link
       ansible.builtin.shell: |
         aws secretsmanager get-secret-value \
           --secret-id "/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords" \
@@ -96,19 +96,21 @@
         oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
       no_log: true
 
-    - name: Check AUDITDATA schema password exists in secret
+    # Can't remember why this was added but the password for auditdata.schema_owner doesn't exist in Secrets Manager so if this is needed in future we might need to use ggadmin users, or add the password for auditdata.schema_owner.
+    - name: Check schema password exists in secret for AUDITDATA link
       ansible.builtin.assert:
         that:
-          - oracle_goldengate_group.auditdata.schema_owner | lower in oracle_goldengate_password_secret
+          #- oracle_goldengate_group.auditdata.schema_owner | lower in oracle_goldengate_password_secret
+          - oracle_goldengate_dbuser | lower in oracle_goldengate_password_secret
         fail_msg: >-
-          Password key '{{ oracle_goldengate_group.auditdata.schema_owner | lower }}' was not found in AWS secret
+          Password key '{{ oracle_goldengate_dbuser | lower }}' was not found in AWS secret
           '/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords'.
           Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
         quiet: true
 
     - name: Set AUDITDATA schema password fact
       ansible.builtin.set_fact:
-        oracle_goldengate_auditdata_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.auditdata.schema_owner | lower] }}"
+        oracle_goldengate_auditdata_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_dbuser | lower] }}"
       no_log: true
 
     - name: Ensure Source SQL directory exists

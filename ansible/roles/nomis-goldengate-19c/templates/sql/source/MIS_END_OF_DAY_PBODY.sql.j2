@@ -111,8 +111,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         v_plsql := 'begin dbms_scheduler.run_job@CNOM_MIS_LINK(''MIS_BATCH_CONTROL'',FALSE); end;';
         execute immediate v_plsql;
 
-        v_plsql := 'alter system archive log current';
-        execute immediate v_plsql;
+        -- No need to send a new log as we no longer stop the capture and apply processes for the remote database.
+        -- v_plsql := 'alter system archive log current';
+        -- execute immediate v_plsql;
     END run_batch;
 
 END MIS_END_OF_DAY_PKG;

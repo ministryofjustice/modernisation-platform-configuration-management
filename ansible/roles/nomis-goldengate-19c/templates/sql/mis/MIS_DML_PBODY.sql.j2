@@ -28,6 +28,23 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     return g_version;
   END;
 
+  PROCEDURE log_debug (
+    p_staging_owner   IN     varchar2,
+    p_location     IN     varchar2,
+    p_text      IN     varchar2,
+    p_threshold   IN     number DEFAULT 0
+  ) IS
+  -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+  BEGIN
+    
+    g_debug := mis_gen_pkg.get_debug_level(mis_gen_pkg.g_debug_mis_dml);
+
+    IF g_debug > p_threshold THEN
+        mis_gen_pkg.log_strm_message (p_staging_owner, p_location, p_text);
+    END IF;
+
+  END log_debug;
+
 
   FUNCTION convert_anydata_to_varchar2 (
     p_any_val in sys.anydata
@@ -66,7 +83,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
     return substr(v_varchar2_val, 1, 2000);
 
-  END;
+  END convert_anydata_to_varchar2;
 
   FUNCTION convert_anydata_to_date (
     p_any_val in sys.anydata
@@ -105,7 +122,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
     return v_date_val;
 
-  END;
+  END convert_anydata_to_date;
 
   FUNCTION get_xform_func_name(
         p_tgt_owner     IN     VARCHAR2,
@@ -122,7 +139,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     ELSE
         return upper(p_tgt_owner)||'_XFORM_'||mod(p_tab_seq,100000);
     END IF;
-  END;
+  END get_xform_func_name;
 
   FUNCTION get_dml_proc_name(
         p_tgt_owner     IN     VARCHAR2,
@@ -141,7 +158,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         return 'OGG_'||upper(p_tgt_owner) ||
                 '_DML_'||mod(p_tab_seq,100000)||'_'||DBMS_UTILITY.GET_HASH_VALUE(p_key_columns,0,100000);
     END IF;
-  END;
+  END get_dml_proc_name;
 
 
 
@@ -188,7 +205,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
       old_values            => NULL,
       new_values            => v_merged_values
     );
-  END;
+  END convert_lcr_to_insert;
 
   PROCEDURE parse_anydata_lcr (
     p_in_anydata    IN  sys.anydata,
@@ -221,7 +238,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     p_scn := p_row_lcr.get_scn();
     -- get tag for row LCR
     p_tag := RAWTOHEX(p_row_lcr.get_tag());
-  END;
+  END parse_anydata_lcr;
 
 
   FUNCTION capture_rule_row_xform_user (
@@ -283,7 +300,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             v_object_name, v_command_type, v_source_time, v_scn, v_tag);
 
         -- debug message
-        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.1',
+        log_debug (v_target_object_owner, 'capture_rule_row_xform_user.1',
                         'Processing ' || v_command_type || ' row LCR for ' || v_source_object_owner || '.' ||
                         v_object_name || '@' || v_source_db_name || '.');
 
@@ -300,7 +317,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             v_target_object_name := v_tgt_table_list(i);
 
             -- debug message
-            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.2',
+            log_debug (v_target_object_owner, 'capture_rule_row_xform_user.2',
                             'Processing ' || v_command_type || ' row LCR for target table ' ||
                             v_target_object_name || '.');
 
@@ -330,7 +347,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                 v_command_ok := TRUE;
 
                 -- debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.4',
+                log_debug (v_target_object_owner, 'capture_rule_row_xform_user.4',
                                 'Checking UPDATE row LCR for ' || v_source_object_owner || '.' ||
                                 v_object_name || '@' || v_source_db_name || '.', 2);
                 -- get primary key columns
@@ -417,7 +434,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             ELSIF v_command_ok THEN
 
                 -- debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.7',
+                log_debug (v_target_object_owner, 'capture_rule_row_xform_user.7',
                             'Capturing ' || v_command_type || ' row LCR for ' ||
                             v_source_object_owner || '.' ||
                             v_object_name || '@' || v_source_db_name || ', scn=' || v_row_lcr.get_scn() || '.');
@@ -432,7 +449,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             ELSE
 
                 -- return empty array for row LCRs of wrong command type; debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'capture_rule_row_xform_user.8',
+                log_debug (v_target_object_owner, 'capture_rule_row_xform_user.8',
                             'Rejected ' || v_command_type || ' row LCR for ' || v_source_object_owner || '.' ||
                             v_object_name || '@' || v_source_db_name || '.');
 
@@ -458,7 +475,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                     p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
             RAISE;
 
-  END;
+  END capture_rule_row_xform_user;
 
 
   PROCEDURE apply_handler_user (
@@ -572,7 +589,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             v_object_name, v_command_type, v_source_time, v_scn, v_tag);
 
         -- debug message
-        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1',
+        log_debug (v_target_object_owner, 'apply_handler_user.1',
                         'Processing ' || v_command_type || ' row LCR for ' ||
                         v_source_object_owner || '.' || v_object_name || '@' ||
                         v_source_db_name || '.', 2);
@@ -586,7 +603,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         IF v_command_type = 'UPDATE' AND length(p_key_columns) > 0 THEN
             
             -- debug message
-            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1a',
+            log_debug (v_target_object_owner, 'apply_handler_user.1a',
                             'Checking UPDATE row LCR for PK changes on ' || 
                             v_source_object_owner || '.' || v_object_name || '@' || 
                             v_source_db_name || '.', 2);
@@ -629,7 +646,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                     v_saved_new_values := v_row_lcr.get_values('new', 'N');
                 EXCEPTION
                     WHEN mis_gen_pkg.e_row_missing THEN
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1c',
+                        log_debug (v_target_object_owner, 'apply_handler_user.1c',
                             'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
                 END;
                 
@@ -638,19 +655,19 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                     v_row_lcr.set_values('new', NULL);
                 EXCEPTION
                     WHEN mis_gen_pkg.e_row_missing THEN
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1d',
+                        log_debug (v_target_object_owner, 'apply_handler_user.1d',
                             'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
                 END;
                 BEGIN
                     v_row_lcr.set_command_type('DELETE');
                 EXCEPTION
                     WHEN mis_gen_pkg.e_row_missing THEN
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1e',
+                        log_debug (v_target_object_owner, 'apply_handler_user.1e',
                             'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
                 END;
                 
                 -- debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1f',
+                log_debug (v_target_object_owner, 'apply_handler_user.1f',
                                 'Executing DELETE row LCR for old key values on ' || v_target_object_name ||
                                 ' (batch number ' || v_batch_number || ').', 1);
                 
@@ -658,11 +675,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                     v_row_lcr.execute(conflict_resolution => FALSE);
                 EXCEPTION
                     WHEN mis_gen_pkg.e_row_missing THEN
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1x',
+                        log_debug (v_target_object_owner, 'apply_handler_user.1x',
                             'DELETE not found (row may already been deleted). Continuing with INSERT.',1);
                     WHEN NO_DATA_FOUND THEN
                         -- row may have already been deleted, log but continue with insert
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1x',
+                        log_debug (v_target_object_owner, 'apply_handler_user.1x',
                                         'NO_DATA_FOUND during LCR execute. Continuing with INSERT.', 1);
                 END;
                 
@@ -684,7 +701,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                 convert_lcr_to_insert(v_row_lcr);
                 
                 -- debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.1g',
+                log_debug (v_target_object_owner, 'apply_handler_user.1g',
                                 'Converted to INSERT row LCR for new key values on ' || v_target_object_name ||
                                 ' (batch number ' || v_batch_number || ').', 1);
                 
@@ -702,7 +719,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             IF (instr(v_proc_flags, 'LOB') > 0) OR (instr(v_proc_flags, 'LONG') > 0) THEN
 
                 -- debug message
-                mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.2',
+                log_debug (v_target_object_owner, 'apply_handler_user.2',
                                 'Processing ' || v_command_type || ' row LCR for ' || v_target_object_name ||
                                 ' (batch number ' || v_batch_number || ').', 1);
 
@@ -723,7 +740,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         ELSE
 
             -- debug message
-            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.3',
+            log_debug (v_target_object_owner, 'apply_handler_user.3',
                             'Processing ' || v_command_type || ' row LCR for ' || v_target_object_name ||
                             ' (batch number ' || v_batch_number || ').', 1);
 
@@ -773,7 +790,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
                 IF (v_tag = g_tag2) THEN
                     -- debug message
-                    mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.5',
+                    log_debug (v_target_object_owner, 'apply_handler_user.5',
                         'Processing target row LCR for ' || v_target_object_name || ' (' ||
                         v_where_clause || ').');
 
@@ -799,12 +816,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
         IF v_execute THEN
             -- debug message
-            /* too many recs being logged with this
-            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.7',
+            log_debug (v_target_object_owner, 'apply_handler_user.7',
                             'Executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
-                            v_target_object_name || ' (' || v_where_clause || ').');
-            */
-
+                            v_target_object_name || ' (' || v_where_clause || ').',2);
+            
             BEGIN
                 v_row_lcr.execute(conflict_resolution => FALSE);
             EXCEPTION
@@ -830,11 +845,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                         END LOOP;
                         
                         -- debug message
-                        /* too many recs being logged with this
-                        mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.7a',
+                        log_debug (v_target_object_owner, 'apply_handler_user.7a',
                             'Re-executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
-                            v_target_object_name || '.');
-                        */
+                            v_target_object_name || '.',2);
                         BEGIN
                         -- retry as update
                             v_row_lcr.execute(conflict_resolution => FALSE);
@@ -843,7 +856,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             END;
         ELSE
             -- debug message
-            mis_gen_pkg.log_strm_debug (v_target_object_owner, 'apply_handler_user.8',
+            log_debug (v_target_object_owner, 'apply_handler_user.8',
                             'Not executing ' || v_row_lcr.get_command_type() || ' row LCR for ' ||
                             v_target_object_name || ' (' || v_where_clause || ').');
         END IF;
@@ -876,7 +889,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
 
         RAISE;
 
-  END;
+  END apply_handler_user;
 
 
   PROCEDURE set_apply_handlers (
@@ -973,7 +986,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         END IF;
     END LOOP;
 
-    mis_gen_pkg.log_strm_debug (l_tgt_owner, 'set_apply_handlers',
+    log_debug (l_tgt_owner, 'set_apply_handlers',
                     'DML apply handlers reset for ' || l_src_owner_list.count || ' tables.');
 
   EXCEPTION
@@ -983,7 +996,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                         p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
 
-  END;
+  END set_apply_handlers;
 
 
   PROCEDURE clear_apply_handlers (
@@ -1027,7 +1040,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     -- get list of apply processes
     l_apply_name_list := mis_gen_pkg.get_apply_list(l_tgt_owner);
 
-    mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+    log_debug (l_tgt_owner, 'clear_apply_handlers',
                     'Found ' || l_apply_name_list.count || ' apply processes for ' || l_tgt_owner || '.');
 
     -- retrieve details of all target tables
@@ -1044,7 +1057,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
         bulk collect into l_src_owner_list, l_src_table_list, l_operations_list, l_procedure_list
         using l_apply_name_list(i);
 
-        mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+        log_debug (l_tgt_owner, 'clear_apply_handlers',
                         'Found ' || l_src_owner_list.count || ' handlers.');
 
         -- clear handlers for each table
@@ -1062,7 +1075,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
             END;
         END LOOP;
 
-        mis_gen_pkg.log_strm_debug (l_tgt_owner, 'clear_apply_handlers',
+        log_debug (l_tgt_owner, 'clear_apply_handlers',
                         'DML apply handlers cleared for ' || l_src_owner_list.count || ' tables.');
     END LOOP;
 
@@ -1073,7 +1086,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
                         p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
 
-  END;
+  END clear_apply_handlers;
 
 
 END MIS_DML_PKG;

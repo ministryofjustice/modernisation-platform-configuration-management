@@ -496,7 +496,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         IF NOT extract_running(v_capture_name_list(i)) THEN
     --            SYS.DBMS_CAPTURE_ADM.START_CAPTURE(v_capture_name_list(i));
             DECLARE
-                l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(mis_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+                l_job_name VARCHAR2(128) := 'OGG_START_EXT_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
             BEGIN
                 DBMS_SCHEDULER.create_job(
                         job_name            => l_job_name,
@@ -564,7 +564,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         IF extract_running(v_capture_name_list(i)) THEN
     --            SYS.DBMS_CAPTURE_ADM.STOP_CAPTURE(v_capture_name_list(i), p_force);
             DECLARE
-                l_job_name VARCHAR2(128) := 'OGG_STOP_EXTRACT_' || UPPER(mis_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+                l_job_name VARCHAR2(128) := 'OGG_STOP_EXT_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
             BEGIN
                 DBMS_SCHEDULER.create_job(
                     job_name            => l_job_name,
@@ -692,7 +692,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         IF NOT replicat_running(v_apply_name_list(i)) THEN
     --            SYS.DBMS_APPLY_ADM.START_APPLY(v_apply_name_list(i));
             DECLARE
-                l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || UPPER(mis_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+                l_job_name VARCHAR2(128) := 'OGG_START_REP_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
             BEGIN
             --  SYS.DBMS_APPLY_ADM.start_replicat(g_apply_name);
                 DBMS_SCHEDULER.create_job(
@@ -775,7 +775,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             -- stop apply process
     --            SYS.DBMS_APPLY_ADM.STOP_APPLY(v_apply_name_list(i), p_force);
             DECLARE
-                l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(mis_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+                l_job_name VARCHAR2(128) := 'OGG_STOP_REP_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
             BEGIN
                 --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
                 DBMS_SCHEDULER.create_job(

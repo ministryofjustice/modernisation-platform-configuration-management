@@ -206,6 +206,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     -- get list of apply processes
     v_apply_name_list := mis_gen_pkg.get_apply_list(p_staging_owner);
 
+    -- The following no longer seems to work for Goldengate processes, so we will get the information from the capture process later in the procedure instead
     v_plsql := 'select nvl(da.max_applied_message_number, dap.applied_message_number) ' ||
                  'from dba_apply_progress dap, dba_apply da ' ||
                 'where da.apply_name = :apply_name ' ||
