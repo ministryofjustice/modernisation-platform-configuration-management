@@ -57,13 +57,13 @@ declare
 
   procedure create_or_unlock_user(user_name varchar2, user_password varchar2) is
   begin
-    dbms_output.put_line('create user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '"');
-    execute immediate 'create user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '"';
+    dbms_output.put_line('create user ' || user_name || ' identified by ' || user_password);
+    execute immediate 'create user ' || user_name || ' identified by ' || user_password;
   exception
     when others then
       if sqlcode = -1920 then
-        dbms_output.put_line('alter user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '" account unlock');
-        execute immediate 'alter user ' || user_name || ' identified by "' || replace(user_password, '"', '""') || '" account unlock';
+        dbms_output.put_line('alter user ' || user_name || ' identified by ' || user_password || ' account unlock');
+        execute immediate 'alter user ' || user_name || ' identified by ' || user_password || ' account unlock';
       else
         raise;
       end if;
