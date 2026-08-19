@@ -2,18 +2,6 @@
   set_fact:
      target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
 
-- name: Get RAT playback password from Secrets Manager
-  import_role:
-    name: secretsmanager-passwords
-  vars:
-    secretsmanager_passwords: "{{ rat_playback_secretsmanager_passwords }}"
-  no_log: true
-
-- name: Set RAT playback account password
-  set_fact:
-    rat_playback_user_password: "{{ secretsmanager_passwords_dict['db'].passwords['rat_user'] }}"
-  no_log: true
-
 - name: Validate RAT playback inputs
   assert:
     that:
@@ -60,10 +48,8 @@
   script: initialize_rat_playback.sh "{{ rat_playback_directory_name }}" "{{ rat_playback_directory_path }}" "{{ rat_playback_name }}"
   become: true
   become_user: oracle
-  no_log: true
   environment:
      TARGET_DB_NAME: "{{ target_db_name }}"
-     RAT_USER_PASSWORD: "{{ rat_playback_user_password }}"
 
 - name: Calibrate RAT playback clients
   script: calibrate_rat_playback.sh "{{ rat_playback_directory_path }}" "{{ rat_playback_wrc_client_count }}" "{{ rat_playback_wrc_client_startup_delay }}"
@@ -71,8 +57,7 @@
   become_user: oracle
   environment:
       TARGET_DB_NAME: "{{ target_db_name }}"
-      RAT_PLAYBACK_WRC_CONNECTION: "RAT_USER/{{ rat_playback_user_password }}{{ '' if rat_playback_wrc_connection == '/' else '@' ~ rat_playback_wrc_connection }}"
-    no_log: true
+      RAT_PLAYBACK_WRC_CONNECTION: "{{ rat_playback_wrc_connection }}"
 
 - name: Prepare and start RAT playback
   script: start_rat_playback.sh "{{ rat_playback_synchronization }}"
