@@ -31,7 +31,7 @@ begin
 
     dbms_output.put_line('Source database link name: '||v_source_db);
 
-    select count(*) into v_count from dba_db_links where db_link = v_source_db and owner = 'PUBLIC';
+    select count(*) into v_count from dba_db_links where db_link like v_source_db||'%' and owner = 'PUBLIC';
 
     dbms_output.put_line('Source database link count: '||v_count);
     if v_count = 1 then

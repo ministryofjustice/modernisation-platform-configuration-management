@@ -114,7 +114,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     IF extract_running THEN
       -- stop capture process
       DECLARE
-        l_job_name VARCHAR2(128) := 'OGG_stop_extract_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+        l_job_name VARCHAR2(128) := 'OGG_STOP_EXT_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
       BEGIN
         --  SYS.DBMS_CAPTURE_ADM.stop_extract(g_capture_name, p_force);
         DBMS_SCHEDULER.create_job(
@@ -164,7 +164,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
   PROCEDURE start_extract IS
   -- packaged procedure start_extract starts audit capture process
-    l_job_name VARCHAR2(128) := 'OGG_START_EXTRACT_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+    l_job_name VARCHAR2(128) := 'OGG_START_EXT_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
   BEGIN
     IF NOT extract_running THEN
       -- start capture processes
@@ -215,7 +215,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     IF replicat_running THEN
       -- stop audit apply process
       DECLARE
-        l_job_name VARCHAR2(128) := 'OGG_stop_replicat_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+        l_job_name VARCHAR2(128) := 'OGG_STOP_REP_' || UPPER(auditdata_gen_pkg.g_ogg_group_name) || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
       BEGIN
         --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
         DBMS_SCHEDULER.create_job(
@@ -295,7 +295,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
 
     IF NOT replicat_running THEN
       DECLARE
-        l_job_name VARCHAR2(128) := 'OGG_start_replicat_' || auditdata_gen_pkg.g_ogg_group_name || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3');
+        l_job_name VARCHAR2(128) := 'OGG_START_REP_' || auditdata_gen_pkg.g_ogg_group_name || '_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
       BEGIN
         --  SYS.DBMS_APPLY_ADM.start_apply(g_apply_name);
         DBMS_SCHEDULER.create_job(

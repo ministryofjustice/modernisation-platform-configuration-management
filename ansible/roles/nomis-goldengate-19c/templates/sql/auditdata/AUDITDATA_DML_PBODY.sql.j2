@@ -855,8 +855,10 @@ BEGIN
   END;
   --create an array of tables in the selected schema
   v_plsql := 
-    'SELECT table_name FROM all_tables@' || v_dblink 
-    || ' WHERE owner = ''' || g_source_owner || '''';  
+    'SELECT t.table_name FROM all_tables@' || v_dblink ||' t '
+    || ' WHERE t.owner = ''' || g_source_owner || ''''
+    || ' AND NOT EXISTS (SELECT 1 FROM dba_apply_dml_handlers h WHERE h.apply_name = UPPER(''' || g_apply_name || ''') AND h.object_name = t.table_name)';
+  DBMS_OUTPUT.PUT_LINE('Finding tables: ' || v_plsql);
   execute immediate v_plsql bulk collect into v_tab_list;
 
   if v_tab_list.count = 0 then
