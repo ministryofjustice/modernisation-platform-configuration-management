@@ -1,0 +1,17 @@
+---
+- block:
+    - import_tasks: install_rclone.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - rclone_install
+
+    - import_tasks: setup_config.yml
+      tags:
+        - amibuild
+        - ec2provision
+        - ec2patch
+        - rclone_setup_config
+
+  # block
+  when: ansible_distribution in ['RedHat']
