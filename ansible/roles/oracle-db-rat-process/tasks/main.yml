@@ -72,7 +72,7 @@
 # as this will permit WRC to be run from a different host if needed
 - name: Set RAT prepared file S3 location
   set_fact:
-     rat_prepare_s3_location: "s3://{{ rat_capture_s3_bucket_name }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/prepared/{{ rat_replay_name }}"
+     rat_prepared_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/prepared/') }}"
 
 - name: Upload RAT prepared files to S3
   command:
@@ -82,11 +82,11 @@
         - sync
         - --no-progress
         - "{{ rat_replay_directory_path }}/"
-        - "{{ rat_prepare_s3_location }}"
+        - "{{ rat_prepared_s3_location }}"
   become: true
   become_user: oracle
 
-- name: Report RAT capture S3 location
+- name: Report RAT prepared S3 location
   debug:
-     msg: "RAT capture files uploaded to {{ rat_prepare_s3_location }}"
+     msg: "RAT capture files uploaded to {{ rat_prepared_s3_location }}"
 
