@@ -1,0 +1,25 @@
+---
+- name: Get secretsmanager secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ rclone_sharepoint_config }}"
+
+- name: Create rclone config dir
+  ansible.builtin.file:
+    path: "{{ rclone_config_dir }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  when: rclone_config_dir is defined
+
+- name: Copy rclone config
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ rclone_config_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop:
+    - rclone.conf

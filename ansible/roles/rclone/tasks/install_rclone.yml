@@ -1,0 +1,41 @@
+---
+- name: Check installed packages
+  ansible.builtin.package_facts:
+
+- name: Parse rclone version if already installed
+  ansible.builtin.set_fact:
+    rclone_current_version: "{{ ansible_facts.packages['rclone'][0]['version'] }}"
+  when: "'rclone' in ansible_facts.packages"
+
+- name: Set dummy rclone version if not already installed
+  ansible.builtin.set_fact:
+    rclone_current_version: "0.0.0"
+  when: "'rclone' not in ansible_facts.packages"
+
+- name: Fetch the latest rclone version metadata
+  ansible.builtin.uri:
+    url: https://downloads.rclone.org/version.txt
+    return_content: true
+  register: rclone_latest_version_uri
+
+- name: Parse latest rclone version
+  ansible.builtin.set_fact:
+    rclone_latest_version: "{{ rclone_latest_version_uri.content | regex_replace('rclone v', '') | trim }}"
+
+- name: Set fact for latest version {{ rclone_latest_version }}
+  ansible.builtin.set_fact:
+    rclone_target_or_latest_version: "{{ rclone_latest_version }}"
+  when: rclone_target_version == "latest"
+
+- name: Set fact for target version {{ rclone_target_version }}
+  ansible.builtin.set_fact:
+    rclone_target_or_latest_version: "{{ rclone_target_version }}"
+  when: rclone_target_version != "latest"
+
+- name: Install rclone {{ rclone_current_version }} -> {{ rclone_target_or_latest_version }}
+  dnf:
+    name: "https://downloads.rclone.org/v{{ rclone_target_or_latest_version }}/rclone-v{{ rclone_target_or_latest_version }}-linux-amd64.rpm"
+    state: present
+    allow_downgrade: true
+    disable_gpg_check: true
+  when: rclone_current_version != rclone_target_or_latest_version
