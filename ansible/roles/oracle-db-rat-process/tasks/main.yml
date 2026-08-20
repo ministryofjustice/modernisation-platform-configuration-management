@@ -67,3 +67,26 @@
      TARGET_DB_NAME: "{{ target_db_name }}"
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
+
+# Once the prepare has been done - upload the prepared files back to S3
+# as this will permit WRC to be run from a different host if needed
+- name: Set RAT prepared file S3 location
+  set_fact:
+     rat_prepare_s3_location: "s3://{{ rat_capture_s3_bucket_name }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/prepared/{{ rat_replay_name }}"
+
+- name: Upload RAT prepared files to S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_replay_directory_path }}/"
+        - "{{ rat_prepare_s3_location }}"
+  become: true
+  become_user: oracle
+
+- name: Report RAT capture S3 location
+  debug:
+     msg: "RAT capture files uploaded to {{ rat_prepare_s3_location }}"
+
