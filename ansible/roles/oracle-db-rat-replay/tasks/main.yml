@@ -1,0 +1,89 @@
+- name: Resolve target database name
+  set_fact:
+     target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
+
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
+- name: Validate RAT replay inputs
+  assert:
+    that:
+      - rat_replay_s3_location | length > 0
+      - rat_replay_s3_location is match('^s3://')
+      - rat_replay_synchronization in ['SCN', 'OBJECT_ID']
+      - tns_alias is defined
+      - tns_alias | length > 0
+      - rat_replay_wrc_client_count | int > 0
+      - rat_replay_wrc_client_startup_delay | int >= 0
+    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, a positive rat_replay_wrc_client_count, and set rat_replay_synchronization to SCN or OBJECT_ID"
+
+- name: Build RAT replay names
+  set_fact:
+     rat_replay_name: "{{ rat_replay_name | default((target_db_name | lower) ~ '_' ~ now(fmt='%Y%m%d%H%M%S'), true) }}"
+
+- name: Build RAT replay directory names
+  set_fact:
+     rat_replay_directory_name: "RAT_REPLAY_{{ rat_replay_name | upper }}"
+     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ target_db_name | lower }}/{{ rat_replay_name }}"
+
+- name: Create RAT replay directory on the database host
+  file:
+     path: "{{ rat_replay_directory_path }}"
+     state: directory
+     owner: oracle
+     group: oinstall
+     mode: '0750'
+  become: true
+
+- name: Download RAT capture files for replay from S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_replay_s3_location }}"
+        - "{{ rat_replay_directory_path }}"
+  become: true
+  become_user: oracle
+
+- name: Report downloaded RAT replay location
+  debug:
+     msg: "RAT capture files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
+
+- name: Initialize RAT replay
+  script: initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+
+- name: Prepare RAT replay
+  script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+
+- name: Calibrate RAT replay clients
+  script: calibrate_rat_replay.sh "{{ rat_replay_directory_path }}" "{{ rat_replay_wrc_client_count }}" "{{ rat_replay_wrc_client_startup_delay }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+
+- name: Start RAT replay
+  script: start_rat_replay.sh "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"

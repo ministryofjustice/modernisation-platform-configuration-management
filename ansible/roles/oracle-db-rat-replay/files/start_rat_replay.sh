@@ -3,13 +3,12 @@
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <synchronization> <tns_alias>" >&2
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <tns_alias>" >&2
   exit 1
 fi
 
-synchronization="$1"
-tns_alias="$2"
+tns_alias="$1"
 
 target_db_name="${TARGET_DB_NAME:-${ORACLE_SID:-}}"
 rat_secret_id="${RAT_SECRET_ID:-}"
@@ -30,7 +29,6 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
   exit 1
 fi
 
-echo "Synchronization: ${synchronization}"
 echo "Target database name: ${target_db_name}"
 
 export PATH="$PATH:/usr/local/bin"
@@ -54,8 +52,6 @@ whenever sqlerror exit failure
 connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
 set serveroutput on
 begin
-  DBMS_WORKLOAD_REPLAY.PREPARE_REPLAY(
-    synchronization => '$synchronization');
   DBMS_WORKLOAD_REPLAY.START_REPLAY;
 end;
 /

@@ -1,0 +1,62 @@
+- name: Resolve target database name
+  set_fact:
+     target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
+
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
+- name: Validate RAT report inputs
+  assert:
+    that:
+      - rat_report_replay_name is defined
+      - rat_report_replay_name | length > 0
+      - tns_alias is defined
+      - tns_alias | length > 0
+    fail_msg: "Define rat_report_replay_name as the DBMS_WORKLOAD_REPLAY replay name and tns_alias"
+
+- name: Build RAT report names
+  set_fact:
+     rat_report_directory_name: "RAT_REPORT_{{ target_db_name | upper }}_{{ now(fmt='%y%m%d%H%M%S') }}"
+     rat_report_directory_path: "{{ rat_report_base_dir }}/{{ target_db_name | lower }}/{{ now(fmt='%Y%m%d%H%M%S') }}"
+     rat_report_filename: "replay_{{ rat_report_replay_name }}.html"
+
+- name: Create RAT report directory on the database host
+  file:
+     path: "{{ rat_report_directory_path }}"
+     state: directory
+     owner: oracle
+     group: oinstall
+     mode: '0750'
+  become: true
+
+- name: Generate RAT replay report
+  script: generate_rat_report.sh "{{ rat_report_directory_name }}" "{{ rat_report_directory_path }}" "{{ rat_report_filename }}" "{{ rat_report_replay_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+
+- name: Set RAT report S3 location
+  set_fact:
+     rat_report_s3_location: "s3://{{ rat_report_s3_bucket_name }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/replay_reports/"
+
+- name: Upload RAT replay report to S3
+  command:
+     argv:
+        - aws
+        - s3
+        - cp
+        - --no-progress
+        - "{{ rat_report_directory_path }}/{{ rat_report_filename }}"
+        - "{{ rat_report_s3_location }}"
+  become: true
+  become_user: oracle
+
+
+- name: Display RAT report S3 location
+  debug:
+     msg: "RAT report uploaded to {{ rat_report_s3_location }}"
+
