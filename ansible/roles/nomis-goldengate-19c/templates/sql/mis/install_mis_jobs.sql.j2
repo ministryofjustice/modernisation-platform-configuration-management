@@ -89,7 +89,7 @@ end;',
             repeat_interval  => 'FREQ=DAILY; BYHOUR=5; BYMINUTE=0',
             enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Job to control the increment of the MIS batch number. Migrated from STRMADMIN.MIS_BATCH_CONTROL - Keep disabled');
+            comments         => 'Job to initiate GoldenGate stop-point polling for MIS batch rollover. Migrated from STRMADMIN.MIS_BATCH_CONTROL - Keep disabled');
         DBMS_OUTPUT.PUT_LINE('Created job: MIS_BATCH_CONTROL (disabled)');
     END;
     
@@ -123,7 +123,7 @@ end;',
             repeat_interval  => 'FREQ=DAILY; BYHOUR=6; BYMINUTE=0',
             enabled          => v_enabled,
             auto_drop        => FALSE,
-            comments         => 'Job to ensure that the MIS batch number is incremented. Migrated from STRMADMIN.MIS_BATCH_ROLL - Keep disabled');
+            comments         => 'Job to roll the MIS batch after GoldenGate reaches the stop SCN. Migrated from STRMADMIN.MIS_BATCH_ROLL - Keep disabled');
         DBMS_OUTPUT.PUT_LINE('Created job: MIS_BATCH_ROLL (disabled)');
     END;
     

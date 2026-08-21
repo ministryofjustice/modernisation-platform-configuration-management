@@ -273,58 +273,59 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
   END PURGE_RECORDS ;
 
     -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh.
-    -- Called by MIS_BATCH_CONTROL job, which will:
-    --   - set stop points for capture and apply processes associated with the MIS staging tables
-    --   - run the MIS_BATCH_ROLL job 
-    --   - wait for all capture and apply processes associated with the MIS staging tables to stop
+    -- Called by MIS_BATCH_CONTROL job (once, at end-of-day from source over a DB link).
+    -- Determines whether a stop point exists and, if so, creates/enables the
+    -- MIS_BATCH_ROLL_CHECK polling job, then returns immediately.
+    -- The polling job calls wait_stop_points every 60 seconds and disables itself
+    -- once the batch has been rolled.
     PROCEDURE mis_batch_control IS
-        v_roll BOOLEAN := FALSE;
-        v_plsql varchar2(200);
+       v_points_set BOOLEAN := FALSE;
     BEGIN
-        -- v_plsql := 'alter system flush shared_pool';
-        -- execute immediate v_plsql;
-        mis_gg_ctrl_pkg.set_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
-        if v_roll = TRUE then
-            -- wait until stop point reached
-            mis_gg_ctrl_pkg.wait_stop_points(mis_gen_pkg.g_mis_owner,v_roll);
-            if v_roll = TRUE then -- roll batch number forward
-                --v_plsql := 'begin dbms_scheduler.run_job(''MIS_BATCH_ROLL'',FALSE); end;';
-                --execute immediate v_plsql;
-                mis_batch_roll;
-            else -- timeout or other error - force error condition for scheduler job logs
-                RAISE_APPLICATION_ERROR
-                (MIS_GEN_PKG.g_mis_streams_ctrl_exception,
-                    'Unable to process stop point. Check '||mis_gen_pkg.g_mis_owner||'.STRM_ERROR_LOG for details.');
-            end if;
-        else
-            -- restart apply process if stopped.
-            -- do not refresh handlers as they are now deployment-time setup only.
-            begin
-                MIS_GG_CTRL_PKG.start_replicat(mis_gen_pkg.g_mis_owner, false);
-            exception
-                when MIS_GEN_PKG.cannot_alter_process then null;
-            end;
-        end if;
+       mis_gg_ctrl_pkg.set_stop_points(mis_gen_pkg.g_mis_owner, v_points_set);
+
+       if v_points_set = TRUE then
+           -- Create the polling job if it does not already exist
+           begin
+               dbms_scheduler.create_job(
+                   job_name       => 'MIS_BATCH_ROLL_CHECK',
+                   job_type       => 'PLSQL_BLOCK',
+                   job_action     => 'begin ' || mis_gen_pkg.g_mis_owner ||
+                                     '.MIS_GG_CTRL_PKG.wait_stop_points(''' ||
+                                     mis_gen_pkg.g_mis_owner || ''', :result); end;',
+                   start_date     => systimestamp,
+                   repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
+                   enabled        => TRUE,
+                   auto_drop      => FALSE,
+                   comments       => 'GoldenGate stop-point poll: checks applied_low_position every 60s and rolls batch when stop SCN is reached.');
+           exception
+               when others then
+                   if sqlcode = -27477 then
+                       -- Job already exists; make sure it is enabled
+                       dbms_scheduler.enable(mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
+                   else
+                       raise;
+                   end if;
+           end;
+       end if;
     END mis_batch_control;
 
-    -- Creates a new batch and calls the external BO process to start the ETL processing.
-    -- Called by MIS_BATCH_ROLL job
+    -- Creates a new batch and triggers ETL.  Called by the legacy MIS_BATCH_ROLL
+    -- scheduler job (manual/operational use).  Normal end-of-day processing uses
+    -- mis_batch_control + MIS_BATCH_ROLL_CHECK → wait_stop_points instead.
     PROCEDURE mis_batch_roll IS
-        v_more BOOLEAN := FALSE;
+        v_continue BOOLEAN := FALSE;
         v_plsql varchar2(200);
     BEGIN
-        MIS_BATCH_PKG.create_new_batch(mis_gen_pkg.g_mis_owner, TRUE, v_more);
---        strmadmin.MIS_STRM_PKG1.create_new_batch('BODISTAGING',TRUE,v_more);
-        IF v_more = TRUE THEN
-            --v_plsql := 'begin dbms_scheduler.run_job(''MIS_BATCH_CONTROL'',FALSE); end;';
-            --execute immediate v_plsql;
-            -- Passing FALSE to the above dbms_scheduler.run_job call means that the job will be run in a separate session, so any exceptions raised will be in the context of that session and not this one, which means we can't reliably catch them here. Instead, we'll rely on the job logs to identify any issues with the batch roll. Not sure why it was set to do that but instead we can just call the procedure directly, which will allow us to catch any exceptions here and log them appropriately.
-            mis_batch_control;
-        ELSE
-            -- run the trigger_mis_load.sh script to start the ETL processing
-            v_plsql := 'begin dbms_scheduler.run_job(''MIS_PRE_LOAD'',FALSE); end;';
-            execute immediate v_plsql;
-        END IF;
+        -- Check GoldenGate progress before attempting a batch roll
+        mis_gg_ctrl_pkg.wait_stop_points(mis_gen_pkg.g_mis_owner, v_continue);
+
+        if v_continue = TRUE then
+            -- If wait_stop_points rolled the batch it will have triggered
+            -- set_stop_points internally; if more points remain mis_batch_control
+            -- will re-enable the poll job.  Nothing more to do here unless this
+            -- is being driven manually, in which case the caller can run again.
+            null;
+        end if;
     END mis_batch_roll;
 
 

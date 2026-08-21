@@ -38,7 +38,7 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     TYPE scn_list is TABLE OF NUMBER;
 
     -- package level variable declarations
-    g_version      VARCHAR2(20) := '1.0e.59';
+    g_version      VARCHAR2(20) := '2.0.1';
     g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_sql_owner }}';
 --    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
     g_queue_owner   VARCHAR2(30) := upper('{{ oracle_goldengate_dbuser }}');

@@ -86,7 +86,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
 
     -- Packaged procedure run_batch
     -- runs the end of day batch process for MIS refresh, which will:
-    --   - set stop points for capture and apply processes associated with the MIS staging tables
+    --   - set stop points for goldengate process to know when to stop processing records for the current MIS batch
     --   - run the MIS_BATCH_CONTROL program on the remote database via the MIS_STRM_LINK database link, which will create a new batch and set stop points for the remote capture and apply processes
     --   - wait for all capture and apply processes associated with the MIS staging tables to stop
     PROCEDURE run_batch IS
@@ -96,8 +96,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         -- create stop points table if it doesn't exist (will be empty if just created, so no risk of setting stop points inappropriately)
         ADD_MIS_STOP_POINTS_TABLE;
 
-        -- set stop points for local capture and apply processes
-        ADD_MIS_STOP_POINT();
+        -- set stop points for goldengate process to know when to stop processing records for the current MIS batch
+        ADD_MIS_STOP_POINT;
 
         -- check if db link exists before proceeding (will raise exception if not)
         begin

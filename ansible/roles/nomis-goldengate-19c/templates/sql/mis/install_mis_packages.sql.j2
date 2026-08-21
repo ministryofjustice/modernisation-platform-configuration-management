@@ -11,6 +11,10 @@ grant select on DBA_TABLES to {{ oracle_goldengate_sql_owner }};
 grant execute on DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
 grant select on gv_$streams_apply_server to {{ oracle_goldengate_sql_owner }};
 grant execute on DBMS_UTILITY to {{ oracle_goldengate_sql_owner }};
+grant select on DBA_GG_INBOUND_PROGRESS to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_LOCK to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_UTILITY to {{ oracle_goldengate_sql_owner }};
+grant execute on DBMS_RULE_ADM to {{ oracle_goldengate_sql_owner }};
 
 REM couldn't create packages in {{ oracle_goldengate_sql_owner }} so had to run this:
 grant connect, resource to {{ oracle_goldengate_sql_owner }};

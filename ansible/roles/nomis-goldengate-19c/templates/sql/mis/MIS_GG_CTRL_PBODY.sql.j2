@@ -69,7 +69,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             mis_gen_pkg.log_strm_error (p_staging_owner, 'apply_process_error_count',
                             p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
             RAISE;
-    END;
+    END apply_process_error_count;
 
 
   PROCEDURE set_stop_points (
@@ -78,16 +78,13 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   ) IS
 --  PRAGMA AUTONOMOUS_TRANSACTION;
   -- packaged procedure set_stop_points (GG-migrated version)
-  -- Logs MIS_STOP_POINTS from source database to track batch boundaries.
-  -- No longer controls Capture/Apply processes via DBMS_CAPTURE_ADM/DBMS_APPLY_ADM.
-  -- Extract and Replicat are managed externally through GoldenGate scripts.
+  -- Determines whether there is an outstanding MIS stop point for GoldenGate.
   
     l_plsql      varchar2(2000); 
     l_stop_scn       number := null;
     l_after_scn     number := null;
     l_stop_date     date := null;
     l_staged_date     date := null;
-    l_points_set     boolean := FALSE;
     l_old_batch_number    NUMBER(38,0) := -1;
     l_etl_owner     varchar2(30);
     l_source_db_name  varchar2(255) := mis_gen_pkg.get_source_database_name;
@@ -107,48 +104,32 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         execute immediate l_plsql into l_staged_date using l_old_batch_number;
     END IF;
 
-    l_staged_date := nvl(l_staged_date, trunc(sysdate));
+    l_staged_date := nvl(l_staged_date,trunc(sysdate));
+    l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' || l_source_db_name ||
+               ' where stop_point_date > :staged_date';
+    execute immediate l_plsql
+    into l_stop_scn
+    using l_staged_date;
 
-    -- Query MIS_STOP_POINTS to determine if a boundary has been reached.
-    -- This tracks the logical MIS batch boundary but does not control Capture/Apply/Replicat.
-    BEGIN
-        l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' || l_source_db_name ||
-                  ' where stop_point_date > :staged_date';
-        execute immediate l_plsql
-        into  l_stop_scn
-        using l_staged_date;
+    IF l_stop_scn IS NULL THEN
+        p_points_set := FALSE;
+        return;
+    END IF;
 
-        IF l_stop_scn IS NOT NULL THEN
-           -- a new stop point is available
-           l_plsql := 'select after_scn, stop_point_date from MIS_STOP_POINTS@' || l_source_db_name ||
-                      ' where stop_scn = :scn';
-           execute immediate l_plsql
-           into  l_after_scn, l_stop_date
-           using l_stop_scn;
-        
-           mis_gen_pkg.log_strm_message (p_staging_owner, 'set_stop_points',
-                           'Stop point available (stop_date=' ||
-                               to_char(l_stop_date,'DD-MON-YYYY HH24:MI:SS') || ' stop_scn=' ||
-                               l_stop_scn || ').');
-           l_points_set := TRUE;
-        ELSE
-           -- no stop point available; normal operation
-           mis_gen_pkg.log_strm_debug (p_staging_owner, 'set_stop_points',
-                           'No pending stop point.');
-           l_points_set := FALSE;
-        END IF;
-    EXCEPTION
-        WHEN OTHERS THEN
-           -- Error querying remote database; log but do not fail
-           mis_gen_pkg.log_strm_debug (p_staging_owner, 'set_stop_points',
-                           'Cannot query MIS_STOP_POINTS: ' || SQLERRM);
-           l_points_set := FALSE;
-    END;
+    l_plsql := 'select after_scn, stop_point_date from MIS_STOP_POINTS@' ||
+               l_source_db_name || ' where stop_scn = :scn';
+    execute immediate l_plsql
+    into l_after_scn, l_stop_date
+    using l_stop_scn;
 
-    p_points_set := l_points_set;
+    mis_gen_pkg.log_strm_message(p_staging_owner, 'set_stop_points',
+        'Outstanding stop point found: stop_scn=' || l_stop_scn ||
+        ', after_scn=' || l_after_scn ||
+        ', stop_point_date=' || to_char(l_stop_date,'DD-MON-YYYY HH24:MI:SS') || '.');
 
--- We're no longer making any changes after the GG migration, so we don't need to commit here. The procedure is now just logging the stop points.
---    COMMIT;
+    p_points_set := TRUE;
+
+    COMMIT;
 
   EXCEPTION
   
@@ -158,48 +139,218 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         -- ROLLBACK;
         RAISE;
 
-  END;
+  END set_stop_points;
 
 
   PROCEDURE wait_stop_points (
       p_staging_owner   IN     varchar2,
       p_continue   OUT    boolean
   ) IS
-  PRAGMA AUTONOMOUS_TRANSACTION;
-  -- packaged procedure wait_stop_points (GG-migrated version)
-  -- For GoldenGate, this is a compatibility procedure that logs stop-point tracking.
-  -- It does NOT wait for Capture/Apply/Replicat process status, as these are managed 
-  -- externally through GoldenGate scripts.
-  -- Returns TRUE if a stop point has been logged; FALSE otherwise.
-  -- Caller (mis_batch_control) uses the return value to decide whether to trigger batch roll.
-  
-    l_continue       boolean := FALSE;
+  -- packaged procedure wait_stop_points
+  -- Performs one non-blocking GoldenGate apply progress check.
+  -- Called by the MIS_BATCH_ROLL_CHECK scheduler job every 60 seconds.
+  -- Rolls the batch once, exactly once, when APPLIED_LOW_POSITION >= STOP_SCN,
+  -- then disables the polling job so it stops firing.
+  -- No PRAGMA AUTONOMOUS_TRANSACTION: the session-scoped DBMS_LOCK must not be
+  -- released until this call returns, otherwise concurrent scheduler executions
+  -- could all pass the guard simultaneously.
+
+    l_plsql               varchar2(2000);
+    l_stop_scn            number := null;
+    l_progress_scn        number := null;
+    l_staged_date         date := null;
+    l_etl_owner           varchar2(30);
+    l_lock_handle         varchar2(128);
+    l_lock_result         number;
+    l_before_batch_number NUMBER(38,0) := -1;
+    l_more_points         BOOLEAN := FALSE;
+
+    FUNCTION get_applied_low_position (
+        p_inbound_server IN varchar2
+    ) RETURN NUMBER IS
+        l_applied_low_position varchar2(4000);
+        l_count number;
+    BEGIN
+        select count(*)
+        into   l_count
+        from   dba_gg_inbound_progress
+        where  upper(server_name) = upper(p_inbound_server);
+
+        IF l_count = 0 THEN
+            mis_gen_pkg.log_strm_error (p_staging_owner, 'get_applied_low_position',
+                            p_err_code => SQLCODE, p_text => 'No GoldenGate inbound progress row found for ' || p_inbound_server || '.');
+            RAISE_APPLICATION_ERROR(mis_gen_pkg.g_MIS_STREAMS_EXCEPTION,'No GoldenGate inbound progress row found for ' || p_inbound_server || '.');
+        ELSIF l_count > 1 THEN
+            mis_gen_pkg.log_strm_error (p_staging_owner, 'get_applied_low_position',
+                            p_err_code => SQLCODE, p_text => 'Multiple GoldenGate inbound progress rows found for ' || p_inbound_server || '.');
+            RAISE_APPLICATION_ERROR(mis_gen_pkg.g_MIS_STREAMS_EXCEPTION,'Multiple GoldenGate inbound progress rows found for ' || p_inbound_server || '.');
+        END IF;
+
+        select applied_low_position
+        into   l_applied_low_position
+        from   dba_gg_inbound_progress
+        where  upper(server_name) = upper(p_inbound_server);
+
+        return to_number(l_applied_low_position);
+    EXCEPTION
+        WHEN VALUE_ERROR THEN
+            mis_gen_pkg.log_strm_error (p_staging_owner, 'get_applied_low_position',
+                            p_err_code => SQLCODE, p_text => 'Invalid APPLIED_LOW_POSITION for ' || p_inbound_server || ': ' || l_applied_low_position);
+            RAISE_APPLICATION_ERROR(mis_gen_pkg.g_MIS_STREAMS_EXCEPTION,'Invalid APPLIED_LOW_POSITION for ' || p_inbound_server || ': ' || l_applied_low_position);
+    END;
 
   BEGIN
-    -- In GG environment, we simply log that we checked for stop points.
-    -- The actual coordination of Extract/Replicat with batch boundaries
-    -- is handled externally by GoldenGate configuration, not by PL/SQL.
-    
-    mis_gen_pkg.log_strm_debug (p_staging_owner, 'wait_stop_points',
-                    'Stop point check completed (GG-managed, no process waits).');
-    
-    -- Return TRUE to signal that stop-point logic has been executed.
-    -- The caller will decide next steps based on set_stop_points output.
-    l_continue := TRUE;
-    
-    p_continue := l_continue;
+    -- Determine the outstanding stop SCN relative to the current batch boundary.
+    -- This mirrors the filter used by set_stop_points: stop_point_date must be
+    -- later than the staged date of the current batch so that a stop point
+    -- that has already been processed (for the previous batch) is not re-used.
+    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
+    execute immediate l_plsql into l_etl_owner;
 
-    COMMIT;
+    l_before_batch_number := MIS_BATCH_PKG.get_batch_number(
+                                 p_staging_owner   => p_staging_owner,
+                                 p_ignore_datetime => TRUE);
+
+    IF l_before_batch_number > 1 THEN
+        l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
+                   'from ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+                   'where load_id = :load_id';
+        execute immediate l_plsql into l_staged_date using l_before_batch_number;
+    END IF;
+    l_staged_date := nvl(l_staged_date, trunc(sysdate));
+
+    l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' ||
+               mis_gen_pkg.get_source_database_name ||
+               ' where stop_point_date > :staged_date';
+    execute immediate l_plsql into l_stop_scn using l_staged_date;
+
+    IF l_stop_scn IS NULL THEN
+        -- No outstanding stop point beyond the current batch; nothing to do
+        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+            'No outstanding stop point beyond the current batch; nothing to do.');
+        p_continue := TRUE;
+        return;
+    END IF;
+
+    -- Read GoldenGate progress
+    l_progress_scn := get_applied_low_position(mis_gen_pkg.g_apply_name);
+
+    mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+        'GoldenGate progress: inbound_server=' || mis_gen_pkg.g_apply_name ||
+        ', applied_low_position=' || l_progress_scn ||
+        ', stop_scn=' || l_stop_scn ||
+        ', current_batch=' || l_before_batch_number || '.');
+
+    IF l_progress_scn < l_stop_scn THEN
+        -- Not yet reached; scheduler will try again on the next interval
+        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+            'Stop SCN not yet reached; deferring batch roll.');
+        p_continue := TRUE;
+        return;
+    END IF;
+
+    -- Stop SCN reached.  Use a session-scoped advisory lock (timeout=0, no-wait) so
+    -- that only one concurrent scheduler execution proceeds to roll the batch.
+    -- The lock is held for the lifetime of this session call, not just a transaction,
+    -- so PRAGMA AUTONOMOUS_TRANSACTION must NOT be used here.
+    dbms_lock.allocate_unique('MIS_BATCH_ROLL_' || p_staging_owner, l_lock_handle);
+    l_lock_result := dbms_lock.request(l_lock_handle, dbms_lock.x_mode, 0, TRUE);
+
+    IF l_lock_result != 0 THEN
+        -- Another session already holds the lock and is rolling the batch
+        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+            'Batch roll already in progress in another session; skipping.');
+        p_continue := TRUE;
+        return;
+    END IF;
+
+    BEGIN
+        -- Re-read the batch number inside the lock guard to confirm it has not already
+        -- been rolled by a concurrent execution that acquired the lock first
+        IF MIS_BATCH_PKG.get_batch_number(
+               p_staging_owner   => p_staging_owner,
+               p_ignore_datetime => TRUE) = l_before_batch_number THEN
+
+            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                'Stop SCN reached (applied_low_position=' || l_progress_scn ||
+                ' >= stop_scn=' || l_stop_scn || '); rolling batch.');
+
+            MIS_BATCH_PKG.create_new_batch(p_staging_owner, FALSE, l_more_points);
+
+            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                'Batch rolled successfully. Disabling MIS_BATCH_ROLL_CHECK scheduler job.');
+
+            -- Disable the polling job now that this stop point has been processed.
+            BEGIN
+                dbms_scheduler.disable(
+                    name  => mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK',
+                    force => FALSE);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    -- Non-fatal: log but do not abort the batch roll
+                    mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                        'Warning: could not disable MIS_BATCH_ROLL_CHECK: ' || SQLERRM);
+            END;
+
+            IF l_more_points THEN
+                -- A further stop point exists; re-enable the polling job so it
+                -- picks up the next boundary without manual intervention.
+                mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                    'Additional stop points outstanding; re-enabling MIS_BATCH_ROLL_CHECK.');
+                BEGIN
+                    dbms_scheduler.enable(
+                        mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                            'Warning: could not re-enable MIS_BATCH_ROLL_CHECK: ' || SQLERRM);
+                END;
+            ELSE
+                -- No further stop points; start the ETL load for the completed batch
+                mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                    'No further stop points; triggering MIS_PRE_LOAD.');
+                BEGIN
+                    dbms_scheduler.run_job(mis_gen_pkg.g_mis_owner || '.MIS_PRE_LOAD', FALSE);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        mis_gen_pkg.log_strm_error(p_staging_owner, 'wait_stop_points',
+                            p_err_code => SQLCODE,
+                            p_text => 'Failed to run MIS_PRE_LOAD: ' || SQLERRM);
+                END;
+            END IF;
+
+        ELSE
+            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                'Batch already rolled by concurrent session; no action taken.');
+        END IF;
+
+        p_continue := TRUE;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            -- Release lock explicitly before re-raising so the next scheduler
+            -- execution can attempt the roll
+            DECLARE
+                l_rel number;
+            BEGIN
+                l_rel := dbms_lock.release(l_lock_handle);
+            EXCEPTION WHEN OTHERS THEN null;
+            END;
+            RAISE;
+    END;
+
+    -- Release the advisory lock
+    l_lock_result := dbms_lock.release(l_lock_handle);
 
   EXCEPTION
-  
+
     WHEN OTHERS THEN
         mis_gen_pkg.log_strm_error (p_staging_owner, 'wait_stop_points',
-                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
-        ROLLBACK;
+                        p_err_code => SQLCODE, p_text => SQLERRM ||
+                        ' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
 
-  END;
+  END wait_stop_points;
 
 
   PROCEDURE set_capture_pos_rules (
@@ -306,7 +457,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                 '(p_in_anydata,'''||p_tgt_owner||''','''||l_tgt_table_str||''','''||
                   l_key_columns_list(1)||''','''||l_proc_flag_str||'''); ' ||
             'END;';
-        dbms_utility.exec_ddl_statement(l_plsql);
+        -- Do not compile the function as it is no longer needed for GoldenGate 19c (they won't be used).
+        -- dbms_utility.exec_ddl_statement(l_plsql);
 
         -- handle table processing flags
         l_rule_comment := 'POSITIVE CAPTURE RULE: FLAGS (' ||
@@ -396,7 +548,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END set_capture_pos_rules;
 
   FUNCTION replicat_running(
     p_apply_name 	IN     varchar2 DEFAULT NULL
@@ -421,7 +573,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         mis_gen_pkg.log_strm_error (p_apply_name, 'replicat_running',
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
-  END;
+  END replicat_running;
 
   FUNCTION extract_running(
     p_capture_name 	IN     varchar2 DEFAULT NULL
@@ -446,7 +598,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         mis_gen_pkg.log_strm_error (p_capture_name, 'extract_running',
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
-  END;
+  END extract_running;
 
   PROCEDURE start_extract(
     p_staging_owner 	IN     varchar2 DEFAULT NULL,
@@ -497,6 +649,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     --            SYS.DBMS_CAPTURE_ADM.START_CAPTURE(v_capture_name_list(i));
             DECLARE
                 l_job_name VARCHAR2(128) := 'OGG_START_EXT_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
+                l_job_status VARCHAR2(30);
             BEGIN
                 DBMS_SCHEDULER.create_job(
                         job_name            => l_job_name,
@@ -513,13 +666,37 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                     job_name            => l_job_name,
                     use_current_session => TRUE
                 );
+                DBMS_SCHEDULER.drop_job(mis_gen_pkg.g_mis_owner||'.'||l_job_name);
 
+                --    1. check the job run details to confirm the process has started, then
+                --    2. check the dba_capture view to confirm the status of the capture process after the job runs
+                BEGIN
+                    select status 
+                    into l_job_status
+                    from dba_scheduler_job_run_details
+                    where job_name = l_job_name;
+                    if l_job_status <> 'SUCCEEDED' then
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
+                                    'Capture process ' || v_capture_name_list(i) || ' did not start as expected. Job status: ' || l_job_status,-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                    end if;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
+                                    'Capture process ' || v_capture_name_list(i) || ' did not start as expected. Job not found.',-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                END;
+
+                if NOT extract_running(v_capture_name_list(i)) then
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
+                                'Capture process ' || v_capture_name_list(i) || ' did not start as expected.',-1);
+                    raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                else
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
+                                'Capture process ' || v_capture_name_list(i) || ' started successfully.');
+                end if;
                 mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
                                 'Capture process ' || v_capture_name_list(i) || ' started.', -1);
-            EXCEPTION
-                WHEN mis_gen_pkg.cannot_alter_process THEN
-                mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_capture',
-                                'Capture process ' || v_capture_name_list(i) || ' already started.', -1);
             END;
         END IF;
     END LOOP;
@@ -541,7 +718,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END start_extract;
 
 
   PROCEDURE stop_extract(
@@ -565,6 +742,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     --            SYS.DBMS_CAPTURE_ADM.STOP_CAPTURE(v_capture_name_list(i), p_force);
             DECLARE
                 l_job_name VARCHAR2(128) := 'OGG_STOP_EXT_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
+                l_job_status VARCHAR2(30);
             BEGIN
                 DBMS_SCHEDULER.create_job(
                     job_name            => l_job_name,
@@ -575,6 +753,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                     auto_drop           => TRUE
                 );
                 
+                -- future enhancement, set max duration for the job to run, e.g. 3 minutes, to avoid indefinite blocking if the process does not stop
+                -- dbms_scheduler.set_attribute(l_job_name,'max_run_duration','+000 00:03:00');
                 DBMS_SCHEDULER.enable(l_job_name);
 
                 -- Wait for completion (blocks this session)
@@ -582,22 +762,35 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                     job_name            => l_job_name,
                     use_current_session => TRUE
                 );
-            EXCEPTION
-                WHEN MIS_GEN_PKG.timeout_stopping_process THEN
-                BEGIN -- retry stopping capture process
-                    SYS.DBMS_LOCK.SLEEP(MIS_GEN_PKG.g_sleep1);
-                    v_retry_txt := ' on second attempt';
-    -- change this                SYS.DBMS_CAPTURE_ADM.STOP_CAPTURE(v_capture_name_list(i), p_force);
+                DBMS_SCHEDULER.drop_job(mis_gen_pkg.g_mis_owner||'.'||l_job_name);
+
+                --    1. check the job run details to confirm the process has stopped, then
+                --    2. check the dba_capture view to confirm the status of the capture process after the job runs
+                BEGIN
+                    select status 
+                    into l_job_status
+                    from dba_scheduler_job_run_details
+                    where job_name = l_job_name;
+                    if l_job_status <> 'SUCCEEDED' then
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_capture',
+                                    'Capture process ' || v_capture_name_list(i) || ' did not stop as expected. Job status: ' || l_job_status,-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                    end if;
                 EXCEPTION
-                    WHEN MIS_GEN_PKG.timeout_stopping_process THEN
-                    BEGIN
-                        SYS.DBMS_LOCK.SLEEP(MIS_GEN_PKG.g_sleep2);
-                        v_retry_txt := ' on third attempt';
-    -- change this                    SYS.DBMS_CAPTURE_ADM.STOP_CAPTURE(v_capture_name_list(i), p_force);
-                    EXCEPTION
-                        WHEN MIS_GEN_PKG.timeout_stopping_process THEN RAISE;
-                    END;
+                    WHEN NO_DATA_FOUND THEN
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_capture',
+                                    'Capture process ' || v_capture_name_list(i) || ' did not stop as expected. Job not found.',-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
                 END;
+
+                if extract_running(v_capture_name_list(i)) then
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_capture',
+                                'Capture process ' || v_capture_name_list(i) || ' did not stop as expected.',-1);
+                    raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                else
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_capture',
+                                'Capture process ' || v_capture_name_list(i) || ' stopped successfully.');
+                end if;
             END;
             mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_capture',
                             'Capture process ' || v_capture_name_list(i) || ' stopped' || v_retry_txt || '.');
@@ -611,7 +804,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END stop_extract;
 
   PROCEDURE drop_extract(
     p_staging_owner 	IN     varchar2 DEFAULT NULL
@@ -640,7 +833,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END drop_extract;
 
   PROCEDURE start_replicat(
     p_staging_owner 	IN     varchar2 DEFAULT NULL,
@@ -693,6 +886,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     --            SYS.DBMS_APPLY_ADM.START_APPLY(v_apply_name_list(i));
             DECLARE
                 l_job_name VARCHAR2(128) := 'OGG_START_REP_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
+                l_job_status VARCHAR2(30);
             BEGIN
             --  SYS.DBMS_APPLY_ADM.start_replicat(g_apply_name);
                 DBMS_SCHEDULER.create_job(
@@ -711,12 +905,37 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                     job_name            => l_job_name,
                     use_current_session => TRUE
                 );
+                DBMS_SCHEDULER.drop_job(mis_gen_pkg.g_mis_owner||'.'||l_job_name);
+
+                --    1. check the job run details to confirm the process has started, then
+                --    2. check the dba view to confirm the status of the capture process after the job runs
+                BEGIN
+                    select status 
+                    into l_job_status
+                    from dba_scheduler_job_run_details
+                    where job_name = l_job_name;
+                    if l_job_status <> 'SUCCEEDED' then
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
+                                    'Replicat process ' || v_apply_name_list(i) || ' did not start as expected. Job status: ' || l_job_status,-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                    end if;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
+                                    'Replicat process ' || v_apply_name_list(i) || ' did not start as expected. Job not found.',-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                END;
+
+                if NOT replicat_running(v_apply_name_list(i)) then
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
+                                'Replicat process ' || v_apply_name_list(i) || ' did not start as expected.',-1);
+                    raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                else
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
+                                'Replicat process ' || v_apply_name_list(i) || ' started successfully.');
+                end if;
                 mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
                                 'Replicat process ' || v_apply_name_list(i) || ' started.', -1);
-            EXCEPTION
-                WHEN mis_gen_pkg.cannot_alter_process THEN
-                mis_gen_pkg.log_strm_debug (p_staging_owner, 'start_replicat',
-                                'Replicat process ' || v_apply_name_list(i) || ' already started.', -1);
             END;
         END IF;
     END LOOP;
@@ -744,7 +963,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END start_replicat;
 
   PROCEDURE stop_replicat(
     p_staging_owner 	IN     varchar2 DEFAULT NULL,
@@ -776,6 +995,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     --            SYS.DBMS_APPLY_ADM.STOP_APPLY(v_apply_name_list(i), p_force);
             DECLARE
                 l_job_name VARCHAR2(128) := 'OGG_STOP_REP_' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS');
+                l_job_status VARCHAR2(30);
             BEGIN
                 --  SYS.DBMS_APPLY_ADM.stop_replicat(g_apply_name, p_force);
                 DBMS_SCHEDULER.create_job(
@@ -794,22 +1014,35 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                     job_name            => l_job_name,
                     use_current_session => TRUE
                 );
-            EXCEPTION
-                WHEN MIS_GEN_PKG.timeout_stopping_process THEN
-                BEGIN -- retry stopping apply process
-                    SYS.DBMS_LOCK.SLEEP(MIS_GEN_PKG.g_sleep1);
-                    v_retry_txt := ' on second attempt';
-    -- change this                SYS.DBMS_APPLY_ADM.STOP_APPLY(v_apply_name_list(i), p_force);
+                DBMS_SCHEDULER.drop_job(mis_gen_pkg.g_mis_owner||'.'||l_job_name);
+
+                --    1. check the job run details to confirm the process has stopped, then
+                --    2. check the dba view to confirm the status of the capture process after the job runs
+                BEGIN
+                    select status 
+                    into l_job_status
+                    from dba_scheduler_job_run_details
+                    where job_name = l_job_name;
+                    if l_job_status <> 'SUCCEEDED' then
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_apply',
+                                    'Replicat process ' || v_apply_name_list(i) || ' did not stop as expected. Job status: ' || l_job_status,-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                    end if;
                 EXCEPTION
-                    WHEN MIS_GEN_PKG.timeout_stopping_process THEN
-                    BEGIN
-                        SYS.DBMS_LOCK.SLEEP(MIS_GEN_PKG.g_sleep2);
-                        v_retry_txt := ' on third attempt';
-    -- change this                    SYS.DBMS_APPLY_ADM.STOP_APPLY(v_apply_name_list(i), p_force);
-                    EXCEPTION
-                        WHEN MIS_GEN_PKG.timeout_stopping_process THEN RAISE;
-                    END;
+                    WHEN NO_DATA_FOUND THEN
+                        mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_apply',
+                                    'Replicat process ' || v_apply_name_list(i) || ' did not stop as expected. Job not found.',-1);
+                        raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
                 END;
+
+                if replicat_running(v_apply_name_list(i)) then
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_apply',
+                                'Replicat process ' || v_apply_name_list(i) || ' did not stop as expected.',-1);
+                    raise mis_gen_pkg.MIS_STREAMS_CTRL_EXCEPTION;
+                else
+                    mis_gen_pkg.log_strm_debug (p_staging_owner, 'stop_apply',
+                                'Replicat process ' || v_apply_name_list(i) || ' stopped successfully.');
+                end if;
             END;
             -- get max applied SCN
             execute immediate v_plsql
@@ -830,7 +1063,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END stop_replicat;
 
   PROCEDURE drop_replicat(
     p_staging_owner 	IN     varchar2 DEFAULT NULL
@@ -861,7 +1094,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         p_err_code => SQLCODE, p_text => SQLERRM);
         RAISE;
 
-  END;
+  END drop_replicat;
 
 
 

@@ -438,7 +438,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     -- check for apply process errors before stopping
     v_apply_proc_error_count := MIS_GG_CTRL_PKG.apply_process_error_count(v_staging_owner);
 
-    -- Suspend apply processes associated with staging table owner
+    -- No longer any need to suspend apply processes as the batch id is now set through the DML handlers and the procedures no longer need to be recreated with a hardcoded batch id. The apply processes can be left running and will pick up the new batch id automatically.
     -- mis_gg_ctrl_pkg.stop_replicat(v_staging_owner);
     
     -- determine number of latest batch for source
@@ -534,27 +534,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         renumber_old_batch_rows(p_staging_owner, v_new_batch_number);
     END IF;
 
-    -- Reset and resume GoldenGate processes associated with staging table owner
-    -- (as long as there are no queued apply errors and the capture processes have not aborted)
+    -- GoldenGate remains running; if a stop point is outstanding, defer batch roll until it is reached.
     IF (p_restart = TRUE) AND (v_apply_error_count = 0) AND
        (v_apply_proc_error_count = 0) AND (v_capture_error_count = 0) THEN
         -- set stop points
         mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
-        -- restart replicat
-        -- do not refresh handlers as they are now deployment-time setup only.
-        mis_gg_ctrl_pkg.start_replicat(v_staging_owner, false);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
-        -- restart extract in case stopped due to SCN limit
-        BEGIN
-          mis_gg_ctrl_pkg.start_extract(p_staging_owner);
-        EXCEPTION
-            WHEN mis_gen_pkg.cannot_alter_process THEN null;
-        END;
     ELSE
-        -- Not restarting; do not clear handlers as they are now deployment-time setup only.
-        -- Handlers are persistent across batch rollovers and retrieve batch ID dynamically.
         mis_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
-                        'Not restarting GoldenGate processes due to errors or restart flag.');
+                        'GoldenGate batch roll deferred due to errors or restart flag.');
     END IF;
 
     -- log message

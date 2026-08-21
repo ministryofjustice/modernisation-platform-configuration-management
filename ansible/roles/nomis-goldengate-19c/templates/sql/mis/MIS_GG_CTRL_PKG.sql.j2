@@ -30,15 +30,13 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
     ) RETURN number;
 
     -- Packaged procedure set_stop_points
-    -- sets or clears stop points for all capture and apply processes
-    -- associated with a particular staging table owner.
+    -- determines whether a GoldenGate stop point exists for a staging owner.
     PROCEDURE set_stop_points (
         p_staging_owner IN     varchar2,
         p_points_set   OUT    boolean);
 
     -- Packaged procedure wait_stop_points
-    -- waits for all capture processes
-    -- associated with a particular staging table owner to stop.
+    -- checks whether GoldenGate has applied through the outstanding stop SCN.
     PROCEDURE wait_stop_points (
         p_staging_owner IN     varchar2,
         p_continue   OUT    boolean);

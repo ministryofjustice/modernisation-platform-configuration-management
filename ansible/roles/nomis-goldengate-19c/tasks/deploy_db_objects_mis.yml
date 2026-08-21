@@ -97,3 +97,12 @@
       ansible.builtin.fail:
         msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
       when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+
+    # This dir should already exist, created by the nomis-misload role. But it didn't exist on the T1 instance used for GG dev.
+    - name: Ensure MIS textfile directory exists and owned by the oracle user
+      ansible.builtin.file:
+        path: "/opt/textfile_monitoring"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
