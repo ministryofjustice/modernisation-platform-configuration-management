@@ -13,36 +13,21 @@
   ansible.builtin.shell: |
     set -e
     set -o pipefail
-    export ORAENV_ASK=NO
-    . oraenv > /dev/null
-    ./ggsci << EOF
-    DBLOGIN USERIDALIAS AUDIT_DB
-    START REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }} {{ afterscn_clause }}
-    INFO REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
-    EXIT
-    EOF
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditdata.sh" {{ oracle_goldengate_start_scn | trim }}
   args:
     executable: /bin/bash
-    chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditdata_replicat
-  changed_when: "'RUNNING' in start_auditdata_replicat.stdout"
+  changed_when: "'started successfully' in start_auditdata_replicat.stdout.lower() or 'RUNNING' in start_auditdata_replicat.stdout"
   when: run_auditdata
 
 - name: Start AUDITREF Replicat process
   ansible.builtin.shell: |
     set -e
     set -o pipefail
-    export ORAENV_ASK=NO
-    . oraenv > /dev/null
-    ./ggsci << EOF
-    DBLOGIN USERIDALIAS AUDIT_DB
-    START REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }} {{ afterscn_clause }}
-    INFO REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
-    EXIT
-    EOF
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditref.sh" {{ oracle_goldengate_start_scn | trim }}
   args:
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
@@ -50,21 +35,14 @@
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditref_replicat
-  changed_when: "'RUNNING' in start_auditref_replicat.stdout"
+  changed_when: "'started successfully' in start_auditref_replicat.stdout.lower() or 'RUNNING' in start_auditref_replicat.stdout"
   when: run_auditref
 
 - name: Start MIS Replicat process
   ansible.builtin.shell: |
     set -e
     set -o pipefail
-    export ORAENV_ASK=NO
-    . oraenv > /dev/null
-    ./ggsci << EOF
-    DBLOGIN USERIDALIAS MIS_DB
-    START REPLICAT {{ oracle_goldengate_group.mis.replicat_name }} {{ afterscn_clause }}
-    INFO REPLICAT {{ oracle_goldengate_group.mis.replicat_name }}
-    EXIT
-    EOF
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_mis.sh" {{ oracle_goldengate_start_scn | trim }}
   args:
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
@@ -72,5 +50,5 @@
   become: yes
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_mis_replicat
-  changed_when: "'RUNNING' in start_mis_replicat.stdout"
+  changed_when: "'started successfully' in start_mis_replicat.stdout.lower() or 'RUNNING' in start_mis_replicat.stdout"
   when: run_mis

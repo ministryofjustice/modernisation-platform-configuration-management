@@ -9,8 +9,11 @@ ORAENV_ASK=NO
 GGHOME={{ oracle_goldengate_home }}
 REPLICAT_NAME={{ oracle_goldengate_group.auditdata.replicat_name }}
 LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
+MANUAL_STOP_FILE={{ oracle_goldengate_log_dir }}/auditdata_replicat_monitor.manual_stop
 
 cd ${GGHOME}
+
+rm -f "${MANUAL_STOP_FILE}"
 
 # if SCN passed in as an argument, use it to start the replicat
 if [ $# -eq 1 ]; then

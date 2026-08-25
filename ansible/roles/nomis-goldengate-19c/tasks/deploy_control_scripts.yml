@@ -155,3 +155,38 @@
     owner: "{{ oracle_goldengate_owner }}"
     group: "{{ oracle_goldengate_osgroup }}"
     mode: "0644"
+
+# Deploy scripts for rebuilding structurally drifted tables and refreshing DML handlers
+- name: Deploy AUDITDATA table sync script
+  ansible.builtin.template:
+    src: sync_auditdata_tables.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/sync_auditdata_tables.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: run_auditdata
+
+- name: Deploy AUDITDATA replicat monitor script
+  ansible.builtin.template:
+    src: monitor_auditdata_replicat.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/monitor_auditdata_replicat.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: run_auditdata
+
+- name: Deploy GoldenGate archivelog purge script
+  ansible.builtin.template:
+    src: purge_gg_archivelogs.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/purge_gg_archivelogs.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+
+- name: Deploy GoldenGate report and operational log purge script
+  ansible.builtin.template:
+    src: purge_gg_logs.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/purge_gg_logs.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
