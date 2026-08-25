@@ -197,7 +197,32 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             mis_gen_pkg.log_strm_error (p_staging_owner, 'get_applied_low_position',
                             p_err_code => SQLCODE, p_text => 'Invalid APPLIED_LOW_POSITION for ' || p_inbound_server || ': ' || l_applied_low_position);
             RAISE_APPLICATION_ERROR(mis_gen_pkg.g_MIS_STREAMS_EXCEPTION,'Invalid APPLIED_LOW_POSITION for ' || p_inbound_server || ': ' || l_applied_low_position);
-    END;
+    END get_applied_low_position;
+
+    -- Disable the polling job.
+    PROCEDURE drop_job IS
+        -- Declare a user-defined exception for ORA-27478
+        e_job_is_running EXCEPTION;
+        PRAGMA EXCEPTION_INIT(e_job_is_running, -27478);
+    BEGIN
+        dbms_scheduler.drop_job(mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
+    EXCEPTION
+        WHEN e_job_is_running THEN
+            FOR i in 1..5 LOOP
+                dbms_lock.sleep(1); -- wait for the job to finish
+                BEGIN
+                    dbms_scheduler.drop_job(mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
+                    EXIT; -- success
+                EXCEPTION
+                    WHEN e_job_is_running THEN
+                        null; -- retry
+                END;
+            END LOOP;
+        WHEN OTHERS THEN
+            -- Non-fatal: log but do not abort the batch roll
+            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+                'Warning: could not disable MIS_BATCH_ROLL_CHECK: ' || SQLERRM);
+    END drop_job;
 
   BEGIN
     -- Determine the outstanding stop SCN relative to the current batch boundary.
@@ -229,6 +254,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
             'No outstanding stop point beyond the current batch; nothing to do.');
         p_continue := TRUE;
+        drop_job;
         return;
     END IF;
 
@@ -281,16 +307,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                 'Batch rolled successfully. Disabling MIS_BATCH_ROLL_CHECK scheduler job.');
 
             -- Disable the polling job now that this stop point has been processed.
-            BEGIN
-                dbms_scheduler.disable(
-                    name  => mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK',
-                    force => FALSE);
-            EXCEPTION
-                WHEN OTHERS THEN
-                    -- Non-fatal: log but do not abort the batch roll
-                    mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-                        'Warning: could not disable MIS_BATCH_ROLL_CHECK: ' || SQLERRM);
-            END;
+            drop_job;
 
             IF l_more_points THEN
                 -- A further stop point exists; re-enable the polling job so it
@@ -352,6 +369,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
   END wait_stop_points;
 
+  -- overridden version of wait_stop_points with no params
+  -- called from mis_batch_roll_check job
+    PROCEDURE wait_stop_points_job IS
+        v_continue BOOLEAN := FALSE;
+        v_plsql varchar2(200);
+    BEGIN
+        -- Check GoldenGate progress before attempting a batch roll
+        mis_gg_ctrl_pkg.wait_stop_points(mis_gen_pkg.g_mis_owner, v_continue);
+    END wait_stop_points_job;
 
   PROCEDURE set_capture_pos_rules (
     p_tgt_owner         IN     varchar2,

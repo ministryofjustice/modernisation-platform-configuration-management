@@ -41,6 +41,10 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
         p_staging_owner IN     varchar2,
         p_continue   OUT    boolean);
 
+    -- overridden version of wait_stop_points with no params
+    -- called from mis_batch_roll_check job
+    PROCEDURE wait_stop_points_job;
+
     -- Packaged function replicat_running returns TRUE if the specified replicat process is running.
     FUNCTION replicat_running(
         p_apply_name 	IN     varchar2 DEFAULT NULL

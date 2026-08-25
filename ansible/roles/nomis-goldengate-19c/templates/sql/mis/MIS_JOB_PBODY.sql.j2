@@ -290,8 +290,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
                    job_name       => 'MIS_BATCH_ROLL_CHECK',
                    job_type       => 'PLSQL_BLOCK',
                    job_action     => 'begin ' || mis_gen_pkg.g_mis_owner ||
-                                     '.MIS_GG_CTRL_PKG.wait_stop_points(''' ||
-                                     mis_gen_pkg.g_mis_owner || ''', :result); end;',
+                                     '.MIS_GG_CTRL_PKG.wait_stop_points_job; end;',
                    start_date     => systimestamp,
                    repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
                    enabled        => TRUE,
