@@ -24,6 +24,36 @@
         oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.auditref.dummy_target_schema }}"
         
+    - name: Get password secret metadata from AWS Secrets Manager to be used for the db link to the source database
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      no_log: true
+
+    - name: Check Source schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - oracle_goldengate_group.source.schema_owner | lower in oracle_goldengate_password_secret
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_group.source.schema_owner | lower }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set Source schema password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_source_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.source.schema_owner | lower] }}"
+      no_log: true
+      
     - name: Ensure Auditref SQL directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/auditref"

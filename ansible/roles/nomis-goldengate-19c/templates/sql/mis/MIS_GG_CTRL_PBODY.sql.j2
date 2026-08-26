@@ -86,20 +86,17 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     l_stop_date     date := null;
     l_staged_date     date := null;
     l_old_batch_number    NUMBER(38,0) := -1;
-    l_etl_owner     varchar2(30);
     l_source_db_name  varchar2(255) := mis_gen_pkg.get_source_database_name;
 
   BEGIN
-    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
-    execute immediate l_plsql into l_etl_owner;
- 
+
     -- determine number of latest batch for source
     l_old_batch_number := MIS_BATCH_PKG.get_batch_number(p_staging_owner => p_staging_owner, p_ignore_datetime => TRUE);
   
     IF l_old_batch_number > 1 THEN
         -- get details of existing active batch
         l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                    'from ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+                    'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
                    'where load_id = :load_id';  
         execute immediate l_plsql into l_staged_date using l_old_batch_number;
     END IF;
@@ -159,7 +156,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     l_stop_scn            number := null;
     l_progress_scn        number := null;
     l_staged_date         date := null;
-    l_etl_owner           varchar2(30);
     l_lock_handle         varchar2(128);
     l_lock_result         number;
     l_before_batch_number NUMBER(38,0) := -1;
@@ -229,21 +225,22 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     -- This mirrors the filter used by set_stop_points: stop_point_date must be
     -- later than the staged date of the current batch so that a stop point
     -- that has already been processed (for the previous batch) is not re-used.
-    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
-    execute immediate l_plsql into l_etl_owner;
-
+ 
     l_before_batch_number := MIS_BATCH_PKG.get_batch_number(
                                  p_staging_owner   => p_staging_owner,
                                  p_ignore_datetime => TRUE);
 
     IF l_before_batch_number > 1 THEN
         l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                   'from ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+                   'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
                    'where load_id = :load_id';
         execute immediate l_plsql into l_staged_date using l_before_batch_number;
     END IF;
     l_staged_date := nvl(l_staged_date, trunc(sysdate));
 
+    -- get the stop SCN that is beyond the current batch boundary.
+    -- stop points only get created when the end of day job runs, so there should never be more than one outstanding stop point at a time.
+    -- if there are multiple stop points, the one with the earliest stop SCN is used as each one should be processed in order.
     l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' ||
                mis_gen_pkg.get_source_database_name ||
                ' where stop_point_date > :staged_date';

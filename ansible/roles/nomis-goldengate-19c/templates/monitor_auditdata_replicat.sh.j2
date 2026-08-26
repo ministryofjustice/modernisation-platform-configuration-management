@@ -4,8 +4,8 @@
 
 set -u
 
-PATH=/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin
 GGHOME={{ oracle_goldengate_home }}
+PATH=${GGHOME}:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin
 GGSCI=${GGHOME}/ggsci
 SCRIPTS_DIR={{ oracle_goldengate_scripts_dir }}
 REPLICAT_NAME={{ oracle_goldengate_group.auditdata.replicat_name }}

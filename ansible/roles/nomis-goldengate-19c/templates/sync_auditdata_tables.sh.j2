@@ -18,19 +18,22 @@ log() {
 
 log "Starting AUDITDATA table sync"
 
-. ~/.bash_profile
 export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
 export ORACLE_HOME={{ oracle_goldengate_group.auditdata.oracle_home }}
 export PATH=${ORACLE_HOME}/bin:$PATH
 
-SOURCE_SYS_PASSWORD=$(aws secretsmanager get-secret-value   --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords"   --query 'SecretString'   --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+# Retrieve SYS password from AWS Secrets Manager
+SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "/oracle/database/${ORACLE_SID}/passwords" \
+  --query 'SecretString' \
+  --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
 
-if [ -z "${SOURCE_SYS_PASSWORD}" ]; then
-    log "ERROR: Cannot retrieve SYS password for {{ oracle_goldengate_group.source.tns_alias }}"
-    exit 1
+if [ -z "$SYS_PASSWORD" ]; then
+  echo "ERROR: Cannot retrieve existing passwords secret for ${ORACLE_SID}"
+  exit 1
 fi
 
-sqlplus -s / as sysdba <<'EOF'
+sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba <<EOF
 SET PAGESIZE 0 FEEDBACK OFF HEADING OFF ECHO OFF TRIMSPOOL ON TERMOUT OFF SERVEROUTPUT ON
 WHENEVER SQLERROR EXIT SQL.SQLCODE
 BEGIN
@@ -44,7 +47,7 @@ BEGIN
   DBMS_METADATA.set_transform_param(DBMS_METADATA.session_transform, 'PARTITIONING', false);
 END;
 /
-spool ${TMP_SQL}
+spool /tmp/sync_auditdata_tables.sql
 WITH source_tables AS (
   SELECT o.owner, o.object_name, o.object_type
   FROM   dba_objects@{{ oracle_goldengate_group.source.tns_alias }} o
@@ -110,12 +113,11 @@ EOF
 
 if [ -s "${TMP_SQL}" ]; then
     log "Applying generated SQL"
-    sqlplus -s / as sysdba <<EOF
+    sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba <<EOF
 SET ECHO ON FEEDBACK ON
-WHENEVER SQLERROR EXIT SQL.SQLCODE
-@${TMP_SQL}
+@/tmp/sync_auditdata_tables.sql
 BEGIN
-  auditdata_dml_pkg.apply_dml_conf;
+  {{ oracle_goldengate_group.auditdata.schema_owner }}.auditdata_dml_pkg.apply_dml_conf;
 END;
 /
 EXIT;

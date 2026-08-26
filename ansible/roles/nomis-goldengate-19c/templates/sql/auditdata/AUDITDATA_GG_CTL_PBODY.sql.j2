@@ -160,6 +160,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
                 null, null, null, null, null, null, 'stop_extract');
             raise timeout_stopping_process;
         end if;
+      END;
 
     END IF;
     -- log message

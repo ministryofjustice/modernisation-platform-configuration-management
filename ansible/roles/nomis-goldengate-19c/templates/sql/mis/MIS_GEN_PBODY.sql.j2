@@ -21,6 +21,20 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
  *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
+  -- Packaged function get_etl_load_log_owner returns the owner of the ETL_LOAD_LOG table
+  FUNCTION get_etl_load_log_owner RETURN VARCHAR2
+  IS
+    l_plsql    varchar2(2000); 
+    l_owner    varchar2(30);
+  BEGIN
+    if g_etl_load_log_owner is null then
+      l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
+      execute immediate l_plsql into g_etl_load_log_owner;
+    end if;
+    return g_etl_load_log_owner;
+  END;
+
+
   FUNCTION strip_input (p_str varchar2, p_len number)
   RETURN varchar2 RESULT_CACHE IS
   -- function strip_input

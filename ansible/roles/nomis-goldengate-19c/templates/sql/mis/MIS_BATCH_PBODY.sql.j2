@@ -20,7 +20,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
  *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
-
   FUNCTION get_batch_number(
     p_staging_owner   IN varchar2 DEFAULT null,
     p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
@@ -32,14 +31,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     l_batch_number  NUMBER(38,0) := -1;
     l_plsql    varchar2(2000); 
     l_staging_owner  varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
-    l_etl_owner varchar2(30);
 
   BEGIN
-    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
-    execute immediate l_plsql into l_etl_owner;
     -- determine number of latest open batch for source
     l_plsql := 'select max(load_id) ' ||
-                 'from ' || l_etl_owner || '.ETL_LOAD_LOG';
+                 'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG';
     IF p_staging_owner IS NOT NULL THEN
         l_plsql := l_plsql ||
                ' where repository_name = ''' || l_staging_owner || '''';
@@ -98,16 +94,12 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   -- local procedure update_batch_record updates the batch control table
 
     l_plsql    varchar2(2000); 
-    l_etl_owner varchar2(30);
 
   BEGIN
 
-    l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
-    execute immediate l_plsql into l_etl_owner;
-
     IF p_batch_number > 1 THEN
         -- update timestamp on existing active batch
-        l_plsql := 'update ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+        l_plsql := 'update ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
                       'set staged_end_datetime = nvl(:end_datetime,staged_end_datetime), ' ||
                           'message = nvl(:message,message), ' ||
                           'error_flag = :error_flag ' ||
@@ -430,7 +422,6 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     v_apply_scn     number := 0;
     v_error_flag     varchar2(1) := 'Y';
     v_message       varchar2(80) := null;
-    l_etl_owner varchar2(30);
   BEGIN
 
     p_more_points := FALSE;
@@ -444,14 +435,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     -- determine number of latest batch for source
     v_old_batch_number := get_batch_number(v_staging_owner, TRUE);
 
-    v_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
-    execute immediate v_plsql into l_etl_owner;
-
     IF v_old_batch_number > 1 THEN
 
         -- get details of existing active batch
         v_plsql := 'select staged_end_datetime, nvl(error_flag,''N'') ' ||
-                     'from ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+                     'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
                     'where load_id = :load_id';  
         execute immediate v_plsql into v_staged_end_datetime, v_error_flag
         using v_old_batch_number;
@@ -514,7 +502,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     END IF;
 
     -- insert new active batch row for source
-    v_plsql := 'insert into ' || l_etl_owner || '.ETL_LOAD_LOG ' ||
+    v_plsql := 'insert into ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
                       '(load_id, job_name, repository_name, staged_start_datetime, message) ' ||
                'VALUES (:load_id, :job_name, :repos_name, :start_datetime, ''Batch created'')';  
     execute immediate v_plsql
@@ -542,7 +530,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
     ELSE
         mis_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
-                        'GoldenGate batch roll deferred due to errors or restart flag.');
+                        'GoldenGate batch roll deferred due to errors or restart flag (v_apply_error_count:' || v_apply_error_count ||
+                        ', v_apply_proc_error_count:' || v_apply_proc_error_count ||
+                        ', v_capture_error_count:' || v_capture_error_count || ').');
     END IF;
 
     -- log message
@@ -713,6 +703,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     p_batch_number   IN     NUMBER DEFAULT null,
     p_tgt_table   IN     VARCHAR2 DEFAULT null
   ) IS
+  PRAGMA AUTONOMOUS_TRANSACTION;
   -- packaged procedure unload_tables
   -- will delete entries for (latest) batch in p_tgt_owner.p_tgt_table
   -- and where mis_scn >= p_stop_scn.
@@ -731,6 +722,34 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         -- get active batch number
         l_batch_number := get_batch_number(l_tgt_owner);
     END IF;
+
+    -- delete rows for any tables not listed in the STRM_TAB_CONTROL table that have a MIS_LOAD_ID column.
+    -- The auditref version of the tables don't have the MIS_LOAD_ID columns so won't be picked up here.
+    l_plsql :=
+      'SELECT o.OBJECT_NAME, null proc_flags FROM dba_objects o '||
+      'WHERE o.OWNER = ''' || l_tgt_owner || ''' AND o.OBJECT_NAME LIKE ''STG_%'' AND o.OBJECT_TYPE = ''TABLE'' '||
+      'AND EXISTS (SELECT 1 FROM DBA_TAB_COLS dtc WHERE dtc.TABLE_NAME = o.OBJECT_NAME AND dtc.OWNER = o.OWNER AND dtc.COLUMN_NAME = ''MIS_LOAD_ID'' ) '||
+      'and not exists (select 1 from ' || l_tgt_owner || '.strm_tab_control stc where stc.tgt_table = o.OBJECT_NAME)';
+
+    IF p_tgt_table IS NULL THEN
+        execute immediate l_plsql
+        bulk collect into l_tgt_table_list;
+    ELSE
+        l_plsql := l_plsql || ' and o.OBJECT_NAME = :tgt_table';
+        execute immediate l_plsql
+        bulk collect into l_tgt_table_list
+        using l_tgt_table;
+    END IF;
+
+    FOR i in 1..l_tgt_table_list.count
+    LOOP
+        -- remove old target entries (if any)
+        l_plsql := 'delete from ' || l_tgt_owner || '.' || l_tgt_table_list(i) || ' ' ||
+                    'where mis_load_id = :load_id ' ||
+                      'and nvl(mis_scn, 0) >= :scn';
+        execute immediate l_plsql
+        using l_batch_number, p_stop_scn;
+    END LOOP;
 
     l_plsql := 'select tgt_table, proc_flags ' ||
                  'from ' || l_tgt_owner || '.STRM_TAB_CONTROL';
@@ -763,6 +782,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         RAISE_APPLICATION_ERROR(mis_gen_pkg.g_mis_streams_exception, l_ref_table_count ||
          ' REF table(s) not unloaded (out of ' || l_tgt_table_list.count || ').');
     END IF;
+
+    COMMIT;
 
   EXCEPTION
 

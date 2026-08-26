@@ -63,6 +63,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     g_debug_cache_loaded_at   DATE;
     g_debug_cache_ttl_mins    CONSTANT PLS_INTEGER := 10;
 
+    g_etl_load_log_owner VARCHAR2(30);
+
     -- retry limit: number of times to loop when waiting for stop point processing
     --              wait time for each loop is g_retry_limit * g_sleep1
     g_retry_limit   NUMBER := 120;
@@ -122,6 +124,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     -- define error codes that need numerical checking
     g_scn_limit_reached   NUMBER := 26717;
 
+    -- Packaged function get_etl_load_log_owner returns the owner of the ETL_LOAD_LOG table
+    FUNCTION get_etl_load_log_owner RETURN VARCHAR2;
 
     -- function strip_input
     -- will remove single quotes and comment characters from input string
