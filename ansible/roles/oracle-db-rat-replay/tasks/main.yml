@@ -6,6 +6,10 @@
   set_fact:
      rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
 
+- name: Build RAT replay directory path
+  set_fact:
+    rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ target_db_name | lower }}/{{ rat_replay_name }}"
+
 - name: Validate RAT replay inputs
   assert:
     that:
