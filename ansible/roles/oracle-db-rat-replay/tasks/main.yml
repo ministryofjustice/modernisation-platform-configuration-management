@@ -21,6 +21,32 @@
       - rat_replay_wrc_client_startup_delay | int >= 0
     fail_msg: "Define rat_replay_directory_path (from oracle-db-rat-process), tns_alias, and a positive rat_replay_wrc_client_count"
 
+
+- name: Create RAT replay directory on the replay host
+  file:
+     path: "{{ rat_replay_directory_path }}"
+     state: directory
+     owner: oracle
+     group: oinstall
+     mode: '0750'
+  become: true
+
+- name: Download processed RAT files for replay from S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_replay_s3_location }}"
+        - "{{ rat_replay_directory_path }}"
+  become: true
+  become_user: oracle
+
+- name: Report downloaded RAT replay location
+  debug:
+     msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
+
 - name: Calibrate RAT replay clients
   script: calibrate_rat_replay.sh "{{ rat_replay_directory_path }}" "{{ rat_replay_wrc_client_count }}" "{{ rat_replay_wrc_client_startup_delay }}" "{{ tns_alias }}"
   become: true
