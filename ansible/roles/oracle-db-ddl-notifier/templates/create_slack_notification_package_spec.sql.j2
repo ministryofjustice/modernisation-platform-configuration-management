@@ -12,3 +12,8 @@ CREATE OR REPLACE PACKAGE {{ notification_schema }}.slack_notifier AS
   gc_account_name          VARCHAR2(1000)  := '{{ account_name }}';
 END slack_notifier;
 /
+
+-- DBMS_SYSTEM is used to allow SSL Certificate failures to
+-- be logged to avoid silent failures where Slack notifications are not sent
+GRANT EXECUTE ON DBMS_SYSTEM TO {{ notification_schema }};
+

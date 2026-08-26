@@ -9,6 +9,8 @@ CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
     l_http_resp  UTL_HTTP.resp;
     l_payload    VARCHAR2(32767);
     l_response   VARCHAR2(32767);
+    e_http_failed EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_http_failed, -29273);
   BEGIN
     l_payload := '{"channel":"' || gc_channel || '",'||
                   '"username":"'|| gc_application ||' DDL Notifier",' ||
@@ -36,6 +38,13 @@ CREATE OR REPLACE PACKAGE BODY {{ notification_schema }}.slack_notifier AS
         NULL;
     END;
     UTL_HTTP.end_response(l_http_resp);
+    EXCEPTION
+        WHEN e_http_failed THEN
+            SYS.DBMS_SYSTEM.KSDWRT(
+                2,
+                SQLERRM || ' from {{ notification_schema }}.SLACK_NOTIFIER'
+            );
+            RAISE;
   END send_message;
 
 END slack_notifier;
