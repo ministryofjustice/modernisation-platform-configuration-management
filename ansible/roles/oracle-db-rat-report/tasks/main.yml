@@ -41,7 +41,7 @@
 
 - name: Set RAT report S3 location
   set_fact:
-     rat_capture_s3_location: "s3://{{ rat_capture_s3_bucket_name }}/report/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
+     rat_capture_s3_location: "s3://{{ rat_report_s3_bucket_name }}/report/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
 
 - name: Upload RAT replay report to S3
   command:
