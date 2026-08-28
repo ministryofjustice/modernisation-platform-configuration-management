@@ -1,0 +1,39 @@
+---
+- name: Validate supported Enterprise Linux version
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version in ["7", "8", "9"]
+    fail_msg: >-
+      The onr-arns-dblink role supports EL7, EL8, and EL9 only.
+      Detected {{ ansible_distribution }} {{ ansible_distribution_version }}.
+
+- name: Validate required ARNS variables
+  ansible.builtin.assert:
+    that:
+      - onr_arns_secret_id | length > 0
+      - onr_arns_oracle_home | length > 0
+      - onr_arns_dblink_name | length > 0
+    fail_msg: >-
+      One or more mandatory variables for the ARNS database link
+      have not been configured.
+
+- name: Validate database link type
+  ansible.builtin.assert:
+    that:
+      - onr_arns_dblink_type in ["private", "public"]
+    fail_msg: >-
+      onr_arns_dblink_type must be either 'private' or 'public'.
+
+- name: Check Oracle Database Gateway for ODBC executable
+  ansible.builtin.stat:
+    path: "{{ onr_arns_oracle_home }}/bin/dg4odbc"
+  register: onr_arns_dg4odbc
+
+- name: Validate Oracle Database Gateway for ODBC is installed
+  ansible.builtin.assert:
+    that:
+      - onr_arns_dg4odbc.stat.exists
+    fail_msg: >-
+      {{ onr_arns_oracle_home }}/bin/dg4odbc does not exist.
+      Oracle Database Gateway for ODBC must be available before
+      the ARNS database link can be configured.

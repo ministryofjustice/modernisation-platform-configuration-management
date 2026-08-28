@@ -1,0 +1,32 @@
+---
+- name: Validate ODBC connectivity with isql DSN {{ onr_arns_odbc_dsn }}
+  ansible.builtin.command:
+    argv:
+      - isql
+      - "{{ onr_arns_odbc_dsn }}"
+      - "{{ onr_arns_db_username }}"
+      - "{{ onr_arns_db_password }}"
+  register: onr_arns_isql_result
+  changed_when: false
+  no_log: true
+  when: onr_arns_validate_isql | bool
+
+- name: Validate Oracle SQL execution through database link {{ onr_arns_tns_alias }}
+  ansible.builtin.command:
+    cmd: "{{ onr_arns_oracle_home }}/bin/sqlplus -s / as sysdba"
+    stdin: |
+      whenever sqlerror exit failure rollback
+      set heading off feedback off verify off pages 0
+      {{ onr_arns_validate_oracle_probe_sql }}@{{ onr_arns_tns_alias }};
+      exit
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  register: onr_arns_oracle_probe_result
+  changed_when: false
+  no_log: true
+  when:
+    - onr_arns_validate_oracle_query | bool
+    - onr_arns_dblink_type == "public"

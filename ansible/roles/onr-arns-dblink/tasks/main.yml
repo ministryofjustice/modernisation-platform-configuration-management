@@ -1,0 +1,48 @@
+---
+- name: Validate ARNS database link configuration
+  import_tasks: validate.yml
+  tags:
+    - onr-arns-dblink
+    - validate
+
+- name: Install PostgreSQL ODBC rpm/package components
+  import_tasks: install_odbc.yml
+  tags:
+    - onr-arns-dblink
+    - install-odbc
+
+- name: Install ARNS PostgreSQL certificate
+  import_tasks: install_certificate.yml
+  tags:
+    - onr-arns-dblink
+    - install-certificate
+
+- name: Retrieve ARNS database credentials
+  import_tasks: get_arns_credentials.yml
+  tags:
+    - onr-arns-dblink
+    - credentials
+
+- name: Configure PostgreSQL ODBC connection
+  import_tasks: configure_odbc.yml
+  tags:
+    - onr-arns-dblink
+    - configure-odbc
+
+- name: Configure Oracle Heterogeneous Services
+  import_tasks: configure_oracle_hs.yml
+  tags:
+    - onr-arns-dblink
+    - configure-oracle-hs
+
+- name: Create Oracle database link
+  import_tasks: create_database_link.yml
+  tags:
+    - onr-arns-dblink
+    - database_link
+
+- name: Validate ARNS connectivity
+  import_tasks: validate_connectivity.yml
+  tags:
+    - onr-arns-dblink
+    - validate-connectivity

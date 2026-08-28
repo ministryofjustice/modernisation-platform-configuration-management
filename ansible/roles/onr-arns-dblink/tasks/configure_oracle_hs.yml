@@ -1,0 +1,65 @@
+---
+- name: Configure Oracle Heterogeneous Services for ARNS
+  ansible.builtin.template:
+    src: initarns.ora.j2
+    dest: >-
+      {{ onr_arns_oracle_home }}/hs/admin/init{{ onr_arns_oracle_hs_sid }}.ora
+    owner: oracle
+    group: oinstall
+    mode: "0644"
+
+- name: Configure PG gateway SID in listener.ora
+  ansible.builtin.blockinfile:
+    path: "{{ onr_arns_oracle_home }}/network/admin/listener.ora"
+    marker: "# {mark} ANSIBLE MANAGED ARNS DATABASE LINK"
+    insertafter: "SID_LIST_LISTENER"
+    block: |
+      (SID_DESC =
+       (SID_NAME = {{ onr_arns_oracle_hs_sid }})
+       (ORACLE_HOME = {{ onr_arns_oracle_home }})
+       (PROGRAM = {{ onr_arns_oracle_home }}/bin/dg4odbc)
+       (ENVS = "LD_LIBRARY_PATH=/usr/lib64:{{ onr_arns_oracle_home }}/lib,ODBCINI=/etc/odbc.ini,ODBCSYSINI=/etc")
+      )
+
+- name: Configure ARNS Oracle Net service
+  ansible.builtin.blockinfile:
+    path: "{{ onr_arns_oracle_home }}/network/admin/tnsnames.ora"
+    marker: "# {mark} ANSIBLE MANAGED ARNS DATABASE LINK"
+    insertafter: EOF
+    block: |
+      {{ onr_arns_tns_alias }} =
+       (DESCRIPTION =
+        (ADDRESS = (PROTOCOL = TCP)(HOST = {{ onr_arns_listener_host }})(PORT = {{ onr_arns_listener_port }}))
+        (CONNECT_DATA =
+         (SID = {{ onr_arns_oracle_hs_sid }})
+        )
+        (HS = OK)
+       )
+
+- name: Check LISTENER status
+  ansible.builtin.command:
+    cmd: >-
+      {{ onr_arns_oracle_home }}/bin/lsnrctl
+      status
+      LISTENER
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  register: onr_arns_listener_status
+  changed_when: false
+  failed_when: false
+
+- name: Reload LISTENER to apply PG gateway SID configuration
+  ansible.builtin.command:
+    cmd: >-
+      {{ onr_arns_oracle_home }}/bin/lsnrctl
+      reload
+      LISTENER
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  when: onr_arns_listener_status.rc == 0

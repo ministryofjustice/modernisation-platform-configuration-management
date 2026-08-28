@@ -1,0 +1,78 @@
+---
+- name: Escape ARNS credentials for Oracle DDL
+  ansible.builtin.set_fact:
+    onr_arns_db_username_sql: >-
+      {{ onr_arns_db_username | replace('"', '""') }}
+    onr_arns_db_password_sql: >-
+      {{ onr_arns_db_password | replace('"', '""') }}
+  no_log: true
+
+- name: Create public ARNS database link
+  ansible.builtin.command:
+    cmd: "{{ onr_arns_oracle_home }}/bin/sqlplus -s / as sysdba"
+    stdin: |
+      whenever sqlerror exit failure rollback
+
+      DECLARE
+        v_count NUMBER;
+      BEGIN
+        SELECT COUNT(*)
+        INTO v_count
+        FROM dba_db_links
+        WHERE owner = 'PUBLIC'
+        AND db_link = UPPER('{{ onr_arns_dblink_name }}');
+
+        IF v_count = 0 THEN
+          EXECUTE IMMEDIATE
+            'CREATE PUBLIC DATABASE LINK {{ onr_arns_dblink_name }} ' ||
+            'CONNECT TO "{{ onr_arns_db_username_sql }}" ' ||
+            'IDENTIFIED BY "{{ onr_arns_db_password_sql }}" ' ||
+            'USING ''{{ onr_arns_tns_alias }}''';
+        END IF;
+      END;
+      /
+
+      exit
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  no_log: true
+  when: onr_arns_dblink_type == "public"
+
+- name: Create private ARNS database link
+  ansible.builtin.command:
+    cmd: >-
+      {{ onr_arns_oracle_home }}/bin/sqlplus
+      -s
+      {{ onr_arns_dblink_owner_username }}/{{ onr_arns_dblink_owner_password }}
+    stdin: |
+      whenever sqlerror exit failure rollback
+
+      DECLARE
+        v_count NUMBER;
+      BEGIN
+        SELECT COUNT(*)
+        INTO v_count
+        FROM user_db_links
+        WHERE db_link = UPPER('{{ onr_arns_dblink_name }}');
+
+        IF v_count = 0 THEN
+          EXECUTE IMMEDIATE
+            'CREATE DATABASE LINK {{ onr_arns_dblink_name }} ' ||
+            'CONNECT TO "{{ onr_arns_db_username_sql }}" ' ||
+            'IDENTIFIED BY "{{ onr_arns_db_password_sql }}" ' ||
+            'USING ''{{ onr_arns_tns_alias }}''';
+        END IF;
+      END;
+      /
+
+      exit
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  no_log: true
+  when: onr_arns_dblink_type == "private"
