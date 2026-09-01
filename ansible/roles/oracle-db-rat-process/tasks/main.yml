@@ -57,6 +57,11 @@
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
+  register: initialize_rat
+
+- name: Show Initialize output
+  debug:
+     var: initialize_rat.stdout
 
 - name: Prepare RAT replay
   script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
@@ -65,6 +70,11 @@
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
+  register: prepare_rat
+
+- name: Show Prepare output
+  debug:
+     var: prepare_rat.stdout
 
 # Once the prepare has been done - upload the prepared files back to S3
 # as this will permit WRC to be run from a different host if needed
