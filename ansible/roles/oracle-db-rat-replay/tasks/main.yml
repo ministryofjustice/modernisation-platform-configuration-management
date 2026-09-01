@@ -60,7 +60,7 @@
 
 - name: Show Calibrate RAT output
   debug:
-     var: calibrate_rat.stdout
+     var: calibrate_rat.stdout_lines
 
 - name: Start RAT replay
   script: start_rat_replay.sh "{{ tns_alias }}"
