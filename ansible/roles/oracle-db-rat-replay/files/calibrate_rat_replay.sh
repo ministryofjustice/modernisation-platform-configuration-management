@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-if [[ $# -ne 4 ]]; then
+if [[ $# -ne 3 ]]; then
   echo "Usage: $0 <directory_path> <startup_delay_seconds> <tns_alias>" >&2
   exit 1
 fi
@@ -28,7 +28,6 @@ fi
 
 echo "Replay directory path: ${replay_directory_path}"
 echo "Target database name: ${tns_alias}"
-echo "WRC replay client count: ${client_count}"
 
 export PATH="$PATH:/usr/local/bin"
 rat_replay_password="$(aws secretsmanager get-secret-value \
