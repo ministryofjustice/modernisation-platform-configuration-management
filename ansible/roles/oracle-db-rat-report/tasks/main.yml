@@ -13,7 +13,11 @@
       - rat_report_replay_name | length > 0
       - tns_alias is defined
       - tns_alias | length > 0
-    fail_msg: "Define rat_report_replay_name as the DBMS_WORKLOAD_REPLAY replay name and tns_alias"
+      - application is defined
+      - application | length > 0
+      - rat_report_s3_bucket_name is defined
+      - rat_report_s3_bucket_name | length > 0
+    fail_msg: "Define rat_report_replay_name as the DBMS_WORKLOAD_REPLAY replay name, tns_alias, application, and rat_report_s3_bucket_name"
 
 - name: Build RAT report names
   set_fact:
