@@ -1,3 +1,7 @@
+- name: Report Replay Target database
+  debug:
+     msg: "Replay will be run on the {{ tns_alias }} database"
+
 - name: Resolve RAT secret name
   set_fact:
      rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
