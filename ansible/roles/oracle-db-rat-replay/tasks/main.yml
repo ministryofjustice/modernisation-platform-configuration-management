@@ -56,6 +56,11 @@
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
+  register: calibrate_rat
+
+- name: Show Calibrate RAT output
+  debug:
+     var: calibrate_rat.stdout
 
 - name: Start RAT replay
   script: start_rat_replay.sh "{{ tns_alias }}"
