@@ -4,14 +4,13 @@
 set -euo pipefail
 
 if [[ $# -ne 4 ]]; then
-  echo "Usage: $0 <directory_path> <client_count> <startup_delay_seconds> <tns_alias>" >&2
+  echo "Usage: $0 <directory_path> <startup_delay_seconds> <tns_alias>" >&2
   exit 1
 fi
 
 replay_directory_path="$1"
-client_count="$2"
-startup_delay_seconds="$3"
-tns_alias="$4"
+startup_delay_seconds="$2"
+tns_alias="$3"
 
 rat_secret_id="${RAT_SECRET_ID:-}"
 aws_region="${AWS_REGION:-}"
@@ -45,7 +44,17 @@ fi
 
 wrc_connection="RAT_REPLAY/${rat_replay_password}@${tns_alias}"
 
+CALIBRATE=$(
 wrc "$wrc_connection" mode=calibrate replaydir="$replay_directory_path"
+)
+
+echo "---- Calibration Output ----"
+echo $CALIBRATE
+echo "----------------------------"
+
+client_count=$(echo $CALIBRATE |  grep "Consider using" | grep clients | awk '{print $5}' )
+
+echo "Starting $client_count clients"
 
 for client_number in $(seq 1 "$client_count"); do
   log_file="${replay_directory_path}/wrc-replay-${client_number}.log"

@@ -50,7 +50,7 @@
      msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
 
 - name: Calibrate RAT replay clients
-  script: calibrate_rat_replay.sh "{{ rat_replay_directory_path }}" "{{ rat_replay_wrc_client_count }}" "{{ rat_replay_wrc_client_startup_delay }}" "{{ tns_alias }}"
+  script: calibrate_rat_replay.sh "{{ rat_replay_directory_path }}" "{{ rat_replay_wrc_client_startup_delay }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
