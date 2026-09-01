@@ -50,11 +50,6 @@
   debug:
      msg: "RAT capture files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
 
-- name: Initialisation debug
-  debug:
-     msg: |
-         initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
-
 - name: Initialize RAT replay
   script: initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
   become: true

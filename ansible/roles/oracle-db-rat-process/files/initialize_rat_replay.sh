@@ -12,14 +12,9 @@ replay_directory_name="$1"
 replay_directory_path="$2"
 replay_name="$3"
 tns_alias="$4"
-target_db_name="${TARGET_DB_NAME:-${ORACLE_SID:-}}"
+
 rat_secret_id="${RAT_SECRET_ID:-}"
 aws_region="${AWS_REGION:-}"
-
-if [[ -z "${target_db_name}" ]]; then
-  echo "Set TARGET_DB_NAME or ORACLE_SID before running this script." >&2
-  exit 1
-fi
 
 if [[ -z "${tns_alias}" ]]; then
   echo "Set tns_alias before running this script." >&2
@@ -34,7 +29,7 @@ fi
 echo "Replay directory name: ${replay_directory_name}"
 echo "Replay directory path: ${replay_directory_path}"
 echo "Replay name: ${replay_name}"
-echo "Target database name: ${target_db_name}"
+echo "Target database name: ${tns_alias}"
 
 export PATH="$PATH:/usr/local/bin"
 rat_replay_password="$(aws secretsmanager get-secret-value \
@@ -49,7 +44,7 @@ if [[ -z "${rat_replay_password}" ]]; then
 fi
 
 export ORAENV_ASK=NO
-export ORACLE_SID="${target_db_name}"
+export ORACLE_SID="${tns_alias}"
 . oraenv -s
 
 sqlplus -s /nolog <<EOF
