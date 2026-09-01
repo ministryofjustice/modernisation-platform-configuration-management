@@ -81,6 +81,9 @@ echo "Initialising replay"
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
 connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
+set serverout on
+declare
+begin
   DBMS_WORKLOAD_REPLAY.INITIALIZE_REPLAY(
     replay_name => '$replay_name',
     replay_dir  => '$replay_directory_name');
