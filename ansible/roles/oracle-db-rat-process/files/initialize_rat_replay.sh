@@ -74,6 +74,8 @@ begin
     capture_dir => '$replay_directory_name');
 end;
 /
+exit
+EOF
 
 echo "Initialising replay"
 sqlplus -s /nolog <<EOF
