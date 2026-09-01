@@ -54,7 +54,6 @@
   become: true
   become_user: oracle
   environment:
-     TARGET_DB_NAME: "{{ target_db_name }}"
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
 
@@ -63,6 +62,5 @@
   become: true
   become_user: oracle
   environment:
-     TARGET_DB_NAME: "{{ target_db_name }}"
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"

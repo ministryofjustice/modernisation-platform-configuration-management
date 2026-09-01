@@ -12,14 +12,10 @@ replay_directory_path="$1"
 client_count="$2"
 startup_delay_seconds="$3"
 tns_alias="$4"
-target_db_name="${TARGET_DB_NAME:-${ORACLE_SID:-}}"
+
 rat_secret_id="${RAT_SECRET_ID:-}"
 aws_region="${AWS_REGION:-}"
 
-if [[ -z "${target_db_name}" ]]; then
-  echo "Set TARGET_DB_NAME or ORACLE_SID before running this script." >&2
-  exit 1
-fi
 
 if [[ -z "${tns_alias}" ]]; then
   echo "Set tns_alias before running this script." >&2
@@ -48,9 +44,6 @@ if [[ -z "${rat_replay_password}" ]]; then
 fi
 
 wrc_connection="RAT_REPLAY/${rat_replay_password}@${tns_alias}"
-export ORAENV_ASK=NO
-export ORACLE_SID="${target_db_name}"
-. oraenv -s
 
 wrc "$wrc_connection" mode=calibrate replaydir="$replay_directory_path"
 
