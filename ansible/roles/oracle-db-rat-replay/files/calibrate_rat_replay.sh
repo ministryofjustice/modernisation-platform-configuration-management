@@ -51,7 +51,7 @@ echo "---- Calibration Output ----"
 echo $CALIBRATE
 echo "----------------------------"
 
-client_count=$(echo $CALIBRATE |  grep "Consider using" | grep clients | awk '{print $5}' )
+client_count=$(grep -oP 'Consider using at least \K[0-9]+' <<< "$CALIBRATE")
 
 echo "Starting $client_count clients"
 
