@@ -17,7 +17,6 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
   exit 1
 fi
 
-. ~/.bash_profile
 export PATH="$PATH:/usr/local/bin"
 rat_capture_password="$(aws secretsmanager get-secret-value \
   --secret-id "${rat_secret_id}" \
