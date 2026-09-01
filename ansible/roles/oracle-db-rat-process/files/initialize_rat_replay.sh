@@ -43,10 +43,6 @@ if [[ -z "${rat_replay_password}" ]]; then
   exit 1
 fi
 
-export ORAENV_ASK=NO
-export ORACLE_SID="${tns_alias}"
-. oraenv -s
-
 echo "Creating replay directory"
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
