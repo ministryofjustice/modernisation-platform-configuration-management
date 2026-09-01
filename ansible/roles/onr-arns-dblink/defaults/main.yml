@@ -6,6 +6,8 @@ onr_arns_postgres_el7_odbc_rpm: postgresql12-odbc-12.02.0000-1PGDG.rhel7.x86_64.
 
 onr_arns_postgres_s3_prefix: hmpps/onr/postgres
 onr_arns_stage_dir: /u02/stage
+onr_arns_staging_db: MISTR
+onr_arns_target_db: OASREP
 
 # EL8 package name from the configured yum repository.
 onr_arns_postgres_el8_packages:
@@ -66,7 +68,7 @@ onr_arns_odbc_ini: /etc/odbc.ini
 # ODBC shared library paths by Enterprise Linux major version.
 onr_arns_odbc_driver_paths:
   "7":
-    pg: /usr/lib64/psqlodbc.so
+    pg: /usr/pgsql-12/lib/psqlodbc.so
     default: /usr/lib64/libodbcpsqlS.so
   "8":
     pg: /usr/lib64/psqlodbc.so
@@ -95,17 +97,7 @@ onr_arns_listener_port: 1521
 # Oracle DB link
 onr_arns_dblink_name: PG
 
-# public or private
-onr_arns_dblink_type: private
-
-# Required only for a private database link.
-#
-# Ideally these should already come from your normal Oracle account
-# management/vault mechanism rather than being stored in plaintext.
-onr_arns_dblink_owner_username: ""
-onr_arns_dblink_owner_password: ""
-
 # Post-configuration validation
 onr_arns_validate_isql: true
 onr_arns_validate_oracle_query: true
-onr_arns_validate_oracle_probe_sql: 'select 1 from dual'
+onr_arns_validate_oracle_probe_sql: 'select count(1) from "assessment-view"."goal"'

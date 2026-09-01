@@ -6,6 +6,19 @@
     onr_arns_odbc_driver_path_default: >-
       {{ onr_arns_odbc_driver_paths[ansible_distribution_major_version].default }}
 
+- name: Ensure all values needed for the odbc.ini template are set
+  ansible.builtin.assert:
+    that:
+      - onr_arns_odbc_driver_path_pg | length > 0
+      - onr_arns_odbc_driver_path_default | length > 0
+      - onr_arns_db_host | length > 0
+      - onr_arns_db_username | length > 0
+      - onr_arns_db_password | length > 0
+      - onr_arns_db_port | length > 0
+      - onr_arns_db_name | length > 0
+    fail_msg: >-
+      One or more values needed for the odbc.ini template have not been set.
+
 - name: Configure ARNS PostgreSQL ODBC DSN
   ansible.builtin.template:
     src: odbc.ini.j2
@@ -13,17 +26,3 @@
     owner: root
     group: root
     mode: "0644"
-
-- name: Test that PostgreSQL ODBC shared libraries resolve
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      rpm -ql postgresql12-odbc 2>/dev/null \
-        | grep '\.so$' \
-        | head -1 \
-        | xargs -r ldd
-    executable: /bin/bash
-  register: onr_arns_odbc_ldd
-  changed_when: false
-  failed_when: false
-  when: ansible_distribution_major_version == "7"

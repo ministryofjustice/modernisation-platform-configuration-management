@@ -1,24 +1,45 @@
 ---
-- name: Validate ODBC connectivity with isql DSN {{ onr_arns_odbc_dsn }}
-  ansible.builtin.command:
-    argv:
-      - isql
-      - "{{ onr_arns_odbc_dsn }}"
-      - "{{ onr_arns_db_username }}"
-      - "{{ onr_arns_db_password }}"
-  register: onr_arns_isql_result
-  changed_when: false
+# ensure onr_arns_db_username is set
+- name: Fail if ARNS database username is not set
+  fail:
+    msg: "ARNS database username or password is not set. Ensure the secret {{ onr_arns_secret_id }} exists and contains the keys {{ onr_arns_secret_username_key }} and {{ onr_arns_secret_password_key }}"
+  when: onr_arns_db_username is not defined or onr_arns_db_password is not defined
+  
+- name: Escape ARNS credentials for Oracle DDL
+  ansible.builtin.set_fact:
+    onr_arns_db_username_sql: >-
+      {{ onr_arns_db_username | replace('"', '""') }}
+    onr_arns_db_password_sql: >-
+      {{ onr_arns_db_password | replace('"', '""') }}
   no_log: true
-  when: onr_arns_validate_isql | bool
+
+# To verify connectivity, use the ODBC sql tool isql.
+# isql PG db-username db-user-password
+# If this returns a connected banner the ODBC connection is verified.
+- name: Verify ODBC connection to ARNS database
+  ansible.builtin.shell: |
+      isql {{ onr_arns_odbc_dsn }} {{ onr_arns_db_username_sql }} {{ onr_arns_db_password_sql }} -v << EOF
+      quit
+      EOF
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  register: onr_arns_odbc_isql
+  changed_when: false
+  failed_when: "'Connected!' not in onr_arns_odbc_isql.stdout"
+  no_log: true
 
 - name: Validate Oracle SQL execution through database link {{ onr_arns_tns_alias }}
-  ansible.builtin.command:
-    cmd: "{{ onr_arns_oracle_home }}/bin/sqlplus -s / as sysdba"
-    stdin: |
-      whenever sqlerror exit failure rollback
-      set heading off feedback off verify off pages 0
-      {{ onr_arns_validate_oracle_probe_sql }}@{{ onr_arns_tns_alias }};
-      exit
+  ansible.builtin.shell: |
+    source oraenv <<< {{ staging_db_name }}
+    sqlplus -s / as sysdba <<EOF 
+    whenever sqlerror exit failure rollback
+    set heading off feedback off verify off pages 0
+    {{ onr_arns_validate_oracle_probe_sql }}@{{ onr_arns_tns_alias }};
+    exit
+    EOF
   become: true
   become_user: oracle
   environment:
@@ -26,7 +47,3 @@
     PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
   register: onr_arns_oracle_probe_result
   changed_when: false
-  no_log: true
-  when:
-    - onr_arns_validate_oracle_query | bool
-    - onr_arns_dblink_type == "public"

@@ -17,13 +17,6 @@
       One or more mandatory variables for the ARNS database link
       have not been configured.
 
-- name: Validate database link type
-  ansible.builtin.assert:
-    that:
-      - onr_arns_dblink_type in ["private", "public"]
-    fail_msg: >-
-      onr_arns_dblink_type must be either 'private' or 'public'.
-
 - name: Check Oracle Database Gateway for ODBC executable
   ansible.builtin.stat:
     path: "{{ onr_arns_oracle_home }}/bin/dg4odbc"

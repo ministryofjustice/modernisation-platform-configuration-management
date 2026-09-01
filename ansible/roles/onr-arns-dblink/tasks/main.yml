@@ -1,4 +1,9 @@
 ---
+- name: Get facts for playbook execution
+  import_tasks: get_facts.yml
+  tags:
+    - always
+
 - name: Validate ARNS database link configuration
   import_tasks: validate.yml
   tags:
@@ -10,12 +15,6 @@
   tags:
     - onr-arns-dblink
     - install-odbc
-
-- name: Install ARNS PostgreSQL certificate
-  import_tasks: install_certificate.yml
-  tags:
-    - onr-arns-dblink
-    - install-certificate
 
 - name: Retrieve ARNS database credentials
   import_tasks: get_arns_credentials.yml

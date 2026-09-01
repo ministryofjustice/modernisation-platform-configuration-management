@@ -1,7 +1,7 @@
 ---
 - name: Configure Oracle Heterogeneous Services for ARNS
   ansible.builtin.template:
-    src: initarns.ora.j2
+    src: initPG.ora.j2
     dest: >-
       {{ onr_arns_oracle_home }}/hs/admin/init{{ onr_arns_oracle_hs_sid }}.ora
     owner: oracle
@@ -10,9 +10,9 @@
 
 - name: Configure PG gateway SID in listener.ora
   ansible.builtin.blockinfile:
-    path: "{{ onr_arns_oracle_home }}/network/admin/listener.ora"
+    path: "{{ onr_arns_oracle_home }}/../gridhome_1/network/admin/listener.ora"
     marker: "# {mark} ANSIBLE MANAGED ARNS DATABASE LINK"
-    insertafter: "SID_LIST_LISTENER"
+    insertafter: "SID_LIST ="
     block: |
       (SID_DESC =
        (SID_NAME = {{ onr_arns_oracle_hs_sid }})
@@ -39,9 +39,7 @@
 - name: Check LISTENER status
   ansible.builtin.command:
     cmd: >-
-      {{ onr_arns_oracle_home }}/bin/lsnrctl
-      status
-      LISTENER
+      {{ onr_arns_oracle_home }}/bin/lsnrctl status LISTENER
   become: true
   become_user: oracle
   environment:
@@ -54,12 +52,28 @@
 - name: Reload LISTENER to apply PG gateway SID configuration
   ansible.builtin.command:
     cmd: >-
-      {{ onr_arns_oracle_home }}/bin/lsnrctl
-      reload
-      LISTENER
+        {{ onr_arns_oracle_home }}/bin/lsnrctl stop LISTENER
+        {{ onr_arns_oracle_home }}/bin/lsnrctl start LISTENER
   become: true
   become_user: oracle
   environment:
     ORACLE_HOME: "{{ onr_arns_oracle_home }}"
     PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
-  when: onr_arns_listener_status.rc == 0
+  register: onr_arns_listener_reload
+  when: onr_arns_listener_status.rc == 0 and '{{ onr_arns_oracle_hs_sid }}' not in onr_arns_listener_status.stdout
+
+  # Ensure there is a handler for PG in the listener response. If not, the listener may not have been reloaded correctly.
+- name: Check LISTENER status for PG gateway SID
+  ansible.builtin.command:
+    cmd: >-
+      {{ onr_arns_oracle_home }}/bin/lsnrctl status LISTENER
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+  register: onr_arns_listener_status_pg
+  changed_when: false
+  failed_when: "'{{ onr_arns_oracle_hs_sid }}' not in onr_arns_listener_status_pg.stdout"
+  # only run when listener has been restarted
+  when: onr_arns_listener_reload is not defined
