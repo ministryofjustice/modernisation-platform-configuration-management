@@ -47,6 +47,7 @@ export ORAENV_ASK=NO
 export ORACLE_SID="${tns_alias}"
 . oraenv -s
 
+echo "Creating replay directory"
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
 connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
@@ -61,9 +62,27 @@ begin
         raise;
       end if;
   end;
+end;
+/
+exit
+EOF
 
+echo "Processing capture files"
+sqlplus -s /nolog <<EOF
+whenever sqlerror exit failure
+connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
+set serveroutput on
+declare
+begin
   DBMS_WORKLOAD_REPLAY.PROCESS_CAPTURE(
     capture_dir => '$replay_directory_name');
+end;
+/
+
+echo "Initialising replay"
+sqlplus -s /nolog <<EOF
+whenever sqlerror exit failure
+connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
   DBMS_WORKLOAD_REPLAY.INITIALIZE_REPLAY(
     replay_name => '$replay_name',
     replay_dir  => '$replay_directory_name');
