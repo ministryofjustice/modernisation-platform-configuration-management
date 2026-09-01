@@ -28,7 +28,7 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
 fi
 
 echo "Replay directory path: ${replay_directory_path}"
-echo "Target database name: ${target_db_name}"
+echo "Target database name: ${tns_alias}"
 echo "WRC replay client count: ${client_count}"
 
 export PATH="$PATH:/usr/local/bin"

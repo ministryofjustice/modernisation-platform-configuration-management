@@ -23,7 +23,7 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
   exit 1
 fi
 
-echo "Target database name: ${target_db_name}"
+echo "Target database name: ${tns_alias}"
 
 export PATH="$PATH:/usr/local/bin"
 rat_replay_password="$(aws secretsmanager get-secret-value \
