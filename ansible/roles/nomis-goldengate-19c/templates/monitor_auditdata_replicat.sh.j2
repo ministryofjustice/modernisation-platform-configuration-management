@@ -49,6 +49,19 @@ EXIT
 EOF
 }
 
+set_oraenv() {
+    # get the first ORACLE_SID from /etc/oratab and set the environment for Oracle commands.
+    # doesn't matter which SID we use, we just need to set the environment for sqlplus and ggsci
+    grep -v '^#' /etc/oratab | grep -v '^$' | head -n 1 | cut -d: -f1 | while read -r sid; do
+        export ORACLE_SID="${sid}"
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        break
+    done
+}
+
+# Set oraenv otherwise ggsci will error
+set_oraenv
 status_text=$(replicat_status)
 status_rc=$?
 log "Replicat status check rc=${status_rc}"
