@@ -1,0 +1,103 @@
+---
+# EL7 PostgreSQL packages. These are stored internally because suitable
+# versions are no longer available from the configured EL7 repositories.
+onr_arns_postgres_el7_libs_rpm: postgresql12-libs-12.6-1PGDG.rhel7.x86_64.rpm
+onr_arns_postgres_el7_odbc_rpm: postgresql12-odbc-12.02.0000-1PGDG.rhel7.x86_64.rpm
+
+onr_arns_postgres_s3_prefix: hmpps/onr/postgres
+onr_arns_stage_dir: /u02/stage
+onr_arns_staging_db: MISTR
+onr_arns_target_db: OASREP
+
+# EL8 package name from the configured yum repository.
+onr_arns_postgres_el8_packages:
+  - unixODBC
+  - postgresql-odbc
+
+# AWS
+onr_arns_aws_region: eu-west-2
+
+# Name or ARN of the Secrets Manager secret populated by ARNS.
+# Default to the environment-specific pattern used by ARNS.
+# Map estate environment names to ARNS secret suffixes.
+onr_arns_environment_suffix_map:
+  development: test
+  test: test
+  preproduction: preprod
+  preprod: preprod
+  production: prod
+  prod: prod
+
+onr_arns_environment_suffix: >-
+  {{
+    onr_arns_environment_suffix_map[
+      aws_environment | lower
+    ] | default(aws_environment | lower)
+  }}
+
+onr_arns_secret_id: "/postgres/database/hmpps-arns-assessment-view-db-{{ onr_arns_environment_suffix }}/cloud-platform-config"
+
+# Expected SecretString structure:
+#
+# {
+#   "username": "...",
+#   "password": "...",
+#   "endpoint": "...",
+#   "port": 5432,
+#   "db_name": "..."
+# }
+#
+onr_arns_secret_username_key: username
+onr_arns_secret_password_key: password
+onr_arns_secret_host_key: endpoint
+onr_arns_secret_port_key: port
+onr_arns_secret_database_key: db_name
+
+# Certificate
+#
+# Assumes the ARNS/PostgreSQL CA certificate is placed in S3.
+# Change the filename/path once the actual certificate is supplied.
+onr_arns_certificate_s3_prefix: hmpps/onr/postgres
+onr_arns_certificate_filename: global-bundle.pem.1
+onr_arns_certificate_path: "/etc/pki/ca-trust/source/anchors/{{ onr_arns_certificate_filename }}"
+
+# PostgreSQL ODBC
+onr_arns_odbc_dsn: PG
+onr_arns_odbc_ini: /etc/odbc.ini
+
+# ODBC shared library paths by Enterprise Linux major version.
+onr_arns_odbc_driver_paths:
+  "7":
+    pg: /usr/pgsql-12/lib/psqlodbc.so
+    default: /usr/lib64/libodbcpsqlS.so
+  "8":
+    pg: /usr/lib64/psqlodbc.so
+    default: /usr/lib64/psqlodbc.so
+  "9":
+    pg: /usr/lib64/psqlodbc.so
+    default: /usr/lib64/psqlodbc.so
+
+# Require certificate validation.
+onr_arns_postgres_sslmode: verify-full
+
+# Oracle
+#
+# ORACLE_HOME should normally already exist elsewhere in the repository.
+# Override this only if your existing Oracle variables use another name.
+onr_arns_oracle_home: "{{ database_home }}"
+
+onr_arns_oracle_hs_sid: PG
+onr_arns_tns_alias: PG
+
+# ODBC port for Oracle HS connectivity
+# The PG gateway connects to localhost on this port via the main LISTENER
+onr_arns_listener_host: localhost
+onr_arns_listener_port: 1521
+
+# Oracle DB link
+onr_arns_dblink_name: PG
+
+# Post-configuration validation
+onr_arns_validate_isql: true
+onr_arns_validate_oracle_query: true
+onr_arns_validate_oracle_probe_sql: 'select count(1) from "assessment-view"."goal"'
