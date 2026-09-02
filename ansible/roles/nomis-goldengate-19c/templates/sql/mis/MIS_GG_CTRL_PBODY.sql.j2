@@ -298,7 +298,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                 'Stop SCN reached (applied_low_position=' || l_progress_scn ||
                 ' >= stop_scn=' || l_stop_scn || '); rolling batch.');
 
-            MIS_BATCH_PKG.create_new_batch(p_staging_owner, FALSE, l_more_points);
+            MIS_BATCH_PKG.create_new_batch(p_staging_owner, TRUE, l_more_points);
 
             mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
                 'Batch rolled successfully. Disabling MIS_BATCH_ROLL_CHECK scheduler job.');
