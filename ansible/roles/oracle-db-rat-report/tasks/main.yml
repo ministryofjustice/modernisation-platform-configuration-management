@@ -17,8 +17,8 @@
 
 - name: Build RAT report names
   set_fact:
-     rat_report_directory_name: "RAT_REPORT_{{ target_db_name | upper }}_{{ now(fmt='%y%m%d%H%M%S') }}"
-     rat_report_directory_path: "{{ rat_report_base_dir }}/{{ target_db_name | lower }}/{{ now(fmt='%Y%m%d%H%M%S') }}"
+     rat_report_directory_name: "RAT_REPORT_{{ tns_alias | upper }}_{{ now(fmt='%y%m%d%H%M%S') }}"
+     rat_report_directory_path: "{{ rat_report_base_dir }}/{{ tns_alias | lower }}/{{ now(fmt='%Y%m%d%H%M%S') }}"
      rat_report_filename: "replay_{{ rat_report_replay_name }}.html"
 
 - name: Create RAT report directory on the database host
