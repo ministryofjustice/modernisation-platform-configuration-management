@@ -1,0 +1,100 @@
+- name: Report Replay Target database
+  debug:
+     msg: "Replay will be run on the {{ tns_alias }} database"
+
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
+- name: Validate RAT replay inputs
+  assert:
+    that:
+      - rat_replay_s3_location | length > 0
+      - rat_replay_s3_location is match('^s3://')
+      - rat_replay_synchronization in ['SCN', 'OBJECT_ID']
+      - tns_alias is defined
+      - tns_alias | length > 0
+    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, and set rat_replay_synchronization to SCN or OBJECT_ID"
+
+- name: Build RAT replay names
+  set_fact:
+     rat_replay_name: "{{ rat_replay_name | default((tns_alias | lower) ~ '_' ~ now(fmt='%Y%m%d%H%M%S'), true) }}"
+
+- name: Build RAT replay directory names
+  set_fact:
+     rat_replay_directory_name: "RAT_REPLAY_{{ rat_replay_name | upper }}"
+     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
+
+- name: Create RAT replay directory on the database host
+  file:
+     path: "{{ rat_replay_directory_path }}"
+     state: directory
+     owner: oracle
+     group: oinstall
+     mode: '0750'
+  become: true
+
+- name: Download RAT capture files for replay from S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_replay_s3_location }}"
+        - "{{ rat_replay_directory_path }}"
+  become: true
+  become_user: oracle
+
+- name: Report downloaded RAT replay location
+  debug:
+     msg: "RAT capture files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
+
+- name: Initialize RAT replay
+  script: initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: initialize_rat
+
+- name: Show Initialize output
+  debug:
+     var: initialize_rat.stdout
+
+- name: Prepare RAT replay
+  script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: prepare_rat
+
+- name: Show Prepare output
+  debug:
+     var: prepare_rat.stdout
+
+# Once the prepare has been done - upload the prepared files back to S3
+# as this will permit WRC to be run from a different host if needed
+- name: Set RAT prepared file S3 location
+  set_fact:
+     rat_prepared_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/prepared/') }}"
+
+- name: Upload RAT prepared files to S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_replay_directory_path }}/"
+        - "{{ rat_prepared_s3_location }}"
+  become: true
+  become_user: oracle
+
+- name: Report RAT prepared S3 location
+  debug:
+     msg: "RAT capture files uploaded to {{ rat_prepared_s3_location }}"
+

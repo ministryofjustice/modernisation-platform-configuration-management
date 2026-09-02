@@ -1,0 +1,22 @@
+- name: Resolve target database name
+  set_fact:
+     target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
+
+- name: Set RAT Capture Passwords
+  include_tasks: create-secrets.yml
+  # no_log: true
+  tags:
+    - always
+
+- name: Create RAT capture and replay accounts
+  script: setup_rat_users.sh
+  become: true
+  become_user: oracle
+  register: setup_rat_users
+  environment:
+    TARGET_DB_NAME: "{{ target_db_name }}"
+    RAT_SECRET_ID: "{{ secret_name }}"
+    AWS_REGION: "{{ region }}"
+
+- debug:
+    var: setup_rat_users
