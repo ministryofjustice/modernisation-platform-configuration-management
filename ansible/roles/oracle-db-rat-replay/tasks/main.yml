@@ -1,7 +1,3 @@
-- name: Resolve target database name
-  set_fact:
-     target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
-
 - name: Resolve RAT secret name
   set_fact:
      rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
@@ -21,7 +17,7 @@
 
 - name: Build RAT replay directory path
   set_fact:
-    rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ target_db_name | lower }}/{{ rat_replay_name }}"
+    rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
 
 - name: Create RAT replay directory on the replay host
   file:
