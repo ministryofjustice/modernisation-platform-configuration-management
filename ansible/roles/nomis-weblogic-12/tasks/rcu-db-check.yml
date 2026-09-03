@@ -1,0 +1,53 @@
+---
+- name: Check Oracle database connection
+  block:
+    - name: Validate database connection credentials
+      become_user: oracle
+      ansible.builtin.shell: |
+        set -eo pipefail
+        source ~oracle/.bash_profile
+
+        sqlplus -s /nolog <<'SQL'
+        connect sys/{{ weblogic_db_repo_password }}@{{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }} as sysdba
+        set heading off feedback off verify off echo off pagesize 0 trimspool on
+        select 'CONNECTION_SUCCESS' from dual;
+        exit
+        SQL
+      args:
+        executable: /bin/bash
+      register: db_connection_result
+      changed_when: false
+      no_log: true
+
+    - name: Debug database connection output
+      ansible.builtin.debug:
+        var: db_connection_result.stdout_lines
+
+    - name: Validate database connection was successful
+      ansible.builtin.assert:
+        that:
+          - db_connection_result.rc == 0
+          - "'CONNECTION_SUCCESS' in db_connection_result.stdout"
+        fail_msg: |
+          Database connection failed. Please verify:
+          - Hostname: {{ weblogic_db_repo_hostname }}
+          - Port: 1521
+          - SID: {{ weblogic_db_repo_sid }}
+          - Credentials and network connectivity
+          
+          Error output: {{ db_connection_result.stderr }}
+
+  rescue:
+    - name: Check for ORA-01017 authentication error
+      ansible.builtin.assert:
+        that:
+          - "'ORA-01017' not in db_connection_result.stderr | default('')"
+        fail_msg: |
+          Database connection failed with authentication error: ORA-01017: invalid username/password; logon denied
+          Please verify the database credentials provided for user sys.
+
+    - name: Re-raise connection error
+      ansible.builtin.fail:
+        msg: |
+          Failed to connect to Oracle database at {{ weblogic_db_repo_hostname }}:1521/{{ weblogic_db_repo_sid }}.
+          Check the error output above for details.

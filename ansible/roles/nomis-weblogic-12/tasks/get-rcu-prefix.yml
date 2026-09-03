@@ -1,3 +1,6 @@
+- name: Check RCU database connection
+  ansible.builtin.include_tasks: rcu-db-check.yml
+
 - name: Ensure WebLogic software directory exists
   ansible.builtin.file:
     path: /u01/software/weblogic
