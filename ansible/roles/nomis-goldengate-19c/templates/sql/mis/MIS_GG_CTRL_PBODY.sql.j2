@@ -108,6 +108,11 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     into l_stop_scn
     using l_staged_date;
 
+    mis_gen_pkg.log_strm_debug(p_staging_owner, 'set_stop_points',
+        'Debug: stop_scn=' || l_stop_scn ||
+        ', l_old_batch_number=' || l_old_batch_number ||
+        ', l_staged_date=' || to_char(l_staged_date,'DD-MON-YYYY HH24:MI:SS') || '.', 1);
+
     IF l_stop_scn IS NULL THEN
         p_points_set := FALSE;
         return;
@@ -119,10 +124,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     into l_after_scn, l_stop_date
     using l_stop_scn;
 
-    mis_gen_pkg.log_strm_message(p_staging_owner, 'set_stop_points',
+    mis_gen_pkg.log_strm_debug(p_staging_owner, 'set_stop_points',
         'Outstanding stop point found: stop_scn=' || l_stop_scn ||
         ', after_scn=' || l_after_scn ||
-        ', stop_point_date=' || to_char(l_stop_date,'DD-MON-YYYY HH24:MI:SS') || '.');
+        ', stop_point_date=' || to_char(l_stop_date,'DD-MON-YYYY HH24:MI:SS') || '.', 1);
 
     p_points_set := TRUE;
 
@@ -248,8 +253,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
     IF l_stop_scn IS NULL THEN
         -- No outstanding stop point beyond the current batch; nothing to do
-        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-            'No outstanding stop point beyond the current batch; nothing to do.');
+        mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+            'No outstanding stop point beyond the current batch; nothing to do.', 1);
         p_continue := TRUE;
         drop_job;
         return;
@@ -258,16 +263,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     -- Read GoldenGate progress
     l_progress_scn := get_applied_low_position(mis_gen_pkg.g_apply_name);
 
-    mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+    mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
         'GoldenGate progress: inbound_server=' || mis_gen_pkg.g_apply_name ||
         ', applied_low_position=' || l_progress_scn ||
         ', stop_scn=' || l_stop_scn ||
-        ', current_batch=' || l_before_batch_number || '.');
+        ', current_batch=' || l_before_batch_number || '.', 1);
 
     IF l_progress_scn < l_stop_scn THEN
         -- Not yet reached; scheduler will try again on the next interval
-        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-            'Stop SCN not yet reached; deferring batch roll.');
+        mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+            'Stop SCN not yet reached; deferring batch roll.', 1);
         p_continue := TRUE;
         return;
     END IF;
@@ -281,8 +286,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
     IF l_lock_result != 0 THEN
         -- Another session already holds the lock and is rolling the batch
-        mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-            'Batch roll already in progress in another session; skipping.');
+        mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+            'Batch roll already in progress in another session; skipping.', 1);
         p_continue := TRUE;
         return;
     END IF;
@@ -294,14 +299,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                p_staging_owner   => p_staging_owner,
                p_ignore_datetime => TRUE) = l_before_batch_number THEN
 
-            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
+            mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
                 'Stop SCN reached (applied_low_position=' || l_progress_scn ||
-                ' >= stop_scn=' || l_stop_scn || '); rolling batch.');
+                ' >= stop_scn=' || l_stop_scn || '); rolling batch.', 1);
 
             MIS_BATCH_PKG.create_new_batch(p_staging_owner, TRUE, l_more_points);
 
-            mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-                'Batch rolled successfully. Disabling MIS_BATCH_ROLL_CHECK scheduler job.');
+            mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+                'Batch rolled successfully. Disabling MIS_BATCH_ROLL_CHECK scheduler job.', 1);
 
             -- Disable the polling job now that this stop point has been processed.
             drop_job;
@@ -309,8 +314,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             IF l_more_points THEN
                 -- A further stop point exists; re-enable the polling job so it
                 -- picks up the next boundary without manual intervention.
-                mis_gen_pkg.log_strm_message(p_staging_owner, 'wait_stop_points',
-                    'Additional stop points outstanding; re-enabling MIS_BATCH_ROLL_CHECK.');
+                mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+                    'Additional stop points outstanding; re-enabling MIS_BATCH_ROLL_CHECK.', 1);
                 BEGIN
                     dbms_scheduler.enable(
                         mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
