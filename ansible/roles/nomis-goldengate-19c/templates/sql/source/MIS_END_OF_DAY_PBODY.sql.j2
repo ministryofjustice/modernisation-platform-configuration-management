@@ -36,6 +36,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
 
     PROCEDURE ADD_MIS_STOP_POINT (p_datetime IN DATE DEFAULT NULL)
     IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
       v_scn 	NUMBER;
       v_scn2 	NUMBER;
       v_plsql   VARCHAR2(4000);
@@ -80,7 +81,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
       v_plsql := 'update {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points set after_scn = ' || v_scn2 || ' where stop_scn = ' || v_scn;
       execute immediate v_plsql;
 
-      commit;
+      -- commit the transaction so that the stop point is available to the MIS database immediately
+      COMMIT;
 
     END ADD_MIS_STOP_POINT;
 
