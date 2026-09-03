@@ -34,7 +34,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
             END IF;
     END ADD_MIS_STOP_POINTS_TABLE; 
 
-    PROCEDURE ADD_MIS_STOP_POINT (p_datetime IN DATE DEFAULT NULL)
+    FUNCTION ADD_MIS_STOP_POINT (
+        p_datetime IN DATE DEFAULT NULL
+    ) RETURN NUMBER
     IS
     PRAGMA AUTONOMOUS_TRANSACTION;
       v_scn 	NUMBER;
@@ -49,23 +51,27 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         from   v$database;
 
         -- we use dynamic SQL as the table may not exist when this package is first compiled in the database.
-        v_plsql := 'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points(stop_scn) values(' || v_scn || ')';
-        execute immediate v_plsql;
+        v_plsql :=
+            'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points ' ||
+            '(stop_scn) values (:1)';
+
+        EXECUTE IMMEDIATE v_plsql USING v_scn;
       ELSE
         select timestamp_to_scn(p_datetime)
         into   v_scn
         from   dual;
 
-        v_plsql := 'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points (stop_point_date, stop_scn) values (TO_DATE(''' || TO_CHAR(p_datetime, 'YYYY-MM-DD HH24:MI:SS') || ''', ''YYYY-MM-DD HH24:MI:SS''), ' || v_scn || ')';
-        execute immediate v_plsql;
-      END IF;
+        v_plsql :=
+            'insert into {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points ' ||
+            '(stop_point_date, stop_scn) values (:1, :2)';
 
-      commit;
-      
-      -- get new current SCN
-      select max(current_scn)
-      into   v_scn2
-      from   v$database;
+        EXECUTE IMMEDIATE v_plsql USING p_datetime, v_scn;        
+      END IF;
+    
+      -- Get the SCN immediately after the stop point
+      SELECT current_scn
+      INTO   v_scn2
+      FROM   v$database;
 
       -- update stop record
       IF p_datetime IS NOT NULL THEN
@@ -78,11 +84,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         END;
       END IF;
       
-      v_plsql := 'update {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points set after_scn = ' || v_scn2 || ' where stop_scn = ' || v_scn;
-      execute immediate v_plsql;
+        v_plsql :=
+        'update {{ oracle_goldengate_group.source.schema_owner }}.mis_stop_points ' ||
+        'set after_scn = :1 where stop_scn = :2';
+
+        EXECUTE IMMEDIATE v_plsql USING v_scn2, v_scn;
 
       -- commit the transaction so that the stop point is available to the MIS database immediately
       COMMIT;
+
+      RETURN v_scn;
 
     END ADD_MIS_STOP_POINT;
 
@@ -93,13 +104,14 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
     --   - wait for all capture and apply processes associated with the MIS staging tables to stop
     PROCEDURE run_batch IS
         v_chk number(1);
+        v_stop_scn  NUMBER;
         v_plsql VARCHAR2(4000);
     BEGIN
         -- create stop points table if it doesn't exist (will be empty if just created, so no risk of setting stop points inappropriately)
         ADD_MIS_STOP_POINTS_TABLE;
 
-        -- set stop points for goldengate process to know when to stop processing records for the current MIS batch
-        ADD_MIS_STOP_POINT;
+        -- Get the stop point for goldengate process to know when to stop processing records for the current MIS batch
+        v_stop_scn := ADD_MIS_STOP_POINT;
 
         -- check if db link exists before proceeding (will raise exception if not)
         begin
@@ -109,13 +121,15 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
             when others then
                 raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure.');
         end;
-        
-        v_plsql := 'begin dbms_scheduler.run_job@CNOM_MIS_LINK(''MIS_BATCH_CONTROL'',FALSE); end;';
-        execute immediate v_plsql;
 
-        -- No need to send a new log as we no longer stop the capture and apply processes for the remote database.
-        -- v_plsql := 'alter system archive log current';
-        -- execute immediate v_plsql;
+        -- Initiate MIS stop-point processing using the exact SCN created above.
+        v_plsql :=
+            'begin ' ||
+            '  {{ oracle_goldengate_group.mis.schema_owner }}.MIS_JOB_PKG.mis_batch_control@CNOM_MIS_LINK(:1); ' ||
+            'end;';
+
+        EXECUTE IMMEDIATE v_plsql USING v_stop_scn;
+    
     END run_batch;
 
 END MIS_END_OF_DAY_PKG;

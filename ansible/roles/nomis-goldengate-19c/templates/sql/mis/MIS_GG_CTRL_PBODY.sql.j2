@@ -72,16 +72,17 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     END apply_process_error_count;
 
 
-  PROCEDURE set_stop_points (
-      p_staging_owner   IN     varchar2,
-      p_points_set   OUT    boolean
+    PROCEDURE set_stop_points (
+        p_staging_owner IN     VARCHAR2,
+        p_points_set    OUT    BOOLEAN,
+        p_stop_scn      IN     NUMBER DEFAULT NULL
   ) IS
 --  PRAGMA AUTONOMOUS_TRANSACTION;
   -- packaged procedure set_stop_points (GG-migrated version)
   -- Determines whether there is an outstanding MIS stop point for GoldenGate.
   
     l_plsql      varchar2(2000); 
-    l_stop_scn       number := null;
+    l_stop_scn NUMBER := p_stop_scn;
     l_after_scn     number := null;
     l_stop_date     date := null;
     l_staged_date     date := null;
@@ -90,23 +91,26 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
   BEGIN
 
-    -- determine number of latest batch for source
-    l_old_batch_number := MIS_BATCH_PKG.get_batch_number(p_staging_owner => p_staging_owner, p_ignore_datetime => TRUE);
-  
-    IF l_old_batch_number > 1 THEN
-        -- get details of existing active batch
-        l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                    'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
-                   'where load_id = :load_id';  
-        execute immediate l_plsql into l_staged_date using l_old_batch_number;
-    END IF;
+    -- only do the old processing if scn is not passed in
+    IF l_stop_scn IS NULL THEN
+        -- determine number of latest batch for source
+        l_old_batch_number := MIS_BATCH_PKG.get_batch_number(p_staging_owner => p_staging_owner, p_ignore_datetime => TRUE);
+    
+        IF l_old_batch_number > 1 THEN
+            -- get details of existing active batch
+            l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
+                        'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                    'where load_id = :load_id';  
+            execute immediate l_plsql into l_staged_date using l_old_batch_number;
+        END IF;
 
-    l_staged_date := nvl(l_staged_date,trunc(sysdate));
-    l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' || l_source_db_name ||
-               ' where stop_point_date > :staged_date';
-    execute immediate l_plsql
-    into l_stop_scn
-    using l_staged_date;
+        l_staged_date := nvl(l_staged_date,trunc(sysdate));
+        l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' || l_source_db_name ||
+                ' where stop_point_date > :staged_date';
+        execute immediate l_plsql
+        into l_stop_scn
+        using l_staged_date;
+    END IF;
 
     mis_gen_pkg.log_strm_debug(p_staging_owner, 'set_stop_points',
         'Debug: stop_scn=' || l_stop_scn ||
@@ -115,23 +119,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
     IF l_stop_scn IS NULL THEN
         p_points_set := FALSE;
-        return;
+    ELSE
+        -- additional processing if stop_scn is not null
+        p_points_set := TRUE;
     END IF;
-
-    l_plsql := 'select after_scn, stop_point_date from MIS_STOP_POINTS@' ||
-               l_source_db_name || ' where stop_scn = :scn';
-    execute immediate l_plsql
-    into l_after_scn, l_stop_date
-    using l_stop_scn;
-
-    mis_gen_pkg.log_strm_debug(p_staging_owner, 'set_stop_points',
-        'Outstanding stop point found: stop_scn=' || l_stop_scn ||
-        ', after_scn=' || l_after_scn ||
-        ', stop_point_date=' || to_char(l_stop_date,'DD-MON-YYYY HH24:MI:SS') || '.', 1);
-
-    p_points_set := TRUE;
-
-    COMMIT;
 
   EXCEPTION
   
@@ -146,7 +137,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
   PROCEDURE wait_stop_points (
       p_staging_owner   IN     varchar2,
-      p_continue   OUT    boolean
+      p_continue   OUT    boolean,
+      p_stop_scn      IN     NUMBER DEFAULT NULL
   ) IS
   -- packaged procedure wait_stop_points
   -- Performs one non-blocking GoldenGate apply progress check.
@@ -158,7 +150,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   -- could all pass the guard simultaneously.
 
     l_plsql               varchar2(2000);
-    l_stop_scn            number := null;
+    l_stop_scn            NUMBER := p_stop_scn;
     l_progress_scn        number := null;
     l_staged_date         date := null;
     l_lock_handle         varchar2(128);
@@ -226,38 +218,41 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     END drop_job;
 
   BEGIN
-    -- Determine the outstanding stop SCN relative to the current batch boundary.
-    -- This mirrors the filter used by set_stop_points: stop_point_date must be
-    -- later than the staged date of the current batch so that a stop point
-    -- that has already been processed (for the previous batch) is not re-used.
- 
-    l_before_batch_number := MIS_BATCH_PKG.get_batch_number(
-                                 p_staging_owner   => p_staging_owner,
-                                 p_ignore_datetime => TRUE);
-
-    IF l_before_batch_number > 1 THEN
-        l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
-                   'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
-                   'where load_id = :load_id';
-        execute immediate l_plsql into l_staged_date using l_before_batch_number;
-    END IF;
-    l_staged_date := nvl(l_staged_date, trunc(sysdate));
-
-    -- get the stop SCN that is beyond the current batch boundary.
-    -- stop points only get created when the end of day job runs, so there should never be more than one outstanding stop point at a time.
-    -- if there are multiple stop points, the one with the earliest stop SCN is used as each one should be processed in order.
-    l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' ||
-               mis_gen_pkg.get_source_database_name ||
-               ' where stop_point_date > :staged_date';
-    execute immediate l_plsql into l_stop_scn using l_staged_date;
-
     IF l_stop_scn IS NULL THEN
-        -- No outstanding stop point beyond the current batch; nothing to do
-        mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
-            'No outstanding stop point beyond the current batch; nothing to do.', 1);
-        p_continue := TRUE;
-        drop_job;
-        return;
+        -- Existing legacy/manual lookup logic.
+        -- Determine the outstanding stop SCN relative to the current batch boundary.
+        -- This mirrors the filter used by set_stop_points: stop_point_date must be
+        -- later than the staged date of the current batch so that a stop point
+        -- that has already been processed (for the previous batch) is not re-used.
+    
+        l_before_batch_number := MIS_BATCH_PKG.get_batch_number(
+                                    p_staging_owner   => p_staging_owner,
+                                    p_ignore_datetime => TRUE);
+
+        IF l_before_batch_number > 1 THEN
+            l_plsql := 'select nvl(staged_end_datetime, staged_start_datetime) ' ||
+                    'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                    'where load_id = :load_id';
+            execute immediate l_plsql into l_staged_date using l_before_batch_number;
+        END IF;
+        l_staged_date := nvl(l_staged_date, trunc(sysdate));
+
+        -- get the stop SCN that is beyond the current batch boundary.
+        -- stop points only get created when the end of day job runs, so there should never be more than one outstanding stop point at a time.
+        -- if there are multiple stop points, the one with the earliest stop SCN is used as each one should be processed in order.
+        l_plsql := 'select min(stop_scn) from MIS_STOP_POINTS@' ||
+                mis_gen_pkg.get_source_database_name ||
+                ' where stop_point_date > :staged_date';
+        execute immediate l_plsql into l_stop_scn using l_staged_date;
+
+        IF l_stop_scn IS NULL THEN
+            -- No outstanding stop point beyond the current batch; nothing to do
+            mis_gen_pkg.log_strm_debug(p_staging_owner, 'wait_stop_points',
+                'No outstanding stop point beyond the current batch; nothing to do.', 1);
+            p_continue := TRUE;
+            drop_job;
+            return;
+        END IF;
     END IF;
 
     -- Read GoldenGate progress
@@ -373,12 +368,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
   -- overridden version of wait_stop_points with no params
   -- called from mis_batch_roll_check job
-    PROCEDURE wait_stop_points_job IS
+    PROCEDURE wait_stop_points_job(
+       p_stop_scn IN NUMBER DEFAULT NULL
+    ) IS
         v_continue BOOLEAN := FALSE;
-        v_plsql varchar2(200);
     BEGIN
         -- Check GoldenGate progress before attempting a batch roll
-        mis_gg_ctrl_pkg.wait_stop_points(mis_gen_pkg.g_mis_owner, v_continue);
+        mis_gg_ctrl_pkg.wait_stop_points(
+            p_staging_owner => mis_gen_pkg.g_mis_owner,
+            p_continue      => v_continue,
+            p_stop_scn      => p_stop_scn);
     END wait_stop_points_job;
 
   PROCEDURE set_capture_pos_rules (

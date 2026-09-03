@@ -278,34 +278,63 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
     -- MIS_BATCH_ROLL_CHECK polling job, then returns immediately.
     -- The polling job calls wait_stop_points every 60 seconds and disables itself
     -- once the batch has been rolled.
-    PROCEDURE mis_batch_control IS
-       v_points_set BOOLEAN := FALSE;
+    PROCEDURE mis_batch_control (
+        p_stop_scn IN NUMBER DEFAULT NULL
+    ) IS
+        v_points_set BOOLEAN := FALSE;
+        v_job_action VARCHAR2(4000);
     BEGIN
-       mis_gg_ctrl_pkg.set_stop_points(mis_gen_pkg.g_mis_owner, v_points_set);
+        mis_gg_ctrl_pkg.set_stop_points(
+            p_staging_owner => mis_gen_pkg.g_mis_owner,
+            p_points_set    => v_points_set,
+            p_stop_scn      => p_stop_scn
+        );
 
-       if v_points_set = TRUE then
-           -- Create the polling job if it does not already exist
-           begin
-               dbms_scheduler.create_job(
-                   job_name       => 'MIS_BATCH_ROLL_CHECK',
-                   job_type       => 'PLSQL_BLOCK',
-                   job_action     => 'begin ' || mis_gen_pkg.g_mis_owner ||
-                                     '.MIS_GG_CTRL_PKG.wait_stop_points_job; end;',
-                   start_date     => systimestamp,
-                   repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
-                   enabled        => TRUE,
-                   auto_drop      => FALSE,
-                   comments       => 'GoldenGate stop-point poll: checks applied_low_position every 60s and rolls batch when stop SCN is reached.');
-           exception
-               when others then
-                   if sqlcode = -27477 then
-                       -- Job already exists; make sure it is enabled
-                       dbms_scheduler.enable(mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
-                   else
-                       raise;
-                   end if;
-           end;
-       end if;
+        IF v_points_set THEN
+
+            IF p_stop_scn IS NOT NULL THEN
+                v_job_action :=
+                    'begin ' ||
+                    mis_gen_pkg.g_mis_owner ||
+                    '.MIS_GG_CTRL_PKG.wait_stop_points_job(' ||
+                    to_char(
+                        trunc(p_stop_scn),
+                        'FM99999999999999999999999999999999999999'
+                    ) ||
+                    '); end;';
+            ELSE
+                -- Backward-compatible/manual invocation.
+                v_job_action :=
+                    'begin ' ||
+                    mis_gen_pkg.g_mis_owner ||
+                    '.MIS_GG_CTRL_PKG.wait_stop_points_job; end;';
+            END IF;
+
+            BEGIN
+                dbms_scheduler.create_job(
+                    job_name        => 'MIS_BATCH_ROLL_CHECK',
+                    job_type        => 'PLSQL_BLOCK',
+                    job_action      => v_job_action,
+                    start_date      => systimestamp,
+                    repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
+                    enabled         => TRUE,
+                    auto_drop       => FALSE,
+                    comments        =>
+                        'GoldenGate stop-point poll: checks Replicat progress ' ||
+                        'against the supplied MIS stop SCN every 60 seconds.'
+                );
+            EXCEPTION
+                WHEN OTHERS THEN
+                    IF SQLCODE = -27477 THEN
+                        dbms_scheduler.enable(
+                            mis_gen_pkg.g_mis_owner ||
+                            '.MIS_BATCH_ROLL_CHECK'
+                        );
+                    ELSE
+                        RAISE;
+                    END IF;
+            END;
+        END IF;
     END mis_batch_control;
 
     -- Creates a new batch and triggers ETL.  Called by the legacy MIS_BATCH_ROLL

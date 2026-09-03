@@ -52,7 +52,9 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AUTHID C
 
     -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh.
     -- Called by MIS_BATCH_CONTROL job, which now only initiates the GoldenGate stop-point check.
-    PROCEDURE mis_batch_control;
+    PROCEDURE mis_batch_control (
+        p_stop_scn IN NUMBER DEFAULT NULL
+    );
 
     -- Creates a new batch once GoldenGate has applied through the stop SCN.
     -- Called by MIS_BATCH_ROLL job or the asynchronous scheduler poll.
