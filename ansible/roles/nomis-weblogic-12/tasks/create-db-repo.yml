@@ -20,6 +20,9 @@
       requested prefix is {{ weblogic_db_repo_prefix }}.
   when: weblogic_existing_rcu_prefix_marker.stat.exists
 
+- name: Check RCU database connection
+  ansible.builtin.include_tasks: rcu-db-check.yml
+
 - name: Copy repository database config
   ansible.builtin.template:
     src: "12{{ item }}"
