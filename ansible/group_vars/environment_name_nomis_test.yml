@@ -56,6 +56,10 @@ db_configs:
       - { name: NOMIS_TAF, role: PRIMARY }
       - { name: OLDNOMIS_TAF, role: PRIMARY }
       - { name: NOMIS_APIRO, role: PRIMARY }
+    ddl_notifier:
+      notification_schema: "GGADMIN"
+      slack_channel: "#nomis-aws-oracle-ddl"
+      tracked_schemas: ['OMS_OWNER']
   T1NDH:
     db_name: T1NDH
     db_unique_name: T1NDH
