@@ -20,12 +20,36 @@
     group: root
   when: rclone_config_dir is defined
 
-- name: Copy rclone config
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "{{ rclone_config_dir }}/{{ item }}"
-    owner: root
-    group: root
+- name: Configure rclone config without overwriting any rclone generated values
+  community.general.ini_file:
+    path: "{{ rclone_config_dir }}/rclone.conf"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
     mode: '0600'
-  loop:
-    - rclone.conf
+  loop: >-
+    [
+    {% for key, config in rclone_sharepoint_config.items() %}
+      { 'section': '{{ key }}', 'option': 'type', 'value': 'onedrive' },
+      { 'section': '{{ key }}', 'option': 'client_credentials', 'value': 'true' },
+      { 'section': '{{ key }}', 'option': 'client_id', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["client_id"] }}' },
+      { 'section': '{{ key }}', 'option': 'tenant', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["tenant_id"] }}' },
+      { 'section': '{{ key }}', 'option': 'drive_id', 'value': '{{ secretsmanager_passwords_dict[config.drive_ids_secret_key].passwords[key] }}' },
+      { 'section': '{{ key }}', 'option': 'drive_type', 'value': 'documentLibrary' }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    ]
+
+- name: Configure rclone config secrets without overwriting any rclone generated values
+  community.general.ini_file:
+    path: "{{ rclone_config_dir }}/rclone.conf"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    mode: '0600'
+  no_log: true
+  loop: >-
+    [
+    {% for key, config in rclone_sharepoint_config.items() %}
+      { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["client_secret"] }}' },{% if not loop.last %},{% endif %}
+    {% endfor %}
+    ]
