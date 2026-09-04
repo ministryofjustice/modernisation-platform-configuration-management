@@ -1,9 +1,15 @@
 ---
-- name: Get secretsmanager secrets
+- name: Get AppRegistration secrets
   import_role:
     name: secretsmanager-passwords
   vars:
-    secretsmanager_passwords: "{{ rclone_sharepoint_config }}"
+    secretsmanager_passwords: "{{ rclone_secretsmanager_app_registrations }}"
+
+- name: Get driveid secrets
+  import_role:
+    name: secretsmanager-passwords
+  vars:
+    secretsmanager_passwords: "{{ rclone_secretsmanager_drive_ids }}"
 
 - name: Create rclone config dir
   ansible.builtin.file:
