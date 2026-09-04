@@ -22,7 +22,7 @@
     oracle_install_user: oracle
     artefact_dir: /u02
     temp: "{{ artefact_dir }}/temp"
-    app_dir: "{{ oracle_base_output.stdout }}"
+    app_dir: "{{ oracle_base }}"
     slack_wallet_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}"
   tags: create_slack_wallet
 
@@ -44,6 +44,6 @@
   vars:
      stage: "/u02/stage"
      database_name: "{{ primary_database_name }}"
-     app_dir: "{{ oracle_base_output.stdout }}"
+     app_dir: "{{ oracle_base }}"
   tags: create_slack_notifier_package
 
