@@ -8,6 +8,11 @@
   become: true
   become_user: oracle
 
+# if oracle_base_output.stdout is empty, set oracle_base to /u01/app/oracle
+- name: Set ORACLE_BASE fact
+  set_fact:
+    oracle_base: "{{ oracle_base_output.stdout | default('/u01/app/oracle', true) }}"
+
 - name: Get OEM secrets
   import_role:
     name: secretsmanager-passwords
