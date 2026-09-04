@@ -20,6 +20,23 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
  *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
+  PROCEDURE log_debug (
+      p_staging_owner   IN     varchar2,
+      p_location     IN     varchar2,
+      p_text      IN     varchar2,
+      p_threshold   IN     number DEFAULT 0
+  ) IS
+  -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+  BEGIN
+      
+      g_debug := mis_gen_pkg.get_debug_level(mis_gen_pkg.g_debug_mis_batch);
+
+      IF g_debug > p_threshold THEN
+          mis_gen_pkg.log_strm_message (p_staging_owner, p_location, p_text);
+      END IF;
+
+  END log_debug;
+
   FUNCTION get_batch_number(
     p_staging_owner   IN varchar2 DEFAULT null,
     p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
@@ -322,7 +339,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         into v_status, v_err_number, v_first_scn, v_captured_scn
         using v_capture_name_list(i);
         IF v_status = 'ENABLED' THEN
-            mis_gen_pkg.log_strm_debug (p_staging_owner, 'capture_inactive_count',
+            log_debug (p_staging_owner, 'capture_inactive_count',
                               'Capture process ' || v_capture_name_list(i) ||
                               ' is ENABLED (captured_scn=' || v_captured_scn ||
                               ', first_scn=' || v_first_scn || ').', -1);
@@ -479,7 +496,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     BEGIN
         v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
     EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
-        MIS_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
+        log_debug (v_staging_owner, 'create_new_batch',
                         v_apply_scn || ' is not a currently valid system change number at source;' ||
                         ' will check registered log dates instead.', -1);
         -- get the next date (end of log) of the archive logs
@@ -529,7 +546,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
     ELSE
-        mis_gen_pkg.log_strm_debug (v_staging_owner, 'create_new_batch',
+        log_debug (v_staging_owner, 'create_new_batch',
                         'GoldenGate batch roll deferred due to errors or restart flag (v_apply_error_count:' || v_apply_error_count ||
                         ', v_apply_proc_error_count:' || v_apply_proc_error_count ||
                         ', v_capture_error_count:' || v_capture_error_count || ').');

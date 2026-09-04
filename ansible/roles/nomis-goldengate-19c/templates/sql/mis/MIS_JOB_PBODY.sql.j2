@@ -23,9 +23,25 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
     -- packaged function get_version
     -- will return a VARCHAR2 string containing a package version number
     BEGIN
-    return g_version;
+        return g_version;
     END;
 
+    PROCEDURE log_debug (
+        p_staging_owner   IN     varchar2,
+        p_location     IN     varchar2,
+        p_text      IN     varchar2,
+        p_threshold   IN     number DEFAULT 0
+    ) IS
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    BEGIN
+        
+        g_debug := mis_gen_pkg.get_debug_level(mis_gen_pkg.g_debug_mis_job);
+
+        IF g_debug > p_threshold THEN
+            mis_gen_pkg.log_strm_message (p_staging_owner, p_location, p_text);
+        END IF;
+
+    END log_debug;
 
     PROCEDURE log_apply (
         p_tgt_owner   IN     VARCHAR2
@@ -169,77 +185,66 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
     END create_audit_reference_job;
 
 
-
     PROCEDURE PRUNE_TABLE (
-    p_staging_owner   IN     varchar2,
-    p_table      in varchar2,
-    p_date_col   in varchar2,
-    p_prune_date in date,
-    p_key_col    in varchar2 default null,
-    p_loop_size  in integer default 1000000
+        p_staging_owner   IN     varchar2,
+        p_table      in varchar2,
+        p_date_col   in varchar2,
+        p_prune_date in date,
+        p_key_col    in varchar2 default null,
+        p_loop_size  in integer default 1000000
     ) IS
-    -- local procedure prune_table
-    -- will delete entries older than p_prune_date from p_table
+    PRAGMA AUTONOMOUS_TRANSACTION;
+        -- local procedure prune_table
+        -- will delete entries older than p_prune_date from p_table
 
-    v_statement           varchar2(1000);
-    v_min_key             integer := null;
-    v_max_key             integer := null;
-    v_lim_key             integer;
-    v_message             varchar2(1000);
-
-    pragma AUTONOMOUS_TRANSACTION;
-
+        v_statement           varchar2(1000);
+        v_min_key             integer := null;
+        v_max_key             integer := null;
+        v_lim_key             integer;
+        v_message             varchar2(1000);
     BEGIN
+        IF p_key_col IS NOT NULL 
+        THEN
+        -- Get the min and max key values prior to the prune date
+            v_statement := 'select min(' || p_key_col || '), max(' || p_key_col || ')' ||
+                    ' from ' || p_staging_owner  || '.' || p_table ||
+                            ' where ' || p_date_col || ' < :prune_date';
+            EXECUTE IMMEDIATE v_statement into v_min_key, v_max_key using p_prune_date;
 
-    IF p_key_col IS NOT NULL THEN
+            IF v_min_key IS NOT NULL THEN
+                -- loop through key values in increments of p_loop_size
+                LOOP
+                    v_lim_key := least(v_min_key+p_loop_size, v_max_key);
 
-    -- Get the min and max key values prior to the prune date
+                    -- delete rows from p_table by key value
+                    v_statement := 'delete from ' || p_staging_owner  || '.' || p_table ||
+                                    ' where ' || p_key_col || ' <= :key_value';
+                    EXECUTE IMMEDIATE v_statement using v_lim_key;
 
-    v_statement := 'select min(' || p_key_col || '), max(' || p_key_col || ')' ||
-            ' from ' || p_staging_owner  || '.' || p_table ||
-                    ' where ' || p_date_col || ' < :prune_date';
-    EXECUTE IMMEDIATE v_statement into v_min_key, v_max_key using p_prune_date;
+                    v_message := SQL%ROWCOUNT || ' rows older than ' || to_char(p_prune_date,'DD-MON-YYYY') || ' deleted from ' || p_table || '.';
 
-    IF v_min_key IS NOT NULL THEN
+                    COMMIT;
 
-        -- loop through key values in increments of p_loop_size
-        LOOP
-        v_lim_key := least(v_min_key+p_loop_size, v_max_key);
+                    --DBMS_OUTPUT.PUT_LINE(v_message);
+                    log_debug(p_staging_owner, 'prune_table', v_message, 1);
 
-        -- delete rows from p_table by key value
-        v_statement := 'delete from ' || p_staging_owner  || '.' || p_table ||
-                        ' where ' || p_key_col || ' <= :key_value';
-        EXECUTE IMMEDIATE v_statement using v_lim_key;
+                    EXIT WHEN v_lim_key >= v_max_key;
+                    v_min_key := v_lim_key;
+                END LOOP;
+            END IF;
+        ELSE
+            -- delete rows from p_table by date
+            v_statement := 'delete from ' || p_staging_owner  || '.' || p_table ||
+                            ' where ' || p_date_col || ' < :prune_date';
+            EXECUTE IMMEDIATE v_statement using p_prune_date;
 
-        v_message := SQL%ROWCOUNT || ' rows older than ' || to_char(p_prune_date,'DD-MON-YYYY') || ' deleted from ' || p_table || '.';
+            v_message := SQL%ROWCOUNT || ' rows older than ' || to_char(p_prune_date,'DD-MON-YYYY') || ' deleted from ' || p_table || '.';
 
-        COMMIT;
+            COMMIT;
 
-        --DBMS_OUTPUT.PUT_LINE(v_message);
-        mis_gen_pkg.log_strm_error(p_staging_owner, 'prune_table', p_tgt_table=>p_table,
-                        p_err_code=>0, p_text=>v_message);
-
-        EXIT WHEN v_lim_key >= v_max_key;
-        v_min_key := v_lim_key;
-        END LOOP;
-
-    END IF;
-
-    ELSE
-    -- delete rows from p_table by date
-    v_statement := 'delete from ' || p_staging_owner  || '.' || p_table ||
-                    ' where ' || p_date_col || ' < :prune_date';
-    EXECUTE IMMEDIATE v_statement using p_prune_date;
-
-    v_message := SQL%ROWCOUNT || ' rows older than ' || to_char(p_prune_date,'DD-MON-YYYY') || ' deleted from ' || p_table || '.';
-
-    COMMIT;
-
-    --DBMS_OUTPUT.PUT_LINE(v_message);
-    mis_gen_pkg.log_strm_error(p_staging_owner, 'prune_table', p_tgt_table=>p_table,
-                    p_err_code=>0, p_text=>v_message);
-    END IF;
-
+            --DBMS_OUTPUT.PUT_LINE(v_message);
+            log_debug(p_staging_owner, 'prune_table', v_message, 1);
+        END IF;
     COMMIT;
 
     EXCEPTION
@@ -249,22 +254,16 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
         RAISE;
     END PRUNE_TABLE ;
 
-
     PROCEDURE PURGE_RECORDS (
     p_staging_owner   IN     varchar2,
     p_months     in integer default 26
     ) IS
-    -- packaged procedure purge_records
-    -- will delete rows older than p_months months from historical tables
-
-    v_prune_date          date := add_months(trunc(sysdate),-p_months);
-
+        -- packaged procedure purge_records
+        -- will delete rows older than p_months months from historical tables
+        v_prune_date          date := add_months(trunc(sysdate),-p_months);
     BEGIN
-
     -- Remove table entries prior to the prune date
-
-    prune_table(p_staging_owner, 'strm_error_log', 'error_datetime', v_prune_date);
-
+        prune_table(p_staging_owner, 'strm_error_log', 'error_datetime', v_prune_date);
     EXCEPTION
     WHEN OTHERS THEN
         mis_gen_pkg.log_strm_error (p_staging_owner, 'purge_records',

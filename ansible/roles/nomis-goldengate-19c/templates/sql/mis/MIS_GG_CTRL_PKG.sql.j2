@@ -22,6 +22,9 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG AUTH
  *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
  */
 
+    -- debug flag: positive value to log debug messages
+    g_debug NUMBER := 0;
+
     -- Packaged function apply_process_error_count returns the number of apply processes
     -- for a particular staging table owner (if supplied) that have error status
     FUNCTION apply_process_error_count(

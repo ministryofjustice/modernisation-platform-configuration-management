@@ -58,9 +58,15 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID D
     -- debug flag: No longer needs to be set to 1 for debug messages to be logged, as the debug level is now controlled by the MIS_DEBUG_CONFIG table.
     g_debug NUMBER := 1;
     g_debug_mis_dml VARCHAR2(30) := 'MIS_DML_PKG';
+    g_debug_mis_job VARCHAR2(30) := 'MIS_JOB_PKG';
+    g_debug_mis_gg_ctrl VARCHAR2(30) := 'MIS_GG_CTRL_PKG';
+    g_debug_mis_batch VARCHAR2(30) := 'MIS_BATCH_PKG';
+    g_debug_mis_gen VARCHAR2(30) := 'MIS_GEN_PKG';
+    g_debug_mis_tab_ctrl VARCHAR2(30) := 'MIS_TAB_CTRL_PKG';
     g_debug_level_cached      NUMBER := 0;
     g_debug_cache_loaded      BOOLEAN := FALSE;
     g_debug_cache_loaded_at   DATE;
+    g_debug_cache_key         VARCHAR2(100);
     g_debug_cache_ttl_mins    CONSTANT PLS_INTEGER := 10;
 
     g_etl_load_log_owner VARCHAR2(30);

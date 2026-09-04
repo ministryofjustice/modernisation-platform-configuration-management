@@ -312,44 +312,59 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
   PROCEDURE refresh_debug_level_cache(p_config_key IN VARCHAR2) IS
     l_debug_level NUMBER;
+    l_key         VARCHAR2(100) := UPPER(TRIM(p_config_key));
   BEGIN
+    IF l_key IS NULL THEN
+      g_debug_level_cached    := 0;
+      g_debug_cache_loaded    := TRUE;
+      g_debug_cache_loaded_at := SYSDATE;
+      g_debug_cache_key       := NULL;
+      RETURN;
+    END IF;
+
     EXECUTE IMMEDIATE
       'SELECT debug_level FROM MIS_DEBUG_CONFIG WHERE config_key = :1'
       INTO l_debug_level
-      USING p_config_key;
+      USING l_key;
 
     g_debug_level_cached    := NVL(l_debug_level, 0);
     g_debug_cache_loaded    := TRUE;
     g_debug_cache_loaded_at := SYSDATE;
+    g_debug_cache_key       := l_key;
 
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
       g_debug_level_cached    := 0;
       g_debug_cache_loaded    := TRUE;
       g_debug_cache_loaded_at := SYSDATE;
+      g_debug_cache_key       := l_key;
     WHEN OTHERS THEN
       IF SQLCODE = -942 THEN
         g_debug_level_cached    := 0;
         g_debug_cache_loaded    := TRUE;
         g_debug_cache_loaded_at := SYSDATE;
+        g_debug_cache_key       := l_key;
       ELSE
         -- transient/other error: keep previous cache if present
         IF NOT g_debug_cache_loaded THEN
           g_debug_level_cached    := 0;
           g_debug_cache_loaded    := TRUE;
           g_debug_cache_loaded_at := SYSDATE;
+          g_debug_cache_key       := l_key;
         END IF;
       END IF;
   END refresh_debug_level_cache;
 
   FUNCTION get_debug_level(p_config_key IN VARCHAR2) RETURN NUMBER IS
     l_ttl_days CONSTANT NUMBER := g_debug_cache_ttl_mins / 1440;
+    l_key      VARCHAR2(100) := UPPER(TRIM(p_config_key));
   BEGIN
     IF (NOT g_debug_cache_loaded)
+      OR NVL(g_debug_cache_key, '<<NULL>>') <> NVL(l_key, '<<NULL>>')
       OR g_debug_cache_loaded_at IS NULL
       OR (SYSDATE - g_debug_cache_loaded_at) >= l_ttl_days
     THEN
-      refresh_debug_level_cache(p_config_key);
+      refresh_debug_level_cache(l_key);
     END IF;
 
     RETURN NVL(g_debug_level_cached, 0);
