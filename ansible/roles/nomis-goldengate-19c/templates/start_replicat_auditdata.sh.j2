@@ -8,37 +8,48 @@ ORAENV_ASK=NO
 
 GGHOME={{ oracle_goldengate_home }}
 REPLICAT_NAME={{ oracle_goldengate_group.auditdata.replicat_name }}
-LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
+LOG_FILE={{ oracle_goldengate_log_dir }}/ogg_control.log
 MANUAL_STOP_FILE={{ oracle_goldengate_log_dir }}/auditdata_replicat_monitor.manual_stop
+SCRIPTS_DIR={{ oracle_goldengate_scripts_dir }}
+SYNC_SCRIPT=${SCRIPTS_DIR}/sync_auditdata_tables.sh
+
+exec >>"${LOG_FILE}" 2>&1
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $*"
+}
 
 cd ${GGHOME}
+
+if ! "${SYNC_SCRIPT}"; then
+    log "ERROR: sync script failed"
+    exit 1
+fi
 
 rm -f "${MANUAL_STOP_FILE}"
 
 # if SCN passed in as an argument, use it to start the replicat
 if [ $# -eq 1 ]; then
     SCN=$1
-    echo "Starting Replicat ${REPLICAT_NAME} with SCN ${SCN}..."
+    log "Starting Replicat ${REPLICAT_NAME} with SCN ${SCN}..."
     START=", AFTERSCN ${SCN}"
 else
-    echo "Starting Replicat ${REPLICAT_NAME}..."
+    log "Starting Replicat ${REPLICAT_NAME}..."
     START=""
 fi
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') - START REPLICAT ${REPLICAT_NAME} ${START}" >>"$LOG"
+log "START REPLICAT ${REPLICAT_NAME} ${START}"
 
-./ggsci << EOF >>"$LOG" 2>&1
+./ggsci << EOF >>"$LOG_FILE" 2>&1
 START REPLICAT ${REPLICAT_NAME} ${START}
 INFO REPLICAT ${REPLICAT_NAME}
 EXIT
 EOF
 
 if [ $? -eq 0 ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Replicat ${REPLICAT_NAME} started successfully" >>"$LOG"
-    echo "Replicat ${REPLICAT_NAME} started successfully with ${START}"
+    log "Replicat ${REPLICAT_NAME} started successfully"
     exit 0
 else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to start Replicat ${REPLICAT_NAME}" >>"$LOG"
-    echo "Failed to start Replicat ${REPLICAT_NAME} with ${START}"
+    log "FAILED to start Replicat ${REPLICAT_NAME}"
     exit 1
 fi

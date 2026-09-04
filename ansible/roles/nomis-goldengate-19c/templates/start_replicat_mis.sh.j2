@@ -32,10 +32,10 @@ EOF
 
 if [ $? -eq 0 ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Replicat ${REPLICAT_NAME} started successfully" >>"$LOG"
-    echo "Replicat ${REPLICAT_NAME} started successfully with ${START}"
+    echo "Replicat ${REPLICAT_NAME} started successfully"
     exit 0
 else
     echo "$(date '+%Y-%m-%d %H:%M:%S') - FAILED to start Replicat ${REPLICAT_NAME}" >>"$LOG"
-    echo "Failed to start Replicat ${REPLICAT_NAME} with ${START}"
+    echo "Failed to start Replicat ${REPLICAT_NAME}"
     exit 1
 fi
