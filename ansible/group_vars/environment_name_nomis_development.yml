@@ -8,9 +8,10 @@ dns_search_domains:
   - nomis-data-hub.hmpps-development.modernisation-platform.internal
   - azure.noms.root
 tnsnames_port: 1521
-tnsnames_qa19c_service_name: QA19C
-tnsnames_qa11g_service_name: QA11G
-tnsnames_qa11g2_service_name: QA11G2
+tnsnames_dbs:
+  - DEV19C
+  - QA19C
+  - REL19C
 zip_file_temp_dir: /tmp
 winrm_domain_name_fqdn: azure.noms.root
 
@@ -39,6 +40,8 @@ db_configs:
     db_name: qa11g2
   qa19c:
     db_name: qa19c
+  rel19c:
+    db_name: rel19c
   qa11r:
     db_name: qa11r
   RCVCAT:
