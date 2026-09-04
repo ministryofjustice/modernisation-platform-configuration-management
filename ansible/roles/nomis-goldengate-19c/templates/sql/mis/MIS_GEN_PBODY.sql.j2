@@ -302,7 +302,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
 
     EXECUTE IMMEDIATE q'[
       MERGE INTO MIS_DEBUG_CONFIG t
-      USING (SELECT 'MIS_DML_PKG' AS config_key, 0 AS debug_level FROM dual) s
+      USING (SELECT o.object_name AS config_key, 9 AS debug_level FROM dba_objects o WHERE o.OWNER = 'BODISTAGING' AND o.OBJECT_NAME LIKE '%PKG' AND o.OBJECT_TYPE = 'PACKAGE') s
         ON (t.config_key = s.config_key)
       WHEN NOT MATCHED THEN
         INSERT (config_key, debug_level, updated_at)
