@@ -255,8 +255,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
     END PRUNE_TABLE ;
 
     PROCEDURE PURGE_RECORDS (
-    p_staging_owner   IN     varchar2,
-    p_months     in integer default 26
+        p_staging_owner   IN     varchar2,
+        p_months     in integer default 26
     ) IS
         -- packaged procedure purge_records
         -- will delete rows older than p_months months from historical tables
@@ -273,66 +273,77 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
 
     -- Packaged procedure mis_batch_control will run the end of day batch process for MIS refresh.
     -- Called by MIS_BATCH_CONTROL job (once, at end-of-day from source over a DB link).
-    -- Determines whether a stop point exists and, if so, creates/enables the
-    -- MIS_BATCH_ROLL_CHECK polling job, then returns immediately.
-    -- The polling job calls wait_stop_points every 60 seconds and disables itself
-    -- once the batch has been rolled.
+    -- 
+    -- New model (end-of-day): p_stop_scn is supplied, so call create_new_batch directly
+    -- with STAGED_START_SCN to enable SCN-driven batch selection in DML handlers.
+    -- No polling job needed; the batch is deterministic from replicated MIS_SCN.
+    -- 
+    -- Legacy model (manual/operational): p_stop_scn is NULL, so create/enable the
+    -- MIS_BATCH_ROLL_CHECK polling job for backward compatibility.
     PROCEDURE mis_batch_control (
         p_stop_scn IN NUMBER DEFAULT NULL
     ) IS
-        v_points_set BOOLEAN := FALSE;
-        v_job_action VARCHAR2(4000);
+        v_more_points BOOLEAN := FALSE;
     BEGIN
-        mis_gg_ctrl_pkg.set_stop_points(
-            p_staging_owner => mis_gen_pkg.g_mis_owner,
-            p_points_set    => v_points_set,
-            p_stop_scn      => p_stop_scn
-        );
-
-        IF v_points_set THEN
-
-            IF p_stop_scn IS NOT NULL THEN
-                v_job_action :=
-                    'begin ' ||
-                    mis_gen_pkg.g_mis_owner ||
-                    '.MIS_GG_CTRL_PKG.wait_stop_points_job(' ||
-                    to_char(
-                        trunc(p_stop_scn),
-                        'FM99999999999999999999999999999999999999'
-                    ) ||
-                    '); end;';
-            ELSE
-                -- Backward-compatible/manual invocation.
-                v_job_action :=
-                    'begin ' ||
-                    mis_gen_pkg.g_mis_owner ||
-                    '.MIS_GG_CTRL_PKG.wait_stop_points_job; end;';
+        log_debug(mis_gen_pkg.g_mis_owner, 'mis_batch_control', 'Starting MIS batch control procedure. p_stop_scn=' || NVL(TO_CHAR(p_stop_scn), 'NULL'), 1);
+        IF p_stop_scn IS NOT NULL THEN
+            -- New SCN-driven model: create batch with STAGED_START_SCN, no polling needed
+            mis_batch_pkg.create_new_batch(
+                p_staging_owner  => mis_gen_pkg.g_mis_owner,
+                p_restart        => TRUE,
+                p_more_points    => v_more_points,
+                p_staged_start_scn => p_stop_scn
+            );
+            
+            -- If more stop points exist, trigger MIS_PRE_LOAD to process the completed batch
+            IF NOT v_more_points THEN
+                BEGIN
+                    dbms_scheduler.run_job(mis_gen_pkg.g_mis_owner || '.MIS_PRE_LOAD', FALSE);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        mis_gen_pkg.log_strm_error(mis_gen_pkg.g_mis_owner, 'mis_batch_control',
+                            p_err_code => SQLCODE,
+                            p_text => 'Failed to run MIS_PRE_LOAD: ' || SQLERRM);
+                END;
             END IF;
+        ELSE
+            -- Legacy model: fall back to polling job for backward compatibility
+            mis_gg_ctrl_pkg.set_stop_points(
+                p_staging_owner => mis_gen_pkg.g_mis_owner,
+                p_points_set    => v_more_points,
+                p_stop_scn      => p_stop_scn
+            );
 
-            BEGIN
-                dbms_scheduler.create_job(
-                    job_name        => 'MIS_BATCH_ROLL_CHECK',
-                    job_type        => 'PLSQL_BLOCK',
-                    job_action      => v_job_action,
-                    start_date      => systimestamp,
-                    repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
-                    enabled         => TRUE,
-                    auto_drop       => FALSE,
-                    comments        =>
-                        'GoldenGate stop-point poll: checks Replicat progress ' ||
-                        'against the supplied MIS stop SCN every 60 seconds.'
-                );
-            EXCEPTION
-                WHEN OTHERS THEN
-                    IF SQLCODE = -27477 THEN
-                        dbms_scheduler.enable(
+            IF v_more_points THEN
+                -- Create/enable the polling job (legacy path only)
+                BEGIN
+                    dbms_scheduler.create_job(
+                        job_name        => 'MIS_BATCH_ROLL_CHECK',
+                        job_type        => 'PLSQL_BLOCK',
+                        job_action      =>
+                            'begin ' ||
                             mis_gen_pkg.g_mis_owner ||
-                            '.MIS_BATCH_ROLL_CHECK'
-                        );
-                    ELSE
-                        RAISE;
-                    END IF;
-            END;
+                            '.MIS_GG_CTRL_PKG.wait_stop_points_job; end;',
+                        start_date      => systimestamp,
+                        repeat_interval => 'FREQ=SECONDLY;INTERVAL=60',
+                        enabled         => TRUE,
+                        auto_drop       => FALSE,
+                        comments        =>
+                            'GoldenGate stop-point poll: checks Replicat progress ' ||
+                            'every 60 seconds (legacy manual batch-roll mode).'
+                    );
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        IF SQLCODE = -27477 THEN
+                            dbms_scheduler.enable(
+                                mis_gen_pkg.g_mis_owner ||
+                                '.MIS_BATCH_ROLL_CHECK'
+                            );
+                        ELSE
+                            RAISE;
+                        END IF;
+                END;
+            END IF;
         END IF;
     END mis_batch_control;
 

@@ -68,7 +68,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         EXECUTE IMMEDIATE v_plsql USING p_datetime, v_scn;        
       END IF;
     
-      -- Get the SCN immediately after the stop point
+      -- Get the SCN immediately after the stop point insert transaction.
+      -- This is the boundary SCN used by the target-side batch logic so that
+      -- the new batch starts strictly *after* the stop-point transaction.
       SELECT current_scn
       INTO   v_scn2
       FROM   v$database;
@@ -90,10 +92,12 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
 
         EXECUTE IMMEDIATE v_plsql USING v_scn2, v_scn;
 
-      -- commit the transaction so that the stop point is available to the MIS database immediately
+      -- Commit so the stop-point record is visible to downstream processing.
       COMMIT;
 
-      RETURN v_scn;
+      -- Return AFTER_SCN (v_scn2), not STOP_SCN (v_scn), to mirror the legacy
+      -- Streams boundary model where processing used the post-stop SCN.
+      RETURN v_scn2;
 
     END ADD_MIS_STOP_POINT;
 

@@ -21,7 +21,8 @@ REPORTROLLOVER AT 00:00
 -- All MIS mappings use this macro.
 --
 -- MIS_LOAD_ID is a target-only primary-key column and must be present before the DML handler receives the LCR.
--- The SCN isn't stored in the LCR so we need to get it from the environment.
+-- MIS_SCN carries the source commit SCN and is used by apply_handler_user for SCN-driven batch selection
+-- (via get_batch_number with STAGED_START_SCN, enabling deterministic batch routing without polling).
 MACRO #MIS_MAP
 PARAMS (#SOURCE_TABLE, #TARGET_TABLE)
 BEGIN

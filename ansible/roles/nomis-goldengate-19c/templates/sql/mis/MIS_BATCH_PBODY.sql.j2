@@ -39,18 +39,41 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
   FUNCTION get_batch_number(
     p_staging_owner   IN varchar2 DEFAULT null,
-    p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
+    p_ignore_datetime   IN BOOLEAN DEFAULT FALSE,
+    p_scn             IN NUMBER DEFAULT NULL
   ) RETURN number
   IS
   -- packaged function get_batch_number returns the active batch number for
-  -- the staging process, derived from the ETL_LOAD_LOG table
+  -- the staging process, derived from the ETL_LOAD_LOG table.
+  -- If p_scn is supplied, returns the batch row whose STAGED_START_SCN <= p_scn,
+  -- allowing SCN-driven batch selection (new model).
+  -- Otherwise uses legacy datetime-based logic (fallback for manual/legacy processing).
 
     l_batch_number  NUMBER(38,0) := -1;
     l_plsql    varchar2(2000); 
     l_staging_owner  varchar2(30) := MIS_gen_pkg.strip_input(p_staging_owner,30);
 
   BEGIN
-    -- determine number of latest open batch for source
+    -- SCN-driven batch selection (new end-of-day path)
+    IF p_scn IS NOT NULL THEN
+        l_plsql := 'select min(load_id) ' ||
+                   'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                   'where :scn >= staged_start_scn';
+        IF p_staging_owner IS NOT NULL THEN
+            l_plsql := l_plsql || ' and repository_name = ''' || l_staging_owner || '''';
+        END IF;
+        l_plsql := l_plsql || ' order by staged_start_scn desc, load_id desc';
+        
+        BEGIN
+            execute immediate l_plsql into l_batch_number using p_scn;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                l_batch_number := -1;
+        END;
+        RETURN nvl(l_batch_number, -1);
+    END IF;
+
+    -- Legacy datetime-based batch selection (fallback)
     l_plsql := 'select max(load_id) ' ||
                  'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG';
     IF p_staging_owner IS NOT NULL THEN
@@ -416,7 +439,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   PROCEDURE create_new_batch(
     p_staging_owner   IN  varchar2,
     p_restart         IN  BOOLEAN DEFAULT TRUE,
-    p_more_points       OUT BOOLEAN
+    p_more_points       OUT BOOLEAN,
+    p_staged_start_scn  IN  NUMBER DEFAULT NULL
   ) IS
   -- packaged procedure create_new_batch
   -- stops running apply processes,
@@ -519,11 +543,21 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     END IF;
 
     -- insert new active batch row for source
-    v_plsql := 'insert into ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
-                      '(load_id, job_name, repository_name, staged_start_datetime, message) ' ||
-               'VALUES (:load_id, :job_name, :repos_name, :start_datetime, ''Batch created'')';  
-    execute immediate v_plsql
-    using v_new_batch_number, v_job_name, v_staging_owner, v_date;
+    IF p_staged_start_scn IS NOT NULL THEN
+        -- New model: include STAGED_START_SCN for SCN-driven batch selection
+        v_plsql := 'insert into ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                         '(load_id, job_name, repository_name, staged_start_datetime, staged_start_scn, message) ' ||
+                  'VALUES (:load_id, :job_name, :repos_name, :start_datetime, :start_scn, ''Batch created'')';  
+        execute immediate v_plsql
+        using v_new_batch_number, v_job_name, v_staging_owner, v_date, p_staged_start_scn;
+    ELSE
+        -- Legacy model: no STAGED_START_SCN
+        v_plsql := 'insert into ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                         '(load_id, job_name, repository_name, staged_start_datetime, message) ' ||
+                  'VALUES (:load_id, :job_name, :repos_name, :start_datetime, ''Batch created'')';  
+        execute immediate v_plsql
+        using v_new_batch_number, v_job_name, v_staging_owner, v_date;
+    END IF;
 
 
     IF (v_staged_end_datetime IS NULL) AND (v_old_batch_number > 1) THEN

@@ -28,6 +28,8 @@ grant execute on DBMS_SCHEDULER to {{ oracle_goldengate_sql_owner }};
 grant create job to {{ oracle_goldengate_sql_owner }};
 grant create external job to {{ oracle_goldengate_sql_owner }};
 
+PROMPT Running DDL changes for MIS packages: 
+@mis_ddl_changes.sql
 
 PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
 @MIS_GEN_PKG.sql

@@ -510,7 +510,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
     v_row_lcr_list    sys.lcr$_row_list := NULL;
     v_plsql      varchar2(4000); 
 
-    v_batch_number    NUMBER(38,0) := mis_batch_pkg.get_batch_number;
+    v_batch_number    NUMBER(38,0) := -1;  -- will be set using SCN-driven logic after LCR parse
     v_source_time    DATE := null;
     v_row_count      number := -1;
     v_max_scn      number := null;
@@ -588,11 +588,24 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
            (p_in_anydata, v_row_lcr, v_source_db_name, v_source_object_owner,
             v_object_name, v_command_type, v_source_time, v_scn, v_tag);
 
+        -- Determine batch number using SCN-driven logic (new model).
+        -- If STAGED_START_SCN is populated on ETL_LOAD_LOG, route to batch with STAGED_START_SCN >= v_scn.
+        -- Otherwise fall back to legacy datetime-based logic.
+        v_batch_number := mis_batch_pkg.get_batch_number(
+            p_staging_owner => v_target_object_owner,
+            p_scn           => v_scn
+        );
+
+        -- If SCN-driven lookup failed (no batch with STAGED_START_SCN >= v_scn), fall back to legacy logic
+        IF v_batch_number <= 0 THEN
+            v_batch_number := mis_batch_pkg.get_batch_number(p_staging_owner => v_target_object_owner);
+        END IF;
+
         -- debug message
         log_debug (v_target_object_owner, 'apply_handler_user.1',
                         'Processing ' || v_command_type || ' row LCR for ' ||
                         v_source_object_owner || '.' || v_object_name || '@' ||
-                        v_source_db_name || '.', 2);
+                        v_source_db_name || ' (MIS_SCN=' || v_scn || ', batch=' || v_batch_number || ')', 2);
 
         -----------------------------------------------
         -- Check for PK updates and split if necessary

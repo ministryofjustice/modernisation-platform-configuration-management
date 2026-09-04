@@ -96,7 +96,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   ) IS
 --  PRAGMA AUTONOMOUS_TRANSACTION;
   -- packaged procedure set_stop_points (GG-migrated version)
-  -- Determines whether there is an outstanding MIS stop point for GoldenGate.
+  -- LEGACY/MANUAL MODE ONLY: determines whether there is an outstanding MIS stop point for GoldenGate.
+  -- NEW MODE: end-of-day path supplies STAGED_START_SCN directly; this procedure is not needed.
   
     l_plsql      varchar2(2000); 
     l_stop_scn NUMBER := p_stop_scn;
@@ -107,6 +108,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
     l_source_db_name  varchar2(255) := mis_gen_pkg.get_source_database_name;
 
   BEGIN
+    log_debug(p_staging_owner, 'set_stop_points', 'Starting set_stop_points procedure. p_stop_scn=' || NVL(TO_CHAR(p_stop_scn), 'NULL'), 1);
 
     -- only do the old processing if scn is not passed in
     IF l_stop_scn IS NULL THEN
@@ -127,17 +129,19 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
         execute immediate l_plsql
         into l_stop_scn
         using l_staged_date;
-    END IF;
+        log_debug(p_staging_owner, 'set_stop_points',
+            'Debug: stop_scn=' || l_stop_scn ||
+            ', l_old_batch_number=' || l_old_batch_number ||
+            ', l_staged_date=' || to_char(l_staged_date,'DD-MON-YYYY HH24:MI:SS') || '.', 1);
 
-    log_debug(p_staging_owner, 'set_stop_points',
-        'Debug: stop_scn=' || l_stop_scn ||
-        ', l_old_batch_number=' || l_old_batch_number ||
-        ', l_staged_date=' || to_char(l_staged_date,'DD-MON-YYYY HH24:MI:SS') || '.', 1);
-
-    IF l_stop_scn IS NULL THEN
-        p_points_set := FALSE;
+        IF l_stop_scn IS NULL THEN
+            p_points_set := FALSE;
+        ELSE
+            -- additional processing if stop_scn is not null
+            p_points_set := TRUE;
+        END IF;
     ELSE
-        -- additional processing if stop_scn is not null
+        -- stop_scn was passed in, so we consider points set
         p_points_set := TRUE;
     END IF;
 
@@ -159,7 +163,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
   ) IS
   -- packaged procedure wait_stop_points
   -- Performs one non-blocking GoldenGate apply progress check.
-  -- Called by the MIS_BATCH_ROLL_CHECK scheduler job every 60 seconds.
+  -- LEGACY/MANUAL MODE ONLY: called by MIS_BATCH_ROLL_CHECK scheduler job every 60 seconds
+  -- during manual batch-roll operations (when p_stop_scn is NULL at call site).
+  -- NEW MODE: end-of-day path uses SCN-driven batch selection; no polling needed.
   -- Rolls the batch once, exactly once, when APPLIED_LOW_POSITION >= STOP_SCN,
   -- then disables the polling job so it stops firing.
   -- No PRAGMA AUTONOMOUS_TRANSACTION: the session-scoped DBMS_LOCK must not be
@@ -383,8 +389,9 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
 
   END wait_stop_points;
 
-  -- overridden version of wait_stop_points with no params
-  -- called from mis_batch_roll_check job
+    -- Wrapper for wait_stop_points (legacy/manual mode only)
+    -- Called from MIS_BATCH_ROLL_CHECK job in manual batch-roll operations.
+    -- NEW MODE: end-of-day path bypasses this polling job entirely; uses SCN-driven batch selection.
     PROCEDURE wait_stop_points_job(
        p_stop_scn IN NUMBER DEFAULT NULL
     ) IS

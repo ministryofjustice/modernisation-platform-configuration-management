@@ -28,7 +28,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AUTHID
     -- the staging process, derived from the ETL_LOAD_LOG table
     FUNCTION get_batch_number(
         p_staging_owner   IN varchar2 DEFAULT null,
-        p_ignore_datetime   IN BOOLEAN DEFAULT FALSE
+        p_ignore_datetime   IN BOOLEAN DEFAULT FALSE,
+        p_scn             IN NUMBER DEFAULT NULL
     ) RETURN number;
 
     -- Packaged function get_scn_timestamp returns the timestamp
@@ -62,7 +63,8 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AUTHID
     PROCEDURE create_new_batch(
         p_staging_owner   IN  varchar2,
         p_restart     IN  BOOLEAN DEFAULT TRUE,
-        p_more_points     OUT BOOLEAN);
+        p_more_points     OUT BOOLEAN,
+        p_staged_start_scn  IN  NUMBER DEFAULT NULL);
 
     -- Packaged procedure reload_tables
     -- will insert/overwrite entries for latest batch in p_tgt_owner.p_tgt_table
