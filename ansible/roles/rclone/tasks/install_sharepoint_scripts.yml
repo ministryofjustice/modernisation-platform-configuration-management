@@ -1,0 +1,10 @@
+---
+- name: Copy sharepoint helper scripts
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/root/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - sharepoint-get-drive-id.sh
