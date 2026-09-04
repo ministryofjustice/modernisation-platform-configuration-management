@@ -1,0 +1,27 @@
+- name: Get Ora version
+  import_tasks: detect_ora_version.yml
+
+- name: Merge GoldenGate defaults with environment overrides
+  ansible.builtin.set_fact:
+    oracle_goldengate_group: >-
+      {{
+        oracle_goldengate_group_defaults
+        | combine(oracle_goldengate_group_overrides | default({}), recursive=True)
+      }}
+
+# add debug to check the merged oracle_goldengate_group variable
+- name: Debug merged oracle_goldengate_group variable
+  ansible.builtin.debug:
+    var: oracle_goldengate_group
+    verbosity: 2
+
+# stop processing here if the merged oracle_goldengate_group variable is empty
+- name: Fail if merged oracle_goldengate_group variable is empty
+  ansible.builtin.fail:
+    msg: "Error: Merged oracle_goldengate_group variable is empty. Please check your group_vars and defaults."
+  when: oracle_goldengate_group | length == 0
+
+- name: Set deployment target host as a fact for use in templates
+  ansible.builtin.set_fact:
+    target_host: "{{ inventory_hostname }}"
+  when: (inventory_hostname is defined) and (inventory_hostname|length > 0)

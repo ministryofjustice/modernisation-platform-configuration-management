@@ -1,0 +1,48 @@
+---
+# Configure Oracle database parameters for GoldenGate replication for a single database
+# This file is called by configure_database_parameters.yml for each database SID
+
+- name: Configure parameters in the database
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_SID="{{ oracle_goldengate_local_db_sid }}"
+    export ORACLE_HOME="{{ oracle_goldengate_group.mis.oracle_home }}"
+    export PATH="${ORACLE_HOME}/bin:${PATH}"
+
+    SQL_CONNECT_STR="/ as sysdba"
+
+    sqlplus -s "${SQL_CONNECT_STR}" << 'EOSQL'
+    SET ECHO OFF
+    SET FEEDBACK ON
+    SET HEADING OFF
+    SET PAGESIZE 0
+    
+    WHENEVER SQLERROR EXIT SQL.SQLCODE
+    
+    PROMPT Current ENABLE_GOLDENGATE_REPLICATION value:
+    SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+    
+    PROMPT Enable GoldenGate replication
+    ALTER SYSTEM SET ENABLE_GOLDENGATE_REPLICATION=TRUE SCOPE=BOTH;
+    
+    PROMPT New ENABLE_GOLDENGATE_REPLICATION value:
+    SELECT value FROM v$parameter WHERE name = 'enable_goldengate_replication';
+       
+    EXIT
+    EOSQL
+  args:
+    executable: /bin/bash
+  register: sql_output
+  become: yes 
+  become_user: "{{ oracle_goldengate_owner }}"
+  
+- name: Display SQL output for {{ oracle_goldengate_local_db_sid }}
+  ansible.builtin.debug:
+    var: sql_output.stdout_lines
+  when: sql_output is defined
+
+- name: Check if SQL execution was successful for {{ oracle_goldengate_local_db_sid }}
+  ansible.builtin.fail:
+    msg: "Failed to configure database parameters for GoldenGate replication on {{ oracle_goldengate_local_db_sid }}. SQL output: {{ sql_output.stdout_lines }}"
+  when: sql_output is defined and sql_output.rc != 0
+

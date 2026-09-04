@@ -1,0 +1,97 @@
+---
+# create oracle_goldengate_sql_dir directory if it doesn't exist
+- name: Ensure GoldenGate SQL directory exists
+  ansible.builtin.file:
+    path: "{{ oracle_goldengate_sql_dir }}"
+    state: directory
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0755"
+
+- name: Deploy Auditref support packages
+  when:
+    - run_auditref is defined and run_auditref
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for Auditref stream used in packages
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.auditref.schema_owner }}"
+        oracle_goldengate_group_name: "auditref"
+        oracle_goldengate_group_extract_name: "{{ oracle_goldengate_group.auditref.extract_name }}"
+        oracle_goldengate_group_replicat_name: "{{ oracle_goldengate_group.auditref.replicat_name }}"
+        oracle_goldengate_group_trail_prefix: "{{ oracle_goldengate_group.auditref.trail_prefix }}"
+        oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.schema_owner }}"
+        oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.auditref.dummy_target_schema }}"
+        
+    - name: Get password secret metadata from AWS Secrets Manager to be used for the db link to the source database
+      ansible.builtin.shell: |
+        aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query SecretString \
+          --output text
+      register: oracle_goldengate_password_secret_raw
+      changed_when: false
+      no_log: true
+
+    - name: Set password secret fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
+      no_log: true
+
+    - name: Check Source schema password exists in secret
+      ansible.builtin.assert:
+        that:
+          - oracle_goldengate_group.source.schema_owner | lower in oracle_goldengate_password_secret
+        fail_msg: >-
+          Password key '{{ oracle_goldengate_group.source.schema_owner | lower }}' was not found in AWS secret
+          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
+          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
+        quiet: true
+
+    - name: Set Source schema password fact
+      ansible.builtin.set_fact:
+        oracle_goldengate_source_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.source.schema_owner | lower] }}"
+      no_log: true
+      
+    - name: Ensure Auditref SQL directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_sql_dir }}/auditref"
+        state: directory
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0755"
+
+    - name: Deploy MIS support packages (Auditref stream uses the same support packages as MIS stream)
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ oracle_goldengate_sql_dir }}/auditref/{{ item | basename | regex_replace('\\.j2$', '') }}"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+      loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/mis/*.j2', wantlist=True) }}"
+
+    - name: Run Auditref support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.auditref.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.auditref.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/auditref
+        sqlplus -s / as sysdba @install_mis_packages.sql
+      args:
+        executable: /bin/bash
+      register: auditref_config_output
+      failed_when: auditref_config_output.rc != 0
+
+    - name: Show output of Auditref package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['Auditref package install output:'] + (auditref_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in auditref_config_output.stdout or 'compilation errors' in auditref_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of Auditref package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of Auditref package install: {{ auditref_config_output.stdout }}"
+      when: "'ORA-' in auditref_config_output.stdout or 'compilation errors' in auditref_config_output.stdout"
+

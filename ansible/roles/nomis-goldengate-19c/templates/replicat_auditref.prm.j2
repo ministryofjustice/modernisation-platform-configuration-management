@@ -1,0 +1,35 @@
+REPLICAT {{ oracle_goldengate_group.auditref.replicat_name }}
+
+GETENV (NLS_LANG)
+
+USERIDALIAS AUDIT_DB
+
+-- --- Error handling ---
+-- Stop on all unhandled errors. Never silently lose source changes.
+REPERROR (DEFAULT, ABEND)
+-- Stop on errors raised by Integrated Replicat procedural DML handlers.
+REPERROR (PROCEDURE, ABEND)
+-- Retain diagnostic details; this does not cause records to be skipped.
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditref.replicat_name }}.dsc,APPEND,MEGABYTES 100
+-- Prevent the discard file from filling up and causing the process to abend
+DISCARDROLLOVER ON sunday
+-- Report a count of transaction records processed since startup
+REPORTCOUNT EVERY 15 MINUTES, RATE
+-- Rotate the report file at midnight every day
+REPORTROLLOVER AT 00:00
+
+MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditref.schema_owner }}"."*", &
+    COLMAP (
+      USEDEFAULTS, &
+      MIS_SOURCE_TIME = @GETENV('GGHEADER', 'COMMITTIMESTAMP'), &
+      MIS_COMMAND_FLAG = @CASE(
+        @GETENV('GGHEADER', 'OPTYPE'), 
+          'INSERT', 'I', 
+          'UPDATE', 'U', 
+          'PK UPDATE', 'U', 
+          'SQL COMPUPDATE', 'U', 
+          'DELETE', 'D', 
+          'TRUNCATE', 'D', 
+          '?'), &
+      MIS_SCN = @GETENV('TRANSACTION', 'CSN'));
+

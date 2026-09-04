@@ -1,0 +1,208 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AUTHID DEFINER AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle Goldengate for Prison-NOMIS release 2.0.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version:     2.0
+ *
+ *  Author:    R. Taylor - EDS UK Ltd.
+ *
+ *  Date:    Monday, 21 May 2007.
+ * 
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
+ *
+ *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ *      ...
+ *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
+ */
+
+    -- Type definitions for lists of table information
+    TYPE mis_anydata_array IS VARRAY(2147483647) OF SYS.ANYDATA;
+    TYPE db_name_list IS TABLE OF VARCHAR2(128);
+    TYPE owner_list IS TABLE OF all_tables.owner%type;
+    TYPE object_list IS TABLE OF all_objects.object_name%type;
+    TYPE apply_list IS TABLE OF all_apply.apply_name%type;
+    TYPE capture_list IS TABLE OF all_capture.capture_name%type;
+    TYPE keep_dups_list is TABLE OF CHAR;
+    TYPE key_col_list is TABLE OF VARCHAR2(400);
+    TYPE tab_seq_list is TABLE OF NUMBER;
+    TYPE operations_list IS TABLE OF all_apply_dml_handlers.operation_name%type;
+    TYPE procedure_list IS TABLE OF all_apply_dml_handlers.user_procedure%type;
+    TYPE rule_list IS TABLE OF all_streams_rules.rule_name%type;
+    TYPE string_list is TABLE OF VARCHAR2(4000);
+    TYPE scn_list is TABLE OF NUMBER;
+
+    -- package level variable declarations
+    g_version      VARCHAR2(20) := '2.0.1';
+    g_mis_owner   VARCHAR2(30) := '{{ oracle_goldengate_sql_owner }}';
+--    g_queue_owner   VARCHAR2(30) := SYS_CONTEXT('USERENV', 'CURRENT_USER');
+    g_queue_owner   VARCHAR2(30) := upper('{{ oracle_goldengate_dbuser }}');
+    g_source_owner   VARCHAR2(30) := '{{ oracle_goldengate_group.source.schema_owner }}';
+    
+    g_ogg_group_name VARCHAR2(30) := upper('{{ oracle_goldengate_group_name }}');
+    g_ogg_scripts_dir VARCHAR2(200) := '{{ oracle_goldengate_scripts_dir }}';
+
+    g_ogg_extract   VARCHAR2(30) := '{{ oracle_goldengate_group_extract_name }}';
+    g_capture_name VARCHAR2(30) := 'OGG$CAP_'||g_ogg_extract;
+    g_capture_queue_name VARCHAR2(30) := 'OGG$Q_'||g_ogg_extract;
+
+    g_ogg_replicat VARCHAR2(30) := '{{ oracle_goldengate_group_replicat_name }}';
+    g_apply_name   VARCHAR2(30) := 'OGG$'||g_ogg_replicat;
+    g_apply_queue_name VARCHAR2(30) := 'OGGQ$'||g_ogg_replicat;
+
+    -- debug flag: No longer needs to be set to 1 for debug messages to be logged, as the debug level is now controlled by the MIS_DEBUG_CONFIG table.
+    g_debug NUMBER := 1;
+    g_debug_mis_dml VARCHAR2(30) := 'MIS_DML_PKG';
+    g_debug_mis_job VARCHAR2(30) := 'MIS_JOB_PKG';
+    g_debug_mis_gg_ctrl VARCHAR2(30) := 'MIS_GG_CTRL_PKG';
+    g_debug_mis_batch VARCHAR2(30) := 'MIS_BATCH_PKG';
+    g_debug_mis_gen VARCHAR2(30) := 'MIS_GEN_PKG';
+    g_debug_mis_tab_ctrl VARCHAR2(30) := 'MIS_TAB_CTRL_PKG';
+    g_debug_level_cached      NUMBER := 0;
+    g_debug_cache_loaded      BOOLEAN := FALSE;
+    g_debug_cache_loaded_at   DATE;
+    g_debug_cache_key         VARCHAR2(100);
+    g_debug_cache_ttl_mins    CONSTANT PLS_INTEGER := 10;
+
+    g_etl_load_log_owner VARCHAR2(30);
+
+    -- retry limit: number of times to loop when waiting for stop point processing
+    --              wait time for each loop is g_retry_limit * g_sleep1
+    g_retry_limit   NUMBER := 120;
+
+    -- sleep before retry period: times in seconds to wait after timeout before retry
+    g_sleep1   NUMBER := 90;
+    g_sleep2   NUMBER := 510;
+
+
+    -- define controls for statistics refresh of busy tables
+    g_stats_max_days    NUMBER := 8;
+    g_stats_min_mins    NUMBER := 15;
+    g_stats_pct_tolerance  NUMBER := 10;
+    g_stats_low_count     NUMBER := 1000;
+
+    -- define exceptions
+    g_mis_streams_exception         CONSTANT NUMBER := -20001;
+    MIS_STREAMS_EXCEPTION         EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_EXCEPTION, -20001);
+    g_mis_streams_data_exception   CONSTANT NUMBER := -20002;
+    MIS_STREAMS_DATA_EXCEPTION     EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_DATA_EXCEPTION, -20002);
+    g_mis_streams_table_exception   CONSTANT NUMBER := -20003;
+    MIS_STREAMS_TABLE_EXCEPTION   EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_TABLE_EXCEPTION, -20003);
+    g_mis_streams_queue_exception   CONSTANT NUMBER := -20004;
+    MIS_STREAMS_QUEUE_EXCEPTION   EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_QUEUE_EXCEPTION, -20004);
+    g_mis_streams_ctrl_exception   CONSTANT NUMBER := -20005;
+    MIS_STREAMS_CTRL_EXCEPTION     EXCEPTION;
+    PRAGMA EXCEPTION_INIT(MIS_STREAMS_CTRL_EXCEPTION, -20005);
+
+    -- define error conditions for exception handling
+    invalid_column EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_column, -23607);
+    duplicate_column_name EXCEPTION;
+    PRAGMA EXCEPTION_INIT(duplicate_column_name, -26673);
+    invalid_lob_locator EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_lob_locator, -22275);
+    cannot_alter_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(cannot_alter_process, -26666);
+    timeout_stopping_process EXCEPTION;
+    PRAGMA EXCEPTION_INIT(timeout_stopping_process, -26672);
+    invalid_param_value EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_param_value, -23605);
+    invalid_datatype EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_param_value, -902);
+    scn_limit_reached EXCEPTION;
+    PRAGMA EXCEPTION_INIT(scn_limit_reached, -26717);
+    invalid_scn EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_scn, -8181);
+    invalid_null_value EXCEPTION;
+    PRAGMA EXCEPTION_INIT(invalid_null_value, -24031);
+    e_row_missing EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_row_missing, -26787);  -- ORA-26787: row with key does not exist
+
+    -- define error codes that need numerical checking
+    g_scn_limit_reached   NUMBER := 26717;
+
+    -- Packaged function get_etl_load_log_owner returns the owner of the ETL_LOAD_LOG table
+    FUNCTION get_etl_load_log_owner RETURN VARCHAR2;
+
+    -- function strip_input
+    -- will remove single quotes and comment characters from input string
+    FUNCTION strip_input (p_str varchar2, p_len number)
+    RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged procedure log_strm_error
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_error (
+        p_staging_owner IN     varchar2,
+        p_location   IN     varchar2 DEFAULT 'MIS_GEN_PKG',
+        p_src_db   IN     varchar2 DEFAULT NULL,
+        p_src_owner   IN     varchar2 DEFAULT NULL,
+        p_src_table   IN     varchar2 DEFAULT NULL,
+        p_tgt_table   IN     varchar2 DEFAULT NULL,
+        p_batch_id   IN     number   DEFAULT NULL,
+        p_err_code   IN     number   DEFAULT NULL,
+        p_text      IN     varchar2 DEFAULT NULL);
+
+    -- Packaged procedure log_strm_message
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_message (
+        p_staging_owner IN     varchar2,
+        p_location   IN     varchar2,
+        p_text      IN     varchar2);
+
+    -- packaged procedure log_strm_debug
+    -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    PROCEDURE log_strm_debug (
+        p_staging_owner   IN     varchar2,
+        p_location     IN     varchar2,
+        p_text      IN     varchar2,
+        p_threshold   IN     number DEFAULT 0);
+
+    FUNCTION get_capture_name(
+        p_source_owner IN varchar2
+    ) RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged function get_capture_list returns a list of all capture processes
+    -- or those associated with a particular staging table owner (if supplied)
+    FUNCTION get_capture_list(
+        p_staging_owner   IN     varchar2 DEFAULT NULL
+    ) RETURN capture_list;
+
+    -- Packaged procedure get_apply_list returns a list of all apply processes
+    -- or those associated with a particular staging table owner (if supplied)
+    FUNCTION get_apply_list(
+        p_staging_owner   IN     varchar2 DEFAULT NULL
+    ) RETURN apply_list;
+
+    -- Packaged function object_list_to_comma returns a comma-separated string
+    -- containing values from a object_list type
+    FUNCTION object_list_to_comma(
+        p_object_list     IN     object_list)
+    RETURN varchar2;
+
+    -- Packaged function comma_to_object_list returns a object_list type
+    -- containing values from a comma-separated string
+    FUNCTION comma_to_object_list(
+        p_object_str     IN     varchar2)
+    RETURN object_list RESULT_CACHE;
+
+    -- Packaged function get_source_database_name returns the name of the source database.
+    FUNCTION get_source_database_name RETURN varchar2;
+
+    -- New debug config procedures for MIS_GEN_PKG
+    PROCEDURE ensure_debug_config;
+    PROCEDURE refresh_debug_level_cache(p_config_key IN VARCHAR2);
+    FUNCTION get_debug_level(p_config_key IN VARCHAR2) RETURN NUMBER;
+
+END MIS_GEN_PKG;
+/
+
+show errors

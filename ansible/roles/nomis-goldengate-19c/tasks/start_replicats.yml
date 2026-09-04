@@ -1,0 +1,54 @@
+---
+# Start GoldenGate Replicat processes
+
+- name: Set AFTERCSN clause
+  ansible.builtin.set_fact:
+    afterscn_clause: >-
+      {% if oracle_goldengate_start_mode == 'scn' and oracle_goldengate_start_scn != '' %}
+      ,AFTERCSN {{ oracle_goldengate_start_scn }}
+      {% else %}
+      {% endif %}
+
+- name: Start AUDITDATA Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditdata.sh" {{ oracle_goldengate_start_scn | trim }}
+  args:
+    executable: /bin/bash
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditdata_replicat
+  changed_when: "'started successfully' in start_auditdata_replicat.stdout.lower() or 'RUNNING' in start_auditdata_replicat.stdout"
+  when: run_auditdata
+
+- name: Start AUDITREF Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_auditref.sh" {{ oracle_goldengate_start_scn | trim }}
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_auditref_replicat
+  changed_when: "'started successfully' in start_auditref_replicat.stdout.lower() or 'RUNNING' in start_auditref_replicat.stdout"
+  when: run_auditref
+
+- name: Start MIS Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/start_replicat_mis.sh" {{ oracle_goldengate_start_scn | trim }}
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: start_mis_replicat
+  changed_when: "'started successfully' in start_mis_replicat.stdout.lower() or 'RUNNING' in start_mis_replicat.stdout"
+  when: run_mis
