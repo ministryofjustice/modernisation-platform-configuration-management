@@ -333,7 +333,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
                         mis_gen_pkg.g_mis_owner || '.MIS_BATCH_ROLL_CHECK');
                 EXCEPTION
                     WHEN OTHERS THEN
-                        log_message(p_staging_owner, 'wait_stop_points',
+                        mis_gen_pkg.log_strm_error(p_staging_owner, 'wait_stop_points',
                             'Warning: could not re-enable MIS_BATCH_ROLL_CHECK: ' || SQLERRM);
                 END;
             ELSE
