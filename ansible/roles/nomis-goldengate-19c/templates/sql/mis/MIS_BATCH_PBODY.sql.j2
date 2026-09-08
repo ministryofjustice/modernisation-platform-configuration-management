@@ -56,39 +56,39 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
   BEGIN
     -- SCN-driven batch selection (new end-of-day path)
     IF p_scn IS NOT NULL THEN
-        l_plsql := 'select min(load_id) ' ||
-                   'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
-                   'where :scn >= staged_start_scn';
-        IF p_staging_owner IS NOT NULL THEN
-            l_plsql := l_plsql || ' and repository_name = ''' || l_staging_owner || '''';
-        END IF;
-        l_plsql := l_plsql || ' order by staged_start_scn desc, load_id desc';
-        
-        BEGIN
-            execute immediate l_plsql into l_batch_number using p_scn;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                l_batch_number := -1;
-        END;
-        RETURN nvl(l_batch_number, -1);
+      l_plsql := 'select max(load_id) ' ||
+                  'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG ' ||
+                  'where :scn >= staged_start_scn';
+      IF p_staging_owner IS NOT NULL THEN
+          l_plsql := l_plsql || ' and repository_name = ''' || l_staging_owner || '''';
+      END IF;
+      --l_plsql := l_plsql || ' order by staged_start_scn desc, load_id desc';
+      
+      BEGIN
+          execute immediate l_plsql into l_batch_number using p_scn;
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              l_batch_number := -1;
+      END;
+      RETURN nvl(l_batch_number, -1);
+    ELSE
+      -- Legacy datetime-based batch selection (fallback)
+      l_plsql := 'select max(load_id) ' ||
+                  'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG';
+      IF p_staging_owner IS NOT NULL THEN
+          l_plsql := l_plsql ||
+                ' where repository_name = ''' || l_staging_owner || '''';
+          IF p_ignore_datetime <> TRUE THEN
+              l_plsql := l_plsql ||
+                  ' and staged_end_datetime is null' ||
+                  ' and load_start_datetime is null';
+          END IF;
+      END IF;
+
+      execute immediate l_plsql into l_batch_number;
+
+      return nvl(l_batch_number,-1);
     END IF;
-
-    -- Legacy datetime-based batch selection (fallback)
-    l_plsql := 'select max(load_id) ' ||
-                 'from ' || MIS_GEN_PKG.get_etl_load_log_owner || '.ETL_LOAD_LOG';
-    IF p_staging_owner IS NOT NULL THEN
-        l_plsql := l_plsql ||
-               ' where repository_name = ''' || l_staging_owner || '''';
-        IF p_ignore_datetime <> TRUE THEN
-            l_plsql := l_plsql ||
-                 ' and staged_end_datetime is null' ||
-                 ' and load_start_datetime is null';
-        END IF;
-    END IF;
-
-    execute immediate l_plsql into l_batch_number;
-
-    return nvl(l_batch_number,-1);
 
   EXCEPTION
 
