@@ -110,3 +110,22 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
     autofs_mount: true
+
+rclone_secretsmanager_app_registrations:
+  rclone:
+    secret: "delius-mis-prod-sharepoint-app-registration"
+    users:
+      - client_id:
+      - client_secret:
+      - tenant_id:
+
+rclone_secretsmanager_drive_ids:
+  rclone:
+    secret: "delius-mis-prod-sharepoint-drive-ids"
+    users:
+      - wmt:
+
+rclone_sharepoint_config:
+  wmt:
+    app_registrations_secret_key: rclone
+    drive_ids_secret_key: rclone

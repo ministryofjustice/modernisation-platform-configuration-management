@@ -16,6 +16,7 @@
   ansible.builtin.uri:
     url: https://downloads.rclone.org/version.txt
     return_content: true
+  check_mode: false
   register: rclone_latest_version_uri
 
 - name: Parse latest rclone version
