@@ -24,4 +24,4 @@
 - name: Reload systemd if necessary
   ansible.builtin.systemd:
     daemon_reload: true
-  when: rclone_sync_systemd.changed
+  when: rclone_sync_systemd is changed
