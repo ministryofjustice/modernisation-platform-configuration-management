@@ -1,0 +1,6 @@
+---
+- name: Enable rclone-sync service
+  ansible.builtin.service:
+    name: rclone-sync.timer
+    state: started
+    enabled: yes

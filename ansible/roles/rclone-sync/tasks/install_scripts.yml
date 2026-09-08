@@ -1,0 +1,27 @@
+---
+- name: Copy rclone-sync script
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - usr/local/bin/rclone-sync.sh
+
+- name: Copy rclone-sync systemd config
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - etc/systemd/system/rclone-sync.service
+    - etc/systemd/system/rclone-sync.timer
+  register: rclone_sync_systemd    
+
+- name: Reload systemd if necessary
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: rclone_sync_systemd.changed
