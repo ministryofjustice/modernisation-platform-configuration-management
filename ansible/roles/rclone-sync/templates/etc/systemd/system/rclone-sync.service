@@ -1,5 +1,5 @@
 [Unit]
-Description=Script for running rclone against multiple local directories on a timer
+Description={{ rclone_sync_description }}
 After=network-online.target
 Wants=network-online.target
 
@@ -13,4 +13,3 @@ IOSchedulingClass=best-effort
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=rclone-sync
-LogLevelMax=notice

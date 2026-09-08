@@ -1,6 +1,8 @@
 ---
 # See README.md for examples
 rclone_sync_config: {}
+
+rclone_sync_description: "Script for running rclone against multiple local directories on a timer"
 rclone_sync_timer_frequency_minutes: 5
 rclone_sync_timer_start_minute: "{{ (ec2_name.split('-')[-1] | int) % rclone_sync_timer_frequency_minutes }}"
 rclone_sync_timer_schedule: "*:{{ rclone_sync_timer_start_minute }}/{{ rclone_sync_timer_frequency_minutes }}"
