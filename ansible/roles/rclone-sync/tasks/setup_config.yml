@@ -1,0 +1,10 @@
+---
+- name: Copy rclone-sync config
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - etc/rclone-sync.conf

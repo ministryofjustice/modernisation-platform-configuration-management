@@ -1,0 +1,28 @@
+---
+- block:
+    - import_tasks: install_scripts.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - rclone_sync_install
+
+    - import_tasks: setup_config.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - rclone_sync_setup_config
+
+    - import_tasks: setup_rsyslog.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - rclone_sync_setup_rsyslog
+
+    - import_tasks: enable_service.yml
+      tags:
+        - ec2provision
+        - ec2patch
+        - rclone_sync_enable_service
+
+  # block
+  when: ansible_distribution in ['RedHat']

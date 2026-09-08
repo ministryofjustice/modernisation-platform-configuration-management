@@ -129,3 +129,20 @@ rclone_sharepoint_config:
   wmt:
     app_registrations_secret_key: rclone
     drive_ids_secret_key: rclone
+
+rclone_sync_timer_frequency_minutes: 2 # runs at alternatve minutes on each CMS
+rclone_sync_config:
+  shared_lock: "/samba.delius-prod.internal/secure/NPS/nart/.rclone-sync.lock"
+  rclone_args:
+    - "--stats=0"
+    - "--fast-list"
+  dirs:
+    wmt:
+      rclone_cmd: copy
+      rclone_src: "/samba.delius-prod.internal/secure/NPS/National/wmt"
+      rclone_dest: "wmt:NDelius MIS Reports/Caseload Reports"
+      rclone_args:
+        - "--min-age=2m"
+        - "--include=*.xlsx"
+        - "--dry-run"
+        - "--max-depth=1"
