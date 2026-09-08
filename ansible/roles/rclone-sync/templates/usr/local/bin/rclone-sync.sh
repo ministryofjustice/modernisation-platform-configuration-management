@@ -130,7 +130,7 @@ fi
             continue
         fi
 
-        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" "$RCLONE_DRYUN_ARG" 2>&1 |
+        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" $RCLONE_DRYUN_ARG 2>&1 |
         while IFS= read -r line
         do
             [[ -n "$line" ]] && echo "${LOGPREFIX}$line"
