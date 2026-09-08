@@ -197,9 +197,9 @@ while IFS= read LINE;
 do
    EXCLUDED_HOST=$(echo $LINE | awk '{print $1}')
    EXCLUDE_EXPIRY=$(echo $LINE | awk '{print $NF}' | sed 's/-//g' )
-
-   # If the exclusion expiry date is in the future, consider for inclusion
-   if [[ ${EXCLUDE_EXPIRY} -gt ${CURRENT_TIMESTAMP} ]];
+   
+   # If there is no exclusion expiry date, or the expiry date is in the future, consider for inclusion
+   if [[ ! ${EXCLUDE_EXPIRY} =~ ^[0-9]{14}$ || ${EXCLUDE_EXPIRY} -gt ${CURRENT_TIMESTAMP} ]];
    then
       # If the host is not already a key to the array then add it
       # (avoiding duplicates)
