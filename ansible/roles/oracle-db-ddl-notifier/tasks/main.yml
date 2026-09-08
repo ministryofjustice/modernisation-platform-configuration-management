@@ -26,10 +26,14 @@
     slack_wallet_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}"
   tags: create_slack_wallet
 
+- name: Get Notifier Variables
+  set_fact:
+      this_db_ddl_notifier: "{{ ddl_notifier if (application in ['delius-core','delius-mis']) else db_configs[primary_database_name].ddl_notifier }}"
+
 # We only need to run the ACL Setup on the Primary
 # (For Delius, where the database_primary_sid is set; otherwise if the database name does not have a DR Prefix)
 - name: Setup ACL to Contact Slack
-  script: ../oracle-oms-setup/files/create_slack_acl.sh {{ ddl_notifier.notification_schema }}
+  script: ../oracle-oms-setup/files/create_slack_acl.sh {{ this_db_ddl_notifier.notification_schema }}
   when: primary_database_name is defined
   become: true
   become_user: oracle
