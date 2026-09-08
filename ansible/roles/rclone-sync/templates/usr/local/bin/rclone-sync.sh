@@ -8,7 +8,7 @@
 #
 # Shared locking:
 #   Since the script can run on multiple servers, a best efforts locking
-#   mechanism is optionally implemented by atomic creation of a directory 
+#   mechanism is optionally implemented by atomic creation of a directory
 #   on the shared file system. The lock directory is removed if it is
 #   older than SHARED_LOCK_TIMEOUT to prevent an accidental permanent lock
 
@@ -17,7 +17,7 @@ LOCAL_LOCK="/run/lock/rclone-sync.lock"
 SHARED_LOCK="{{ rclone_sync_config.shared_lock | default() }}"
 SHARED_LOCK_TIMEOUT=3600
 OVERALL_EXITCODE=0
-        
+
 acquire_shared_lock() {
     mkdir "$SHARED_LOCK" 2>/dev/null && return 0
 
@@ -26,12 +26,13 @@ acquire_shared_lock() {
     NOW=$(date +%s)
     LOCK_AGE=$((NOW - LOCK_TIME))
     if (( LOCK_AGE > SHARED_LOCK_TIMEOUT )); then
-      echo "Forcibly removing shared lock (>${SHARED_LOCK_TIMEOUT}s): $SHARED_LOCK"      
+      echo "Forcibly removing shared lock; age=${LOCK_AGE}s timeout=${SHARED_LOCK_TIMEOUT}s" >&2
       rmdir "$SHARED_LOCK" 2>/dev/null
     fi
+    echo "Failed to get shared lock; age=${LOCK_AGE}s" >&2
     return 1
 }
-    
+
 release_shared_lock() {
     rmdir "$SHARED_LOCK" 2>/dev/null || true
 }
@@ -52,7 +53,7 @@ fi
         if [[ ! -d "$SHARED_LOCK_PARENT" ]]; then
             echo "Shared lock parent does not exist: $SHARED_LOCK_PARENT" >&2
             exit 1
-        fi        
+        fi
         FSTYPE=$(stat -f -c %T "$SHARED_LOCK_PARENT")
         case "$FSTYPE" in
             nfs|nfs4|cifs|smb2|smb3) ;;
@@ -64,7 +65,7 @@ fi
 
         acquire_shared_lock || exit 0
         trap release_shared_lock EXIT HUP INT TERM
-    fi     
+    fi
 
     LINE_NUM=0
     while IFS='|' read -ra FIELDS
