@@ -2,9 +2,8 @@
 Description=Run SharePoint synchronisation on a timer
 
 [Timer]
-OnBootSec=2min
-OnUnitActiveSec=1min
-AccuracySec=30s
+OnCalendar={{ rclone_sync_timer_schedule }}
+AccuracySec=5s
 
 [Install]
 WantedBy=timers.target
