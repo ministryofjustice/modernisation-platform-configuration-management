@@ -17,6 +17,17 @@ LOCAL_LOCK="/run/lock/rclone-sync.lock"
 SHARED_LOCK="{{ rclone_sync_config.shared_lock | default() }}"
 SHARED_LOCK_TIMEOUT=3600
 OVERALL_EXITCODE=0
+RCLONE_DRYUN_ARG=
+ENABLE_MONITORING=0
+
+usage() {
+  echo "Usage $0: <opts>
+
+Where <opts>:
+  -d  Enable dryrun for maintenance mode commands
+  -m  Write status to /opt/textfile_monitoring
+"
+}
 
 acquire_shared_lock() {
     mkdir "$SHARED_LOCK" 2>/dev/null && return 0
@@ -34,8 +45,26 @@ acquire_shared_lock() {
 }
 
 release_shared_lock() {
+    # shellcheck disable=SC2317
     rmdir "$SHARED_LOCK" 2>/dev/null || true
 }
+
+while getopts "dm" opt; do
+    case $opt in
+        d)
+            RCLONE_DRYUN_ARG="--dry-run"
+            ;;
+        m)
+            ENABLE_MONITORING=1
+            ;;
+        ?)
+            echo "Invalid option: ${OPTARG}" >&2
+            echo >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
 
 if [[ ! -f "$CONFIG" ]]; then
     echo "Configuration file not found: $CONFIG" >&2
@@ -101,7 +130,7 @@ fi
             continue
         fi
 
-        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" 2>&1 |
+        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" "$RCLONE_DRYUN_ARG" 2>&1 |
         while IFS= read -r line
         do
             [[ -n "$line" ]] && echo "${LOGPREFIX}$line"
@@ -118,4 +147,12 @@ fi
     exit "$OVERALL_EXITCODE"
 ) 9>"$LOCAL_LOCK"
 
-exit $?
+OVERALL_EXITCODE=$?
+
+if (( ENABLE_MONITORING == 1 )); then
+    if [[ -d /opt/textfile_monitoring ]]; then
+        echo "rclone_sync_status $OVERALL_EXITCODE" > /opt/textfile_monitoring/rclone_sync.prom
+    fi
+fi
+
+exit $OVERALL_EXITCODE
