@@ -588,6 +588,20 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AS
            (p_in_anydata, v_row_lcr, v_source_db_name, v_source_object_owner,
             v_object_name, v_command_type, v_source_time, v_scn, v_tag);
 
+        -- found that after migration to GG the scn returned above is null so get it from the column as we now populate that in the replicat param file
+        IF v_scn IS NULL THEN
+            BEGIN
+                v_scn := to_number(
+                        convert_anydata_to_varchar2(
+                            v_row_lcr.get_value('new','MIS_SCN','N')
+                        )
+                    );
+            EXCEPTION
+                WHEN OTHERS THEN
+                    NULL;
+            END;
+        END IF;
+
         -- Determine batch number using SCN-driven logic (new model).
         -- If STAGED_START_SCN is populated on ETL_LOAD_LOG, route to batch with STAGED_START_SCN >= v_scn.
         -- Otherwise fall back to legacy datetime-based logic.

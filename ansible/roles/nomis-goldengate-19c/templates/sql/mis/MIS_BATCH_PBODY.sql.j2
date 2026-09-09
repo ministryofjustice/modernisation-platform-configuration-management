@@ -513,24 +513,30 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     END IF;
     
     -- get hi watermark SCN
-    v_apply_scn := apply_hi_scn(v_staging_owner);
+    -- if p_staged_start_scn is not provided then it will get the captured SCN, which could be much earlier 
+    -- than the applied one and therefore will end up having an earlier date.
+    -- So if p_staged_start_scn is passed in then let's use it as the apply scn so we get the right timestamp for the batch start/end columns.
+    if p_staged_start_scn is null then
+        v_apply_scn := apply_hi_scn(v_staging_owner);
+    else
+        v_apply_scn := p_staged_start_scn;
+    end if;
 
     -- set new start date
     IF v_staged_end_datetime IS NULL THEN
-    BEGIN
-        v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
-    EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
-        log_debug (v_staging_owner, 'create_new_batch',
-                        v_apply_scn || ' is not a currently valid system change number at source;' ||
-                        ' will check registered log dates instead.', -1);
-        -- get the next date (end of log) of the archive logs
-        -- registered to the capture process containing data for a given SCN
-        v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
-    END;
+        BEGIN
+            v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
+        EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+            log_debug (v_staging_owner, 'create_new_batch',
+                            v_apply_scn || ' is not a currently valid system change number at source;' ||
+                            ' will check registered log dates instead.', -1);
+            -- get the next date (end of log) of the archive logs
+            -- registered to the capture process containing data for a given SCN
+            v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
+        END;
     ELSE
         v_date := v_staged_end_datetime;
     END IF;
-
 
     -- determine highest current batch number
     v_max_batch_number := get_batch_number(NULL);
@@ -577,7 +583,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     IF (p_restart = TRUE) AND (v_apply_error_count = 0) AND
        (v_apply_proc_error_count = 0) AND (v_capture_error_count = 0) THEN
         -- set stop points
-        mis_gg_ctrl_pkg.set_stop_points(v_staging_owner, p_more_points);
+        mis_gg_ctrl_pkg.set_stop_points(
+                p_staging_owner => v_staging_owner,
+                p_points_set    => p_more_points,
+                p_stop_scn      => p_staged_start_scn);
         update_batch_record(v_new_batch_number, null, null, 'Apply underway');
     ELSE
         log_debug (v_staging_owner, 'create_new_batch',
