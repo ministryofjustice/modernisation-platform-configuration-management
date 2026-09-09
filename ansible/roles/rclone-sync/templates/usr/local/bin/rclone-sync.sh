@@ -2,9 +2,10 @@
 # Script to sync local directories using rclone with output logged to syslog
 #
 # Config file is pipe separated in format:
-#   cmd|logprefix|source|target|arg1|arg2|arg3|...
+#   logprefix|arg1|arg2|arg3|...
 #
-# Each argument after target is passed to rclone as a separate argument.
+# e.g.
+#   wmt|copy|/my/source|/my/dest|--dry-run
 #
 # Shared locking:
 #   Since the script can run on multiple servers, a best efforts locking
@@ -103,48 +104,22 @@ fi
     while IFS='|' read -ra FIELDS
     do
         LINE_NUM=$((LINE_NUM + 1))
+        LOGPREFIX="${FIELDS[0]:-}"
 
         {% raw %}
-        CMD="${FIELDS[0]:-}"
-        [[ -z "$CMD" && ${#FIELDS[@]} -eq 0 ]] && continue
-        [[ "$CMD" =~ ^[[:space:]]*# ]] && continue
-
-        if [[ ${#FIELDS[@]} -lt 4 ]]; then
-            echo "line $LINE_NUM: Invalid config line (expected at least 4 fields)" >&2
-            OVERALL_EXITCODE=1
-            continue
-        fi
+        # skip blank lines and comments
+        [[ -z "$LOGPREFIX" && ${#FIELDS[@]} -eq 0 ]] && continue
+        [[ "$LOGPREFIX" =~ ^[[:space:]]*# ]] && continue
         {% endraw %}
 
-        LOGPREFIX="${FIELDS[1]}"
-        SRC="${FIELDS[2]}"
-        DST="${FIELDS[3]}"
-        ARGS=("${FIELDS[@]:4}")
-
-        if [[ -z "$CMD" || -z "$SRC" || -z "$DST" ]]; then
-            echo "${LOGPREFIX}line $LINE_NUM: Invalid config line (empty cmd, src or dst)" >&2
-            OVERALL_EXITCODE=1
-            continue
-        fi
-
-        if [[ ! -d "$SRC" ]]; then
-            echo "${LOGPREFIX}source directory is not accessible '$SRC'" >&2
-            OVERALL_EXITCODE=1
-            continue
-        fi
-
-        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" "${RCLONE_OPTS[@]}" 2>&1 |
-        while IFS= read -r line
-        do
+        rclone "${FIELDS[@]:1}" "${RCLONE_OPTS[@]}" 2>&1 | while IFS= read -r line; do
             [[ -n "$line" ]] && echo "${LOGPREFIX}$line"
         done
 
         EXITCODE=${PIPESTATUS[0]}
-
         if [[ "$EXITCODE" -ne 0 ]]; then
             OVERALL_EXITCODE=$EXITCODE
         fi
-
     done < "$CONFIG"
     exit "$OVERALL_EXITCODE"
 ) 9>"$LOCAL_LOCK"

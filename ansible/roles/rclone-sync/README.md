@@ -19,9 +19,10 @@ rclone_sync_config:
     - "--fast-list"
   dirs:
     wmt:
-      rclone_cmd: copy
-      rclone_src: "/samba.delius-prod.internal/secure/NPS/National/wmt"
-      rclone_dest: "wmt:NDelius MIS Reports/Caseload Reports"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/National/wmt"
+        - "wmt:NDelius MIS Reports/Caseload Reports"
       rclone_args:
         - "--include=*.xlsx"
         - "--dry-run"
@@ -34,5 +35,4 @@ Where
  - `rclone_args`: default rclone args to apply on every rclone command
  - `dirs`: a dictionary of directories to sync using rclone.
    The dictionary key is used in syslog logs. Then specify the rclone cmd,
-   e.g. copy or sync, the src directory, rclone destination, and any
-   additional `rclone_args`.
+   e.g. copy or sync, and any additional `rclone_args`.
