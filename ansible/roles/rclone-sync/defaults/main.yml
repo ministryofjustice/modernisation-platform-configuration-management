@@ -1,5 +1,7 @@
 ---
 # See README.md for examples
+# Note: --ignore-size and --ignore-checksum is required for some file types, e.g. xlsx
+
 rclone_sync_config:
   # shared_lock: "" # optionally set to file share directory for locking
   rclone_args: {}
@@ -13,6 +15,8 @@ rclone_sync_config:
   #    rclone_args:
   #      - "--min-age=2m"
   #      - "--include=*.xlsx"
+  #      - "--ignore-size"  # because MS365 immediately updates xlsx files
+  #      - "--ignore-checksum"  # ditto
   #      - "--max-depth=1"
 
 rclone_sync_description: "Script for running rclone against multiple local directories on a timer"
