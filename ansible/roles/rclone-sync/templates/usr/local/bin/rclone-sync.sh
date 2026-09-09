@@ -17,14 +17,6 @@
 #   mechanism is optionally implemented by atomic creation of a directory
 #   on the shared file system. The lock directory is removed if it is
 #   older than SHARED_LOCK_TIMEOUT to prevent an accidental permanent lock
-#
-# Usage:
-#   rclone-sync [-fms] [rclone_arg1] .. [rclone_argN]
-#
-# Where:
-#   -m: enable monitoring, i.e. write status to /opt/textfile_monitoring
-#   -f: enable frequency, i.e. only run if frequency seconds have elapsed since last run
-#   -s: add a date based --suffix and --suffix-keep-extension
 
 CONFIG="/etc/rclone-sync.conf"
 STATE_DIR="/var/lib/rclone-sync"
@@ -39,6 +31,20 @@ ERROR_BACKOFF_SECS=600
 RCLONE_OPTS=()
 
 {% raw %}
+usage() {
+  echo "Usage $0: [all|<job_key>] [-fms] [<rclone_arg1>] .. [<rclone_argN>]
+
+Where:
+   all:       run all jobs in $CONFIG
+   <job_key>: run only the job matching job_key
+
+All other options are passed through to rclone except:
+   -m: enable monitoring, i.e. write status to /opt/textfile_monitoring
+   -f: enable frequency, i.e. only run if frequency seconds have elapsed since last run
+   -s: add a date based --suffix and --suffix-keep-extension
+"
+}
+
 acquire_shared_lock() {
     local now
     local lock_time
@@ -104,6 +110,13 @@ get_job_timestamp() {
         echo "$timestamp"
     fi
 }
+
+job_key_cmdline_arg=$1
+if [[ -z $job_key_cmdline_arg || "$job_key_cmdline_arg" == -* ]]; then
+    usage >&2
+    exit 1
+fi
+shift
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -184,26 +197,37 @@ fi
 
     now=$(date +%s)
     line_num=0
+    job_count=0
     overall_exitcode=0
     while IFS='|' read -ra fields
     do
         line_num=$((line_num + 1))
-        logprefix="${fields[0]:-}"
+        job_key="${fields[0]:-}"
 
         # skip blank lines and comments
-        [[ -z "$logprefix" && ${#fields[@]} -eq 0 ]] && continue
-        [[ "$logprefix" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "$job_key" && ${#fields[@]} -eq 0 ]] && continue
+        [[ "$job_key" =~ ^[[:space:]]*# ]] && continue
 
         if [[ ${#fields[@]} -lt 3 ]]; then
-            echo "${logprefix}ERROR: $CONFIG: line ${line_num}: No rclone command specified" >&2
+            echo "ERROR: $CONFIG: line ${line_num}: No rclone command specified" >&2
             overall_exitcode=1
             continue
         fi
 
+        logprefix="[$job_key] "
         frequency="${fields[1]:-}"
+
+        if [[ "$job_key_cmdline_arg" != "all" && "$job_key_cmdline_arg" != "$job_key" ]]; then
+            if ((VERBOSE > 1)); then
+                echo "${logprefix}DEBUG: Skipping as $job_key_cmdline_arg job requested"
+            fi
+            continue
+        fi
+        job_count=$((job_count+1))
+
         if [[ -n $frequency ]]; then
             if [[ ! "$frequency" =~ ^[0-9]+$ ]]; then
-                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: Frequency must be numeric: $frequency" >&2
+                echo "ERROR: $CONFIG: line ${line_num}: Frequency must be numeric: $frequency" >&2
                 overall_exitcode=1
                 continue
             fi
@@ -212,11 +236,11 @@ fi
         fi
 
         if ((ENABLE_FREQUENCY == 1)); then
-            timestamp=$(get_job_timestamp "$logprefix")
+            timestamp=$(get_job_timestamp "$job_key")
             if ((now < timestamp)); then
                 timestamp_diff=$((timestamp - now))
                 if ((timestamp_diff > frequency && timestamp_diff > ERROR_BACKOFF_SECS)); then
-                    echo "${logprefix}Frequency check: running; clock skew; ignoring next run in ${timestamp_diff}s; frequency=$frequency; timestamp=$timestamp"
+                    echo "${logprefix}Frequency check: running; ${timestamp_diff}s too long to next run; frequency=$frequency; timestamp=$timestamp"
                 else
                     if ((VERBOSE > 1)); then
                         echo "${logprefix}DEBUG: Frequency check: skipping; next run in ${timestamp_diff}s; frequency=$frequency; timestamp=$timestamp"
@@ -240,19 +264,24 @@ fi
             overall_exitcode=$exitcode
             if ((ENABLE_FREQUENCY == 1)); then
                 if ((VERBOSE > 1)); then
-                    echo "${logprefix}DEBUG: Frequency check: setting next run in ${ERROR_BACKOFF_SECS}s (error backoff); timestamp= $((now + ERROR_BACKOFF_SECS))"
+                    echo "${logprefix}DEBUG: Frequency check: setting next run in ${ERROR_BACKOFF_SECS}s (error backoff); timestamp=$((now + ERROR_BACKOFF_SECS))"
                 fi
-                set_job_timestamp "$logprefix" "$((now + ERROR_BACKOFF_SECS))"
+                set_job_timestamp "$job_key" "$((now + ERROR_BACKOFF_SECS))"
             fi
         else
             if ((ENABLE_FREQUENCY == 1)); then
                 if ((VERBOSE > 1)); then
                     echo "${logprefix}DEBUG: Frequency check: setting next run in ${frequency}s; timestamp=$((now + frequency))"
                 fi
-                set_job_timestamp "$logprefix" "$((now + frequency))"
+                set_job_timestamp "$job_key" "$((now + frequency))"
             fi
         fi
     done < "$CONFIG"
+
+    if [[ "$job_key_cmdline_arg" != "all" && $job_count -eq 0 ]]; then
+        echo "ERROR: No matching jobs for $job_key_cmdline_arg" >&2
+        overall_exitcode=1
+    fi
     exit "$overall_exitcode"
 ) 9>"$LOCAL_LOCK"
 
