@@ -11,23 +11,20 @@
 #   mechanism is optionally implemented by atomic creation of a directory
 #   on the shared file system. The lock directory is removed if it is
 #   older than SHARED_LOCK_TIMEOUT to prevent an accidental permanent lock
+#
+# Usage:
+#   rclone-sync [-ms] [rclone_arg1] .. [rclone_argN]
+# Where:
+#   -m: enable monitoring (write status to /opt/textfile_monitoring)
+#   -s: add a date based --suffix and --suffix-keep-extension
 
 CONFIG="/etc/rclone-sync.conf"
 LOCAL_LOCK="/run/lock/rclone-sync.lock"
 SHARED_LOCK="{{ rclone_sync_config.shared_lock | default() }}"
 SHARED_LOCK_TIMEOUT=3600
 OVERALL_EXITCODE=0
-RCLONE_DRYUN_ARG=
 ENABLE_MONITORING=0
-
-usage() {
-  echo "Usage $0: <opts>
-
-Where <opts>:
-  -d  Enable dryrun for maintenance mode commands
-  -m  Write status to /opt/textfile_monitoring
-"
-}
+RCLONE_OPTS=()
 
 acquire_shared_lock() {
     mkdir "$SHARED_LOCK" 2>/dev/null && return 0
@@ -49,21 +46,27 @@ release_shared_lock() {
     rmdir "$SHARED_LOCK" 2>/dev/null || true
 }
 
-while getopts "dm" opt; do
-    case $opt in
-        d)
-            RCLONE_DRYUN_ARG="--dry-run"
-            ;;
-        m)
-            ENABLE_MONITORING=1
-            ;;
-        ?)
-            echo "Invalid option: ${OPTARG}" >&2
-            echo >&2
-            usage >&2
-            exit 1
-            ;;
-    esac
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m)
+      ENABLE_MONITORING=1
+      shift
+      ;;
+    -s)
+      RCLONE_OPTS+=("--suffix=-$(date +%F_%H%M%S)")
+      RCLONE_OPTS+=("--suffix-keep-extension")
+      shift
+      ;;
+    --)
+      shift
+      RCLONE_OPTS+=("$@")
+      break
+      ;;
+    *)
+      RCLONE_OPTS+=("$1")
+      shift
+      ;;
+  esac
 done
 
 if [[ ! -f "$CONFIG" ]]; then
@@ -130,7 +133,7 @@ fi
             continue
         fi
 
-        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" $RCLONE_DRYUN_ARG 2>&1 |
+        rclone "$CMD" "$SRC" "$DST" "${ARGS[@]}" "${RCLONE_OPTS[@]}" 2>&1 |
         while IFS= read -r line
         do
             [[ -n "$line" ]] && echo "${LOGPREFIX}$line"
@@ -139,7 +142,6 @@ fi
         EXITCODE=${PIPESTATUS[0]}
 
         if [[ "$EXITCODE" -ne 0 ]]; then
-            echo "${LOGPREFIX}rclone $CMD '$SRC' '$DST' ${ARGS[*]}: failed with exit code $EXITCODE" >&2
             OVERALL_EXITCODE=$EXITCODE
         fi
 
