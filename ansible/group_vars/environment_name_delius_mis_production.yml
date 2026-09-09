@@ -140,7 +140,8 @@ rclone_sync_config:
     - "--low-level-retries=0"
     - "--fast-list"
   dirs:
-    wmt:
+    wmt-copy:
+      frequency_seconds: 3600
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/wmt"
@@ -153,7 +154,8 @@ rclone_sync_config:
         - "--ignore-size"  # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
         - "--max-depth=1"
-    wmt-backup:
+    wmt-delete:
+      frequency_seconds: 86400
       rclone_cmd:
         - "delete"
         - "wmt:NDelius MIS Reports/.rclone-backup"

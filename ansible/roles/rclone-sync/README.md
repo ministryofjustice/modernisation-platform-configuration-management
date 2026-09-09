@@ -19,6 +19,7 @@ rclone_sync_config:
     - "--fast-list"
   dirs:
     wmt:
+      frequency_seconds: 600
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/wmt"
@@ -32,6 +33,8 @@ Where
  - `shared lock`: set this if you are enabling on multiple machines and
    the source directory is on a file share. It is a directory on the
    file share that will be created/removed by the script to manage locking
+ - `frequency_seconds`: if set, don't run more frequently than this value
+ - `rclone_cmd`: the rclone cmd and associated args
  - `rclone_args`: default rclone args to apply on every rclone command
  - `dirs`: a dictionary of directories to sync using rclone.
    The dictionary key is used in syslog logs. Then specify the rclone cmd,
