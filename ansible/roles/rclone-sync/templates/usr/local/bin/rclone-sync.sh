@@ -249,7 +249,7 @@ fi
             fi
         fi
 
-        # expand any $(date +format) in the config
+        # expand any $(date +format) in the config
         args=("${fields[@]:2}" "${RCLONE_OPTS[@]}")
         expanded_args=()
         date_regex='\$\(date[[:space:]]+\+([^)]+)\)'

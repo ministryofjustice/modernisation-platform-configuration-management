@@ -140,26 +140,33 @@ rclone_sync_config:
     - "--low-level-retries=0"
     - "--fast-list"
   dirs:
-    wmt-copy:
+    readme:
+      frequency_seconds: 3600
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "wmt:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+    wmt:
       frequency_seconds: 3600
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/wmt"
-        - "wmt:NDelius MIS Reports/Caseload Reports"
+        - "wmt:_NART - Automated Uploads/NDMIS/Reports/wmt"
       rclone_args:
-        - "-s"  # add a date based suffix on backups
         - "--suffix=-$(date +%F_%H%M%S)"
         - "--suffix-keep-extension"
         - "--min-age=2m"
-        - "--include=*.xlsx"
-        - "--ignore-size"  # because MS365 immediately updates xlsx files
+        - "--include=NDelius*.xlsx"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
         - "--max-depth=1"
-    wmt-delete:
+    delete-old:
       frequency_seconds: 86400
       rclone_cmd:
         - "delete"
-        - "wmt:NDelius MIS Reports/.rclone-backup"
+        - "wmt:_NART - Automated Uploads"
       rclone_args:
-        - "--min-age=7d"
-        - "--include=*.xlsx"
+        - "--min-age=30d"
+        - "--exclude=README.md"
