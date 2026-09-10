@@ -3,7 +3,7 @@
 ## Test Individual Tasks
 
 | Task | Command |
-|------|---------|
+| ------ | --------- |
 | Detect database | `ansible-playbook site.yml --tags detect-database` |
 | Install software | `ansible-playbook site.yml --tags install-software` |
 | Install patches | `ansible-playbook site.yml --tags install-patches` |
@@ -38,7 +38,7 @@
 ## Test by Phase
 
 | Phase | Command |
-|-------|---------|
+| ------- | --------- |
 | All installation | `ansible-playbook site.yml --tags goldengate-install` |
 | All configuration | `ansible-playbook site.yml --tags goldengate-config` |
 | Software only | `ansible-playbook site.yml --tags goldengate-software` |
@@ -50,7 +50,7 @@
 ## Test by Database
 
 | Target | Command |
-|--------|---------|
+| -------- | --------- |
 | Audit DB tasks | `ansible-playbook site.yml --tags goldengate-audit` |
 | MIS DB tasks | `ansible-playbook site.yml --tags goldengate-mis` |
 | Source DB objects | `ansible-playbook site.yml --tags deploy-source` |
@@ -58,7 +58,7 @@
 ## Test by Function
 
 | Function | Command |
-|----------|---------|
+| ---------- | --------- |
 | All extract processes | `ansible-playbook site.yml --tags goldengate-extract` |
 | All replicat processes | `ansible-playbook site.yml --tags goldengate-replicat` |
 | Register all processes | `ansible-playbook site.yml --tags goldengate-register` |

@@ -111,7 +111,7 @@ goldengate (ALL TASKS)
 ### Tag Matrix by Task
 
 | Task | Tags |
-|------|------|
+| ------ | ------ |
 | Install GoldenGate | `goldengate`, `goldengate-install`, `goldengate-audit`, `goldengate-mis` |
 | Detect Local Database | `goldengate`, `goldengate-install`, `goldengate-config`, `goldengate-audit`, `goldengate-mis` |
 | Configure DB Parameters | `goldengate`, `goldengate-install`, `goldengate-database-config`, `goldengate-audit`, `goldengate-mis` |
@@ -300,7 +300,7 @@ run_mis: "{{ oracle_goldengate_local_db_sid == 'T1CMISG' }}"
 ### What Gets Deployed When
 
 | Component | Targeting T1CAUDG | Targeting T1CMISG |
-|-----------|-------------------|-------------------|
+| ----------- | ------------------- | ------------------- |
 | GoldenGate Software | ✅ Yes | ✅ Yes |
 | Credential Store | ✅ Yes | ✅ Yes |
 | Manager Config | ✅ Yes | ✅ Yes |

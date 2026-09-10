@@ -55,7 +55,7 @@ Each task should have a **unique tag** for independent testing:
 Follow this pattern for consistency:
 
 | Level | Pattern | Example | Purpose |
-|-------|---------|---------|---------|
+| ------- | --------- | --------- | --------- |
 | **Root** | `{role}` | `goldengate` | Run entire role |
 | **Phase** | `{role}-{phase}` | `goldengate-install` | Run installation phase |
 | **Category** | `{role}-{category}` | `goldengate-software` | Run software tasks |
@@ -339,7 +339,7 @@ ansible-playbook site.yml --tags goldengate-processes
 ## Tag Usage Matrix
 
 | Task | Unique Tag | Phase Tags | Category Tags | DB Tags |
-|------|-----------|------------|---------------|---------|
+| ------ | ----------- | ------------ | --------------- | --------- |
 | Detect DB | `detect-database` | `always` | - | - |
 | Install Software | `install-software` | `goldengate-install` | `goldengate-software` | - |
 | Install Patches | `install-patches` | `goldengate-install` | `goldengate-software`, `goldengate-patches` | - |
