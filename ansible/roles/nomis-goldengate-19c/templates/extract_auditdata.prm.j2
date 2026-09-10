@@ -30,7 +30,7 @@ WARNLONGTRANS 1H, CHECKINTERVAL 30m
 -- Force Extract to include before-images of all supplementally logged columns in the trail file for conflict resolution and dependency tracking.
 LOGALLSUPCOLS
 -- Configure downstream deployment to read archived logs instead of mining standby redo logs in real time.
-TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N)
+TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N, _LOGMINER_READ_BUFFERS 256)
 
 -- Original Streams rules:
 -- Positive i.e. include only DML on tables owned by OMS_OWNER: 

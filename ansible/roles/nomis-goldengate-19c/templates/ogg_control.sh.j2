@@ -51,7 +51,7 @@ EOF
 show_status() {
     local stream=$1
     local type=$2
-    
+    echo "Checking status for stream: $stream, type: $type"
     case "${stream}_${type}" in
         auditdata_extract)
             CMD=${EXTRACT_AUDITDATA}
@@ -72,6 +72,9 @@ show_status() {
             CMD=${REPLICAT_MIS}
             ;;
         *_both)
+            CMD="ALL"
+            ;;
+        ALL_)
             CMD="ALL"
             ;;
     esac
@@ -100,6 +103,7 @@ show_status() {
     cd ${GGHOME}
     echo ""
     echo "=== Status for ${stream} ==="
+    echo "=== Command: INFO ${CMD} ==="
     ./ggsci << EOF
 INFO ${CMD}
 EXIT
@@ -184,11 +188,11 @@ case "$ACTION" in
     status)
         if [ "$STREAM" == "all" ]; then
             show_manager_status
-            show_status "ALL"
+            show_status "ALL" "$PROCESS_TYPE"
         elif [ "$STREAM" == "manager" ]; then
             show_manager_status
         else
-            show_status "$STREAM"
+            show_status "$STREAM" "$PROCESS_TYPE"
         fi
         ;;
         
