@@ -41,7 +41,6 @@ Where:
 All other options are passed through to rclone except:
    -m: enable monitoring, i.e. write status to /opt/textfile_monitoring
    -f: enable frequency, i.e. only run if frequency seconds have elapsed since last run
-   -s: add a date based --suffix and --suffix-keep-extension
 "
 }
 
@@ -126,11 +125,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -m)
             ENABLE_MONITORING=1
-            shift
-            ;;
-        -s)
-            RCLONE_OPTS+=("--suffix=-$(date +%F_%H%M%S)")
-            RCLONE_OPTS+=("--suffix-keep-extension")
             shift
             ;;
         --verbose)
@@ -255,7 +249,22 @@ fi
             fi
         fi
 
-        rclone "${fields[@]:2}" "${RCLONE_OPTS[@]}" 2>&1 | while IFS= read -r line; do
+        # expand any $(date +format) in the config
+        args=("${fields[@]:2}" "${RCLONE_OPTS[@]}")
+        expanded_args=()
+        date_regex='\$\(date[[:space:]]+\+([^)]+)\)'
+
+        for arg in "${args[@]}"; do
+            while [[ "$arg" =~ $date_regex ]]; do
+                match="${BASH_REMATCH[0]}"
+                format="${BASH_REMATCH[1]}"
+                timestamp=$(date +"$format")
+                arg="${arg//$match/$timestamp}"
+            done
+            expanded_args+=("$arg")
+        done
+
+        rclone "${expanded_args[@]}" 2>&1 | while IFS= read -r line; do
             [[ -n "$line" ]] && echo "${logprefix}$line"
         done
 

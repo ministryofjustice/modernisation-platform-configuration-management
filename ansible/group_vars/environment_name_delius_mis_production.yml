@@ -148,7 +148,8 @@ rclone_sync_config:
         - "wmt:NDelius MIS Reports/Caseload Reports"
       rclone_args:
         - "-s"  # add a date based suffix on backups
-        - "--backup-dir=wmt:NDelius MIS Reports/.rclone-backup/Caseload Reports"
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
         - "--min-age=2m"
         - "--include=*.xlsx"
         - "--ignore-size"  # because MS365 immediately updates xlsx files
