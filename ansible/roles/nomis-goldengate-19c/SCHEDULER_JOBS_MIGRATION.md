@@ -30,7 +30,7 @@ The `STRMADMIN` schema was used with Oracle Streams in Oracle 11g. As we migrate
 ### CNOM Database (4 jobs total + 1 new)
 
 | Original Job Name | New Owner | New Job Name | Status | Enabled After Switchover? |
-|------------------|-----------|--------------|--------|---------------------------|
+| ------------------ | ----------- | -------------- | -------- | --------------------------- |
 | BATCH_STATUS_EXTRACT_JOB | OMS_OWNER | BATCH_STATUS_EXTRACT_JOB | Migrated | NO (last run 2018) |
 | MIS_BATCH_CONTROL_CHAIN_JOB | - | - | Not Migrated | Manual migration required |
 | ORCL_BATCH_STATUS_EXTRACT_JOB | OMS_OWNER | ORCL_BATCH_STATUS_EXTRACT_JOB | Migrated | NO (last run 2018) |
@@ -42,7 +42,7 @@ The `STRMADMIN` schema was used with Oracle Streams in Oracle 11g. As we migrate
 ### MIS Database (8 jobs total)
 
 | Original Job Name | New Owner | New Job Name | Status | Enabled After Switchover? |
-|------------------|-----------|--------------|--------|---------------------------|
+| ------------------ | ----------- | -------------- | -------- | --------------------------- |
 | DAILY_LOG_PURGE | - | - | Not Migrated | Already in root crontab |
 | MISLOAD_FAILURE_CHECK | - | - | Not Migrated | Should be cron job |
 | MIS_BATCH_CONTROL | BODISTAGING | MIS_BATCH_CONTROL | Migrated | NO (disabled) |
@@ -57,7 +57,7 @@ The `STRMADMIN` schema was used with Oracle Streams in Oracle 11g. As we migrate
 ### CNMAUD Database (17 jobs total)
 
 | Original Job Name | New Owner | New Job Name | Status | Enabled After Switchover? |
-|------------------|-----------|--------------|--------|---------------------------|
+| ------------------ | ----------- | -------------- | -------- | --------------------------- |
 | ADD_WKLY_DATA_PARTS | AUDITDATA | ADD_WKLY_DATA_PARTS | Migrated | YES |
 | ARCH_WKLY_DATA_PARTS | AUDITDATA | ARCH_WKLY_DATA_PARTS | Migrated | YES |
 | AUDIT DEQUEUE | - | - | Not Migrated | Procedure no longer exists |
