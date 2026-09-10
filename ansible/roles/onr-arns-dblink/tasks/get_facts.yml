@@ -1,0 +1,33 @@
+---
+- name: Check server has DB components
+  ansible.builtin.stat:
+    path: /etc/oratab
+  register: db_server_file
+
+- name: Fail if no DB components found
+  fail:
+    msg: Please run this role against a database
+  when: not db_server_file.stat.exists
+
+# Note that the MISTRN database is the STAGING/SOURCE database and then OASREP database is the TARGET database.
+# The database link to the postgres database is created from the STAGING/SOURCE database, so we need to get the name of the STAGING/SOURCE database from the running processes.
+- name: Find the staging database name from running process
+  ansible.builtin.shell: ps -ef | grep pmon | grep {{ onr_arns_staging_db }} | grep -v grep | awk -F_ '{ print $3 }'
+  changed_when: false
+  check_mode: false
+  register: db_name
+
+- name: Set staging_db_name fact
+  set_fact:
+    staging_db_name: "{{ db_name.stdout }}"
+
+- name: Check all secrets and tags are set
+  set_fact:
+    app_all_variables_set: true
+  when:
+    - staging_db_name|length > 0
+
+- name: Fail if missing secrets or tags
+  fail:
+    msg: Ensure all required secrets and tags are set
+  when: not app_all_variables_set|default(false)

@@ -1,0 +1,13 @@
+# Managed by Ansible - onr-arns-dblink
+
+# HS init parameters
+#
+HS_FDS_CONNECT_INFO = {{ onr_arns_odbc_dsn }}
+HS_FDS_TRACE_LEVEL = DEBUG
+HS_FDS_SHAREABLE_NAME = /usr/lib64/libodbc.so.2
+HS_FDS_TRACE_FILE_NAME=/tmp/ora_hs_trace.log
+HS_LANGUAGE = AMERICAN_AMERICA.WE8ISO8859P9
+#
+# ODBC specific environment variables
+#
+set ODBCINI=/etc/odbc.ini

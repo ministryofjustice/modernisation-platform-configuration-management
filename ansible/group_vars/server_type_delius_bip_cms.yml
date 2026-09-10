@@ -41,11 +41,13 @@ server_type_roles_list:
   - amazon-efs-utils
   - filesystems
   - sap-bip-4
-  # - collectd
-  # - amazon-cloudwatch-agent
-  # - amazon-cloudwatch-agent-collectd
-  # - collectd-service-metrics
-  # - collectd-textfile-monitoring
+  - rclone
+  - rclone-sync
+  - collectd
+  - amazon-cloudwatch-agent
+  - amazon-cloudwatch-agent-collectd
+  - collectd-textfile-monitoring
+# - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 

@@ -53,7 +53,7 @@ db_configs:
   RCVCAT:
     rcvcat_db_name: PRCVCAT
   PDOASYS:
-    db_name: PDOASYS
+    db_name: OASPROD
     db_unique_name: PDOASYS
     instance_name: PDOASYS
     host_name: pd-oasys-db-a
@@ -108,15 +108,15 @@ db_configs:
     service:
       - { name: BIPINF_TAF, role: PRIMARY }
   DROASYS:
-    db_name: DROASYS
+    db_name: OASPROD
     db_unique_name: DROASYS
     instance_name: DROASYS
-    host_name: pd-oasys-db-b
+    host_name: pd-oasys-db-b.oasys.hmpps-preproduction.modernisation-platform.internal
     port: 1521
     tns_name: DROASYS
     asm_disk_groups: DATA,FLASH
     service:
-      - { name: OASHA_TAF, role: PRIMARY }
+      - { name: OASHA_TAF, role: PHYSICAL_STANDBY }
   PROASYS:
     db_name: OASYSPTC
     db_unique_name: PROASYS

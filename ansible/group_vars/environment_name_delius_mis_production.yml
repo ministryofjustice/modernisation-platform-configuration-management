@@ -7,9 +7,9 @@ sap_bip_oracle_client_conf:
 
 sap_bip_db_conf:
   auditing_db_server: PRDBOE_TAF
-  auditing_db_user: b14cms
+  auditing_db_user: b14aud
   cms_db_server: PRDBOE_TAF
-  cms_db_user: b14aud
+  cms_db_user: b14cms
 
 sap_bip_auditing_db_server: "{{ sap_bip_db_conf.auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_db_conf.auditing_db_user }}"
@@ -110,3 +110,39 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
     autofs_mount: true
+
+rclone_secretsmanager_app_registrations:
+  rclone:
+    secret: "delius-mis-prod-sharepoint-app-registration"
+    users:
+      - client_id:
+      - client_secret:
+      - tenant_id:
+
+rclone_secretsmanager_drive_ids:
+  rclone:
+    secret: "delius-mis-prod-sharepoint-drive-ids"
+    users:
+      - wmt:
+
+rclone_sharepoint_config:
+  wmt:
+    app_registrations_secret_key: rclone
+    drive_ids_secret_key: rclone
+
+rclone_sync_timer_frequency_minutes: 2 # runs at alternatve minutes on each CMS
+rclone_sync_config:
+  shared_lock: "/samba.delius-prod.internal/secure/NPS/nart/.rclone-sync.lock"
+  rclone_args:
+    - "--stats=0"
+    - "--fast-list"
+  dirs:
+    wmt:
+      rclone_cmd: copy
+      rclone_src: "/samba.delius-prod.internal/secure/NPS/National/wmt"
+      rclone_dest: "wmt:NDelius MIS Reports/Caseload Reports"
+      rclone_args:
+        - "--min-age=2m"
+        - "--include=*.xlsx"
+        - "--dry-run"
+        - "--max-depth=1"

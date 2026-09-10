@@ -1,0 +1,28 @@
+---
+- name: Resolve ODBC driver paths for current EL major version
+  ansible.builtin.set_fact:
+    onr_arns_odbc_driver_path_pg: >-
+      {{ onr_arns_odbc_driver_paths[ansible_distribution_major_version].pg }}
+    onr_arns_odbc_driver_path_default: >-
+      {{ onr_arns_odbc_driver_paths[ansible_distribution_major_version].default }}
+
+- name: Ensure all values needed for the odbc.ini template are set
+  ansible.builtin.assert:
+    that:
+      - onr_arns_odbc_driver_path_pg | length > 0
+      - onr_arns_odbc_driver_path_default | length > 0
+      - onr_arns_db_host | length > 0
+      - onr_arns_db_username | length > 0
+      - onr_arns_db_password | length > 0
+      - onr_arns_db_port | length > 0
+      - onr_arns_db_name | length > 0
+    fail_msg: >-
+      One or more values needed for the odbc.ini template have not been set.
+
+- name: Configure ARNS PostgreSQL ODBC DSN
+  ansible.builtin.template:
+    src: odbc.ini.j2
+    dest: "{{ onr_arns_odbc_ini }}"
+    owner: root
+    group: root
+    mode: "0644"

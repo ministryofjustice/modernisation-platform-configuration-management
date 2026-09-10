@@ -1,0 +1,92 @@
+- name: Resolve target database name
+  set_fact:
+     target_db_name: "{{ database_primary_sid | default(database_standby_sid) if (database_primary_sid is defined or database_standby_sid is defined) else ( target_db_names | from_json | combine )[inventory_hostname] }}"
+
+- name: Resolve RAT secret name
+  set_fact:
+     rat_secret_name: "{{ environment_name }}-oracle{% if 'delius-mis' in environment_name %}-{{ database_primary_sid[-3:] | lower }}{% endif %}-db-dba-passwords"
+
+- name: Validate RAT capture action
+  assert:
+     that:
+        - rat_capture_action in ['start', 'stop']
+     fail_msg: "Set rat_capture_action to either 'start' or 'stop'"
+
+- name: Validate RAT start inputs
+  assert:
+     that:
+        - application is defined
+        - application in application_schemas
+        - application_schemas[application] | length > 0
+     fail_msg: "Define application and application_schemas[application] before starting a RAT capture"
+  when: rat_capture_action == 'start'
+
+- name: Validate RAT stop upload inputs
+  assert:
+     that:
+        - application is defined
+        - rat_capture_s3_bucket_name | length > 0
+     fail_msg: "Define application and rat_capture_s3_bucket_name before stopping a RAT capture"
+  when: rat_capture_action == 'stop'
+
+- name: Build RAT capture names
+  set_fact:
+     rat_capture_timestamp: "{{ now(fmt='%y%m%d%H%M%S') }}"
+     rat_capture_name: "{{ application | replace('-', '_') }}_{{ target_db_name | lower }}_{{ now(fmt='%Y%m%d%H%M%S') }}"
+     rat_capture_directory_name: "RAT_{{ target_db_name | upper }}_{{ now(fmt='%y%m%d%H%M%S') }}"
+     rat_capture_directory_path: "{{ rat_capture_base_dir }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/{{ now(fmt='%Y%m%d%H%M%S') }}"
+  when: rat_capture_action == 'start'
+
+- name: Create RAT capture directory on the database host
+  file:
+     path: "{{ rat_capture_directory_path }}"
+     state: directory
+     owner: oracle
+     group: oinstall
+     mode: '0750'
+  become: true
+  when: rat_capture_action == 'start'
+
+- name: Start RAT capture
+  script: start_rat_capture.sh "{{ rat_capture_directory_name }}" "{{ rat_capture_directory_path }}" "{{ rat_capture_name }}"
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_CAPTURE_SCHEMAS: "{{ application_schemas[application] | join(',') }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  when: rat_capture_action == 'start'
+
+- name: Stop RAT capture
+  script: stop_rat_capture.sh
+  become: true
+  become_user: oracle
+  environment:
+     TARGET_DB_NAME: "{{ target_db_name }}"
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  when: rat_capture_action == 'stop'
+
+- name: Set RAT capture S3 location
+  set_fact:
+     rat_capture_s3_location: "s3://{{ rat_capture_s3_bucket_name }}/capture/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
+  when: rat_capture_action == 'stop'
+
+- name: Upload RAT capture files to S3
+  command:
+     argv:
+        - aws
+        - s3
+        - sync
+        - --no-progress
+        - "{{ rat_capture_base_dir }}/{{ application | replace('-', '_') }}/{{ target_db_name | lower }}/"
+        - "{{ rat_capture_s3_location }}"
+  become: true
+  become_user: oracle
+  when: rat_capture_action == 'stop'
+
+- name: Report RAT capture S3 location
+  debug:
+     msg: "RAT capture files uploaded to {{ rat_capture_s3_location }}"
+  when: rat_capture_action == 'stop'

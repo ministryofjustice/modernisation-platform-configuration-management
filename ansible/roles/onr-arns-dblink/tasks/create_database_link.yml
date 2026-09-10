@@ -1,0 +1,42 @@
+---
+- name: Escape ARNS credentials for Oracle DDL
+  ansible.builtin.set_fact:
+    onr_arns_db_username_sql: >-
+      {{ onr_arns_db_username | replace('"', '""') }}
+    onr_arns_db_password_sql: >-
+      {{ onr_arns_db_password | replace('"', '""') }}
+  no_log: true
+
+- name: Create public ARNS database link
+  ansible.builtin.shell: |
+    source oraenv <<< {{ staging_db_name }}
+    sqlplus -s / as sysdba <<EOF 
+    whenever sqlerror exit failure rollback
+
+    DECLARE
+      v_count NUMBER;
+    BEGIN
+      SELECT COUNT(*)
+      INTO v_count
+      FROM dba_db_links
+      WHERE owner = 'PUBLIC'
+      AND db_link = UPPER('{{ onr_arns_dblink_name }}');
+
+      IF v_count = 0 THEN
+        EXECUTE IMMEDIATE
+          'CREATE PUBLIC DATABASE LINK {{ onr_arns_dblink_name }} ' ||
+          'CONNECT TO "{{ onr_arns_db_username_sql }}" ' ||
+          'IDENTIFIED BY "{{ onr_arns_db_password_sql }}" ' ||
+          'USING ''{{ onr_arns_tns_alias }}''';
+      END IF;
+    END;
+    /
+    exit
+    EOF
+  become: true
+  become_user: oracle
+  environment:
+    ORACLE_HOME: "{{ onr_arns_oracle_home }}"
+    PATH: "{{ onr_arns_oracle_home }}/bin:/usr/bin:/bin"
+    ORACLE_SID: "{{ staging_db_name }}"
+  no_log: true

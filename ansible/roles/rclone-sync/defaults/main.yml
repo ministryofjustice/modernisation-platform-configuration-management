@@ -1,0 +1,21 @@
+---
+# See README.md for examples
+rclone_sync_config:
+  # shared_lock: "" # optionally set to file share directory for locking
+  rclone_args: {}
+  #   - "--stats=0"
+  #   - "--fast-list"
+  dirs: {}
+  #  example:
+  #    rclone_cmd: copy
+  #    rclone_src: "/my/sourcedir"
+  #    rclone_dest: "rclongconfig:sharepoint/path"
+  #    rclone_args:
+  #      - "--min-age=2m"
+  #      - "--include=*.xlsx"
+  #      - "--max-depth=1"
+
+rclone_sync_description: "Script for running rclone against multiple local directories on a timer"
+rclone_sync_timer_frequency_minutes: 5
+rclone_sync_timer_start_minute: "{{ (ec2_name.split('-')[-1] | int) % rclone_sync_timer_frequency_minutes }}"
+rclone_sync_timer_schedule: "*:{{ rclone_sync_timer_start_minute }}/{{ rclone_sync_timer_frequency_minutes }}"

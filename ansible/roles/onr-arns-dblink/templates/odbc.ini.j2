@@ -1,0 +1,14 @@
+# Managed by Ansible - onr-arns-dblink
+
+[{{ onr_arns_odbc_dsn }}]
+Description = PG
+Driver = {{ onr_arns_odbc_driver_path_pg }}
+ServerName = {{ onr_arns_db_host }}
+Username = {{ onr_arns_db_username }}
+Password = {{ onr_arns_db_password }}
+Port = {{ onr_arns_db_port }}
+Database = {{ onr_arns_db_name }}
+SSLmode = require
+
+[Default]
+Driver = {{ onr_arns_odbc_driver_path_default }}

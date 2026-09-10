@@ -1,0 +1,17 @@
+---
+- name: Copy rclone-sync rsyslog config
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - etc/rsyslog.d/01-rclone-sync.conf
+  register: rclone_sync_rsyslog
+
+- name: Restart rsyslog service
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+  when: rclone_sync_rsyslog is changed

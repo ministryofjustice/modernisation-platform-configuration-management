@@ -1,0 +1,54 @@
+---
+- name: Create PostgreSQL staging directory
+  ansible.builtin.file:
+    path: "{{ onr_arns_stage_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ansible_distribution_major_version == "7"
+
+- name: Download PostgreSQL libraries RPM from S3
+  amazon.aws.s3_object:
+    bucket: "{{ s3_bucket }}"
+    object: >-
+      {{ onr_arns_postgres_s3_prefix }}/{{ onr_arns_postgres_el7_libs_rpm }}
+    dest: >-
+      {{ onr_arns_stage_dir }}/{{ onr_arns_postgres_el7_libs_rpm }}
+    mode: get
+  when: ansible_distribution_major_version == "7"
+
+- name: Download PostgreSQL ODBC RPM from S3
+  amazon.aws.s3_object:
+    bucket: "{{ s3_bucket }}"
+    object: >-
+      {{ onr_arns_postgres_s3_prefix }}/{{ onr_arns_postgres_el7_odbc_rpm }}
+    dest: >-
+      {{ onr_arns_stage_dir }}/{{ onr_arns_postgres_el7_odbc_rpm }}
+    mode: get
+  when: ansible_distribution_major_version == "7"
+
+- name: Install PostgreSQL libraries and ODBC driver on EL7
+  ansible.builtin.yum:
+    name:
+      - "{{ onr_arns_stage_dir }}/{{ onr_arns_postgres_el7_libs_rpm }}"
+      - "{{ onr_arns_stage_dir }}/{{ onr_arns_postgres_el7_odbc_rpm }}"
+    state: present
+    disable_gpg_check: true
+  when: ansible_distribution_major_version == "7"
+
+- name: Install PostgreSQL ODBC packages on EL8
+  ansible.builtin.yum:
+    name: "{{ onr_arns_postgres_el8_packages }}"
+    state: present
+  when: ansible_distribution_major_version == "8"
+
+- name: Query registered ODBC drivers
+  ansible.builtin.command:
+    cmd: odbcinst -q -d
+  register: onr_arns_odbc_drivers
+  changed_when: false
+
+- name: Display registered ODBC drivers
+  ansible.builtin.debug:
+    var: onr_arns_odbc_drivers.stdout_lines
