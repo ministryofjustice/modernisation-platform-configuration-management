@@ -130,19 +130,43 @@ rclone_sharepoint_config:
     app_registrations_secret_key: rclone
     drive_ids_secret_key: rclone
 
-rclone_sync_timer_frequency_minutes: 2 # runs at alternatve minutes on each CMS
+rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/samba.delius-prod.internal/secure/NPS/nart/.rclone-sync.lock"
   rclone_args:
+    - "--verbose"
     - "--stats=0"
+    - "--retries=0"  # don't retry as script runs every few minutes
+    - "--low-level-retries=0"
     - "--fast-list"
   dirs:
-    wmt:
-      rclone_cmd: copy
-      rclone_src: "/samba.delius-prod.internal/secure/NPS/National/wmt"
-      rclone_dest: "wmt:NDelius MIS Reports/Caseload Reports"
+    readme:
+      frequency_seconds: 3600
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "wmt:_NART - Automated Uploads"
       rclone_args:
+        - "--checksum"
+    wmt:
+      frequency_seconds: 3600
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/National/wmt"
+        - "wmt:_NART - Automated Uploads/NDMIS/Reports/wmt"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
         - "--min-age=2m"
-        - "--include=*.xlsx"
-        - "--dry-run"
+        - "--include=NDelius*.xlsx"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
         - "--max-depth=1"
+    delete-old:
+      frequency_seconds: 86400
+      rclone_cmd:
+        - "delete"
+        - "wmt:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=30d"
+        - "--exclude=README.md"
