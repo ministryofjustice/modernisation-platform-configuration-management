@@ -1,0 +1,109 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.AUD_DBA_IMP_PKG1 AUTHID DEFINER as
+/*
+ *  NOMIS Data Audit Trail import code.
+ *  
+ *  Description:  	This script creates procedures to support import of
+ *                      database audit trail and user data for Prison-NOMIS release 1.0e.
+ *  
+ *                      This script should be executed by the AUDITDATA user.
+ *  
+ *  Version: 		1.0e
+ *
+ *  Author:		R. Taylor - EDS UK Ltd.
+ *
+ *  Date:		Thursday, 24 July 2008.
+ * 
+ *  Change History:	Version:  Date:	    Author:	Description:	
+ *
+ *			1.0e.1	  24/07/08  R. Taylor	Initial version
+ *			1.0e.2	  24/07/08  R. Taylor	Clear remote_databases before insert
+ *			1.0e.3	  25/07/08  R. Taylor	Default from date to 01-DEC-06
+ *							Used in interim audit deliverable.
+ *			1.0e.4	  13/08/08  R. Taylor	Retain from timestamp if no data processed.
+ *			1.0e.5	  17/10/08  R. Taylor	Allow deferred load on add remote database.
+ *			1.0e.6	  22/10/08  R. Taylor	Split package and body files.
+ *			1.0e.7	  06/04/09  R. Taylor	Make initial date a parameter
+ *			                    		(should be 2 months before go-live).
+ *			1.0e.8	  19/03/10  R. Taylor	Restrict cursor size and logoff updates (Vantive 1883240).
+ *			1.0e.9	  13/04/10  R. Taylor	Truncate temp tables and analyze temp table data.
+ *			1.0e.10	  24/09/10  R. Taylor	Add get_version function.
+ *			1.0e.11	  17/11/10  R. Taylor	Add parameter for statistics gathering.
+ *			1.0e.12	  14/02/11  R. Taylor	Modify add_remote_database to preserve timestamps.
+ *			1.0e.13	  20/04/11  R. Taylor	Avoid loopback database link for AUDIT import.
+ *			1.0e.14	  12/12/12  R. Taylor	Ignore logoff times for audit trail selection (QC18080).
+ *			                    			Allow for upgrade versions of databases (LSB5).
+ */
+
+  g_version 	 	VARCHAR2(20) := '1.0e.14';
+  g_sys_live_date 	DATE := to_date('01-MAR-2013','DD-MON-YYYY');
+  g_audit_trail_window	NUMBER := 7;
+  g_logoff_cutoff	NUMBER := 7;
+  g_stats_percent 	NUMBER := 5 ;
+  g_audit_db 		VARCHAR2(30) := 'AUDIT';
+
+  -- define error conditions for exception handling
+  db_link_not_found EXCEPTION;
+  PRAGMA EXCEPTION_INIT(db_link_not_found, -2024);
+
+  TYPE RAT_remote_dbs IS	table of remote_audit_trail.REMOTE_DB%TYPE;
+  TYPE RAT_audit_datetimes IS 	table of remote_audit_trail.audit_datetime%TYPE;
+  TYPE RAT_import_datetimes IS 	table of remote_audit_trail.import_datetime%TYPE;
+  TYPE RAT_actions IS 		table of remote_audit_trail.ACTION%TYPE;
+  TYPE RAT_action_names IS 		table of remote_audit_trail.ACTION_NAME%TYPE;
+  TYPE RAT_usernames IS 		table of remote_audit_trail.USERNAME%TYPE;
+  TYPE RAT_ses_actions IS 		table of remote_audit_trail.SES_ACTIONS%TYPE;
+  TYPE RAT_logoff_times IS 		table of remote_audit_trail.LOGOFF_TIME%TYPE;
+  TYPE RAT_logoff_lreads IS		table of remote_audit_trail.LOGOFF_LREAD%TYPE;
+  TYPE RAT_logoff_preads IS		table of remote_audit_trail.LOGOFF_PREAD%TYPE;
+  TYPE RAT_logoff_lwrites IS 		table of remote_audit_trail.LOGOFF_LWRITE%TYPE;
+  TYPE RAT_logoff_dlocks IS		table of remote_audit_trail.LOGOFF_DLOCK%TYPE;
+  TYPE RAT_comment_texts IS		table of remote_audit_trail.COMMENT_TEXT%TYPE;
+  TYPE RAT_entry_ids IS 		table of remote_audit_trail.ENTRYID%TYPE;
+  TYPE RAT_statementids IS 		table of remote_audit_trail.STATEMENTID%TYPE;
+  TYPE RAT_returncodes IS 		table of remote_audit_trail.RETURNCODE%TYPE;
+  TYPE RAT_priv_useds IS 		table of remote_audit_trail.PRIV_USED%TYPE;
+  TYPE RAT_session_cpus IS 		table of remote_audit_trail.SESSION_CPU%TYPE;
+  TYPE RAT_extended_timestamps IS	table of remote_audit_trail.extended_timestamp%TYPE;
+  TYPE RAT_sessionids IS 		table of remote_audit_trail.SESSIONID%TYPE;
+
+  TYPE RU_remote_dbs IS 		table of remote_users.REMOTE_DB%TYPE;
+  TYPE RU_import_datetimes IS 		table of remote_users.import_datetime%TYPE;
+  TYPE RU_usernames IS 			table of remote_users.USERNAME%TYPE;
+  TYPE RU_user_ids IS 			table of remote_users.USER_ID%TYPE;
+  TYPE RU_account_statuss IS 		table of remote_users.ACCOUNT_STATUS%TYPE;
+  TYPE RU_lock_dates IS 		table of remote_users.LOCK_DATE%TYPE;
+  TYPE RU_expiry_dates IS 		table of remote_users.EXPIRY_DATE%TYPE;
+  TYPE RU_default_tablespaces IS 	table of remote_users.DEFAULT_TABLESPACE%TYPE;
+  TYPE RU_temporary_tablespaces IS 	table of remote_users.TEMPORARY_TABLESPACE%TYPE;
+  TYPE RU_createds IS 			table of remote_users.CREATED%TYPE;
+  TYPE RU_profiles IS 			table of remote_users.PROFILE%TYPE;
+  TYPE RU_initial_rsrc_cons_groups IS 	table of remote_users.INITIAL_RSRC_CONSUMER_GROUP%TYPE;
+  TYPE RU_external_names IS 		table of remote_users.EXTERNAL_NAME%TYPE;
+  TYPE RU_record_existss IS 		table of remote_users.record_exists%TYPE;
+ 
+  -- packaged procedure update_remote_audit_records
+  PROCEDURE update_remote_audit_records;
+
+  -- packaged procedure add_database_link
+  PROCEDURE add_database_link(
+    p_db_link 	IN     varchar2,
+    p_username 	IN     varchar2,
+    p_password 	IN     varchar2,
+    p_host  	IN     varchar2
+  );
+
+  -- packaged procedure add_remote_database 
+  PROCEDURE add_remote_database(
+    p_remote_db 	IN     varchar2,
+    p_remote_db_link 	IN     varchar2,
+    p_from_date 	IN     date default null,
+    p_load_now 		IN     boolean default FALSE
+  );
+
+  -- packaged function get_version
+  FUNCTION get_version RETURN varchar2;
+
+end AUD_DBA_IMP_PKG1;
+/
+
+show errors

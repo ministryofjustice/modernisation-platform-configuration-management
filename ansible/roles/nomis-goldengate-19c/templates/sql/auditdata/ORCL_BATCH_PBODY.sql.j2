@@ -1,0 +1,284 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.orcl_batch_pkg AS
+
+-- found in preprod audit database
+
+PROCEDURE add_completed_jobs_log_data (
+	p_subsystem in varchar2,
+	p_output_file in out utl_file.file_type,
+	p_last_start_date in timestamp with time zone)
+AS
+/*
+Add details of completed jobs to a text file passed to it;
+Uploads text file to NCDS SAN
+
+Data mapping:-
+Output Field          Output Field Description            Null?  Format                             Source Column (DBA_SCHEDULER_JOB_RUN_DETAILS)
+============    ======================= ===   =================      =================================================
+Event Date-Time	Date and time event was logged  N     yyyyMMdd_hhmmss           LOG_DATE
+Start Date-Time	Start date and time of job	      Y     yyyyMMdd_hhmmss           ACTUAL_START_DATE
+End Date-Time	End date and time of job	      Y     yyyyMMdd_hhmmss           ACTUAL_START_DATE + RUN_DURATION
+Subsystem	Subsystem where batch job run  N                                              Obtained from procedure parameter
+Job ID	              Scheduled batch job identifier     N
+Job Name	Scheduled batch job name	      N                                               JOB_NAME
+Status	              Current status of job	      Y     'success' or 'failure'               STATUS (modified if 'SUCCESSFUL')
+Message	              Additional detail	                    Y                                               ADDITIONAL_INFO
+
+Change History
+===========
+Version/Date/Author:	1	26/11/2008	J Smith
+Change Summary:	New procedure
+Version/Date/Author:	2	10/08/2009	R Taylor
+Change Summary:	Translate newline characters in additional job info (defect 15973)
+Version/Date/Author     4   24/09/2009  N Frampton
+Change Summary: Added or clause to specifically include AQ_COALESCE_AND_INDEX_REBUILD job
+*/
+v_log_date		dba_scheduler_job_run_details.log_date%type;
+v_job_name		dba_scheduler_job_run_details.job_name%type;
+v_status			dba_scheduler_job_run_details.status%type;
+v_actual_start_date	dba_scheduler_job_run_details.actual_start_date%type;
+v_run_duration		dba_scheduler_job_run_details.run_duration%type;
+v_additional_info		dba_scheduler_job_run_details.additional_info%type;
+
+cursor c_completed_jobs(p_last_start_date IN timestamp with time zone) IS
+	SELECT log_date, job_name, status, actual_start_date, run_duration, additional_info
+	FROM dba_scheduler_job_run_details
+	WHERE (actual_start_date + run_duration) > p_last_start_date
+	AND ( owner not in ('TSMSYS','SYSMAN','DMSYS','DBSNMP','OLAPSYS','ORDPLUGINS','XDB','EXFSYS','ORDSYS',
+                                         'SI_INFORMTN_SCHEMA','ANONYMOUS','CTXSYS','WMSYS','MDSYS','SYSTEM','SYS','MGMT_VIEW','OUTLN')
+	OR job_name = 'AQ_COALESCE_AND_INDEX_REBUILD' )
+	ORDER BY actual_start_date;
+
+BEGIN
+
+--get completed job details
+	OPEN c_completed_jobs (p_last_start_date);
+	LOOP
+		FETCH c_completed_jobs
+		INTO v_log_date, v_job_name, v_status, v_actual_start_date, v_run_duration, v_additional_info;
+		EXIT WHEN c_completed_jobs%NOTFOUND;
+		IF v_status = 'SUCCEEDED' THEN
+			v_status := 'success';
+		END IF;
+		UTL_FILE.put_line (p_output_file,
+			TO_CHAR(v_log_date, 'yyyyMMdd_hh24mIss') || ',' ||
+			TO_CHAR(v_actual_start_date, 'yyyyMMdd_hh24mIss') || ',' ||
+			TO_CHAR(v_actual_start_date + v_run_duration, 'yyyyMMdd_hh24mIss') || ',' ||
+			p_subsystem || ',' ||
+			',' ||
+			v_job_name || ',' ||
+			LOWER(v_status) || ',' ||
+			TRANSLATE(v_additional_info, chr(10)||',', '  ')
+			);
+	END LOOP;
+	CLOSE c_completed_jobs;
+
+EXCEPTION
+	WHEN OTHERS THEN
+		UTL_FILE.put_line (p_output_file,
+			TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+			TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+			',' ||
+			p_subsystem || ',' ||
+			',' ||
+			'add_completed_jobs_log_data (procedure)' || ',' ||
+			'error' || ',' ||
+			TO_CHAR(SQLCODE) || ' - ' || SQLERRM
+			);
+END add_completed_jobs_log_data;
+
+PROCEDURE add_started_jobs_log_data (
+	p_subsystem in varchar2,
+	p_output_file in out utl_file.file_type,
+	p_last_start_date in timestamp with time zone,
+	p_current_start_date in timestamp with time zone)
+AS
+/*
+Adds run details of started jobs to a text file passed to it
+
+Data mapping:-
+Output Field          Output Field Description            Null?  Format                             Source Column (DBA_SCHEDULER_RUNNING_JOBS)
+============    ======================= ===   =================      =================================================
+Event Date-Time	Date and time event was logged  N     yyyyMMdd_hhmmss           SYSDATE
+Start Date-Time	Start date and time of job	      Y     yyyyMMdd_hhmmss           SYSDATE - ELAPSED_TIME
+End Date-Time	End date and time of job	      Y     yyyyMMdd_hhmmss
+Subsystem	Subsystem where batch job run  N                                               Obtained from procedure parameter
+Job ID	              Scheduled batch job identifier     N
+Job Name	Scheduled batch job name	      N                                               JOB_NAME
+Status	              Current status of job	      Y     'started'                               Hard coded
+Message	              Additional detail	                    Y
+
+Change History
+===========
+Version/Date/Author:	1	26/11/2008	J Smith
+Change Summary:	New procedure
+Version/Date/Author     4   24/09/2009  N Frampton
+Change Summary: Added or clause to specifically include AQ_COALESCE_AND_INDEX_REBUILD job
+*/
+v_job_name		dba_scheduler_running_jobs.job_name%type;
+v_elapsed_time		dba_scheduler_running_jobs.elapsed_time%type;
+
+cursor c_started_jobs(p_last_start_date IN timestamp with time zone,
+		     p_current_start_date IN timestamp with time zone) IS
+	SELECT job_name, elapsed_time
+	FROM dba_scheduler_running_jobs
+	WHERE elapsed_time < (p_current_start_date - p_last_start_date)
+	AND ( owner not in ('TSMSYS','SYSMAN','DMSYS','DBSNMP','OLAPSYS','ORDPLUGINS','XDB','EXFSYS','ORDSYS',
+                                         'SI_INFORMTN_SCHEMA','ANONYMOUS','CTXSYS','WMSYS','MDSYS','SYSTEM','SYS','MGMT_VIEW','OUTLN')
+	OR job_name = 'AQ_COALESCE_AND_INDEX_REBUILD' )
+	ORDER BY elapsed_time DESC;
+
+BEGIN
+--get running job details
+	OPEN c_started_jobs (p_last_start_date, p_current_start_date);
+	LOOP
+		FETCH c_started_jobs
+		INTO v_job_name, v_elapsed_time;
+		EXIT WHEN c_started_jobs%NOTFOUND;
+		UTL_FILE.put_line (p_output_file,
+			TO_CHAR(p_current_start_date, 'yyyyMMdd_hh24mIss') || ',' ||
+			TO_CHAR(p_current_start_date - v_elapsed_time, 'yyyyMMdd_hh24mIss') || ',' ||
+			',' ||
+			p_subsystem || ',' ||
+			',' ||
+			v_job_name || ',' ||
+			'started' || ',' ||
+			''
+			);
+	END LOOP;
+	CLOSE c_started_jobs;
+
+EXCEPTION
+	WHEN OTHERS THEN
+		UTL_FILE.put_line (p_output_file,
+			TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+			TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+			',' ||
+			p_subsystem || ',' ||
+			',' ||
+			'add_started_jobs_log_data (procedure)' || ',' ||
+			'error' || ',' ||
+			TO_CHAR(SQLCODE) || ' - ' || SQLERRM
+			);
+END add_started_jobs_log_data;
+
+PROCEDURE extract_orcl_job_data (
+	p_subsystem in varchar2,
+	p_extract_job_name in varchar2)
+AS
+/*
+Captures in a text file details of:
+	Started jobs	- DBA_SCHEDULER_RUNNING_JOBS
+ 	Completed jobs 	- DBA_SCHEDULER_JOB_RUN_DETAILS
+
+Change History
+===========
+Version/Date/Author:	1	26/11/2008	J Smith
+Change Summary:	New procedure
+
+Version/Date/Author:	2	19/05/2009	J Smith
+Change Summary:		Underscore added to timestamp portion of output file name
+*/
+v_subsystem_missing	boolean := FALSE;
+v_job_name_missing	boolean := FALSE;
+v_job_name_invalid		boolean := FALSE;
+v_job_count		number := 0;
+v_err_msg		varchar2(256);
+e_exception		exception;
+v_output_directory_name	varchar2(50) := 'NOMIS_RUNLOGS_' || UPPER(p_subsystem);
+v_output_file_name		varchar2(256) := 'job_status_';
+v_output_file   		utl_file.file_type;
+v_output_file_open		boolean := FALSE;
+v_current_start_date	timestamp(6) with time zone;
+v_last_start_date		timestamp(6) with time zone;
+
+BEGIN
+
+--get start time for current run
+	DBMS_OUTPUT.PUT_LINE('Getting start time for current run');
+	v_current_start_date := SYSDATE;
+
+--initialize output file
+	DBMS_OUTPUT.PUT_LINE('Initializing output file');
+	v_output_file_name := v_output_file_name || p_subsystem || '.' || TO_CHAR(SYSDATE, 'YYYYMMDD_HH24MISS');
+	v_output_file := UTL_FILE.fopen (v_output_directory_name, v_output_file_name, 'w');
+	v_output_file_open := TRUE;
+
+--check subsystem supplied
+	DBMS_OUTPUT.PUT_LINE('Checking that subsystem supplied');
+	IF p_subsystem IS NULL
+	OR TRIM(p_subsystem) = '' THEN
+		v_subsystem_missing := TRUE;
+		RAISE e_exception;
+	END IF;
+
+--validate job name
+	DBMS_OUTPUT.PUT_LINE('Validating job name');
+	IF p_extract_job_name IS NULL
+	OR TRIM(p_extract_job_name) = '' THEN
+		v_job_name_missing := TRUE;
+		RAISE e_exception;
+	ELSE
+		SELECT count(*) INTO v_job_count
+		FROM all_scheduler_jobs
+		WHERE job_name = UPPER(p_extract_job_name);
+		IF v_job_count < 1 THEN
+			v_job_name_invalid := TRUE;
+			RAISE e_exception;
+		END IF;
+	END IF;
+
+--get time of last run
+	DBMS_OUTPUT.PUT_LINE('Getting start time for last run');
+	BEGIN
+		SELECT max(actual_start_date) INTO v_last_start_date
+		FROM dba_scheduler_job_run_details
+		WHERE job_name = UPPER(p_extract_job_name);
+	EXCEPTION
+		WHEN NO_DATA_FOUND THEN
+			--default to previous hour
+			v_last_start_date := SYSDATE - 1/24;
+	END;
+
+--get log details and error messages
+	DBMS_OUTPUT.PUT_LINE('Calling add_started_jobs_log_data');
+	add_started_jobs_log_data(p_subsystem, v_output_file, v_last_start_date, v_current_start_date);
+
+	DBMS_OUTPUT.PUT_LINE('Calling add_completed_jobs_log_data');
+	add_completed_jobs_log_data(p_subsystem, v_output_file, v_last_start_date);
+
+--finalise output file
+	DBMS_OUTPUT.PUT_LINE('Finalising output file');
+	UTL_FILE.fclose (v_output_file);
+
+EXCEPTION
+	WHEN OTHERS THEN
+		v_err_msg := TO_CHAR(SQLCODE) || ' - ' || SQLERRM;
+		DBMS_OUTPUT.PUT_LINE('Processing exception');
+		IF v_output_file_open THEN
+			IF v_subsystem_missing THEN
+				v_err_msg := 'No subsystem has been supplied' ;
+			ELSIF v_job_name_missing THEN
+				v_err_msg := 'No batch log data extract job has been supplied' ;
+			ELSIF v_job_name_invalid THEN
+				v_err_msg := 'Supplied batch log data extract job cannot be found';
+			END IF;
+
+			UTL_FILE.put_line (v_output_file,
+				TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+				TO_CHAR(SYSDATE, 'yyyyMMdd_hh24mIss') || ',' ||
+				',' ||
+				p_subsystem || ',' ||
+				',' ||
+				'extract_orcl_job_data (procedure)' || ',' ||
+				'error' || ',' ||
+				v_err_msg
+				);
+			UTL_FILE.fclose (v_output_file);
+		END IF;
+		RAISE;
+END extract_orcl_job_data;
+
+END orcl_batch_pkg;
+/
+
+show errors

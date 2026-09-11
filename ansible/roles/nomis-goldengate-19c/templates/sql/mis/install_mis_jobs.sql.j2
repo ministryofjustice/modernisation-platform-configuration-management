@@ -1,0 +1,263 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_jobs.log
+
+SET SERVEROUTPUT ON
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Installing MIS scheduler jobs (disabled initially)
+PROMPT ==================================================
+PROMPT Migrating 8 jobs from STRMADMIN:
+PROMPT   1. DAILY_LOG_PURGE -> Script in crontab (not migrating)
+PROMPT   2. MISLOAD_FAILURE_CHECK -> Migrate
+PROMPT   3. MIS_BATCH_CONTROL -> Keep disabled
+PROMPT   4. MIS_BATCH_ROLL -> Keep disabled
+PROMPT   5. MIS_PRE_LOAD -> Keep disabled
+PROMPT   6. MIS_PURGE_STAGING_TABLES -> Migrate
+PROMPT   7. ORCL_BATCH_STATUS_EXTRACT_JOB -> Keep disabled (last run 2018)
+PROMPT   8. WEEKLY_LOG_PURGE -> Migrate
+PROMPT ==================================================
+
+DECLARE
+    v_job_name VARCHAR2(30);
+    v_exists NUMBER;
+    v_status VARCHAR2(10);
+    v_enabled BOOLEAN := FALSE;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('Creating MIS jobs migrated from STRMADMIN...');
+    
+    -- Job 1: DAILY_LOG_PURGE - Already in crontab, not migrating
+    -- This job purges Streams archive logs
+    DBMS_OUTPUT.PUT_LINE('NOTE: DAILY_LOG_PURGE already runs from root crontab - not migrating');
+    
+    -- Job 2: MISLOAD_FAILURE_CHECK
+    BEGIN
+        SELECT COUNT(*) INTO v_exists
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'MISLOAD_FAILURE_CHECK';
+
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'MISLOAD_FAILURE_CHECK';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.MISLOAD_FAILURE_CHECK', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.MISLOAD_FAILURE_CHECK',
+            job_type         => 'EXECUTABLE',
+            job_action       => '/home/oracle/admin/scripts/misload_failure_check.sh',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=DAILY;BYHOUR=6;BYMINUTE=30',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Verify if misload failed or still running. Migrated from STRMADMIN.MISLOAD_FAILURE_CHECK');
+        DBMS_OUTPUT.PUT_LINE('Created job: MISLOAD_FAILURE_CHECK (disabled)');
+    END;
+    
+    -- Job 3: MIS_BATCH_CONTROL (disabled)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'MIS_BATCH_CONTROL';
+
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'MIS_BATCH_CONTROL';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.MIS_BATCH_CONTROL', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.MIS_BATCH_CONTROL',
+            job_type         => 'PLSQL_BLOCK',
+            job_action       => 'begin
+    -- logic moved into the MIS_JOB_PKG package to allow for easier testing and maintenance
+   {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.mis_batch_control;
+end;',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=DAILY; BYHOUR=5; BYMINUTE=0',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Job to initiate GoldenGate stop-point polling for MIS batch rollover. Migrated from STRMADMIN.MIS_BATCH_CONTROL - Keep disabled');
+        DBMS_OUTPUT.PUT_LINE('Created job: MIS_BATCH_CONTROL (disabled)');
+    END;
+    
+    -- Job 4: MIS_BATCH_ROLL (disabled)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'MIS_BATCH_ROLL';
+        
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'MIS_BATCH_ROLL';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.MIS_BATCH_ROLL', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.MIS_BATCH_ROLL',
+            job_type         => 'PLSQL_BLOCK',
+            job_action       => 'begin
+    -- logic moved into the MIS_JOB_PKG package to allow for easier testing and maintenance
+    {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.mis_batch_roll;
+end;',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=DAILY; BYHOUR=6; BYMINUTE=0',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Job to roll the MIS batch after GoldenGate reaches the stop SCN. Migrated from STRMADMIN.MIS_BATCH_ROLL - Keep disabled');
+        DBMS_OUTPUT.PUT_LINE('Created job: MIS_BATCH_ROLL (disabled)');
+    END;
+    
+    -- Job 5: MIS_PRE_LOAD (disabled, executable script)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'MIS_PRE_LOAD';
+
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'MIS_PRE_LOAD';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.MIS_PRE_LOAD', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+    
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.MIS_PRE_LOAD',
+            job_type         => 'EXECUTABLE',
+            job_action       => '/home/oracle/admin/scripts/trigger_mis_load.sh',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=DAILY; BYHOUR=4; BYMINUTE=0',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Job to initiate the MIS Load ETL processing performed by BO Data Intgrator. Migrated from STRMADMIN.MIS_PRE_LOAD - Keep disabled');
+        DBMS_OUTPUT.PUT_LINE('Created job: MIS_PRE_LOAD (disabled)');
+    END;
+    
+    -- Job 6: MIS_PURGE_STAGING_TABLES (enabled, purges strm_error_log)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'MIS_PURGE_STAGING_TABLES';
+        
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'MIS_PURGE_STAGING_TABLES';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.MIS_PURGE_STAGING_TABLES', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.MIS_PURGE_STAGING_TABLES',
+            job_type         => 'PLSQL_BLOCK',
+            job_action       => 'BEGIN {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.PURGE_RECORDS(''{{ oracle_goldengate_sql_owner }}''); END;',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=MONTHLY; BYMONTHDAY=1; BYHOUR=22; BYMINUTE=0',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Purge 26 month old STRM_ERROR_LOG table data. Migrated from STRMADMIN.MIS_PURGE_STAGING_TABLES - Purges strm_error_log');
+        DBMS_OUTPUT.PUT_LINE('Created job: MIS_PURGE_STAGING_TABLES (will be enabled at switchover)');
+    END;
+    
+    -- Job 7: ORCL_BATCH_STATUS_EXTRACT_JOB (disabled, last run 2018)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+        AND job_name = 'ORCL_BATCH_STATUS_EXTRACT_JOB';
+        
+        IF v_exists = 1 THEN
+            SELECT enabled INTO v_status
+            FROM dba_scheduler_jobs 
+            WHERE owner = '{{ oracle_goldengate_sql_owner }}' 
+            AND job_name = 'ORCL_BATCH_STATUS_EXTRACT_JOB';
+            v_enabled := (v_status = 'TRUE');
+            DBMS_SCHEDULER.DROP_JOB(job_name => '{{ oracle_goldengate_sql_owner }}.ORCL_BATCH_STATUS_EXTRACT_JOB', force => TRUE);
+        ELSE
+            v_status := 'FALSE';
+            v_enabled := FALSE;
+        END IF;
+
+        DBMS_SCHEDULER.CREATE_JOB (
+            job_name         => '{{ oracle_goldengate_sql_owner }}.ORCL_BATCH_STATUS_EXTRACT_JOB',
+            job_type         => 'PLSQL_BLOCK',
+            job_action       => 'BEGIN {{ oracle_goldengate_sql_owner }}.ORCL_BATCH_PKG.EXTRACT_ORCL_JOB_DATA(''reporting'', ''ORCL_BATCH_STATUS_EXTRACT_JOB''); END;',
+            start_date       => SYSTIMESTAMP,
+            repeat_interval  => 'FREQ=HOURLY',
+            enabled          => v_enabled,
+            auto_drop        => FALSE,
+            comments         => 'Extracts Oracle Scheduler run log data and uploads it to the central batch scheduling file store. Migrated from STRMADMIN.ORCL_BATCH_STATUS_EXTRACT_JOB - Last run 2018, keep disabled');
+        DBMS_OUTPUT.PUT_LINE('Created job: ORCL_BATCH_STATUS_EXTRACT_JOB (disabled - last run 2018)');
+    END;
+    
+    -- Job 8: WEEKLY_LOG_PURGE (PPMIS only)
+    BEGIN
+        SELECT COUNT(*) INTO v_exists 
+        FROM dba_scheduler_jobs 
+        WHERE owner = 'SYS' -- Note: This job is created in SYS schema as it needs access to the archive log directory object, which is owned by SYS
+        AND job_name = 'WEEKLY_LOG_PURGE';
+        
+        IF v_exists = 0 THEN
+            {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG.create_log_purge_job;
+            -- The job is created disabled
+            DBMS_OUTPUT.PUT_LINE('Created job: WEEKLY_LOG_PURGE (will be enabled at switchover)');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Job WEEKLY_LOG_PURGE already exists');
+        END IF;
+    END;
+    
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || 'MIS jobs installation completed');
+    DBMS_OUTPUT.PUT_LINE('Jobs to be enabled at switchover: MIS_PURGE_STAGING_TABLES, WEEKLY_LOG_PURGE');
+    DBMS_OUTPUT.PUT_LINE('Jobs to remain disabled: MIS_BATCH_CONTROL, MIS_BATCH_ROLL, MIS_PRE_LOAD, ORCL_BATCH_STATUS_EXTRACT_JOB');
+    DBMS_OUTPUT.PUT_LINE('Not migrated (use cron): DAILY_LOG_PURGE, MISLOAD_FAILURE_CHECK');
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error creating jobs: ' || SQLERRM);
+        RAISE;
+END;
+/
+
+PROMPT 
+PROMPT Listing created MIS jobs:
+SELECT owner, job_name, enabled, state, comments
+FROM dba_scheduler_jobs
+WHERE owner = '{{ oracle_goldengate_sql_owner }}'
+  AND job_name IN ('MISLOAD_FAILURE_CHECK', 'MIS_BATCH_CONTROL', 'MIS_BATCH_ROLL', 'MIS_PRE_LOAD', 
+                   'MIS_PURGE_STAGING_TABLES', 'ORCL_BATCH_STATUS_EXTRACT_JOB', 'WEEKLY_LOG_PURGE')
+ORDER BY job_name;
+
+PROMPT
+PROMPT Completed installation of MIS jobs
+spool off
+exit

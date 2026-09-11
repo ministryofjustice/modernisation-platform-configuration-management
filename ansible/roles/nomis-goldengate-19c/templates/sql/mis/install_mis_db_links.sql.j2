@@ -1,0 +1,30 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_db_links.log
+
+WHENEVER SQLERROR EXIT SUCCESS
+
+PROMPT Installing database link to '{{ oracle_goldengate_group.source.tns_alias }}' as {{ oracle_goldengate_group.source.schema_owner }}
+
+set serverout on
+declare
+    v_count integer;
+    v_source_db varchar2(255) := '{{ oracle_goldengate_group.source.tns_alias }}';
+    v_sql varchar2(4000);
+begin
+
+    dbms_output.put_line('Source database link name: '||v_source_db);
+
+    select count(*) into v_count from dba_db_links where db_link like v_source_db||'%' and owner = 'PUBLIC';
+
+    dbms_output.put_line('Source database link count: '||v_count);
+    if v_count = 1 then
+        v_sql := 'DROP PUBLIC DATABASE LINK '||v_source_db;
+        execute immediate v_sql;
+    end if;
+    v_sql := 'CREATE PUBLIC DATABASE LINK '||v_source_db||' CONNECT TO {{ oracle_goldengate_group.source.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_source_schema_password }} USING ''{{ oracle_goldengate_group.source.tns_alias }}''';
+    execute immediate v_sql;
+end;
+/
+
+PROMPT Completed installation of db links
+spool off
+exit

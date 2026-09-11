@@ -1,0 +1,13 @@
+- name: Check GoldenGate Manager status
+  ansible.builtin.shell: |
+    export ORACLE_SID={{ oracle_goldengate_local_db_sid }}
+    export ORAENV_ASK=NO
+    . oraenv > /dev/null 2>&1
+    ./ggsci <<< "info manager"
+  args:
+    chdir: "{{ oracle_goldengate_home }}"
+  register: manager_status
+
+- name: Set fact for whether Manager is running
+  ansible.builtin.set_fact:
+    manager_is_running: "{{ 'Manager is running' in manager_status.stdout }}"
