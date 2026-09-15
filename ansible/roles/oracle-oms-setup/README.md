@@ -1,10 +1,10 @@
 # Overview
 
-Use this role to install Oracle Enterprise Manager Cloud Control 13c Release 5 Installation, Configuration 
+Use this role to install Oracle Enterprise Manager Cloud Control 13c Release 5 Installation, Configuration
 
 # Pre-requisites
 
-Oracle 19c install role already executed successfully on server. oracle-19c role will install Oracle 19c Grid infrstructure, database and create ASM diskgroups needed for oracle-oms-setup role. 
+Oracle 19c install role already executed successfully on server. oracle-19c role will install Oracle 19c Grid infrstructure, database and create ASM diskgroups needed for oracle-oms-setup role.
 
 SSM parameters must be created via terraform before this role is run
 

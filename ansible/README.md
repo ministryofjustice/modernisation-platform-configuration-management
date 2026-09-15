@@ -3,7 +3,7 @@
 ## Introduction
 
 For provisioning and in-life management of EC2 instances. AMI configuration ansible
-belongs in [modernisation-platform-ami-builds] (https://github.com/ministryofjustice/modernisation-platform-ami-builds).
+belongs in [modernisation-platform-ami-builds] (<https://github.com/ministryofjustice/modernisation-platform-ami-builds>).
 
 Please include a README.md for each role.
 
@@ -166,7 +166,7 @@ Ansible tasks are executed on ec2 instances via AWS Session Manager, so you must
 
 The `ansible_connection` variable is set to use the `community.aws.aws_ssm` plugin in [group_vars/aws_ec2.yml](/ansible/group_vars/aws_ec2.yml). The `aws_ec2` group is the default group for all instances that are obtained from dynamic inventory.
 
-Ensure you have set your AWS credentials as environment variables or setup your `~/.aws/credentials` accordingly before attempting to run ansible. Note that at the time of writing, it does not seem possible to run Ansible with credentials obtained from `aws sso login`. Temporary credentials can be obtained from https://moj.awsapps.com/start#/
+Ensure you have set your AWS credentials as environment variables or setup your `~/.aws/credentials` accordingly before attempting to run ansible. Note that at the time of writing, it does not seem possible to run Ansible with credentials obtained from `aws sso login`. Temporary credentials can be obtained from <https://moj.awsapps.com/start#/>
 
 You may encounter an error similar to `ERROR! A worker was found in a dead state`. Apparently this is a Python issue and the workaround is to set an env:
 

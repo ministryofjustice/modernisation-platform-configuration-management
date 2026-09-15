@@ -34,7 +34,7 @@ When adding oracle-oem-blackout to a workflow, ensure the following:
         action: start
 ```
 
-This creates a node-level blackout for the targets i.e. all targets on the host will be in blackout. 
+This creates a node-level blackout for the targets i.e. all targets on the host will be in blackout.
 
 Other levels of blackout can be defined through the object_type flag:
       - "oracle_database"

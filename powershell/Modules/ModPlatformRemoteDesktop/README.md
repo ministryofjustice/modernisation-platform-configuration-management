@@ -1,4 +1,4 @@
-# Provides Remote Desktop related functions.
+#  Provides Remote Desktop related functions.
 
 Module is aimed at 3 different types of EC2 instance/ASG
 - RD Licensing Server EC2 instance
