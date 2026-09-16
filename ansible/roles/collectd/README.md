@@ -59,7 +59,7 @@ systemctl start auditd
 
 Once you have found an AVC denial message in /var/log/audit/audit.log you can use the audit2allow command to create a policy file to allow the process to access the file.
 
-`echo 'denial message' | audit2allow -M <name_of_policy_file>` this will create a *.te file and a *.pp file which you can add to the selinux policy by running `semodule -i <name_of_policy_file>.pp` directly. NOTE: that there are permissions issues with running this in certain directories so you may need to run this command in /usr/tmp or similar.
+`echo 'denial message' | audit2allow -M <name_of_policy_file>` this will create a *.te file and a*.pp file which you can add to the selinux policy by running `semodule -i <name_of_policy_file>.pp` directly. NOTE: that there are permissions issues with running this in certain directories so you may need to run this command in /usr/tmp or similar.
 
 If/when there are additional instances of this please add the settings back to the relevant collectd_selinux_policy_rhel_(version).te file and re-run the ansible task to create the policy file.
 

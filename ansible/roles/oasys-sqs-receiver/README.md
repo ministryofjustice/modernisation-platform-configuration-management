@@ -28,7 +28,7 @@ Ensure:
 # Key Variables
 
 | Variable | Description |
-|-----------|-------------|
+| ----------- | ------------- |
 | `oasys_sqs_release_version` | Version of the SqsReceiveMessage release being deployed |
 | `oasys_sqs_zip_src` | Name of the release zip file in S3 |
 | `oasys_sqs_source_bucket` | S3 path containing the release zip |
@@ -54,8 +54,8 @@ Deploy the OASys SQS Message Receiver:
 ```
  no_proxy="*" ansible-playbook site.yml --limit t2-oasys-db-a -e force_role=oasys-sqs-receiver -e oracle_sid=T2OASYS -e app_env=t2
 
- #  oracle_sid provided since 2 oasys test databases T2OASYS and T2OASYS2 exist on  t2-oasys-db-a
- #  app_env provided and must match app_env in oasys_sqs_secret_path 
+# oracle_sid provided since 2 oasys test databases T2OASYS and T2OASYS2 exist on  t2-oasys-db-a
+# app_env provided and must match app_env in oasys_sqs_secret_path
 
 # Updating to a New Release
 
@@ -103,11 +103,11 @@ Review daemon logs:
 tail -f /var/log/oasys-sqs-receiver/SqsMessageReceiver.log
 
 ```
-# Don't remove the dummy files in the messages folder,  it stops the cartridge from raising any error if there are no messages. 
+# Don't remove the dummy files in the messages folder,  it stops the cartridge from raising any error if there are no messages
 
-# The file CREATE_ORADIR.sql which is part of Release 7.9.0.0 creates an external directory from where messages are loaded into the database.
-# A symbolic link can’t be used to point to the messages folder this does not work with oracle external directories.
+# The file CREATE_ORADIR.sql which is part of Release 7.9.0.0 creates an external directory from where messages are loaded into the database
+# A symbolic link can’t be used to point to the messages folder this does not work with oracle external directories
 # Files are loaded as part of a schedule created by the file, EOR_IMPORT_SQS_JOB.sql which is part of release 7.9.0.0
-# Files loaded can be checked by running select * from TERMINATION_FILE_LIST; as eor on the database.
+# Files loaded can be checked by running select * from TERMINATION_FILE_LIST; as eor on the database
 
-# https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/6166872865/OASys+Integration+with+Delius+via+SQS+Queue
+# <https://dsdmoj.atlassian.net/wiki/spaces/DSTT/pages/6166872865/OASys+Integration+with+Delius+via+SQS+Queue>

@@ -1,4 +1,4 @@
-# Role for creating users and groups.
+# Role for creating users and groups
 
 ## System Users
 

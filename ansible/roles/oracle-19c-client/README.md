@@ -1,6 +1,6 @@
 # Overview
 
-Use this role to install Oracle 19c client. 
+Use this role to install Oracle 19c client.
 
 # Pre-requisites
 
