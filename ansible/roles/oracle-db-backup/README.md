@@ -6,11 +6,11 @@ see collectd-textfile-monitoring role.
 
 # Pre-requisite for scheduled backup  
 
-For S3 bucket with recovery catalog, in SSM parameter store save details for 
+For S3 bucket with recovery catalog, in SSM parameter store save details for
 /database/recovery-catalog-owner/username
-/database/recovery-catalog-owner/password 
+/database/recovery-catalog-owner/password
 
-In group_vars add details for backup schedule and catalog details 
+In group_vars add details for backup schedule and catalog details
 # rman details
 rman_backup_script: rman_backup.sh
 recovery_catalog: 1

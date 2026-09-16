@@ -82,7 +82,7 @@ C. Take database restore point
 no_proxy="*" ansible-playbook site.yml --limit $limit_db -e force_role=oracle-restore-point -e restore_point_name=PRE_ROLE_RUN -e db_tns_list=T1MIS,T1CNMAUD,T1CNOM --tags create_restore_point
 ```
 
-D. Deploy releases on database server 
+D. Deploy releases on database server
 
 The default is to apply all patches present on the S3 bucket that follow the `last_nomis_release` variable.
 
