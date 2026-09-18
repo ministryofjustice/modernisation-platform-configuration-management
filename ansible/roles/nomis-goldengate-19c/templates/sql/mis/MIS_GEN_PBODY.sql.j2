@@ -1,0 +1,376 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GEN_PKG AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle Goldengate DML Handlers for Prison-NOMIS release 2.0.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version:     2.0.1
+ *
+ *  Author:    R. Taylor - EDS UK Ltd.
+ *
+ *  Date:    Monday, 21 May 2007.
+ * 
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
+ *
+ *      1.1.0    21/05/07  R. Taylor  Initial version for 1.1
+ *      ...
+ *      1.0e.59    01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      2.0        12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
+ */
+
+  -- Packaged function get_etl_load_log_owner returns the owner of the ETL_LOAD_LOG table
+  FUNCTION get_etl_load_log_owner RETURN VARCHAR2
+  IS
+    l_plsql    varchar2(2000); 
+    l_owner    varchar2(30);
+  BEGIN
+    if g_etl_load_log_owner is null then
+      l_plsql := 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''';
+      execute immediate l_plsql into g_etl_load_log_owner;
+    end if;
+    return g_etl_load_log_owner;
+  END;
+
+
+  FUNCTION strip_input (p_str varchar2, p_len number)
+  RETURN varchar2 RESULT_CACHE IS
+  -- function strip_input
+  -- will remove single quotes and comment characters from input string
+  BEGIN
+    return substr(replace(translate(p_str,'''-/','***'),'*',''),1,p_len);
+  END;
+
+
+  PROCEDURE log_strm_error (
+    p_staging_owner   IN     varchar2,
+    p_location     IN     varchar2 DEFAULT 'MIS_GEN_PKG',
+    p_src_db     IN     varchar2 DEFAULT NULL,
+    p_src_owner   IN     varchar2 DEFAULT NULL,
+    p_src_table   IN     varchar2 DEFAULT NULL,
+    p_tgt_table   IN     varchar2 DEFAULT NULL,
+    p_batch_id     IN     number   DEFAULT NULL,
+    p_err_code     IN     number   DEFAULT NULL,
+    p_text      IN     varchar2 DEFAULT NULL
+  ) IS
+  PRAGMA AUTONOMOUS_TRANSACTION;
+  -- packaged procedure log_strm_error
+  -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+    l_plsql     varchar2(2000);
+    l_staging_owner  varchar2(30) := strip_input(p_staging_owner,30);
+    l_text     varchar2(4000) := substr(p_text,1,4000);
+  BEGIN
+
+    l_plsql := 'insert into ' || l_staging_owner || '.STRM_ERROR_LOG (' ||
+               'ERROR_DATETIME,ERROR_LOCATION,SRC_DB,SRC_OWNER,' ||
+               'SRC_TABLE,TGT_TABLE,MIS_BATCH_ID,ERROR_CODE,ERROR_TEXT) VALUES (' ||
+               ':timestamp,:ERROR_LOCATION,:SRC_DB,:SRC_OWNER,' ||
+               ':SRC_TABLE,:TGT_TABLE,:MIS_BATCH_ID,:ERROR_CODE,:ERROR_TEXT)';
+
+    execute immediate l_plsql
+    using systimestamp,p_location,p_src_db,p_src_owner,p_src_table,
+          p_tgt_table,p_batch_id,p_err_code,l_text;
+
+    commit;
+
+  --EXCEPTION
+
+    --WHEN OTHERS THEN null; -- what to do?
+
+  END;
+
+  PROCEDURE log_strm_message (
+    p_staging_owner   IN     varchar2,
+    p_location     IN     varchar2,
+    p_text      IN     varchar2
+  ) IS
+  -- packaged procedure log_strm_message
+  -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+  BEGIN
+
+    log_strm_error (p_staging_owner, p_location,
+                    p_err_code => 0, p_text => p_text);
+
+  END;
+
+
+  PROCEDURE log_strm_debug (
+    p_staging_owner   IN     varchar2,
+    p_location     IN     varchar2,
+    p_text      IN     varchar2,
+    p_threshold   IN     number DEFAULT 0
+  ) IS
+  -- packaged procedure log_strm_debug
+  -- will insert entries in p_staging_owner.STRM_ERROR_LOG
+  BEGIN
+
+    IF g_debug > p_threshold THEN
+        log_strm_message (p_staging_owner, p_location, p_text);
+    END IF;
+
+  END;
+
+  FUNCTION get_capture_name(
+    p_source_owner IN varchar2
+  ) RETURN varchar2 RESULT_CACHE
+  IS
+  -- packaged function get_capture_name returns the streams capture process name
+  -- for the supplied source table owner
+    v_length 		number := length(p_source_owner);
+  BEGIN
+    IF v_length > 22 THEN
+        return substr(upper(p_source_owner), v_length-21, 22)||'_CAPTURE';
+    ELSE
+        return upper(p_source_owner)||'_CAPTURE';
+    END IF;
+  END;
+
+  FUNCTION get_capture_list(
+    p_staging_owner   IN     varchar2 DEFAULT NULL
+  ) RETURN capture_list IS
+  -- local procedure get_capture_list returns a list of all capture processes
+  -- or those associated with a particular staging table owner (if supplied)
+
+    v_plsql          varchar2(2000); 
+    v_queue_name    varchar2(30);
+    v_capture_name_list capture_list := null;
+
+  BEGIN
+
+    -- get list of capture processes
+    v_plsql := 'select capture_name ' ||
+                 'from dba_capture ' ||
+                'where queue_owner = :queue_owner';
+    IF p_staging_owner IS NULL THEN
+        execute immediate v_plsql
+        bulk collect into v_capture_name_list
+        using mis_gen_pkg.g_queue_owner;
+    ELSE
+        v_queue_name := mis_gen_pkg.g_capture_queue_name;
+        v_plsql := v_plsql ||
+                 ' and queue_name = :queue_name';
+
+        execute immediate v_plsql
+        bulk collect into v_capture_name_list
+        using mis_gen_pkg.g_queue_owner, v_queue_name;
+    END IF;
+
+    return v_capture_name_list;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        log_strm_error (p_staging_owner, 'get_capture_list',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  FUNCTION get_apply_list(
+    p_staging_owner   IN     varchar2 DEFAULT NULL
+  ) RETURN apply_list IS
+  -- local procedure get_apply_list returns a list of all apply processes
+  -- or those associated with a particular staging table owner (if supplied)
+
+    v_plsql          varchar2(2000); 
+    v_queue_name     varchar2(30) := mis_gen_pkg.g_apply_queue_name;
+    v_apply_name_list   apply_list := null;
+
+  BEGIN
+
+    select apply_name
+    bulk collect into v_apply_name_list
+    from dba_apply
+    where queue_owner = mis_gen_pkg.g_queue_owner
+    and queue_name = v_queue_name;
+    IF v_apply_name_list.count > 0 THEN
+        return v_apply_name_list;
+    END IF;
+
+    -- get list of apply processes
+    v_plsql := 'select apply_name ' ||
+                 'from all_apply ' ||
+                'where queue_owner = :queue_owner';
+    IF p_staging_owner IS NULL THEN
+        execute immediate v_plsql
+        bulk collect into v_apply_name_list
+        using mis_gen_pkg.g_queue_owner;
+        IF v_apply_name_list.count = 0 THEN
+            mis_gen_pkg.log_strm_debug (p_staging_owner, 'get_apply_list 0',
+                      'No apply processes found for ' || mis_gen_pkg.g_queue_owner || '. sql: ' || v_plsql);
+        END IF;
+    ELSE
+        v_plsql := v_plsql ||
+                 ' and queue_name = :queue_name';
+
+        execute immediate v_plsql
+        bulk collect into v_apply_name_list
+        using mis_gen_pkg.g_queue_owner, v_queue_name;
+        IF v_apply_name_list.count = 0 THEN
+            mis_gen_pkg.log_strm_debug (p_staging_owner, 'get_apply_list 2',
+                      'No apply processes found for ' || mis_gen_pkg.g_queue_owner || ' and ' || v_queue_name || '. sql: ' || v_plsql);
+        END IF;
+    END IF;
+    return v_apply_name_list;
+
+  EXCEPTION
+
+    WHEN OTHERS THEN
+        log_strm_error (p_staging_owner, 'get_apply_list',
+                        p_err_code => SQLCODE, p_text => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        RAISE;
+
+  END;
+
+  FUNCTION object_list_to_comma(
+        p_object_list     IN     object_list
+    ) RETURN varchar2
+  IS
+  -- packaged function object_list_to_comma returns a comma-separated string
+  -- containing values from a object_list type
+    l_object_str        varchar2(4000) := '';
+  BEGIN
+    IF p_object_list IS NULL THEN
+        return '';
+    ELSIF p_object_list.count = 0 THEN
+        return '';
+    ELSE
+        l_object_str := p_object_list(1);
+        FOR i in 2..p_object_list.count
+        LOOP
+            l_object_str := l_object_str || ',' || p_object_list(i);
+        END LOOP;
+        return l_object_str;
+    END IF;
+  END;
+
+  FUNCTION comma_to_object_list(
+        p_object_str     IN     varchar2
+    ) RETURN object_list RESULT_CACHE
+  IS
+  -- packaged function comma_to_object_list returns a object_list type
+  -- containing values from a comma-separated string
+  -- list will contain at least one element (even if that element is null)
+    l_object_list       object_list;
+    l_comma_pos   number;
+    l_object_str  varchar2(4000) := strip_input(p_object_str,4000);
+  BEGIN
+    l_comma_pos := instr(l_object_str,',',-1);
+    IF l_comma_pos > 0 THEN
+        l_object_list := comma_to_object_list(substr(l_object_str,1,l_comma_pos-1));
+    ELSE
+        l_object_list := object_list();
+    END IF;
+    l_object_list.EXTEND;
+    l_object_list(l_object_list.LAST) := substr(l_object_str,l_comma_pos+1);
+    return l_object_list;
+  END;
+
+  -- Packaged function get_source_database_name returns the name of the source database.
+  FUNCTION get_source_database_name 
+  RETURN varchar2 IS
+    l_source_database_name varchar2(128);
+  BEGIN
+    select source_database 
+    into l_source_database_name
+    from dba_capture ac
+    where ac.queue_owner = mis_gen_pkg.g_queue_owner
+      and ac.queue_name = mis_gen_pkg.g_capture_queue_name;
+    return l_source_database_name;
+  END;
+
+  -- New debug config procedure to create the MIS_DEBUG_CONFIG table if it does not exist and ensure a row exists for this package.
+  PROCEDURE ensure_debug_config IS
+    l_exists NUMBER := 0;
+  BEGIN
+    SELECT COUNT(*)
+      INTO l_exists
+      FROM user_tables
+    WHERE table_name = 'MIS_DEBUG_CONFIG';
+
+    IF l_exists = 0 THEN
+      EXECUTE IMMEDIATE q'[
+        CREATE TABLE MIS_DEBUG_CONFIG (
+          config_key   VARCHAR2(100) PRIMARY KEY,
+          debug_level  NUMBER(1)      NOT NULL,
+          updated_at   DATE           DEFAULT SYSDATE NOT NULL
+        )
+      ]';
+    END IF;
+
+    EXECUTE IMMEDIATE q'[
+      MERGE INTO MIS_DEBUG_CONFIG t
+      USING (SELECT o.object_name AS config_key, 9 AS debug_level FROM dba_objects o WHERE o.OWNER = 'BODISTAGING' AND o.OBJECT_NAME LIKE '%PKG' AND o.OBJECT_TYPE = 'PACKAGE') s
+        ON (t.config_key = s.config_key)
+      WHEN NOT MATCHED THEN
+        INSERT (config_key, debug_level, updated_at)
+        VALUES (s.config_key, s.debug_level, SYSDATE)
+    ]';
+  END ensure_debug_config;
+
+  PROCEDURE refresh_debug_level_cache(p_config_key IN VARCHAR2) IS
+    l_debug_level NUMBER;
+    l_key         VARCHAR2(100) := UPPER(TRIM(p_config_key));
+  BEGIN
+    IF l_key IS NULL THEN
+      g_debug_level_cached    := 0;
+      g_debug_cache_loaded    := TRUE;
+      g_debug_cache_loaded_at := SYSDATE;
+      g_debug_cache_key       := NULL;
+      RETURN;
+    END IF;
+
+    EXECUTE IMMEDIATE
+      'SELECT debug_level FROM MIS_DEBUG_CONFIG WHERE config_key = :1'
+      INTO l_debug_level
+      USING l_key;
+
+    g_debug_level_cached    := NVL(l_debug_level, 0);
+    g_debug_cache_loaded    := TRUE;
+    g_debug_cache_loaded_at := SYSDATE;
+    g_debug_cache_key       := l_key;
+
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      g_debug_level_cached    := 0;
+      g_debug_cache_loaded    := TRUE;
+      g_debug_cache_loaded_at := SYSDATE;
+      g_debug_cache_key       := l_key;
+    WHEN OTHERS THEN
+      IF SQLCODE = -942 THEN
+        g_debug_level_cached    := 0;
+        g_debug_cache_loaded    := TRUE;
+        g_debug_cache_loaded_at := SYSDATE;
+        g_debug_cache_key       := l_key;
+      ELSE
+        -- transient/other error: keep previous cache if present
+        IF NOT g_debug_cache_loaded THEN
+          g_debug_level_cached    := 0;
+          g_debug_cache_loaded    := TRUE;
+          g_debug_cache_loaded_at := SYSDATE;
+          g_debug_cache_key       := l_key;
+        END IF;
+      END IF;
+  END refresh_debug_level_cache;
+
+  FUNCTION get_debug_level(p_config_key IN VARCHAR2) RETURN NUMBER IS
+    l_ttl_days CONSTANT NUMBER := g_debug_cache_ttl_mins / 1440;
+    l_key      VARCHAR2(100) := UPPER(TRIM(p_config_key));
+  BEGIN
+    IF (NOT g_debug_cache_loaded)
+      OR NVL(g_debug_cache_key, '<<NULL>>') <> NVL(l_key, '<<NULL>>')
+      OR g_debug_cache_loaded_at IS NULL
+      OR (SYSDATE - g_debug_cache_loaded_at) >= l_ttl_days
+    THEN
+      refresh_debug_level_cache(l_key);
+    END IF;
+
+    RETURN NVL(g_debug_level_cached, 0);
+  END get_debug_level;
+
+END MIS_GEN_PKG;
+/
+
+show errors

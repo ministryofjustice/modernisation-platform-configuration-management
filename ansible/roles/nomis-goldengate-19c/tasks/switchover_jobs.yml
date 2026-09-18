@@ -1,0 +1,121 @@
+---
+# Switchover from STRMADMIN jobs to migrated jobs
+# This task disables STRMADMIN jobs and enables the new jobs
+
+- name: Switchover CNOM scheduler jobs
+  when: 
+    - oracle_goldengate_group.source is defined
+    - oracle_goldengate_group.source.tns_alias is defined
+    - run_source is defined and run_source
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for CNOM jobs switchover
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
+        oracle_goldengate_group_name: "source"
+        target_sid: "{{ oracle_goldengate_group.source.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.source.oracle_home }}"
+
+    - name: Deploy CNOM jobs switchover script
+      ansible.builtin.template:
+        src: "sql/source/switchover_source_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/source/switchover_source_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run CNOM jobs switchover script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ target_sid }}
+        export ORACLE_HOME={{ target_oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/source
+        sqlplus -s / as sysdba @switchover_source_jobs.sql
+      args:
+        executable: /bin/bash
+      register: cnom_switchover_output
+      failed_when: cnom_switchover_output.rc != 0
+
+    - name: Show CNOM jobs switchover output
+      ansible.builtin.debug:
+        msg: "{{ cnom_switchover_output.stdout_lines }}"
+      when: cnom_switchover_output.stdout_lines is defined
+
+- name: Switchover MIS scheduler jobs
+  when: 
+    - run_mis is defined and run_mis
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for MIS jobs switchover
+      ansible.builtin.set_fact:
+        oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.mis.schema_owner }}"
+        oracle_goldengate_group_name: "mis"
+        target_sid: "{{ oracle_goldengate_group.mis.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.mis.oracle_home }}"
+
+    - name: Deploy MIS jobs switchover script
+      ansible.builtin.template:
+        src: "sql/mis/switchover_mis_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/mis/switchover_mis_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run MIS jobs switchover script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ target_sid }}
+        export ORACLE_HOME={{ target_oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/mis
+        sqlplus -s / as sysdba @switchover_mis_jobs.sql
+      args:
+        executable: /bin/bash
+      register: mis_switchover_output
+      failed_when: mis_switchover_output.rc != 0
+
+    - name: Show MIS jobs switchover output
+      ansible.builtin.debug:
+        msg: "{{ mis_switchover_output.stdout_lines }}"
+      when: mis_switchover_output.stdout_lines is defined
+
+- name: Switchover AUDIT scheduler jobs
+  when: 
+    - run_auditdata is defined and run_auditdata
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  block:
+    - name: Set facts for AUDIT jobs switchover
+      ansible.builtin.set_fact:
+        oracle_goldengate_group_name: "audit"
+        target_sid: "{{ oracle_goldengate_group.auditdata.tns_alias }}"
+        target_oracle_home: "{{ oracle_goldengate_group.auditdata.oracle_home }}"
+
+    - name: Deploy AUDIT jobs switchover script
+      ansible.builtin.template:
+        src: "sql/auditdata/switchover_audit_jobs.sql.j2"
+        dest: "{{ oracle_goldengate_sql_dir }}/auditdata/switchover_audit_jobs.sql"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+
+    - name: Run AUDIT jobs switchover script
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ target_sid }}
+        export ORACLE_HOME={{ target_oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        cd {{ oracle_goldengate_sql_dir }}/auditdata
+        sqlplus -s / as sysdba @switchover_audit_jobs.sql
+      args:
+        executable: /bin/bash
+      register: audit_switchover_output
+      failed_when: audit_switchover_output.rc != 0
+
+    - name: Show AUDIT jobs switchover output
+      ansible.builtin.debug:
+        msg: "{{ audit_switchover_output.stdout_lines }}"
+      when: audit_switchover_output.stdout_lines is defined

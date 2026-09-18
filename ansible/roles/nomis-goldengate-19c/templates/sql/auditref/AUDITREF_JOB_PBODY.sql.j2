@@ -1,0 +1,85 @@
+CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.auditref.schema_owner }}.AUDITREF_JOB_PKG AS
+
+/*
+ *  NOMIS Audit Reference Jobs code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Audit reference jobs for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_group.auditref.schema_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0    2024      D. Belton  Initial version for job migration
+ */
+
+  -- packaged function get_version
+  -- will return a VARCHAR2 string containing a package version number
+  FUNCTION get_version RETURN varchar2 IS
+  BEGIN
+    return g_version;
+  END;
+
+
+  PROCEDURE gather_stats_auditref_tables
+  IS
+  -- Procedure to gather stats on key AUDITREF reference tables
+  -- Migrated from STRMADMIN.GATHER_STATS_AUDITREF_TABS job
+  BEGIN
+    -- Gather stats on main reference tables used for audit lookups
+    -- Using AUTO_SAMPLE_SIZE for efficiency
+    
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_group.auditref.schema_owner }}',
+      tabname => 'OFFENDERS',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+    DBMS_STATS.GATHER_TABLE_STATS(
+      ownname => '{{ oracle_goldengate_group.auditref.schema_owner }}',
+      tabname => 'OFFENDER_BOOKINGS',
+      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      cascade => TRUE
+    );
+    
+    -- Add other key reference tables as needed
+    -- These are the most frequently joined tables in audit queries
+    
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Log error but don't fail - stats gathering is not critical
+      RAISE_APPLICATION_ERROR(-20001, 
+        'Error in gather_stats_auditref_tables: ' || SQLERRM);
+  END gather_stats_auditref_tables;
+
+
+  PROCEDURE PURGE_RECORDS (
+    p_staging_owner   IN     varchar2,
+    p_months     in integer default 26
+  ) IS
+  -- packaged procedure purge_records
+  -- will delete rows older than p_months months from historical tables
+  -- Called from AUDIT_DATA_PURGE job
+    v_prune_date date := add_months(trunc(sysdate),-p_months);
+  BEGIN
+    -- Remove old error log entries
+    DELETE FROM {{ oracle_goldengate_group.auditref.schema_owner }}.strm_error_log
+    WHERE error_datetime < v_prune_date;
+    
+    COMMIT;
+    
+  EXCEPTION
+    WHEN OTHERS THEN
+      RAISE_APPLICATION_ERROR(-20002, 
+        'Error in purge_records: ' || SQLERRM);
+  END PURGE_RECORDS;
+
+
+END AUDITREF_JOB_PKG;
+/
+
+show errors
