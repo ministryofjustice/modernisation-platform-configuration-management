@@ -55,6 +55,7 @@
         - lookup('env', 'ANSIBLE_PRIVATE_KEY_FILE') | length > 0
 
 - hosts: "{{ target | default('all') }}"
+  gather_facts: true
   tasks:
     - name: Fail if unsupported ansible version
       ansible.builtin.fail:
