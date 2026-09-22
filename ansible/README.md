@@ -127,7 +127,7 @@ Or to drop into an interactive shell just
 
 **Examples to run against RHEL6 instances**
 
-This uses SSH to connect to hosts. There must be at least one RHEL7+ host in the 
+This uses SSH to connect to hosts. There must be at least one RHEL7+ host in the
 account that can be used as a jump server. Ensure the `server-type` tag value is added
 to the `ec2_connection_type` in the dynamic inventory files. Add the secret name
 and jump server instance id to the relevant environment `group_vars`, e.g.
