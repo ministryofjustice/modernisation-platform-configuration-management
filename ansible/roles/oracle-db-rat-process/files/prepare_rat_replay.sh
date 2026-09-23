@@ -44,6 +44,10 @@ whenever sqlerror exit failure
 connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
 set serveroutput on
 begin
+  -- PREPARE_REPLAY configures the processed replay session for execution,
+  -- including how replay clients are synchronized. It prepares the replay's
+  -- run-time settings; it does not process capture files or create the replay
+  -- session, which are handled by PROCESS_CAPTURE and INITIALIZE_REPLAY.
   DBMS_WORKLOAD_REPLAY.PREPARE_REPLAY(
     synchronization => '${synchronization}');
 end;

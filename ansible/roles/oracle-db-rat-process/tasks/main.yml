@@ -34,6 +34,35 @@
      mode: '0750'
   become: true
 
+- name: Check disk space for RAT capture files
+  shell: |
+     set -o errexit
+     set -o nounset
+     set -o pipefail
+
+     capture_size_bytes=$(aws s3 ls --recursive --summarize "{{ rat_replay_s3_location }}" | awk '/Total Size:/ { print $3 }')
+     available_space_kib=$(df -Pk "{{ rat_replay_directory_path }}" | awk 'NR == 2 { print $4 }')
+
+     if [[ ! "${capture_size_bytes}" =~ ^[0-9]+$ || ! "${available_space_kib}" =~ ^[0-9]+$ ]]; then
+       echo "Unable to determine RAT capture size or available disk space." >&2
+       exit 1
+     fi
+
+     required_space_bytes="${capture_size_bytes}"
+     available_space_bytes=$((available_space_kib * 1024))
+
+     if (( required_space_bytes > available_space_bytes )); then
+       echo "Insufficient disk space for RAT capture: ${required_space_bytes} bytes required, ${available_space_bytes} bytes available." >&2
+       exit 1
+     fi
+
+     echo "Sufficient disk space for RAT capture: ${required_space_bytes} bytes required, ${available_space_bytes} bytes available."
+  args:
+     executable: /bin/bash
+  become: true
+  become_user: oracle
+  changed_when: false
+
 - name: Download RAT capture files for replay from S3
   command:
      argv:
@@ -50,10 +79,34 @@
   debug:
      msg: "RAT capture files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
 
-- meta: end_play
+- name: Create RAT replay directory in database
+  script: create_rat_replay_directory.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: create_rat_replay_directory
+
+- name: Show create directory output
+  debug:
+     var: create_rat_replay_directory.stdout
+
+- name: Process RAT capture files
+  script: process_rat_replay_capture.sh "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: process_rat_replay_capture
+
+- name: Show process capture output
+  debug:
+     var: process_rat_replay_capture.stdout
 
 - name: Initialize RAT replay
-  script: initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
+  script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
@@ -61,7 +114,7 @@
      AWS_REGION: "{{ region }}"
   register: initialize_rat
 
-- name: Show Initialize output
+- name: Show initialize output
   debug:
      var: initialize_rat.stdout
 
