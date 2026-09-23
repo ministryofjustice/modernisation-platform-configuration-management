@@ -12,6 +12,7 @@
   when: ansible_distribution_major_version in ['7', '8']
 
 - name: Enable amazon-ssm-agent service
-  service:
+  ansible.builtin.service:
     name: amazon-ssm-agent
     enabled: yes
+    state: started
