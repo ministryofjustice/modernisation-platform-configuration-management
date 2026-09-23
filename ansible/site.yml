@@ -38,6 +38,24 @@
 #   ansible-playbook site.yml --skip-tags ansible_version_check
 
 - hosts: "{{ target | default('all') }}"
+  gather_facts: false
+  tasks:
+    - name: Download SSH key from Secrets Manager
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.copy:
+        content: "{{ lookup('amazon.aws.aws_secret', ssh_private_key_secret_name, region='eu-west-2') }}"
+        dest: "{{ lookup('env', 'ANSIBLE_PRIVATE_KEY_FILE') }}"
+        mode: '0600'
+      no_log: true
+      check_mode: false
+      changed_when: false
+      when:
+        - ssh_private_key_secret_name is defined
+        - lookup('env', 'ANSIBLE_PRIVATE_KEY_FILE') | length > 0
+
+- hosts: "{{ target | default('all') }}"
+  gather_facts: true
   tasks:
     - name: Fail if unsupported ansible version
       ansible.builtin.fail:
