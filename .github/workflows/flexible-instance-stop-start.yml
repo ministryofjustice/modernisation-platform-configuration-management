@@ -1,9 +1,9 @@
-
+---
 # This workflow provides a straight forward example of how cron schedules can be used to orchestrate the shutdown and startup of ec2 and rds resources in a required sequence.
 
 # For each step of the job, an "if" test is applied to determine the specific cron schedule. This means that individual steps can be run at given times based on the condition being tested.
 
-# Tags are used to provide criteria as to which resources are in scope. This provides a high degree of flexbility. 
+# Tags are used to provide criteria as to which resources are in scope. This provides a high degree of flexbility.
 
 # The workflow uses OIDC to connect to the Modernisation Platform member account. The account number is held as a github secret.
 
@@ -19,7 +19,7 @@ permissions:
   id-token: write
   contents: read
 
-on:
+"on":
   schedule:
     - cron: '20 7 * * *' # RDS Start
     - cron: '10 8 * * *' # EC2 Start
@@ -29,7 +29,7 @@ on:
 jobs:
 
   stop-start-instances:
- 
+
     runs-on: ubuntu-latest
 
     env:
@@ -40,52 +40,58 @@ jobs:
       AWS_REGION: 'eu-west-2'
 
     steps:
-  
-    - name: Checkout Repository
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        sparse-checkout: |
-         scripts
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
 
-    - name: Configure AWS credentials
-      id: set-credentials
-      uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
-      with:
-        audience: sts.amazonaws.com
-        aws-region: eu-west-2
-        mask-aws-account-id: true
-        role-to-assume: arn:aws:iam::${{ secrets.EXAMPLE_ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd
+      - name: Configure AWS credentials
+        id: set-credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          audience: sts.amazonaws.com
+          aws-region: eu-west-2
+          mask-aws-account-id: true
+          role-to-assume: arn:aws:iam::${{ secrets.EXAMPLE_ACCOUNT_NUMBER }}:role/modernisation-platform-oidc-cicd
 
-    - name: Start RDS instances with specific tags
-      if: github.event.schedule  == '20 7 * * *'
-      run: |
-        echo $(date +%x_%r)
-        echo ${{ github.event.schedule }}
-        chmod +x scripts/flexistopstart.sh
-        bash scripts/flexistopstart.sh 'start_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
+      - name: Start RDS instances with specific tags
+        if: github.event.schedule  == '20 7 * * *'
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          echo $(date +%x_%r)
+          echo "$SCHEDULE"
+          chmod +x scripts/flexistopstart.sh
+          bash scripts/flexistopstart.sh 'start_rds' "$RDS_TAG" "$RDS_TAG_VALUE" "$AWS_REGION"
 
-    - name: Start EC2 instances with specific tags
-      if: github.event.schedule  == '10 8 * * *'
-      run: |
-        echo $(date +%x_%r)
-        echo ${{ github.event.schedule }}
-        chmod +x scripts/flexistopstart.sh
-        bash scripts/flexistopstart.sh 'start_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+      - name: Start EC2 instances with specific tags
+        if: github.event.schedule  == '10 8 * * *'
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          echo $(date +%x_%r)
+          echo "$SCHEDULE"
+          chmod +x scripts/flexistopstart.sh
+          bash scripts/flexistopstart.sh 'start_ec2' "$EC2_TAG" "$EC2_TAG_VALUE" "$AWS_REGION"
 
-    - name: Stop EC2 instances with specific tags
-      if: github.event.schedule  == '10 19 * * *'
-      run: |
-        echo $(date +%x_%r)
-        echo ${{ github.event.schedule }}
-        chmod +x scripts/flexistopstart.sh
-        bash scripts/flexistopstart.sh 'stop_ec2' $EC2_TAG $EC2_TAG_VALUE $AWS_REGION
+      - name: Stop EC2 instances with specific tags
+        if: github.event.schedule  == '10 19 * * *'
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          echo $(date +%x_%r)
+          echo "$SCHEDULE"
+          chmod +x scripts/flexistopstart.sh
+          bash scripts/flexistopstart.sh 'stop_ec2' "$EC2_TAG" "$EC2_TAG_VALUE" "$AWS_REGION"
 
-    - name: Stop RDS instances with specific tags
-      if: github.event.schedule == '25 19 * * *'
-      run: |
-        echo $(date +%x_%r)
-        echo ${{ github.event.schedule }}
-        chmod +x scripts/flexistopstart.sh
-        bash scripts/flexistopstart.sh 'stop_rds' $RDS_TAG $RDS_TAG_VALUE $AWS_REGION
-
-
+      - name: Stop RDS instances with specific tags
+        if: github.event.schedule == '25 19 * * *'
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          echo $(date +%x_%r)
+          echo "$SCHEDULE"
+          chmod +x scripts/flexistopstart.sh
+          bash scripts/flexistopstart.sh 'stop_rds' "$RDS_TAG" "$RDS_TAG_VALUE" "$AWS_REGION"
