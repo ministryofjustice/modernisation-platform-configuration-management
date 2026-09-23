@@ -4,14 +4,20 @@ collectd_script_name: collectd_service_metrics
 collectd_script_user: ec2-user
 collectd_script_interval: 60
 
-# Shell cmds work for both RHEL6 and RHEL7+
-collectd_monitored_services_role:
+collectd_monitored_services_role_rhel6:
+  - metric_name: service_status_os
+    metric_dimension: amazon-cloudwatch-agent
+    shell_cmd: "(status amazon-cloudwatch-agent|grep running) || (systemctl is-active amazon-cloudwatch-agent)"
+
+collectd_monitored_services_role_default:
   - metric_name: service_status_os
     metric_dimension: amazon-ssm-agent
     shell_cmd: "(status amazon-ssm-agent|grep running) || (systemctl is-active amazon-ssm-agent)"
   - metric_name: service_status_os
     metric_dimension: amazon-cloudwatch-agent
     shell_cmd: "(status amazon-cloudwatch-agent|grep running) || (systemctl is-active amazon-cloudwatch-agent)"
+
+collectd_monitored_services_role: "{{ collectd_monitored_services_role_rhel6 if ansible_distribution_major_version == '6' else collectd_monitored_services_role_default }}"
 
 # add additional services using this variable in servertype group vars
 collectd_monitored_services_servertype: []
