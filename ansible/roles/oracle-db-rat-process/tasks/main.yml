@@ -93,10 +93,10 @@
   debug:
      var: create_rat_replay_directory.stdout
 
-- meta: end_play
-
 - name: Process RAT capture files
   script: process_rat_replay_capture.sh "{{ rat_replay_directory_name }}" "{{ tns_alias }}" "{{ rat_replay_parallelism | default('NO', true) }}"
+  async: 7200
+  poll: 30
   become: true
   become_user: oracle
   environment:

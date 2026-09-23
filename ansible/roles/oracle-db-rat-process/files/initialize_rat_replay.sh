@@ -41,8 +41,6 @@ if [[ -z "${rat_replay_password}" ]]; then
   exit 1
 fi
 
-declare
-declare
 echo "Initialising replay"
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
