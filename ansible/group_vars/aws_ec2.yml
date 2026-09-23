@@ -1,4 +1,29 @@
-ansible_connection: community.aws.aws_ssm
-ansible_aws_ssm_timeout: 300 # long enough for operations that don't support async, e.g. unarchive
-ansible_aws_ssm_reconnection_retries: 0 # Retrying doesn't work well with shell commands that timeout, better to fail immediately.
+ansible_connection: >-
+  {{ 'ssh'
+     if ec2_connection_type is defined and ec2_connection_type == 'ssh'
+     else 'community.aws.aws_ssm' }}
+
+ansible_host: >-
+  {{ private_ip_address
+     if ec2_connection_type is defined and ec2_connection_type == 'ssh'
+     else instance_id }}
+
+ansible_user: >-
+  {{ 'ec2-user'
+     if ec2_connection_type is defined and ec2_connection_type == 'ssh'
+     else omit }}
+
+ansible_ssh_common_args: >-
+  {% if ec2_connection_type is defined and ec2_connection_type == 'ssh' %}
+  -o ProxyCommand="/ansible/ssh-ssm-jump.sh {{ ssh_proxy_instance_id }} %h %p"
+  {% endif %}
+
 ansible_aws_ssm_region: eu-west-2
+
+# set timeout long enough for operations that don't support async, e.g. unarchive
+ansible_aws_ssm_timeout: 300
+ansible_ssh_timeout: 300
+
+# disable retrying as this doesn't work well with shell command that timeout, better to fail immediately
+ansible_aws_ssm_reconnection_retries: 0
+ansible_ssh_retries: 0
