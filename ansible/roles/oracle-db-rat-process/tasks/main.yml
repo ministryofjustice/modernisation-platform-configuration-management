@@ -122,50 +122,13 @@
   debug:
      var: process_rat_replay_capture.stdout
 
-- name: Check whether RAT replay already exists
-  script: check_rat_replay_exists.sh "{{ rat_replay_name }}" "{{ tns_alias }}"
-  become: true
-  become_user: oracle
-  environment:
-     RAT_SECRET_ID: "{{ rat_secret_name }}"
-     AWS_REGION: "{{ region }}"
-  register: check_rat_replay_exists
-
-- name: Show replay existence check output
-  debug:
-     var: check_rat_replay_exists.stdout
-
-- name: Initialize RAT replay
-  script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
-  become: true
-  become_user: oracle
-  environment:
-     RAT_SECRET_ID: "{{ rat_secret_name }}"
-     AWS_REGION: "{{ region }}"
-  register: initialize_rat
-
-- name: Show initialize output
-  debug:
-     var: initialize_rat.stdout
-
-- name: Prepare RAT replay
-  script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
-  become: true
-  become_user: oracle
-  environment:
-     RAT_SECRET_ID: "{{ rat_secret_name }}"
-     AWS_REGION: "{{ region }}"
-  register: prepare_rat
-
-- name: Show Prepare output
-  debug:
-     var: prepare_rat.stdout
-
-# Once the prepare has been done - upload the prepared files back to S3
+# Once the prepare has been done - upload the processed files back to S3
 # as this will permit WRC to be run from a different host if needed
-- name: Set RAT prepared file S3 location
+# Once the workload capture has been processed it may be reused for replay multiple
+# times without subsequent reprocessing.
+- name: Set RAT processed file S3 location
   set_fact:
-     rat_prepared_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/prepared/') }}"
+     rat_processed_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/processed/') }}"
 
 - name: Upload RAT prepared files to S3
   command:
@@ -175,11 +138,11 @@
         - sync
         - --no-progress
         - "{{ rat_replay_directory_path }}/"
-        - "{{ rat_prepared_s3_location }}"
+        - "{{ rat_processed_s3_location }}"
   become: true
   become_user: oracle
 
-- name: Report RAT prepared S3 location
+- name: Report RAT processed S3 location
   debug:
-     msg: "RAT capture files uploaded to {{ rat_prepared_s3_location }}"
+     msg: "RAT capture files uploaded to {{ rat_processed_s3_location }}"
 
