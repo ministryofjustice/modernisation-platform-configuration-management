@@ -122,6 +122,19 @@
   debug:
      var: process_rat_replay_capture.stdout
 
+- name: Check whether RAT replay already exists
+  script: check_rat_replay_exists.sh "{{ rat_replay_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: check_rat_replay_exists
+
+- name: Show replay existence check output
+  debug:
+     var: check_rat_replay_exists.stdout
+
 - name: Initialize RAT replay
   script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
   become: true
