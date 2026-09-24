@@ -17,14 +17,10 @@
       - tns_alias | length > 0
     fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, set rat_replay_synchronization to SCN or OBJECT_ID, and set rat_replay_parallelism to YES or NO if parallel processing is required"
 
-- name: Build RAT replay names
-  set_fact:
-     rat_replay_name: "{{ rat_replay_name | default((tns_alias | lower) ~ '_' ~ now(fmt='%Y%m%d%H%M%S'), true) }}"
-
 - name: Build RAT replay directory names
   set_fact:
-     rat_replay_directory_name: "RAT_REPLAY_{{ rat_replay_name | upper }}"
-     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
+     rat_replay_directory_name: "{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') }}"
+     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') | lower }}"
 
 - name: Create RAT replay directory on the database host
   file:
