@@ -20,6 +20,7 @@ rclone_sync_config:
   dirs:
     wmt:
       frequency_seconds: 600
+      maintenance_window: "1.0400-1.0430" # e.g. day.HHMM where 1=Monday in UTC"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/wmt"
@@ -34,6 +35,7 @@ Where
    the source directory is on a file share. It is a directory on the
    file share that will be created/removed by the script to manage locking
 - `frequency_seconds`: if set, don't run more frequently than this value
+- `maintenance_window`: if set, don't sync during this UTC period in format `start-end`, where both `start` and `end` are in `day.HHMM`, day=0-6 with 0 being Sunday
 - `rclone_cmd`: the rclone cmd and associated args
 - `rclone_args`: default rclone args to apply on every rclone command
 - `dirs`: a dictionary of directories to sync using rclone.

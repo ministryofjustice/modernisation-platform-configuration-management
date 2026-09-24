@@ -5,24 +5,28 @@
         - ec2provision
         - ec2patch
         - rclone_sync_install_scripts
+        - rclone_sync_without_service
 
     - import_tasks: setup_config.yml
       tags:
         - ec2provision
         - ec2patch
         - rclone_sync_setup_config
+        - rclone_sync_without_service
 
     - import_tasks: setup_rsyslog.yml
       tags:
         - ec2provision
         - ec2patch
         - rclone_sync_setup_rsyslog
+        - rclone_sync_without_service
 
     - import_tasks: copy_sharepoint_files.yml
       tags:
         - ec2provision
         - ec2patch
         - rclone_sync_copy_sharepoint_files
+        - rclone_sync_without_service
 
     - import_tasks: enable_service.yml
       tags:
