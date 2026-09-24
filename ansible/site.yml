@@ -53,6 +53,8 @@
       when:
         - ssh_private_key_secret_name is defined
         - lookup('env', 'ANSIBLE_PRIVATE_KEY_FILE') | length > 0
+      tags:
+        - always
 
 - hosts: "{{ target | default('all') }}"
   gather_facts: true

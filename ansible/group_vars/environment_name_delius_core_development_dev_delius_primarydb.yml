@@ -54,7 +54,7 @@ database_locked_statistics:
       - DOMAIN_EVENT: ALL
 fsfo_mode: enabled
 # For Delius databases *only*, allow the DELIUS_APP_SCHEMA.PRF_COLL_JOB to run for up to the
-# period described in the ND_PARAMETERS table:  PRF_MT_MASTER_ITERATIONS * PRF_MT_MASTER_INTERVAL 
+# period described in the ND_PARAMETERS table:  PRF_MT_MASTER_ITERATIONS * PRF_MT_MASTER_INTERVAL
 # (convert from seconds to minutes to set the thresholds)
 host_oem_metrics:
   oracle_database:
@@ -104,14 +104,14 @@ required_patches:
     datapatch_required: false
     install_with_opatchauto: true
 sql_plan_baselines:
-     - SQL_23485ac04e2c7ed0
-     - SQL_be28e221edf92c9c
-     - SQL_a4dca55001c01f27
-     - SQL_55297a64b8f91421
-     - SQL_f4e4e1bdd96476db
+  - SQL_23485ac04e2c7ed0
+  - SQL_be28e221edf92c9c
+  - SQL_a4dca55001c01f27
+  - SQL_55297a64b8f91421
+  - SQL_f4e4e1bdd96476db
 
 dbms_scheduler:
-    delius_audit_archive:
-      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'
-    set_last_archive_timestamp:
-      repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=30;BYSECOND=0'
+  delius_audit_archive:
+    repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'
+  set_last_archive_timestamp:
+    repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=30;BYSECOND=0'

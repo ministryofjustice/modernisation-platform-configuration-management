@@ -1,19 +1,49 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+---
+# This file is auto-generated, do not manually amend.
+# scripts/generate-dependabot-file.sh
 
 version: 2
 
-
 updates:
+  # Dependency management strategy:
+  # ministryofjustice/modernisation-platform#8211
+  #
+  # Major and minor/patch version updates are grouped separately, with both
+  # checked monthly to reduce routine Dependabot PR noise.
+  #
+  # Monthly is a compromise, not the ticket's proposed fortnightly major
+  # and six-monthly minor/patch cadence.
+  #
+  # Dependabot alerts and security updates must be enabled separately in
+  # repository/org settings; security updates do not wait for this schedule.
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     cooldown:
       default-days: 7
     groups:
-      action-dependencies:
-        patterns:
-          - "*"
+      action-major:
+        update-types:
+          - "major"
+      action-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "pip"
+    directories:
+      - "/ansible"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      pip-major:
+        update-types:
+          - "major"
+      pip-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
