@@ -176,6 +176,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_DML_P
   v_audit_client_ip_address_fnd boolean := false;
   v_audit_client_workstation_fnd boolean := false;
   v_audit_additional_info_fnd  boolean := false;
+  v_audit_fnd_col_info varchar2(2000);
 --end v4/v7
   v_col_num    number;
   v_saved_new_col_num  number;
@@ -514,42 +515,42 @@ BEGIN
 --v6: check for preceding update as well as insert
           --could be an UPDATE for an immediately preceding INSERT or UPDATE
           --of a row containing a blob (this won't have audit values)
-          BEGIN
-            v_line_number:=350;
-            SELECT a.lcr_command_type, a.audit_timestamp,
-              a.audit_user_id, a.audit_module_name,
-              a.audit_client_user_id, a.audit_client_ip_address,
-              a.audit_client_workstation_name, a.audit_additional_info
-            INTO v_lcr_command_type_prv, v_audit_datetime_prv,
-              v_audit_user_id_prv, v_audit_module_name_prv,
-              v_audit_client_user_id_prv, v_audit_client_ip_address_prv,
-              v_audit_client_workstation_prv, v_audit_additional_info_prv
-            FROM auditdata.audit_table a
-            WHERE a.audit_table_seq in
-              (SELECT MAX(b.audit_table_seq) from auditdata.audit_table b
-              WHERE b.lcr_commit_scn = v_commit_scn
-              AND b.lcr_object_name = v_object_name --v7: allow index use
-              AND (lcr_command_type = 'INSERT' OR lcr_command_type = 'UPDATE')
-              AND b.lcr_source_time between (v_source_time - 1/24)
-                            and v_source_time);
-            v_line_number:=360;
-            v_audit_values_missing := FALSE;
-            --do a blanket update of the audit variables
-            v_audit_datetime := v_audit_datetime_prv;
-            v_audit_user_id := v_audit_user_id_prv;
-            v_audit_module_name := v_audit_module_name_prv;
-            v_audit_client_user_id := v_audit_client_user_id_prv;
-            v_audit_client_ip_address := v_audit_client_ip_address_prv;
-            v_audit_client_workstation := v_audit_client_workstation_prv;
-            v_audit_additional_info := v_audit_additional_info_prv;
-            v_audit_values_missing := FALSE; --v4
-          EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-              --module must have been excluded
-              --(can only get lob UPDATES with a prior INSERT)
-              v_save_row := FALSE;
+            BEGIN
+              v_line_number:=350;
+              SELECT a.lcr_command_type, a.audit_timestamp,
+                a.audit_user_id, a.audit_module_name,
+                a.audit_client_user_id, a.audit_client_ip_address,
+                a.audit_client_workstation_name, a.audit_additional_info
+              INTO v_lcr_command_type_prv, v_audit_datetime_prv,
+                v_audit_user_id_prv, v_audit_module_name_prv,
+                v_audit_client_user_id_prv, v_audit_client_ip_address_prv,
+                v_audit_client_workstation_prv, v_audit_additional_info_prv
+              FROM auditdata.audit_table a
+              WHERE a.audit_table_seq in
+                (SELECT MAX(b.audit_table_seq) from auditdata.audit_table b
+                WHERE b.lcr_commit_scn = v_commit_scn
+                AND b.lcr_object_name = v_object_name --v7: allow index use
+                AND (lcr_command_type = 'INSERT' OR lcr_command_type = 'UPDATE')
+                AND b.lcr_source_time between (v_source_time - 1/24)
+                              and v_source_time);
+              v_line_number:=360;
+              v_audit_values_missing := FALSE;
+              --do a blanket update of the audit variables
+              v_audit_datetime := v_audit_datetime_prv;
+              v_audit_user_id := v_audit_user_id_prv;
+              v_audit_module_name := v_audit_module_name_prv;
+              v_audit_client_user_id := v_audit_client_user_id_prv;
+              v_audit_client_ip_address := v_audit_client_ip_address_prv;
+              v_audit_client_workstation := v_audit_client_workstation_prv;
+              v_audit_additional_info := v_audit_additional_info_prv;
               v_audit_values_missing := FALSE; --v4
-          END;
+            EXCEPTION
+              WHEN NO_DATA_FOUND THEN
+                --module must have been excluded
+                --(can only get lob UPDATES with a prior INSERT)
+                v_save_row := FALSE;
+                v_audit_values_missing := FALSE; --v4
+            END;
           ELSE
             v_audit_values_missing := TRUE;
           END IF;
@@ -558,7 +559,18 @@ BEGIN
         END IF;
       END IF;
       IF v_audit_values_missing = TRUE THEN
-          audit_log_error(SQLCODE, SQLERRM || ' - Source table audit column(s) missing or not populated',
+          v_audit_fnd_col_info := 
+            CASE WHEN v_audit_datetime IS NULL THEN 'null_audit_datetime,' ELSE '' END ||
+            CASE WHEN v_audit_datetime_fnd = false THEN 'audit_datetime,' ELSE '' END ||
+            CASE WHEN v_audit_user_id_fnd = false THEN 'audit_user_id,' ELSE '' END ||
+            CASE WHEN v_audit_module_name_fnd = false THEN 'audit_module_name,' ELSE '' END ||
+            CASE WHEN v_audit_client_user_id_fnd = false THEN 'audit_client_user_id,' ELSE '' END ||
+            CASE WHEN v_audit_client_ip_address_fnd = false THEN 'audit_client_ip_address,' ELSE '' END ||
+            CASE WHEN v_audit_client_workstation_fnd = false THEN 'audit_client_workstation,' ELSE '' END;
+          IF v_audit_fnd_col_info IS NOT NULL THEN
+            v_audit_fnd_col_info := RTRIM(v_audit_fnd_col_info, ',');
+          END IF;
+          audit_log_error(SQLCODE, SQLERRM || ' - Source table audit column(s) missing or not populated: ' || v_audit_fnd_col_info,
         v_scn, v_object_name, v_command_type, 
         v_target_object_name, v_commit_scn, v_source_time, v_error_location);
       END IF;
@@ -605,7 +617,7 @@ BEGIN
           --so no need to match on object name
           --  if there have been deletes in the transaction
           --  affecting more than one source table
-          --just checked last hour's worth of records in order to limit search
+          --just check last hour's worth of records in order to limit search
 --start v3: module name may be null or empty
       IF NOT save_module_rows(v_audit_module_name) THEN --v8
 --end v3
@@ -629,6 +641,7 @@ BEGIN
           lcr_commit_scn = v_commit_scn,
           lcr_source_time = v_source_time
         WHERE audit_table_seq = v_audit_table_seq;
+        --
         v_table_row_required := FALSE;
         v_column_rows_required := TRUE;
       END IF;
@@ -639,6 +652,8 @@ BEGIN
           ' - delete without corresponding deletions table insert', 
           v_scn, v_object_name, v_command_type, v_target_object_name,
           v_commit_scn, v_source_time, v_error_location);
+        -- log that no corresponding insert was found for the delete
+        -- but continue and insert table and column rows as required
         v_table_row_required := TRUE;
         v_column_rows_required := TRUE;
     END;
