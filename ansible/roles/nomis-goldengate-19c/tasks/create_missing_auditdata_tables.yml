@@ -1,0 +1,13 @@
+---
+# Create missing AUDITDATA tables based on source schema objects
+- name: Create missing AUDITDATA tables if local database is the audit database
+  when: run_auditdata
+  ansible.builtin.shell: |
+    {{ oracle_goldengate_scripts_dir }}/sync_auditdata_tables.sh
+  register: create_tables_output
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  args:
+    executable: /bin/bash
+  changed_when: "'TABLE' in create_tables_output.stdout"
+  failed_when: create_tables_output.rc != 0

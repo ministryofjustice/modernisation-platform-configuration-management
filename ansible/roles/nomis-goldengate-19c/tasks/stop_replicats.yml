@@ -1,0 +1,46 @@
+---
+# Stop GoldenGate Replicat processes
+
+- name: Stop AUDITDATA Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/stop_replicat_auditdata.sh"
+  args:
+    executable: /bin/bash
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditdata_replicat
+  changed_when: "'stopped successfully' in stop_auditdata_replicat.stdout.lower() or 'ABENDED' in stop_auditdata_replicat.stdout"
+  when: run_auditdata
+
+- name: Stop AUDITREF Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/stop_replicat_auditref.sh"
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_auditref_replicat
+  changed_when: "'stopped successfully' in stop_auditref_replicat.stdout.lower() or 'ABENDED' in stop_auditref_replicat.stdout"
+  when: run_auditref
+
+- name: Stop MIS Replicat process
+  ansible.builtin.shell: |
+    set -e
+    set -o pipefail
+    "{{ oracle_goldengate_scripts_dir }}/stop_replicat_mis.sh"
+  args:
+    executable: /bin/bash
+    chdir: "{{ oracle_goldengate_home }}"
+  environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
+  become: yes
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: stop_mis_replicat
+  changed_when: "'stopped successfully' in stop_mis_replicat.stdout.lower() or 'ABENDED' in stop_mis_replicat.stdout"
+  when: run_mis

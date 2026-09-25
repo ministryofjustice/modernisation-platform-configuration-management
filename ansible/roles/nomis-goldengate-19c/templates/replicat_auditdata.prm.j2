@@ -1,0 +1,24 @@
+REPLICAT {{ oracle_goldengate_group.auditdata.replicat_name }}
+
+GETENV (NLS_LANG)
+
+USERIDALIAS AUDIT_DB
+
+-- --- Error handling ---
+-- Stop on all unhandled errors. Never silently lose source changes.
+REPERROR (DEFAULT, ABEND)
+-- Stop on errors raised by Integrated Replicat procedural DML handlers.
+REPERROR (PROCEDURE, ABEND)
+-- Retain diagnostic details; this does not cause records to be skipped.
+DISCARDFILE {{ oracle_goldengate_report_dir }}/{{ oracle_goldengate_group.auditdata.replicat_name }}.dsc,APPEND,MEGABYTES 100
+-- Prevent the discard file from filling up and causing the process to abend
+DISCARDROLLOVER ON sunday
+-- Report a count of transaction records processed since startup
+REPORTCOUNT EVERY 15 MINUTES, RATE
+-- Rotate the report file at midnight every day
+REPORTROLLOVER AT 00:00
+
+-- We need to map to dummy tables in the target because replicat expects to be able to query the target database for metadata about the source tables, and if we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. The dummy tables can be empty because we are not actually replicating any data, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
+MAP "{{ oracle_goldengate_group.source.schema_owner }}"."*", TARGET "{{ oracle_goldengate_group.auditdata.dummy_target_schema }}"."*";
+
+

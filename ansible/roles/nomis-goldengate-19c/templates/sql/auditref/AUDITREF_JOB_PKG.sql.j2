@@ -1,0 +1,37 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_group.auditref.schema_owner }}.AUDITREF_JOB_PKG AS
+
+/*
+ *  NOMIS Audit Reference Jobs code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Audit reference jobs for Prison-NOMIS.
+ *  
+ *                  This script should be compiled by the {{ oracle_goldengate_group.auditref.schema_owner }} user.
+ *  
+ *  Change History:  
+ *          Version:  Date:      Author:      Description:  
+ *
+ *      1.0    2024      D. Belton  Initial version for job migration
+ */
+
+    -- package version
+    g_version      VARCHAR2(20) := '1.0';
+
+    -- Packaged procedure gather_stats_auditref_tables
+    -- will gather stats on key AUDITREF tables
+    PROCEDURE gather_stats_auditref_tables;
+
+    -- Packaged procedure purge_records
+    -- will delete rows older than p_months months from historical tables
+    PROCEDURE PURGE_RECORDS (
+        p_staging_owner   IN     varchar2,
+        p_months     in integer default 26 );
+
+    -- Packaged function get_version
+    -- will return a VARCHAR2 string containing a package version number
+    FUNCTION get_version RETURN varchar2;
+
+END AUDITREF_JOB_PKG;
+/
+
+show errors

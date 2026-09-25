@@ -1,0 +1,15 @@
+#!/bin/bash
+cd /home/oracle/admin/scripts
+export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+export ORAENV_ASK=NO
+. /usr/local/bin/oraenv
+sqlplus -s / as sysdba << EOF > /opt/textfile_monitoring/misload_success_status.prom
+set head off feedback off
+select decode(count(1),0, 'misload_success 0','misload_success 1')
+from bodimis.etl_load_log
+where to_char(load_start_datetime,'dd.mm.yyyy') = to_char(sysdate,'dd.mm.yyyy')
+and error_flag='N'
+and load_start_datetime is null;
+exit
+EOF
+
