@@ -43,8 +43,10 @@ TRANLOGOPTIONS INTEGRATEDPARAMS (DOWNSTREAM_REAL_TIME_MINE N, _LOGMINER_READ_BUF
 -- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'MV_OFFENDER_MATCH_DETAILS'))
 -- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'OFFENDER_SCHEDULES'))
 -- (((( :dml.get_object_owner() = 'OMS_OWNER') and :dml.is_null_tag() = 'Y' and (:dml.get_object_name() like 'RE$ACTION_IMP_TAB'))
+-- (:dml.get_object_owner() = 'OMS_OWNER' and :dml.get_command_type() <> 'DELETE' AND :dml.get_object_name() <> 'OMS_DELETED_ROWS' AND :dml.get_value('NEW','"AUDIT_MODULE_NAME"').accessvarchar2() IN ('$$START$$','$$END$$')
 
 -- CMP3$ and CMP4$ are special internal tables used by the Oracle Compression Advisor that we want to exclude completely.
+-- The final negative rule above is implemented in the DML processing that is run as part of the replicat.
 
 TABLEEXCLUDE OMS_OWNER.CMP3$*;
 TABLEEXCLUDE OMS_OWNER.CMP4$*;
@@ -54,9 +56,6 @@ TABLEEXCLUDE OMS_OWNER.RE$ACTION_IMP_TAB;
 
 -- We don't need to include any DML on MIS_STOP_POINTS as it's not needed in the audit trail. This is a table that contains stop points for the MIS extract. It was originally in the STRMADMIN schema but has been moved to the OMS_OWNER schema as part of the GG migration.
 TABLEEXCLUDE OMS_OWNER.MIS_STOP_POINTS;
-
--- Don't include any DML on OMS_DELETED_ROWS as it's not needed in the audit trail. This is a table that contains deleted rows from all tables in the OMS_OWNER schema, and it's only used for auditing purposes within the source database, so we don't need it in the audit trail and it would just add unnecessary volume to the trail.
-TABLEEXCLUDE OMS_OWNER.OMS_DELETED_ROWS;
 
 -- The original Streams negative rule will be implemented in the DML processing that is run as part of the replicat.
 TABLE OMS_OWNER.*;
