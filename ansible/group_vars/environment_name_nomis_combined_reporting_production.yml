@@ -247,6 +247,16 @@ bip_filesystems_mount:
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
     state: absent
     autofs_mount: true
+  - dir: /mnt/AO
+    uid: root
+    gid: root
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+    src: //fslinux.azure.hmpp.root/AO
+    # metric_dimension: AO
+    maintenance_window: "4.0400-4.0430" # Thu 4am UTC
+    state: absent
+    autofs_mount: true
 
 webadmin_filesystems_mount:
   - dir: /NART
@@ -256,6 +266,67 @@ webadmin_filesystems_mount:
     opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
-    maintenance_window:
+    maintenance_window: "4.0400-4.0430" # Thu 4am UTC
     state: absent
     autofs_mount: true
+
+rclone_secretsmanager_app_registrations:
+  rclone_1:
+    secret: "/microsoft/sharepoint/1/app-registration"
+    users:
+      - client_id:
+      - client_secret:
+      - tenant_id:
+
+rclone_secretsmanager_drive_ids:
+  rclone_1:
+    secret: "/microsoft/sharepoint/1/drive-ids"
+    users:
+      - HMPPS-HQ-PS-CC-CMgt:
+
+# cc-ao (Custodial Capacity AO extract): AO -> HMPPS-HQ-PS-CC-CMgt
+rclone_sharepoint_config:
+  cc-ao:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: HMPPS-HQ-PS-CC-CMgt
+
+rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
+rclone_sync_config:
+  shared_lock: "/opt/data/BusinessObjects/.rclone-sync.lock"
+  rclone_args:
+    - "--verbose"
+    - "--stats=0"
+    - "--retries=0"  # don't retry as script runs every few minutes
+    - "--low-level-retries=0"
+    - "--fast-list"
+  dirs:
+    readme:
+      frequency_seconds: 3600
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "cc-ao:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+    cc-ao:
+      frequency_seconds: 3600
+      maintenance_window: "4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
+      rclone_cmd:
+        - "copy"
+        - "/mnt/AO"
+        - "cc-ao:_NART - Automated Uploads/NOMIS/Extracts/AO"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=5m"
+        - "--max-age=7d"
+        - "--include=AO*.zip"
+        - "--max-depth=1"
+    delete-old:
+      frequency_seconds: 86400
+      rclone_cmd:
+        - "delete"
+        - "cc-ao:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=30d"
+        - "--exclude=README.md"

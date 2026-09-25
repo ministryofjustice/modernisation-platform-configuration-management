@@ -32,9 +32,9 @@
     {% for key, config in rclone_sharepoint_config.items() %}
       { 'section': '{{ key }}', 'option': 'type', 'value': 'onedrive' },
       { 'section': '{{ key }}', 'option': 'client_credentials', 'value': 'true' },
-      { 'section': '{{ key }}', 'option': 'client_id', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["client_id"] }}' },
-      { 'section': '{{ key }}', 'option': 'tenant', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["tenant_id"] }}' },
-      { 'section': '{{ key }}', 'option': 'drive_id', 'value': '{{ secretsmanager_passwords_dict[config.drive_ids_secret_key].passwords[key] }}' },
+      { 'section': '{{ key }}', 'option': 'client_id', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["client_id"] }}' },
+      { 'section': '{{ key }}', 'option': 'tenant', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["tenant_id"] }}' },
+      { 'section': '{{ key }}', 'option': 'drive_id', 'value': '{{ secretsmanager_passwords_dict[config.drive_ids_ansible_key].passwords[config.drive_ids_secret_key] }}' },
       { 'section': '{{ key }}', 'option': 'drive_type', 'value': 'documentLibrary' }{% if not loop.last %},{% endif %}
     {% endfor %}
     ]
@@ -50,6 +50,6 @@
   loop: >-
     [
     {% for key, config in rclone_sharepoint_config.items() %}
-      { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_secret_key].passwords["client_secret"] }}' },{% if not loop.last %},{% endif %}
+      { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["client_secret"] }}' },{% if not loop.last %},{% endif %}
     {% endfor %}
     ]

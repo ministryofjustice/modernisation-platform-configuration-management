@@ -112,7 +112,7 @@ bip_filesystems_mount:
     autofs_mount: true
 
 rclone_secretsmanager_app_registrations:
-  rclone:
+  rclone_1:
     secret: "delius-mis-prod-sharepoint-app-registration"
     users:
       - client_id:
@@ -120,15 +120,17 @@ rclone_secretsmanager_app_registrations:
       - tenant_id:
 
 rclone_secretsmanager_drive_ids:
-  rclone:
+  rclone_1:
     secret: "delius-mis-prod-sharepoint-drive-ids"
     users:
-      - wmt:
+      - LogandViewReductionsAppAccess:
 
+# wmt: NDelius Staff Caseload report -> LogandViewReductionsAppAccess
 rclone_sharepoint_config:
   wmt:
-    app_registrations_secret_key: rclone
-    drive_ids_secret_key: rclone
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: LogandViewReductionsAppAccess
 
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:

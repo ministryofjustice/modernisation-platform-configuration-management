@@ -26,13 +26,15 @@ SHARED_LOCK="{{ rclone_sync_config.shared_lock | default() }}"
 SHARED_LOCK_TIMEOUT=3600
 ENABLE_MONITORING=0
 ENABLE_FREQUENCY=0
+ENABLE_MAINTENANCE_WINDOW_CHECK=1
 VERBOSE=0
 ERROR_BACKOFF_SECS=600
+MAINTENANCE_WINDOW_BACKOFF_SECS=1800
 RCLONE_OPTS=()
 
 {% raw %}
 usage() {
-  echo "Usage $0: [all|<job_key>] [-fms] [<rclone_arg1>] .. [<rclone_argN>]
+  echo "Usage $0: [all|<job_key>] [-fm] [<rclone_arg1>] .. [<rclone_argN>]
 
 Where:
    all:       run all jobs in $CONFIG
@@ -202,7 +204,7 @@ fi
         [[ -z "$job_key" && ${#fields[@]} -eq 0 ]] && continue
         [[ "$job_key" =~ ^[[:space:]]*# ]] && continue
 
-        if [[ ${#fields[@]} -lt 3 ]]; then
+        if [[ ${#fields[@]} -lt 4 ]]; then
             echo "ERROR: $CONFIG: line ${line_num}: No rclone command specified" >&2
             overall_exitcode=1
             continue
@@ -210,6 +212,7 @@ fi
 
         logprefix="[$job_key] "
         frequency="${fields[1]:-}"
+        maintenance_window="${fields[2]:-}"
 
         if [[ "$job_key_cmdline_arg" != "all" && "$job_key_cmdline_arg" != "$job_key" ]]; then
             if ((VERBOSE > 1)); then
@@ -249,8 +252,26 @@ fi
             fi
         fi
 
+        if ((ENABLE_MAINTENANCE_WINDOW_CHECK == 1)); then
+            if [[ -n $maintenance_window ]]; then
+                now_utc=$(date -u +%u.%H%M)
+                maintenance_times=(${maintenance_window/-/ })
+                if [[ ($now_utc == "${maintenance_times[0]}" || $now_utc > "${maintenance_times[0]}") && $now_utc < "${maintenance_times[1]}" ]]; then
+                    echo "${logprefix}DEBUG: Skipping check in maintenance window now_utc in [${maintenance_times[0]},${maintenance_times[1]}]"
+
+                    if ((ENABLE_FREQUENCY == 1)); then
+                        if ((VERBOSE > 1)); then
+                            echo "${logprefix}DEBUG: Frequency check: setting next run in ${MAINTENANCE_WINDOW_BACKOFF_SECS}s (maintenance window backoff); timestamp=$((now + MAINTENANCE_WINDOW_BACKOFF_SECS))"
+                        fi
+                        set_job_timestamp "$job_key" "$((now + MAINTENANCE_WINDOW_BACKOFF_SECS))"
+                    fi
+                    continue
+                fi
+            fi
+        fi
+
         # expand any $(date +format) in the config
-        args=("${fields[@]:2}" "${RCLONE_OPTS[@]}")
+        args=("${fields[@]:3}" "${RCLONE_OPTS[@]}")
         expanded_args=()
         date_regex='\$\(date[[:space:]]+\+([^)]+)\)'
 
