@@ -3,20 +3,20 @@
 ## Introduction
 
 For provisioning and in-life management of EC2 instances. AMI configuration ansible
-belongs in [modernisation-platform-ami-builds] (https://github.com/ministryofjustice/modernisation-platform-ami-builds).
+belongs in [modernisation-platform-ami-builds] (<https://github.com/ministryofjustice/modernisation-platform-ami-builds>).
 
 Please include a README.md for each role.
 
 ## Using ansible to provision an EC2 instance
 
 Use `user_data` to provide a cloud init or shell script which runs
-ansible. See nomis ansible template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/nomis/templates/) for an example. This relies on
+ansible. See terraform template scripts in [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/blob/main/terraform/modules/baseline_presets/ec2-user-data/ansible-ec2provision.sh.tftpl) for an example. This relies on
 tags to identify which roles to run.
 
 ## Running ansible locally on a linux EC2 instance
 
 The `ansible-script` role installs a wrapper script ansible.sh in the /root/ directory.
-Use this to run ansible within a virtual environment pulling in appropriate group_vars.
+Use this to run ansible within a virtual environment pulling in appropriate `group_vars`.
 For example:
 
 ```
@@ -68,6 +68,7 @@ podman machine start
 ```
 
 #### VPN
+
 Being connected to the Prisma VPN results in tls certificate errors when attempting to download the inital rockylinux image. Therefore it is best to disconnect from the VPN while creating the local container.
 
 #### Credentials Environment Variables
@@ -101,7 +102,9 @@ when using aws-vault. Note you can adjust the password timeout in KeyChain setti
 
 Use the `container.sh` script to run ansible in a container.
 
-Examples to run against RHEL7+ instances
+**Examples to run against RHEL7+ instances**
+
+This uses SSM to connect to hosts.
 
 ```
 # use credentials pasted into shell
@@ -122,25 +125,37 @@ Or to drop into an interactive shell just
 ./container.sh -v nomis-test
 ```
 
-Examples to run against RHEL6 instances
+**Examples to run against RHEL6 instances**
+
+This uses SSH to connect to hosts. There must be at least one RHEL7+ host in the
+account that can be used as a jump server. Ensure the `server-type` tag value is added
+to the `ec2_connection_type` in the dynamic inventory files. Add the secret name
+and jump server instance id to the relevant environment `group_vars`, e.g.
+
+```
+ssh_private_key_secret_name: "/ec2/.ssh/ec2-user"
+ssh_proxy_instance_id: "i-065d6980dcb4fbbdf" # dev-nomis-db-1-a
+```
+
+Include `-6` to run the RHEL6 container and `-s` to include SSH key setup.
 
 ```
 # use credentials pasted into shell
-./container.sh -6 ansible-inventory --graph
-./container.sh -6 ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+./container.sh -6s ansible-inventory --graph
+./container.sh -6s ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
 
 # use nomis-test AWS profile (using aws-vault)
-./container.sh -6 -v nomis-test ansible-inventory --graph
-./container.sh -6 ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
+./container.sh -6s -v nomis-test ansible-inventory --graph
+./container.sh -6s ansible-playbook site.yml -e force_role=get-ec2-facts --limit os_type_linux
 ```
 
 Or to drop into an interactive shell just
 ```
 # use credentials pasted into shell
-./container.sh -6
+./container.sh -6s
 
 # use nomis-test AWS profile (using aws-vault)
-./container.sh -6 -v nomis-test
+./container.sh -6s -v nomis-test
 ```
 
 ## Running ansible against an EC2 instance post build
@@ -166,7 +181,7 @@ Ansible tasks are executed on ec2 instances via AWS Session Manager, so you must
 
 The `ansible_connection` variable is set to use the `community.aws.aws_ssm` plugin in [group_vars/aws_ec2.yml](/ansible/group_vars/aws_ec2.yml). The `aws_ec2` group is the default group for all instances that are obtained from dynamic inventory.
 
-Ensure you have set your AWS credentials as environment variables or setup your `~/.aws/credentials` accordingly before attempting to run ansible. Note that at the time of writing, it does not seem possible to run Ansible with credentials obtained from `aws sso login`. Temporary credentials can be obtained from https://moj.awsapps.com/start#/
+Ensure you have set your AWS credentials as environment variables or setup your `~/.aws/credentials` accordingly before attempting to run ansible. Note that at the time of writing, it does not seem possible to run Ansible with credentials obtained from `aws sso login`. Temporary credentials can be obtained from <https://moj.awsapps.com/start#/>
 
 You may encounter an error similar to `ERROR! A worker was found in a dead state`. Apparently this is a Python issue and the workaround is to set an env:
 
@@ -228,12 +243,4 @@ Use requirements.rhel6.yml instead.  Example error:
 # [WARNING]: Skipping Galaxy server https://galaxy.ansible.com/api/. Got an unexpected error when getting available versions of collection amazon.aws:
 # '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
 # ERROR! Unexpected Exception, this is probably a bug: '/api/v3/plugin/ansible/content/published/collections/index/amazon/aws/versions/'
-```
-
-### Removing the local container
-If using podman you can remove the image (depending on which you built) so it builds again next time the container.sh script is run:
-
-```
-podman image rm localhost/ansible-2.11.12
-podman image rm localhost/ansible-2.13.13
 ```

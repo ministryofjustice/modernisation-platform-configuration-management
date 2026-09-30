@@ -1,12 +1,12 @@
 # Overview
 
-Role for configuring scheduled CSR DB training schema refreshes every Sunday and Adhoc schema refreshes from Production. 
+Role for configuring scheduled CSR DB training schema refreshes every Sunday and Adhoc schema refreshes from Production.
 
-# Pre-requisite for scheduled refresh 
+# Pre-requisite for scheduled refresh
 
-Schema passwords stored in secrets manager 
+Schema passwords stored in secrets manager
 
-In group_vars add details for training refresh schedule and catalog details 
+In group_vars add details for training refresh schedule and catalog details
 # rman details
 db_sid: PPIWFM
 refresh_script: csr_training_schema_refresh.sh

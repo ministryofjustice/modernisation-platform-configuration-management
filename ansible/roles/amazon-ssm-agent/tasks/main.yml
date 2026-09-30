@@ -3,5 +3,17 @@
 # Role included in case we want to patch via ansible
 - import_tasks: install-rhel.yml
   tags:
+    - amazon_ssm_agent_install
     - ec2patch
-  when: ansible_distribution in ['RedHat', 'OracleLinux']
+  when:
+    - amazon_ssm_agent_state == "present"
+    - ansible_distribution in ['RedHat', 'OracleLinux']
+
+- import_tasks: uninstall-rhel.yml
+  tags:
+    - amazon_ssm_agent_uninstall
+    - ec2provision
+    - ec2patch
+  when:
+    - amazon_ssm_agent_state == "absent"
+    - ansible_distribution in ['RedHat', 'OracleLinux']

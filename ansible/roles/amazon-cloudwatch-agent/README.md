@@ -19,9 +19,9 @@ cat /opt/aws/amazon-cloudwatch-agent/logs/configuration-validation.log
 
 ## Debugging Cloudwatch Agent
 
-https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-CloudWatch-Agent.html
+<https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/troubleshooting-CloudWatch-Agent.html>
 
-IMPORTANT: DO NOT USE WILDCARDS in file definitions for the path of a log. This causes the agent to use increasing amounts of memory as it attempts to monitor ALL the log files in the directory... 
+IMPORTANT: DO NOT USE WILDCARDS in file definitions for the path of a log. This causes the agent to use increasing amounts of memory as it attempts to monitor ALL the log files in the directory...
 
 
 ## Finding Logs in Cloudwatch
@@ -43,4 +43,4 @@ Get-Counter -ListSet * | Where-Object -FilterScript { $PSItem.counter
 setname -match 'logicaldisk'} | Select-Object -Property Counter -ExpandProperty Counter
 ```
 
-Be aware that some Windows metrics will appear in the list in the AWS Cloudwatch Console as <CounterSetName> <Metric Name> e.g. Memory % CPU Available. In some cases it's actually preferable to rename the metric in the config but not all metrics can be renamed. 
+Be aware that some Windows metrics will appear in the list in the AWS Cloudwatch Console as <CounterSetName> <Metric Name> e.g. Memory % CPU Available. In some cases it's actually preferable to rename the metric in the config but not all metrics can be renamed.

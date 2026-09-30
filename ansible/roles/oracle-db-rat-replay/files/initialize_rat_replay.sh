@@ -3,13 +3,14 @@
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <synchronization> <tns_alias>" >&2
+if [[ $# -ne 3 ]]; then
+  echo "Usage: $0 <replay_name> <directory_name> <tns_alias>" >&2
   exit 1
 fi
 
-synchronization="$1"
-tns_alias="$2"
+replay_name="$1"
+replay_directory_name="$2"
+tns_alias="$3"
 
 rat_secret_id="${RAT_SECRET_ID:-}"
 aws_region="${AWS_REGION:-}"
@@ -24,7 +25,8 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
   exit 1
 fi
 
-echo "Synchronization: ${synchronization}"
+echo "Replay directory name: ${replay_directory_name}"
+echo "Replay name: ${replay_name}"
 echo "Target database name: ${tns_alias}"
 
 export PATH="$PATH:/usr/local/bin"
@@ -39,13 +41,20 @@ if [[ -z "${rat_replay_password}" ]]; then
   exit 1
 fi
 
+echo "Initialising replay"
 sqlplus -s /nolog <<EOF
 whenever sqlerror exit failure
 connect RAT_REPLAY/${rat_replay_password}@${tns_alias}
-set serveroutput on
+set serverout on
+declare
 begin
-  DBMS_WORKLOAD_REPLAY.PREPARE_REPLAY(
-    synchronization => '${synchronization}');
+  -- INITIALIZE_REPLAY creates the named replay session and associates it with
+  -- the directory containing the capture that PROCESS_CAPTURE has converted.
+  -- This establishes the replay to be prepared and run; it does not process
+  -- the capture files or configure replay synchronization.
+  DBMS_WORKLOAD_REPLAY.INITIALIZE_REPLAY(
+    replay_name => '$replay_name',
+    replay_dir  => '$replay_directory_name');
 end;
 /
 exit

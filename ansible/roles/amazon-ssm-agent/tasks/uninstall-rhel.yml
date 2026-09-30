@@ -1,0 +1,6 @@
+---
+- name: Disable amazon-ssm-agent service
+  ansible.builtin.service:
+    name: amazon-ssm-agent
+    state: stopped
+    enabled: no

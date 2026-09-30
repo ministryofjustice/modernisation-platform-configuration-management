@@ -1,4 +1,4 @@
-This role can be used to restore an Oracle database from an RMAN backup located in an s3 bucket. 
+This role can be used to restore an Oracle database from an RMAN backup located in an s3 bucket.
 
 ## Requirements
 

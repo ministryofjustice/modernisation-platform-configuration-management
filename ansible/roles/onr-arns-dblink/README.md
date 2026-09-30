@@ -34,7 +34,7 @@ Configures Oracle Heterogeneous Services (HS) and ODBC connectivity so an Oracle
 ### Required / environment-specific
 
 | Variable | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | `onr_arns_secret_id` | Secret id/arn to read from Secrets Manager. | `"/postgres/database/hmpps-arns-assessment-view-db-preprod/cloud-platform-config"` |
 | `onr_arns_oracle_home` | Oracle home containing `sqlplus` and `dg4odbc`. | `"/u01/app/oracle/product/19c/db_1"` |
 | `s3_bucket` | Bucket containing staged EL7 ODBC RPMs. | `"modernisation-platform-amis"` |
@@ -44,7 +44,7 @@ Configures Oracle Heterogeneous Services (HS) and ODBC connectivity so an Oracle
 ### Commonly used defaults
 
 | Variable | Default |
-|---|---|
+| --- | --- |
 | `onr_arns_aws_region` | `eu-west-2` |
 | `onr_arns_odbc_ini` | `/etc/odbc.ini` |
 | `onr_arns_odbc_dsn` | `PG` |

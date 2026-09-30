@@ -34,7 +34,7 @@ Example step:
 
 # Accessing Secret in a different account
 
-## Option 1 - EC2 IAM Role
+##  Option 1 - EC2 IAM Role
 
 The Secret must have a policy which grants the EC2 IAM role principal `secretsmanager:GetSecretValue`.
 If this is tricky to achieve, see Option 2.
@@ -58,7 +58,7 @@ Example step:
           - sysman: # password must be set outside of code
 ```
 
-## Option 2 - Dedicated IAM Role
+##  Option 2 - Dedicated IAM Role
 
 If it is a pain to grant permissions to all EC2 roles, create a dedicated
 IAM role for the purpose and set the `assume_role_name` variable.

@@ -134,14 +134,14 @@ ansible-playbook roles/ansible/site.yml \
 The workflow supports two operations:
 
 | Operation | Description |
-|----------|-------------|
+| ---------- | ------------- |
 | **collection** | Collect Oracle Database, CPU and/or WebLogic audit information |
 | **summary** | Generate the consolidated summary and ZIP archive |
 
 When running **collection**, the workflow allows the following filters:
 
 | Input | Description |
-|------|-------------|
+| ------ | ------------- |
 | **applications** | Limit the audit to a specific application, or leave blank for all |
 | **environments** | Limit the audit to selected environments |
 | **auditLevel** | Run `databases`, `weblogic` or both |
@@ -155,7 +155,7 @@ The **summary** operation runs once against the shared audit S3 bucket and gener
 ## Tags
 
 | Tag | Description |
-|------|-------------|
+| ------ | ------------- |
 | `collection` | Run audit collection |
 | `databases` | Audit Oracle databases and CPU information |
 | `weblogic` | Audit WebLogic ECS clusters |
@@ -187,7 +187,7 @@ options_packs_usage_summary.txt
 The following variables can be overridden if required.
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| ---------- | --------- | ------------- |
 | `audit_dir` | `/tmp/audit` | Local working directory |
 | `upload_collection` | `true` | Upload results to S3 |
 | `region` | `eu-west-2` | AWS region |

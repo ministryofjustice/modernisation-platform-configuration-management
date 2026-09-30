@@ -9,6 +9,9 @@ dns_search_domains:
   - azure.noms.root
 winrm_domain_name_fqdn: azure.noms.root
 
+ssh_private_key_secret_name: "/ec2/.ssh/ec2-user"
+ssh_proxy_instance_id: "i-07569b6b6c8a4cb6e" # t1-nomis-db-1-b
+
 # since ssm broken on web, add user accounts in case ec2-user breaks
 users_and_groups_regular_web:
   - group: studio-webops

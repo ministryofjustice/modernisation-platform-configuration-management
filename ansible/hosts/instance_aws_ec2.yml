@@ -7,14 +7,17 @@ include_filters:
 exclude_filters:
   - tag:aws:autoscaling:groupName:
       - "*"
+  - tag:os-type:
+      - Windows
 hostnames:
   - "tag:Name"
 
 compose:
-  ansible_host: instance_id
   application: tags['application'] | replace("delius-mis","delius")
   aws_environment: tags['environment-name'].split('-')|last
   ec2_name: tags['Name']
+  ec2_connection_type: >
+    'ssh' if tags['server-type'] in ['nomis-web'] else 'ssm'
 
 keyed_groups:
   - key: tags['environment-name']

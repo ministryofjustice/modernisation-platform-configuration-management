@@ -16,7 +16,7 @@ choco install git.install -y
 
 ### Modules
 
-A module contains a collection of functions available for use 
+A module contains a collection of functions available for use
 in other modules or scripts. There is a helper script for creating
 the manifest file.  Create a directory for each module under
 `powershell/Modules/` folder.
@@ -38,8 +38,8 @@ directory related scripts in `powershell/Scripts/ModPlatformAD`
 Be consistent. Pascal case (capitalize the first letter of each word) except keywords
 and operators which are in lower case.
 
-Verbs: https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7.4
-Formatting: https://poshcode.gitbook.io/powershell-practice-and-style/style-guide/code-layout-and-formatting
+Verbs: <https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7.4>
+Formatting: <https://poshcode.gitbook.io/powershell-practice-and-style/style-guide/code-layout-and-formatting>
 
 ## Using powershell to provision an EC2 instance
 

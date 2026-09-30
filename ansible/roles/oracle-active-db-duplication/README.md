@@ -8,10 +8,10 @@ Use this role for duplicating Oracle 19c  database with active database duplicat
 
 # Pre-requisites
 
-Ensure Primary database TNS has auxiliary and target database TNS entries already created. 
- 
-Ensure `db_config` variable is configured with all database settings. 
-Ensure Source database is in archivelog and using password file. 
+Ensure Primary database TNS has auxiliary and target database TNS entries already created.
+
+Ensure `db_config` variable is configured with all database settings.
+Ensure Source database is in archivelog and using password file.
 
 This is typically defined within `group_vars`.  For example:
 
@@ -31,7 +31,7 @@ db_configs:
 
 # Example
 
-1. Create duplicate database with active database duplication. 
+1. Create duplicate database with active database duplication.
 
 ```
 

@@ -96,7 +96,7 @@ oracle_setup_config:
       group: oinstall
       owner: oracle
       s3_bucket_path: nomis-weblogic-12
-      zip_file_name: u01_tag_config.zip
+      zip_file_name: u01_tag_config_dev.zip
 
   qa:
     - directory_path: /home/oracle/sysconsoftware/12c_setup_config
@@ -126,6 +126,20 @@ oracle_setup_config:
       s3_bucket_path: nomis-weblogic-12
       zip_file_name: u01_tag_config_rel.zip
 
+  poc:
+    - directory_path: /home/oracle/sysconsoftware/12c_setup_config
+      extract_path: /home/oracle/sysconsoftware/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: 12c_setup_config.zip
+    - directory_path: /u01/tag
+      extract_path: /u01/
+      group: oinstall
+      owner: oracle
+      s3_bucket_path: nomis-weblogic-12
+      zip_file_name: u01_tag_config.zip
+
 oracle_config: "{{ oracle_setup_config[nomis_environment] }}"
 
 weblogic_configs:
@@ -142,6 +156,11 @@ weblogic_configs:
   qa19c:
     weblogic_db_repo_hostname: "dev-nomis-db19c-1-b"
     weblogic_db_repo_sid: "qa19c"
+    weblogic_db_repo_username: "sys"
+
+  dev:
+    weblogic_db_repo_hostname: "nomis-db19c-1-a"
+    weblogic_db_repo_sid: "dev19c"
     weblogic_db_repo_username: "sys"
 
   qa:

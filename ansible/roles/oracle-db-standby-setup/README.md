@@ -2,7 +2,7 @@
 
 Use this role when configuring a new standby database.
 
-1. First setup the primary database to support the new standby database 
+1. First setup the primary database to support the new standby database
 2. Take adhoc backup of primary database (using oracle-db-backup role in this repo, or rman-backup role in ansible-monorepo)
 3. Setup standby database
 

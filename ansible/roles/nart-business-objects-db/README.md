@@ -41,7 +41,7 @@ This will auto-generate passwords for following. Or you can pre-define them:
 - `bip_audit_owner`
 - `bods_ips_audit_owner`
 
-## Example usage:
+## Example usage
 
 ```
 # check variables have defined + generate database passwords if necessary

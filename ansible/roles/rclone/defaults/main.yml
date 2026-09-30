@@ -1,5 +1,5 @@
 ---
-#rclone_target_version: latest # use this to install the latest version
+#rclone_target_version: latest # use this to install the latest version
 rclone_target_version: 1.75.0
 rclone_config_dir: "/root/.config/rclone"
 rclone_secretsmanager_app_registrations: {}
@@ -8,7 +8,7 @@ rclone_sharepoint_config: {}
 
 # example config
 #rclone_secretsmanager_app_registrations:
-#  rclone:
+#  rclone_1:
 #    secret: "my_appregistration_secret"
 #    users:
 #      - client_id:
@@ -16,12 +16,13 @@ rclone_sharepoint_config: {}
 #      - tenant_id:
 
 #rclone_secretsmanager_drive_ids:
-#  rclone:
+#  rclone_1:
 #    secret: "my_driveid_secret"
 #    users:
-#      - wmt:
+#      - MySharepointSiteId:
 
 #rclone_sharepoint_config:
 #  wmt:
-#    app_registrations_secret_key: rclone
-#    drive_id_secrets_key: rclone
+#    app_registrations_ansible_key: rclone_1
+#    drive_id_ansible_key: rclone_1
+#    drive_id_secret_key: MySharepointSiteId

@@ -44,6 +44,45 @@
   debug:
      msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
 
+- name: Check whether RAT replay already exists
+  script: check_rat_replay_exists.sh "{{ rat_replay_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: check_rat_replay_exists
+
+- name: Show replay existence check output
+  debug:
+     var: check_rat_replay_exists.stdout
+
+- name: Initialize RAT replay
+  script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: initialize_rat
+
+- name: Show initialize output
+  debug:
+     var: initialize_rat.stdout
+
+- name: Prepare RAT replay
+  script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+  register: prepare_rat
+
+- name: Show Prepare output
+  debug:
+     var: prepare_rat.stdout
+
 - name: Calibrate RAT replay clients
   script: calibrate_rat_replay.sh "{{ rat_replay_directory_path }}" "{{ rat_replay_wrc_client_startup_delay }}" "{{ tns_alias }}"
   become: true

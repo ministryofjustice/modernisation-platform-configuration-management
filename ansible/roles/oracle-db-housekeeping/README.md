@@ -14,7 +14,7 @@ housekeeping_cron:
       weekday: "0"
       minute: "30"
       hour: "08"
-      # job: command generated in 
+      # job: command generated in
 
 Example:
 no_proxy="*" ansible-playbook site.yml --limit test-oem-a -e force_role=oracle-db-housekeeping

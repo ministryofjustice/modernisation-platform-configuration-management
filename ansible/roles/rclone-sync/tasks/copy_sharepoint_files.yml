@@ -1,0 +1,18 @@
+---
+- name: Create rclone var directory
+  ansible.builtin.file:
+    path: "/var/lib/rclone-sync/sharepoint"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Copy sharepoint files
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - var/lib/rclone-sync/sharepoint/README.md

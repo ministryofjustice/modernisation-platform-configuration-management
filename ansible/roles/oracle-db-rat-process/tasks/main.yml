@@ -12,18 +12,15 @@
       - rat_replay_s3_location | length > 0
       - rat_replay_s3_location is match('^s3://')
       - rat_replay_synchronization in ['SCN', 'OBJECT_ID']
+      - (rat_replay_parallelism | default('no', true)) in ['yes', 'no']
       - tns_alias is defined
       - tns_alias | length > 0
-    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, and set rat_replay_synchronization to SCN or OBJECT_ID"
-
-- name: Build RAT replay names
-  set_fact:
-     rat_replay_name: "{{ rat_replay_name | default((tns_alias | lower) ~ '_' ~ now(fmt='%Y%m%d%H%M%S'), true) }}"
+    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, set rat_replay_synchronization to SCN or OBJECT_ID, and set rat_replay_parallelism to YES or NO if parallel processing is required"
 
 - name: Build RAT replay directory names
   set_fact:
-     rat_replay_directory_name: "RAT_REPLAY_{{ rat_replay_name | upper }}"
-     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
+     rat_replay_directory_name: "{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') }}"
+     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') | lower }}"
 
 - name: Create RAT replay directory on the database host
   file:
@@ -33,6 +30,35 @@
      group: oinstall
      mode: '0750'
   become: true
+
+- name: Check disk space for RAT capture files
+  shell: |
+     set -o errexit
+     set -o nounset
+     set -o pipefail
+
+     capture_size_bytes=$(aws s3 ls --recursive --summarize "{{ rat_replay_s3_location }}" | awk '/Total Size:/ { print $3 }')
+     available_space_kib=$(df -Pk "{{ rat_replay_directory_path }}" | awk 'NR == 2 { print $4 }')
+
+     if [[ ! "${capture_size_bytes}" =~ ^[0-9]+$ || ! "${available_space_kib}" =~ ^[0-9]+$ ]]; then
+       echo "Unable to determine RAT capture size or available disk space." >&2
+       exit 1
+     fi
+
+     required_space_bytes="${capture_size_bytes}"
+     available_space_bytes=$((available_space_kib * 1024))
+
+     if (( required_space_bytes > available_space_bytes )); then
+       echo "Insufficient disk space for RAT capture: ${required_space_bytes} bytes required, ${available_space_bytes} bytes available." >&2
+       exit 1
+     fi
+
+     echo "Sufficient disk space for RAT capture: ${required_space_bytes} bytes required, ${available_space_bytes} bytes available."
+  args:
+     executable: /bin/bash
+  become: true
+  become_user: oracle
+  changed_when: false
 
 - name: Download RAT capture files for replay from S3
   command:
@@ -50,37 +76,55 @@
   debug:
      msg: "RAT capture files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
 
-- name: Initialize RAT replay
-  script: initialize_rat_replay.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ rat_replay_name }}" "{{ tns_alias }}"
+- name: Create RAT replay directory in database
+  script: create_rat_replay_directory.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ tns_alias }}"
   become: true
   become_user: oracle
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
-  register: initialize_rat
+  register: create_rat_replay_directory
 
-- name: Show Initialize output
+- name: Show create directory output
   debug:
-     var: initialize_rat.stdout
+     var: create_rat_replay_directory.stdout
 
-- name: Prepare RAT replay
-  script: prepare_rat_replay.sh "{{ rat_replay_synchronization }}" "{{ tns_alias }}"
+- name: Copy RAT capture processing script to database host
+  copy:
+    src: process_rat_replay_capture.sh
+    dest: /tmp/process_rat_replay_capture.sh
+    owner: oracle
+    group: oinstall
+    mode: '0750'
+  become: true
+
+- name: Process RAT capture files
+  command:
+    argv:
+      - /tmp/process_rat_replay_capture.sh
+      - "{{ rat_replay_directory_name }}"
+      - "{{ tns_alias }}"
+      - "{{ rat_replay_parallelism | default('no', true) }}"
+  async: 7200
+  poll: 30
   become: true
   become_user: oracle
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
-  register: prepare_rat
+  register: process_rat_replay_capture
 
-- name: Show Prepare output
+- name: Show process capture output
   debug:
-     var: prepare_rat.stdout
+     var: process_rat_replay_capture.stdout
 
-# Once the prepare has been done - upload the prepared files back to S3
+# Once the prepare has been done - upload the processed files back to S3
 # as this will permit WRC to be run from a different host if needed
-- name: Set RAT prepared file S3 location
+# Once the workload capture has been processed it may be reused for replay multiple
+# times without subsequent reprocessing.
+- name: Set RAT processed file S3 location
   set_fact:
-     rat_prepared_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/prepared/') }}"
+     rat_processed_s3_location: "{{ rat_replay_s3_location | replace('/capture/', '/processed/') }}"
 
 - name: Upload RAT prepared files to S3
   command:
@@ -90,11 +134,11 @@
         - sync
         - --no-progress
         - "{{ rat_replay_directory_path }}/"
-        - "{{ rat_prepared_s3_location }}"
+        - "{{ rat_processed_s3_location }}"
   become: true
   become_user: oracle
 
-- name: Report RAT prepared S3 location
+- name: Report RAT processed S3 location
   debug:
-     msg: "RAT capture files uploaded to {{ rat_prepared_s3_location }}"
+     msg: "RAT capture files uploaded to {{ rat_processed_s3_location }}"
 
