@@ -2,11 +2,11 @@
 # Script to sync local directories using rclone with output logged to syslog
 #
 # Config file is pipe separated in format:
-#   logprefix|frequency|arg1|arg2|arg3|...
+#   logprefix|frequency_interval|frequency_offset|arg1|arg2|arg3|...
 #
 # e.g.
-#   [mycopy] |5m|copy|/my/source|myremote:/my/dest|--min-age=5m
-#   [mycleanup] |1d|delete|myremote:/backup|--min-age=7d
+#   [mycopy] |3600|900|copy|/my/source|myremote:/my/dest|--min-age=5m # run at 15 minutes past the hour
+#   [mycleanup] |86400||delete|myremote:/backup|--min-age=7d         # run daily
 #
 # State:
 #   Last attempted execution time for each log prefix is stored in:
@@ -42,7 +42,7 @@ Where:
 
 All other options are passed through to rclone except:
    -m: enable monitoring, i.e. write status to /opt/textfile_monitoring
-   -f: enable frequency, i.e. only run if frequency seconds have elapsed since last run
+   -f: enable frequency, i.e. only run if frequency_interval seconds have elapsed since last run
 "
 }
 
@@ -211,8 +211,9 @@ fi
         fi
 
         logprefix="[$job_key] "
-        frequency="${fields[1]:-}"
-        maintenance_window="${fields[2]:-}"
+        frequency_interval="${fields[1]:-}"
+        frequency_offset="${fields[2]:-}"
+        maintenance_window="${fields[3]:-}"
 
         if [[ "$job_key_cmdline_arg" != "all" && "$job_key_cmdline_arg" != "$job_key" ]]; then
             if ((VERBOSE > 1)); then
@@ -222,25 +223,33 @@ fi
         fi
         job_count=$((job_count+1))
 
-        if [[ -n $frequency ]]; then
-            if [[ ! "$frequency" =~ ^[0-9]+$ ]]; then
-                echo "ERROR: $CONFIG: line ${line_num}: Frequency must be numeric: $frequency" >&2
+        if [[ -n $frequency_interval ]]; then
+            if [[ ! "$frequency_interval" =~ ^[0-9]+$ ]]; then
+                echo "ERROR: $CONFIG: line ${line_num}: Frequency interval (in seconds)  must be numeric: $frequency_interval" >&2
                 overall_exitcode=1
                 continue
             fi
         else
-            frequency=0
+            frequency_interval=0
+        fi
+
+        if [[ -n $frequency_offset ]]; then
+            if [[ ! "$frequency_offset" =~ ^[0-9]+$ ]]; then
+                echo "ERROR: $CONFIG: line ${line_num}: Frequency offset (in seconds) must be numeric: $frequency_offset" >&2
+                overall_exitcode=1
+                continue
+            fi
         fi
 
         if ((ENABLE_FREQUENCY == 1)); then
             timestamp=$(get_job_timestamp "$job_key")
             if ((now < timestamp)); then
                 timestamp_diff=$((timestamp - now))
-                if ((timestamp_diff > frequency && timestamp_diff > ERROR_BACKOFF_SECS)); then
-                    echo "${logprefix}Frequency check: running; ${timestamp_diff}s too long to next run; frequency=$frequency; timestamp=$timestamp"
+                if ((timestamp_diff > frequency_interval && timestamp_diff > ERROR_BACKOFF_SECS)); then
+                    echo "${logprefix}Frequency check: running; ${timestamp_diff}s too long to next run; frequency_interval=${frequency_interval}s; timestamp=$timestamp"
                 else
                     if ((VERBOSE > 1)); then
-                        echo "${logprefix}DEBUG: Frequency check: skipping; next run in ${timestamp_diff}s; frequency=$frequency; timestamp=$timestamp"
+                        echo "${logprefix}DEBUG: Frequency check: skipping; next run in ${timestamp_diff}s; frequency_interval=${frequency_interval}s; timestamp=$timestamp"
                     fi
                     continue
                 fi
@@ -271,7 +280,7 @@ fi
         fi
 
         # expand any $(date +format) in the config
-        args=("${fields[@]:3}" "${RCLONE_OPTS[@]}")
+        args=("${fields[@]:4}" "${RCLONE_OPTS[@]}")
         expanded_args=()
         date_regex='\$\(date[[:space:]]+\+([^)]+)\)'
 
@@ -300,10 +309,17 @@ fi
             fi
         else
             if ((ENABLE_FREQUENCY == 1)); then
-                if ((VERBOSE > 1)); then
-                    echo "${logprefix}DEBUG: Frequency check: setting next run in ${frequency}s; timestamp=$((now + frequency))"
+                if [[ -n $frequency_offset ]]; then
+                    # round time to the next frequency_interval + frequency_offset
+                    now_less_offset=$((now - frequency_offset))
+                    next_time=$(( now_less_offset - (now_less_offset % frequency_interval) + frequency_interval + frequency_offset ))
+                else
+                    next_time=$((now + frequency_interval))
                 fi
-                set_job_timestamp "$job_key" "$((now + frequency))"
+                if ((VERBOSE > 1)); then
+                    echo "${logprefix}DEBUG: Frequency check: setting next run in $((next_time - now))s; timestamp=${next_time}; $(date -d @${next_time} +%T)"
+                fi
+                set_job_timestamp "$job_key" "$next_time"
             fi
         fi
     done < "$CONFIG"
