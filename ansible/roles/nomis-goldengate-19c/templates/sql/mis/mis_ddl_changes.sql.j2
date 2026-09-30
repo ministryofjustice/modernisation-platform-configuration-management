@@ -1,0 +1,69 @@
+/*
+ *  MIS Batch Roll SCN-Driven Model Migration
+ *  
+ *  Description:    This script migrates ETL_LOAD_LOG to support the new
+ *                  SCN-driven batch selection model (STAGED_START_SCN column).
+ *                  
+ *  Backward Compatibility:
+ *      - STAGED_START_SCN is NULLABLE and has DEFAULT NULL
+ *      - Legacy datetime-based batch selection remains functional
+ *      - New model (with STAGED_START_SCN) and legacy model coexist
+ *      - End-of-day path supplies STAGED_START_SCN; manual/legacy path does not
+ *  
+ *  Execution:      Run this script as the ETL_LOAD_LOG table owner
+ *                  (typically the AUDIT/ETL schema, not {{ oracle_goldengate_sql_owner }})
+ */
+
+set serveroutput on size 1000000;
+declare
+    l_staging_owner varchar2(30);
+BEGIN
+    -- find the schema owner of ETL_LOAD_LOG table
+    IF l_staging_owner IS NULL THEN
+        EXECUTE IMMEDIATE 'select owner from dba_tables where table_name = ''ETL_LOAD_LOG''' INTO l_staging_owner;
+    END IF;
+    IF l_staging_owner IS NULL THEN
+        raise_application_error(-20001, 'ETL_LOAD_LOG table not found in any schema.');
+    END IF;
+    -- Add STAGED_START_SCN column to ETL_LOAD_LOG if it does not already exist
+    -- This column stores the end-of-day batch boundary SCN passed from the source database
+    -- and enables SCN-driven batch selection in DML handlers
+    BEGIN
+        EXECUTE IMMEDIATE 'ALTER TABLE ' || l_staging_owner || '.ETL_LOAD_LOG ADD (
+            staged_start_scn NUMBER(38) DEFAULT NULL
+        )';
+        DBMS_OUTPUT.PUT_LINE('Added STAGED_START_SCN column to ETL_LOAD_LOG.');
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE = -1430 THEN
+                -- Column already exists
+                DBMS_OUTPUT.PUT_LINE('STAGED_START_SCN column already exists on ETL_LOAD_LOG.');
+            ELSE
+                RAISE;
+            END IF;
+    END;
+
+    -- Add a non-unique index on STAGED_START_SCN for efficient batch lookup
+    -- Backfill STAGED_START_SCN for existing batches
+    BEGIN
+        EXECUTE IMMEDIATE 'CREATE INDEX ' || l_staging_owner || '.ETL_LOAD_LOG_STG_START_SCN_IDX 
+            ON ' || l_staging_owner || '.ETL_LOAD_LOG(staged_start_scn)';
+        DBMS_OUTPUT.PUT_LINE('Created index ETL_LOAD_LOG_STG_START_SCN_IDX.');
+        EXECUTE IMMEDIATE 'UPDATE ' || l_staging_owner || '.ETL_LOAD_LOG SET staged_start_scn = 0 WHERE staged_start_scn IS NULL AND staged_start_datetime IS NOT NULL';
+        DBMS_OUTPUT.PUT_LINE('Backfilled STAGED_START_SCN for existing batches where applicable.');
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE = -955 THEN
+                -- Index already exists
+                DBMS_OUTPUT.PUT_LINE('Index ETL_LOAD_LOG_STG_START_SCN_IDX already exists.');
+            ELSE
+                RAISE;
+            END IF;
+    END;
+
+    -- Existing batches without STAGED_START_SCN will use legacy datetime-based lookup
+    DBMS_OUTPUT.PUT_LINE('Migration complete. New model uses STAGED_START_SCN for end-of-day path; legacy model uses datetime.');
+
+END;
+/

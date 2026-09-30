@@ -1,0 +1,40 @@
+---
+# Get current SCN from database for reference
+# Useful when you need to know the current SCN before registering/adding an extract
+
+- name: Get current SCN from source database
+  ansible.builtin.shell: |
+    . ~/.bash_profile
+    export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+    export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+    export PATH=${ORACLE_HOME}/bin:$PATH
+
+    # Retrieve SYS password from AWS Secrets Manager
+    SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+      --secret-id "/oracle/database/$ORACLE_SID/passwords" \
+      --query 'SecretString' \
+      --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+    if [ -z "$SYS_PASSWORD" ]; then
+      echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
+      exit 1
+    fi
+
+    sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba <<EOF
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    SELECT CURRENT_SCN FROM V\$DATABASE;
+    EXIT;
+    EOF
+  become: true
+  become_user: "{{ oracle_goldengate_owner }}"
+  register: source_current_scn_output
+  changed_when: false
+  failed_when: source_current_scn_output.rc != 0
+
+- name: Display current SCN from source database
+  ansible.builtin.debug:
+    msg: "Source Database ({{ oracle_goldengate_group.source.tns_alias }}) Current SCN: {{ source_current_scn_output.stdout | trim }}"
+
+- name: Set fact for source SCN
+  ansible.builtin.set_fact:
+    oracle_goldengate_source_current_scn: "{{ source_current_scn_output.stdout | trim }}"
