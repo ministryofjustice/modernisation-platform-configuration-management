@@ -64,9 +64,9 @@ The role creates a dedicated database user (`ggadmin` by default) for GoldenGate
 - Automatically added to GoldenGate credential store with alias `GGADMIN`
 - Used for GoldenGate replication processes and administration
 
-For the Auditdata stream the role also creates a (locked) schema in the target database and creates tables based on the source schema tables. 
-This is required in order to use MAP in the Replicat param file for mapping because replicat expects the tables to exist in the target database even though the records will be transformed and stored in special audit specific tables. 
-If we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail. 
+For the Auditdata stream the role also creates a (locked) schema in the target database and creates tables based on the source schema tables.
+This is required in order to use MAP in the Replicat param file for mapping because replicat expects the tables to exist in the target database even though the records will be transformed and stored in special audit specific tables.
+If we use TABLEEXCLUDE for all tables then it won't be able to find any metadata and will fail.
 The dummy tables will be empty because we are not actually replicating any data into them, we just need them to exist so that the replicat can start successfully and apply the filtering logic in the parameter file.
 
 ### Credential Store
