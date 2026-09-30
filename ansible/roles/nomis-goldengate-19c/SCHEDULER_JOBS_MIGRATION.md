@@ -118,7 +118,7 @@ WHERE owner IN ('AUDITDATA', 'AUDITREF', 'SYS')
 ORDER BY owner, job_name;
 ```
 
-### Phase 2: Switchover
+### Phase 2: Switchover to New Jobs
 
 When ready to switch from STRMADMIN jobs to migrated jobs:
 

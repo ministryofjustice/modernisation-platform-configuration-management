@@ -5,7 +5,7 @@
 ### Overview
 The Oracle GoldenGate 19c installation supports three replication streams. GoldenGate is installed on a **single target host** which runs both the Audit (T1CAUDG) and MIS (T1CMISG) databases. A single playbook run detects all running Oracle instances and deploys all matching stream components automatically.
 
-```
+```text
 ┌─────────────────┐        ┌──────────────────────────────────────┐
 │  Source Host    │        │  GoldenGate Target Host              │
 │  (Nomis)        │───────>│                                      │
@@ -90,7 +90,7 @@ run_mis: true/false
 
 ### Complete Tag Hierarchy
 
-```
+```text
 goldengate (ALL TASKS)
 ├── goldengate-install (Installation & Setup)
 │   ├── goldengate-audit (Audit-specific install)

@@ -77,7 +77,7 @@ ansible-playbook site.yml --tags get-current-scn
 ```
 
 **Output:**
-```
+```text
 Source Database (T1CNOM) Current SCN: 123456789
 Local Database (T1CAUDG) Current SCN: 123456790
 ```

@@ -6,7 +6,7 @@ The role currently uses a **hierarchical tagging strategy** with multiple levels
 
 ### Tag Hierarchy
 
-```
+```text
 goldengate (root - all tasks)
 ├── goldengate-install (installation phase)
 │   ├── goldengate-software (software installation)
@@ -419,7 +419,7 @@ ansible-playbook site.yml --list-tags
 ```
 
 Expected output:
-```
+```text
 playbook: site.yml
 
   play #1 (goldengate_hosts): Configure GoldenGate TAGS: []
