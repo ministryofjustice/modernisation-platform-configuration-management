@@ -1,3 +1,4 @@
+---
 - name: Apply GoldenGate software patches
   when: oracle_goldengate_software_patches[ora_version] is defined
   block:
@@ -7,7 +8,7 @@
         export ORACLE_HOME="{{ oracle_goldengate_home }}"
         export PATH="{{ oracle_goldengate_home }}/OPatch:${PATH}"
         opatch lsinventory -oh {{ oracle_goldengate_home }} -invPtrLoc {{ oracle_inventory }}/oraInst.loc
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       args:
         executable: /bin/bash
@@ -40,7 +41,7 @@
         - patch_id | length > 0
         - patch_id not in applied_patches
       loop: "{{ oracle_goldengate_software_patches[ora_version] }}"
-          
+
     - name: Show list of patches to apply in logs
       ansible.builtin.debug:
         msg: "Patches to apply: {{ patches_to_apply }}"
@@ -66,14 +67,14 @@
             dest: "{{ oracle_goldengate_home }}"
             owner: "{{ oracle_goldengate_owner }}"
             group: "{{ oracle_goldengate_osgroup }}"
-            remote_src: yes
+            remote_src: true
 
         - name: Run OPatch to check the version
           ansible.builtin.shell: |
             export ORACLE_HOME="{{ oracle_goldengate_home }}"
             export PATH="{{ oracle_goldengate_home }}/OPatch:${PATH}"
             opatch version
-          become: yes
+          become: true
           become_user: "{{ oracle_goldengate_owner }}"
           args:
             executable: /bin/bash
@@ -100,7 +101,7 @@
             dest: "{{ oracle_goldengate_software_dir }}"
             owner: "{{ oracle_goldengate_owner }}"
             group: "{{ oracle_goldengate_osgroup }}"
-            remote_src: yes
+            remote_src: true
           loop: "{{ patches_to_apply }}"
           register: patch_unarchive_output
           failed_when: patch_unarchive_output.failed
@@ -109,7 +110,7 @@
         - name: Find extracted OPatch patch directories
           ansible.builtin.find:
             paths: "{{ oracle_goldengate_software_dir }}"
-            recurse: yes
+            recurse: true
             file_type: file
             patterns: "actions.xml"
           register: patch_actions_files
@@ -139,7 +140,7 @@
         - name: Install GoldenGate software patches
           ansible.builtin.command: >-
             opatch apply -silent -oh {{ oracle_goldengate_home }}
-          become: yes
+          become: true
           become_user: "{{ oracle_goldengate_owner }}"
           environment:
             ORACLE_HOME: "{{ oracle_goldengate_home }}"
@@ -155,7 +156,7 @@
             msg: "Patch installation output: {{ patch_install_output.results | map(attribute='stdout') | list }}"
 
         - name: Clean up patch files
-          ansible.builtin.file:    
+          ansible.builtin.file:
             path: "{{ item if (item is string and item.startswith('/')) else (oracle_goldengate_software_dir ~ '/' ~ item) }}"
             state: absent
           loop: >-

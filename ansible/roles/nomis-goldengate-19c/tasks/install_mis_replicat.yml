@@ -15,7 +15,7 @@
     EXIT;
     EOF
   register: mis_tableexclude_output
-  become: yes
+  become: true
   become_user: oracle
   changed_when: false
   failed_when: mis_tableexclude_output.rc != 0 or 'ORA-' in mis_tableexclude_output.stdout
@@ -41,7 +41,7 @@
     EXIT;
     EOF
   register: mis_tableinclude_output
-  become: yes
+  become: true
   become_user: oracle
   changed_when: false
   failed_when: mis_tableinclude_output.rc != 0 or 'ORA-' in mis_tableinclude_output.stdout

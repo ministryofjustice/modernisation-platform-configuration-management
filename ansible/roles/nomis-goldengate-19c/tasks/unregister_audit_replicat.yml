@@ -17,7 +17,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: delete_auditdata_replicat
   failed_when: false
@@ -47,7 +47,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: delete_auditref_replicat
   failed_when: false
@@ -58,4 +58,3 @@
   ansible.builtin.debug:
     msg: "{{ delete_auditref_replicat.stdout }}"
   when: run_auditref
-

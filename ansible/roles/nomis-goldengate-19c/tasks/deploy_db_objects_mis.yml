@@ -9,7 +9,7 @@
     mode: "0755"
 
 - name: Deploy MIS database objects
-  when: 
+  when:
     - run_mis is defined and run_mis
   become: true
   become_user: "{{ oracle_goldengate_owner }}"

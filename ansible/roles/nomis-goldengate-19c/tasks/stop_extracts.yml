@@ -13,7 +13,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: stop_auditdata_extract
   changed_when: "'STOPPED' in stop_auditdata_extract.stdout or 'ABENDED' in stop_auditdata_extract.stdout"
@@ -31,7 +31,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: stop_auditref_extract
   changed_when: "'STOPPED' in stop_auditref_extract.stdout or 'ABENDED' in stop_auditref_extract.stdout"
@@ -49,7 +49,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: stop_mis_extract
   changed_when: "'STOPPED' in stop_mis_extract.stdout or 'ABENDED' in stop_mis_extract.stdout"

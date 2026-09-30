@@ -10,16 +10,16 @@
       register: running_instances
       changed_when: false
       failed_when: false
-      become: yes
+      become: true
 
     - name: Display detected Oracle instances
       ansible.builtin.debug:
         msg: "Detected Oracle instances: {{ running_instances.stdout_lines }}"
       when: running_instances.stdout_lines | length > 0
 
-    - name: Fail if no Oracle instances are running 
-      ansible.builtin.fail: 
-        msg: "No running Oracle instances detected on this host. GoldenGate cannot be deployed without a local database." 
+    - name: Fail if no Oracle instances are running
+      ansible.builtin.fail:
+        msg: "No running Oracle instances detected on this host. GoldenGate cannot be deployed without a local database."
       when: running_instances.stdout_lines | length == 0
 
     - name: Extract configured database SIDs from oracle_goldengate_db
@@ -191,4 +191,3 @@
 
 - ansible.builtin.set_fact:
     host_is_source: "{{ db_check.rc == 0 }}"
-

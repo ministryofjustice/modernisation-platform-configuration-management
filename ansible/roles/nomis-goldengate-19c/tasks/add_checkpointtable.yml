@@ -1,3 +1,4 @@
+---
 # The checkpoint table is used by replicat processes to track their progress in applying changes to the target database. The extracts use files.
 # The tns alias will be passed in as a var checkpoint_table_db_alias, which will be set to either the auditdata or mis database depending on which replicat processes are being installed. The checkpoint table needs to be created in the database that the replicat processes are connecting to, because the checkpoint table needs to be specified in the replicat parameter files and the replicat processes won't start if the checkpoint table doesn't exist.
 - name: Check if checkpoint table already exists
@@ -13,7 +14,7 @@
     EOF
   args:
     chdir: "{{ oracle_goldengate_home }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   environment: "{{ gg_env }}"
   register: checkpointtable_info
@@ -40,7 +41,7 @@
     EOF
   args:
     chdir: "{{ oracle_goldengate_home }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   environment: "{{ gg_env }}"
   register: create_checkpointtable

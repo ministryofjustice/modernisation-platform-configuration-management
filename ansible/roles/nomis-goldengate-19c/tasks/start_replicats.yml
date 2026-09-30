@@ -17,7 +17,7 @@
   args:
     executable: /bin/bash
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditdata_replicat
   changed_when: "'started successfully' in start_auditdata_replicat.stdout.lower() or 'RUNNING' in start_auditdata_replicat.stdout"
@@ -32,7 +32,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_auditref_replicat
   changed_when: "'started successfully' in start_auditref_replicat.stdout.lower() or 'RUNNING' in start_auditref_replicat.stdout"
@@ -47,7 +47,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: start_mis_replicat
   changed_when: "'started successfully' in start_mis_replicat.stdout.lower() or 'RUNNING' in start_mis_replicat.stdout"

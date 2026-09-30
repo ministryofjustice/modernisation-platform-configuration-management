@@ -10,7 +10,7 @@
 
 - name: Detect local Oracle database instance
   import_tasks: detect_local_database.yml
-  tags: 
+  tags:
     - always
     - detect-database
 
@@ -65,7 +65,7 @@
     - goldengate-database-config
     - configure-db-params
 
-- name: Create GoldenGate database administrator and schema users 
+- name: Create GoldenGate database administrator and schema users
   import_tasks: create_gg_dbusers.yml
   tags:
     - goldengate

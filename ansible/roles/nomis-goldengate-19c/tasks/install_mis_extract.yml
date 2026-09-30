@@ -14,14 +14,14 @@
     EXIT;
     EOF
   register: mis_tableinclude_output
-  become: yes
+  become: true
   become_user: oracle
   changed_when: false
   failed_when: mis_tableinclude_output.rc != 0 or 'ORA-' in mis_tableinclude_output.stdout
 
 - name: Set fact splitting stdout into lines
   ansible.builtin.set_fact:
-    oms_owner_tableinclude_lines: "{{ mis_tableinclude_output.stdout_lines }}"  
+    oms_owner_tableinclude_lines: "{{ mis_tableinclude_output.stdout_lines }}"
 
 - name: Deploy Extract parameter file for MIS
   ansible.builtin.template:

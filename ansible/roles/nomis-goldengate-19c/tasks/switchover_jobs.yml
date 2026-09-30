@@ -3,7 +3,7 @@
 # This task disables STRMADMIN jobs and enables the new jobs
 
 - name: Switchover CNOM scheduler jobs
-  when: 
+  when:
     - oracle_goldengate_group.source is defined
     - oracle_goldengate_group.source.tns_alias is defined
     - run_source is defined and run_source
@@ -44,7 +44,7 @@
       when: cnom_switchover_output.stdout_lines is defined
 
 - name: Switchover MIS scheduler jobs
-  when: 
+  when:
     - run_mis is defined and run_mis
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
@@ -83,7 +83,7 @@
       when: mis_switchover_output.stdout_lines is defined
 
 - name: Switchover AUDIT scheduler jobs
-  when: 
+  when:
     - run_auditdata is defined and run_auditdata
   become: true
   become_user: "{{ oracle_goldengate_owner }}"

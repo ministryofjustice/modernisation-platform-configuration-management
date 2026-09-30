@@ -16,7 +16,7 @@
       exit 1
     fi
   register: check_secrets_output
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   args:
     executable: /bin/bash
@@ -43,7 +43,7 @@
       exit 1
     fi
   register: check_user_output
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   args:
     executable: /bin/bash
@@ -62,28 +62,28 @@
       no_log: true
 
     # CAPTURE priv is still needed for the source db user as the downstream capture process will connect remotely using this user, ßbut we don't need to grant APPLY privileges on the source database as the replicat process won't be connecting to the source database
-    - name: Set GoldenGate admin privileges based on database type 
+    - name: Set GoldenGate admin privileges based on database type
       when: oracle_goldengate_local_db_sid in [oracle_goldengate_group.source.tns_alias]
-      ansible.builtin.set_fact: 
+      ansible.builtin.set_fact:
         gg_privilege_type: 'CAPTURE'
 
-    - name: Set GoldenGate admin privileges based on database type 
+    - name: Set GoldenGate admin privileges based on database type
       when: oracle_goldengate_local_db_sid in [oracle_goldengate_group.auditdata.tns_alias, oracle_goldengate_group.auditref.tns_alias, oracle_goldengate_group.mis.tns_alias]
-      ansible.builtin.set_fact: 
+      ansible.builtin.set_fact:
         gg_privilege_type: '*'
 
-    # Create gg db user based on https://docs.oracle.com/en/middleware/goldengate/core/19.1/oracle-db/establishing-oracle-goldengate-credentials.html 
+    # Create gg db user based on https://docs.oracle.com/en/middleware/goldengate/core/19.1/oracle-db/establishing-oracle-goldengate-credentials.html
     - name: Create SQL script to create GoldenGate admin user
       ansible.builtin.copy:
         content: |
           -- Create GoldenGate Administrator User
           -- This user will be used for GoldenGate replication processes
-          
+
           SET ECHO ON
           SET FEEDBACK ON
-          
+
           WHENEVER SQLERROR EXIT SQL.SQLCODE
-          
+
           -- Check if user exists
           DECLARE
             v_count NUMBER;
@@ -100,7 +100,7 @@
             END IF;
           END;
           /
-          
+
           -- Grant additional GoldenGate-specific privileges
           GRANT DBA TO {{ oracle_goldengate_dbuser }};
           GRANT CREATE SESSION TO {{ oracle_goldengate_dbuser }};
@@ -111,18 +111,18 @@
           GRANT SELECT ANY DICTIONARY to {{ oracle_goldengate_dbuser }};
           GRANT SELECT ON v_$database to {{ oracle_goldengate_dbuser }};
 
-          EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE); 
+          EXEC dbms_goldengate_auth.grant_admin_privilege (grantee => '{{ oracle_goldengate_dbuser }}', privilege_type => '{{ gg_privilege_type }}',  grant_select_privileges=> true, do_grants => TRUE);
 
           -- Verify user creation
           PROMPT
           PROMPT Verifying user creation:
-          SELECT username, account_status, default_tablespace, created 
-          FROM dba_users 
+          SELECT username, account_status, default_tablespace, created
+          FROM dba_users
           WHERE username = UPPER('{{ oracle_goldengate_dbuser }}');
-          
+
           PROMPT
           PROMPT GoldenGate user {{ oracle_goldengate_dbuser }} created successfully!
-          
+
           EXIT
         dest: "/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql"
         owner: "{{ oracle_goldengate_owner }}"
@@ -158,7 +158,7 @@
 
         sqlplus -s "${SQL_CONNECT_STR}" @/tmp/create_gg_dbuser_{{ oracle_goldengate_local_db_sid }}.sql
       register: create_user_output
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       args:
         executable: /bin/bash
@@ -171,7 +171,7 @@
 
     - name: Display user creation results (sanitized)
       ansible.builtin.debug:
-        msg: 
+        msg:
           - "Database: {{ oracle_goldengate_local_db_sid }}"
           - "GoldenGate user: {{ oracle_goldengate_dbuser }}"
           - "Status: {{ 'Created successfully' if create_user_output.changed else 'Already exists or error' }}"
@@ -185,7 +185,7 @@
           --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
           --query 'SecretString' \
           --output text 2>/dev/null)
-        
+
         if [ -z "$CURRENT_SECRET" ]; then
           echo "ERROR: Cannot retrieve existing passwords secret for {{ oracle_goldengate_local_db_sid }}"
           exit 1
@@ -207,7 +207,7 @@
           echo "Adding {{ oracle_goldengate_dbuser }} password to AWS Secrets Manager for {{ oracle_goldengate_local_db_sid }}"
           UPDATED_SECRET=$(echo "$CURRENT_SECRET" | jq --arg pwd "{{ gg_dbuser_password }}" '. + { "{{ oracle_goldengate_dbuser }}": $pwd }')
         fi
-        
+
         # Update the secret with the new value
         aws secretsmanager put-secret-value \
           --secret-id "/oracle/database/{{ oracle_goldengate_local_db_sid }}/passwords" \
@@ -233,11 +233,11 @@
         export ORACLE_SID={{ oracle_goldengate_group.auditdata.tns_alias }}
         export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
         export PATH=${ORACLE_HOME}/bin:$PATH
-        
+
         sqlplus -s / as sysdba <<EOF
         SET ECHO ON
         SET FEEDBACK ON
-        
+
         WHENEVER SQLERROR EXIT SQL.SQLCODE
 
         -- Check if user exists
@@ -251,19 +251,19 @@
           END IF;
         END;
         /
-        
+
         -- For auditdata we need to create a dummy schema in the target database and create the table structures based on the source schema as we have to use MAP in the Replicat param file.
         -- User will be locked as we don't want anyone connecting to it, it's only needed for the Replicat MAP in the param file.
-        CREATE USER {{ oracle_goldengate_group.auditdata.dummy_target_schema }} PROFILE DEFAULT 
-        IDENTIFIED BY "{{ gg_oms_schema_password }}" 
-        DEFAULT TABLESPACE USERS 
-        TEMPORARY TABLESPACE TEMP 
-        QUOTA UNLIMITED ON USERS 
+        CREATE USER {{ oracle_goldengate_group.auditdata.dummy_target_schema }} PROFILE DEFAULT
+        IDENTIFIED BY "{{ gg_oms_schema_password }}"
+        DEFAULT TABLESPACE USERS
+        TEMPORARY TABLESPACE TEMP
+        QUOTA UNLIMITED ON USERS
         ACCOUNT LOCK;
         EXIT;
         EOF
       register: create_schema_output
-      become: yes
+      become: true
       become_user: oracle
       changed_when: "'created' in create_schema_output.stdout"
       failed_when: create_schema_output.rc != 0 and 'already exists' not in create_schema_output.stderr
@@ -272,7 +272,7 @@
     - name: Display schema creation results (sanitized)
       when: run_auditdata
       ansible.builtin.debug:
-        msg: 
+        msg:
           - "Database: {{ oracle_goldengate_group.auditdata.tns_alias }}"
           - "Schema: {{ oracle_goldengate_group.auditdata.dummy_target_schema }}"
           - "Status: {{ 'Created successfully' if create_schema_output.changed else 'Already exists or error' }}"

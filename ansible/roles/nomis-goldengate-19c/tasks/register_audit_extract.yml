@@ -41,7 +41,7 @@
         executable: /bin/bash
         chdir: "{{ oracle_goldengate_home }}"
       environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       register: add_auditdata_extract
       failed_when: add_auditdata_extract.rc != 0 and "already exists" not in add_auditdata_extract.stderr
@@ -88,7 +88,7 @@
         executable: /bin/bash
         chdir: "{{ oracle_goldengate_home }}"
       environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       register: add_auditref_extract
       failed_when: add_auditref_extract.rc != 0 and "already exists" not in add_auditref_extract.stderr

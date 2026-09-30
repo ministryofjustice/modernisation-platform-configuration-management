@@ -23,7 +23,7 @@
         oracle_goldengate_group_trail_prefix: "{{ oracle_goldengate_group.auditref.trail_prefix }}"
         oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.auditref.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.auditref.dummy_target_schema }}"
-        
+
     - name: Get password secret metadata from AWS Secrets Manager to be used for the db link to the source database
       ansible.builtin.shell: |
         aws secretsmanager get-secret-value \
@@ -53,7 +53,7 @@
       ansible.builtin.set_fact:
         oracle_goldengate_source_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.source.schema_owner | lower] }}"
       no_log: true
-      
+
     - name: Ensure Auditref SQL directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/auditref"
@@ -94,4 +94,3 @@
       ansible.builtin.fail:
         msg: "Errors found in output of Auditref package install: {{ auditref_config_output.stdout }}"
       when: "'ORA-' in auditref_config_output.stdout or 'compilation errors' in auditref_config_output.stdout"
-

@@ -9,12 +9,12 @@ oracle_opatch_software: p6880880_190000_Linux-x86-64.12.2.0.1.48.zip
 oracle_goldengate_software_patches:
   ORA11g:
     # 38781234 Oracle GoldenGate 19.30.0.0.260120 for Oracle 11g (Patchset)
-    #- p38781234_1930000OGGRU_Linux-x86-64.zip
+    # - p38781234_1930000OGGRU_Linux-x86-64.zip
     # 39739998 Oracle GoldenGate 19.32.0.0.260721 for Oracle 11g(Patchset:Linux x86-64)
     - p39739998_1932000OGGRU_Linux-x86-64.zip
   ORA19c:
     # 38781237 Oracle GoldenGate 19.30.0.0.260120 for Oracle 19c (Patchset)
-    #- p38781237_1930000OGGRU_Linux-x86-64.zip
+    # - p38781237_1930000OGGRU_Linux-x86-64.zip
     # 39740001 Oracle GoldenGate 19.32.0.0.260721 for Oracle 19c(Patchset:Linux x86-64)
     - p39740001_1932000OGGRU_Linux-x86-64.zip
 
@@ -33,7 +33,7 @@ oracle11g_home: "/u01/app/oracle/product/11.2.0.4/db_1"
 oracle19c_home: "/u01/app/oracle/product/19c/db_1"
 # This variable is set in the detect_ora_version.yml task and used to determine which Oracle home to use for GoldenGate installation and configuration. It is also used to determine which GoldenGate software patch to install based on the Oracle version.
 ora_version: ""
-  
+
 oracle_goldengate_home: /u01/app/oracle/product/goldengate/19c
 oracle_goldengate_software_dir: /u02/stage/goldengate
 
@@ -73,12 +73,12 @@ checkpoint_table_name: "checkpoints"
 # (override via inventory/group vars using oracle_goldengate_group_overrides)
 oracle_goldengate_group_defaults:
   source:
-    tns_alias: 
+    tns_alias:
     schema_owner: OMS_OWNER
     credential_alias: SOURCE_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
   auditdata:
-    tns_alias: 
+    tns_alias:
     schema_owner: AUDITDATA
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -88,7 +88,7 @@ oracle_goldengate_group_defaults:
     trail_prefix: dt
     dummy_target_schema: AUDITDATA_OMS_OWNER
   auditref:
-    tns_alias: 
+    tns_alias:
     schema_owner: AUDITREF
     credential_alias: AUDIT_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -98,7 +98,7 @@ oracle_goldengate_group_defaults:
     trail_prefix: rf
     dummy_target_schema: ""
   mis:
-    tns_alias: 
+    tns_alias:
     schema_owner: BODISTAGING
     credential_alias: MIS_DB
     oracle_home: "{{ oracle11g_home if ora_version == 'ORA11g' else oracle19c_home }}"
@@ -107,7 +107,7 @@ oracle_goldengate_group_defaults:
     trail_path: mis
     trail_prefix: ms
     dummy_target_schema: ""
-  
+
 # Define which database instance is running on this host
 # This controls which GoldenGate components are deployed
 # If not set, will be automatically detected by checking running Oracle instances

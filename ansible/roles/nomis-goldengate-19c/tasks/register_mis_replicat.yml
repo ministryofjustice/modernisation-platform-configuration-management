@@ -16,7 +16,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: add_mis_replicat
   failed_when: '"ERROR" in add_mis_replicat.stdout'
@@ -27,4 +27,3 @@
   ansible.builtin.debug:
     msg: "{{ add_mis_replicat.stdout }}"
   when: run_mis
-

@@ -16,7 +16,7 @@
         executable: /bin/bash
         chdir: "{{ oracle_goldengate_home }}"
       environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       register: stop_mis_extract
       failed_when: false
@@ -39,7 +39,7 @@
         executable: /bin/bash
         chdir: "{{ oracle_goldengate_home }}"
       environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       register: remove_mis_extract
       failed_when: false

@@ -19,7 +19,7 @@
         export ORACLE_HOME="{{ oracle_goldengate_db_oracle_home }}"
         export PATH="{{ oracle_goldengate_db_oracle_home }}/OPatch:${PATH}"
         opatch lsinventory -oh {{ oracle_goldengate_db_oracle_home }} -invPtrLoc {{ oracle_inventory }}/oraInst.loc
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       args:
         executable: /bin/bash
@@ -84,7 +84,7 @@
             dest: "{{ oracle_goldengate_software_dir }}"
             owner: "{{ oracle_goldengate_owner }}"
             group: "{{ oracle_goldengate_osgroup }}"
-            remote_src: yes
+            remote_src: true
           loop: "{{ db_patches_to_apply }}"
           register: db_patch_unarchive_output
           failed_when: db_patch_unarchive_output.failed
@@ -93,7 +93,7 @@
         - name: Find extracted database patch directories
           ansible.builtin.find:
             paths: "{{ oracle_goldengate_software_dir }}"
-            recurse: yes
+            recurse: true
             file_type: file
             patterns: "actions.xml"
           register: db_patch_actions_files
@@ -123,7 +123,7 @@
         - name: Install GoldenGate database patches
           ansible.builtin.command: >-
             opatch apply -silent -oh {{ oracle_goldengate_db_oracle_home }}
-          become: yes
+          become: true
           become_user: "{{ oracle_goldengate_owner }}"
           environment:
             ORACLE_HOME: "{{ oracle_goldengate_db_oracle_home }}"
@@ -166,7 +166,7 @@
         path: "{{ oracle_goldengate_db_oracle_home }}/sqlpatch/{{ item }}/postinstall.sql"
       loop: "{{ database_patch_ids }}"
       register: postinstall_script_stat
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
 
     # Support both auto-detected databases (oracle_goldengate_local_db_sids) and manual override (oracle_goldengate_local_db_sid)
@@ -193,7 +193,7 @@
         EOSQL
       args:
         executable: /bin/bash
-      become: yes
+      become: true
       become_user: "{{ oracle_goldengate_owner }}"
       loop: "{{ postinstall_script_stat.results | selectattr('stat.exists') | list | product(_db_sids_to_configure) | list }}"
       loop_control:

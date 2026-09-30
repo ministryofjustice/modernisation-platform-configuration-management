@@ -1,6 +1,7 @@
+---
 - name: Stop GoldenGate Manager
   ansible.builtin.command: "{{ oracle_goldengate_scripts_dir }}/stop_manager.sh"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
   register: stop_manager

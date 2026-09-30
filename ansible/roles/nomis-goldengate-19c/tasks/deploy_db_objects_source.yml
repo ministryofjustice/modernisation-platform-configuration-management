@@ -50,7 +50,7 @@
       ansible.builtin.set_fact:
         oracle_goldengate_source_sys_password: "{{ oracle_goldengate_password_secret['sys'] }}"
       no_log: true
-      
+
     - name: Get MIS password secret metadata from AWS Secrets Manager
       ansible.builtin.shell: |
         aws secretsmanager get-secret-value \
@@ -100,7 +100,6 @@
     - name: Check schema password exists in secret for AUDITDATA link
       ansible.builtin.assert:
         that:
-          #- oracle_goldengate_group.auditdata.schema_owner | lower in oracle_goldengate_password_secret
           - oracle_goldengate_dbuser | lower in oracle_goldengate_password_secret
         fail_msg: >-
           Password key '{{ oracle_goldengate_dbuser | lower }}' was not found in AWS secret
@@ -139,7 +138,7 @@
 
         # Retrieve SYS password from AWS Secrets Manager
         SYS_PASSWORD="{{ oracle_goldengate_source_sys_password }}"
-        
+
         if [ -z "$SYS_PASSWORD" ]; then
           echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
           exit 1
@@ -152,7 +151,7 @@
         executable: /bin/bash
       register: source_config_output
       failed_when: source_config_output.rc != 0
-      
+
     - name: Show output of Source package install in logs
       ansible.builtin.debug:
         msg: "{{ item }}"

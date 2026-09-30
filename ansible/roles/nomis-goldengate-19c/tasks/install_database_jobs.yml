@@ -4,7 +4,7 @@
 # Use switchover tasks to enable these and disable STRMADMIN jobs
 
 - name: Install CNOM database jobs (source database)
-  when: 
+  when:
     - oracle_goldengate_group.source is defined
     - oracle_goldengate_group.source.tns_alias is defined
     - run_source is defined and run_source
@@ -38,7 +38,7 @@
           --secret-id "/oracle/database/$ORACLE_SID/passwords" \
           --query 'SecretString' \
           --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
-        
+
         if [ -z "$SYS_PASSWORD" ]; then
           echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
           exit 1
@@ -63,7 +63,7 @@
       when: "'ORA-' in cnom_jobs_output.stdout and 'ORA-00955' not in cnom_jobs_output.stdout and 'ORA-27477' not in cnom_jobs_output.stdout"
 
 - name: Install MIS database jobs
-  when: 
+  when:
     - run_mis is defined and run_mis
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
@@ -117,8 +117,7 @@
         mode: "0755"
 
 - name: Install AUDIT database jobs
-  when: 
-    - run_auditdata is defined and run_auditdata
+  when: run_auditdata is defined and run_auditdata
   become: true
   become_user: "{{ oracle_goldengate_owner }}"
   block:

@@ -1,3 +1,4 @@
+---
 # Call the database procedure that will register the DML handlers for the Replicat processes, which is required for it to function correctly.
 - name: Register DML handlers for AuditData Replicat process
   ansible.builtin.shell: |
@@ -16,7 +17,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditdata.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: register_dml_handlers
   failed_when: register_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in register_dml_handlers.stdout
@@ -40,7 +41,7 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.auditref.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: register_dml_handlers
   failed_when: register_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in register_dml_handlers.stdout
@@ -64,10 +65,8 @@
     executable: /bin/bash
     chdir: "{{ oracle_goldengate_home }}"
   environment: "{{ gg_env | combine({'ORACLE_SID': oracle_goldengate_group.mis.tns_alias}) }}"
-  become: yes
+  become: true
   become_user: "{{ oracle_goldengate_owner }}"
   register: register_dml_handlers
   failed_when: register_dml_handlers.rc != 0 or "PL/SQL procedure successfully completed." not in register_dml_handlers.stdout
   when: run_mis
-
-  
