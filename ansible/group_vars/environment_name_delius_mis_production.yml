@@ -125,9 +125,9 @@ rclone_secretsmanager_drive_ids:
     users:
       - LogandViewReductionsAppAccess:
 
-# wmt: NDelius Staff Caseload report -> LogandViewReductionsAppAccess
+# wit: NDelius Staff Caseload report -> LogandViewReductionsAppAccess (wit = Workflow Intelligence Team)
 rclone_sharepoint_config:
-  wmt:
+  wit:
     app_registrations_ansible_key: rclone_1
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: LogandViewReductionsAppAccess
@@ -142,33 +142,47 @@ rclone_sync_config:
     - "--low-level-retries=0"
     - "--fast-list"
   dirs:
-    readme:
-      frequency_seconds: 3600
+    wit-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 30 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
-        - "wmt:_NART - Automated Uploads"
+        - "wit:_NART - Automated Uploads"
       rclone_args:
         - "--checksum"
-    wmt:
-      frequency_seconds: 3600
+        - "--min-age=1m"
+    wit-staff-caseload:
+      frequency_interval_seconds: 1800
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 15 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/NDelius_Staff_Caseload"
-        - "wmt:_NART - Automated Uploads/NDMIS/Reports/NDelius_Staff_Caseload"
+        - "wit:_NART - Automated Uploads/NDMIS/Reports/NDelius_Staff_Caseload"
       rclone_args:
         - "--suffix=-$(date +%F_%H%M%S)"
         - "--suffix-keep-extension"
-        - "--min-age=2m"
+        - "--min-age=30m"
         - "--include=NDelius*.xlsx"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
         - "--max-depth=1"
-    delete-old:
-      frequency_seconds: 86400
+    wit-delete-old:
+      frequency_interval_seconds: 86400
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 3600 }}"
       rclone_cmd:
         - "delete"
-        - "wmt:_NART - Automated Uploads"
+        - "wit:_NART - Automated Uploads"
       rclone_args:
         - "--min-age=30d"
         - "--exclude=README.md"
+    cfo-extract:
+      frequency_interval_seconds: 1800
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 15 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/National/cfo"
+        - "s3:cfo-delius-uploads"
+      rclone_args:
+        - "--min-age=30m"
+        - "--include=cfo*.txt"
