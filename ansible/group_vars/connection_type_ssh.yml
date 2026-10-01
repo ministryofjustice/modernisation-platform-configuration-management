@@ -1,0 +1,11 @@
+---
+# ansible_host is set in compose. Setting it here breaks delegation
+ansible_user: ec2-user
+ansible_ssh_common_args: >-
+  -o ProxyCommand="/ansible/ssh-ssm-jump.sh {{ hostvars[inventory_hostname]['ssh_proxy_instance_id'] | default('') }} %h %p"
+
+# set timeout long enough for operations that don't support async, e.g. unarchive
+ansible_ssh_timeout: 300
+
+# disable retrying as this doesn't work well with shell command that timeout, better to fail immediately
+ansible_ssh_retries: 0
