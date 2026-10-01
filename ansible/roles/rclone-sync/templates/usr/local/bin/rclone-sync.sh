@@ -32,7 +32,8 @@ ERROR_BACKOFF_SECS=600
 MAINTENANCE_WINDOW_BACKOFF_SECS=1800
 RCLONE_OPTS=()
 
-{% raw %}
+# START (raw section){% raw %}
+
 usage() {
   echo "Usage $0: [all|<job_key>] [-fm] [<rclone_arg1>] .. [<rclone_argN>]
 
@@ -264,9 +265,9 @@ fi
         if ((ENABLE_MAINTENANCE_WINDOW_CHECK == 1)); then
             if [[ -n $maintenance_window ]]; then
                 now_utc=$(date -u +%u.%H%M)
-                maintenance_times=(${maintenance_window/-/ })
+                IFS=- read -r -a maintenance_times <<< "$maintenance_window"
                 if [[ ($now_utc == "${maintenance_times[0]}" || $now_utc > "${maintenance_times[0]}") && $now_utc < "${maintenance_times[1]}" ]]; then
-                    echo "${logprefix}DEBUG: Skipping check in maintenance window now_utc in [${maintenance_times[0]},${maintenance_times[1]}]"
+                    echo "${logprefix}DEBUG: Skipping check in maintenance window $now_utc in [${maintenance_times[0]},${maintenance_times[1]}]"
 
                     if ((ENABLE_FREQUENCY == 1)); then
                         if ((VERBOSE > 1)); then
@@ -340,4 +341,5 @@ if (( ENABLE_MONITORING == 1 )); then
 fi
 
 exit "$overall_exitcode"
-{% endraw %}
+
+# END (raw section){% endraw %}
