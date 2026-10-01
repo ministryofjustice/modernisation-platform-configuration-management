@@ -73,8 +73,9 @@ acquire_shared_lock() {
     return 1
 }
 
+# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 release_shared_lock() {
-    # shellcheck disable=SC2317
     if rmdir "$SHARED_LOCK" 2>/dev/null; then
         if ((VERBOSE > 1)); then
             echo "DEBUG: Released shared lock"
