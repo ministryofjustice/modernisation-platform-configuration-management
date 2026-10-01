@@ -303,7 +303,7 @@ rclone_sync_config:
   dirs:
     cc-readme:
       frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 30 }}"
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -312,8 +312,8 @@ rclone_sync_config:
         - "--checksum"
         - "--min-age=1m"
     cc-ao:
-      frequency_interval_seconds: 1800
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 15 }}"
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       maintenance_window: "4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
       rclone_cmd:
         - "copy"
@@ -321,7 +321,7 @@ rclone_sync_config:
         - "cc-ao:_NART - Automated Uploads/NOMIS/Extracts/AO"
       rclone_args:
         - "--checksum"
-        - "--min-age=5m"
+        - "--min-age=15m"
         - "--max-age=7d"
         - "--include=AO*.zip"
         - "--max-depth=1"

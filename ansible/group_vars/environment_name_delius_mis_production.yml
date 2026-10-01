@@ -144,7 +144,7 @@ rclone_sync_config:
   dirs:
     wit-readme:
       frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 30 }}"
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -153,8 +153,8 @@ rclone_sync_config:
         - "--checksum"
         - "--min-age=1m"
     wit-staff-caseload:
-      frequency_interval_seconds: 1800
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 15 }}"
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/NDelius_Staff_Caseload"
@@ -163,6 +163,7 @@ rclone_sync_config:
         - "--suffix=-$(date +%F_%H%M%S)"
         - "--suffix-keep-extension"
         - "--min-age=30m"
+        - "--max-age=2d"
         - "--include=NDelius*.xlsx"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
@@ -177,12 +178,13 @@ rclone_sync_config:
         - "--min-age=30d"
         - "--exclude=README.md"
     cfo-extract:
-      frequency_interval_seconds: 1800
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 15 }}"
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/National/cfo"
         - "s3:cfo-delius-uploads"
       rclone_args:
         - "--min-age=30m"
+        - "--max-age=2d"
         - "--include=cfo*.txt"
