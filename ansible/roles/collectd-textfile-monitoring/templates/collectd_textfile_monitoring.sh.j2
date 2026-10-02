@@ -6,14 +6,20 @@
 HOSTNAME="${HOSTNAME:-localhost}"
 INTERVAL="${INTERVAL:-{{ collectd_script_interval }}}"
 
-while sleep "$INTERVAL"; do
+# Force Bash to use line-buffering for stdout immediately
+stdbuf -oL -eL /bin/bash
+
+# Prevent wildcards from failing or lagging if files don't exist
+shopt -s nullglob
+
+while true; do
   now=$(date +%s)
   for file in /opt/textfile_monitoring/*.prom /opt/textfile_monitoring/*.metric /opt/textfile_monitoring/*/*.prom /opt/textfile_monitoring/*/*.metric; do
 {% raw %}
     if [[ -e "$file" ]]; then
       IFS=$'\n'
       metrics=($(grep -E "^[[:alnum:][:punct:]]+[[:space:]]+[[:digit:]]+" "$file" | grep -v ^#))
-      metric_name=$(dirname $file | sed 's|^/opt/||g' | sed 's|/|_|g')
+      metric_name=$(dirname "$file" | sed 's|^/opt/||g' | sed 's|/|_|g')
       unset IFS
       file_last_modified=$(date -r "$file" +%s)
       secs_since_last_modified=$((now - file_last_modified))
@@ -27,4 +33,5 @@ while sleep "$INTERVAL"; do
     fi
 {% endraw %}
   done
+  sleep "$INTERVAL"
 done
