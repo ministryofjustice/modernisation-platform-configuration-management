@@ -1,4 +1,11 @@
 ---
+- name: Create monitoring directory
+  ansible.builtin.file:
+    path: "/{{ item }}"
+    state: directory
+  loop:
+    - "opt/textfile_monitoring/rclone_sync"
+
 - name: Copy rclone-sync script
   ansible.builtin.template:
     src: "{{ item }}"
