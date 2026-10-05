@@ -299,8 +299,14 @@ fi
         rclone "${expanded_args[@]}" 2>&1 | while IFS= read -r line; do
             [[ -n "$line" ]] && echo "${logprefix}$line"
         done
-
         exitcode=${PIPESTATUS[0]}
+
+        if (( ENABLE_MONITORING == 1 )); then
+            if [[ -d /opt/textfile_monitoring/rclone_sync ]]; then
+                echo "$job_key $overall_exitcode" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+            fi
+        fi
+
         if [[ "$exitcode" -ne 0 ]]; then
             overall_exitcode=$exitcode
             if ((ENABLE_FREQUENCY == 1)); then
@@ -333,14 +339,6 @@ fi
     exit "$overall_exitcode"
 ) 9>"$LOCAL_LOCK"
 
-overall_exitcode=$?
-
-if (( ENABLE_MONITORING == 1 )); then
-    if [[ -d /opt/textfile_monitoring ]]; then
-        echo "rclone_sync_status $overall_exitcode" > /opt/textfile_monitoring/rclone_sync.prom
-    fi
-fi
-
-exit "$overall_exitcode"
+exit $?
 
 # END (raw section){% endraw %}
