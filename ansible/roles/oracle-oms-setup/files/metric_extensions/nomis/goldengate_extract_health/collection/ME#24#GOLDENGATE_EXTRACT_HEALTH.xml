@@ -1,0 +1,14 @@
+<TargetCollectionExt EXT_NAME="ME$GOLDENGATE_EXTRACT_HEALTH" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$GOLDENGATE_EXTRACT_HEALTH" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="5" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$GOLDENGATE_EXTRACT_HEALTH">
+		<Condition COLUMN_NAME="STATUS" CRITICAL="RUNNING" OPERATOR="NE" OCCURRENCES="1" MESSAGE="GoldenGate extract %keyValue% is not running (status %value%)." CLEAR_MESSAGE="GoldenGate extract %keyValue% is running."/>
+		<Condition COLUMN_NAME="LAG_SECONDS" CRITICAL="3900" WARNING="2700" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate extract %keyValue% is lagging by %value% seconds." CLEAR_MESSAGE="GoldenGate extract %keyValue% lag is within bounds."/>
+		<Condition COLUMN_NAME="CHECKPOINT_AGE_SECONDS" CRITICAL="1800" WARNING="600" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate extract %keyValue% checkpoint has not advanced for %value% seconds." CLEAR_MESSAGE="GoldenGate extract %keyValue% checkpoint is advancing."/>
+		<Condition COLUMN_NAME="OLDEST_TRANSACTION_SECONDS" CRITICAL="3600" WARNING="1800" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate extract %keyValue% has an open transaction %value% seconds old." CLEAR_MESSAGE="No long running open transactions for GoldenGate extract %keyValue%."/>
+		<Condition COLUMN_NAME="ERROR_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% OGG/ORA errors reported for GoldenGate extract %keyValue%." CLEAR_MESSAGE="No OGG/ORA errors reported for GoldenGate extract %keyValue%."/>
+		<Condition COLUMN_NAME="TRAIL_FS_USED_PCT" CRITICAL="90" WARNING="80" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate trail filesystem for extract %keyValue% is %value% percent full." CLEAR_MESSAGE="GoldenGate trail filesystem for extract %keyValue% usage is within bounds."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
