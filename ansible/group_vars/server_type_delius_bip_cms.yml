@@ -47,7 +47,7 @@ server_type_roles_list:
   - amazon-cloudwatch-agent
   - amazon-cloudwatch-agent-collectd
   - collectd-textfile-monitoring
-# - collectd-service-metrics
+  - collectd-service-metrics
 
 roles_list: "{{ (ami_roles_list | default([]) | difference(server_type_roles_list | default([]))) + (server_type_roles_list | default([])) }}"
 
@@ -116,10 +116,10 @@ sap_bip_sia_name_cms: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-'
 sap_bip_sia_name_app: "{{ ec2.tags.Name | regex_replace('delius-') | replace('-','') }}" # max length 13
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 
-# collectd_monitored_services_servertype:
-#  - metric_name: service_status_os
-#    metric_dimension: chronyd
-#    shell_cmd: "systemctl is-active chronyd"
-#  - metric_name: service_status_app
-#    metric_dimension: service_sapbobj
-#    shell_cmd: "pgrep java -u bobj"
+collectd_monitored_services_servertype:
+  - metric_name: service_status_os
+    metric_dimension: chronyd
+    shell_cmd: "systemctl is-active chronyd"
+  - metric_name: service_status_app
+    metric_dimension: service_sapbobj
+    shell_cmd: "pgrep java -u bobj"
