@@ -1,0 +1,31 @@
+<TargetMetadataExt EXT_NAME="ME$BACKUP_SCRIPT_OUTPUT_AGE" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$BACKUP_SCRIPT_OUTPUT_AGE" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$BACKUP_SCRIPT_OUTPUT_AGE">Backup Script Output Age</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$BACKUP_SCRIPT_OUTPUT_AGE">Get age of most recent backup script output file.  Used to confirm backup has run recently (not necessarily successfully).  </Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="TARGET_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_SCRIPT_OUTPUT_AGETARGET_NAME">Target Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="BACKUP_SCRIPT_OUTPUT_FILE_AGE" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$BACKUP_SCRIPT_OUTPUT_AGEBACKUP_SCRIPT_OUTPUT_FILE_AGE">Backup Script Output File Age</Label>
+<Unit NLSID="EM_SYS_STANDARD_TIME_DAYS">DAYS</Unit>
+<UnitCategory>TIME</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Fault">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/get_backup_script_output_age.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

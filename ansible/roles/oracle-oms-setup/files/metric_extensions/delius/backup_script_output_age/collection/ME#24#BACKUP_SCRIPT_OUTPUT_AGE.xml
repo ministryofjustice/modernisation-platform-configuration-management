@@ -1,0 +1,9 @@
+<TargetCollectionExt EXT_NAME="ME$BACKUP_SCRIPT_OUTPUT_AGE" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$BACKUP_SCRIPT_OUTPUT_AGE" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="8" TIME_UNIT="Hr"/>
+	</Schedule>
+	<MetricColl NAME="ME$BACKUP_SCRIPT_OUTPUT_AGE">
+		<Condition COLUMN_NAME="BACKUP_SCRIPT_OUTPUT_FILE_AGE" CRITICAL="1" OPERATOR="GT" OCCURRENCES="1" MESSAGE="The latest backup script output file for %keyValue% is %value% days old." CLEAR_MESSAGE="The latest backup script output file for %keyValue% is %value% days old."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>
