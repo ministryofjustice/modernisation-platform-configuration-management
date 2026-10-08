@@ -1,0 +1,13 @@
+<TargetCollectionExt EXT_NAME="ME$GOLDENGATE_REPLICAT_HEALTH" EXT_VERSION="1" TARGET_TYPE="host"><CollectionItem NAME="ME$GOLDENGATE_REPLICAT_HEALTH" UPLOAD="YES">
+	<Schedule>
+		<IntervalSchedule INTERVAL="5" TIME_UNIT="Min"/>
+	</Schedule>
+	<MetricColl NAME="ME$GOLDENGATE_REPLICAT_HEALTH">
+		<Condition COLUMN_NAME="STATUS" CRITICAL="RUNNING" OPERATOR="NE" OCCURRENCES="1" MESSAGE="GoldenGate replicat %keyValue% is not running (status %value%)." CLEAR_MESSAGE="GoldenGate replicat %keyValue% is running."/>
+		<Condition COLUMN_NAME="LAG_SECONDS" CRITICAL="900" WARNING="300" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate replicat %keyValue% is lagging by %value% seconds." CLEAR_MESSAGE="GoldenGate replicat %keyValue% lag is within bounds."/>
+		<Condition COLUMN_NAME="CHECKPOINT_AGE_MINUTES" CRITICAL="30" WARNING="10" OPERATOR="GT" OCCURRENCES="1" MESSAGE="GoldenGate replicat %keyValue% checkpoint has not advanced for %value% minutes." CLEAR_MESSAGE="GoldenGate replicat %keyValue% checkpoint is advancing."/>
+		<Condition COLUMN_NAME="APPLY_ERROR_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% unresolved apply errors for GoldenGate replicat %keyValue%." CLEAR_MESSAGE="No unresolved apply errors for GoldenGate replicat %keyValue%."/>
+		<Condition COLUMN_NAME="ERROR_COUNT" CRITICAL="0" OPERATOR="GT" OCCURRENCES="1" MESSAGE="%value% OGG/ORA errors reported for GoldenGate replicat %keyValue%." CLEAR_MESSAGE="No OGG/ORA errors reported for GoldenGate replicat %keyValue%."/>
+	</MetricColl>
+</CollectionItem>
+</TargetCollectionExt>

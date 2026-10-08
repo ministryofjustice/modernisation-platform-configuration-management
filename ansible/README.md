@@ -128,9 +128,10 @@ Or to drop into an interactive shell just
 **Examples to run against RHEL6 instances**
 
 This uses SSH to connect to hosts. There must be at least one RHEL7+ host in the
-account that can be used as a jump server. Ensure the `server-type` tag value is added
-to the `ec2_connection_type` in the dynamic inventory files. Add the secret name
-and jump server instance id to the relevant environment `group_vars`, e.g.
+account that can be used as a jump server. Either add a `connection-type` tag to
+the instance with value `ssh` or update the dynamic inventory files.
+
+Add the secret name and jump server instance id to the relevant environment `group_vars`, e.g.
 
 ```
 ssh_private_key_secret_name: "/ec2/.ssh/ec2-user"

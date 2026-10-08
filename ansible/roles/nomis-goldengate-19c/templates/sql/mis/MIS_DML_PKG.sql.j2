@@ -1,0 +1,102 @@
+CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_DML_PKG AUTHID DEFINER AS
+/*
+ *  NOMIS MIS Goldengate code.
+ *  
+ *  Description:    This script creates procedures to support
+ *                      Oracle Goldengate DML Handlers for Prison-NOMIS release 2.0.
+ *                  Based on MIS_STRM_PKG1
+ *  
+ *  Version:     2.0
+ *
+ *  Author:    R. Taylor - EDS UK Ltd.
+ *
+ *  Date:    Monday, 21 May 2007.
+ * 
+ *  Change History:  
+ *      Version:  Date:      Author:  Description:  
+ *
+ *      1.1.0     21/05/07  R. Taylor  Initial version for 1.1
+ *      ...
+ *      1.0e.59   01/05/13  R. Taylor  Added purge_records procedure (defect 19143).
+ *      2.0.0     12/08/26  Migration  Migrated for GoldenGate 19c. Added new procedures to support GoldenGate 19c.
+*/
+
+    -- package level variable declarations
+    g_version      VARCHAR2(20) := '2.0';
+
+    -- debug flag: positive value to log debug messages
+    g_debug NUMBER := 1;
+
+    -- LCR tags: values used to flag messages for apply process
+    g_tag  VARCHAR2(20) := '01';
+    g_tag2 VARCHAR2(20) := '02';
+
+
+    -- Packaged function convert_anydata_to_varchar2
+    -- will convert a SYS.ANYDATA record to a VARCHAR2 string
+    FUNCTION convert_anydata_to_varchar2 (
+        p_any_val   IN     sys.anydata)
+    RETURN varchar2;
+
+    -- packaged function convert_anydata_to_date
+    -- will convert a SYS.ANYDATA record to a date value
+    FUNCTION convert_anydata_to_date (
+        p_any_val in sys.anydata)
+    RETURN date;
+
+    -- Packaged function get_xform_func_name returns the capture
+    -- transformation name for the supplied target table
+    FUNCTION get_xform_func_name(
+        p_tgt_owner     IN     VARCHAR2,
+        p_tab_seq     IN     NUMBER)
+    RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged function get_dml_proc_name returns the dml handler name
+    -- for the supplied target table (includes hash of key column names)
+    FUNCTION get_dml_proc_name(
+        p_tgt_owner     IN     VARCHAR2,
+        p_tab_seq     IN     NUMBER,
+        p_key_columns     IN     VARCHAR2)
+    RETURN varchar2 RESULT_CACHE;
+
+    -- Packaged procedure convert_lcr_to_insert
+    -- will convert row LCR record to INSERT
+    PROCEDURE convert_lcr_to_insert (
+        p_row_lcr   IN OUT sys.lcr$_row_record);
+
+    -- Packaged procedure apply_handler_user
+    -- will convert queued row LCRs for Target tables prior to direct apply
+    -- It is assumed that the capture process will only capture row LCRs for OMS_OWNER.X tables.
+    -- The function will convert updates that affect target key values
+    -- to paired delete and insert records.
+    -- Needs to be invoked from a wrapper function to pass in specific user name for
+    -- staging table owner, staging table name, key and deletion column names and processing flags.
+    PROCEDURE apply_handler_user (
+        p_in_anydata    IN sys.anydata,
+        p_batch_number  IN varchar2,
+        p_tgt_owner     IN varchar2,
+        p_tgt_table     IN varchar2,
+        p_key_columns   IN varchar2,
+        p_keep_dups     IN char,
+        p_proc_flags    IN varchar2,
+        p_del_columns   IN varchar2);
+
+
+    -- Packaged procedure set_apply_handlers
+    -- will set DML apply handlers for source tables in p_tgt_owner.STRM_TAB_CONTROL
+    PROCEDURE set_apply_handlers (
+        p_tgt_owner   IN     VARCHAR2);
+
+    -- Packaged procedure clear_apply_handlers
+    -- will remove DML handlers for apply processes related to p_tgt_owner
+    PROCEDURE clear_apply_handlers (
+        p_tgt_owner   IN     VARCHAR2);
+
+    -- Packaged function get_version
+    -- will return a VARCHAR2 string containing a package version number
+    FUNCTION get_version RETURN varchar2;
+
+END MIS_DML_PKG;
+/
+
+show errors

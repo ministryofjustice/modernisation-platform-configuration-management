@@ -1,0 +1,76 @@
+<TargetMetadataExt EXT_NAME="ME$GOLDENGATE_REPLICAT_HEALTH" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$GOLDENGATE_REPLICAT_HEALTH" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$GOLDENGATE_REPLICAT_HEALTH">GoldenGate Replicat Health</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$GOLDENGATE_REPLICAT_HEALTH">Monitor GoldenGate Replicat status, lag, checkpoints and apply errors</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="DATABASE" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHDATABASE">Database</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="REPLICAT_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHREPLICAT_NAME">Replicat Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="STATUS" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHSTATUS">Replicat Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="LAG_SECONDS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHLAG_SECONDS">Replicat Lag</Label>
+<Unit NLSID="mext_unit_nlsid_SECOND">SECOND</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="CHECKPOINT_AGE_MINUTES" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHCHECKPOINT_AGE_MINUTES">Checkpoint Age</Label>
+<Unit NLSID="mext_unit_nlsid_MINUTE">MINUTE</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHERROR_COUNT">Error Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="APPLY_ERROR_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHAPPLY_ERROR_COUNT">Apply Error Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_NUMBER" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHERROR_NUMBER">Apply Error Number</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_REPLICAT_HEALTHERROR_MESSAGE">Apply Error Message</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/goldengate_replicat_health.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

@@ -20,10 +20,17 @@ compose:
   application: tags['application']
   aws_environment: tags['environment-name'].split('-')|last
   ec2_name: tags['Name']
-  ec2_connection_type: >
-    'ssh' if tags['server-type'] in ['nomis-web'] else 'ssm'
+  ansible_host: >-
+    private_ip_address
+    if (tags.get('connection-type') == 'ssh' or ('connection-type' not in tags and tags.get('server-type') in ['nomis-web']))
+    else instance_id
 
 keyed_groups:
+  - key: >-
+      tags.get('connection-type')
+      if tags.get('connection-type')
+      else ('ssh' if tags.get('server-type') in ['nomis-web'] else 'ssm')
+    prefix: connection_type
   - key: tags['environment-name']
     prefix: environment-name
   - key: tags['environment-name'] + '-' + tags[application + '-environment']
