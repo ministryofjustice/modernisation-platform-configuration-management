@@ -21,97 +21,6 @@
         oracle_goldengate_sql_owner: "{{ oracle_goldengate_group.source.schema_owner }}"
         oracle_goldengate_group_name: "source"
 
-    - name: Get Source password secret metadata from AWS Secrets Manager
-      ansible.builtin.shell: |
-        aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
-          --query SecretString \
-          --output text
-      register: oracle_goldengate_password_secret_raw
-      changed_when: false
-      no_log: true
-
-    - name: Set password secret fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
-      no_log: true
-
-    - name: Check sys schema password exists in secret
-      ansible.builtin.assert:
-        that:
-          - "'sys' in oracle_goldengate_password_secret.keys()"
-        fail_msg: >-
-          Password key 'sys' was not found in AWS secret
-          '/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords'.
-          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
-        quiet: true
-
-    - name: Set Source sys password fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_source_sys_password: "{{ oracle_goldengate_password_secret['sys'] }}"
-      no_log: true
-
-    - name: Get MIS password secret metadata from AWS Secrets Manager
-      ansible.builtin.shell: |
-        aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords" \
-          --query SecretString \
-          --output text
-      register: oracle_goldengate_password_secret_raw
-      changed_when: false
-      no_log: true
-
-    - name: Set password secret fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
-      no_log: true
-
-    - name: Check MIS schema password exists in secret
-      ansible.builtin.assert:
-        that:
-          - oracle_goldengate_group.mis.schema_owner | lower in oracle_goldengate_password_secret
-        fail_msg: >-
-          Password key '{{ oracle_goldengate_group.mis.schema_owner | lower }}' was not found in AWS secret
-          '/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords'.
-          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
-        quiet: true
-
-    - name: Set MIS schema password fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_mis_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_group.mis.schema_owner | lower] }}"
-      no_log: true
-
-    - name: Get password secret metadata from AWS Secrets Manager for AUDITDATA link
-      ansible.builtin.shell: |
-        aws secretsmanager get-secret-value \
-          --secret-id "/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords" \
-          --query SecretString \
-          --output text
-      register: oracle_goldengate_password_secret_raw
-      changed_when: false
-      no_log: true
-
-    - name: Set password secret fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_password_secret: "{{ oracle_goldengate_password_secret_raw.stdout | from_json }}"
-      no_log: true
-
-    # Can't remember why this was added but the password for auditdata.schema_owner doesn't exist in Secrets Manager so if this is needed in future we might need to use ggadmin users, or add the password for auditdata.schema_owner.
-    - name: Check schema password exists in secret for AUDITDATA link
-      ansible.builtin.assert:
-        that:
-          - oracle_goldengate_dbuser | lower in oracle_goldengate_password_secret
-        fail_msg: >-
-          Password key '{{ oracle_goldengate_dbuser | lower }}' was not found in AWS secret
-          '/oracle/database/{{ oracle_goldengate_group.auditdata.tns_alias }}/passwords'.
-          Available keys: {{ oracle_goldengate_password_secret.keys() | list | join(', ') }}
-        quiet: true
-
-    - name: Set AUDITDATA schema password fact
-      ansible.builtin.set_fact:
-        oracle_goldengate_auditdata_schema_password: "{{ oracle_goldengate_password_secret[oracle_goldengate_dbuser | lower] }}"
-      no_log: true
-
     - name: Ensure Source SQL directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/source"
@@ -137,7 +46,10 @@
         export PATH=${ORACLE_HOME}/bin:$PATH
 
         # Retrieve SYS password from AWS Secrets Manager
-        SYS_PASSWORD="{{ oracle_goldengate_source_sys_password }}"
+        SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+          --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+          --query 'SecretString' \
+          --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
 
         if [ -z "$SYS_PASSWORD" ]; then
           echo "ERROR: Failed to retrieve SYS password from AWS Secrets Manager for $ORACLE_SID"
@@ -145,7 +57,6 @@
         fi
 
         cd {{ oracle_goldengate_sql_dir }}/source
-        sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_source_db_links.sql
         sqlplus -s sys/"${SYS_PASSWORD}"@${ORACLE_SID} as sysdba @install_source_packages.sql
       args:
         executable: /bin/bash
@@ -162,3 +73,31 @@
       ansible.builtin.fail:
         msg: "Errors found in output of Source package install: {{ source_config_output.stdout }}"
       when: "'ORA-' in source_config_output.stdout or 'compilation errors' in source_config_output.stdout"
+
+    - name: Set execute permission for install_source_db_links.sh script
+      ansible.builtin.file:
+        path: "{{ oracle_goldengate_scripts_dir }}/source/install_source_db_links.sh"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0750"
+
+    - name: Run source db links install script install_source_db_links.sh
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        cd {{ oracle_goldengate_scripts_dir }}/source
+        ./install_source_db_links.sh
+      args:
+        executable: /bin/bash
+      register: source_db_links_output
+      failed_when: source_db_links_output.rc != 0
+
+    - name: Show output of source db links install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['source db links install output:'] + (source_db_links_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: source_db_links_output.rc != 0
+
+    - name: Fail if ORA errors found in output of source db links install
+      ansible.builtin.fail:
+        msg: "Errors found in output of source db links install: {{ source_db_links_output.stdout }}"
+      when: source_db_links_output.rc != 0

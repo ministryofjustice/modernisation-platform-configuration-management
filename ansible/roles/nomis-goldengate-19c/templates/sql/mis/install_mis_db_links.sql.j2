@@ -9,7 +9,15 @@ declare
     v_count integer;
     v_source_db varchar2(255) := '{{ oracle_goldengate_group.source.tns_alias }}';
     v_sql varchar2(4000);
+    v_env_var varchar2(255) := 'SOURCE_DB_PASSWORD';
+    v_source_db_pwd varchar2(255);
 begin
+    -- get the source database password from the environment variable 
+    -- which should have been set by the calling sh script
+    dbms_system.get_env(v_env_var, v_source_db_pwd);
+    if v_source_db_pwd is null then
+      raise_application_error(-20001, 'Source database password not found in environment variable '||v_env_var);
+    end if;
 
     dbms_output.put_line('Source database link name: '||v_source_db);
 
@@ -20,7 +28,7 @@ begin
         v_sql := 'DROP PUBLIC DATABASE LINK '||v_source_db;
         execute immediate v_sql;
     end if;
-    v_sql := 'CREATE PUBLIC DATABASE LINK '||v_source_db||' CONNECT TO {{ oracle_goldengate_group.source.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_source_schema_password }} USING ''{{ oracle_goldengate_group.source.tns_alias }}''';
+    v_sql := 'CREATE PUBLIC DATABASE LINK '||v_source_db||' CONNECT TO {{ oracle_goldengate_group.source.schema_owner }} IDENTIFIED BY "'||v_source_db_pwd||'" USING ''{{ oracle_goldengate_group.source.tns_alias }}''';
     execute immediate v_sql;
 end;
 /

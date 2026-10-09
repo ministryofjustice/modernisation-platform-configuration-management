@@ -6,12 +6,19 @@ PROMPT Installing database link to '{{ oracle_goldengate_group.mis.tns_alias }}'
 
 declare
     v_count integer;
+    v_env_var varchar2(255) := 'MIS_DB_PASSWORD';
+    v_mis_db_pwd varchar2(255);
 begin
+    dbms_system.get_env(v_env_var, v_mis_db_pwd);
+    if v_mis_db_pwd is null then
+      raise_application_error(-20001, 'MIS database password not found in environment variable '||v_env_var);
+    end if;
+
     select count(*) into v_count from dba_db_links where db_link like 'CNOM_MIS_LINK%' and owner = 'PUBLIC';
     if v_count = 1 then
         execute immediate 'DROP PUBLIC DATABASE LINK CNOM_MIS_LINK';
     end if;
-    execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_MIS_LINK CONNECT TO {{ oracle_goldengate_group.mis.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_mis_schema_password }} USING ''{{ oracle_goldengate_group.mis.tns_alias }}''';
+    execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_MIS_LINK CONNECT TO {{ oracle_goldengate_group.mis.schema_owner }} IDENTIFIED BY "' || v_mis_db_pwd || '" USING ''{{ oracle_goldengate_group.mis.tns_alias }}''';
 end;
 /
 
@@ -25,7 +32,7 @@ REM     select count(*) into v_count from dba_db_links where db_link like 'CNOM_
 REM     if v_count = 1 then
 REM         execute immediate 'DROP PUBLIC DATABASE LINK CNOM_AUD_LINK';
 REM     end if;
-REM     execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_AUD_LINK CONNECT TO {{ oracle_goldengate_group.auditdata.schema_owner }} IDENTIFIED BY {{ oracle_goldengate_auditdata_schema_password }} USING ''{{ oracle_goldengate_group.auditdata.tns_alias }}''';
+REM     execute immediate 'CREATE PUBLIC DATABASE LINK CNOM_AUD_LINK CONNECT TO {{ oracle_goldengate_group.auditdata.schema_owner }} IDENTIFIED BY "{{ oracle_goldengate_auditdata_schema_password }}" USING ''{{ oracle_goldengate_group.auditdata.tns_alias }}''';
 REM end;
 REM /
 
