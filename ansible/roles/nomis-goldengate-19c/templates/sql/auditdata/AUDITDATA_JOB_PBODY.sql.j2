@@ -522,7 +522,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
         AUDITDATA_GEN_PKG.log_audit_error ('populate_offender_refs', p_src_time => l_source_time,
                 p_src_object => l_source_object, p_tgt_object => 'AUDIT_OFFENDER_REF',
                 p_command_type => null, p_row_scn => null, p_commit_scn => null,
-                p_error_code => SQLCODE, p_message => SQLERRM);
+                p_error_code => SQLCODE, p_message => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END;
 
@@ -641,7 +641,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
         AUDITDATA_GEN_PKG.log_audit_error ('export_binary_data', p_src_time => v_lcr_source_time,
                 p_src_object => v_lcr_object_name, p_tgt_object => null,
                 p_command_type => null, p_row_scn => null, p_commit_scn => p_lcr_commit_scn,
-                p_error_code => SQLCODE, p_message => SQLERRM);
+                p_error_code => SQLCODE, p_message => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
   END;
 
 
@@ -693,7 +693,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
         p_row_scn => NULL, 
         p_commit_scn => NULL,
         p_error_code => SQLCODE, 
-        p_message => SQLERRM);
+        p_message => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
       RAISE;
   END gather_stats_auditdata_tables;
 
@@ -739,7 +739,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
         p_row_scn => NULL, 
         p_commit_scn => NULL,
         p_error_code => SQLCODE, 
-        p_message => SQLERRM);
+        p_message => SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
       RAISE;
   END log_purge;
 

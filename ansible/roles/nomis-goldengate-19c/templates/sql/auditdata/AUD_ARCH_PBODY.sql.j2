@@ -125,7 +125,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'alter_ts_ro_and_backup',
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
 	DBMS_OUTPUT.PUT_LINE('Processing exception');
 	IF v_output_file_open THEN
             UTL_FILE.fclose (v_output_file);
@@ -285,7 +285,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   EXCEPTION
     WHEN OTHERS THEN
       log_archive_error(p_location=>'check_job_status', p_error_code=>SQLCODE,
-          p_message=>'Error checking job status for handle '||h1||': '||SQLERRM);
+          p_message=>'Error checking job status for handle '||h1||': '||SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
 
   END CHECK_JOB_STATUS;
 
@@ -379,7 +379,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   EXCEPTION
     WHEN OTHERS THEN
       log_archive_error(p_location=>'check_log_file_count', p_error_code=>SQLCODE,
-          p_message=>'Error checking log file '||P_LOG_FILE||': '||SQLERRM);
+          p_message=>'Error checking log file '||P_LOG_FILE||': '||SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
       P_FILE_EXISTS := V_EXP_FILE_EXISTS;
       P_COUNT := T_COUNT;
 
@@ -588,7 +588,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
         RAISE;
     WHEN OTHERS THEN
         log_archive_error(p_location=>'export_procedure', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         UTL_FILE.FCLOSE_ALL;
         RAISE;
 
@@ -743,7 +743,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END TRUNCATE_PARTITION ;
 
@@ -866,7 +866,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END DROP_PARTITION ;
 
@@ -939,7 +939,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
 
     WHEN OTHERS THEN
         log_archive_error(p_location=>'extend_control', p_partition_date=>partition_dte,
-      			  p_error_code=>SQLCODE, p_message=>SQLERRM);
+      			  p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END EXTEND_CONTROL;
 
@@ -1038,7 +1038,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
     WHEN OTHERS THEN
 v_area := v_area||', 17 OTHERS';
         log_archive_error(p_location=>'export_control', p_partition_date=>partition_dte_min,
-      			  p_error_code=>SQLCODE, p_message=>v_area||', '||SQLERRM);
+      			  p_error_code=>SQLCODE, p_message=>v_area||', '||SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END EXPORT_CONTROL;
 
@@ -1559,7 +1559,7 @@ v_area := v_area||', 17 OTHERS';
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'import_procedure', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>'Error checking row counts: '||SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>'Error checking row counts: '||SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         V_CHECK_ERRORS := V_CHECK_ERRORS+1;
   END;
 
@@ -1591,12 +1591,12 @@ v_area := v_area||', 17 OTHERS';
   EXCEPTION
     WHEN success_with_info THEN
         log_archive_error(p_location=>'import_procedure', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         check_job_status(h1);
         RAISE;
     WHEN OTHERS THEN
         log_archive_error(p_location=>'import_procedure', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
 
   END IMPORT_PROCEDURE ;
@@ -1676,7 +1676,7 @@ v_area := v_area||', 17 OTHERS';
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'prune_table', p_partition_date=>p_prune_date,
-                          p_tgt_object=>p_table, p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_tgt_object=>p_table, p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END PRUNE_TABLE ;
 
@@ -1703,7 +1703,7 @@ v_area := v_area||', 17 OTHERS';
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'purge_records', p_partition_date=>v_prune_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END PURGE_RECORDS ;
 
@@ -1741,7 +1741,7 @@ v_area := v_area||', 17 OTHERS';
   EXCEPTION
     WHEN OTHERS THEN
         log_archive_error(p_location=>'purge_partitions', p_partition_date=>v_drop_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_error_code=>SQLCODE, p_message=>SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         RAISE;
   END PURGE_PARTITIONS ;
 

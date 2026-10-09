@@ -1029,7 +1029,7 @@ BEGIN
 */
   EXCEPTION
     WHEN OTHERS THEN
-  audit_log_error(SQLCODE,     l_line_number ||' - '||SQLERRM, null, null, null, null, null, null, 'apply_dml_deconf');
+  audit_log_error(SQLCODE,     l_line_number ||' - '||SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, null, null, null, null, null, null, 'apply_dml_deconf');
         RAISE;
   END;
   
@@ -1192,24 +1192,28 @@ null;
       null, null, null, null, null, null, 'maintain_module_config');
     RAISE AUD_STREAMS_EXCEPTION;
   WHEN OTHERS THEN
-    audit_log_error(SQLCODE, SQLERRM, null, null, null, null, null, null, 'maintain_module_config');
+    audit_log_error(SQLCODE, SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, null, null, null, null, null, null, 'maintain_module_config');
     RAISE;
   END;
 
   -- Packaged function get_metadata_over_dblink
-  -- will return a VARCHAR2 string containing the DDL metadata for the specified object
+  -- will return a local temporary CLOB containing the DDL metadata for the specified object
   -- from the source database over a database link to the source database.
   -- This avoids the "ORA-06553: PLS-564" error with 11g when trying to run DBMS_METADATA.get_ddl@<db_link>.
   FUNCTION get_metadata_over_dblink(pi_object_type VARCHAR2,
                                     pi_object_owner VARCHAR2,
                                     pi_object_name VARCHAR2)
-  RETURN varchar2 IS
-    v_doc    varchar2(4000);
+  RETURN CLOB IS
+    v_doc    CLOB;
+    v_piece  VARCHAR2(32767);
     v_schema varchar2(30);
     h        number;
     th       number;
     partial  number;
   BEGIN
+    audit_log_error(0, 'Checking '||pi_object_type||' '||pi_object_owner||'.'||pi_object_name,
+                    null, null, null, null, null, null, 'get_metadata_over_dblink');
+
     -- check it exists in the remote database before trying to get the metadata
     SELECT DISTINCT OWNER
       INTO v_schema
@@ -1218,6 +1222,8 @@ null;
       AND owner = UPPER(pi_object_owner)
       AND object_type = UPPER(pi_object_type);
 
+    -- Only scalar pieces cross the link; the CLOB is local and lives through the SQL call.
+    DBMS_LOB.CREATETEMPORARY(v_doc, true, DBMS_LOB.CALL);
     h := DBMS_METADATA.OPEN@{{ oracle_goldengate_group.source.tns_alias }}(UPPER(pi_object_type));
     DBMS_METADATA.SET_FILTER@{{ oracle_goldengate_group.source.tns_alias }}(h, 'SCHEMA', v_schema);
     DBMS_METADATA.SET_FILTER@{{ oracle_goldengate_group.source.tns_alias }}(h, 'NAME', UPPER(pi_object_name));
@@ -1225,22 +1231,51 @@ null;
     th := DBMS_METADATA.ADD_TRANSFORM@{{ oracle_goldengate_group.source.tns_alias }}(h, 'DDL');
     DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SQLTERMINATOR', true);
     DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'PRETTY', true);
-    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SIZE_BYTE_KEYWORD', false);
     DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SEGMENT_ATTRIBUTES', false);
     DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'STORAGE', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'REF_CONSTRAINTS', false);
     DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'TABLESPACE', false);
-    DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'PARTITIONING', false);
+    IF pi_object_type = 'TABLE' THEN
+      DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'SIZE_BYTE_KEYWORD', false);
+      DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'REF_CONSTRAINTS', false);
+      DBMS_METADATA.SET_TRANSFORM_PARAM@{{ oracle_goldengate_group.source.tns_alias }}(th, 'PARTITIONING', false);
+    END IF;
     LOOP
-      BEGIN
-        v_doc := v_doc ||
-              to_char(DBMS_METADATA.fetch_ddl_text@{{ oracle_goldengate_group.source.tns_alias }}(h, partial));
-        EXIT WHEN partial = 0;
-      END;
+      v_piece := DBMS_METADATA.fetch_ddl_text@{{ oracle_goldengate_group.source.tns_alias }}(h, partial);
+      IF v_piece IS NOT NULL THEN
+        -- CLOB write amounts use UCS2 units, including surrogate pairs.
+        DBMS_LOB.WRITEAPPEND(v_doc, LENGTH2(v_piece), v_piece);
+      END IF;
+      EXIT WHEN partial = 0;
     END LOOP;
     DBMS_METADATA.CLOSE@{{ oracle_goldengate_group.source.tns_alias }}(h);
+    h := null;
 
     RETURN v_doc;
+
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      audit_log_error(SQLCODE, SQLERRM, null, null, null, null, null, null, 'get_metadata_over_dblink');
+    WHEN OTHERS THEN
+      audit_log_error(SQLCODE, SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, null, null, null, null, null, null, 'get_metadata_over_dblink');
+      IF h IS NOT NULL THEN
+        BEGIN
+          DBMS_METADATA.CLOSE@{{ oracle_goldengate_group.source.tns_alias }}(h);
+        EXCEPTION
+          WHEN OTHERS THEN
+            audit_log_error(SQLCODE, 'Error closing metadata handle: '||SQLERRM,
+                            null, null, null, null, null, null, 'get_metadata_over_dblink');
+        END;
+      END IF;
+      BEGIN
+        IF DBMS_LOB.ISTEMPORARY(v_doc) = 1 THEN
+          DBMS_LOB.FREETEMPORARY(v_doc);
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          audit_log_error(SQLCODE, 'Error freeing metadata CLOB: '||SQLERRM,
+                          null, null, null, null, null, null, 'get_metadata_over_dblink');
+      END;
+      RAISE;
 
   END get_metadata_over_dblink;
 
