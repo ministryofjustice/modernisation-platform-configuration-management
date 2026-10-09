@@ -20,7 +20,7 @@
     group: root
   when: rclone_config_dir is defined
 
-- name: Configure rclone config without overwriting any rclone generated values
+- name: Configure rclone sharepoint entries
   community.general.ini_file:
     path: "{{ rclone_config_dir }}/rclone.conf"
     section: "{{ item.section }}"
@@ -39,7 +39,7 @@
     {% endfor %}
     ]
 
-- name: Configure rclone config secrets without overwriting any rclone generated values
+- name: Configure rclone sharepoint secrets
   community.general.ini_file:
     path: "{{ rclone_config_dir }}/rclone.conf"
     section: "{{ item.section }}"
@@ -53,3 +53,18 @@
       { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["client_secret"] }}' },{% if not loop.last %},{% endif %}
     {% endfor %}
     ]
+
+- name: Configure rclone config s3
+  community.general.ini_file:
+    path: "{{ rclone_config_dir }}/rclone.conf"
+    section: "s3"
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    mode: '0600'
+  loop:
+    - { key: 'type', value: 's3' }
+    - { key: 'provider', value: 'AWS' }
+    - { key: 'env_auth', value: 'true' }
+    - { key: 'no_check_bucket', value: 'true' }
+    - { key: 'region', value: 'eu-west-2' }
+    - { key: 'acl', value: 'bucket-owner-full-control' }

@@ -2,8 +2,8 @@
 - name: create monitoring directory
   ansible.builtin.file:
     path: "{{ item }}"
-    owner: root
-    group: root
+    owner: "{{ collectd_textfile_monitoring_dir_owner }}"
+    group: "{{ collectd_textfile_monitoring_dir_group }}"
     state: directory
   loop:
     - /opt/textfile_monitoring

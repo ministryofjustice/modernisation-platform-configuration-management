@@ -12,29 +12,34 @@ Example config
 
 ```
 rclone_sync_config:
-  shared_lock: "/samba.delius-prod.internal/secure/NPS/nart/.sharepoint-sync.lock"
+  shared_lock: "/my-network-mount/.rclone-sync.lock"
   rclone_args:
     - "--min-age=2m"
     - "--stats=0"
     - "--fast-list"
   dirs:
-    wmt:
-      frequency_seconds: 600
+    example:
+      frequency_interval_seconds: 3600    # run every hour
+      frequency_offset_seconds: 900       # run 15 minutes past the hour
       maintenance_window: "1.0400-1.0430" # e.g. day.HHMM where 1=Monday in UTC"
       rclone_cmd:
         - "copy"
-        - "/samba.delius-prod.internal/secure/NPS/National/wmt"
-        - "wmt:NDelius MIS Reports/Caseload Reports"
+        - "/my/sourcedir"
+        - "rcloneconfig:sharepoint/path"
       rclone_args:
+        - "--min-age=2m"
         - "--include=*.xlsx"
-        - "--dry-run"
+        - "--ignore-size"  # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+        - "--max-depth=1"
 ```
 
 Where
 - `shared lock`: set this if you are enabling on multiple machines and
    the source directory is on a file share. It is a directory on the
    file share that will be created/removed by the script to manage locking
-- `frequency_seconds`: if set, don't run more frequently than this value
+- `frequency_interval_seconds`: if set, don't run more frequently than this value
+- `frequency_offset_seconds`: if set, align the time the command runs to the nearest frequency interval + offset seconds
 - `maintenance_window`: if set, don't sync during this UTC period in format `start-end`, where both `start` and `end` are in `day.HHMM`, day=0-6 with 0 being Sunday
 - `rclone_cmd`: the rclone cmd and associated args
 - `rclone_args`: default rclone args to apply on every rclone command

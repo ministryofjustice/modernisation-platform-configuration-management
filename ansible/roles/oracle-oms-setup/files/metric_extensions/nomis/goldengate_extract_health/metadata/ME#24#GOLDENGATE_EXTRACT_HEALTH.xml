@@ -1,0 +1,85 @@
+<TargetMetadataExt EXT_NAME="ME$GOLDENGATE_EXTRACT_HEALTH" EXT_VERSION="1" TARGET_TYPE="host"><Metric NAME="ME$GOLDENGATE_EXTRACT_HEALTH" TYPE="TABLE">
+<Display>
+<Label NLSID="NLS_METRIC_hostME$GOLDENGATE_EXTRACT_HEALTH">GoldenGate Extract Health</Label>
+<Description NLSID="NLS_DESCRIPTION_hostME$GOLDENGATE_EXTRACT_HEALTH">Monitor GoldenGate Extract status, lag, checkpoints, errors, transactions and trail filesystem usage</Description>
+</Display>
+<TableDescriptor>
+<ColumnDescriptor NAME="DATABASE" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHDATABASE">Database</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="EXTRACT_NAME" TYPE="STRING" IS_KEY="TRUE">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHEXTRACT_NAME">Extract Name</Label>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="STATUS" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHSTATUS">Extract Status</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Response">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="LAG_SECONDS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHLAG_SECONDS">Extract Lag</Label>
+<Unit NLSID="mext_unit_nlsid_SECOND">SECOND</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="CHECKPOINT_AGE_SECONDS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHCHECKPOINT_AGE_SECONDS">Checkpoint Age</Label>
+<Unit NLSID="mext_unit_nlsid_SECOND">SECOND</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="OLDEST_TRANSACTION_SECONDS" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHOLDEST_TRANSACTION_SECONDS">Oldest Open Transaction</Label>
+<Unit NLSID="mext_unit_nlsid_SECOND">SECOND</Unit>
+<UnitCategory>RATE</UnitCategory>
+</Display>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_COUNT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHERROR_COUNT">Error Count</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_NUMBER" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHERROR_NUMBER">Capture Error Number</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="ERROR_MESSAGE" TYPE="STRING">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHERROR_MESSAGE">Capture Error Message</Label>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Error">
+</CategoryValue>
+</ColumnDescriptor>
+<ColumnDescriptor NAME="TRAIL_FS_USED_PCT" TYPE="NUMBER">
+<Display>
+<Label NLSID="NLS_COLUMN_hostME$GOLDENGATE_EXTRACT_HEALTHTRAIL_FS_USED_PCT">Trail Filesystem Used</Label>
+<Unit NLSID="mext_unit_nlsid_PERCENTAGE">PERCENTAGE</Unit>
+<UnitCategory>PERCENTAGE</UnitCategory>
+</Display>
+<CategoryValue CLASS="Default" CATEGORY_NAME="Capacity">
+</CategoryValue>
+</ColumnDescriptor>
+</TableDescriptor>
+<QueryDescriptor FETCHLET_ID="OSLineToken">
+<Property NAME="command" SCOPE="GLOBAL">/bin/bash</Property>
+<Property NAME="script" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%/goldengate_extract_health.sh</Property>
+<Property NAME="scriptLoc" SCOPE="GLOBAL" OPTIONAL="TRUE">%scriptsDir%</Property>
+<Property NAME="delimiter" SCOPE="GLOBAL" OPTIONAL="TRUE">|</Property>
+<Property NAME="ENVEM_TARGET_NAME" SCOPE="INSTANCE" OPTIONAL="TRUE">NAME</Property>
+<CredentialRef NAME="OSCreds"></CredentialRef>
+</QueryDescriptor>
+</Metric>
+</TargetMetadataExt>

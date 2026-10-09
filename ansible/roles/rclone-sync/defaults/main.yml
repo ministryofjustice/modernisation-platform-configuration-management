@@ -9,12 +9,13 @@ rclone_sync_config:
   #   - "--fast-list"
   dirs: {}
   #  example:
-  #    frequency_seconds: 600
+  #    frequency_interval_seconds: 3600    # run every hour
+  #    frequency_offset_seconds: 900       # run 15 minutes past the hour
   #    maintenance_window: "1.0400-1.0430" # e.g. day.HHMM where 1=Monday in UTC"
   #    rclone_cmd:
   #      - "copy"
   #      - "/my/sourcedir"
-  #      - "rclongconfig:sharepoint/path"
+  #      - "rcloneconfig:sharepoint/path"
   #    rclone_args:
   #      - "--min-age=2m"
   #      - "--include=*.xlsx"
