@@ -6,23 +6,6 @@
 # LogMiner server by increasing the number and size of read buffers. These parameters also affect the same read
 # buffers that are used during database media recovery, of which the performance may also improve.
 
-# When using Extract in integrated capture mode, an area of Oracle memory called the Streams pool must be
-# configured in the SGA of the database.
-# 1GB per integrated extract/replicat process + 25% headroom
-# MIS has one integrated extract and one integrated replicat process + 25% headroom = 2.5GB
-# AUDIT has two integrated extract and one integrated replicat processes + 25% headroom = 5GB
-- name: Set MIS specific streams_pool_size value
-  when:
-    - run_mis is defined and run_mis
-  set_fact:
-    streams_pool_size: 2500M
-
-- name: Set AUDIT specific streams_pool_size value
-  when:
-    - run_auditdata is defined and run_auditdata
-  set_fact:
-    streams_pool_size: 5G
-
 - name: Configure parameters in the database
   ansible.builtin.shell: |
     . ~/.bash_profile
@@ -64,14 +47,6 @@
 
     PROMPT New _log_read_buffer_size value:
     SELECT value FROM v$parameter WHERE name = '_log_read_buffer_size';
-
-    PROMPT Current streams_pool_size value:
-    SELECT value FROM v$parameter WHERE name = 'streams_pool_size';
-
-    ALTER SYSTEM SET streams_pool_size={{ streams_pool_size }} SCOPE=BOTH;
-
-    PROMPT New streams_pool_size value:
-    SELECT value FROM v$parameter WHERE name = 'streams_pool_size';
 
     EXIT
     EOSQL
