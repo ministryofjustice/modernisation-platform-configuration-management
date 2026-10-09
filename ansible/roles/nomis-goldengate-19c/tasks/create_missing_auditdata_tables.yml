@@ -1,4 +1,14 @@
 ---
+# Deploy scripts for rebuilding structurally drifted tables and refreshing DML handlers
+- name: Deploy AUDITDATA table sync script
+  ansible.builtin.template:
+    src: sync_auditdata_tables.sh.j2
+    dest: "{{ oracle_goldengate_scripts_dir }}/sync_auditdata_tables.sh"
+    owner: "{{ oracle_goldengate_owner }}"
+    group: "{{ oracle_goldengate_osgroup }}"
+    mode: "0750"
+  when: run_auditdata
+
 # Create missing AUDITDATA tables based on source schema objects
 - name: Create missing AUDITDATA tables if local database is the audit database
   when: run_auditdata
