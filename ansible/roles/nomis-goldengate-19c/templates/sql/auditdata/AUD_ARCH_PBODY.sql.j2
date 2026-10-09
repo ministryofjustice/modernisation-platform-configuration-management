@@ -683,10 +683,20 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   -- Ensure tablespace is read write
 
   a_ts := 'AUDITDATA_' || partition_in || '_TBS';
+  DECLARE
+    v_status varchar2(30);
   BEGIN
-    mstatement := 'alter tablespace '||a_ts||' read write';
-    EXECUTE IMMEDIATE mstatement ;
+    SELECT status INTO v_status
+    FROM dba_tablespaces
+    WHERE tablespace_name = a_ts;
+    IF v_status != 'ONLINE' THEN
+      mstatement := 'alter tablespace '||a_ts||' read write';
+      EXECUTE IMMEDIATE mstatement;
+    END IF;
   EXCEPTION
+    WHEN no_data_found THEN -- Tablespace not found
+        log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                          p_error_code=>SQLCODE, p_message=>SQLERRM);
     WHEN tablespace_not_read_only THEN null;
     WHEN tablespace_not_exists THEN
         log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
