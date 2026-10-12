@@ -422,6 +422,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   T_COUNT                   INTEGER;
   v_partition_date 	    date := NULL;
   V_EXP_FILE_EXISTS   	    BOOLEAN;
+  v_partition_check         NUMBER(1);
 
 
   procedure open_export_job
@@ -473,109 +474,183 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   Count_recs := 0 ;
   Count_exported := 0;
 
+  -- check if there are any tables with the specified partition
+  SELECT count(*)
+  INTO v_partition_check
+  FROM ALL_TABLES dt
+  WHERE dt.OWNER = g_data_owner
+  AND dt.TABLE_NAME IN ('AUDIT_TABLE','AUDIT_COLUMN','AUDIT_OFFENDER_REF','OS_LOG_EVENT','REMOTE_AUDIT_TRAIL')
+  AND EXISTS (
+    SELECT 1
+    FROM dba_tab_partitions dtp
+    WHERE dtp.table_owner = dt.owner
+    AND dtp.TABLE_NAME = dt.TABLE_NAME
+    AND dtp.partition_name like '%'||partition_in);
+  IF v_partition_check > 0 
+  THEN
+    -- Create a (user-named) Data Pump job to do a schema export.
+    begin
+      open_export_job;
+    exception
+          WHEN job_does_not_exist THEN
+          IF retry_job THEN
+              -- drop temporary table and retry
+              mstatement := 'drop table "'||K_JOB_TABLE||'"';
+              execute immediate mstatement;
+              open_export_job;
+          ELSE
+              RAISE;
+          END IF;
+          WHEN job_already_exists THEN
+          IF retry_job THEN
+              -- drop temporary table and retry
+              mstatement := 'drop table "'||K_JOB_TABLE||'"';
+              execute immediate mstatement;
+              open_export_job;
+          ELSE
+              RAISE;
+          END IF;
+    end;
 
-  --
-  --        Select count of records from each partition
-  --
-  P_COUNT := 0;
+    --
+    --        Select count of records from each partition
+    --
+    P_COUNT := 0;
 
-  mstatement := 'select count(*) from '||g_data_owner||'.audit_table        partition ( '||a_par||') ';
-  EXECUTE IMMEDIATE mstatement into Pnum_rows_AT ;
-  P_COUNT := P_COUNT + Pnum_rows_AT;
-  mstatement := 'select count(*) from '||g_data_owner||'.audit_column       partition ( '||a_par||') ';
-  EXECUTE IMMEDIATE mstatement into Pnum_rows_AC ;
-  P_COUNT := P_COUNT + Pnum_rows_AC;
-  mstatement := 'select count(*) from '||g_data_owner||'.AUDIT_OFFENDER_REF partition ( '||a_par||') ';
-  EXECUTE IMMEDIATE mstatement into Pnum_rows_AOR ;
-  P_COUNT := P_COUNT + Pnum_rows_AOR;
-  mstatement := 'select count(*) from '||g_data_owner||'.OS_LOG_EVENT       partition ( '||a_par||') ';
-  EXECUTE IMMEDIATE mstatement into Pnum_rows_OS ;
-  P_COUNT := P_COUNT + Pnum_rows_OS;
-  mstatement := 'select count(*) from '||g_data_owner||'.REMOTE_AUDIT_TRAIL partition ( '||a_par||') ';
-  EXECUTE IMMEDIATE mstatement into Pnum_rows_RA ;
-  P_COUNT := P_COUNT + Pnum_rows_RA;
-
-
-  -- Create a (user-named) Data Pump job to do a schema export.
-  begin
-    open_export_job;
-  exception
-        WHEN job_does_not_exist THEN
-        IF retry_job THEN
-            -- drop temporary table and retry
-            mstatement := 'drop table "'||K_JOB_TABLE||'"';
-            execute immediate mstatement;
-            open_export_job;
+    -- A metadata filter is used to specify the schema that will be exported.
+    DBMS_DATAPUMP.metadata_filter(handle => h1, name => 'SCHEMA_EXPR', value => 'IN('''||g_data_owner||''')');
+    -- Build the list of tables to export depending on whether they have the specified partition
+    DECLARE
+      v_tab_list VARCHAR2(1000);
+    BEGIN
+      SELECT 'IN ('''||LISTAGG(table_name,''',''') WITHIN GROUP (ORDER BY 1)||''')'
+      INTO v_tab_list
+      FROM ALL_TABLES dt
+    WHERE dt.OWNER = g_data_owner
+      AND dt.TABLE_NAME IN ('AUDIT_TABLE','AUDIT_COLUMN','AUDIT_OFFENDER_REF','OS_LOG_EVENT','REMOTE_AUDIT_TRAIL')
+      AND EXISTS (
+        SELECT 1
+        FROM dba_tab_partitions dtp
+        WHERE dtp.table_owner = dt.owner
+        AND dtp.TABLE_NAME = dt.TABLE_NAME 
+        AND dtp.partition_name like '%'||partition_in);
+      DBMS_DATAPUMP.metadata_filter(handle => h1, name => 'NAME_EXPR', value => v_tab_list);
+    END;
+    -- Check each table for the specified partition and count the records.
+    -- Add the partition filter to the export job if the partition exists.
+    BEGIN
+      mstatement := 'select count(*) from '||g_data_owner||'.AUDIT_TABLE        partition ( '||a_par||') ';
+      EXECUTE IMMEDIATE mstatement into Pnum_rows_AT ;
+      P_COUNT := P_COUNT + Pnum_rows_AT;
+      DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
+        value => Audit_partition, table_name => 'AUDIT_TABLE',        schema_name => g_data_owner );
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -2149 THEN
+          null; -- Partition not found
         ELSE
-            RAISE;
+          RAISE;
         END IF;
-        WHEN job_already_exists THEN
-        IF retry_job THEN
-            -- drop temporary table and retry
-            mstatement := 'drop table "'||K_JOB_TABLE||'"';
-            execute immediate mstatement;
-            open_export_job;
+    END;
+    BEGIN
+      mstatement := 'select count(*) from '||g_data_owner||'.AUDIT_COLUMN       partition ( '||a_par||') ';
+      EXECUTE IMMEDIATE mstatement into Pnum_rows_AC ;
+      P_COUNT := P_COUNT + Pnum_rows_AC;
+      DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
+        value => Audit_partition, table_name => 'AUDIT_COLUMN',       schema_name => g_data_owner );
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -2149 THEN
+          null; -- Partition not found
         ELSE
-            RAISE;
+          RAISE;
         END IF;
-  end;
+    END;
+    BEGIN
+      mstatement := 'select count(*) from '||g_data_owner||'.AUDIT_OFFENDER_REF partition ( '||a_par||') ';
+      EXECUTE IMMEDIATE mstatement into Pnum_rows_AOR ;
+      P_COUNT := P_COUNT + Pnum_rows_AOR;
+      DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
+        value => Audit_partition, table_name => 'AUDIT_OFFENDER_REF', schema_name => g_data_owner );
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -2149 THEN
+          null; -- Partition not found
+        ELSE
+          RAISE;
+        END IF;
+    END;
+    BEGIN
+      mstatement := 'select count(*) from '||g_data_owner||'.OS_LOG_EVENT       partition ( '||a_par||') ';
+      EXECUTE IMMEDIATE mstatement into Pnum_rows_OS ;
+      P_COUNT := P_COUNT + Pnum_rows_OS;
+      DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
+        value => Audit_partition, table_name => 'OS_LOG_EVENT', schema_name => g_data_owner );
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -2149 THEN
+          null; -- Partition not found
+        ELSE
+          RAISE;
+        END IF;
+    END;
+    BEGIN
+      mstatement := 'select count(*) from '||g_data_owner||'.REMOTE_AUDIT_TRAIL partition ( '||a_par||') ';
+      EXECUTE IMMEDIATE mstatement into Pnum_rows_RA ;
+      P_COUNT := P_COUNT + Pnum_rows_RA;
+      DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
+        value => Audit_partition, table_name => 'REMOTE_AUDIT_TRAIL', schema_name => g_data_owner );
+    EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -2149 THEN
+          null; -- Partition not found
+        ELSE
+          RAISE;
+        END IF;
+    END;
+    --
+    DBMS_DATAPUMP.SET_PARALLEL (h1, 5 );
 
-  -- A metadata filter is used to specify the schema that will be exported.
-  DBMS_DATAPUMP.metadata_filter(handle => h1, name => 'SCHEMA_EXPR',
-    value => 'IN('''||g_data_owner||''')');
-  DBMS_DATAPUMP.metadata_filter(handle => h1, name => 'NAME_EXPR',
-    value => 'IN(''AUDIT_TABLE'',''AUDIT_COLUMN'',''AUDIT_OFFENDER_REF'',''OS_LOG_EVENT'',''REMOTE_AUDIT_TRAIL'')');
-  --
-  DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
-    value => Audit_partition, table_name => 'AUDIT_TABLE',        schema_name => g_data_owner );
-  DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
-    value => Audit_partition, table_name => 'AUDIT_COLUMN',       schema_name => g_data_owner );
-  DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
-    value => Audit_partition, table_name => 'AUDIT_OFFENDER_REF', schema_name => g_data_owner );
-  DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
-    value => Audit_partition, table_name => 'OS_LOG_EVENT',       schema_name => g_data_owner );
-  DBMS_DATAPUMP.data_filter(handle => h1, name => 'PARTITION_LIST',
-    value => Audit_partition, table_name => 'REMOTE_AUDIT_TRAIL', schema_name => g_data_owner );
+    -- Start the job. An exception will be generated if something is not set up properly.
+    DBMS_DATAPUMP.START_JOB(h1);
 
-  --
-  DBMS_DATAPUMP.SET_PARALLEL (h1, 5 );
+    -- The export job should now be running. In the following loop, the job is
+    -- monitored until it completes.
+    monitor_job(h1, job_state);
 
-  -- Start the job. An exception will be generated if something is not set up properly.
-  DBMS_DATAPUMP.START_JOB(h1);
+    -- Indicate that the job finished and gracefully detach from it.
+    --dbms_output.put_line('Job has completed');
+    --dbms_output.put_line('Final job state = ' || job_state);
+    log_archive_error(p_location=>'export_procedure', p_partition_date=>v_partition_date,
+          p_message=>'Export Job has completed. Final job state = ' || job_state);
+
+    dbms_datapump.detach(h1);
 
 
-  -- The export job should now be running. In the following loop, the job is
-  -- monitored until it completes.
-  monitor_job(h1, job_state);
+    ---------------------------------------------------------------
+    --     Check the log file for number of records exported
+    ---------------------------------------------------------------
 
-  -- Indicate that the job finished and gracefully detach from it.
-  --dbms_output.put_line('Job has completed');
-  --dbms_output.put_line('Final job state = ' || job_state);
-  log_archive_error(p_location=>'export_procedure', p_partition_date=>v_partition_date,
-		    p_message=>'Export Job has completed. Final job state = ' || job_state);
+    check_log_file_count (
+      K_DIRECTORY,	-- file directory
+      Log_file,		-- log file name
+      V_EXP_FILE_EXISTS,	-- file status
+      T_COUNT);		-- table name
 
-  dbms_datapump.detach(h1);
-
-
-  ---------------------------------------------------------------
-  --     Check the log file for number of records exported
-  ---------------------------------------------------------------
-
-  check_log_file_count (
-    K_DIRECTORY,	-- file directory
-    Log_file,		-- log file name
-    V_EXP_FILE_EXISTS,	-- file status
-    T_COUNT);		-- table name
-
-  --DBMS_OUTPUT.PUT_LINE( 'Count of Records in Partition : ' || P_COUNT );
-  --DBMS_OUTPUT.PUT_LINE( 'Count of Records Exported     : ' || T_COUNT );
-  Count_recs     := P_COUNT ;
-  Count_exported := T_COUNT;
+    --DBMS_OUTPUT.PUT_LINE( 'Count of Records in Partition : ' || P_COUNT );
+    --DBMS_OUTPUT.PUT_LINE( 'Count of Records Exported     : ' || T_COUNT );
+    Count_recs     := P_COUNT ;
+    Count_exported := T_COUNT;
+  ELSE
+    -- No tables to filter
+    log_archive_error(p_location=>'export_procedure', p_partition_date=>v_partition_date,
+      p_message=>'No tables with partition '||partition_in||' to archive');
+  END IF;
 
   -- update control table
-    mstatement := 'update '||g_data_owner||'.AUDIT_PARTITION_CONTROL ' ||
+  mstatement := 'update '||g_data_owner||'.AUDIT_PARTITION_CONTROL ' ||
     'set CHANGE_DATE = sysdate, ARCHIVED_FLAG = ''Y'' where PARTITION_DATE = :partition_date';
-    EXECUTE IMMEDIATE mstatement USING v_partition_date;
+  EXECUTE IMMEDIATE mstatement USING v_partition_date;
 
   COMMIT;
 
@@ -617,33 +692,54 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   partition_dte 	date;
   v_resize_kb 		number;
   v_tgt_object 		varchar2(30) := null;
+  v_partition_check        number(1);
 
   procedure truncate_table (
     table_in 	in varchar2,
     pname_in 	in varchar2
   ) is
+    v_par_check number(1);
     mstatement 	varchar2(1000);
   begin
-    v_tgt_object := table_in;
-    mstatement := 'alter table '||g_data_owner||'.'||table_in||' truncate partition '||
-                  pname_in||' drop storage update indexes parallel';
-    EXECUTE IMMEDIATE mstatement;
+    -- Check if the partition exists before attempting to truncate
+    SELECT COUNT(*) INTO v_par_check
+    FROM all_tab_partitions
+    WHERE table_owner = g_data_owner
+      AND table_name = table_in
+      AND partition_name = pname_in;
+
+    IF v_par_check <> 0 THEN
+      v_tgt_object := table_in;
+      mstatement := 'alter table '||g_data_owner||'.'||table_in||' truncate partition '||
+                    pname_in||' drop storage update indexes parallel';
+      EXECUTE IMMEDIATE mstatement;
+    END IF;
   end;
   procedure truncate_table_indexes (
     table_in 	in varchar2,
     pname_in 	in varchar2
   ) is
+    v_par_check number(1);
     mstatement 	varchar2(1000);
   begin
-    v_tgt_object := table_in;
-    FOR i in
-    (select owner, index_name from all_indexes
-     where  table_owner = g_data_owner
-     and    table_name = table_in)
-    LOOP
-        mstatement := 'alter index '||i.owner||'.'||i.index_name||' rebuild partition '||pname_in;
-        EXECUTE IMMEDIATE mstatement;
-    END LOOP;
+    -- Check if the partition exists before attempting to truncate
+    SELECT COUNT(*) INTO v_par_check
+    FROM all_tab_partitions
+    WHERE table_owner = g_data_owner
+      AND table_name = table_in
+      AND partition_name = pname_in;
+
+    IF v_par_check <> 0 THEN
+      v_tgt_object := table_in;
+      FOR i in
+      (select owner, index_name from all_indexes
+      where  table_owner = g_data_owner
+      and    table_name = table_in)
+      LOOP
+          mstatement := 'alter index '||i.owner||'.'||i.index_name||' rebuild partition '||pname_in;
+          EXECUTE IMMEDIATE mstatement;
+      END LOOP;
+    END IF;
   end;
 
   pragma AUTONOMOUS_TRANSACTION;
@@ -653,100 +749,116 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   -- validate partition date format
   v_partition_date := to_date(partition_in, g_partition_date_fmt);
 
-  -- Check that the input partition date does not fall within the number of days which must be kept
+  -- check if there are any tables with the specified partition
+  SELECT count(*)
+  INTO v_partition_check
+  FROM ALL_TABLES dt
+  WHERE dt.OWNER = g_data_owner
+  AND dt.TABLE_NAME IN ('AUDIT_TABLE','AUDIT_COLUMN','AUDIT_OFFENDER_REF','OS_LOG_EVENT','REMOTE_AUDIT_TRAIL')
+  AND EXISTS (
+    SELECT 1
+    FROM dba_tab_partitions dtp
+    WHERE dtp.table_owner = dt.owner
+    AND dtp.TABLE_NAME = dt.TABLE_NAME
+    AND dtp.partition_name like '%'||partition_in);
+  IF v_partition_check > 0 
+  THEN
 
-  v_tgt_object := 'AUDIT_PARTITION_CONTROL';
-  mstatement := 'select (max(PARTITION_DATE)) ' ||
-		'  from AUDITDATA.AUDIT_PARTITION_CONTROL ' ||
-                 'where PARTITION_DATE <= SYSDATE';
-  EXECUTE IMMEDIATE mstatement into partition_dte ;
+    -- Check that the input partition date does not fall within the number of days which must be kept
 
-  partition_dte_max :=  partition_dte - g_days_old_to_arch ;
+    v_tgt_object := 'AUDIT_PARTITION_CONTROL';
+    mstatement := 'select (max(PARTITION_DATE)) ' ||
+      '  from AUDITDATA.AUDIT_PARTITION_CONTROL ' ||
+                  'where PARTITION_DATE <= SYSDATE';
+    EXECUTE IMMEDIATE mstatement into partition_dte ;
 
-  IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
-    RAISE_APPLICATION_ERROR
-        (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
-  END IF;
+    partition_dte_max :=  partition_dte - g_days_old_to_arch ;
 
-
-  -- Check the partiton has previously been archived
-
-  select archived_flag into v_archived_flag
-  from   auditdata.AUDIT_PARTITION_CONTROL
-  where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
-
-  IF v_archived_flag != 'Y'  THEN
-    RAISE_APPLICATION_ERROR(g_aud_not_archived,'Partition has not previously been archived');
-  END IF;
-
-
-  -- Ensure tablespace is read write
-
-  a_ts := 'AUDITDATA_' || partition_in || '_TBS';
-  DECLARE
-    v_status varchar2(30);
-  BEGIN
-    SELECT status INTO v_status
-    FROM dba_tablespaces
-    WHERE tablespace_name = a_ts;
-    IF v_status != 'ONLINE' THEN
-      mstatement := 'alter tablespace '||a_ts||' read write';
-      EXECUTE IMMEDIATE mstatement;
+    IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
+      RAISE_APPLICATION_ERROR
+          (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
     END IF;
-  EXCEPTION
-    WHEN no_data_found THEN -- Tablespace not found
-        log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
-    WHEN tablespace_not_read_only THEN null;
-    WHEN tablespace_not_exists THEN
-        log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
-  END;
 
-  -- Set up Partition Names
 
-  a_par := 'Audit_' || partition_in ;
+    -- Check the partiton has previously been archived
 
-  truncate_table('AUDIT_TABLE',a_par);
-  truncate_table('AUDIT_COLUMN',a_par);
-  truncate_table('AUDIT_OFFENDER_REF',a_par);
-  truncate_table('OS_LOG_EVENT',a_par);
-  truncate_table('REMOTE_AUDIT_TRAIL',a_par);
+    select archived_flag into v_archived_flag
+    from   auditdata.AUDIT_PARTITION_CONTROL
+    where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
 
-  truncate_table_indexes('REMOTE_AUDIT_TRAIL',a_par);
-  truncate_table_indexes('OS_LOG_EVENT',a_par);
-  truncate_table_indexes('AUDIT_OFFENDER_REF',a_par);
-  truncate_table_indexes('AUDIT_COLUMN',a_par);
-  truncate_table_indexes('AUDIT_TABLE',a_par);
+    IF v_archived_flag != 'Y'  THEN
+      RAISE_APPLICATION_ERROR(g_aud_not_archived,'Partition has not previously been archived');
+    END IF;
+
+
+    -- Ensure tablespace is read write
+
+    a_ts := 'AUDITDATA_' || partition_in || '_TBS';
+    DECLARE
+      v_status varchar2(30);
+    BEGIN
+      SELECT status INTO v_status
+      FROM dba_tablespaces
+      WHERE tablespace_name = a_ts;
+      IF v_status != 'ONLINE' THEN
+        mstatement := 'alter tablespace '||a_ts||' read write';
+        EXECUTE IMMEDIATE mstatement;
+      END IF;
+    EXCEPTION
+      WHEN no_data_found THEN -- Tablespace not found
+          log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                            p_error_code=>SQLCODE, p_message=>SQLERRM);
+      WHEN tablespace_not_read_only THEN null;
+      WHEN tablespace_not_exists THEN
+          log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                            p_error_code=>SQLCODE, p_message=>SQLERRM);
+    END;
+
+    -- Set up Partition Names
+
+    a_par := 'Audit_' || partition_in ;
+
+    truncate_table('AUDIT_TABLE',a_par);
+    truncate_table('AUDIT_COLUMN',a_par);
+    truncate_table('AUDIT_OFFENDER_REF',a_par);
+    truncate_table('OS_LOG_EVENT',a_par);
+    truncate_table('REMOTE_AUDIT_TRAIL',a_par);
+
+    truncate_table_indexes('REMOTE_AUDIT_TRAIL',a_par);
+    truncate_table_indexes('OS_LOG_EVENT',a_par);
+    truncate_table_indexes('AUDIT_OFFENDER_REF',a_par);
+    truncate_table_indexes('AUDIT_COLUMN',a_par);
+    truncate_table_indexes('AUDIT_TABLE',a_par);
+
+    BEGIN
+      v_tgt_object := 'dba_extents';
+      mstatement := 'select round((max((e.block_id+e.blocks)*t.block_size)/1000)+5,-1) ' ||
+          'from dba_extents e, dba_tablespaces t ' ||
+                    'where e.tablespace_name = t.tablespace_name ' ||
+                      'and t.tablespace_name = :ts_name';
+      EXECUTE IMMEDIATE mstatement into v_resize_kb using a_ts;
+      v_tgt_object := 'dba_tablespaces';
+      mstatement := 'alter tablespace ' ||a_ts|| ' RESIZE ' || v_resize_kb || 'K';
+      EXECUTE IMMEDIATE mstatement ;
+      log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                        p_error_code=>SQLCODE, p_message=>'Tablespace ' || a_ts ||
+                        ' resized to '|| v_resize_kb || 'K.');
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+          log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                            p_error_code=>SQLCODE, p_message=>'Unable to resize data.');
+      WHEN tablespace_not_exists THEN
+          log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
+                            p_error_code=>SQLCODE, p_message=>SQLERRM);
+    END;
+  END IF;
 
   -- update control table
   v_tgt_object := 'AUDIT_PARTITION_CONTROL';
   mstatement := 'update '||g_data_owner||'.AUDIT_PARTITION_CONTROL ' ||
-  'set CHANGE_DATE = sysdate, TRUNCATED_FLAG = ''Y'', RESTORED_FLAG = ''N'' ,RESTORE_MODE = NULL ' ||
-  'where PARTITION_DATE = :partition_date';
+    'set CHANGE_DATE = sysdate, TRUNCATED_FLAG = ''Y'', RESTORED_FLAG = ''N'' ,RESTORE_MODE = NULL ' ||
+    'where PARTITION_DATE = :partition_date';
   EXECUTE IMMEDIATE mstatement USING v_partition_date;
-
-  BEGIN
-    v_tgt_object := 'dba_extents';
-    mstatement := 'select round((max((e.block_id+e.blocks)*t.block_size)/1000)+5,-1) ' ||
-		    'from dba_extents e, dba_tablespaces t ' ||
-                   'where e.tablespace_name = t.tablespace_name ' ||
-                     'and t.tablespace_name = :ts_name';
-    EXECUTE IMMEDIATE mstatement into v_resize_kb using a_ts;
-    v_tgt_object := 'dba_tablespaces';
-    mstatement := 'alter tablespace ' ||a_ts|| ' RESIZE ' || v_resize_kb || 'K';
-    EXECUTE IMMEDIATE mstatement ;
-    log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                      p_error_code=>SQLCODE, p_message=>'Tablespace ' || a_ts ||
-                      ' resized to '|| v_resize_kb || 'K.');
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>'Unable to resize data.');
-    WHEN tablespace_not_exists THEN
-        log_archive_error(p_location=>'truncate_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
-  END;
 
   COMMIT;
 
@@ -776,20 +888,31 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   partition_dte_max 	date;
   partition_dte 	date;
   v_tgt_object 		varchar2(30) := null;
+  v_partition_check     number(1);
 
   procedure drop_table_partition (
     table_in 		in     varchar2,
     pname_in 		in     varchar2,
     rebuild_indexes 	in     boolean
   ) is
+    v_par_check number(1);
     mstatement 	varchar2(1000);
   begin
-    v_tgt_object := table_in;
-    mstatement := 'alter table '||g_data_owner||'.'||table_in||' drop partition '||pname_in;
-    IF rebuild_indexes THEN
-      mstatement := mstatement||' update indexes parallel';
+    -- Check if the partition exists before attempting to truncate
+    SELECT COUNT(*) INTO v_par_check
+    FROM all_tab_partitions
+    WHERE table_owner = g_data_owner
+      AND table_name = table_in
+      AND partition_name = pname_in;
+
+    IF v_par_check <> 0 THEN
+      v_tgt_object := table_in;
+      mstatement := 'alter table '||g_data_owner||'.'||table_in||' drop partition '||pname_in;
+      IF rebuild_indexes THEN
+        mstatement := mstatement||' update indexes parallel';
+      END IF;
+      EXECUTE IMMEDIATE mstatement;
     END IF;
-    EXECUTE IMMEDIATE mstatement;
   exception
     when partition_not_exists then
         log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
@@ -803,72 +926,96 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   -- validate partition date format
   v_partition_date := to_date(partition_in, g_partition_date_fmt);
 
+  -- check if there are any tables with the specified partition
+  SELECT count(*)
+  INTO v_partition_check
+  FROM ALL_TABLES dt
+  WHERE dt.OWNER = g_data_owner
+  AND dt.TABLE_NAME IN ('AUDIT_TABLE','AUDIT_COLUMN','AUDIT_OFFENDER_REF','OS_LOG_EVENT','REMOTE_AUDIT_TRAIL')
+  AND EXISTS (
+    SELECT 1
+    FROM dba_tab_partitions dtp
+    WHERE dtp.table_owner = dt.owner
+    AND dtp.TABLE_NAME = dt.TABLE_NAME
+    AND dtp.partition_name like '%'||partition_in);
+  IF v_partition_check > 0 
+  THEN
 
-  -- Check the partiton has previously been truncated
+    -- Check the partiton has previously been truncated
 
-  select truncated_flag into v_truncated_flag
-  from   auditdata.AUDIT_PARTITION_CONTROL
-  where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
+    select truncated_flag into v_truncated_flag
+    from   auditdata.AUDIT_PARTITION_CONTROL
+    where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
 
-  IF v_truncated_flag != 'Y'  THEN
-    RAISE_APPLICATION_ERROR(g_aud_not_truncated,'Partition has not previously been truncated');
+    IF v_truncated_flag != 'Y'  THEN
+      RAISE_APPLICATION_ERROR(g_aud_not_truncated,'Partition has not previously been truncated');
+    END IF;
+
+    -- Check that the input partition date does not fall within the number of days which must be kept
+
+    v_tgt_object := 'AUDIT_PARTITION_CONTROL';
+    mstatement := 'select (max(PARTITION_DATE)) ' ||
+      '  from AUDITDATA.AUDIT_PARTITION_CONTROL ' ||
+                  'where PARTITION_DATE <= SYSDATE';
+    EXECUTE IMMEDIATE mstatement into partition_dte ;
+
+    partition_dte_max :=  partition_dte - g_days_old_to_drop ;
+
+    IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
+      RAISE_APPLICATION_ERROR
+          (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
+    END IF;
+
+
+    -- Ensure tablespace is read write
+
+    a_ts := 'AUDITDATA_' || partition_in || '_TBS';
+    DECLARE
+      v_status varchar2(30);
+    BEGIN
+      SELECT status INTO v_status
+      FROM dba_tablespaces
+      WHERE tablespace_name = a_ts;
+      IF v_status != 'ONLINE' THEN
+        BEGIN
+          mstatement := 'alter tablespace '||a_ts||' read write';
+          EXECUTE IMMEDIATE mstatement ;
+        EXCEPTION
+          WHEN tablespace_not_read_only THEN null;
+          WHEN tablespace_not_exists THEN
+              log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
+                                p_error_code=>SQLCODE, p_message=>SQLERRM);
+        END;
+      END IF;
+    END;
+
+    -- Set up Partition Names
+
+    a_par := 'Audit_' || partition_in ;
+
+    drop_table_partition('AUDIT_TABLE',a_par,rebuild_indexes);
+    drop_table_partition('AUDIT_COLUMN',a_par,rebuild_indexes);
+    drop_table_partition('AUDIT_OFFENDER_REF',a_par,rebuild_indexes);
+    drop_table_partition('OS_LOG_EVENT',a_par,rebuild_indexes);
+    drop_table_partition('REMOTE_AUDIT_TRAIL',a_par,rebuild_indexes);
+
+    BEGIN
+      v_tgt_object := 'dba_tablespaces';
+      mstatement := 'drop tablespace ' ||a_ts|| ' INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS';
+      EXECUTE IMMEDIATE mstatement ;
+      log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
+                        p_error_code=>SQLCODE, p_message=>'Tablespace ' || a_ts || ' dropped.');
+    EXCEPTION
+      WHEN tablespace_not_exists THEN
+          log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
+                            p_error_code=>SQLCODE, p_message=>SQLERRM);
+    END;
   END IF;
-
-  -- Check that the input partition date does not fall within the number of days which must be kept
-
-  v_tgt_object := 'AUDIT_PARTITION_CONTROL';
-  mstatement := 'select (max(PARTITION_DATE)) ' ||
-		'  from AUDITDATA.AUDIT_PARTITION_CONTROL ' ||
-                 'where PARTITION_DATE <= SYSDATE';
-  EXECUTE IMMEDIATE mstatement into partition_dte ;
-
-  partition_dte_max :=  partition_dte - g_days_old_to_drop ;
-
-  IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
-    RAISE_APPLICATION_ERROR
-        (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
-  END IF;
-
-
-  -- Ensure tablespace is read write
-
-  a_ts := 'AUDITDATA_' || partition_in || '_TBS';
-  BEGIN
-    mstatement := 'alter tablespace '||a_ts||' read write';
-    EXECUTE IMMEDIATE mstatement ;
-  EXCEPTION
-    WHEN tablespace_not_read_only THEN null;
-    WHEN tablespace_not_exists THEN
-        log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
-  END;
-
-  -- Set up Partition Names
-
-  a_par := 'Audit_' || partition_in ;
-
-  drop_table_partition('AUDIT_TABLE',a_par,rebuild_indexes);
-  drop_table_partition('AUDIT_COLUMN',a_par,rebuild_indexes);
-  drop_table_partition('AUDIT_OFFENDER_REF',a_par,rebuild_indexes);
-  drop_table_partition('OS_LOG_EVENT',a_par,rebuild_indexes);
-  drop_table_partition('REMOTE_AUDIT_TRAIL',a_par,rebuild_indexes);
-
-  BEGIN
-    v_tgt_object := 'dba_tablespaces';
-    mstatement := 'drop tablespace ' ||a_ts|| ' INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS';
-    EXECUTE IMMEDIATE mstatement ;
-    log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                      p_error_code=>SQLCODE, p_message=>'Tablespace ' || a_ts || ' dropped.');
-  EXCEPTION
-    WHEN tablespace_not_exists THEN
-        log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                          p_error_code=>SQLCODE, p_message=>SQLERRM);
-  END;
 
   -- update control table
   v_tgt_object := 'AUDIT_PARTITION_CONTROL';
   mstatement := 'delete from '||g_data_owner||'.AUDIT_PARTITION_CONTROL ' ||
-  'where PARTITION_DATE = :partition_date';
+    'where PARTITION_DATE = :partition_date';
   EXECUTE IMMEDIATE mstatement USING v_partition_date;
 
   COMMIT;
@@ -1180,27 +1327,30 @@ v_area := v_area||', 17 OTHERS';
 
   IF MODE_IN  = 3 THEN
     CASE
-        WHEN table_in IS NULL
-            OR TRIM(table_in) = '' THEN
+        WHEN table_in IS NULL OR TRIM(table_in) = '' 
+        THEN
             RAISE_APPLICATION_ERROR(g_aud_tablename_missing,'Table name missing for option '||MODE_IN);
         WHEN UPPER(table_in) NOT IN
 			     (  'REMOTE_AUDIT_TRAIL',
 				'OS_LOG_EVENT',
 				'AUDIT_TABLE',
 				'AUDIT_COLUMN',
-				'AUDIT_OFFENDER_REF' )  THEN
+				'AUDIT_OFFENDER_REF' )  
+        THEN
             RAISE_APPLICATION_ERROR(g_aud_tablename_invalid,'Table name invalid for option '||MODE_IN);
         WHEN where_in IS NULL
   	    OR TRIM(where_in) = ''
-  	    OR SUBSTR(UPPER(where_in), 1,5) != 'WHERE'  THEN
+  	    OR SUBSTR(UPPER(where_in), 1,5) != 'WHERE'  
+        THEN
             RAISE_APPLICATION_ERROR(g_aud_where_missing,'WHERE clause missing for option '||MODE_IN);
         ELSE NULL;
     END CASE;
   ELSE
     IF table_in IS NOT NULL
-        OR TRIM(table_in) != ''
-	OR where_in       IS NOT NULL
-	OR TRIM(where_in) != '' THEN
+    OR TRIM(table_in) != ''
+  	OR where_in       IS NOT NULL
+	  OR TRIM(where_in) != '' 
+    THEN
         RAISE_APPLICATION_error  (g_aud_invalid_parm_comb,'Invalid parameters for option '||MODE_IN);
     END IF;
   END IF;
@@ -1217,7 +1367,8 @@ v_area := v_area||', 17 OTHERS';
 
   --dbms_output.put_line('V_COUNT = ' || V_COUNT);
 
-  IF V_COUNT > (g_weeks_to_restore - 1) THEN
+  IF V_COUNT > (g_weeks_to_restore - 1) 
+  THEN
     RAISE_APPLICATION_ERROR
         (g_aud_at_max_partns,'No more restores allowed as the max number of restored partitions has been reached');
   END IF;
@@ -1262,14 +1413,18 @@ v_area := v_area||', 17 OTHERS';
 
   IF v_restored_mode = '1' THEN
     CASE
-        WHEN MODE_IN IN (3, 1) THEN
+        WHEN MODE_IN IN (3, 1) 
+        THEN
             RAISE_APPLICATION_ERROR
                 (g_aud_already_restored,'Partition has previously been restored and cannot be over written');
-        WHEN MODE_IN = 0 THEN
-	    TRUNCATE_PARTITION ( partition_in );
-        WHEN MODE_IN = 2 THEN
-	    v_mode_SW := '0';
-        ELSE NULL;
+        WHEN MODE_IN = 0 
+        THEN
+      	    TRUNCATE_PARTITION ( partition_in );
+        WHEN MODE_IN = 2 
+        THEN
+      	    v_mode_SW := '0';
+        ELSE 
+            NULL;
     END CASE;
   END IF;
 
@@ -1280,22 +1435,27 @@ v_area := v_area||', 17 OTHERS';
 
   IF v_restored_mode = '2' THEN
     CASE
-        WHEN MODE_IN IN (3, 2) THEN
+        WHEN MODE_IN IN (3, 2) 
+        THEN
             RAISE_APPLICATION_ERROR
                 (g_aud_already_restored,'Partition has previously been restored and cannot be over written');
-        WHEN MODE_IN = 0 THEN
-	    TRUNCATE_PARTITION ( partition_in );
-        WHEN MODE_IN = 1 THEN
-	    v_mode_SW := '0';
-        ELSE NULL;
+        WHEN MODE_IN = 0 
+        THEN
+	          TRUNCATE_PARTITION ( partition_in );
+        WHEN MODE_IN = 1 
+        THEN
+	          v_mode_SW := '0';
+        ELSE 
+            NULL;
     END CASE;
   END IF;
 
   -- If tables have previously been selectively restored (3)
   -- and a non selective restore is requested, truncate them first.
   IF v_restored_mode = '3'
-    AND MODE_IN IN (2, 1, 0) THEN
-	TRUNCATE_PARTITION ( partition_in );
+  AND MODE_IN IN (2, 1, 0) 
+  THEN
+	    TRUNCATE_PARTITION ( partition_in );
   END IF;
 
 /**************************************************************************************************/
