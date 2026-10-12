@@ -37,9 +37,10 @@ http {
         server_name {{ ndh_proxy_host }};
 {% if ndelius_proxy_pass is defined %}
         location / {
-                proxy_set_header Host $host;
+                proxy_set_header Host {{ ndelius_proxy_pass }};
                 proxy_redirect https://{{ ndh_proxy_host }}:443/ https://{{ ndh_proxy_host }}/;
-                proxy_pass https://{{ ndelius_proxy_pass }}/;
+                set $ndelius "https://{{ ndelius_proxy_pass }}:443$request_uri";
+                proxy_pass $ndelius;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
 {% endif %}
