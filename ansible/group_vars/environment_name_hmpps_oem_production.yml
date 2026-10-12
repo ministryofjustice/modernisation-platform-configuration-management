@@ -95,6 +95,8 @@ collectd_endpoint_monitoring:
   # hmpps-domain-services
   - metric_dimension: rdgateway1.hmpps-domain.service.justice.gov.uk
     url: https://rdgateway1.hmpps-domain.service.justice.gov.uk/
+  - metric_dimension: rdweb1.hmpps-domain.service.justice.gov.uk
+    url: https://rdweb1.hmpps-domain.service.justice.gov.uk/RDWeb
 
   # nomis
   - metric_dimension: c.nomis.az.justice.gov.uk
@@ -131,10 +133,12 @@ collectd_endpoint_monitoring:
   # planetfm
   - metric_dimension: cafmtx.planetfm.service.justice.gov.uk
     url: https://cafmtx.planetfm.service.justice.gov.uk/RDWeb
-  - metric_dimension: cafmwebx2.planetfm.service.justice.gov.uk
-    url: https://cafmwebx2.planetfm.service.justice.gov.uk/PlanetPortal
-    follow_redirect: 0
-    timeout_sec: 10
+  # cafmwebx2 is failing as server missing Root YR cross-signed by ISRG Root X1 cert
+  # commenting out for now as alerts are disabled and it is working on end user devices
+  # - metric_dimension: cafmwebx2.planetfm.service.justice.gov.uk
+  #   url: https://cafmwebx2.planetfm.service.justice.gov.uk/PlanetPortal
+  #   follow_redirect: 0
+  #   timeout_sec: 10
   - metric_dimension: cafmtrainweb.planetfm.service.justice.gov.uk
     url: https://cafmtrainweb.planetfm.service.justice.gov.uk/PlanetPortal
     follow_redirect: 0
