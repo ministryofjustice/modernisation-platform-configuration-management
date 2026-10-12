@@ -1,6 +1,6 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_setup.log
 
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 PROMPT Executing grants needed for apply dml handler processing:
 grant select on DBA_APPLY to {{ oracle_goldengate_sql_owner }};

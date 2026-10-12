@@ -1,6 +1,6 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_db_links.log
 
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 declare
   v_env_var varchar2(255) := 'GGADMIN_DB_PASSWORD';

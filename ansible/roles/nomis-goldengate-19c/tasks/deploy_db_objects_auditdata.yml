@@ -78,15 +78,15 @@
       args:
         executable: /bin/bash
       register: audit_db_links_output
-      failed_when: audit_db_links_output.rc != 0
+      failed_when: audit_db_links_output.rc != 0 or 'ORA-' in audit_db_links_output.stdout
 
     - name: Show output of AuditData db links install in logs
       ansible.builtin.debug:
         msg: "{{ item }}"
       loop: "{{ ['AuditData db links install output:'] + (audit_db_links_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
-      when: audit_db_links_output.rc != 0
+      when: audit_db_links_output.rc != 0 or 'ORA-' in audit_db_links_output.stdout
 
     - name: Fail if ORA errors found in output of AuditData db links install
       ansible.builtin.fail:
         msg: "Errors found in output of AuditData db links install: {{ audit_db_links_output.stdout }}"
-      when: audit_db_links_output.rc != 0
+      when: audit_db_links_output.rc != 0 or 'ORA-' in audit_db_links_output.stdout

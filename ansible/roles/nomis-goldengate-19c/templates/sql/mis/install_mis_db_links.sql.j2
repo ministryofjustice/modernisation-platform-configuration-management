@@ -1,6 +1,6 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_db_links.log
 
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 PROMPT Installing database link to '{{ oracle_goldengate_group.source.tns_alias }}' as {{ oracle_goldengate_group.source.schema_owner }}
 

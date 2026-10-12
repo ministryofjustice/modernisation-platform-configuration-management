@@ -1,7 +1,7 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_audit_jobs.log
 
 SET SERVEROUTPUT ON
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 PROMPT Installing AUDIT database scheduler jobs (disabled initially)
 PROMPT ===============================================================

@@ -84,13 +84,13 @@
       args:
         executable: /bin/bash
       register: mis_db_links_output
-      failed_when: mis_db_links_output.rc != 0
+      failed_when: mis_db_links_output.rc != 0 or 'ORA-' in mis_db_links_output.stdout
 
     - name: Show output of mis db links install in logs
       ansible.builtin.debug:
         msg: "{{ item }}"
       loop: "{{ ['mis db links install output:'] + (mis_db_links_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
-      when: mis_db_links_output.rc != 0
+      when: mis_db_links_output.rc != 0 or 'ORA-' in mis_db_links_output.stdout
 
     - name: Fail if ORA errors found in output of mis db links install
       ansible.builtin.fail:

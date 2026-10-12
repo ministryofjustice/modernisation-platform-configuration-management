@@ -54,7 +54,7 @@
       args:
         executable: /bin/bash
       register: auditref_config_output
-      failed_when: auditref_config_output.rc != 0
+      failed_when: auditref_config_output.rc != 0 or 'ORA-' in auditref_config_output.stdout
 
     - name: Show output of Auditref package install in logs
       ansible.builtin.debug:
