@@ -96,7 +96,7 @@
         msg: "{{ item }}"
       loop: "{{ ['source db links install output:'] + (source_db_links_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
       when: source_db_links_output.rc != 0 or 'ORA-' in source_db_links_output.stdout
-  
+
     - name: Fail if ORA errors found in output of source db links install
       ansible.builtin.fail:
         msg: "Errors found in output of source db links install: {{ source_db_links_output.stdout }}"
