@@ -255,6 +255,13 @@ cd ${SCRIPT_DIR}
 # Create blackout
 create_blackout
 
+# Pre steps execution, if it exists
+if [ -f ${DB_SCRIPT_DIR}/pre_steps.sh ]
+then
+  ${DB_SCRIPT_DIR}/pre_steps.sh -t ${REFRESH_DB_SID} -e ${SCRIPT_DIR}
+  [ $? -ne 0 ] && error "Refresh failed in pre steps"
+fi
+
 # Delete Archivelogs
 cleanup_archivelogs
 
@@ -270,19 +277,23 @@ restore_spfile
 # Restore controlfile
 restore_controlfile
 
-#identify recovery until sequence
+# identify recovery until sequence
 identify_recovery_point
 
-#identify source backup date
+# identify source backup date
 identify_source_backup_date
 
-#Recover database
+# Recover database
 restore_database
 
-#Post steps execution
-${DB_SCRIPT_DIR}/post_steps.sh -t ${REFRESH_DB_SID} -e ${SCRIPT_DIR}
-[ $? -ne 0 ] && error "Refresh failed in post steps"
+# Post steps execution
+if [ -f ${DB_SCRIPT_DIR}/post_steps.sh ]
+then
+  ${DB_SCRIPT_DIR}/post_steps.sh -t ${REFRESH_DB_SID} -e ${SCRIPT_DIR}
+  [ $? -ne 0 ] && error "Refresh failed in post steps"
+fi
 
-#Stop blackout
+# Stop blackout
 stop_blackout
+
 echo "${REFRESH_DB_SID} database Refresh completed successfully. " | mailx -s "Preprod ${REFRESH_DB_SID} database refresh completed successfully." ${EMAIL_RECIPIENT}

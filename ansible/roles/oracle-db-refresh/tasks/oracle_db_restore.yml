@@ -42,6 +42,15 @@
         group: "{{ oracle_install_group }}"
         mode: "0700"
 
+    - name: Copy pre refresh script for {{ TARGET_DB }} if one exists as a template
+      ansible.builtin.template:
+        src: "{{ TARGET_DB }}_pre_refresh.sh.j2"
+        dest: "{{refresh_script_dir }}/{{ TARGET_DB }}/pre_refresh.sh"
+        owner: "{{ oracle_install_user }}"
+        group: "{{ oracle_install_group }}"
+        mode: "0700"
+      ignore_errors: yes
+
     - name: Copy post refresh script for {{ TARGET_DB }}
       ansible.builtin.template:
         src: "{{ TARGET_DB }}_post_steps.sh.j2"

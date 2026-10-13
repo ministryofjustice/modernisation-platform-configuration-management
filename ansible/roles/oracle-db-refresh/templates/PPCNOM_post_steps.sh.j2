@@ -171,37 +171,72 @@ streams_setup () {
 	[ `grep ORA- ${DB_SCRIPT_DIR}/streams_setup.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
 	info "Completed streams_setup"
 }
+
+goldengate_setup () {
+	# check if goldengate is installed by checking if the ~/admin/goldengate directory exists and only continue if it does
+	[ ! -d ~/admin/goldengate ] && return 0
+	GG_SCRIPT_DIR=/home/oracle/admin/goldengate/scripts
+	GG_SQL_DIR=/home/oracle/admin/goldengate/sql/source
+  GGADMIN_DB_PASSWORD=$(get_user_creds ggadmin)
+  # reset the ggadmin user password and apply any necessary user privs
+  sqlplus -s "/ as sysdba" @${GG_SCRIPT_DIR}/create_gg_dbuser_${REFRESH_DB_SID}.sql
+	echo "spool ${DB_SCRIPT_DIR}/goldengate_setup.log" > ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter system set job_queue_processes=150 scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "select name , to_char(completion_time ,'dd.mm.yyyy hh24:mi:ss') from v\$archived_log where completion_time> sysdate-1/24;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter user ggadmin identified by $(get_user_creds ggadmin);" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter database add supplemental log data;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter system set enable_goldengate_replication=true scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	# Assume that the ASM folders on PPMIS host mentioned below in the TEMPLATE clauses have already been created as part of the MIS refresh.
+	echo "alter system set log_archive_dest_7='SERVICE=PPMIS ASYNC NOREGISTER VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) TEMPLATE=+DATA/PPMIS/PPCNOM_ARCHIVELOGS/%t_%s_%r.log DB_UNIQUE_NAME=PPMIS' scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter system set log_archive_dest_state_7=enable scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	# N.B. The PPCNMAUD database doesn't get data replicated so no need to add the configuration for it, just disable the log_archive_dest_state for it.
+	echo "alter system set log_archive_dest_state_8=defer scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	# extract the database's data dictionary into the redo logs to create a LogMiner data dictionary snapshot for goldengate to use
+	echo "DECLARE v_scn NUMBER(38); BEGIN dbms_capture_adm.build(first_scn=>v_scn); END;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "/" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "alter system archive log current;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	# Install the source packages required for goldengate setup
+	echo "@${GG_SQL_DIR}/install_source_packages.sql" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/goldengate_setup.sql
+	[ `grep ORA- ${DB_SCRIPT_DIR}/goldengate_setup.log| wc -l ` -gt 0 ] && error "Failed during goldengate setup"
+	# recreate the db links
+	${GG_SQL_DIR}/install_source_db_links.sh >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+	info "Completed goldengate_setup"
+}
+
 create_metadata_table () {
 
-    SRC_DATE=$(grep '^source_backup_date=' \
-               "${DB_SCRIPT_DIR}/identify_source_backup_date.log" \
-               | tail -1 \
-               | cut -d= -f2 \
-			   | xargs)
+	SRC_DATE=$(grep '^source_backup_date=' \
+							"${DB_SCRIPT_DIR}/identify_source_backup_date.log" \
+							| tail -1 \
+							| cut -d= -f2 \
+				| xargs)
 
-echo "set echo on feedback on heading off verify off" > ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
-echo "spool ${DB_SCRIPT_DIR}/crt_refresh_metadata.log" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
-echo "ALTER USER API_PROXY_USER QUOTA 50M ON users;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "set echo on feedback on heading off verify off" > ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "spool ${DB_SCRIPT_DIR}/crt_refresh_metadata.log" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "ALTER USER API_PROXY_USER QUOTA 50M ON users;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-echo "CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "CREATE TABLE API_PROXY_USER.refresh_metadata (last_refresh_date  TIMESTAMP DEFAULT SYSTIMESTAMP, source_backup_date TIMESTAMP);" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-echo "INSERT INTO API_PROXY_USER.refresh_metadata (
-  last_refresh_date,
-  source_backup_date
-)
-SELECT
-  MAX(resetlogs_time),
-  TO_TIMESTAMP('${SRC_DATE}','YYYY-MM-DD HH24:MI:SS')
-FROM v\$database_incarnation;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "INSERT INTO API_PROXY_USER.refresh_metadata (
+		last_refresh_date,
+		source_backup_date
+	)
+	SELECT
+		MAX(resetlogs_time),
+		TO_TIMESTAMP('${SRC_DATE}','YYYY-MM-DD HH24:MI:SS')
+	FROM v\$database_incarnation;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-echo "COMMIT;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
-echo "spool off" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
-echo "exit" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "COMMIT;" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "spool off" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	echo "exit" >> ${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
+	sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/crt_refresh_metadata.sql
 
-[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log| wc -l ` -gt 0 ] && error "Failed metadata table create"
-	info "Metadata table created"
+	[ `grep ORA- ${DB_SCRIPT_DIR}/crt_refresh_metadata.log| wc -l ` -gt 0 ] && error "Failed metadata table create"
+		info "Metadata table created"
 }
 
 
@@ -244,3 +279,6 @@ create_metadata_table
 
 # Streams setup
 streams_setup
+
+# Goldengate setup
+goldengate_setup

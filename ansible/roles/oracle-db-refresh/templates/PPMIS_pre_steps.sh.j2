@@ -1,0 +1,74 @@
+#!/bin/bash
+export ERROR_STATUS=9
+export THISSCRIPT=$(basename $0)
+
+usage () {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "  $THISSCRIPT -t <refresh database sid> -e <script directory> "
+  exit 1
+}
+
+info () {
+    T=$(date +"%D %T")
+    echo "INFO : $THISSCRIPT : $T : $1"
+    if [ "$DEBUG_MODE" = "Y" ]
+    then
+        read CONTINUE?"Press any key to continue "
+    fi
+}
+
+warning () {
+  T=$(date +"%D %T")
+  echo "WARNING : $THISSCRIPT : $T : $1"
+}
+
+error () {
+  T=$(date +"%D %T")
+  echo "ERROR : $THISSCRIPT : $T : $1"
+  exit $ERROR_STATUS
+}
+
+goldengate_reset () {
+  # check if goldengate is installed by checking if the ~/admin/goldengate directory exists and only continue if it does
+  [ ! -d ~/admin/goldengate ] && return 0
+  GG_SCRIPT_DIR=/home/oracle/admin/goldengate/scripts
+  GG_SQL_DIR=/home/oracle/admin/goldengate/sql
+  GG_HOME=/u01/app/oracle/product/goldengate/19c
+  info "Stopping all goldengate processes"
+  ${GG_SCRIPT_DIR}/ogg_control.sh stop mis both >> ${DB_SCRIPT_DIR}/goldengate_reset.log 2>&1
+  info "Delete trail files"
+  rm -rf ${GG_HOME}/dirdat/mis/* > /dev/null >> ${DB_SCRIPT_DIR}/goldengate_reset.log 2>&1
+  info "Delete checkpoint files"
+  rm -rf ${GG_HOME}/dirchk/* > /dev/null >> ${DB_SCRIPT_DIR}/goldengate_reset.log 2>&1
+}
+
+####################
+# Main
+####################
+
+REFRESH_DB_SID="UNSPECIFIED"
+SCRIPT_DIR="UNSPECIFIED"
+
+while getopts "t:e:" opt
+do
+  case $opt in
+    t) REFRESH_DB_SID=$OPTARG ;;
+    e) SCRIPT_DIR=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+
+[ "${REFRESH_DB_SID}" = "UNSPECIFIED" ] && usage
+[ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
+
+DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
+SOURCE_ORACLE_SID=PPCNOM
+
+info "Starting pre steps"
+
+# Goldengate reset
+goldengate_reset
+
+info "Completed pre steps"

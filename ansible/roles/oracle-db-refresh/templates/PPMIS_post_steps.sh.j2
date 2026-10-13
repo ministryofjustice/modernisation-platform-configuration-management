@@ -1,7 +1,6 @@
 #!/bin/bash
 export ERROR_STATUS=9
 export THISSCRIPT=$(basename $0)
-export STREAMS_SCRIPT_DIR=~/admin/streams_scripts
 
 usage () {
   echo ""
@@ -19,12 +18,12 @@ set_ora_env () {
 }
 
 info () {
-  	T=$(date +"%D %T")
-  	echo "INFO : $THISSCRIPT : $T : $1"
-  	if [ "$DEBUG_MODE" = "Y" ]
-  	then
-    		read CONTINUE?"Press any key to continue "
-  	fi
+    T=$(date +"%D %T")
+    echo "INFO : $THISSCRIPT : $T : $1"
+    if [ "$DEBUG_MODE" = "Y" ]
+    then
+        read CONTINUE?"Press any key to continue "
+    fi
 }
 
 warning () {
@@ -92,6 +91,10 @@ db_setup () {
   echo "alter database enable block change tracking;" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "alter database open;" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "alter user dbsnmp identified by $(get_user_creds dbsnmp) account unlock;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  # Why were these two below lines in the Streams setup? They defer and then immediately enable the log_archive_dest_state_2 parameter,
+  # which is used to control the archiving behavior for the standby database, and isn't used for Streams.
+  echo "alter system set log_archive_dest_state_2=defer scope=both;" >> ${DB_SCRIPT_DIR}/db_setup.sql
+  echo "alter system set log_archive_dest_state_2=enable scope=both;" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "shutdown immediate" >> ${DB_SCRIPT_DIR}/db_setup.sql
   echo "exit" >> ${DB_SCRIPT_DIR}/db_setup.sql
   sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/db_setup.sql
@@ -102,6 +105,7 @@ db_setup () {
 
 streams_setup () {
   info "Starting streams_setup"
+  STREAMS_SCRIPT_DIR=/home/oracle/admin/mis_streams_scripts
   SYS_PASSWORD=$(get_user_creds sys)
   STRMADMIN_PASSWORD=$(get_user_creds strmadmin)
   BODISTAGING_PASSWORD=$(get_user_creds bodistaging)
@@ -147,8 +151,6 @@ streams_setup () {
   echo "spool off" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "spool ${DB_SCRIPT_DIR}/streams_setup.log append" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "conn sys/${SYS_PASSWORD}@${SOURCE_ORACLE_SID} as sysdba" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-  echo "alter system set log_archive_dest_state_2=defer scope=both;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
-  echo "alter system set log_archive_dest_state_2=enable scope=both;" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "conn strmadmin/${STRMADMIN_PASSWORD}" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_define_variable.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
   echo "@${STREAMS_SCRIPT_DIR}/san_MIS_STRM_SETUP_v1.0e.18.sql" >> ${DB_SCRIPT_DIR}/streams_setup.sql
@@ -162,7 +164,52 @@ streams_setup () {
   echo "exit">> ${DB_SCRIPT_DIR}/streams_setup.sql
   sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/streams_setup.sql
   [ `grep ORA- ${DB_SCRIPT_DIR}/streams_setup.log| wc -l ` -gt 0 ] && error "Failed during streams setup"
-  exit 0
+}
+
+goldengate_setup () {
+  # check if goldengate is installed by checking if the ~/admin/goldengate directory exists and only continue if it does
+  [ ! -d ~/admin/goldengate ] && return 0
+  GG_SCRIPT_DIR=/home/oracle/admin/goldengate/scripts
+  GG_SQL_DIR=/home/oracle/admin/goldengate/sql/mis
+  GGADMIN_DB_PASSWORD=$(get_user_creds ggadmin)
+  set_ora_env +ASM
+  asmcmd mkdir +DATA/PPMIS/PPCNOM_ARCHIVELOGS
+  set_ora_env $REFRESH_DB_SID
+  # reset the ggadmin user password and apply any necessary user privs
+  sqlplus -s "/ as sysdba" @${GG_SCRIPT_DIR}/create_gg_dbuser_${REFRESH_DB_SID}.sql
+  echo "spool ${DB_SCRIPT_DIR}/goldengate_setup.log" > ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  echo "alter system set enable_goldengate_replication=true scope=both;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  echo "alter user ggadmin identified by ${GGADMIN_DB_PASSWORD};" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  # clear the replicat checkpoints table
+  echo "truncate table ggadmin.checkpoints;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  # The below table ddl comes from ${STREAMS_SCRIPT_DIR}/update_mis so assume it also needs to be done for goldengate setup
+  echo "alter table bodistaging.stg_system_profiles modify profile_value varchar2(42 char);" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  # The below also comes from the Streams setup but is still needed for goldengate setup
+  echo "grant create sequence to bodistaging;" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  # Install the MIS packages required for goldengate setup
+  echo "@${GG_SQL_DIR}/install_mis_packages.sql" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  echo "spool off" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  echo "exit" >> ${DB_SCRIPT_DIR}/goldengate_setup.sql
+  # Execute the goldengate setup SQL script
+  sqlplus -s "/ as sysdba" @${DB_SCRIPT_DIR}/goldengate_setup.sql
+  [ `grep ORA- ${DB_SCRIPT_DIR}/goldengate_setup.log| wc -l ` -gt 0 ] && error "Failed during goldengate setup"
+  # recreate the db links
+  ${GG_SQL_DIR}/install_mis_db_links.sh
+  # start the gg processes from the determined SCN
+  SCN=$(sqlplus -s "/ as sysdba" <<EOF
+set pages 0 head off feedback off verify off echo off
+select max(FIRST_CHANGE#)
+from v\$archived_log@${SOURCE_ORACLE_SID}
+where COMPLETION_TIME > sysdate-4/24
+and DICTIONARY_BEGIN='YES';
+exit
+EOF
+)
+  SCN=$(echo "${SCN}" | xargs)
+  [ -z "${SCN}" ] && error "Unable to determine dictionary build SCN"
+  ${GG_SCRIPT_DIR}/start_extract_mis.sh "${SCN}"
+  ${GG_SCRIPT_DIR}/start_replicat_mis.sh
+  info "Completed goldengate_setup"
 }
 
 ####################
@@ -185,12 +232,11 @@ done
 [ "${SCRIPT_DIR}" = "UNSPECIFIED" ] && usage
 
 DB_SCRIPT_DIR=$SCRIPT_DIR/$REFRESH_DB_SID
-STREAMS_SCRIPT_DIR=/home/oracle/admin/mis_streams_scripts
 SOURCE_ORACLE_SID=PPCNOM
 
 echo "Starting post steps"
 set_ora_env ${REFRESH_DB_SID}
-# NART reporting setup and misload
+# NART reporting setup
 nart_report_change
 
 # User creation
@@ -200,4 +246,9 @@ nart_report_change
 db_setup
 
 # Streams setup
-streams_setup
+# streams_setup
+
+# Goldengate setup
+goldengate_setup
+
+echo "Completed post steps"
