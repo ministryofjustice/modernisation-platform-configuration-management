@@ -41,6 +41,15 @@
         mode: "0644"
       loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/mis/*.j2', wantlist=True) }}"
 
+    - name: Deploy AUDITREF packages
+      ansible.builtin.template:
+        src: "{{ item }}"
+        dest: "{{ oracle_goldengate_sql_dir }}/auditref/{{ item | basename | regex_replace('\\.j2$', '') }}"
+        owner: "{{ oracle_goldengate_owner }}"
+        group: "{{ oracle_goldengate_osgroup }}"
+        mode: "0644"
+      loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/auditref/*.j2', wantlist=True) }}"
+
     - name: Run Auditref support package install
       ansible.builtin.shell: |
         . ~/.bash_profile
@@ -51,6 +60,7 @@
         . oraenv > /dev/null 2>&1
         cd {{ oracle_goldengate_sql_dir }}/auditref
         sqlplus -s / as sysdba @install_mis_packages.sql
+        sqlplus -s / as sysdba @install_auditref_packages.sql
       args:
         executable: /bin/bash
       register: auditref_config_output
