@@ -1,0 +1,15 @@
+---
+- name: Check if Catalog is Not Current
+  script: get_catalog_upgrade_required.sh
+  register: get_catalog_upgrade_required
+  changed_when: false
+  environment:
+    CATALOG_DB: "{{ catalog_db }}"
+
+- name: Run Catalog Upgrade only When Required
+  when: get_catalog_upgrade_required is search('.*DBMS_RCV.*database is not current.*')
+  block:
+    - name: Upgrade RMAN Catalog
+      script: upgrade_rman_catalog.sh
+      environment:
+        CATALOG_DB: "{{ catalog_db }}"

@@ -1,0 +1,72 @@
+---
+# Every task here is delegated.   This is to allow the switch-clone on the primary database (which installs OJVM)
+# delegate disabling of ADG on standby databases.   (We cannot delegate an entire include_tasks so the tasks
+# must be delegated individually).
+
+- name: Detect Active Data Guard Configuration
+  shell: |
+    . ~/.bash_profile
+    srvctl config database -d {{ adg_standby_sid }} | awk -F: '/Start options/{print $2}' | sed 's/^ //'
+  register: adg_config
+  delegate_to: "{{ standby_host }}"
+  become: yes
+  become_user: oracle
+  changed_when: false
+
+- name: Disable Active Data Guard
+  when:
+    - adg_config.stdout_lines[-1] == 'read only'
+  block:
+    - name: Change Configuration
+      shell: |
+        . ~/.bash_profile
+        srvctl modify database -d {{ adg_standby_sid }} -startoption mount
+      delegate_to: "{{ standby_host }}"
+      become: yes
+      become_user: oracle
+
+- name: Bounce Standby Database Following Config Change
+  when: adg_config.stdout_lines[-1] != 'mount'
+  block:
+    - name: Get Database Status
+      shell: |
+        . ~/.bash_profile
+        srvctl status database -d {{ adg_standby_sid }}
+      register: database_status
+      changed_when: false
+      delegate_to: "{{ standby_host }}"
+      become: yes
+      become_user: oracle
+
+    # Ignore error if database is already shutdown (PRCC-1016)
+    - name: Shutdown Database
+      shell: |
+        . ~/.bash_profile
+        srvctl stop database -d {{ adg_standby_sid }}
+      when: not database_status.stdout is search("Database is not running.")
+      register: stop_database
+      failed_when:
+        - stop_database.rc > 0
+        - not stop_database.stdout is search("PRCC-1016")
+      delegate_to: "{{ standby_host }}"
+      become: yes
+      become_user: oracle
+
+    - name: Get Database Status
+      shell: |
+        . ~/.bash_profile
+        srvctl status database -d {{ adg_standby_sid }}
+      register: database_status
+      changed_when: false
+      delegate_to: "{{ standby_host }}"
+      become: yes
+      become_user: oracle
+
+    - name: Startup Database
+      shell: |
+        . ~/.bash_profile
+        srvctl start database -d {{ adg_standby_sid }}
+      when: database_status.stdout is search("Database is not running.")
+      delegate_to: "{{ standby_host }}"
+      become: yes
+      become_user: oracle

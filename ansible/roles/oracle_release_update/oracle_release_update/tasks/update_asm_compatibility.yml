@@ -1,0 +1,21 @@
+---
+# ASM Compatibility for Database should be increased on all Disk Groups
+
+- name: Get Current RDBMS Compatibility Values
+  script: get_asm_compatibility.sh
+  register: asm_compatibility
+  changed_when: false
+
+- name: Update ASM Compatibility Values if currently a lower version
+  script: set_asm_compatibility.sh {{ item.split(',')[0] }} {{ item.split(',')[1] }} "{{ target_gi_version }}"
+  with_items: "{{ asm_compatibility.stdout_lines }}"
+  when:
+    - item.split(',')[0] == 'compatible.asm'
+    - item.split(',')[2] is version(target_gi_version,'<')
+
+- name: Update RDBMS Compatibility Values if currently a lower version
+  script: set_asm_compatibility.sh {{ item.split(',')[0] }} {{ item.split(',')[1] }} "{{ target_gi_version }}"
+  with_items: "{{ asm_compatibility.stdout_lines }}"
+  when:
+    - item.split(',')[0] == 'compatible.rdbms'
+    - item.split(',')[2] is version(target_gi_version,'<')

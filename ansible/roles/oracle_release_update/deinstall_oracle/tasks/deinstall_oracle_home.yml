@@ -1,0 +1,33 @@
+---
+# The Oracle Home may be de-installed with the deinstall tool
+
+- name: Define Temporary Location for Response File
+  tempfile:
+    path: /tmp
+    suffix: deinstall_response
+    state: directory
+  register: deinstalldir
+
+- name: Generate Response File for Deinstall
+  shell: |
+    cd {{ oracle_home }}/deinstall
+    ./deinstall -silent -checkonly -o {{ deinstalldir.path }}
+
+- name: Get Names of Response Files
+  find:
+    path: "{{ deinstalldir.path }}"
+  register: response_files
+
+- name: Get Name of Response File
+  set_fact:
+    response_file: "{{ response_files.files[0].path }}"
+
+- name: Deinstall {{ deinstall_home }} Oracle Home
+  shell: |
+    cd {{ oracle_home }}/deinstall
+    ./deinstall -silent -paramfile "{{ response_file }}"
+
+- name: Remove Response File
+  file:
+    path: "{{ response_file }}"
+    state: absent

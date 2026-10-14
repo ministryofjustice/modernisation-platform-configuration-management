@@ -1,0 +1,16 @@
+---
+- name: Get SYSMAN Password
+  include_tasks: "{{ playbook_dir }}/../../common/tasks/get_facts.yml"
+  tags: get_sysman_password
+
+- name: Get Name of Host
+  shell: |
+    {{ emctl_agent }} config agent listtargets | grep -E ", host]" | cut -d, -f1 | sed 's/^\[//'
+  register: get_name_of_host
+
+- name: Set Name of Host as Known by Agent
+  set_fact:
+    agent_host: "{{ get_name_of_host.stdout }}"
+
+- name: Update Targets
+  include_tasks: update_agent_targets.yml

@@ -1,0 +1,49 @@
+---
+- name: Ensure EMCLI session is ready
+  include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+
+# Get name of the existing target for the specified target type
+# We only expect to see 1 HAS target, 1 ASM target and 1 Listener target on a given host (and all shouold be running from the Grid Infrastructure Home)
+- name: Generate Command to Get Existing Target Name
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='{{ target_type }}'" -column="TARGET_NAME" -script -noheader
+  register: existing_target_name
+  changed_when: false
+
+- name: Set Command to Check if Target Home is Current Grid Infrastructure Home
+  set_fact:
+    get_target_home_cmd: '{{ emcli }} list -resource="TargetProperties" -search="TARGET_NAME=''{{ existing_target_name.stdout }}''" -column="PROPERTY_NAME,PROPERTY_VALUE" -script | grep OracleHome | grep -c {{ target_gi_home }} | cat'
+
+- name: Get the Target Home
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    {{ get_target_home_cmd }}
+  register: get_target_home_match
+  changed_when: false
+  when: existing_target_name.stdout != ''
+
+# Delete Existing Target if it is not related to the New Grid Infrastructre Home
+- name: Delete Existing Target
+  when:
+    - existing_target_name.stdout != ''
+    - get_target_home_match.stdout != '1'
+  block:
+    - name: Delete Target from Repository
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} delete_target -name="{{ existing_target_name.stdout }}" -type="{{ target_type }}"
+
+    - name: Wait for Existing Target Deletion
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} get_targets -targets="{{ existing_target_name.stdout }}:{{ target_type }}" -noheader -script | wc -l
+      register: target_deleted
+      until: target_deleted.stdout | int == 0
+      retries: 20
+      delay: 60
+      changed_when: false

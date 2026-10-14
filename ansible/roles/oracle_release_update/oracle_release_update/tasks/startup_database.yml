@@ -1,0 +1,18 @@
+---
+- name: Get Database Status
+  shell: |
+    . ~/.bash_profile
+    srvctl status database -d {{ item }}
+  register: database_status
+  changed_when: false
+  loop: "{{ sids_to_operate | default(oracle_db_sids) }}"
+
+- name: Report Database Status
+  debug: var=database_status
+
+- name: Startup Database
+  shell: |
+    . ~/.bash_profile
+    srvctl start database -d {{ item.item }}
+  when: item.stdout is search("Database is not running.")
+  loop: "{{ database_status.results }}"

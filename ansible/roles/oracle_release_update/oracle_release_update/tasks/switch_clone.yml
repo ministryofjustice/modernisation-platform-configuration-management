@@ -1,0 +1,52 @@
+---
+# Kill any remaining old sqlplus sessions as these can cause upgrade to fail
+- name: Kill sqlplus
+  shell: pkill sqlplus
+  register: pkillsqlplus
+  failed_when: pkillsqlplus.rc > 1
+
+# Kill any remaining DG broker manager sessions (as above)
+- name: Kill dgmgrl
+  shell: pkill dgmgrl
+  register: pkilldgmgrl
+  failed_when: pkilldgmgrl.rc > 1
+
+- name: Create AWS Snapshot of Primary Host Prior to Switching to Clone
+  include_role:
+    name: aws-snapshot
+  when:
+    - keep_aws_snapshot | default('No AWS Snapshot') != 'No AWS Snapshot'
+    - database_role == 'primary'
+  vars:
+    target_host: "{{ inventory_hostname }}"
+    delete_after_days: "{{ keep_aws_snapshot }}"
+
+# Allow up to 1 hour to perform the switch (should be faster than that, but we want to stop Ansible re-trying needlessly)
+- name: Switch Home from {{ source_home }} to {{ target_home }}
+  shell: |
+    . ~oracle/.bash_profile
+    {{ source_home }}/OPatch/opatchauto apply -oh {{ source_home }} -switch-clone
+  async: 3600
+  poll: 0
+  register: switch_clone
+  become: yes
+  become_user: root
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+
+- name: Wait for Switch Clone
+  async_status:
+    jid: "{{ switch_clone.ansible_job_id }}"
+  register: result
+  until: result.finished
+  retries: 120
+  delay: 30
+  become: yes
+  become_user: root
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+
+- name: Show Output of Switching to Clone
+  debug: var=result.stdout

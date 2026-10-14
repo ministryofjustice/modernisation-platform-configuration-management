@@ -1,0 +1,100 @@
+# Configuration and re-install of the Oracle Secure Backup (OSB) Cloud Module.
+# This is run as part of prepare-clone to avoid having issues with
+# an increase in the backup process duration. The wallet should reside in the
+# $ORACLE_BASE/wallets directory so that it doesn't have to be reconfigured when
+# each patch is applied. The osbws.ora file should also be updated to point to the
+# new wallet location. When prepare-clone runs it will copy the osbws.ora file to
+# the new Oracle home so it shouldn't need updating again, if it points to the
+# correct wallet location.
+---
+- name: Show Target Database Home
+  debug: var=target_home
+
+- name: Define Location for Oracle Wallet as $ORACLE_BASE/wallets/osbws_wallet
+  block:
+    - name: Get Oracle Base
+      shell: |
+        . ~/.bash_profile
+        echo $ORACLE_BASE
+      register: oracle_base_result
+      changed_when: false
+
+    - name: Ensure wallets parent directory exists
+      file:
+        path: "{{ oracle_base_result.stdout }}/wallets"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "0750"
+
+    - name: Define Location for Oracle Wallet
+      set_fact:
+        wallet_dir: "{{ oracle_base_result.stdout }}/wallets/osbws_wallet"
+
+# Check if Wallet Directory exists
+- name: Check if Wallet Directory exists
+  stat:
+    path: "{{ wallet_dir }}"
+  register: wallet_dir_exists
+
+# Copy Wallet Directory out of the original Oracle Home if the wallet directory does not exist
+# in $ORACLE_BASE/wallets. The source home won't use it until the switch over to the new home.
+- name: Copy Wallet Directory if it does not exist
+  when: not wallet_dir_exists.stat.exists
+  block:
+    - name: Copy contents of original osbws_wallet folder
+      command: /usr/bin/cp -ar "{{ source_home }}/dbs/osbws_wallet" "{{ wallet_dir }}"
+      register: copy_output
+
+    # Config file should exist in the new home but check to be sure
+    - name: Check osbws config exists in new home
+      stat:
+        path: "{{ target_home }}/dbs/osbws.ora"
+      register: osbws_config_exists_new
+
+    - name: Check osbws config exists in original home if it's not in the new home
+      stat:
+        path: "{{ source_home }}/dbs/osbws.ora"
+      register: osbws_config_exists_original
+      when: not osbws_config_exists_new.stat.exists
+
+    - name: Copy original osbws.ora to new home if original exists
+      command: /usr/bin/cp -p "{{ source_home }}/dbs/osbws.ora" "{{ target_home }}/dbs/osbws.ora"
+      when:
+        - not osbws_config_exists_new.stat.exists
+        - osbws_config_exists_original.stat.exists
+
+    - name: Fail when config files not present in either home
+      fail:
+        msg: "osbws.ora does not exist. Run the oracle-secure-backup role first to create it in {{ source_home }}/dbs."
+      when: not osbws_config_exists_new.stat.exists and not osbws_config_exists_original.stat.exists
+
+    # Update config files to point to correct wallet location
+    - name: OSBWS Configuration should point to wallet_dir
+      lineinfile:
+        path: "{{ target_home }}/dbs/osbws.ora"
+        regexp: "OSB_WS_WALLET="
+        line: OSB_WS_WALLET='location=file:{{ wallet_dir }} CREDENTIAL_ALIAS=s3_aws'
+
+    - name: Check if OSBWS Duplication Configuration file exists
+      stat:
+        path: "/home/oracle/admin/rman_scripts/osbws_duplicate.ora"
+      register: osbws_duplicate
+
+    - name: OSBWS Duplication Configuration should point to wallet_dir
+      lineinfile:
+        path: "/home/oracle/admin/rman_scripts/osbws_duplicate.ora"
+        regexp: "OSB_WS_WALLET="
+        line: OSB_WS_WALLET='location=file:{{ wallet_dir }} CREDENTIAL_ALIAS=s3_aws'
+      when:
+        - osbws_duplicate.stat.exists
+
+# Starting with Oracle Database 19c Release Update version 27 (19.27), the backup module library files
+# are available in the Oracle home directory after you install the Oracle Database.
+# As we no longer download these (as prod doesn't have access out to download them) we must unzip
+# the library files provided with the new Oracle Home.
+- name: Unzip OSBWS Library
+  unarchive:
+    src: "{{ target_home }}/lib/osbws_linux64.zip"
+    dest: "{{ target_home }}/lib"
+    remote_src: true

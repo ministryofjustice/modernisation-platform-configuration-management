@@ -1,0 +1,40 @@
+---
+- name: Deinstall Grid Infrastructure Software
+  when:
+    - oracle_grid_oracle_home is defined
+    - oracle_grid_oracle_home != 'DO_NOT_DEINSTALL'
+  block:
+    - name: Check Grid Infrastructure Home Format
+      fail:
+        msg: "Grid Infrastructure Oracle Home {{ oracle_grid_oracle_home }} does not match expected format."
+      when: not ( oracle_grid_oracle_home | regex_search("^/u01/app/grid/product/[0-9\.]+/grid$"))
+
+    - name: Deinstall Grid Infrastructure Home
+      include_tasks: deinstall.yml
+      vars:
+        deinstall_home: "{{ oracle_grid_oracle_home }}"
+
+- name: Deinstall Database Software
+  when:
+    - oracle_database_oracle_home is defined
+    - oracle_database_oracle_home != 'DO_NOT_DEINSTALL'
+  block:
+    - name: Check Database Home Format
+      fail:
+        msg: "Database Oracle Home {{ oracle_database_oracle_home }} does not match expected format."
+      when: not (oracle_database_oracle_home | regex_search("^/u01/app/oracle/product/[0-9\.]+/db$"))
+
+    - name: Deinstall Database Home
+      include_tasks: deinstall.yml
+      vars:
+        deinstall_home: "{{ oracle_database_oracle_home }}"
+
+# Set variables ready to run target deletion in next playbook
+# NB: We use ansible_play_hosts to compile a list of targets which have not failed so far
+# as we do not want to delete targets for hosts where the deinstall has failed.
+- name: Prepare Ansible Controller Variables for OEM Target Deletion
+  set_fact:
+    deinstalled_targets: "{{ ansible_play_hosts }}"
+  delegate_to: localhost
+  delegate_facts: true
+  run_once: yes

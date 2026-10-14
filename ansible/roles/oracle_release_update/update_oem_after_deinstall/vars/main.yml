@@ -1,0 +1,10 @@
+---
+oracle_inventory: /u01/app/oraInventory
+stage: /u02/stage
+oem_secretsmanager_passwords:
+  emrep:
+    account_name: "hmpps-oem-{{ aws_environment }}"
+    assume_role_name: "EC2OracleEnterpriseManagementSecretsRole"
+    secret: "/oracle/database/EMREP/shared-passwords"
+    users:
+      - sysman:

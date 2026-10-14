@@ -1,0 +1,129 @@
+---
+# Detect if OJVM Patch has been applied to the Primary database.
+# The OJVM patch is not certified for Standby First deployment so it must be installed there prior to installing on the standby databases.
+- name: Check OJVM Has Been Installed on Primary
+  when: database_role != "primary"
+  block:
+    - name: Check for OJVM Installation on Primary
+      script: get_ojvm_patch_check.sh {{ ojvm_patch_id }}
+      changed_when: false
+      register: get_ojvm_patch_check
+      delegate_to: "{{ primary_host }}"
+
+    - name: Abort Installation if Attempt to Install on Standby Ahead of Primary
+      fail:
+        msg: "OJVM Patch {{ ojvm_patch_id }} is Not Standby First Certified.  Install on Primary First."
+      when: not get_ojvm_patch_check is search('.*SUCCESS.*')
+
+- name: Check if OJVM Already Installed
+  shell: |
+    . ~/.bash_profile
+    $ORACLE_HOME/OPatch/opatch lspatches -id {{ ojvm_patch_id }}
+  register: patch_check
+  failed_when: patch_check.rc > 1
+  changed_when: false
+
+- name: Show Install Status
+  debug: var=patch_check.rc
+
+- name: Run Patch Installation only When Not Installed
+  block:
+    # If Installing on Primary Ensure We Disable Active Data Guard on Related Standby
+    # (Otherwise Recovery will Abort on that Standby)
+    - name: Disable ADG on Each Standby 1 Database
+      when:
+        - high_availability_count[application] | int >= 1
+        - database_role == 'primary'
+      block:
+        - name: Get Standby 1 Group
+          set_fact:
+            standbydb1_group: "{{ primary_host_group | regex_replace('^(.*)_primarydb', '\\1_standbydb1') }}"
+
+        - name: Disable ADG on Standby 1
+          include_tasks: disable_adg.yml
+          vars:
+            standby_host: "{{ groups[standbydb1_group][0] }}"
+            adg_standby_sid: "{{ item }}"
+          loop: "{{ hostvars[groups[standbydb1_group][0]]['database_standby_sids'] | default([hostvars[groups[standbydb1_group][0]]['database_standby_sid']]) }}"
+
+    - name: Disable ADG on Each Standby 2 Database
+      when:
+        - high_availability_count[application] | int == 2
+        - database_role == 'primary'
+      block:
+        - name: Get Standby 2 Group
+          set_fact:
+            standbydb2_group: "{{ primary_host_group | regex_replace('^(.*)_primarydb', '\\1_standbydb2') }}"
+
+        - name: Disable ADG on Standby 2
+          include_tasks: disable_adg.yml
+          vars:
+            standby_host: "{{ groups[standbydb2_group][0] }}"
+            adg_standby_sid: "{{ item }}"
+          loop: "{{ hostvars[groups[standbydb2_group][0]]['database_standby_sids'] | default([hostvars[groups[standbydb2_group][0]]['database_standby_sid']]) }}"
+
+    - name: Shutdown Database for Patching
+      include_tasks: shutdown_database.yml
+      when: (database_role != 'primary' and standby_db_configured) or (database_role == 'primary')
+
+    # OJVM Patch may be standalone (if superset_patch_id is specified) or within the Combo patch (if superset_patch_id is not specified)
+    - name: Define Location of Patch
+      set_fact:
+        ojvm_patch_location: "{{ ( oracle_patch_directory + '/' + ojvm_patch_id ) if (superset_patch_id is defined) else ( oracle_patch_directory + '/' + combo_patch_id + '/' + ojvm_patch_id ) }}"
+
+    - name: Run OJVM Patch Installation
+      shell: |
+        . ~/.bash_profile
+        cd {{ ojvm_patch_location }}
+        $ORACLE_HOME/OPatch/opatch apply -silent
+      async: 2400
+      poll: 0
+      register: run_ojvm_patch
+
+    - name: Wait for OJVM Patch Install
+      async_status:
+        jid: "{{ run_ojvm_patch.ansible_job_id }}"
+      register: result
+      until: result.finished
+      retries: 80
+      delay: 30
+
+    - name: Startup Primary Database in Upgrade Mode for Datapatch
+      script: startup_database_upgrade.sh {{ oracle_db_sids | join(' ') }}
+      when: database_role == "primary"
+
+    - name: Run Datapatch on Primary
+      shell: |
+        . ~/.bash_profile
+        cd {{ target_db_home }}/OPatch
+        ./datapatch -verbose
+      register: datapatch
+      when: database_role == "primary"
+      async: 1800
+      poll: 60
+      failed_when: datapatch.rc !=0 or datapatch.stdout is search('command failed with errors')
+
+    - name: Show Datapatch Output
+      debug: var=datapatch.stdout_lines
+      when: database_role == "primary"
+
+    - name: Shutdown Primary Database
+      include_tasks: shutdown_database.yml
+      when: database_role == "primary"
+
+    - name: Startup Database for Normal Use
+      include_tasks: startup_database.yml
+      when: (database_role != 'primary' and standby_db_configured) or (database_role == 'primary')
+
+    # Enable Active Data Guard if Required after install on Standby
+    - name: Enable ADG
+      include_tasks: enable_adg.yml
+      vars:
+        adg_standby_sid: "{{ item }}"
+      loop: "{{ oracle_db_sids }}"
+      when:
+        - database_role != 'primary'
+        - active_data_guard | default(false) | bool
+        - standby_db_configured
+
+  when: "patch_check.rc == 1"

@@ -1,0 +1,26 @@
+---
+- name: Check if Cookie Shows Active Session
+  lineinfile:
+    path: "{{ cookie_file }}"
+    regexp: "ACTIVE$"
+    state: absent
+  check_mode: yes
+  changed_when: false
+  register: active_session
+
+- name: Convert to Completed Session
+  when: active_session.found
+  block:
+    - name: Get File Statistics
+      stat:
+        path: "{{ cookie_file }}"
+      register: stat_cookie_file
+
+    - name: Get Size of File with ACTIVE Removed (Remove 7 Bytes)
+      set_fact:
+        truncate_file_size: "{{ ( stat_cookie_file.stat.size | int ) - 7 }}"
+
+    - name: Truncate Binary File to remove ACTIVE and Append COMPLETED Instead
+      shell: |
+        truncate -s {{ truncate_file_size }} {{ cookie_file }}
+        printf "\x09\x43\x4f\x4d\x50\x4c\x45\x54\x45\x44\x0a" >> {{ cookie_file }}

@@ -1,0 +1,44 @@
+---
+- name: Set Agent Host
+  set_fact:
+    agent_host: "{{ target_host + '.' + dns_zone_internal }}"
+
+- name: Ensure EMCLI session is ready
+  include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+
+- name: Find Out if Deinstalled Home Exists as a Target
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    ALL_HOME_TARGETS=$({{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_home'" -column="TARGET_NAME" -script -noheader)
+    for TARGET in ${ALL_HOME_TARGETS}; do {{ emcli }} list -resource="TargetProperties" -search="TARGET_NAME='$TARGET'" -search="PROPERTY_NAME='INSTALL_LOCATION'" -column="PROPERTY_VALUE" -script | grep -q "{{ oracle_home }}" && echo $TARGET && break; done
+  register: existing_oracle_home
+  failed_when: (existing_oracle_home.rc > 1 or existing_oracle_home.stderr is search('Error:.*') or existing_oracle_home.stderr is search('Unable to find a java program.*'))
+  changed_when: false
+
+- name: Search Output For Oracle Home Name
+  set_fact:
+    oracle_home_name: "{{ item }}"
+  loop: "{{ existing_oracle_home.stdout_lines }}"
+  when: item is search(agent_host)
+
+# This block will run if the Deinstalled Oracle Home Target still exists
+- name: Delete Target from Repository
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    {{ emcli }} delete_target -name="{{ oracle_home_name }}" -type="oracle_home"
+  when: existing_oracle_home.rc == 0 and oracle_home_name is defined
+
+# Pause Until OEM has Finished Deleting the Target
+# (Otherwise it will fail when we try to add the new target)
+- name: Get Target From Repository
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    {{ emcli }} get_targets -targets="{{ oracle_home_name }}:oracle_home" -script -noheader | awk '{print $NF}'
+  register: delete_target_monitor
+  until: delete_target_monitor.stdout_lines is not search(oracle_home_name)
+  delay: 60
+  retries: 10
+  when: oracle_home_name is defined

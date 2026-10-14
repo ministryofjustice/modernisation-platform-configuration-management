@@ -1,0 +1,35 @@
+---
+# Unlike Disabling ADG, the enable tasks are run directly on the standby database (since they run
+# as part of the apply-ojvm-standby mode).   This means that there is no need to delegate them.
+
+- name: Detect Active Data Guard Configuration
+  shell: |
+    . ~/.bash_profile
+    srvctl config database -d {{ adg_standby_sid }} | awk -F: '/Start options/{print $2}' | sed 's/^ //'
+  register: adg_config
+  changed_when: false
+
+- name: Enable Active Data Guard
+  when:
+    - adg_config.stdout_lines[-1] != 'read only'
+  block:
+    - name: Change Configuration
+      shell: |
+        . ~/.bash_profile
+        srvctl modify database -d {{ adg_standby_sid }} -startoption "read only"
+
+# Do not bounce an open database -- it will be in use as a Snapshot Standby
+- name: Bounce Standby Database Following Config Change
+  when:
+    - adg_config.stdout_lines[-1] != 'read only'
+    - adg_config.stdout_lines[-1] != 'open'
+  block:
+    - name: Shutdown Database
+      include_tasks: shutdown_database.yml
+      vars:
+        sids_to_operate: "{{ [adg_standby_sid] }}"
+
+    - name: Start Database
+      include_tasks: startup_database.yml
+      vars:
+        sids_to_operate: "{{ [adg_standby_sid] }}"

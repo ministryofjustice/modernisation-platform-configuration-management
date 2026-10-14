@@ -1,0 +1,201 @@
+---
+- name: Upgrade OPatch
+  include_tasks: upgrade_opatch.yml
+  tags: [prepare-clone]
+
+- name: Delete Inactive Patches
+  include_tasks: delete_inactive_patches.yml
+  tags: [prepare-clone]
+
+- name: Creating a Home Mapping for Out of Place Upgrade
+  copy:
+    dest: "/tmp/home_map.properties"
+    content: |
+      {{ source_home }}={{ target_home }}
+  tags: [prepare-clone]
+
+- name: Show Prepare Clone Source and Target Homes
+  debug:
+    msg:
+      - "Source home: {{ source_home }}"
+      - "Target home: {{ target_home }}"
+      - "Home map: {{ source_home }}={{ target_home }}"
+  tags: [prepare-clone]
+
+# Allow up to 60 minutes to do analyze - normally < 5 minutes on faster hosts
+# Use the standalone superset patch, or the GI patch contained within a Combo patch.
+- name: Analyze Existing Home for Patch Conflicts
+  shell: |
+    {{ source_home }}/OPatch/opatchauto apply {{ oracle_patch_directory }}/{{ superset_patch_id if superset_patch_id is defined else combo_patch_id + '/' + combo_gi_patch_id }} -analyze -oh {{ source_home }} -silent /tmp/home_map.properties -outofplace
+  register: analyze_db
+  changed_when: false
+  become: true
+  become_user: root
+  async: 3600
+  poll: 0
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+  tags: [prepare-clone]
+
+- name: Wait for Analyze to complete
+  async_status:
+    jid: "{{ analyze_db.ansible_job_id }}"
+  register: analyze_existing_home_result
+  until: analyze_existing_home_result is finished
+  delay: 60
+  retries: 60
+  become: true
+  become_user: root
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+  tags: [prepare-clone]
+
+- debug:
+    var: analyze_existing_home_result
+  tags: [prepare-clone]
+
+# OPatch can be used to find any one-off patches we have installed which would conflict with installing the DBRU
+- name: Identify Patch Conflicts
+  set_fact:
+    patch_conflicts: "{{ ( analyze_existing_home_result.stdout_lines | select('search','Subset Patch \\d+ which has overlay patches \\[[\\d\\,]+\\] and these overlay patches conflict with Superset Patch') | first | default('') | regex_replace('.*\\[([\\d\\,]+)\\].*','\\1') ).split(',') | default([]) | select() }}"
+  tags: [prepare-clone]
+
+# We also need to handle superseded patches (treat these as additional conflicts)
+- name: Identify Superseded Patches
+  set_fact:
+    patch_conflicts: "{{ patch_conflicts + ( ( analyze_existing_home_result.stdout_lines | select('search','Please rebuild the superset patch \\[\\d+\\] to make sure it supersedes all the relevant patch\\(es\\) \\[[\\d\\,]+\\]\\.') | first | default('') | regex_replace('.*\\(es\\) \\[([\\d\\,]+)\\]\\.','\\1') ).split(',') | default([]) ) | select() }}"
+  tags: [prepare-clone]
+
+- name: Report Patch Conflicts
+  debug: var=patch_conflicts
+  tags: [prepare-clone]
+
+# Generate a list of previous DBRUs already installed
+- name: Get Previously Installed DBRUs
+  shell: |
+    . ~oracle/.bash_profile
+    {{ source_home }}/OPatch/opatch lsinv | grep "Database Release Update" | awk '{print $NF}' | tr -d '()"'
+  register: get_previous_dbrus
+  tags: [prepare-clone]
+
+- name: Set List of Patch IDs Associated with Previous Installed DBRUs
+  set_fact:
+    previous_dbrus: "{{ get_previous_dbrus.stdout_lines }}"
+  tags: [prepare-clone]
+
+# Generate a list of all the patch IDs included in the target DBRU
+- name: Get List of Patches included in the DBRU Superset Patch or the Combo Patch GI Patch
+  shell: |
+    cd {{ oracle_patch_directory }}/{{ superset_patch_id if superset_patch_id is defined else combo_patch_id + '/' + combo_gi_patch_id }}
+    find . -name inventory.xml | xargs -l1 grep -E '<bug description=.*number="' | awk -Fnumber= '{print $2}' | tr -d '"/>'
+  register: get_dbru_contents
+  tags: [prepare-clone]
+
+- name: Set List of Patches included in the Superset Patch
+  set_fact:
+    dbru_contents: "{{ get_dbru_contents.stdout_lines }}"
+  tags: [prepare-clone]
+
+# Generate a list of all the patch IDs defined in the environment config which are defined as compatible with the target DBRU
+- name: Initialise List of Patches
+  set_fact:
+    patch_list: []
+  tags: [prepare-clone]
+
+- name: Create List of Patches with their Possible Version Compatibilities
+  set_fact:
+    patch_list: "{{ patch_list  + [ {'patch_id':item.key,'patch_files':item.value.patch_files} ] }}"
+  loop: "{{ required_patches | default({}) | dict2items }}"
+  tags: [prepare-clone]
+
+- name: Initialise List of Patches Compatible with the Target DBRU
+  set_fact:
+    dbru_compatible_patches: []
+  tags: [prepare-clone]
+
+- name: Get Patch IDs Compatible with Target DBRU Version
+  set_fact:
+    dbru_compatible_patches: "{{ dbru_compatible_patches + [ item.0.patch_id.split('p')[1] ] }}"
+  with_subelements:
+    - "{{ patch_list }}"
+    - patch_files
+  when: target_version is search('^' + item.1.target_version)
+  tags: [prepare-clone]
+
+- name: Show DBRU Compatible Patches
+  debug: var=dbru_compatible_patches
+  tags: [prepare-clone]
+
+# If any conflicting patches are either:
+# (1) Previously installed DBRUs
+# (2) Now included in the DBRU, or
+# (3) Have a replacement patch defined in the environment config
+# then we may proceed with the DBRU installation.
+# Otherwise we will abort here as it means we would be deinstalling a patch which is not replaced
+
+- name: Remove Conflicting Patch IDs which Refer to Previous DBRUs
+  set_fact:
+    patch_conflicts: "{{ patch_conflicts | difference(previous_dbrus) }}"
+  tags: [prepare-clone]
+
+- name: Remove Conflicting Patch IDs Included in DBRU
+  set_fact:
+    patch_conflicts: "{{ patch_conflicts | difference(dbru_contents) }}"
+  tags: [prepare-clone]
+
+- name: Remove Conflicting Patch IDs for Which Replacement Patch Files Are Available
+  set_fact:
+    patch_conflicts: "{{ patch_conflicts | difference(dbru_compatible_patches) }}"
+  tags: [prepare-clone]
+
+- name: Abort if Conflicting Patches Still Exist
+  fail: "The patches {{ patch_conflicts }} conflict with the DBRU and require resolution."
+  when: ( patch_conflicts | length ) > 0
+  tags: [prepare-clone]
+
+# Running the prepare script asynchronously has been found to be necessary in order to create an entirely separate root session.
+# When not run aysnchronously we get the error:  "OPATCHAUTO-72083: The bootstrap execution failed because failed to detect Grid Infrastructure setup due to null."
+# This error is avoided if ansible detaches from the session.
+- name: Prepare Clone of {{ source_home }} in {{ target_home }} including DBRU
+  shell: "{{ source_home }}/OPatch/opatchauto apply {{ oracle_patch_directory }}/{{ superset_patch_id if superset_patch_id is defined else combo_patch_id + '/' + combo_gi_patch_id }} -oh {{ source_home }} -silent /tmp/home_map.properties -prepare-clone -force_conflict -logLevel ALL"
+  async: 7200
+  poll: 0
+  register: prepare_clone
+  become: yes
+  become_user: root
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+  tags: [prepare-clone]
+
+# Since we run the above async task using become, we must do so with the async_status, otherwise it is unable to locate the job.
+# There appears to be bug in async_status which causes the 2nd and subsequent polling to attempt to create temporary files under /root and failing due to permissions.
+# To avoid this we use the ansible_remote_tmp variable to override the default location and write to tmp instead.
+- name: Wait for Prepare Clone
+  async_status:
+    jid: "{{ prepare_clone.ansible_job_id }}"
+  register: result
+  until: result.finished
+  retries: 120
+  delay: 60
+  become: yes
+  become_user: root
+  vars:
+    ansible_remote_tmp: /tmp/.ansible
+    ansible_async_dir: /tmp/.ansible_async
+  tags: [prepare-clone]
+
+- name: Show Output of Preparing Clone
+  debug: var=result.stdout
+  tags: [prepare-clone]
+
+# *Sometimes* even though the Clone completes (above step), a Session Cookie file is left over with the status of ACTIVE
+# This cause of this is unknown and an SR has been submitted to Oracle.
+# In the meantime, a workaround is to force the Session Cookie file to say COMPLETED instead of ACTIVE if the above step succeeds
+- name: Workaround for Session Cookie Status
+  include_tasks: session_cookie_workaround.yml
+  vars:
+    path_prefix: "{{ source_home }}"
+  tags: [prepare-clone]

@@ -1,0 +1,33 @@
+---
+#  For reasons, still undiagnosed, when the prepare-clone session finished, in some cases it does not set the session cookie
+#  file to COMPLETED.   Since it is still ACTIVE, the subsequent switch-clone session will report an error and not run.
+#
+#  As a workaround we hack this file to read COMPLETED if the prepare-clone step has completed without errors.
+#  (Note that this is a binary file and we should not perform a direct string replacement on it).
+#
+
+- name: Get All Session Cookie Directories
+  find:
+    path: "{{ path_prefix }}/.opatchauto_storage"
+    file_type: directory
+    patterns: "^[^system_patches]"
+    use_regex: true
+  register: cookie_directories
+
+- name: Get Cookie Files
+  find:
+    path: "{{ item.path }}"
+    file_type: file
+    patterns: oopsessioninfo.ser
+  register: cookie_files
+  loop: "{{ cookie_directories.files }}"
+
+- name: Get List of Files
+  set_fact:
+    list_of_session_cookies: "{{ cookie_files.results | map(attribute='files') | list | flatten | map(attribute='path') | list  }}"
+
+- name: Convert Session Cookies to COMPLETED
+  include_tasks: complete_session_cookies.yml
+  vars:
+    cookie_file: "{{ item }}"
+  loop: "{{ list_of_session_cookies }}"

@@ -1,0 +1,23 @@
+---
+- name: Get Database Status
+  shell: |
+    . ~/.bash_profile
+    srvctl status database -d {{ item }}
+  register: database_status
+  changed_when: false
+  loop: "{{ sids_to_operate | default(oracle_db_sids) }}"
+
+- name: Report Database Status
+  debug: var=database_status
+
+# Ignore error if database is already shutdown (PRCC-1016)
+- name: Shutdown Database
+  shell: |
+    . ~/.bash_profile
+    srvctl stop database -d {{ item.item }}
+  when: not item.stdout is search("Database is not running.")
+  loop: "{{ database_status.results }}"
+  register: stop_database
+  failed_when:
+    - stop_database.rc > 0
+    - not stop_database.stdout is search("PRCC-1016")

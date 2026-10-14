@@ -1,0 +1,20 @@
+---
+# Switch Off FSFO Mode in Primary if Enabled (including Observe-Only Mode)
+# This prevents unwanted failover whilst the primary database is being upgraded
+
+- name: Switch Off FSFO
+  when: database_role == 'primary'
+  block:
+    - name: Get FSFO Mode
+      shell: |
+        . ~/.bash_profile
+        echo -e "show fast_start failover" | dgmgrl / | grep "Fast-Start Failover:" | awk -F: '{print $2}'
+      register: get_fsfo_mode
+
+    - name: Disable FSFO Mode
+      shell: |
+        . ~/.bash_profile
+        echo -e "disable fast_start failover" | dgmgrl /
+      when:
+        - get_fsfo_mode.stdout | trim != ''
+        - get_fsfo_mode.stdout | trim != 'Disabled'

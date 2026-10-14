@@ -1,0 +1,38 @@
+- name: Check if Cloud Control Agent Installed
+  stat:
+    path: "{{ emctl_agent }}"
+  register: agent_emctl
+
+- name: Start Blackout
+  block:
+    - name: Get Hostname
+      shell: |
+        {{ emctl_agent }} config agent listtargets | grep host] | awk -F, '{print $1}' | sed 's/^\[//'
+      register: gethostname
+      changed_when: false
+
+    - name: Set Blackout Name
+      set_fact:
+        blackout_name: "upgrade_to_19c_on_{{ gethostname.stdout }}"
+
+    - name: Check if Blackout Already Exists
+      shell: |
+        {{ emctl_agent }} status blackout | grep -c {{ blackout_name }} | cat
+      register: getblackoutstatus
+      changed_when: false
+
+    - name: Start Blackout
+      shell: |
+        {{ emctl_agent }} start blackout {{ blackout_name }} -nodeLevel
+      when:
+        - (getblackoutstatus.stdout | int) == 0
+        - blackout_action == "start"
+
+    - name: Stop Blackout
+      shell: |
+        {{ emctl_agent }} stop blackout {{ blackout_name }}
+      when:
+        - (getblackoutstatus.stdout | int) == 1
+        - blackout_action == "stop"
+
+  when: agent_emctl.stat.exists

@@ -1,0 +1,18 @@
+---
+# We must use the GI Release Update Patch as this is a Superset patch which contains the patches for both SIHA and Database Home
+
+- name: Copy Combo Patches when used
+  when:
+    - combo_patch_id is defined
+  block:
+    - name: Download Release Update Grid Infrastructure Software
+      shell: "aws s3 cp s3://{{ dependencies_bucket_name }}/dependencies/oracle/rdbms/{{ COMBO_RU }} {{ oracle_patch_directory }}"
+      args:
+        creates: "{{ oracle_patch_directory }}/{{ COMBO_RU }}"
+
+    - name: Unzip Release Update Software
+      unarchive:
+        src: "{{ oracle_patch_directory }}/{{ COMBO_RU }}"
+        dest: "{{ oracle_patch_directory }}"
+        creates: "{{ oracle_patch_directory }}/{{ combo_patch_id }}"
+        remote_src: yes

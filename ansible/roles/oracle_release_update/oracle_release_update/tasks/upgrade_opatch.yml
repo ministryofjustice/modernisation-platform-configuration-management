@@ -1,0 +1,90 @@
+---
+# OPatch Upgrade
+- name: Get Version of OPatch
+  shell: |
+    {{ source_home }}/OPatch/opatch version | grep 'OPatch Version:' | awk '{print $NF}'
+  register: getopatchversion
+  changed_when: false
+
+- name: Set Version of OPatch
+  set_fact:
+    opatchversion: "{{ '0' if getopatchversion.stdout == '' else getopatchversion.stdout }}"
+
+- debug: var=getopatchversion
+
+- debug: var=opatchversion
+
+- debug: var=minimum_opatch_version
+
+- name: List OPatch Software Versions Available In S3
+  shell: aws s3 ls s3://{{ dependencies_bucket_name }}/dependencies/oracle/rdbms/ | grep -E "p6880880.*_{{ expected_version.split('.')[0] }}[0]{4}_.*\.[0-9]{2,3}\.zip$" | awk '{print $NF}' | sort
+  register: opatch_versions
+
+- name: Set Latest OPatch Software Value
+  set_fact:
+    opatch_zip: "{{ opatch_versions.stdout_lines | last | default() }}"
+
+- fail:
+    msg: "No OPatch Software Exists"
+  when: opatch_zip | length == 0
+
+- fail:
+    msg: "OPatch software version is not equal to or greater than {{ minimum_opatch_version }}"
+  when: opatch_zip.split('.')[1:6] | join('.') is version(minimum_opatch_version,'<')
+
+- name: Upgrade OPatch
+  block:
+    # Always move old OPatch out of the way so we are not unzipping into it
+    - name: Move old Opatch out of the way
+      shell: mv {{ source_home }}/OPatch /{{ source_home }}/OPatch.$$.orig
+      become: true
+      become_user: root
+
+    # Create the replacement directory as root as in the case of grid installation, the parent
+    # directory is not writeable by oracle
+    - name: Create Replacement Directory
+      file:
+        path: "{{ source_home }}/OPatch"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: "o+rwx,g+rx"
+      become: true
+      become_user: root
+
+    # Always download OPatch Zip file as new versions have the same name as old versions so we
+    # are safest to overwrite it regardless
+    - name: Download Oracle OPatch Upgrade
+      shell: "aws s3 cp s3://{{ dependencies_bucket_name }}/dependencies/oracle/rdbms/{{ opatch_zip }} {{ oracle_patch_directory }}"
+
+    - name: Unzip new OPatch utility
+      unarchive:
+        src: "{{ oracle_patch_directory }}/{{ opatch_zip }}"
+        dest: "{{ source_home }}"
+        owner: oracle
+        group: oinstall
+        mode: u=rwx,g=rx,o=rx
+        remote_src: yes
+      timeout: 120
+
+  when: opatchversion is version(minimum_opatch_version,'<')
+
+- name: Normalize OPatch Permissions
+  file:
+    path: "{{ source_home }}/OPatch"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: u=rwx,g=rx,o=rx
+    recurse: true
+  become: true
+  become_user: root
+
+- name: Verify Required OPatch Version Is Installed
+  shell: |
+    {{ source_home }}/OPatch/opatch version | grep 'OPatch Version:' | awk '{print $NF}'
+  register: installed_opatch_version
+  changed_when: false
+  failed_when:
+    - installed_opatch_version.rc != 0
+      or installed_opatch_version.stdout | trim is version(minimum_opatch_version, '<')

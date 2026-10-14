@@ -1,0 +1,18 @@
+---
+- hosts: "{{ target_hosts }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  roles:
+    - deinstall_oracle
+
+# Run the following to Update OEM Targets
+# This playbook runs ONLY on a single target host because emcli is installed
+- hosts: "{{ hostvars.localhost.deinstalled_targets[0] | default('skip_update') }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  vars:
+    deletion_targets: "{{ hostvars.localhost.deinstalled_targets | default([]) }}"
+  roles:
+    - update_oem_after_deinstall

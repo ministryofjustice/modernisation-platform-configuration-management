@@ -1,0 +1,269 @@
+---
+- block:
+    - name: Ensure EMCLI session is ready
+      include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+
+    # We start by determining the lifecycle status for the new targets we are going to create.
+    # This will be the same as the lifecycle status of the existing targets that they are due to replace.
+    - name: Generate Command to List Existing Target Properties
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -column="TARGET_NAME" -script -noheader | awk '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+      register: existing_target_properties
+      changed_when: false
+      failed_when: (existing_target_properties.rc != 0) or (existing_target_properties.stderr is search('Error:.*'))
+
+    # We determine lifecycle status based on the most commonly used status for all existing targets on the host
+    - name: Get the Lifecycle Status
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        ({{ existing_target_properties.stdout }}) | grep orcl_gtp_lifecycle_status | sort | uniq -c | sort -r -n -k1 | head -1 | awk '{print $NF}'
+      register: get_lifecycle_status
+      changed_when: false
+
+    # We determine Slack Channel based on the most commonly used Slack Channel for all existing targets on the host
+    - name: Get the Slack Channel Contact
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        ({{ existing_target_properties.stdout }}) | grep orcl_gtp_contact | sort | uniq -c | sort -r -n -k1 | head -1 | awk '{print $NF}'
+      register: get_slack_channel_contact
+      changed_when: false
+
+    - name: Set New Target Properties
+      set_fact:
+        lifecycle_status: "{{ get_lifecycle_status.stdout_lines[-1] | default('Production') }}"
+        slack_channel_contact: "{{ get_slack_channel_contact.stdout_lines[-1] | default('#hmpps-oem-alerts') }}"
+
+    #########################################################
+    #
+    # (1)  ORACLE HOME TARGET
+    #
+    #  Add new Oracle Home target for Updated Grid Oracle Home
+    #
+    ##########################################################
+
+    # Find out if we have a target for the New Grid Infrastructure Oracle Home and create it if it does not exist
+    # (Do not delete the Old Oracle Home as that will be decommissioned separately)
+    - name: Generate Command to List Existing Oracle Home Properties
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_home'" -column="TARGET_NAME" -script -noheader | grep -v 'Synchronized successfully' | awk '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+      register: existing_oracle_home_properties
+      changed_when: false
+
+    - name: Generate Command to Get New Grid Oracle Home Target if it exists
+      set_fact:
+        get_new_gi_home_cmd: "({{ existing_oracle_home_properties.stdout }}) | grep INSTALL_LOCATION | grep -c {{ target_gi_home }} | cat"
+
+    - name: Find out if the New Grid Infrastructure Oracle Home target exists
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ get_new_gi_home_cmd }}
+      register: get_new_oracle_grid_home_exists
+      changed_when: false
+
+    # This block will run if the New Grid Oracle Home Target does not already exist
+    - name: Create New Grid Oracle Home Target
+      block:
+        # For Grid Infrastructure Home Names we use the Convention OraGIHome_<n>_<hostname> where <n> is a sequential counter
+        # - name: Get Name of Highest Numbered Existing Grid Infrastructure Homes Matching Naming Convention
+        #   shell: |
+        #     {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_home'" -column="TARGET_NAME" -script -noheader | grep -v 'Synchronized successfully' |  grep -E "OraGIHome_[[:digit:]]_{{ agent_host }}" | sort -n -k2 -t_ | tail -1
+        #   register: highest_gi_home_name
+        #   changed_when: false
+
+        # - name: Increment Grid Infrastructure Home Name Counter
+        #   set_fact:
+        #     gi_home_counter: "{{ ( ( highest_gi_home_name.stdout_lines[0] | default('OraGIHome_0_' + agent_host ) ) | regex_replace('.+_(\\d+)_.+','\\1') | int ) + 1 }}"
+
+        # - name: Set New Grid Infrastructure Home Name
+        #   set_fact:
+        #     new_gi_home_name: "{{ ( highest_gi_home_name.stdout_lines[0] | default('OraGIHome_0_' + agent_host ) ) | regex_replace('(.+)_\\d+_(.+)','\\1_' + gi_home_counter + '_\\2') }}"
+
+        - name: Find New Grid Infrastructure Home Name
+          shell: |
+            GRID_HOME_NAME=$(grep {{ target_gi_home }} {{ oracle_inventory }}/ContentsXML/inventory.xml |cut -d= -f2 | cut -d'"' -f2)
+            GRID_HOME_INDEX=$(grep {{ target_gi_home }} {{ oracle_inventory }}/ContentsXML/inventory.xml |cut -d= -f5 | cut -d'"' -f2)
+            echo ${GRID_HOME_NAME}_${GRID_HOME_INDEX}_{{ agent_host }}
+          register: newgihomename
+
+        - name: Set New Grid Infrastructure Home Name
+          set_fact:
+            new_gi_home_name: "{{ newgihomename.stdout }}"
+
+        - name: Set Properties
+          set_fact:
+            gi_home_name: "{{ new_gi_home_name }}"
+            gi_home_type: "O"
+            gi_install_location: "{{ target_gi_home }}"
+            gi_inventory: "{{ oracle_inventory }}"
+
+        - name: Create Oracle GI Home Target
+          shell: |
+            . ~/.bash_profile
+            export JAVA_HOME=$ORACLE_HOME/jdk/jre
+            {{ emcli }} add_target -name="{{ gi_home_name }}" -type="oracle_home" -host="{{ agent_host }}" -properties="HOME_TYPE:{{ gi_home_type }};INSTALL_LOCATION:{{ gi_install_location }};INVENTORY:{{ gi_inventory }};orcl_gtp_lifecycle_status:{{ lifecycle_status }};orcl_gtp_contact:{{ slack_channel_contact }};orcl_gtp_line_of_bus:{{ line_of_business }}"
+
+      when: get_new_oracle_grid_home_exists.stdout_lines[-1] == "0"
+
+    #########################################
+    #
+    # (2)  HIGH AVAILABILITY SERVICE TARGET
+    #
+    #      Create New HAS target
+    #
+    #########################################
+
+    - name: Check if HAS Target Already Exists
+      include_tasks: check_target_exists.yml
+      vars:
+        target_name: "has_{{ agent_host }}"
+        target_type: has
+
+    - debug:
+        msg: "The target has_{{ agent_host }} already exists: {{ target_exists }}"
+
+    # Create New HAS Target if one does not already exist
+    - name: Create New HAS Target
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} add_target -name="has_{{ agent_host }}" -type="has" -host="{{ agent_host }}" -properties="OracleHome:{{ target_gi_home }};orcl_gtp_lifecycle_status:{{ lifecycle_status }};orcl_gtp_contact:{{ slack_channel_contact }};orcl_gtp_line_of_bus:{{ line_of_business }};isSiha:YES" | tail -1
+      when: not ( target_exists | bool )
+
+    # Ensure the properties of the HAS target are up to date
+    - name: Modify HAS Target
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} modify_target -name="has_{{ agent_host }}" -type="has" -host="{{ agent_host }}" -properties="isSiha:YES;OracleHome:{{ target_gi_home }};orcl_gtp_lifecycle_status:{{ lifecycle_status }};orcl_gtp_contact:{{ slack_channel_contact }};orcl_gtp_line_of_bus:{{ line_of_business }}"
+
+    #########################################
+    #
+    # (3)  ASM TARGET
+    #
+    #      Modify ASM target
+    #
+    #########################################
+
+    - name: Modify ASM Target
+      include_tasks: modify_target.yml
+      vars:
+        target_type: osm_instance
+
+    #########################################
+    #
+    # (4)  LISTENER TARGET
+    #
+    #      Modify Listener Target
+    #
+    #########################################
+
+    - name: Modify Listener Target
+      include_tasks: modify_target.yml
+      vars:
+        target_type: oracle_listener
+
+    #########################################################
+    #
+    # (5)  ORACLE HOME TARGET
+    #
+    #  Add new Oracle Home target for New Oracle Database Home
+    #
+    ##########################################################
+
+    # Find out if we have a target for the New Database Oracle Home and create it if it does not exist
+    # (Do not delete the 11g Oracle Home as that will be decommissioned separately)
+    - name: Generate Command to List Existing Oracle Home Properties
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_home'" -column="TARGET_NAME" -script -noheader | grep -v 'Synchronized successfully' | awk '{printf("{{ emcli }} list -resource=\"TargetProperties\" -search=\"TARGET_NAME='"'"'%s'"'"'\" -column=\"PROPERTY_NAME,PROPERTY_VALUE\" -script; ",$1)}'
+      register: existing_oracle_home_properties
+      changed_when: false
+
+    - name: Generate Command to Get New Database Oracle Home Target if it exists
+      set_fact:
+        get_new_db_home_cmd: "({{ existing_oracle_home_properties.stdout }}) | grep INSTALL_LOCATION | grep -c {{ target_db_home }} | cat"
+
+    - name: Find out if the New Database Oracle Home target exists
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ get_new_db_home_cmd }}
+      register: get_new_oracle_database_home_exists
+      changed_when: false
+
+    # This block will run if no New Database Oracle Home Target already exists
+    - name: Create New Database Oracle Home Target
+      block:
+        # For Database Infrastructure Home Names we use the Convention OraDBHome_<n>_<hostname> where <n> is a sequential counter
+        # - name: Get Name of Highest Numbered Existing Database Homes Matching Naming Convention
+        #   shell: |
+        #     {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_home'" -column="TARGET_NAME" -script -noheader |  grep -E "OraDBHome_[[:digit:]]_{{ agent_host }}" | sort -n -k2 -t_ | tail -1
+        #   register: highest_db_home_name
+        #   changed_when: false
+
+        # - name: Increment Database Home Name Counter
+        #   set_fact:
+        #     db_home_counter: "{{ ( ( highest_db_home_name.stdout_lines[0] | default('OraDBHome_0_' + agent_host ) ) | regex_replace('.+_(\\d+)_.+','\\1') | int ) + 1 }}"
+
+        # - name: Set New Grid Infrastructure Home Name
+        #   set_fact:
+        #     new_db_home_name: "{{ ( highest_db_home_name.stdout_lines[0] | default('OraDBHome_0_' + agent_host ) ) | regex_replace('(.+)_\\d+_(.+)','\\1_' + db_home_counter + '_\\2') }}"
+
+        - name: Find New Grid Database Home Name
+          shell: |
+            DATABASE_HOME_NAME=$(grep {{ target_db_home }} {{ oracle_inventory }}/ContentsXML/inventory.xml |cut -d= -f2 | cut -d'"' -f2)
+            DATABASE_HOME_INDEX=$(grep {{ target_db_home }} {{ oracle_inventory }}/ContentsXML/inventory.xml |cut -d= -f5 | cut -d'"' -f2)
+            echo ${DATABASE_HOME_NAME}_${DATABASE_HOME_INDEX}_{{ agent_host }}
+          register: newdbhomename
+
+        - name: Set New Database Home Name
+          set_fact:
+            new_db_home_name: "{{ newdbhomename.stdout }}"
+
+        - name: Set Properties
+          set_fact:
+            db_home_name: "{{ new_db_home_name }}"
+            db_home_type: "O"
+            db_install_location: "{{ target_db_home }}"
+            db_inventory: "{{ oracle_inventory }}"
+
+        - name: Create Oracle Home Target
+          shell: |
+            . ~/.bash_profile
+            export JAVA_HOME=$ORACLE_HOME/jdk/jre
+            {{ emcli }} add_target -name="{{ db_home_name }}" -type="oracle_home" -host="{{ agent_host }}" -properties="HOME_TYPE:{{ db_home_type }};INSTALL_LOCATION:{{ db_install_location }};INVENTORY:{{ db_inventory }};orcl_gtp_lifecycle_status:{{ lifecycle_status }};orcl_gtp_contact:{{ slack_channel_contact }};orcl_gtp_line_of_bus:{{ line_of_business }}"
+
+      when: get_new_oracle_database_home_exists.stdout_lines[-1] == "0"
+
+    # Get name of Oracle database as registered with the agent.  Note that this is case sensitive and different cases have been used
+    # in different environments so we cannot assume which case has been used
+    - name: Get Database Target Name
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} list -resource="Targets" -search="HOST_NAME='{{ agent_host }}'" -search="TARGET_TYPE='oracle_database'" -column="TARGET_NAME" -script -noheader | grep -v 'Synchronized successfully' | awk '{print $1}'
+      register: database_target_name
+      changed_when: false
+
+    - name: Find Out Oracle Home of Database from Cloud Control
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} list -resource="TargetProperties" -search="TARGET_NAME='{{ database_target_name.stdout }}'" -column="PROPERTY_NAME,PROPERTY_VALUE" -script | grep -v 'Synchronized successfully' | grep OracleHome | awk '{print $2}'
+      changed_when: false
+      register: db_home_in_cloud
+
+    - name: Assign Database to New Home
+      shell: |
+        . ~/.bash_profile
+        export JAVA_HOME=$ORACLE_HOME/jdk/jre
+        {{ emcli }} modify_target -name="{{ database_target_name.stdout }}" -type="oracle_database" -properties="OracleHome:{{ target_db_home }}" -on_agent
+      when: not ((db_home_in_cloud.stdout_lines | join(' ')) is search(target_db_home))

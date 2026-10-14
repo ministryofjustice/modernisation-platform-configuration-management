@@ -1,0 +1,6 @@
+---
+# Wrapper entrypoint so this role can be invoked as `oracle_release_update`
+# from site.yml while keeping the implementation in the nested role folder.
+- name: Run nested oracle_release_update role
+  ansible.builtin.include_role:
+    name: oracle_release_update/oracle_release_update

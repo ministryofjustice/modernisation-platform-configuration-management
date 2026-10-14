@@ -1,0 +1,37 @@
+---
+- name: Get Number Of Inactive Patches To Retain
+  shell: |
+    grep RETAIN_INACTIVE_PATCHES {{ source_home }}/OPatch/config/opatch.properties | cut -d'=' -f2
+  register: get_retain_inactive_patches_number
+  changed_when: false
+
+- name: List Number Of Inactive Patches
+  shell: |
+    export ORACLE_HOME={{ source_home }}
+    {{ source_home }}/OPatch/opatch util listorderedinactivepatches | grep -oP "^\*\*\*\*\*\sThere are \d inactive RU patches in chain\s\d" | awk '{print $4}'
+  register: list_number_of_inactive_patches
+
+- name: Workout Number Of Inactive Patches To Delete
+  set_fact:
+    number_of_inactive_patches_to_delete: "{{ (list_number_of_inactive_patches.stdout_lines | map('int') | sum | int) - (list_number_of_inactive_patches.stdout_lines | length | int) * (get_retain_inactive_patches_number.stdout|int) }}"
+
+- name: Number Of Inactive Patches To Delete
+  debug:
+    msg: "{{ number_of_inactive_patches_to_delete }}"
+
+- name: Delete Inactive Patches If Required
+  when: number_of_inactive_patches_to_delete | int > 0
+  block:
+    - name: Delete Inactive Patches
+      shell: |
+        export ORACLE_HOME={{ source_home }}
+        {{ source_home }}/OPatch/opatch util deleteinactivepatches -silent
+      register: delete_inactive_patches
+      vars:
+        ansible_aws_ssm_timeout: 7200
+
+    - name: Check Inactive Patches Has Been Deleted
+      assert:
+        that: delete_inactive_patches.stdout is search('OPatch succeeded.')
+        fail_msg: "Delete Inactive Patches Failed"
+        success_msg: "Deleted Inactive Patches"

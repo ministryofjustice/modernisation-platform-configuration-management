@@ -1,0 +1,15 @@
+---
+- name: Ensure EMCLI session is ready
+  include_tasks: "{{ playbook_dir }}/../../common/tasks/emcli_login.yml"
+
+- name: Check if Given Target Exists
+  shell: |
+    . ~/.bash_profile
+    export JAVA_HOME=$ORACLE_HOME/jdk/jre
+    {{ emcli }} get_targets -targets="{{ target_name }}:{{ target_type }}" -script -noheader | wc -l
+  register: get_target_exists
+  changed_when: false
+
+- name: Set if Given Target Exists
+  set_fact:
+    target_exists: "{{ true if ( get_target_exists.stdout | trim ) == '1' else false }}"

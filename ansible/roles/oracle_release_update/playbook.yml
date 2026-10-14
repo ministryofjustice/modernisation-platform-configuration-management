@@ -1,0 +1,42 @@
+---
+# Run Release Update Patching
+- hosts: "{{ target_hosts }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  roles:
+    - oracle_release_update
+
+# Apply Interim Patches after Switching to the Clone Home
+# (We do not set up interim patches during prepare-clone since interim patches often require
+#  subsequent SQL apply, or Datapatch steps which require the database to be running
+#  in the new home).
+# For the Primary Database we do this immediately after Switch Clone.
+# For any Standby Databases we do this after applying the OJVM patch to ensure that
+# the patch is applied to the Primary first (most interim patches can be applied to
+# either Primary or Standby first, but this covers the rare cases where patches
+# are Primary-first only).
+- hosts: "{{ target_hosts }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  roles:
+    - { role: oracle_interim_patch, when: ( apply_mode == 'switch-clone' and database_role == 'primary' ) or ( apply_mode == 'apply-ojvm-standby') }
+  vars:
+    install_absent_patches: true
+
+# Update OEM Targets after Switch Clone Phase of Patching
+- hosts: "{{ target_hosts }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  roles:
+    - { role: update_oem, when: apply_mode == 'switch-clone' and (not pingoms.failed | bool) }
+
+# Update OEM Metrics for Newly Added Targets
+- hosts: "{{ target_hosts }}"
+  gather_facts: no
+  become: yes
+  become_user: oracle
+  roles:
+    - { role: delius_oem_metrics_setup, when: apply_mode == 'switch-clone' and (not pingoms.failed | bool) }

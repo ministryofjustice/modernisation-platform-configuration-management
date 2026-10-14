@@ -1,0 +1,207 @@
+- name: Get Oracle Grid Infrastructure Version
+  shell: |
+    . ~oracle/.bash_profile
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv
+    sqlplus -v | sed '/^\s*$/d'
+  changed_when: false
+  register: get_grid_version
+  tags: always
+
+- name: Set Oracle Grid Infrastructure Version
+  set_fact:
+    source_gi_version: "{{ get_grid_version.stdout_lines[-1] | regex_replace('^.* ([\\d\\.]+).*$','\\1') }}"
+  tags: always
+
+- name: Show Current Grid Infrastructure Version
+  debug: var=source_gi_version
+  tags: always
+
+- name: Get Oracle Grid Infrastructure Home
+  shell: |
+    . ~oracle/.bash_profile
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv
+    echo $ORACLE_HOME
+  changed_when: false
+  register: get_gi_home
+  tags: always
+
+- name: Set Oracle Grid Infrastructure Home
+  set_fact:
+    source_gi_home: "{{ source_gi_home | default(get_gi_home.stdout_lines[-1]) }}"
+
+- name: Show Current Grid Infrastructure Home
+  debug: var=source_gi_home
+  tags: always
+
+- name: Get Oracle Database Version
+  shell: |
+    . ~oracle/.bash_profile
+    sqlplus -v | sed '/^\s*$/d'
+  changed_when: false
+  register: get_database_version
+  tags: always
+
+- name: Set Oracle Database Version
+  set_fact:
+    source_db_version: "{{ get_database_version.stdout_lines[-1] | regex_replace('^.* ([\\d\\.]+).*$','\\1') }}"
+  tags: always
+
+- name: Show Current Database Version
+  debug: var=source_db_version
+  tags: always
+
+- name: Get Oracle Database Home
+  shell: |
+    . ~oracle/.bash_profile
+    echo $ORACLE_HOME
+  changed_when: false
+  register: get_db_home
+  tags: always
+
+- name: Set Oracle Database Home
+  set_fact:
+    source_db_home: "{{ source_db_home | default(get_db_home.stdout_lines[-1]) }}"
+
+- name: Show Current Database Home
+  debug: var=source_db_home
+  tags: always
+
+- name: Get Desired DBRU Version Number
+  shell: grep "<title>" {{ oracle_patch_directory }}/{{ superset_patch_id | default(combo_patch_id) }}/README.html | awk -F"Release Update " '{print $2}' | awk -F. '{printf("%d.%d.%d",$1,$2,$3)}'
+  register: get_dbru_version
+  changed_when: false
+
+- name: Get Target Grid Infrastructure Version
+  set_fact:
+    target_gi_version: "{{ get_dbru_version.stdout }}"
+
+# The format of the README.html for GI for 19.27 has changed and the version number now appears below
+# the title.  It is unclear if this is a typo or a formatting update, so if we do not find the version
+# within the title, check directly beneath it.
+- name: Check Elsewhere for DBRU Version Number
+  when: target_gi_version == '0.0.0'
+  block:
+    - name: Get Desired DBRU Version Number
+      shell: grep -A1 "<title>" {{ oracle_patch_directory }}/{{ superset_patch_id | default(combo_patch_id) }}/README.html | tail -1 | awk -F"Release Update " '{print $2}' | awk -F. '{printf("%d.%d.%d",$1,$2,$3)}'
+      register: get_dbru_version
+      changed_when: false
+
+    - name: Get Target Grid Infrastructure Version
+      set_fact:
+        target_gi_version: "{{ get_dbru_version.stdout }}"
+
+- fail:
+    msg: "Could Not Determine Target Grid Infrastructure Version"
+  when: not target_gi_version is search('[\\d\\.]+')
+
+- fail:
+    msg: "Expected GI Target Version {{ expected_version }} Does Not Match DBRU Version Number {{ target_gi_version }}"
+  when: not target_gi_version is version(expected_version, operator='eq', strict=true)
+
+- name: Generate Target Grid Infrastructure Home
+  set_fact:
+    target_gi_home: "{{ target_gi_home | default((source_gi_home | regex_replace('/([\\d\\.]+)/grid$', '/' + target_gi_version + '/grid') | regex_replace('/[^/]+/gridhome_1$', '/' + target_gi_version + '/gridhome_1'))) }}"
+  tags:
+    - prepare-clone
+    - prepare-clone-grid
+    - prepare-clone-decision
+
+- name: Show New Grid Infrastructure Target Home
+  debug: var=target_gi_home
+  tags:
+    - prepare-clone
+    - prepare-clone-grid
+    - prepare-clone-decision
+
+- name: Check if Oracle Grid Infrastructure Target Home Has Already Been Cloned
+  stat:
+    path: "{{ target_gi_home }}"
+  register: stat_target_gi_home
+  tags:
+    - prepare-clone
+    - prepare-clone-grid
+    - prepare-clone-decision
+
+- name: Abort if Trying to Switch to Non Existing New Home
+  fail:
+    msg: "Grid Infrastructure Home {{ target_gi_home }} does not exist: cannot switch."
+  when:
+    - not stat_target_gi_home.stat.exists
+    - apply_mode == 'switch-clone'
+
+- name: Get Target Database Version
+  set_fact:
+    target_db_version: "{{ target_gi_version }}"
+
+- fail:
+    msg: "Could Not Determine Target Database Version"
+  when: not target_db_version is search('[\\d\\.]+')
+
+- fail:
+    msg: "Expected DB Target Version {{ expected_version }} Does Not Match DBRU Version Number {{ target_db_version }}"
+  when: not target_db_version is version(expected_version, operator='eq', strict=true)
+
+- name: Generate Target Database Home
+  set_fact:
+    target_db_home: "{{ target_db_home | default((source_db_home | regex_replace('/([\\d\\.]+)/db$', '/' + target_db_version + '/db') | regex_replace('/[^/]+/db_1$', '/' + target_db_version + '/db_1'))) }}"
+  tags:
+    - prepare-clone
+    - prepare-clone-db
+    - prepare-clone-decision
+
+- name: Show New Database Target Home
+  debug: var=target_db_home
+  tags:
+    - prepare-clone
+    - prepare-clone-db
+    - prepare-clone-decision
+
+- name: Check if Database Target Home Has Already Been Cloned
+  stat:
+    path: "{{ target_db_home }}"
+  register: stat_target_db_home
+  tags:
+    - prepare-clone
+    - prepare-clone-db
+    - prepare-clone-decision
+
+- name: Abort if Trying to Switch to Non Existing New Home
+  fail:
+    msg: "Database Home {{ target_db_home }} does not exist: cannot switch."
+  when:
+    - not stat_target_db_home.stat.exists
+    - apply_mode == 'switch-clone'
+
+- name: Get Minimum OPatch Version Number
+  shell: grep -iE "OPatch|opatch" {{ oracle_patch_directory }}/{{ superset_patch_id | default(combo_patch_id) }}/README.html | grep -oE '[0-9]+(\.[0-9]+)+' | head -1
+  register: get_opatch_version
+  changed_when: false
+
+- name: Set Minimum OPatch Version
+  set_fact:
+    minimum_opatch_version: >-
+      {{
+        configured_opatch_version
+        if readme_opatch_version == '' or configured_opatch_version is version(readme_opatch_version, '>') else
+        readme_opatch_version
+      }}
+  vars:
+    readme_opatch_version: "{{ get_opatch_version.stdout | trim }}"
+    configured_opatch_version: >-
+      {{
+        hostvars[primary_host].oracle_software.opatch.version
+        | default(hostvars[primary_host].oracle_software.opatch.filename
+        | regex_replace('^.*\.([0-9]+(\.[0-9]+)+)\.zip$', '\1'), true)
+      }}
+
+- name: Abort if Minimum OPatch Version Could Not Be Determined
+  fail:
+    msg: "Could not determine minimum OPatch version from {{ oracle_patch_directory }}/{{ superset_patch_id | default(combo_patch_id) }}/README.html"
+  when: minimum_opatch_version == ''
+
+- name: Show Minimum OPatch Version
+  debug: var=minimum_opatch_version

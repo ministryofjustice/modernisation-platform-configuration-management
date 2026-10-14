@@ -1,0 +1,22 @@
+---
+# Replace old Database Home in Listener Config with new Home
+# Note that the Listener runs from the GI Home.
+# There are 2 possible homes to be updated (so use with_sequence)
+- name: Update Listener Config File
+  lineinfile:
+    path: "{{ target_gi_home }}/network/admin/listener.ora"
+    regexp: "^(?!.*{{ target_db_home }}\\)\\s*)(\\s+)\\(ORACLE_HOME = (?:.*\\))\\s*"
+    backrefs: yes
+    line: "\\1(ORACLE_HOME = {{ target_db_home }})"
+  with_sequence: start=0 end=1
+  register: listener
+
+- name: Restart the Listener
+  shell: |
+    . ~/.bash_profile
+    export ORACLE_SID=+ASM
+    export ORAENV_ASK=NO
+    . oraenv
+    srvctl stop listener -l LISTENER
+    srvctl start listener -l LISTENER
+  when: listener.changed

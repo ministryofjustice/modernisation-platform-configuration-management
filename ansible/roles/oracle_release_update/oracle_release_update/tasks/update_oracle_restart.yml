@@ -1,0 +1,32 @@
+---
+- name: Check Current Version in Oracle Restart
+  shell: |
+    . ~/.bash_profile
+    srvctl config database -d {{ item }}
+  register: srvctlconfig
+  failed_when:
+    - srvctlconfig.rc > 0
+    - not srvctlconfig.stdout is search(".*PRCD-1229.*")
+  loop: "{{ oracle_db_sids }}"
+
+- name: Upgrade Oracle Restart
+  shell: |
+    . ~/.bash_profile
+    srvctl upgrade database -d {{ item.item }} -oraclehome {{ oracle_database_19c_oracle_home }}
+  when: item.stdout is search(".*PRCD-1229.*")
+  loop: "{{ srvctlconfig.results }}"
+
+- name: Get Database Enabled Status
+  shell: |
+    . ~/.bash_profile
+    srvctl config database -d {{ item }} -a | egrep -E "Database is .*abled"
+  register: database_enabled
+  changed_when: false
+  loop: "{{ oracle_db_sids }}"
+
+- name: Enable Database
+  shell: |
+    . ~/.bash_profile
+    srvctl enable database -d {{ item.item }}
+  when: item.stdout is search("Database is disabled")
+  loop: "{{ database_enabled.results }}"

@@ -1,0 +1,15 @@
+---
+- name: Get SYSMAN Password
+  include_tasks: "{{ playbook_dir }}/../../common/tasks/get_facts.yml"
+  tags: get_sysman_password
+
+- name: Delete Targets
+  include_tasks: delete_agent_targets.yml
+  vars:
+    target_host: "{{ target[0] }}"
+    oracle_home: "{{ target[1] }}"
+  with_nested:
+    - "{{ deletion_targets | default( target_hosts.split(',') ) }}"
+    - ["{{ oracle_grid_oracle_home }}", "{{ oracle_database_oracle_home }}"]
+  loop_control:
+    loop_var: target

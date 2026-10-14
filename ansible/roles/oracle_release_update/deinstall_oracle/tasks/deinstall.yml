@@ -1,0 +1,24 @@
+---
+- name: Detect if {{ deinstall_home }} Still in Use
+  script: detect_oracle_home_in_use.sh "{{ deinstall_home }}"
+  become: yes
+  become_user: root
+  changed_when: false
+
+- name: Check if {{ deinstall_home }} Home Still Exists
+  stat:
+    path: "{{ deinstall_home }}"
+  register: home_exists
+
+- name: Deinstall {{ deinstall_home }} Home
+  include_tasks: deinstall_oracle_home.yml
+  vars:
+    oracle_home: "{{ deinstall_home }}"
+  when: home_exists.stat.exists
+
+- name: Remove {{ deinstall_home }} Software Directory
+  file:
+    state: absent
+    path: "{{ deinstall_home }}"
+  become: yes
+  become_user: root
