@@ -68,6 +68,7 @@ WITH blocking_session AS (
   INNER JOIN v\$session s ON l.sid = s.sid
   WHERE l.block = 1
     AND s.type != 'BACKGROUND'
+    AND s.wait_time_micro > 5000000
 ),
 waiting_session AS (
   SELECT s.sid,
