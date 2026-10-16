@@ -44,8 +44,7 @@ col VALUE                  format a20 wrap
 alter session set nls_date_format='YYYY.MM.DD_HH24.MI.SS';
 
 define VERSION=to_char(NULL)
-col VERSION_ new_val VERSION noprint
-select i.VERSION as VERSION_ from V$INSTANCE i, V$DATABASE d, V$VERSION v where v.BANNER like 'Oracle%' or v.BANNER like 'Personal Oracle%';
+col VERSION_ new_val VERSION
 
 -- Prepare settings for pre 12c databases
 define DFUS=DBA_
@@ -80,6 +79,15 @@ select 'Y' as OCS_ from V$VERSION where BANNER like 'Oracle %Perf%';
 col CON_ID  NOPRINT
 
 spool options_packs_usage_summary.txt
+
+select i.HOST_NAME,
+       i.INSTANCE_NAME,
+       d.OPEN_MODE,
+       d.DATABASE_ROLE,
+       i.VERSION
+  from  V$INSTANCE i, V$DATABASE d, V$VERSION v
+  where v.BANNER LIKE 'Oracle%' or v.BANNER like 'Personal Oracle%'
+;
 
 select distinct NAME as PARAMETER, VALUE from GV$PARAMETER where lower(NAME) in ('control_management_pack_access', 'enable_ddl_logging') order by 1;
 
