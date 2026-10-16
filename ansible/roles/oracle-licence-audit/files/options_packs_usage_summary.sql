@@ -84,7 +84,7 @@ select i.HOST_NAME,
        i.INSTANCE_NAME,
        d.OPEN_MODE,
        d.DATABASE_ROLE,
-       i.VERSION
+       i.VERSION as VERSION_
   from  V$INSTANCE i, V$DATABASE d, V$VERSION v
   where v.BANNER LIKE 'Oracle%' or v.BANNER like 'Personal Oracle%'
 ;
