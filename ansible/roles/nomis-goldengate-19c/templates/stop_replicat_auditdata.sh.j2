@@ -10,6 +10,10 @@ GGHOME={{ oracle_goldengate_home }}
 REPLICAT_NAME={{ oracle_goldengate_group.auditdata.replicat_name }}
 LOG={{ oracle_goldengate_log_dir }}/ogg_control.log
 MANUAL_STOP_FILE={{ oracle_goldengate_log_dir }}/auditdata_replicat_monitor.manual_stop
+OEM_AGENT_HOME=/u01/app/oracle/product/oem-agent/agent_13.5.0.0.0
+
+echo "Creating blackout"
+$OEM_AGENT_HOME/bin/emctl start blackout goldengate_maintenance_${ORACLE_SID} ${ORACLE_SID}:oracle_database
 
 cd ${GGHOME}
 

@@ -1,0 +1,88 @@
+#!/bin/bash
+# Script to install auditdata database links for Oracle GoldenGate
+. ~/.bash_profile
+export ORACLE_SID={{ oracle_goldengate_group.source.tns_alias }}
+export ORACLE_HOME={{ oracle_goldengate_group.source.oracle_home }}
+export PATH=${ORACLE_HOME}/bin:$PATH
+
+# Retrieve the MIS {{ oracle_goldengate_dbuser }} password from AWS Secrets Manager for creating the new db link.
+# The db link script will get it from the env variable MIS_DB_PASSWORD.
+export MIS_DB_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "/oracle/database/{{ oracle_goldengate_group.mis.tns_alias }}/passwords" \
+  --query 'SecretString' \
+  --output text 2>/dev/null | jq -r 'to_entries[] | select(.key | ascii_downcase == "{{ oracle_goldengate_dbuser | lower }}") | .value' 2>/dev/null)
+
+if [ -z "$MIS_DB_PASSWORD" ]; then
+  echo "ERROR: Failed to retrieve {{ oracle_goldengate_dbuser }} password from AWS Secrets Manager for {{ oracle_goldengate_group.mis.tns_alias }}"
+  exit 1
+fi
+
+export SYS_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "/oracle/database/{{ oracle_goldengate_group.source.tns_alias }}/passwords" \
+  --query 'SecretString' \
+  --output text 2>/dev/null | jq -r '.sys' 2>/dev/null)
+
+if [ -z "$SYS_PASSWORD" ]; then
+  echo "ERROR: Failed to retrieve sys password from AWS Secrets Manager for {{ oracle_goldengate_group.source.tns_alias }}"
+  exit 1
+fi
+
+# Create secure temporary SQL file
+umask 077
+SQL_FILE=$(mktemp /dev/shm/install_source_db_links.XXXXXX.sql)
+
+cleanup() {
+    rm -f "$SQL_FILE"
+    unset MIS_DB_PASSWORD SYS_PASSWORD
+}
+
+trap cleanup EXIT
+
+# Reject passwords containing double quotes, which cannot be
+# safely embedded in the database link password clause.
+if [[ "$MIS_DB_PASSWORD" == *\"* ]]; then
+    echo "ERROR: MIS password contains unsupported double quote character"
+    exit 1
+fi
+
+# Generate SQL script
+cat > "$SQL_FILE" <<EOF
+WHENEVER OSERROR EXIT FAILURE
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+
+SET ECHO OFF
+SET FEEDBACK OFF
+SET VERIFY OFF
+SET DEFINE OFF
+
+PROMPT Installing database link to '{{ oracle_goldengate_group.mis.tns_alias }}' as {{ oracle_goldengate_group.mis.schema_owner }}
+
+DECLARE
+    v_count INTEGER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM dba_db_links
+    WHERE db_link LIKE 'CNOM_MIS_LINK%'
+      AND owner = 'PUBLIC';
+
+    IF v_count = 1 THEN
+        EXECUTE IMMEDIATE 'DROP PUBLIC DATABASE LINK CNOM_MIS_LINK';
+    END IF;
+END;
+/
+
+CREATE PUBLIC DATABASE LINK CNOM_MIS_LINK
+    CONNECT TO {{ oracle_goldengate_group.mis.schema_owner }}
+    IDENTIFIED BY "${MIS_DB_PASSWORD}"
+    USING '{{ oracle_goldengate_group.mis.tns_alias }}';
+
+EXIT
+EOF
+
+cd {{ oracle_goldengate_sql_dir }}/source
+
+# Execute against remote source database
+sqlplus -s "sys/${SYS_PASSWORD}@${ORACLE_SID} as sysdba" @"$SQL_FILE"
+
+exit 0

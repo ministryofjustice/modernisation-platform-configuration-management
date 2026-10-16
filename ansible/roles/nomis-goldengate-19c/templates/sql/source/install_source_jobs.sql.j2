@@ -1,7 +1,7 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_jobs.log
 
 SET SERVEROUTPUT ON
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 PROMPT Installing CNOM scheduler jobs (disabled initially)
 PROMPT =====================================================

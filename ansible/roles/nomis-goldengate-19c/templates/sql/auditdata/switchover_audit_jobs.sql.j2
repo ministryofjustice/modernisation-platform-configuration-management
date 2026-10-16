@@ -49,7 +49,7 @@ BEGIN
     FOR rec IN (SELECT owner, job_name, enabled 
                 FROM dba_scheduler_jobs 
                 WHERE owner = '{{ oracle_goldengate_group.auditdata.schema_owner }}'
-                AND job_name IN ('ADD_WKLY_DATA_PARTS', 'ARCH_WKLY_DATA_PARTS', 'AUDIT_DATA_PURGE',
+                AND job_name IN ('ADD_WKLY_DATA_PARTS', 'ARCH_WKLY_DATA_PARTS', 'AUDIT_DATA_PURGE','AUDITREF_DATA_PURGE',
                                 'GATHER_STATS_AUDITDATA_TABS', 'GATHER_STATS_AUDIT_COLUMN', 
                                 'GATHER_STATS_AUDIT_TABLE', 'OFFENDER_CROSS_REFERENCE_UPD')
                 ORDER BY job_name) LOOP
