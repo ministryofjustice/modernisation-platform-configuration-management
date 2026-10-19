@@ -51,7 +51,7 @@ get_blocked_sessions_count() {
   fi
 
   # Exit without failure if the database is mounted and not open (probably a standby database)
-  (srvctl status database -d $ORACLE_SID -v | grep -q Mounted) && exit 0
+  (srvctl status database -d $ORACLE_SID -v | grep -q Mount) && exit 0
 
 
   sqlplus -s "$CONNECTION_STRING" <<EOF
@@ -78,6 +78,7 @@ waiting_session AS (
   WHERE l.request <> 0
     AND NOT (s.event = 'enq: CI - contention' AND s.p1 LIKE '112%' and s.program like 'rman@%')
     AND s.type != 'BACKGROUND'
+    AND s.wait_time_micro > 5000000
 )
 SELECT SYS_CONTEXT('USERENV','DB_UNIQUE_NAME') || '|' || b.sid || '|' || b.serial# || '|' || COUNT(*) AS blocker_info
 FROM   blocking_session b,
