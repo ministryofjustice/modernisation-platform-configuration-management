@@ -16,16 +16,25 @@ debug() {
 	fi
 }
 
+# If the path to srvctl has not already been set, use the GI Home
+if ! command -v srvctl >/dev/null 2>&1; then
+	export ORAENV_ASK=NO
+	export ORACLE_SID=+ASM
+	. oraenv >/dev/null
+fi
+
 debug "Discovering configured databases"
 databases="$(srvctl config database)"
 now="$(date +%s)"
-# Expand the output-file pattern once; nullglob gives an empty array if absent.
+# Expand both output-file patterns once; nullglob gives an empty array if absent.
 shopt -s nullglob
-backup_files=(/tmp/rman*.out)
+backup_files=(/tmp/rman*.log /home/oracle/admin/rman_scripts/logs/rman*.log)
 debug "Found ${#backup_files[@]} candidate backup output files"
 
 while IFS= read -r database; do
 	[[ -n "$database" ]] || continue
+        # We use srvctl to get the database name as this may differ from the SID (e.g. for the RMAN catalog databases)
+        database_name="$(srvctl config database -d $database | awk '/Database name:/{print $3}')"
 
 	# Only primary databases are included in this backup-schedule check.
 	role="$(srvctl config database -d "$database" | awk '/Database role/{print $NF}')"
@@ -41,19 +50,21 @@ while IFS= read -r database; do
 			debug "Skipping non-regular file $backup_script_output_file"
 			continue
 		fi
-		debug "Checking $backup_script_output_file for database $database"
+		debug "Checking $backup_script_output_file for database ${database_name:-$database}"
 		# Ignore whitespace and log prefixes, but require an exact database name.
-		if awk -v database="$database" '
+		if awk -v database="${database_name:-$database}" '
 			BEGIN {
-				target = "Target Name = " database
-				gsub(/[[:space:]]/, "", target)
+				target = "connectedtotargetdatabase:" database "(DBID="
 			}
 			{
 				gsub(/[[:space:]]/, "")
-				sub(/^.*TargetName=/, "TargetName=")
-				if ($0 == target) {
-					matched = 1
-					exit
+				sub(/^.*connectedtotargetdatabase:/, "connectedtotargetdatabase:")
+				if (index($0, target) == 1) {
+					dbid = substr($0, length(target) + 1)
+					if (dbid ~ /^[0-9]+\)/) {
+						matched = 1
+						exit
+					}
 				}
 			}
 			END { exit !matched }
