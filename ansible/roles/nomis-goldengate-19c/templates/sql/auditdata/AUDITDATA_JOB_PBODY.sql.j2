@@ -649,93 +649,86 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_JOB_P
   IS
   -- Procedure to gather stats on key AUDITDATA tables
   -- Migrated from STRMADMIN.GATHER_STATS_AUDITDATA_TABS job
-  BEGIN
-
-    BEGIN
-      -- Gather stats on main audit tables
-      DBMS_STATS.GATHER_TABLE_STATS(
-        ownname => '{{ oracle_goldengate_sql_owner }}',
-        tabname => 'AUDIT_TABLE',
-        estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
+    cursor c_tab
+    is
+      select segment_name table_name from dba_segments where owner like 'AUDITDATA'
+      and segment_name not in ('AUDIT_COLUMN','AUDIT_TABLE') and segment_name not like 'BIN$%' and segment_name not like 'SYS_IMPORT%'
+      and segment_type='TABLE'
+      UNION
+      select table_name from dba_tables where cluster_name is not null and owner like 'AUDITDATA'
+      UNION
+      select table_name from dba_tables where partitioned='YES'
+      and owner like 'AUDITDATA'
+      and table_name not in ( 'AUDIT_COLUMN','AUDIT_TABLE' )
+      order by 1;
+  begin
+    -- Gather stats on all AUDITDATA tables, except AUDIT_TABLE and AUDIT_COLUMN
+    dbms_output.put_line(systimestamp||' - Starting statistics gathering');
+    for c_rec in c_tab
+    loop
+      begin
+        dbms_stats.gather_table_stats(ownname => 'AUDITDATA',
+        tabname=>c_rec.table_name,
+        estimate_percent => dbms_stats.auto_sample_size,
+        granularity => 'AUTO',
         method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-        cascade => TRUE
-      );
+        cascade => TRUE,
+        degree => dbms_stats.auto_degree
+        );
+        dbms_output.put_line(systimestamp||' - Statistics gathered for '||c_rec.table_name);
+      EXCEPTION
+      WHEN OTHERS THEN
+        IF SQLCODE = -20005 THEN
+          -- Statistics are locked, ignore the error
+          AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
+            p_src_time => SYSDATE,
+            p_message => 'Statistics are locked, skipping table '||c_rec.table_name);
+        ELSE
+          AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
+            p_src_time => SYSDATE,
+            p_message => 'Error gathering statistics for table '||c_rec.table_name);
+        END IF;
+      end;
+    end loop;
+    -- Gather stats on AUDIT_COLUMN table. 
+    -- Originally from GATHER_STAT_AUDIT_COLUMN program called by the GATHER_STATS_AUDIT_COLUMN job.
+    begin
+        dbms_stats.unlock_table_stats(ownname => 'AUDITDATA',tabname=>'AUDIT_COLUMN');
+        dbms_stats.gather_table_stats(ownname => 'AUDITDATA',
+            tabname=>'AUDIT_COLUMN',
+            estimate_percent => dbms_stats.auto_sample_size,
+            granularity => 'AUTO',
+            method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+            cascade=>TRUE,
+            degree => dbms_stats.auto_degree
+        );
+        dbms_stats.lock_table_stats(ownname => 'AUDITDATA',tabname=>'AUDIT_COLUMN');
     EXCEPTION
     WHEN OTHERS THEN
-      IF SQLCODE = -20005 THEN
         -- Statistics are locked, ignore the error
         AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
           p_src_time => SYSDATE,
-          p_message => 'Statistics are locked, skipping table AUDIT_TABLE.');
-      ELSE
-        -- Re-raise any other exception
-        RAISE;
-      END IF;
-    END;
-
-    BEGIN
-      DBMS_STATS.GATHER_TABLE_STATS(
-        ownname => '{{ oracle_goldengate_sql_owner }}',
-        tabname => 'AUDIT_COLUMN',
-        estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
-        method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-        cascade => TRUE
-      );
+          p_message => 'Error gathering statistics for table AUDIT_COLUMN');
+    end;
+    -- Gather stats on AUDITDATA.AUDIT_TABLE table. 
+    -- Originally from GATHER_STAT_AUDIT_TABLE program called by the GATHER_STATS_AUDIT_TABLE job.
+    begin
+        dbms_stats.unlock_table_stats(ownname => 'AUDITDATA',tabname=>'AUDIT_TABLE');
+        dbms_stats.gather_table_stats(ownname => 'AUDITDATA',
+            tabname=>'AUDIT_TABLE',
+            estimate_percent => dbms_stats.auto_sample_size,
+            granularity => 'AUTO',
+            method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+            cascade => TRUE,
+            degree => dbms_stats.auto_degree
+        );
+        dbms_stats.lock_table_stats(ownname => 'AUDITDATA',tabname=>'AUDIT_TABLE');
     EXCEPTION
     WHEN OTHERS THEN
-      IF SQLCODE = -20005 THEN
-        -- Statistics are locked, ignore the error
         AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
           p_src_time => SYSDATE,
-          p_message => 'Statistics are locked, skipping table AUDIT_COLUMN.');
-      ELSE
-        -- Re-raise any other exception
-        RAISE;
-      END IF;
-    END;
-
-    BEGIN
-      DBMS_STATS.GATHER_TABLE_STATS(
-        ownname => '{{ oracle_goldengate_sql_owner }}',
-        tabname => 'AUDIT_OFFENDER_REF',
-        estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
-        method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-        cascade => TRUE
-      );
-    EXCEPTION
-    WHEN OTHERS THEN
-      IF SQLCODE = -20005 THEN
-        -- Statistics are locked, ignore the error
-        AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
-          p_src_time => SYSDATE,
-          p_message => 'Statistics are locked, skipping table AUDIT_OFFENDER_REF.');
-      ELSE
-        -- Re-raise any other exception
-        RAISE;
-      END IF;
-    END;
-
-    BEGIN
-      DBMS_STATS.GATHER_TABLE_STATS(
-        ownname => '{{ oracle_goldengate_sql_owner }}',
-        tabname => 'STRM_ERROR_LOG',
-        estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
-        method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-        cascade => TRUE
-      );
-    EXCEPTION
-    WHEN OTHERS THEN
-      IF SQLCODE = -20005 THEN
-        -- Statistics are locked, ignore the error
-        AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables',
-          p_src_time => SYSDATE,
-          p_message => 'Statistics are locked, skipping table STRM_ERROR_LOG.');
-      ELSE
-        -- Re-raise any other exception
-        RAISE;
-      END IF;
-    END;
-
+          p_message => 'Error gathering statistics for table AUDIT_TABLE');
+    end;
   EXCEPTION
     WHEN OTHERS THEN
       AUDITDATA_GEN_PKG.log_audit_error ('gather_stats_auditdata_tables', 

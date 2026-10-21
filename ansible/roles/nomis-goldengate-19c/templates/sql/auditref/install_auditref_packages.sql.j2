@@ -4,7 +4,9 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 set serverout on
 
 PROMPT Executing grants needed:
-grant execute on SYS.DBMS_STATS to {{ oracle_goldengate_sql_owner }};
+grant execute on dbms_stats to {{ oracle_goldengate_sql_owner }};
+grant select on dba_segments to {{ oracle_goldengate_sql_owner }};
+grant select on dba_tables to {{ oracle_goldengate_sql_owner }};
 
 PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
 @AUDITREF_JOB_PKG.sql
