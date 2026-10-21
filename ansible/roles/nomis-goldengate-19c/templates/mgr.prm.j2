@@ -21,3 +21,9 @@ LAGINFOMINUTES 15
 -- threshold that is considered critical and to force a warning message to the error file (ggserr.log).
 -- Ensure it is set greater than the time taken for redo logs to be archived and registered in the downstream database, otherwise it will always be reported as critical. 
 LAGCRITICALMINUTES 60
+
+-- Auto-start all Extract and Replicat processes after an instance restart
+AUTOSTART ER *
+
+-- Manager tries to start all processes three times after failure within a one hour time period, and it waits five minutes before each attempt.
+AUTORESTART ER *, RETRIES 3, WAITMINUTES 5, RESETMINUTES 60
