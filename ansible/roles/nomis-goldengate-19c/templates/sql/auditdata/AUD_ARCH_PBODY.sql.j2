@@ -776,7 +776,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
 
     IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
       RAISE_APPLICATION_ERROR
-          (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
+          (g_aud_input_date_too_young,'Requested partition date '||partition_in||' falls within the number of days to keep period');
     END IF;
 
 
@@ -787,7 +787,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
     where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
 
     IF v_archived_flag != 'Y'  THEN
-      RAISE_APPLICATION_ERROR(g_aud_not_archived,'Partition has not previously been archived');
+      RAISE_APPLICATION_ERROR(g_aud_not_archived,'Partition '||partition_in||' has not previously been archived');
     END IF;
 
 
@@ -916,7 +916,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
   exception
     when partition_not_exists then
         log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>SQLERRM);
+                          p_tgt_object=>v_tgt_object, p_error_code=>SQLCODE, p_message=>'Error dropping partition from table '||table_in||': '||SQLERRM);
   end;
 
   pragma AUTONOMOUS_TRANSACTION;
@@ -948,7 +948,8 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
     where  to_char (PARTITION_DATE, 'YYYYMMDD') = partition_in;
 
     IF v_truncated_flag != 'Y'  THEN
-      RAISE_APPLICATION_ERROR(g_aud_not_truncated,'Partition has not previously been truncated');
+      TRUNCATE_PARTITION(partition_in);
+      -- RAISE_APPLICATION_ERROR(g_aud_not_truncated,'Partition '||partition_in||' has not previously been truncated');
     END IF;
 
     -- Check that the input partition date does not fall within the number of days which must be kept
@@ -963,7 +964,7 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
 
     IF partition_in > to_char (partition_dte_max, 'YYYYMMDD') THEN
       RAISE_APPLICATION_ERROR
-          (g_aud_input_date_too_young,'Requested partition date falls within the number of days to keep period');
+          (g_aud_input_date_too_young,'Requested partition date '||partition_in||' falls within the number of days to keep period');
     END IF;
 
 
@@ -1006,9 +1007,10 @@ create or replace PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUD_ARCH_PKG AS
       log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
                         p_error_code=>SQLCODE, p_message=>'Tablespace ' || a_ts || ' dropped.');
     EXCEPTION
-      WHEN tablespace_not_exists THEN
+      WHEN OTHERS THEN
+          -- log any errors that occur during the drop tablespace operation but continue execution
           log_archive_error(p_location=>'drop_partition', p_partition_date=>v_partition_date,
-                            p_error_code=>SQLCODE, p_message=>SQLERRM);
+                            p_error_code=>SQLCODE, p_message=>'Error dropping tablespace: ' || a_ts || ' - ' || SQLERRM);
     END;
   END IF;
 
