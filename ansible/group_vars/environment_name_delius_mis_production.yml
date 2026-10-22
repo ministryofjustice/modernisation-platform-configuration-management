@@ -25,8 +25,8 @@ sap_bip_conf:
   sap_bip_rws_url: "https://reporting.probation.service.justice.gov.uk/biprws"
   sap_bip_sso_rws_url: "https://sso.reporting.probation.service.justice.gov.uk/biprws"
   sap_bip_filesystem_destination_allowlist:
-    - /samba.delius-prod.internal/secure/NPS/
-    - //samba.delius-prod.internal/secure/NPS/
+    - /samba.delius-prod.internal/secure/
+    - //samba.delius-prod.internal/secure/
   web:
     sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
     sap_web_disable_cmcapp: "false"
@@ -98,7 +98,7 @@ bip_filesystems_mount:
     gid: binstall
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "{{ ansible_ec2_placement_availability_zone }}.fs-07148690a431135ed.efs.eu-west-2.amazonaws.com:/"
-  - dir: /samba.delius-prod.internal/secure/NPS
+  - dir: /samba.delius-prod.internal/secure
     fstype: efs
     opts: "_netdev,iam,tls,accesspoint=fsap-09782c81f5b00ad9e,nofail"
     src: fs-8a54e77b.efs.eu-west-2.amazonaws.com
@@ -124,6 +124,20 @@ rclone_secretsmanager_drive_ids:
     secret: "delius-mis-prod-sharepoint-drive-ids"
     users:
       - LogandViewReductionsAppAccess:
+      - EastMidlandsData:
+      - EoEPerformanceTeam-SharePointFiles:
+      - gm-probation-data:
+      - PQKSSDreamTeam:
+      - LondonI:
+      - PQNetwork:
+      - NorthWestProbationService:
+      - nsd-probation-data:
+      - HMPPSPerformanceunit:
+      - SCSharepointSite:
+      - SWPerformanceTeamOnly:
+      - wales-probation-data:
+      - NPSMidsCommsTest:
+      - TestYaTHPerformance:
 
 # wit: NDelius Staff Caseload report -> LogandViewReductionsAppAccess (wit = Workflow Intelligence Team)
 rclone_sharepoint_config:
@@ -131,10 +145,65 @@ rclone_sharepoint_config:
     app_registrations_ansible_key: rclone_1
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: LogandViewReductionsAppAccess
-
+  east-midlands:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: EastMidlandsData
+  east-of-england:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: EoEPerformanceTeam-SharePointFiles
+  greater-manchester:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: gm-probation-data
+  kent-surrey-sussex:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: PQKSSDreamTeam
+  london:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: LondonI
+  north-east:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: PQNetwork
+  north-west:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: NorthWestProbationService
+  nsd:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: nsd-probation-data
+  ppas:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: HMPPSPerformanceunit
+  south-central:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: SCSharepointSite
+  south-west:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: SWPerformanceTeamOnly
+  wales:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: wales-probation-data
+  west-midlands:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: NPSMidsCommsTest
+  yorkshire-and-the-humber:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: TestYaTHPerformance
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
-  shared_lock: "/samba.delius-prod.internal/secure/NPS/nart/.rclone-sync.lock"
+  shared_lock: "/samba.delius-prod.internal/secure/nart/.rclone-sync.lock"
   rclone_args:
     - "--verbose"
     - "--stats=0"
@@ -142,6 +211,342 @@ rclone_sync_config:
     - "--low-level-retries=0"
     - "--fast-list"
   dirs:
+    east-midlands-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "east-midlands:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    east-midlands:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 60 if (ec2_name.split('-')[-1] | int) == 1 else 1860 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/EastMidlands"
+        - "east-midlands:_NART - Automated Uploads/NDMIS/Reports/EastMidlands"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    east-of-england-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "east-of-england:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    east-of-england:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 120 if (ec2_name.split('-')[-1] | int) == 1 else 1920 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/EastofEngland"
+        - "east-of-england:_NART - Automated Uploads/NDMIS/Reports/EastofEngland"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    greater-manchester-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "greater-manchester:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    greater-manchester:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 180 if (ec2_name.split('-')[-1] | int) == 1 else 1980 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/GreaterManchester"
+        - "greater-manchester:_NART - Automated Uploads/NDMIS/Reports/GreaterManchester"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    kent-surrey-sussex-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "kent-surrey-sussex:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    kent-surrey-sussex:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 240 if (ec2_name.split('-')[-1] | int) == 1 else 2040 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/KentSurreyandSussex"
+        - "kent-surrey-sussex:_NART - Automated Uploads/NDMIS/Reports/KentSurreyandSussex"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    london-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "london:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    london:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 300 if (ec2_name.split('-')[-1] | int) == 1 else 2100 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/London"
+        - "london:_NART - Automated Uploads/NDMIS/Reports/London"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    north-east-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "north-east:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    north-east:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 360 if (ec2_name.split('-')[-1] | int) == 1 else 2160 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/NorthEast"
+        - "north-east:_NART - Automated Uploads/NDMIS/Reports/NorthEast"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    north-west-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "north-west:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    north-west:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 420 if (ec2_name.split('-')[-1] | int) == 1 else 2220 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/NorthWest"
+        - "north-west:_NART - Automated Uploads/NDMIS/Reports/NorthWest"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    nsd-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "nsd:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    nsd:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 480 if (ec2_name.split('-')[-1] | int) == 1 else 2280 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/NSD"
+        - "nsd:_NART - Automated Uploads/NDMIS/Reports/NSD"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    ppas-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "ppas:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    ppas:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 540 if (ec2_name.split('-')[-1] | int) == 1 else 2340 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/PPAS"
+        - "ppas:_NART - Automated Uploads/NDMIS/Reports/PPAS"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    south-central-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "south-central:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    south-central:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 600 if (ec2_name.split('-')[-1] | int) == 1 else 2400 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/SouthCentral"
+        - "south-central:_NART - Automated Uploads/NDMIS/Reports/SouthCentral"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    south-west-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "south-west:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    south-west:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 660 if (ec2_name.split('-')[-1] | int) == 1 else 2460 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/SouthWest"
+        - "south-west:_NART - Automated Uploads/NDMIS/Reports/SouthWest"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    wales-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "wales:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    wales:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 720 if (ec2_name.split('-')[-1] | int) == 1 else 2520 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/Wales"
+        - "wales:_NART - Automated Uploads/NDMIS/Reports/Wales"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    west-midlands-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "west-midlands:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    west-midlands:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 780 if (ec2_name.split('-')[-1] | int) == 1 else 2580 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/WestMidlands"
+        - "west-midlands:_NART - Automated Uploads/NDMIS/Reports/WestMidlands"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    yorkshire-and-the-humber-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "yorkshire-and-the-humber:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    yorkshire-and-the-humber:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 840 if (ec2_name.split('-')[-1] | int) == 1 else 2640 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/NPS/YorkshireAndTheHumber"
+        - "yorkshire-and-the-humber:_NART - Automated Uploads/NDMIS/Reports/YorkshireAndTheHumber"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
     wit-readme:
       frequency_interval_seconds: 3600
       frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
@@ -157,7 +562,7 @@ rclone_sync_config:
       frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
-        - "/samba.delius-prod.internal/secure/NPS/National/NDelius_Staff_Caseload"
+        - "/samba.delius-prod.internal/secure/National/NDelius_Staff_Caseload"
         - "wit:_NART - Automated Uploads/NDMIS/Reports/NDelius_Staff_Caseload"
       rclone_args:
         - "--suffix=-$(date +%F_%H%M%S)"
@@ -182,7 +587,7 @@ rclone_sync_config:
       frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
-        - "/samba.delius-prod.internal/secure/NPS/National/cfo"
+        - "/samba.delius-prod.internal/secure/National/cfo"
         - "s3:cfo-delius-uploads"
       rclone_args:
         - "--min-age=30m"
