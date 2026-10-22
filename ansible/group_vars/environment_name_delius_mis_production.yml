@@ -138,6 +138,10 @@ rclone_secretsmanager_drive_ids:
       - wales-probation-data:
       - NPSMidsCommsTest:
       - TestYaTHPerformance:
+      - CDGDigitalinformationandImprovementteam2:
+      - OPDteamspace2:
+      - NationalReportingToolset:
+      - NART:
 
 # wit: NDelius Staff Caseload report -> LogandViewReductionsAppAccess (wit = Workflow Intelligence Team)
 rclone_sharepoint_config:
@@ -201,6 +205,22 @@ rclone_sharepoint_config:
     app_registrations_ansible_key: rclone_1
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: TestYaTHPerformance
+  cdg:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: CDGDigitalinformationandImprovementteam2
+  opd:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: OPDteamspace2
+  dtt:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: NationalReportingToolset
+  nart:
+    app_registrations_ansible_key: rclone_1
+    drive_ids_ansible_key: rclone_1
+    drive_ids_secret_key: NART
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/samba.delius-prod.internal/secure/nart/.rclone-sync.lock"
@@ -582,6 +602,102 @@ rclone_sync_config:
       rclone_args:
         - "--min-age=30d"
         - "--exclude=README.md"
+    cdg-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "cdg:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    cdg:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 900 if (ec2_name.split('-')[-1] | int) == 1 else 2700 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/National/CDG"
+        - "cdg:_NART - Automated Uploads/NDMIS/Reports/CDG"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    opd-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "opd:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    opd:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 960 if (ec2_name.split('-')[-1] | int) == 1 else 2760 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/National/OPD"
+        - "opd:_NART - Automated Uploads/NDMIS/Reports/OPD"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+    dtt-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "dtt:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    #dtt:
+    #  frequency_interval_seconds: 3600
+    #  frequency_offset_seconds: "{{ 1020 if (ec2_name.split('-')[-1] | int) == 1 else 2820 }}"
+    #  rclone_cmd:
+    #    - "copy"
+    #    - "/samba.delius-prod.internal/secure/National/TODO"
+    #    - "dtt:_NART - Automated Uploads/NDMIS/Reports/TODO"
+    #  rclone_args:
+    #    - "--suffix=-$(date +%F_%H%M%S)"
+    #    - "--suffix-keep-extension"
+    #    - "--min-age=30m"
+    #    - "--max-age=2d"
+    #    - "--ignore-size"      # because MS365 immediately updates xlsx files
+    #    - "--ignore-checksum"  # ditto
+    nart-readme:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "nart:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+    nart:
+      frequency_interval_seconds: 3600
+      frequency_offset_seconds: "{{ 1080 if (ec2_name.split('-')[-1] | int) == 1 else 2880 }}"
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/nart"
+        - "nart:_NART - Automated Uploads/NDMIS/Reports/nart"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
     cfo-extract:
       frequency_interval_seconds: 3600
       frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
