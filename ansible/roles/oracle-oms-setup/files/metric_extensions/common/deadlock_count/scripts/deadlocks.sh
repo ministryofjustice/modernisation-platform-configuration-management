@@ -2,7 +2,7 @@
 
 ALERT_LOG="$ORACLE_BASE/diag/rdbms/${ORACLE_SID,,}/$ORACLE_SID/trace/alert_$ORACLE_SID.log"
 DEADLOCK_PATTERN="ORA-00060: Deadlock detected"
-DEADLOCK_COUNT=$(grep -c "$DEADLOCK_PATTERN" "$ALERT_LOG" 2>/dev/null)
+DEADLOCK_COUNT=$(grep -c "$DEADLOCK_PATTERN" "$ALERT_LOG")
 BEGINEPOCH=$(date "+%s" --date='- 15  minutes')
 FIRST_SQL_TO_MATCH="UPDATE OFFENDER O SET O.CURRENT_TIER = PKG_LOOKUPS.FUNCGETTABRECORD( P_TABLE => 'MANAGEMENT_TIER', P_REF_COL => 'offender_id', P_REF_VAL => :B1 , P_DATA_FLD => 'tier_id', P_ORDER_BY => 'date_changed DESC, tier_id DESC') WHERE OFFENDER_ID = :B1"
 SECOND_SQL_TO_MATCH="DELETE FROM OFFENDER WHERE ROWID = :p_row_id"
@@ -29,11 +29,16 @@ then
         FIRST_SQL=$(grep -A1 'current SQL:' $TRACEFILE |egrep -v 'current SQL:' | head -1 | sed -e 's/^ *//; s/ *$//')
         SECOND_USER=$(grep -A1 'client details:' $TRACEFILE |egrep -v 'client details:' | awk '{print $4}' | grep -v "^$" | head -2 | tail -1 | sed -e s/,//)
         SECOND_SQL=$(grep -A1 'current SQL:' $TRACEFILE |egrep -v 'current SQL:' | tail -1 | sed -e 's/^ *//; s/ *$//')
+        # Ignore deadlocks for the SupervisionPackagesService - these occur frequently and are automatically retried
+        CLIENT_ID=$(grep '*** CLIENT ID:' $TRACEFILE | sed -n 's/.*(\([^)]*\)).*/\1/p')
 
         if [[ "$FIRST_USER" == "appuser" && "$FIRST_SQL" == "$FIRST_SQL_TO_MATCH"
               && "$SECOND_USER" == "root" && "$SECOND_SQL" == "$SECOND_SQL_TO_MATCH" ]]
         then
           STATUS="DISCARD"
+        elif [[ "$CLIENT_ID" == "SupervisionPackagesService" ]]
+        then
+           STATUS="DISCARD"        
         else
           DEADLOCK_KEEP+=( ${d} )
         fi
