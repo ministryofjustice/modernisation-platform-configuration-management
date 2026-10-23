@@ -21,6 +21,7 @@
 CONFIG="/etc/rclone-sync.conf"
 STATE_DIR="/var/lib/rclone-sync"
 STATE_FILE="$STATE_DIR/state"
+ERROR_FILE="$STATE_DIR/error"
 LOCAL_LOCK="/run/lock/rclone-sync.lock"
 SHARED_LOCK="{{ rclone_sync_config.shared_lock | default() }}"
 SHARED_LOCK_TIMEOUT=3600
@@ -29,6 +30,7 @@ ENABLE_FREQUENCY=0
 ENABLE_MAINTENANCE_WINDOW_CHECK=1
 VERBOSE=0
 ERROR_BACKOFF_SECS=600
+CONSECUTIVE_ERRORS_BEFORE_TRIGGERING_ALARM=6
 MAINTENANCE_WINDOW_BACKOFF_SECS=1800
 RCLONE_OPTS=()
 
@@ -111,6 +113,37 @@ get_job_timestamp() {
         echo 0
     else
         echo "$timestamp"
+    fi
+}
+
+set_job_error_count() {
+    local key
+    local key_re
+    local error
+
+    key=$1
+    error=$2
+    key_re=$(printf '%s' "${key}" | sed 's/[][\/.^$*+?{}|()]/\\&/g')
+
+    if [[ -f "$ERROR_FILE" ]] && grep -q "^${key_re}=" "$ERROR_FILE"; then
+        sed -i "s|^${key_re}=.*|${key}=${error}|" "$ERROR_FILE"
+    else
+        echo "${key}=${error}" >> "$ERROR_FILE"
+    fi
+}
+
+get_job_error_count() {
+    local key
+    local key_re
+    local error
+
+    key=$1
+    key_re=$(printf '%s' "${key}" | sed 's/[][\/.^$*+?{}|()]/\\&/g')
+    error=$(sed -n "s|^${key_re}=||p" "$ERROR_FILE" 2>/dev/null | head -n 1)
+    if [[ -z "$error" ]]; then
+        echo 0
+    else
+        echo "$error"
     fi
 }
 
@@ -301,9 +334,21 @@ fi
         done
         exitcode=${PIPESTATUS[0]}
 
+        error_count=$(get_job_error_count "$job_key")
+        if [[ "$exitcode" -ne 0 ]]; then
+            error_count=$((error_count+1))
+        else
+            error_count=0
+        fi
+        set_job_error_count "$job_key" "$error_count"
+
         if (( ENABLE_MONITORING == 1 )); then
             if [[ -d /opt/textfile_monitoring/rclone_sync ]]; then
-                echo "$job_key $overall_exitcode" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                if [[ $error_count -gt $CONSECUTIVE_ERRORS_BEFORE_TRIGGERING_ALARM ]]; then
+                    echo "$job_key $error_count" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                else
+                    echo "$job_key 0" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                fi
             fi
         fi
 
