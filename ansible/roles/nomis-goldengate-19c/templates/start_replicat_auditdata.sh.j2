@@ -12,6 +12,7 @@ LOG_FILE={{ oracle_goldengate_log_dir }}/ogg_control.log
 MANUAL_STOP_FILE={{ oracle_goldengate_log_dir }}/auditdata_replicat_monitor.manual_stop
 SCRIPTS_DIR={{ oracle_goldengate_scripts_dir }}
 SYNC_SCRIPT=${SCRIPTS_DIR}/sync_auditdata_tables.sh
+OEM_AGENT_HOME=/u01/app/oracle/product/oem-agent/agent_13.5.0.0.0
 
 exec >>"${LOG_FILE}" 2>&1
 
@@ -48,6 +49,8 @@ EOF
 
 if [ $? -eq 0 ]; then
     log "Replicat ${REPLICAT_NAME} started successfully"
+    log "Stopping blackout"
+    $OEM_AGENT_HOME/bin/emctl stop blackout goldengate_maintenance_${ORACLE_SID}
     exit 0
 else
     log "FAILED to start Replicat ${REPLICAT_NAME}"
