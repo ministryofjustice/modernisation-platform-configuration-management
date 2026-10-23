@@ -147,6 +147,30 @@ get_job_error_count() {
     fi
 }
 
+reset_job_failed_file() {
+    local key
+
+    key=$1
+    file=$2
+    mkdir -p "$STATE_DIR/failed/$key"
+    if [[ -e "$STATE_DIR/failed/$key/failed.2.txt" ]]; then
+        rm -f "$STATE_DIR/failed/$key/failed.2.txt"
+    fi
+    if [[ -e "$STATE_DIR/failed/$key/failed.1.txt" ]]; then
+        mv "$STATE_DIR/failed/$key/failed.1.txt" "$STATE_DIR/failed/$key/failed.2.txt"
+    fi
+    touch "$STATE_DIR/failed/$key/failed.1.txt"
+}
+
+add_job_failed_file() {
+    local key
+    local file
+
+    key=$1
+    file=$2
+    echo "$file" >> "$STATE_DIR/failed/$key/failed.1.txt"
+}
+
 job_key_cmdline_arg=$1
 if [[ -z $job_key_cmdline_arg || "$job_key_cmdline_arg" == -* ]]; then
     usage >&2
@@ -249,6 +273,7 @@ fi
         frequency_interval="${fields[1]:-}"
         frequency_offset="${fields[2]:-}"
         maintenance_window="${fields[3]:-}"
+        rclone_cmd="${fields[4]:-}"
 
         if [[ "$job_key_cmdline_arg" != "all" && "$job_key_cmdline_arg" != "$job_key" ]]; then
             if ((VERBOSE > 1)); then
@@ -329,8 +354,39 @@ fi
             expanded_args+=("$arg")
         done
 
+        # Workaround for files that fail due to upload session was not found
+        if [[ $rclone_cmd == "copy" ]]; then
+            f1_file="$STATE_DIR/failed/$job_key/failed.1.txt"
+            f2_file="$STATE_DIR/failed/$job_key/failed.2.txt"
+            dest="${fields[6]}"
+            suffix="_$(date +%Y%m%d_%H%M%S)"
+
+            if [[ -f "$f1_file" && -f "$f2_file" ]]; then
+                while IFS= read -r failed_file; do
+                    [[ -z "$failed_file" ]] && continue
+                    if grep -Fqx "$failed_file" "$f2_file" >/dev/null; then
+                       # Separate extension manually to mimic --suffix-keep-extension
+                       base="${failed_file%.*}"
+                       ext="${failed_file##*.}"
+                       new_file="${base}${suffix}.${ext}"
+                       rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
+                           [[ -n "$line" ]] && echo "${logprefix}overwrite workaround: $line"
+                       done
+                    fi
+                done < "$f1_file"
+            fi
+            reset_job_failed_file "$job_key"
+        fi
+
+        pattern="ERROR : ([^:]+): Failed to copy:.*The upload session was not found"
         rclone "${expanded_args[@]}" 2>&1 | while IFS= read -r line; do
             [[ -n "$line" ]] && echo "${logprefix}$line"
+            if [[ $rclone_cmd == "copy" ]]; then
+                if [[ "$line" =~ $pattern ]]; then
+                    failed_file="${BASH_REMATCH[1]}"
+                    add_job_failed_file "$job_key" "$failed_file"
+                fi
+            fi
         done
         exitcode=${PIPESTATUS[0]}
 
