@@ -2,11 +2,15 @@
 # Script to sync local directories using rclone with output logged to syslog
 #
 # Config file is pipe separated in format:
-#   logprefix|frequency_interval|frequency_offset|arg1|arg2|arg3|...
+#   jobkey|arg1|arg2|arg3|...
 #
 # e.g.
-#   [mycopy] |3600|900|copy|/my/source|myremote:/my/dest|--min-age=5m # run at 15 minutes past the hour
-#   [mycleanup] |86400||delete|myremote:/backup|--min-age=7d         # run daily
+#   mycopy|copy|/my/source|myremote:/my/dest|--min-age=5m # run at 15 minutes past the hour
+#   mycleanup|delete|myremote:/backup|--min-age=7d        # run daily
+#
+# Use the script to run rclone one or all of the jobs specified in the config
+# with option to add additonal parameters as needed, e.g.
+#   rclone-sync.sh mycopy --dry-run
 #
 # State:
 #   Last attempted execution time for each log prefix is stored in:
@@ -17,6 +21,14 @@
 #   mechanism is optionally implemented by atomic creation of a directory
 #   on the shared file system. The lock directory is removed if it is
 #   older than SHARED_LOCK_TIMEOUT to prevent an accidental permanent lock
+#
+# Script specific options (--rclone-sync options)
+#   --rclone-sync-frequency-interval <seconds>        - run job with this frequency
+#   --rclone-sync-frequency-offset   <seconds>        - specify exact time to run, e.g. number of seconds past the hour if frequency=3600
+#   --rclone-sync-maintenance-window                  - d.HHMM-d.HHMM, don't run during maintenance window
+#   --rclone-error-backoff                            - if an error, retry in this number of seconds rather than on the next run
+#   --rclone-alarm-after-consecutive-error-count      - only alarm after this number of consecutive errors
+#   --rclone-sync-move-after-consecutive-error-count  - use moveto if a copy/sync if repeatedly failing
 
 CONFIG="/etc/rclone-sync.conf"
 STATE_DIR="/var/lib/rclone-sync"
@@ -29,9 +41,6 @@ ENABLE_MONITORING=0
 ENABLE_FREQUENCY=0
 ENABLE_MAINTENANCE_WINDOW_CHECK=1
 VERBOSE=0
-ERROR_BACKOFF_SECS=600
-CONSECUTIVE_ERRORS_BEFORE_TRIGGERING_ALARM=6
-MAINTENANCE_WINDOW_BACKOFF_SECS=1800
 RCLONE_OPTS=()
 
 # START (raw section){% raw %}
@@ -149,16 +158,20 @@ get_job_error_count() {
 
 reset_job_failed_file() {
     local key
+    local count
+    local i
 
     key=$1
-    file=$2
+    count=$2
     mkdir -p "$STATE_DIR/failed/$key"
-    if [[ -e "$STATE_DIR/failed/$key/failed.2.txt" ]]; then
-        rm -f "$STATE_DIR/failed/$key/failed.2.txt"
+    if [[ -e "$STATE_DIR/failed/$key/failed.$count.txt" ]]; then
+        rm -f "$STATE_DIR/failed/$key/failed.$count.txt"
     fi
-    if [[ -e "$STATE_DIR/failed/$key/failed.1.txt" ]]; then
-        mv "$STATE_DIR/failed/$key/failed.1.txt" "$STATE_DIR/failed/$key/failed.2.txt"
-    fi
+    for ((i=count-1; i>0; i=i-1)); do
+        if [[ -e "$STATE_DIR/failed/$key/failed.$i.txt" ]]; then
+            mv "$STATE_DIR/failed/$key/failed.$i.txt" "$STATE_DIR/failed/$key/failed.$((i+1)).txt"
+        fi
+    done
     touch "$STATE_DIR/failed/$key/failed.1.txt"
 }
 
@@ -168,7 +181,30 @@ add_job_failed_file() {
 
     key=$1
     file=$2
-    echo "$file" >> "$STATE_DIR/failed/$key/failed.1.txt"
+    if ! grep -Fqx "$file" "$STATE_DIR/failed/$key/failed.1.txt"; then
+        echo "$file" >> "$STATE_DIR/failed/$key/failed.1.txt"
+    fi
+}
+
+# shellcheck disable=SC2126
+get_job_failed_files() {
+    local key
+    local count
+    local failed_file
+    local consecutive_failure_count
+
+    key=$1
+    count=$2
+
+    if [[ -f "$STATE_DIR/failed/$key/failed.1.txt" ]]; then
+        while IFS= read -r failed_file; do
+            [[ -z "$failed_file" ]] && continue
+            consecutive_failure_count=$(grep -Fx "$failed_file" "$STATE_DIR/failed/$key"/failed.*.txt | wc -l)
+            if [[ $consecutive_failure_count -eq $count ]]; then
+                echo "$failed_file"
+            fi
+        done < "$STATE_DIR/failed/$key/failed.1.txt"
+    fi
 }
 
 job_key_cmdline_arg=$1
@@ -254,6 +290,9 @@ fi
     line_num=0
     job_count=0
     overall_exitcode=0
+    date_regex='\$\(date[[:space:]]+\+([^)]+)\)'
+    argvalue_regex='^(--[^=]+)=(.*)$'
+
     while IFS='|' read -ra fields
     do
         line_num=$((line_num + 1))
@@ -263,17 +302,7 @@ fi
         [[ -z "$job_key" && ${#fields[@]} -eq 0 ]] && continue
         [[ "$job_key" =~ ^[[:space:]]*# ]] && continue
 
-        if [[ ${#fields[@]} -lt 4 ]]; then
-            echo "ERROR: $CONFIG: line ${line_num}: No rclone command specified" >&2
-            overall_exitcode=1
-            continue
-        fi
-
         logprefix="[$job_key] "
-        frequency_interval="${fields[1]:-}"
-        frequency_offset="${fields[2]:-}"
-        maintenance_window="${fields[3]:-}"
-        rclone_cmd="${fields[4]:-}"
 
         if [[ "$job_key_cmdline_arg" != "all" && "$job_key_cmdline_arg" != "$job_key" ]]; then
             if ((VERBOSE > 1)); then
@@ -281,24 +310,98 @@ fi
             fi
             continue
         fi
+
         job_count=$((job_count+1))
+        frequency_interval=0
+        frequency_offset=
+        alarm_after_consecutive_error_count=
+        move_after_consecutive_error_count=
+        maintenance_window=
+        error_backoff=
+        suffix=
+        exitcode=
+        rclone_cmds=()
+        rclone_args=()
 
-        if [[ -n $frequency_interval ]]; then
-            if [[ ! "$frequency_interval" =~ ^[0-9]+$ ]]; then
-                echo "ERROR: $CONFIG: line ${line_num}: Frequency interval (in seconds)  must be numeric: $frequency_interval" >&2
-                overall_exitcode=1
-                continue
+        # parse args stripping out any rclone-sync specifc args and expanding any dates
+        for arg in "${fields[@]:1}" "${RCLONE_OPTS[@]}"; do
+            if [[ "$arg" == -* ]]; then
+                while [[ "$arg" =~ $date_regex ]]; do
+                    match="${BASH_REMATCH[0]}"
+                    format="${BASH_REMATCH[1]}"
+                    timestamp=$(date +"$format")
+                    arg="${arg//$match/$timestamp}"
+                done
+                if [[ "$arg" =~ $argvalue_regex ]]; then
+                    argname="${BASH_REMATCH[1]}"
+                    argvalue="${BASH_REMATCH[2]}"
+                    case "$argname" in
+                        --rclone-sync-frequency-interval)
+                            if [[ ! "$argvalue" =~ ^[0-9]+$ ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: $argname must be numeric, got: $argvalue" >&2
+                                exitcode=1
+                            else
+                                frequency_interval="$argvalue"
+                            fi
+                            ;;
+                        --rclone-sync-frequency-offset)
+                            if [[ ! "$argvalue" =~ ^[0-9]+$ ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: $argname must be numeric, got: $argvalue" >&2
+                                exitcode=1
+                            else
+                                frequency_offset="$argvalue"
+                            fi
+                            ;;
+                        --rclone-sync-maintenance-window)
+                            maintenance_window="$argvalue"
+                            ;;
+                        --rclone-error-backoff)
+                            if [[ ! "$argvalue" =~ ^[0-9]+$ ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: $argname must be numeric, got: $argvalue" >&2
+                                exitcode=1
+                            else
+                                error_backoff="$argvalue"
+                            fi
+                            ;;
+                        --rclone-alarm-after-consecutive-error-count)
+                            if [[ ! "$argvalue" =~ ^[0-9]+$ ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: $argname must be numeric, got: $argvalue" >&2
+                                exitcode=1
+                            else
+                                alarm_after_consecutive_error_count="$argvalue"
+                            fi
+                            ;;
+                        --rclone-sync-move-after-consecutive-error-count)
+                            if [[ ! "$argvalue" =~ ^[0-9]+$ ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: $argname must be numeric, got: $argvalue" >&2
+                                exitcode=1
+                            else
+                                move_after_consecutive_error_count="$argvalue"
+                            fi
+                            ;;
+                        --suffix)
+                            suffix=$argvalue
+                            rclone_args+=("$arg")
+                            ;;
+                        *)
+                            if [[ $argname =~ --rclone-sync ]]; then
+                                echo "${logprefix}ERROR: $CONFIG: line ${line_num}: Unsupported rclone-sync arg $argname" >&2
+                                exitcode=1
+                            else
+                                rclone_args+=("$arg")
+                            fi
+                    esac
+                else
+                    rclone_args+=("$arg")
+                fi
+            else
+                rclone_cmds+=("$arg")
             fi
-        else
-            frequency_interval=0
-        fi
+        done
 
-        if [[ -n $frequency_offset ]]; then
-            if [[ ! "$frequency_offset" =~ ^[0-9]+$ ]]; then
-                echo "ERROR: $CONFIG: line ${line_num}: Frequency offset (in seconds) must be numeric: $frequency_offset" >&2
-                overall_exitcode=1
-                continue
-            fi
+        if [[ ${#rclone_cmds[@]} -eq 0 ]]; then
+            echo "${logprefix}ERROR: $CONFIG: line ${line_num}: No rclone command specified" >&2
+            exitcode=1
         fi
 
         if ((ENABLE_FREQUENCY == 1)); then
@@ -327,80 +430,73 @@ fi
                 IFS=- read -r -a maintenance_times <<< "$maintenance_window"
                 if [[ ($now_utc == "${maintenance_times[0]}" || $now_utc > "${maintenance_times[0]}") && $now_utc < "${maintenance_times[1]}" ]]; then
                     echo "${logprefix}DEBUG: Skipping check in maintenance window $now_utc in [${maintenance_times[0]},${maintenance_times[1]}]"
-
-                    if ((ENABLE_FREQUENCY == 1)); then
-                        if ((VERBOSE > 1)); then
-                            echo "${logprefix}DEBUG: Frequency check: setting next run in ${MAINTENANCE_WINDOW_BACKOFF_SECS}s (maintenance window backoff); timestamp=$((now + MAINTENANCE_WINDOW_BACKOFF_SECS))"
-                        fi
-                        set_job_timestamp "$job_key" "$((now + MAINTENANCE_WINDOW_BACKOFF_SECS))"
-                    fi
                     continue
                 fi
             fi
         fi
 
-        # expand any $(date +format) in the config
-        args=("${fields[@]:4}" "${RCLONE_OPTS[@]}")
-        expanded_args=()
-        date_regex='\$\(date[[:space:]]+\+([^)]+)\)'
-
-        for arg in "${args[@]}"; do
-            while [[ "$arg" =~ $date_regex ]]; do
-                match="${BASH_REMATCH[0]}"
-                format="${BASH_REMATCH[1]}"
-                timestamp=$(date +"$format")
-                arg="${arg//$match/$timestamp}"
-            done
-            expanded_args+=("$arg")
-        done
-
-        # Workaround for files that fail due to upload session was not found
-        if [[ $rclone_cmd == "copy" ]]; then
-            f1_file="$STATE_DIR/failed/$job_key/failed.1.txt"
-            f2_file="$STATE_DIR/failed/$job_key/failed.2.txt"
-            dest="${fields[6]}"
-            suffix="_$(date +%Y%m%d_%H%M%S)"
-
-            if [[ -f "$f1_file" && -f "$f2_file" ]]; then
-                while IFS= read -r failed_file; do
-                    [[ -z "$failed_file" ]] && continue
-                    if grep -Fqx "$failed_file" "$f2_file" >/dev/null; then
-                       # Separate extension manually to mimic --suffix-keep-extension
-                       base="${failed_file%.*}"
-                       ext="${failed_file##*.}"
-                       new_file="${base}${suffix}.${ext}"
-                       rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
-                           [[ -n "$line" ]] && echo "${logprefix}overwrite workaround: $line"
-                       done
-                    fi
-                done < "$f1_file"
-            fi
-            reset_job_failed_file "$job_key"
+        if [[ -n "$move_after_consecutive_error_count" ]]; then
+            reset_job_failed_file "$job_key" "$move_after_consecutive_error_count"
         fi
 
-        pattern="ERROR : ([^:]+): Failed to copy:.*The upload session was not found"
-        rclone "${expanded_args[@]}" 2>&1 | while IFS= read -r line; do
-            [[ -n "$line" ]] && echo "${logprefix}$line"
-            if [[ $rclone_cmd == "copy" ]]; then
-                if [[ "$line" =~ $pattern ]]; then
-                    failed_file="${BASH_REMATCH[1]}"
-                    add_job_failed_file "$job_key" "$failed_file"
+        if [[ -z "$exitcode" ]]; then
+            # run rclone but capture failures due to upload session was not found - it seems this can block some uploads
+            pattern="ERROR : ([^:]+): Failed to copy:.*The upload session was not found"
+            rclone "${rclone_cmds[@]}" "${rclone_args[@]}" 2>&1 | while IFS= read -r line; do
+                [[ -n "$line" ]] && echo "${logprefix}$line"
+                if [[ -n "$move_after_consecutive_error_count" ]]; then
+                    if [[ "$line" =~ $pattern ]]; then
+                        failed_file="${BASH_REMATCH[1]}"
+                        add_job_failed_file "$job_key" "$failed_file"
+                    fi
                 fi
+            done
+            exitcode=${PIPESTATUS[0]}
+
+            # Workaround for files that fail due to upload session was not found
+            if [[ -n "$move_after_consecutive_error_count" ]]; then
+                failed_files=$(get_job_failed_files "$job_key" "$move_after_consecutive_error_count")
+                while IFS= read -r failed_file; do
+                    [[ -z "$failed_file" ]] && continue
+                    if [[ ${rclone_cmds[0]} != "copy" && ${rclone_cmds[0]} != "sync" ]]; then
+                        echo "${logprefix}ERROR: $CONFIG: line ${line_num}: expected copy or sync cmd with --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
+                        exitcode=1
+                    elif [[ -z "$suffix" ]]; then
+                        echo "${logprefix}ERROR: $CONFIG: line ${line_num}: --suffix must be specified with --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
+                        exitcode=1
+                    elif [[ ${#rclone_cmds[@]} -lt 2 ]]; then
+                        echo "${logprefix}ERROR: $CONFIG: line ${line_num}: missing dest arg, cannot --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
+                        exitcode=1
+                    else
+                        dest="${rclone_cmds[2]}"
+                        base="${failed_file%.*}"
+                        ext="${failed_file##*.}"
+                        new_file="${base}${suffix}.${ext}"
+                        echo "DEBUG: rclone moveto '$dest/$failed_file' '$dest/$new_file'"
+                        # rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
+                        #     [[ -n "$line" ]] && echo "${logprefix}overwrite workaround: $line"
+                        # done
+                    fi
+                done <<< "$failed_files"
             fi
-        done
-        exitcode=${PIPESTATUS[0]}
+        fi
 
         error_count=$(get_job_error_count "$job_key")
         if [[ "$exitcode" -ne 0 ]]; then
             error_count=$((error_count+1))
         else
+            if (( error_count > 1 )); then
+               echo "${logprefix}INFO: successfully ran after consecutive_error_count=$error_count"
+            fi
             error_count=0
         fi
         set_job_error_count "$job_key" "$error_count"
 
         if (( ENABLE_MONITORING == 1 )); then
             if [[ -d /opt/textfile_monitoring/rclone_sync ]]; then
-                if [[ $error_count -gt $CONSECUTIVE_ERRORS_BEFORE_TRIGGERING_ALARM ]]; then
+                if [[ -z $alarm_after_consecutive_error_count ]]; then
+                    echo "$job_key $error_count" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                elif [[ $error_count -gt $alarm_after_consecutive_error_count ]]; then
                     echo "$job_key $error_count" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
                 else
                     echo "$job_key 0" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
@@ -411,10 +507,12 @@ fi
         if [[ "$exitcode" -ne 0 ]]; then
             overall_exitcode=$exitcode
             if ((ENABLE_FREQUENCY == 1)); then
-                if ((VERBOSE > 1)); then
-                    echo "${logprefix}DEBUG: Frequency check: setting next run in ${ERROR_BACKOFF_SECS}s (error backoff); timestamp=$((now + ERROR_BACKOFF_SECS))"
+                if [[ -n $error_backoff ]]; then
+                    if ((VERBOSE > 1)); then
+                        echo "${logprefix}DEBUG: Frequency check: setting next run in ${error_backoff}s (error backoff); timestamp=$((now + error_backoff))"
+                    fi
+                    set_job_timestamp "$job_key" "$((now + error_backoff))"
                 fi
-                set_job_timestamp "$job_key" "$((now + ERROR_BACKOFF_SECS))"
             fi
         else
             if ((ENABLE_FREQUENCY == 1)); then
