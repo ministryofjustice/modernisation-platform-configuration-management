@@ -221,6 +221,13 @@ rclone_sharepoint_config:
     app_registrations_ansible_key: rclone_1
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: NART
+rclone_sync_readme_frequency_interval: 3600
+rclone_sync_readme_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 1800 }}"
+rclone_sync_report_frequency_interval: 1800
+rclone_sync_report_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 900 }}"
+rclone_sync_report_move_after_consecutive_error_count: 3
+rclone_sync_delete_frequency_interval: 86400
+rclone_sync_delete_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 3600 }}"
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/samba.delius-prod.internal/secure/nart/.rclone-sync.lock"
@@ -230,10 +237,11 @@ rclone_sync_config:
     - "--retries=0"  # don't retry as script runs every few minutes
     - "--low-level-retries=0"
     - "--fast-list"
+  rclone_sync_args:
+    - "--rclone-error-backoff=600"
+    - "--rclone-alarm-after-consecutive-error-count=1000"
   dirs:
     east-midlands-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -241,9 +249,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     east-midlands:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 60 if (ec2_name.split('-')[-1] | int) == 1 else 1860 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/EastMidlands"
@@ -255,9 +264,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     east-of-england-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -265,9 +276,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     east-of-england:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 120 if (ec2_name.split('-')[-1] | int) == 1 else 1920 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/EastofEngland"
@@ -279,9 +291,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 120 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     greater-manchester-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -289,9 +303,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     greater-manchester:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 180 if (ec2_name.split('-')[-1] | int) == 1 else 1980 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/GreaterManchester"
@@ -303,9 +318,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 180 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     kent-surrey-sussex-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -313,9 +330,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     kent-surrey-sussex:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 240 if (ec2_name.split('-')[-1] | int) == 1 else 2040 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/KentSurreyandSussex"
@@ -327,9 +345,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 240 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     london-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -337,9 +357,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     london:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 300 if (ec2_name.split('-')[-1] | int) == 1 else 2100 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/London"
@@ -351,9 +372,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 300 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     north-east-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -361,9 +384,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     north-east:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 360 if (ec2_name.split('-')[-1] | int) == 1 else 2160 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/NorthEast"
@@ -375,9 +399,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 360 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     north-west-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -385,9 +411,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     north-west:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 420 if (ec2_name.split('-')[-1] | int) == 1 else 2220 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/NorthWest"
@@ -399,9 +426,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 420 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     nsd-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -409,9 +438,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     nsd:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 480 if (ec2_name.split('-')[-1] | int) == 1 else 2280 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/NSD"
@@ -423,9 +453,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 480 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     ppas-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -433,9 +465,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     ppas:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 540 if (ec2_name.split('-')[-1] | int) == 1 else 2340 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/PPAS"
@@ -447,9 +480,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 540 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     south-central-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -457,9 +492,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     south-central:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 600 if (ec2_name.split('-')[-1] | int) == 1 else 2400 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/SouthCentral"
@@ -471,9 +507,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 600 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     south-west-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -481,9 +519,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     south-west:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 660 if (ec2_name.split('-')[-1] | int) == 1 else 2460 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/SouthWest"
@@ -495,9 +534,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 660 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     wales-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -505,9 +546,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     wales:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 720 if (ec2_name.split('-')[-1] | int) == 1 else 2520 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/Wales"
@@ -519,9 +561,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 720 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     west-midlands-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -529,9 +573,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     west-midlands:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 780 if (ec2_name.split('-')[-1] | int) == 1 else 2580 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/WestMidlands"
@@ -543,9 +588,11 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 780 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     yorkshire-and-the-humber-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -553,9 +600,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     yorkshire-and-the-humber:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 840 if (ec2_name.split('-')[-1] | int) == 1 else 2640 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/NPS/YorkshireAndTheHumber"
@@ -567,9 +615,119 @@ rclone_sync_config:
         - "--max-age=2d"
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 840 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+    cdg-readme:
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "cdg:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+    cdg:
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/National/CDG"
+        - "cdg:_NART - Automated Uploads/NDMIS/Reports/CDG"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+    opd-readme:
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "opd:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+    opd:
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/National/OPD"
+        - "opd:_NART - Automated Uploads/NDMIS/Reports/OPD"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 120 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+    dtt-readme:
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "dtt:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+    dtt:
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/National/wmt/Reporting Transformation Files"
+        - "dtt:_NART - Automated Uploads/NDMIS/Reports/Reporting Transformation Files"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 180 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+    nart-readme:
+      rclone_cmd:
+        - "copy"
+        - "/var/lib/rclone-sync/sharepoint"
+        - "nart:_NART - Automated Uploads"
+      rclone_args:
+        - "--checksum"
+        - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+    nart:
+      rclone_cmd:
+        - "copy"
+        - "/samba.delius-prod.internal/secure/nart"
+        - "nart:_NART - Automated Uploads/NDMIS/Reports/nart"
+      rclone_args:
+        - "--suffix=-$(date +%F_%H%M%S)"
+        - "--suffix-keep-extension"
+        - "--min-age=30m"
+        - "--max-age=2d"
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
+        - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 240 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     wit-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -577,9 +735,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     wit-staff-caseload:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/National/NDelius_Staff_Caseload"
@@ -593,114 +752,21 @@ rclone_sync_config:
         - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
         - "--max-depth=1"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 300 }}"
+        - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
     wit-delete-old:
-      frequency_interval_seconds: 86400
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 3600 }}"
       rclone_cmd:
         - "delete"
         - "wit:_NART - Automated Uploads"
       rclone_args:
         - "--min-age=30d"
         - "--exclude=README.md"
-    cdg-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      rclone_cmd:
-        - "copy"
-        - "/var/lib/rclone-sync/sharepoint"
-        - "cdg:_NART - Automated Uploads"
-      rclone_args:
-        - "--checksum"
-        - "--min-age=1m"
-    cdg:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 900 if (ec2_name.split('-')[-1] | int) == 1 else 2700 }}"
-      rclone_cmd:
-        - "copy"
-        - "/samba.delius-prod.internal/secure/National/CDG"
-        - "cdg:_NART - Automated Uploads/NDMIS/Reports/CDG"
-      rclone_args:
-        - "--suffix=-$(date +%F_%H%M%S)"
-        - "--suffix-keep-extension"
-        - "--min-age=30m"
-        - "--max-age=2d"
-        - "--ignore-size"      # because MS365 immediately updates xlsx files
-        - "--ignore-checksum"  # ditto
-    opd-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      rclone_cmd:
-        - "copy"
-        - "/var/lib/rclone-sync/sharepoint"
-        - "opd:_NART - Automated Uploads"
-      rclone_args:
-        - "--checksum"
-        - "--min-age=1m"
-    opd:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 960 if (ec2_name.split('-')[-1] | int) == 1 else 2760 }}"
-      rclone_cmd:
-        - "copy"
-        - "/samba.delius-prod.internal/secure/National/OPD"
-        - "opd:_NART - Automated Uploads/NDMIS/Reports/OPD"
-      rclone_args:
-        - "--suffix=-$(date +%F_%H%M%S)"
-        - "--suffix-keep-extension"
-        - "--min-age=30m"
-        - "--max-age=2d"
-        - "--ignore-size"      # because MS365 immediately updates xlsx files
-        - "--ignore-checksum"  # ditto
-    dtt-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      rclone_cmd:
-        - "copy"
-        - "/var/lib/rclone-sync/sharepoint"
-        - "dtt:_NART - Automated Uploads"
-      rclone_args:
-        - "--checksum"
-        - "--min-age=1m"
-    #dtt:
-    #  frequency_interval_seconds: 3600
-    #  frequency_offset_seconds: "{{ 1020 if (ec2_name.split('-')[-1] | int) == 1 else 2820 }}"
-    #  rclone_cmd:
-    #    - "copy"
-    #    - "/samba.delius-prod.internal/secure/National/TODO"
-    #    - "dtt:_NART - Automated Uploads/NDMIS/Reports/TODO"
-    #  rclone_args:
-    #    - "--suffix=-$(date +%F_%H%M%S)"
-    #    - "--suffix-keep-extension"
-    #    - "--min-age=30m"
-    #    - "--max-age=2d"
-    #    - "--ignore-size"      # because MS365 immediately updates xlsx files
-    #    - "--ignore-checksum"  # ditto
-    nart-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      rclone_cmd:
-        - "copy"
-        - "/var/lib/rclone-sync/sharepoint"
-        - "nart:_NART - Automated Uploads"
-      rclone_args:
-        - "--checksum"
-        - "--min-age=1m"
-    nart:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 1080 if (ec2_name.split('-')[-1] | int) == 1 else 2880 }}"
-      rclone_cmd:
-        - "copy"
-        - "/samba.delius-prod.internal/secure/nart"
-        - "nart:_NART - Automated Uploads/NDMIS/Reports/nart"
-      rclone_args:
-        - "--suffix=-$(date +%F_%H%M%S)"
-        - "--suffix-keep-extension"
-        - "--min-age=30m"
-        - "--max-age=2d"
-        - "--ignore-size"      # because MS365 immediately updates xlsx files
-        - "--ignore-checksum"  # ditto
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     cfo-extract:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/samba.delius-prod.internal/secure/National/cfo"
@@ -709,3 +775,6 @@ rclone_sync_config:
         - "--min-age=30m"
         - "--max-age=2d"
         - "--include=cfo*.txt"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 360 }}"
