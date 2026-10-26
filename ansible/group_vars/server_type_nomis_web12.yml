@@ -41,7 +41,7 @@ xsiam_agent_state: "{{ xsiam_agent_web12_state }}" # set in environment group_va
 #    metric_dimension: chronyd
 #    shell_cmd: "service chronyd status"
 
-packages_yum_update: []
+packages_yum_update: ["libevent", "kernel-uek", "NetworkManager", "NetworkManager-initscripts-updown", "NetworkManager-libnm", "NetworkManager-team", "NetworkManager-tui", "platform-python", "python3-libs", "python3-unbound", "unbound-libs"]
 packages_yum_install:
   - binutils
   - libstdc++-devel
