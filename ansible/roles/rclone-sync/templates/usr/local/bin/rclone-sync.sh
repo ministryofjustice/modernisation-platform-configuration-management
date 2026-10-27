@@ -478,7 +478,7 @@ fi
                         base="${failed_file%.*}"
                         ext="${failed_file##*.}"
                         new_file="${base}${suffix}.${ext}"
-                        rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
+                        rclone moveto "$dest/$failed_file" "$dest/$new_file" --verbose --stats=0 --retries=0 --low-level-retries=0 2>&1 | while IFS= read -r line; do
                             [[ -n "$line" ]] && echo "${logprefix}move_after_consecutive_error_count=$move_after_consecutive_error_count: $line"
                         done
                     fi
