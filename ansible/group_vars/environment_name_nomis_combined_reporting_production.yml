@@ -291,6 +291,12 @@ rclone_sharepoint_config:
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: HMPPS-HQ-PS-CC-CMgt
 
+rclone_sync_readme_frequency_interval: 3600
+rclone_sync_readme_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 1800 }}"
+rclone_sync_report_frequency_interval: 1800
+rclone_sync_report_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 900 }}"
+rclone_sync_delete_frequency_interval: 86400
+rclone_sync_delete_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 3600 }}"
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/opt/data/BusinessObjects/.rclone-sync.lock"
@@ -300,10 +306,10 @@ rclone_sync_config:
     - "--retries=0"  # don't retry as script runs every few minutes
     - "--low-level-retries=0"
     - "--fast-list"
+  rclone_sync_args:
+    - "--rclone-error-backoff=600"
   dirs:
     cc-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -311,10 +317,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     cc-ao:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      maintenance_window: "4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
       rclone_cmd:
         - "copy"
         - "/mnt/AO"
@@ -325,12 +331,17 @@ rclone_sync_config:
         - "--max-age=7d"
         - "--include=AO*.zip"
         - "--max-depth=1"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
+        - "--rclone-sync-maintenance-window=4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
     cc-delete-old:
-      frequency_interval_seconds: 86400
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 3600 }}"
       rclone_cmd:
         - "delete"
         - "cc-ao:_NART - Automated Uploads"
       rclone_args:
         - "--min-age=30d"
         - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
