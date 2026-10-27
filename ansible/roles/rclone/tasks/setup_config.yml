@@ -50,7 +50,7 @@
   loop: >-
     [
     {% for key, config in rclone_sharepoint_config.items() %}
-      { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["client_secret"] }}' },{% if not loop.last %},{% endif %}
+      { 'section': '{{ key }}', 'option': 'client_secret', 'value': '{{ secretsmanager_passwords_dict[config.app_registrations_ansible_key].passwords["client_secret"] }}' }{% if not loop.last %},{% endif %}
     {% endfor %}
     ]
 
