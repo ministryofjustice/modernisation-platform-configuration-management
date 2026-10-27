@@ -17,6 +17,7 @@
 
 - name: Build RAT replay directory path
   set_fact:
+    rat_replay_directory_name: "{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') }}"
     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
 
 - name: Create RAT replay directory on the replay host
