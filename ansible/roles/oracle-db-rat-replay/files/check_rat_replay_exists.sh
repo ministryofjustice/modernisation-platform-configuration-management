@@ -3,19 +3,18 @@
 
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <replay_name> <tns_alias>" >&2
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <tns_alias>" >&2
   exit 1
 fi
 
-replay_name="$1"
-tns_alias="$2"
+tns_alias="$1"
 
 rat_secret_id="${RAT_SECRET_ID:-}"
 aws_region="${AWS_REGION:-}"
 
-if [[ -z "${replay_name}" || -z "${tns_alias}" ]]; then
-  echo "Set replay_name and tns_alias before running this script." >&2
+if [[ -z "${tns_alias}" ]]; then
+  echo "Set tns_alias before running this script." >&2
   exit 1
 fi
 
@@ -24,7 +23,7 @@ if [[ -z "${rat_secret_id}" || -z "${aws_region}" ]]; then
   exit 1
 fi
 
-echo "Checking whether replay already exists: ${replay_name}"
+echo "Checking whether replay already exists:"
 echo "Target database name: ${tns_alias}"
 
 export PATH="$PATH:/usr/local/bin"
@@ -53,12 +52,11 @@ begin
   for replay_record in (
     select name
       from dba_workload_replays
-     where name = '${replay_name}'
-     and status != 'CANCELLED'
+     where status != 'CANCELLED'
   ) loop
     raise_application_error(
       -20001,
-      'A workload replay named ${replay_name} already exists.');
+      'A workload replay named '||replay_record.name||' already exists.');
   end loop;
 end;
 /
