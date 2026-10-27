@@ -160,13 +160,19 @@ reset_job_failed_file() {
     local key
     local count
     local i
+    local f
 
     key=$1
     count=$2
+
     mkdir -p "$STATE_DIR/failed/$key"
-    if [[ -e "$STATE_DIR/failed/$key/failed.$count.txt" ]]; then
-        rm -f "$STATE_DIR/failed/$key/failed.$count.txt"
-    fi
+    for f in "$STATE_DIR/failed/$key"/failed.*.txt; do
+        if [[ $f =~ failed\.([0-9]+)\.txt ]]; then
+            if (( BASH_REMATCH[1] >= count )); then
+                rm -f "$f"
+            fi
+        fi
+    done
     for ((i=count-1; i>0; i=i-1)); do
         if [[ -e "$STATE_DIR/failed/$key/failed.$i.txt" ]]; then
             mv "$STATE_DIR/failed/$key/failed.$i.txt" "$STATE_DIR/failed/$key/failed.$((i+1)).txt"
@@ -472,10 +478,9 @@ fi
                         base="${failed_file%.*}"
                         ext="${failed_file##*.}"
                         new_file="${base}${suffix}.${ext}"
-                        echo "DEBUG: rclone moveto '$dest/$failed_file' '$dest/$new_file'"
-                        # rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
-                        #     [[ -n "$line" ]] && echo "${logprefix}overwrite workaround: $line"
-                        # done
+                        rclone moveto "$dest/$failed_file" "$dest/$new_file" -v --stats=0 2>&1 | while IFS= read -r line; do
+                            [[ -n "$line" ]] && echo "${logprefix}move_after_consecutive_error_count=$move_after_consecutive_error_count: $line"
+                        done
                     fi
                 done <<< "$failed_files"
             fi
@@ -495,9 +500,9 @@ fi
         if (( ENABLE_MONITORING == 1 )); then
             if [[ -d /opt/textfile_monitoring/rclone_sync ]]; then
                 if [[ -z $alarm_after_consecutive_error_count ]]; then
-                    echo "$job_key $error_count" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                    echo "$job_key $exitcode" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
                 elif [[ $error_count -gt $alarm_after_consecutive_error_count ]]; then
-                    echo "$job_key $error_count" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
+                    echo "$job_key $exitcode" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
                 else
                     echo "$job_key 0" > "/opt/textfile_monitoring/rclone_sync/$job_key.metric"
                 fi

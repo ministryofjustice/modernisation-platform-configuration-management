@@ -226,6 +226,7 @@ rclone_sync_readme_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1
 rclone_sync_report_frequency_interval: 1800
 rclone_sync_report_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 900 }}"
 rclone_sync_report_move_after_consecutive_error_count: 3
+rclone_sync_report_alarm_after_consecutive_error_count: 150
 rclone_sync_delete_frequency_interval: 86400
 rclone_sync_delete_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 3600 }}"
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
@@ -239,7 +240,6 @@ rclone_sync_config:
     - "--fast-list"
   rclone_sync_args:
     - "--rclone-error-backoff=600"
-    - "--rclone-alarm-after-consecutive-error-count=1000"
   dirs:
     east-midlands-readme:
       rclone_cmd:
@@ -268,6 +268,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    east-midlands-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "east-midlands:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     east-of-england-readme:
       rclone_cmd:
         - "copy"
@@ -295,6 +306,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 120 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    east-of-england-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "east-of-england:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     greater-manchester-readme:
       rclone_cmd:
         - "copy"
@@ -322,6 +344,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 180 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    greater-manchester-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "greater-manchester:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     kent-surrey-sussex-readme:
       rclone_cmd:
         - "copy"
@@ -349,6 +382,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 240 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    kent-surrey-sussex-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "kent-surrey-sussex:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     london-readme:
       rclone_cmd:
         - "copy"
@@ -376,6 +420,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 300 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    london-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "london:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     north-east-readme:
       rclone_cmd:
         - "copy"
@@ -403,6 +458,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 360 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    north-east-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "north-east:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     north-west-readme:
       rclone_cmd:
         - "copy"
@@ -430,6 +496,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 420 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    north-west-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "north-west:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     nsd-readme:
       rclone_cmd:
         - "copy"
@@ -457,6 +534,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 480 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    nsd-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "nsd:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     ppas-readme:
       rclone_cmd:
         - "copy"
@@ -484,6 +572,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 540 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    ppas-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "ppas:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     south-central-readme:
       rclone_cmd:
         - "copy"
@@ -511,6 +610,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 600 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    south-central-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "south-central:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     south-west-readme:
       rclone_cmd:
         - "copy"
@@ -538,6 +648,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 660 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    south-west-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "south-west:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     wales-readme:
       rclone_cmd:
         - "copy"
@@ -565,6 +686,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 720 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    wales-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "wales:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     west-midlands-readme:
       rclone_cmd:
         - "copy"
@@ -592,6 +724,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 780 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    west-midlands-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "west-midlands:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     yorkshire-and-the-humber-readme:
       rclone_cmd:
         - "copy"
@@ -619,6 +762,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 840 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    yorkshire-and-the-humber-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "yorkshire-and-the-humber:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     cdg-readme:
       rclone_cmd:
         - "copy"
@@ -646,6 +800,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    cdg-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "cdg:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     opd-readme:
       rclone_cmd:
         - "copy"
@@ -673,6 +838,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 120 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    opd-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "opd:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     dtt-readme:
       rclone_cmd:
         - "copy"
@@ -700,6 +876,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 180 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    dtt-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "dtt:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     nart-readme:
       rclone_cmd:
         - "copy"
@@ -727,6 +914,17 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 240 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_report_alarm_after_consecutive_error_count }}"
+    nart-delete-old:
+      rclone_cmd:
+        - "delete"
+        - "nart:_NART - Automated Uploads"
+      rclone_args:
+        - "--min-age=35d"
+        - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
     wit-readme:
       rclone_cmd:
         - "copy"
@@ -756,6 +954,7 @@ rclone_sync_config:
         - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 300 }}"
         - "--rclone-sync-move-after-consecutive-error-count={{ rclone_sync_report_move_after_consecutive_error_count }}"
+        - "--rclone-alarm-after-consecutive-error-count=6"
     wit-delete-old:
       rclone_cmd:
         - "delete"
