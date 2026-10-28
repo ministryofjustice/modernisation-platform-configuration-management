@@ -447,11 +447,14 @@ fi
 
         if [[ -z "$exitcode" ]]; then
             # run rclone but capture failures due to upload session was not found - it seems this can block some uploads
-            pattern="ERROR : ([^:]+): Failed to copy:.*The upload session was not found"
+            pattern1="ERROR : ([^:]+): Failed to copy:.*The upload session was not found"
+            pattern2="NOTICE: ([^:]+): Failed to cancel multipart upload" # suppress from logs
             rclone "${rclone_cmds[@]}" "${rclone_args[@]}" 2>&1 | while IFS= read -r line; do
-                [[ -n "$line" ]] && echo "${logprefix}$line"
-                if [[ -n "$move_after_consecutive_error_count" ]]; then
-                    if [[ "$line" =~ $pattern ]]; then
+                if [[ -n "$line" ]]; then
+                    if [[ ! "$line" =~ $pattern2 || $VERBOSE -gt 1 ]]; then
+                        echo "${logprefix}$line"
+                    fi
+                    if [[ -n "$move_after_consecutive_error_count" && "$line" =~ $pattern1 ]]; then
                         failed_file="${BASH_REMATCH[1]}"
                         add_job_failed_file "$job_key" "$failed_file"
                     fi
@@ -466,21 +469,24 @@ fi
                     [[ -z "$failed_file" ]] && continue
                     if [[ ${rclone_cmds[0]} != "copy" && ${rclone_cmds[0]} != "sync" ]]; then
                         echo "${logprefix}ERROR: $CONFIG: line ${line_num}: expected copy or sync cmd with --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
-                        exitcode=1
                     elif [[ -z "$suffix" ]]; then
                         echo "${logprefix}ERROR: $CONFIG: line ${line_num}: --suffix must be specified with --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
-                        exitcode=1
                     elif [[ ${#rclone_cmds[@]} -lt 2 ]]; then
                         echo "${logprefix}ERROR: $CONFIG: line ${line_num}: missing dest arg, cannot --rclone-sync-move-after-consecutive-error-count: $failed_file" >&2
-                        exitcode=1
                     else
+                        src="${rclone_cmds[1]}"
                         dest="${rclone_cmds[2]}"
                         base="${failed_file%.*}"
                         ext="${failed_file##*.}"
-                        new_file="${base}${suffix}.${ext}"
-                        rclone moveto "$dest/$failed_file" "$dest/$new_file" --verbose --stats=0 --retries=0 --low-level-retries=0 2>&1 | while IFS= read -r line; do
+                        backup_file="${base}${suffix}.${ext}"
+                        rclone moveto "$dest/$failed_file" "$dest/$backup_file" --verbose --stats=0 --retries=0 --low-level-retries=0 2>&1 | while IFS= read -r line; do
                             [[ -n "$line" ]] && echo "${logprefix}move_after_consecutive_error_count=$move_after_consecutive_error_count: $line"
                         done
+                        if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
+                            rclone copyto "$src/$failed_file" "$dest/$failed_file" --verbose --stats=0 --retries=0 --low-level-retries=0 --ignore-size --ignore-checksum 2>&1 | while IFS= read -r line; do
+                                [[ -n "$line" ]] && echo "${logprefix}move_after_consecutive_error_count=$move_after_consecutive_error_count: $line"
+                            done
+                        fi
                     fi
                 done <<< "$failed_files"
             fi
