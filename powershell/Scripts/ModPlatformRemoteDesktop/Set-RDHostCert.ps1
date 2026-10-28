@@ -30,7 +30,7 @@ if (-not $CertThumbprint) {
   if (-not $Cert) {
     Write-Error "Could not find cert matching $CertName"
   }
-  $CertThumbprint = $LatestCert.Thumbprint
+  $CertThumbprint = $Cert.Thumbprint
 } else {
   $Cert = Get-ChildItem -Path "Cert:\LocalMachine\My" |
     Where-Object { $_.Thumbprint -eq $Thumbprint }
