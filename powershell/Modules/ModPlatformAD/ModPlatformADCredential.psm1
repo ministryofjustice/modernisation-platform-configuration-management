@@ -38,8 +38,8 @@ function Get-ModPlatformADSecret {
   }
   $AccountIds = "$AccountIdsRaw" | ConvertFrom-Json
 
-  if ($ModPlatformADConfig.ContainsKey($SecretName)) {
-    $SecretName = $ModPlatformADConfig[$SecretName]
+  if ($ModPlatformADConfig.ContainsKey($ADConfigSecretKey)) {
+    $SecretName = $ModPlatformADConfig[$ADConfigSecretKey]
     $SecretId   = $SecretName
     if ($ModPlatformADConfig.ContainsKey("SecretAccountName")) {
       $SecretAccountId = $AccountIds.[string]$ModPlatformADConfig.SecretAccountName
