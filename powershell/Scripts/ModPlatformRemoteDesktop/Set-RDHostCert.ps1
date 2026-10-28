@@ -41,18 +41,21 @@ if (-not $CertThumbprint) {
 $Subject    = $Cert.Subject
 $ExpiryDate = $Cert.NotAfter
 
-$RDSettings = Get-WmiObject -Class "Win32_TSGeneralSetting" -Namespace "root\cimv2\TerminalServices" -Filter "TerminalName='RDP-Tcp'"
+$RDSettings            = Get-WmiObject -Class "Win32_TSGeneralSetting" -Namespace "root\cimv2\TerminalServices" -Filter "TerminalName='RDP-Tcp'"
 $CurrentCertThumbprint = $RDSettings.SSLCertificateSHA1Hash
+$WmiPath               = $RDSettings.__path
 
 if ($CertThumbprint -eq $CurrentCertThumbprint) {
   Write-Output "RD Host cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
 } else {
   if (-not $CurrentCertThumbprint) {
     Write-Output "Setting RD Host cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
   } else {
     $CurrentCert = Get-ChildItem -Path "Cert:\LocalMachine\My" | Where-Object { $_.Thumbprint -eq $CurrentCertThumbprint }
     $CurrentSubject    = $CurrentCert.Subject
     $CurrentExpiryDate = $CurrentCert.NotAfter
     Write-Output "Updating RD Host cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
   }
 }
