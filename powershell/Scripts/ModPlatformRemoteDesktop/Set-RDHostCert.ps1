@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Set Remote Desktop Certificate by Role
+    Set Remote Desktop Host (Terminal Servics) Cert
 
 .DESCRIPTION
     Either the Cert Thumbprint or Cert Name must be provided
@@ -10,16 +10,12 @@
 
 .PARAMETER CertFilename
     Specify the name of the certificate to import
-
-.PARAMETER RDRole
-    Specify the remote desktop role to set
 #>
 
 [CmdletBinding()]
 param (
   [string]$CertThumbprint,
-  [string]$CertName = "*.azure.hmpp.root",
-  [string]$RDRole= "RDPublishing"
+  [string]$CertName = "*.azure.hmpp.root"
 )
 
 if (-not $CertThumbprint) {
@@ -36,7 +32,7 @@ if (-not $CertThumbprint) {
   }
   $CertThumbprint = $LatestCert.Thumbprint
 } else {
-  $Cert = Get-ChildItem -Path "Cert:\LocalMachine\My" | 
+  $Cert = Get-ChildItem -Path "Cert:\LocalMachine\My" |
     Where-Object { $_.Thumbprint -eq $Thumbprint }
   if (-not $Cert) {
     Write-Error "Could not find cert matching $Thumbprint"
@@ -45,15 +41,18 @@ if (-not $CertThumbprint) {
 $Subject    = $Cert.Subject
 $ExpiryDate = $Cert.NotAfter
 
-$CurrentCert           = Get-RDCertificate -Role $RDRole
-$CurrentCertThumbprint = $CurrentCert.Thumbprint
+$RDSettings = Get-WmiObject -Class "Win32_TSGeneralSetting" -Namespace "root\cimv2\TerminalServices" -Filter "TerminalName='RDP-Tcp'"
+$CurrentCertThumbprint = $RDSettings.SSLCertificateSHA1Hash
+
 if ($CertThumbprint -eq $CurrentCertThumbprint) {
-  Write-Output "$RDRole cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+  Write-Output "RD Host cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
 } else {
   if (-not $CurrentCertThumbprint) {
-    Write-Output "Setting $RDRole cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    Write-Output "Setting RD Host cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
   } else {
-    Write-Output "Updating $RDRole cert $CurrentCertThumbprint -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    $CurrentCert = Get-ChildItem -Path "Cert:\LocalMachine\My" | Where-Object { $_.Thumbprint -eq $CurrentCertThumbprint }
+    $CurrentSubject    = $CurrentCert.Subject
+    $CurrentExpiryDate = $CurrentCert.NotAfter
+    Write-Output "Updating RD Host cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
   }
-  Set-RDCertificate -Role $RDRole -Thumbprint $CertThumbprint -Force
 }
