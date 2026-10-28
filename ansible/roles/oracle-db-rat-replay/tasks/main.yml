@@ -35,12 +35,12 @@
      var: check_rat_replay_exists.stdout
 
 
-
 - name: Build RAT replay directory path
   set_fact:
     rat_replay_directory_name: "{{ rat_replay_directory | default('RAT_REPLAY_DIRECTORY') }}"
     rat_replay_directory_path: "{{ rat_replay_base_dir }}/{{ tns_alias | lower }}/{{ rat_replay_name }}"
 
+# We need the processed Replay files on BOTH the replay host and the database host
 - name: Create RAT replay directory on the replay host
   file:
      path: "{{ rat_replay_directory_path }}"
@@ -50,7 +50,7 @@
      mode: '0750'
   become: true
 
-- name: Download processed RAT files for replay from S3
+- name: Download processed RAT files for replay from S3 to the Replay Host
   command:
      argv:
         - aws
@@ -67,6 +67,107 @@
 - name: Report downloaded RAT replay location
   debug:
      msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
+
+# We use the TNS Alias to determine if the Replay Host and the DB Host are the same
+# (The same processed Replay files need to exist on both Replay Host and DB Host)
+- name: Resolve TNS alias hostname
+  ansible.builtin.shell:
+    cmd: ". ~/.bash_profile && tnsping {{ tns_alias | quote }}"
+    executable: /bin/bash
+  become: true
+  become_user: oracle
+  register: tnsping_result
+  changed_when: false
+
+- name: Extract hostname from TNS alias
+  ansible.builtin.set_fact:
+    tns_hostname: "{{ tnsping_result.stdout | regex_findall('(?i)\\(HOST\\s*=\\s*([^)]*)\\)') | first | default('') | trim | split('.') | first }}"
+
+- name: Require hostname in TNS alias output
+  ansible.builtin.assert:
+    that:
+      - tns_hostname | length > 0
+    fail_msg: "Could not extract a hostname from tnsping output for TNS alias {{ tns_alias }}"
+
+# Due to multiple host aliases and IP addresses in use we check if the Replay Host and
+# DB Host are the same by creating a temporary file on the Replay Host and seeing if
+# we can access it from the DB Host.  If so this proves they are the same host.
+# This avoids complex checks matching aliases and qualified hostnames etc.
+- name: Create temporary marker on the current host
+  ansible.builtin.tempfile:
+    state: file
+    prefix: ansible-tns-alias-check-
+  register: tns_host_check_file
+
+- name: Determine whether TNS alias reaches the current host
+  block:
+    - name: Check marker visibility through TNS hostname
+      ansible.builtin.stat:
+        path: "{{ tns_host_check_file.path }}"
+      delegate_to: "{{ tns_hostname }}"
+      register: tns_host_check_alias
+
+    - name: Set whether TNS alias reaches the current host
+      ansible.builtin.set_fact:
+        tns_hostname_is_current_host: "{{ tns_host_check_alias.stat.exists | bool }}"
+  always:
+    - name: Remove temporary TNS alias marker
+      ansible.builtin.file:
+        path: "{{ tns_host_check_file.path }}"
+        state: absent
+
+# If the DB Host is different from the Replay Host then run the download again for that host
+- name: Download Processed RAT replay files onto DB host
+  when: not tns_hostname_is_current_host
+  block:
+
+    - name: Create RAT replay directory on the DB host
+      file:
+        path: "{{ rat_replay_directory_path }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: '0750'
+      become: true
+      delegate_to: "{{ tns_hostname }}"
+
+    - name: Download processed RAT files for replay from S3 to the DB host
+      command:
+        argv:
+            - aws
+            - s3
+            - sync
+            - --no-progress
+            - "{{ rat_replay_s3_location }}"
+            - "{{ rat_replay_directory_path }}"
+      async: 7200
+      poll: 30
+      become: true
+      become_user: oracle
+      delegate_to: "{{ tns_hostname }}"
+
+
+
+
+    - name: Report downloaded RAT replay location
+      debug:
+        msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
+
+- name: Create or replace Oracle RAT replay directory
+  script: create_or_replace_oracle_directory.sh "{{ rat_replay_directory_name }}" "{{ rat_replay_directory_path }}" "{{ tns_alias }}"
+  become: true
+  become_user: oracle
+  environment:
+     RAT_SECRET_ID: "{{ rat_secret_name }}"
+     AWS_REGION: "{{ region }}"
+
+
+
+
+
+
+
+
 
 - name: Initialize RAT replay
   script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
