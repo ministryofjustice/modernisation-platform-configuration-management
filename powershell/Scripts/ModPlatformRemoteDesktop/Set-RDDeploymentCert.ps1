@@ -45,7 +45,7 @@ if (-not $CertThumbprint) {
 $Subject    = $Cert.Subject
 $ExpiryDate = $Cert.NotAfter
 
-$CurrentCert           = Get-RDCertificate -Role $RDRole
+$CurrentCert           = Get-RDCertificate -Role $RDRole -WhatIf:$false
 $CurrentCertThumbprint = $CurrentCert.Thumbprint
 if ($CertThumbprint -eq $CurrentCertThumbprint) {
   Write-Output "$RDRole cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
