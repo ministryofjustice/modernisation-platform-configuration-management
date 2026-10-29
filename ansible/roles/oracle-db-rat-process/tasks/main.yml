@@ -140,12 +140,12 @@
   become: true
   become_user: oracle
 
-- name: Remove RAT prepared files from the host after upload
-  ansible.builtin.file:
-     path: "{{ rat_replay_directory_path }}"
-     state: absent
-  become: true
-  become_user: oracle
+# - name: Remove RAT prepared files from the host after upload
+#   ansible.builtin.file:
+#      path: "{{ rat_replay_directory_path }}"
+#      state: absent
+#   become: true
+#   become_user: oracle
 
 - name: Report RAT processed S3 location
   debug:
