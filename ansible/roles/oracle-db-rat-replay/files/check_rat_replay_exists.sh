@@ -53,6 +53,7 @@ begin
     select name
       from dba_workload_replays
      where status != 'CANCELLED'
+     and   status != 'COMPLETED'
   ) loop
     raise_application_error(
       -20001,
