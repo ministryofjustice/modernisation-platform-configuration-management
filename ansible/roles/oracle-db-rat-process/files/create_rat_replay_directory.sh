@@ -52,7 +52,7 @@ begin
   -- This is a prerequisite for PROCESS_CAPTURE: the database needs a named
   -- directory object before it can read and process the capture files.
   begin
-    execute immediate 'create directory $replay_directory_name as ''$replay_directory_path''';
+    execute immediate 'create or replace directory $replay_directory_name as ''$replay_directory_path''';
   exception
     when others then
       if sqlcode != -955 then
