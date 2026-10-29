@@ -49,13 +49,21 @@ if ($CertThumbprint -eq $CurrentCertThumbprint) {
   Write-Output "RD Host cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
 } else {
   if (-not $CurrentCertThumbprint) {
-    Write-Output "Setting RD Host cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
-    Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
+    if ($WhatIfPreference) {
+      Write-Output "What-If: Setting RD Host cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    } else {
+      Write-Output "Setting RD Host cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+      Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
+    }
   } else {
     $CurrentCert = Get-ChildItem -Path "Cert:\LocalMachine\My", "Cert:\LocalMachine\Remote Desktop" | Where-Object { $_.Thumbprint -eq $CurrentCertThumbprint } | Select-Object -First 1
     $CurrentSubject    = $CurrentCert.Subject
     $CurrentExpiryDate = $CurrentCert.NotAfter
-    Write-Output "Updating RD Host cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
-    Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
+    if ($WhatIfPreference) {
+      Write-Output "What-If: Updating RD Host cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    } else {
+      Write-Output "Updating RD Host cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+      Set-WmiInstance -Path $WmiPath -Arguments @{SSLCertificateSHA1Hash=$CertThumbprint}
+    }
   }
 }

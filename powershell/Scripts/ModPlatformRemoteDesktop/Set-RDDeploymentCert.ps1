@@ -51,11 +51,20 @@ if ($CertThumbprint -eq $CurrentCertThumbprint) {
   Write-Output "$RDRole cert already set to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
 } else {
   if (-not $CurrentCertThumbprint) {
-    Write-Output "Setting $RDRole cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    if ($WhatIfPreference) {
+      Write-Output "What-If: Setting $RDRole cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    } else {
+      Write-Output "Setting $RDRole cert to $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+      Set-RDCertificate -Role $RDRole -Thumbprint $CertThumbprint -Force
+    }
   } else {
     $CurrentSubject    = $CurrentCert.Subject
     $CurrentExpiryDate = $CurrentCert.ExpiresOn
-    Write-Output "Updating $RDRole cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    if ($WhatIfPreference) {
+      Write-Output "What-If: Updating $RDRole cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+    } else {
+      Write-Output "Updating $RDRole cert $CurrentCertThumbprint (subject=$CurrentSubject expiry=$CurrentExpiryDate) -> $CertThumbprint (subject=$Subject expiry=$ExpiryDate)"
+      Set-RDCertificate -Role $RDRole -Thumbprint $CertThumbprint -Force
+    }
   }
-  Set-RDCertificate -Role $RDRole -Thumbprint $CertThumbprint -Force
 }

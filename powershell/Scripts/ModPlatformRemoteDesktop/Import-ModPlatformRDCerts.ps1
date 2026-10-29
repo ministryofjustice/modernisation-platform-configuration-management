@@ -49,8 +49,12 @@ $LocalCert.Dispose()
 $ExistingCert = Get-ChildItem -Path "Cert:\LocalMachine\My" | Where-Object { $_.Thumbprint -eq $Thumbprint }
 
 if (-not $ExistingCert) {
-  Write-Output "Importing Cert $CertFilename to Cert:\LocalMachine\My"
-  Import-PfxCertificate -FilePath $LocalCertPath -CertStoreLocation "Cert:\LocalMachine\My" -Password $CertPasswordSecureString
+  if ($WhatIfPreference) {
+    Write-Output "What-If: Importing Cert $CertFilename to Cert:\LocalMachine\My"
+  } else {
+    Write-Output "Importing Cert $CertFilename to Cert:\LocalMachine\My"
+    Import-PfxCertificate -FilePath $LocalCertPath -CertStoreLocation "Cert:\LocalMachine\My" -Password $CertPasswordSecureString
+  }
 } else {
   Write-Output "Cert $CertFilename already imported to Cert:\LocalMachine\My"
 }
