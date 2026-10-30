@@ -53,6 +53,9 @@ echo "----------------------------"
 
 client_count=$(grep -oP 'Consider using at least \K[0-9]+' <<< "$CALIBRATE")
 
+# Try doubling the client count to see impact on runtime
+client_count=$((client_count*2))
+
 echo "Starting $client_count clients"
 
 for client_number in $(seq 1 "$client_count"); do
