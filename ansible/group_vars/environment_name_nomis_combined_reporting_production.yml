@@ -309,6 +309,7 @@ rclone_sync_config:
     - "--fast-list"
   rclone_sync_args:
     - "--rclone-error-backoff=600"
+    - "--rclone-alarm-after-consecutive-error-count=6" # sometimes we get Service Unavailable
   dirs:
     cc-readme:
       rclone_cmd:
