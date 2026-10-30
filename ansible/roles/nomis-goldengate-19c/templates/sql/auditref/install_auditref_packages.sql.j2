@@ -1,0 +1,31 @@
+spool /tmp/{{ oracle_goldengate_group_name }}_setup.log
+
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+set serverout on
+
+PROMPT Executing grants needed:
+grant execute on dbms_stats to {{ oracle_goldengate_sql_owner }};
+grant select on dba_segments to {{ oracle_goldengate_sql_owner }};
+grant select on dba_tables to {{ oracle_goldengate_sql_owner }};
+
+PROMPT Compiling packages as {{ oracle_goldengate_sql_owner }}:
+@AUDITREF_JOB_PKG.sql
+@AUDITREF_JOB_PBODY.sql
+
+create or replace public synonym AUDITREF_JOB_PKG for {{ oracle_goldengate_sql_owner }}.AUDITREF_JOB_PKG;
+grant execute on {{ oracle_goldengate_sql_owner }}.AUDITREF_JOB_PKG to {{ oracle_goldengate_dbuser }};
+
+PROMPT Create new index for performance
+DECLARE
+    v_count INTEGER;
+BEGIN
+  -- check if index exists before trying to create it, as it may already exist if the script has been run before
+  SELECT COUNT(*) INTO v_count FROM all_indexes WHERE index_name = 'AUDITREF_ERROR_DATETIME_INDX' AND owner = UPPER('{{ oracle_goldengate_sql_owner }}');
+  IF v_count = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE INDEX {{ oracle_goldengate_sql_owner }}.auditref_error_datetime_indx ON {{ oracle_goldengate_sql_owner }}.STRM_ERROR_LOG(error_datetime)';
+  END IF;
+END;
+/
+
+spool off 
+exit
