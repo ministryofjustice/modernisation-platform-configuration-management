@@ -223,12 +223,14 @@ rclone_sharepoint_config:
     drive_ids_secret_key: NART
 rclone_sync_readme_frequency_interval: 3600
 rclone_sync_readme_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 1800 }}"
+rclone_sync_readme_alarm_after_consecutive_error_count: 6 # sometimes we get Service Unavailable
 rclone_sync_report_frequency_interval: 1800
 rclone_sync_report_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 900 }}"
 rclone_sync_report_move_after_consecutive_error_count: 3
-rclone_sync_report_alarm_after_consecutive_error_count: 150
+rclone_sync_report_alarm_after_consecutive_error_count: 72
 rclone_sync_delete_frequency_interval: 86400
 rclone_sync_delete_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 3600 }}"
+rclone_sync_delete_alarm_after_consecutive_error_count: 6
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/samba.delius-prod.internal/secure/nart/.rclone-sync.lock"
@@ -253,6 +255,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     east-midlands:
       rclone_cmd:
         - "copy"
@@ -280,6 +283,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     east-of-england-readme:
       rclone_cmd:
         - "copy"
@@ -291,6 +295,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     east-of-england:
       rclone_cmd:
         - "copy"
@@ -318,6 +323,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     greater-manchester-readme:
       rclone_cmd:
         - "copy"
@@ -329,6 +335,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     greater-manchester:
       rclone_cmd:
         - "copy"
@@ -356,6 +363,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     kent-surrey-sussex-readme:
       rclone_cmd:
         - "copy"
@@ -367,6 +375,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     kent-surrey-sussex:
       rclone_cmd:
         - "copy"
@@ -394,6 +403,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     london-readme:
       rclone_cmd:
         - "copy"
@@ -405,6 +415,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     london:
       rclone_cmd:
         - "copy"
@@ -432,6 +443,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     north-east-readme:
       rclone_cmd:
         - "copy"
@@ -443,6 +455,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     north-east:
       rclone_cmd:
         - "copy"
@@ -470,6 +483,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     north-west-readme:
       rclone_cmd:
         - "copy"
@@ -481,6 +495,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     north-west:
       rclone_cmd:
         - "copy"
@@ -508,6 +523,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     nsd-readme:
       rclone_cmd:
         - "copy"
@@ -519,6 +535,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     nsd:
       rclone_cmd:
         - "copy"
@@ -546,6 +563,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     ppas-readme:
       rclone_cmd:
         - "copy"
@@ -557,6 +575,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     ppas:
       rclone_cmd:
         - "copy"
@@ -584,6 +603,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     south-central-readme:
       rclone_cmd:
         - "copy"
@@ -595,6 +615,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     south-central:
       rclone_cmd:
         - "copy"
@@ -622,6 +643,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     south-west-readme:
       rclone_cmd:
         - "copy"
@@ -633,6 +655,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     south-west:
       rclone_cmd:
         - "copy"
@@ -660,6 +683,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     wales-readme:
       rclone_cmd:
         - "copy"
@@ -671,6 +695,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     wales:
       rclone_cmd:
         - "copy"
@@ -698,6 +723,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     west-midlands-readme:
       rclone_cmd:
         - "copy"
@@ -709,6 +735,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     west-midlands:
       rclone_cmd:
         - "copy"
@@ -736,6 +763,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     yorkshire-and-the-humber-readme:
       rclone_cmd:
         - "copy"
@@ -747,6 +775,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     yorkshire-and-the-humber:
       rclone_cmd:
         - "copy"
@@ -774,6 +803,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     cdg-readme:
       rclone_cmd:
         - "copy"
@@ -785,6 +815,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     cdg:
       rclone_cmd:
         - "copy"
@@ -812,6 +843,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     opd-readme:
       rclone_cmd:
         - "copy"
@@ -823,6 +855,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     opd:
       rclone_cmd:
         - "copy"
@@ -850,6 +883,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     dtt-readme:
       rclone_cmd:
         - "copy"
@@ -861,6 +895,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     dtt:
       rclone_cmd:
         - "copy"
@@ -888,6 +923,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     nart-readme:
       rclone_cmd:
         - "copy"
@@ -899,6 +935,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     nart:
       rclone_cmd:
         - "copy"
@@ -926,6 +963,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     wit-readme:
       rclone_cmd:
         - "copy"
@@ -937,6 +975,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_readme_alarm_after_consecutive_error_count }}"
     wit-staff-caseload:
       rclone_cmd:
         - "copy"
@@ -966,6 +1005,7 @@ rclone_sync_config:
       rclone_sync_args:
         - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
         - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"
+        - "--rclone-alarm-after-consecutive-error-count={{ rclone_sync_delete_alarm_after_consecutive_error_count }}"
     cfo-extract:
       rclone_cmd:
         - "copy"
