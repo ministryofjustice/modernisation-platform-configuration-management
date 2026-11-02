@@ -123,7 +123,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
             execute immediate v_plsql into v_chk;
         exception
             when others then
-                raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure.');
+                raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure. Error: ' || SQLERRM);
         end;
 
         -- Initiate MIS stop-point processing using the exact SCN created above.
