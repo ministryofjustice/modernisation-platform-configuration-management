@@ -1,5 +1,5 @@
 ---
-- name: Copy bobj bash profile
+- name: Copy filesystem destination allowlist profile
   ansible.builtin.template:
     src: "app/{{ item }}"
     dest: "{{ sap_bip_installation_directory }}/{{ item }}"

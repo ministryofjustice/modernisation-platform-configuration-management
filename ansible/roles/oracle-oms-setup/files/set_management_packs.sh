@@ -113,10 +113,27 @@ EXIT
 EOSQL
 )
 
+if [[ "${MANAGEMENT_PACK_CHANGES}" == *ORA-* || -n "${MANAGEMENT_PACK_CHANGES}" ]];
+then
+    REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region || echo "eu-west-2" | sed 's/[a-z]$//')
+    SLACK_TOKEN=$(aws secretsmanager get-secret-value --secret-id /oracle/database/EMREP/shared-passwords --region ${REGION} --query SecretString --output text | jq -r .slack_token)
+fi
+
+if [[ "${MANAGEMENT_PACK_CHANGES}" == *ORA-* ]];
+then
+    ERROR_MESSAGE=$(printf 'Oracle error while querying management pack changes on %s:\n%s' "$(hostname)" "${MANAGEMENT_PACK_CHANGES}")
+    curl -X POST "https://slack.com/api/chat.postMessage" \
+        -H "accept: application/json" \
+        -d "token=${SLACK_TOKEN}" \
+        -d 'channel=#hmpps-oem-alerts' \
+        --data-urlencode "text=${ERROR_MESSAGE}" \
+        -d 'username=Management Pack target property script'
+    exit 1
+fi
+
 if [[ ! -z ${MANAGEMENT_PACK_CHANGES} ]];
 then
 
-  REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region || echo "eu-west-2" | sed 's/[a-z]$//')
   CHANGE_LOG=/home/oracle/admin/em/management_pack_changes.$(date +%Y%m%d%H%M%S).log
   EMCLI=/u01/app/oracle/product/mw135/bin/emcli
   connect_to_emcli
@@ -171,8 +188,6 @@ then
 	     fi
      fi
   done <<< "${MANAGEMENT_PACK_CHANGES}"
-
-  SLACK_TOKEN=$(aws secretsmanager get-secret-value --secret-id /oracle/database/EMREP/shared-passwords --region ${REGION} --query SecretString --output text | jq -r .slack_token)
 
   SLACK_CHANNEL="#hmpps-oem-alerts"
   EMOJI_ICON=":package:"

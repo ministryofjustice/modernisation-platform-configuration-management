@@ -37,6 +37,8 @@
         - --no-progress
         - "{{ rat_replay_s3_location }}"
         - "{{ rat_replay_directory_path }}"
+  async: 7200
+  poll: 30
   become: true
   become_user: oracle
 

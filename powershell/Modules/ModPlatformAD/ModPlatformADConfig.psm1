@@ -34,6 +34,7 @@ function Get-ModPlatformADConfig {
       "DomainNameNetbios" = "AZURE"
       "DomainJoinUsername" = "svc_join_domain"
       "DomainAdminUsername" = "svc_admin"
+      "CertificatePasswordsSecretName" = "/microsoft/AD/azure.noms.root/shared-certificate-passwords"
     }
     "azure.hmpp.root" = @{
       "AccountIdsSSMParameterName" = "account_ids"
@@ -44,6 +45,7 @@ function Get-ModPlatformADConfig {
       "DomainNameNetbios" = "HMPP"
       "DomainJoinUsername" = "svc_join_domain"
       "DomainAdminUsername" = "svc_admin"
+      "CertificatePasswordsSecretName" = "/microsoft/AD/azure.hmpp.root/shared-certificate-passwords"
     }
     "delius-mis-dev.internal" = @{
       "SecretName" = "delius-mis-dev-sap-dis-passwords"
