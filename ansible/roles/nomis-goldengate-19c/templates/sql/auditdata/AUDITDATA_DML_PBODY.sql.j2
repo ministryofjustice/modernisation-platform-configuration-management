@@ -610,15 +610,20 @@ BEGIN
 --start v2: if this is a delete, update the preceding OMS_DELETED_ROWS insert rather than creating a new row
     IF v_command_type = 'delete' THEN
     BEGIN
-      SELECT a.audit_table_seq, a.audit_module_name 
+      SELECT audit_table_seq, audit_module_name
       INTO v_audit_table_seq, v_audit_module_name
-      from  auditdata.audit_table a
-      WHERE a.audit_table_seq IN
-        (SELECT MAX(b.audit_table_seq) FROM auditdata.audit_table b
-          WHERE b.lcr_commit_scn = v_commit_scn
-          AND b.lcr_source_time between (v_source_time - 1/24) and v_source_time
-          AND b.lcr_command_type = 'INSERT'
-          AND b.lcr_object_name = v_deletions_table_name);
+      FROM (
+          SELECT a.audit_table_seq,
+                a.audit_module_name
+          FROM auditdata.audit_table a
+          WHERE a.lcr_commit_scn = v_commit_scn
+            AND a.lcr_source_time BETWEEN
+                (v_source_time - 1/24) AND v_source_time
+            AND a.lcr_command_type = 'INSERT'
+            AND a.lcr_object_name = v_deletions_table_name
+          ORDER BY a.audit_table_seq DESC
+      )
+      WHERE ROWNUM = 1;
           --audit_ values will be same for all deletes in the transaction,
           --so no need to match on object name
           --  if there have been deletes in the transaction
