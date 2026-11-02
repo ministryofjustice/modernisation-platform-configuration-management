@@ -12,8 +12,9 @@
       - rat_replay_s3_location is match('^s3://')
       - tns_alias is defined
       - tns_alias | length > 0
+      - rat_replay_synchronization is defined
       - rat_replay_wrc_client_startup_delay | int >= 0
-    fail_msg: "Define rat_replay_name, rat_replay_s3_location as an S3 URI, tns_alias, and a positive rat_replay_wrc_client_count"
+    fail_msg: "Define rat_replay_name, rat_replay_s3_location as an S3 URI, tns_alias, rat_replay_synchronization and a positive rat_replay_wrc_client_count"
 
 - name: Check whether RAT replay already exists
   script: check_rat_replay_exists.sh "{{ tns_alias }}"
@@ -146,9 +147,6 @@
       become_user: oracle
       delegate_to: "{{ tns_hostname }}"
 
-
-
-
     - name: Report downloaded RAT replay location
       debug:
         msg: "Processed RAT files downloaded from {{ rat_replay_s3_location }} to {{ rat_replay_directory_path }}"
@@ -160,14 +158,6 @@
   environment:
      RAT_SECRET_ID: "{{ rat_secret_name }}"
      AWS_REGION: "{{ region }}"
-
-
-
-
-
-
-
-
 
 - name: Initialize RAT replay
   script: initialize_rat_replay.sh "{{ rat_replay_name }}" "{{ rat_replay_directory_name }}" "{{ tns_alias }}"
