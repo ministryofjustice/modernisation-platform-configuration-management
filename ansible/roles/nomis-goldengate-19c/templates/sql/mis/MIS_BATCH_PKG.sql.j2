@@ -55,6 +55,16 @@ CREATE OR REPLACE PACKAGE {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG AUTHID
         p_new_batch_number  IN     number,
         p_old_batch_number  IN     number DEFAULT -1);
 
+    -- Recover saved source AFTER_SCN boundaries from an existing SCN-based batch.
+    -- Neither procedure commits. Historical recovery also renumbers later batches.
+    PROCEDURE recover_batches(
+        p_tgt_owner         IN VARCHAR2,
+        p_from_batch_number IN NUMBER);
+
+    PROCEDURE recover_historical_batches(
+        p_tgt_owner         IN VARCHAR2,
+        p_from_batch_number IN NUMBER);
+
     -- Packaged procedure create_new_batch
     -- stops running apply processes,
     -- creates a new batch entry for the supplied staging table owner,
