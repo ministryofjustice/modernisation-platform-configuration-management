@@ -46,6 +46,71 @@ Note: AUDITREF and MIS processes share the same database package code but differ
 
 ## Features
 
+### Recovering MIS batch boundaries
+
+`MIS_BATCH_PKG` provides two opt-in recovery procedures. Existing rollover procedures
+and scheduler jobs are unchanged. Both read the source schema's `MIS_STOP_POINTS`
+over the source link returned by `MIS_GEN_PKG.get_source_database_name`, using
+`AFTER_SCN` as the batch boundary and `STOP_POINT_DATE` as its date.
+
+Supply the staging owner and an existing starting batch whose positive
+`STAGED_START_SCN` is still retained in the source table. Recovery processes all saved
+boundaries from that batch onwards, including additional same-day stop points.
+Migration-backfilled zero SCNs are not valid starting boundaries.
+
+```sql
+-- Append missing boundaries when no later batch already exists.
+BEGIN
+  BODISTAGING.MIS_BATCH_PKG.recover_batches('BODISTAGING', 3901);
+  COMMIT;
+END;
+/
+
+-- Explicit historical repair when later batches already exist.
+BEGIN
+  BODISTAGING.MIS_BATCH_PKG.recover_historical_batches('BODISTAGING', 3901);
+  COMMIT;
+END;
+/
+```
+
+Replace the package owner with the configured `oracle_goldengate_sql_owner` if it
+differs from `BODISTAGING`. Automatic recovery preserves existing IDs and allocates
+new IDs above the global maximum; it raises an error for an earlier missing boundary
+when a later batch already exists. Historical recovery assigns consecutive IDs from
+the starting batch and moves existing later batch records and their
+`STRM_ERROR_LOG.MIS_BATCH_ID` references. It rejects destinations occupied by another
+repository and ranges requiring existing IDs to move downwards.
+
+For example, starting at 3901 with 22 missing boundaries before the existing 3902,
+historical recovery creates 3902--3923 and moves the old 3902 to 3924, retaining its
+processing metadata. Existing batch end dates are aligned with the next saved
+boundary; recovery does not rerun normal rollover or ETL side effects.
+
+Both procedures repair surviving rows in registered non-reference staging tables
+and unregistered `STG_` tables containing `MIS_LOAD_ID` and `MIS_SCN`. Rows whose
+current IDs fall between the starting batch and the original highest batch for the
+repository are mapped to the latest boundary not greater than their SCN. Other IDs,
+including orphan IDs such as -1, are outside this repair's scope. Missing SCNs,
+SCNs preceding the starting boundary, invalid source boundaries, missing registered
+tables/columns and primary-key collisions cause an error, not a guessed assignment.
+Overwritten historical row versions cannot be reconstructed.
+
+Suspend normal rollover, replication and ETL consumption before recovery. The
+procedures acquire fail-fast exclusive locks on the batch log and affected staging
+tables; locks are held until the caller commits or rolls back. These locks serialize
+recovery calls but do not replace suspending existing rollover code, which does not
+use the same locking protocol. A failure rolls back recovery changes to a savepoint
+and logs and re-raises the error. Successful diagnostic entries say "pending caller
+commit" because logging is autonomous and neither recovery procedure commits.
+
+To invoke `recover_batches` automatically, explicitly wire a separate job with
+appropriate operational coordination and a caller commit. No job is installed here.
+Neither procedure creates a source stop point. Existing `run_batch` continues to
+save each day's boundary independently of source-to-MIS link availability.
+Downstream load references and other database dependencies are not migrated by
+these procedures.
+
 ### Database Parameter Configuration
 The role automatically configures the required Oracle database parameters for GoldenGate replication:
 - Sets `ENABLE_GOLDENGATE_REPLICATION = TRUE` on all databases defined in `oracle_goldengate_group` (no restart required)
