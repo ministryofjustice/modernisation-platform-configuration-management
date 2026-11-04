@@ -39,6 +39,9 @@ updates:
       interval: "monthly"
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "boto3"
+      - dependency-name: "botocore"
     groups:
       pip-major:
         update-types:
