@@ -1054,7 +1054,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     -- delete rows for any tables not listed in the STRM_TAB_CONTROL table that have a MIS_LOAD_ID column.
     -- The auditref version of the tables don't have the MIS_LOAD_ID columns so won't be picked up here.
     l_plsql :=
-      'SELECT o.OBJECT_NAME, null proc_flags FROM dba_objects o '||
+      'SELECT o.OBJECT_NAME FROM dba_objects o '||
       'WHERE o.OWNER = ''' || l_tgt_owner || ''' AND o.OBJECT_NAME LIKE ''STG_%'' AND o.OBJECT_TYPE = ''TABLE'' '||
       'AND EXISTS (SELECT 1 FROM DBA_TAB_COLS dtc WHERE dtc.TABLE_NAME = o.OBJECT_NAME AND dtc.OWNER = o.OWNER AND dtc.COLUMN_NAME = ''MIS_LOAD_ID'' ) '||
       'and not exists (select 1 from ' || l_tgt_owner || '.strm_tab_control stc where stc.tgt_table = o.OBJECT_NAME)';
