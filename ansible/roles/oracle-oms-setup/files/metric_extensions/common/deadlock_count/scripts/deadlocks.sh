@@ -36,7 +36,7 @@ then
               && "$SECOND_USER" == "root" && "$SECOND_SQL" == "$SECOND_SQL_TO_MATCH" ]]
         then
           STATUS="DISCARD"
-        elif [[ "$CLIENT_ID" == "SupervisionPackagesService" || "$CLIENT_ID" == "PrisonCustodyStatusService" ]]
+        elif [[ "$CLIENT_ID" == "SupervisionPackagesService" || "$CLIENT_ID" == "PrisonCustodyStatusService"  || "$CLIENT_ID" ==  "PrisonIdentifierAndDelius" ]]
         then
            STATUS="DISCARD"        
         else
