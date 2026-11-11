@@ -295,7 +295,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_JOB_PKG AS
                 p_staged_start_scn => p_stop_scn
             );
             
-            -- If more stop points exist, trigger MIS_PRE_LOAD to process the completed batch
+            -- If no more stop points exist, trigger MIS_PRE_LOAD to process the completed batch
             IF NOT v_more_points THEN
                 BEGIN
                     dbms_scheduler.run_job(mis_gen_pkg.g_mis_owner || '.MIS_PRE_LOAD', FALSE);

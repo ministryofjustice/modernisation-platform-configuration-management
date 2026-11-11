@@ -124,6 +124,41 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     return l_timestamp;
   END;
 
+  FUNCTION get_stop_point_date(
+    p_staging_owner IN VARCHAR2,
+    p_after_scn IN NUMBER
+  ) RETURN DATE IS
+    l_stop_point_date DATE;
+    e_null_stop_point_date EXCEPTION;
+  BEGIN
+    SELECT stop_point_date
+      INTO l_stop_point_date
+      FROM {{ oracle_goldengate_group.source.schema_owner }}.MIS_STOP_POINTS@{{ oracle_goldengate_group.source.tns_alias }}
+     WHERE after_scn = p_after_scn;
+
+    IF l_stop_point_date IS NULL THEN
+      RAISE e_null_stop_point_date;
+    END IF;
+
+    RETURN l_stop_point_date;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'No MIS_STOP_POINTS row found for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+    WHEN TOO_MANY_ROWS THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'Multiple MIS_STOP_POINTS rows found for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+    WHEN e_null_stop_point_date THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'STOP_POINT_DATE is null for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+  END;
+
 
   PROCEDURE update_batch_record(
     p_batch_number   IN     number,
@@ -792,17 +827,28 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
     -- set new start date
     IF v_staged_end_datetime IS NULL THEN
-        BEGIN
-            v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
-        EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+        IF p_staged_start_scn IS NOT NULL THEN
+            -- The source stop-point date is the authoritative batch boundary;
+            -- SCN_TO_TIMESTAMP can differ from the source transaction commit time.
+            v_date := get_stop_point_date(v_staging_owner, p_staged_start_scn);
             log_debug (v_staging_owner, 'create_new_batch',
-                            v_apply_scn || ' is not a currently valid system change number at source;' ||
-                            ' will check registered log dates instead.', -1);
-            -- get the next date (end of log) of the archive logs
-            -- registered to the capture process containing data for a given SCN
-            v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
-        END;
+                'Batch boundary: AFTER_SCN=' || TO_CHAR(p_staged_start_scn) ||
+                ', STOP_POINT_DATE=' || TO_CHAR(v_date, 'YYYY-MM-DD HH24:MI:SS'));
+        ELSE
+            BEGIN
+                v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
+            EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+                log_debug (v_staging_owner, 'create_new_batch',
+                                v_apply_scn || ' is not a currently valid system change number at source;' ||
+                                ' will check registered log dates instead.', -1);
+                -- get the next date (end of log) of the archive logs
+                -- registered to the capture process containing data for a given SCN
+                v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
+            END;
+        END IF;
     ELSE
+        -- An existing end date is already the recorded prior boundary; retain it
+        -- rather than replacing it with a new source lookup.
         v_date := v_staged_end_datetime;
     END IF;
 

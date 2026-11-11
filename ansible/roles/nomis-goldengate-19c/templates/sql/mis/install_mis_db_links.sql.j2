@@ -30,6 +30,10 @@ begin
     end if;
     v_sql := 'CREATE PUBLIC DATABASE LINK '||v_source_db||' CONNECT TO {{ oracle_goldengate_group.source.schema_owner }} IDENTIFIED BY "'||v_source_db_pwd||'" USING ''{{ oracle_goldengate_group.source.tns_alias }}''';
     execute immediate v_sql;
+
+    dbms_output.put_line('Testing database link to source database...');
+    v_sql := 'select 1 from dual@'||v_source_db;
+    execute immediate v_sql;
 end;
 /
 

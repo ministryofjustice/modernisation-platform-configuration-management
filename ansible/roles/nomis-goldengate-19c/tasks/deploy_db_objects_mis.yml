@@ -25,7 +25,7 @@
         oracle_goldengate_group_target_schema: "{{ oracle_goldengate_group.mis.schema_owner }}"
         oracle_goldengate_group_dummy_target_schema: "{{ oracle_goldengate_group.mis.dummy_target_schema }}"
 
-    - name: Ensure MIS SQL directory exists
+    - name: Ensure MIS sql scripts directory exists
       ansible.builtin.file:
         path: "{{ oracle_goldengate_sql_dir }}/mis"
         state: directory
@@ -34,7 +34,7 @@
         mode: "0755"
 
     # copy all scripts in templates/sql/mis directory to the GoldenGate home directory on the host, preserving ownership and permissions. These include the support package installation script and the control table creation script.
-    - name: Deploy MIS support packages
+    - name: Deploy MIS packages and scripts
       ansible.builtin.template:
         src: "{{ item }}"
         dest: "{{ oracle_goldengate_sql_dir }}/mis/{{ item | basename | regex_replace('\\.j2$', '') }}"
@@ -42,32 +42,6 @@
         group: "{{ oracle_goldengate_osgroup }}"
         mode: "0644"
       loop: "{{ lookup('ansible.builtin.fileglob', role_path ~ '/templates/sql/mis/*.j2', wantlist=True) }}"
-
-    - name: Run MIS support package install
-      ansible.builtin.shell: |
-        . ~/.bash_profile
-        export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
-        export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
-        export PATH=${ORACLE_HOME}/bin:$PATH
-        export ORAENV_ASK=NO
-        . oraenv > /dev/null 2>&1
-        cd {{ oracle_goldengate_sql_dir }}/mis
-        sqlplus -s / as sysdba @install_mis_packages.sql
-      args:
-        executable: /bin/bash
-      register: mis_config_output
-      failed_when: mis_config_output.rc != 0
-
-    - name: Show output of MIS package install in logs
-      ansible.builtin.debug:
-        msg: "{{ item }}"
-      loop: "{{ ['MIS package install output:'] + (mis_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
-      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
-
-    - name: Fail if ORA errors found in output of MIS package install
-      ansible.builtin.fail:
-        msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
-      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
 
     - name: Set execute permission for install_mis_db_links.sh script
       ansible.builtin.file:
@@ -96,6 +70,32 @@
       ansible.builtin.fail:
         msg: "Errors found in output of mis db links install: {{ mis_db_links_output.stdout }}"
       when: mis_db_links_output.rc != 0
+
+    - name: Run MIS support package install
+      ansible.builtin.shell: |
+        . ~/.bash_profile
+        export ORACLE_SID={{ oracle_goldengate_group.mis.tns_alias }}
+        export ORACLE_HOME={{ oracle_goldengate_group.mis.oracle_home }}
+        export PATH=${ORACLE_HOME}/bin:$PATH
+        export ORAENV_ASK=NO
+        . oraenv > /dev/null 2>&1
+        cd {{ oracle_goldengate_sql_dir }}/mis
+        sqlplus -s / as sysdba @install_mis_packages.sql
+      args:
+        executable: /bin/bash
+      register: mis_config_output
+      failed_when: mis_config_output.rc != 0
+
+    - name: Show output of MIS package install in logs
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ ['MIS package install output:'] + (mis_config_output.stdout_lines | default([]) | map('trim') | select('truthy') | list) }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
+
+    - name: Fail if ORA errors found in output of MIS package install
+      ansible.builtin.fail:
+        msg: "Errors found in output of MIS package install: {{ mis_config_output.stdout }}"
+      when: "'ORA-' in mis_config_output.stdout or 'compilation errors' in mis_config_output.stdout"
 
     # This dir should already exist, created by the nomis-misload role. But it didn't exist on the T1 instance used for GG dev.
     - name: Ensure MIS textfile directory exists and owned by the oracle user
