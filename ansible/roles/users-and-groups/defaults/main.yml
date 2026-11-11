@@ -30,3 +30,6 @@ users_and_groups_system_vars_prefixes:
 users_and_groups_regular_vars_prefixes:
   - "default"
   - "{{ ec2.tags['business-unit'] | lower }}"
+
+# Optionally define an override for ec2-user authorized_keys
+# ec2_user_authorized_keys:
