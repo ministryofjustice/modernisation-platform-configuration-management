@@ -14,3 +14,9 @@
     password: "*"
     password_expire_max: -1
   when: getent_passwd["ec2-user"] is defined
+
+- name: Update ec2-user authorized keys
+  ansible.posix.authorized_key:
+    user: ec2-user
+    key: "{{ ec2_user_authorized_keys }}"
+  when: ec2_user_authorized_keys is defined
