@@ -69,6 +69,11 @@ append_ecosystem() {
     echo '      interval: "monthly"'
     echo "    cooldown:"
     echo "      default-days: $dependabot_cooldown_default_days"
+    if [[ "$ecosystem" == "pip" ]]; then
+      echo "    ignore:"
+      echo '      - dependency-name: "boto3"'
+      echo '      - dependency-name: "botocore"'
+    fi
     echo "    groups:"
     echo "      ${group_prefix}-major:"
     echo "        update-types:"
