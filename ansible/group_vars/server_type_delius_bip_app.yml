@@ -1,6 +1,8 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
+ec2_user_authorized_keys: "{{ ec2_user_app_authorized_keys }}"
+
 users_and_groups_regular:
   - group: studio-webops
   - group: nart

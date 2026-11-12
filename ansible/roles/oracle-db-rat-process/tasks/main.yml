@@ -11,11 +11,10 @@
     that:
       - rat_replay_s3_location | length > 0
       - rat_replay_s3_location is match('^s3://')
-      - rat_replay_synchronization in ['SCN', 'OBJECT_ID']
       - (rat_replay_parallelism | default('no', true)) in ['yes', 'no']
       - tns_alias is defined
       - tns_alias | length > 0
-    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, set rat_replay_synchronization to SCN or OBJECT_ID, and set rat_replay_parallelism to YES or NO if parallel processing is required"
+    fail_msg: "Define rat_replay_s3_location as an S3 URI, tns_alias, and set rat_replay_parallelism to YES or NO if parallel processing is required"
 
 - name: Build RAT replay directory names
   set_fact:
@@ -137,6 +136,13 @@
         - --no-progress
         - "{{ rat_replay_directory_path }}/"
         - "{{ rat_processed_s3_location }}"
+  become: true
+  become_user: oracle
+
+- name: Remove RAT prepared files from the host after upload
+  ansible.builtin.file:
+     path: "{{ rat_replay_directory_path }}"
+     state: absent
   become: true
   become_user: oracle
 
