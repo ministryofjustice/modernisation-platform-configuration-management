@@ -134,10 +134,10 @@ sap_web_apps:
   - dswsbobje
   - webi-websetup
 
-sap_web_bilogon_app_name: Delius Reporting
-sap_web_bilogon_app_name_short: Delius Reporting
-sap_web_bilogon_app_name_greeting: Welcome
-sap_web_bilogon_product_name: Delius
+sap_web_bilogon_app_name: "BI Logon - {{ sap_bip_conf.sap_env_name }}"
+sap_web_bilogon_app_name_short: "BI Logon - {{ sap_bip_conf.sap_env_name }}"
+sap_web_bilogon_app_name_greeting: "BI Logon - {{ sap_bip_conf.sap_env_name }}"
+sap_web_bilogon_product_name: "NDelius National Reporting"
 sap_web_bilogon_authentication_default: secLDAP
 sap_web_bilogon_authentication_visible: "true"
 sap_web_bilogon_logon_authentication_visibleList: secEnterprise,secLDAP
@@ -157,10 +157,10 @@ sap_web_cmcapp_cms_visible: "false"
 sap_web_cmcapp_dialog_prompt_enabled: "false"
 sap_web_cmcapp_disclaimer_enabled: "false"
 
-sap_web_fioribi_app_name: Delius Reporting
-sap_web_fioribi_app_name_short: Delius Reporting
-sap_web_fioribi_app_name_greeting: Welcome
-sap_web_fioribi_app_custom_product_name: Delius
+sap_web_fioribi_app_name: "BI Launch Pad - {{ sap_bip_conf.sap_env_name }}"
+sap_web_fioribi_app_name_short: "BI Launch Pad - {{ sap_bip_conf.sap_env_name }}"
+sap_web_fioribi_app_name_greeting: "BI Launch Pad - {{ sap_bip_conf.sap_env_name }}"
+sap_web_fioribi_app_custom_product_name: "NDelius National Reporting"
 sap_web_fioribi_authentication_default: secLDAP
 sap_web_fioribi_authentication_visible: "true"
 sap_web_fioribi_logon_authentication_visibleList: secEnterprise,secLDAP
@@ -172,9 +172,9 @@ sap_web_fioribi_notification_enabled: "true"
 sap_web_fioribi_admin_user_email: NationalApplicationsReportingTeam@justice.gov.uk
 sap_web_fioribi_disclaimer_enabled: "false"
 
-sap_web_opendocument_app_name: Delius Reporting OpenDocument
-sap_web_opendocument_app_name_short: OpenDocument
-sap_web_opendocument_app_custom_product_name: Delius
+sap_web_opendocument_app_name: "OpenDocument - {{ sap_bip_conf.sap_env_name }}"
+sap_web_opendocument_app_name_short: "OpenDocument - {{ sap_bip_conf.sap_env_name }}"
+sap_web_opendocument_app_custom_product_name: "NDelius National Reporting"
 sap_web_opendocument_authentication_default: secLDAP
 sap_web_opendocument_authentication_visible: "true"
 sap_web_opendocument_logon_authentication_visibleList: secEnterprise,secLDAP
@@ -185,5 +185,8 @@ sap_web_opendocument_admin_user_email: NationalApplicationsReportingTeam@justice
 
 sap_web_global_allowed_cms: "{{ sap_bip_allowed_cms }}"
 sap_web_global_prefer_root_selected: groupList
+sap_web_platform_services_properties: |
+  # Struts upload file size in K, M, or G.
+  servlet.action.init-param.maxFileSize=250M
 
 sap_web_admintools_allowed_cms: "{{ sap_bip_allowed_cms }}"
