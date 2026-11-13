@@ -37,7 +37,8 @@ export ORAENV_ASK=NO
 . oraenv
 
 trigger_misload
-misload_status=$?
+misload_exit_status=$?
+misload_status=$misload_exit_status
 echo "misload_status $misload_status" > /opt/textfile_monitoring/misload_status.prom
 
 if [[ "$misload_status" == "0" ]]; then
@@ -50,3 +51,4 @@ if [[ "$misload_status" == "0" ]]; then
 fi
 
 rm -f /opt/textfile_monitoring/misload_triggered.prom
+exit "$misload_exit_status"

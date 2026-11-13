@@ -6,6 +6,8 @@ Role to set up trigger file for mis load and status monitoring
 
 The trigger_mis_load.sh script is intended to be triggered by the Oracle db on the instance. This role is intended to check connectivity before creating the trigger file.
 
+The script returns the exit status of the MIS load trigger after updating monitoring and removing the running marker. A non-zero exit status (for example, when the Python script is missing or the remote batch command fails) causes the Oracle Scheduler executable job to be marked as failed. Writing to standard error alone does not determine the job status.
+
 There is a connection check step to ensure the target instance is up and running before the playbook is run.
 
 This role uses pywinrm to connect to Windows hosts and execute commands on them. It will execute where the EC2 instance has a tag of 'misload_target'. This needs to be the FQDN of the target instance.
