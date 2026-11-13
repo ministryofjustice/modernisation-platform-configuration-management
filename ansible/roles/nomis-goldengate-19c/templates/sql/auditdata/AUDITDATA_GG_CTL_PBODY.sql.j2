@@ -66,7 +66,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     WHEN NO_DATA_FOUND THEN
         RETURN FALSE;
     WHEN OTHERS THEN
-      audit_log_error(0, 'Replicat status ' || p_apply_name || ' failure.',
+      audit_log_error(0, 'Replicat status ' || p_apply_name || ' failure:'|| SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE,
           null, null, null, null, null, null, 'replicat_running');
         RAISE;
   END;
@@ -91,7 +91,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
     WHEN NO_DATA_FOUND THEN
         RETURN FALSE;
     WHEN OTHERS THEN
-      audit_log_error(0, 'Extract status ' || p_capture_name || ' failure.',
+      audit_log_error(0, 'Extract status ' || p_capture_name || ' failure:'|| SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE,
           null, null, null, null, null, null, 'extract_running');
         RAISE;
   END;
@@ -168,7 +168,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
         v_msg_number, null, null, null, null, null, 'stop_extract');
   EXCEPTION
     WHEN OTHERS THEN
-      audit_log_error(SQLCODE, SQLERRM, v_msg_number, null, null, null, null, null, 'stop_extract');
+      audit_log_error(SQLCODE, SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, v_msg_number, null, null, null, null, null, 'stop_extract');
       RAISE;
   END;
 
@@ -229,7 +229,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
          null, null, null, null, null, null, 'start_extract');
   EXCEPTION
     WHEN OTHERS THEN
-      audit_log_error(SQLCODE, SQLERRM, null, null, null, null, null, null, 'start_extract');
+      audit_log_error(SQLCODE, SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, null, null, null, null, null, null, 'start_extract');
       RAISE;
   END;
 
@@ -307,7 +307,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.AUDITDATA_GG_CT
          v_msg_number, null, null, null, null, v_msg_date, 'stop_replicat');
   EXCEPTION
     WHEN OTHERS THEN
-      audit_log_error(SQLCODE, SQLERRM, v_msg_number, null, null, null, null, v_msg_date, 'stop_replicat');
+      audit_log_error(SQLCODE, SQLERRM ||' Error line :' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, v_msg_number, null, null, null, null, v_msg_date, 'stop_replicat');
       RAISE;
   END;
 

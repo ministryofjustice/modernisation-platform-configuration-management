@@ -26,34 +26,38 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.auditref.schema_owner 
   IS
   -- Procedure to gather stats on key AUDITREF reference tables
   -- Migrated from STRMADMIN.GATHER_STATS_AUDITREF_TABS job
-  BEGIN
-    -- Gather stats on main reference tables used for audit lookups
-    -- Using AUTO_SAMPLE_SIZE for efficiency
-    
-    DBMS_STATS.GATHER_TABLE_STATS(
-      ownname => '{{ oracle_goldengate_group.auditref.schema_owner }}',
-      tabname => 'OFFENDERS',
-      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
-      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-      cascade => TRUE
-    );
-    
-    DBMS_STATS.GATHER_TABLE_STATS(
-      ownname => '{{ oracle_goldengate_group.auditref.schema_owner }}',
-      tabname => 'OFFENDER_BOOKINGS',
-      estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,
-      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
-      cascade => TRUE
-    );
-    
-    -- Add other key reference tables as needed
-    -- These are the most frequently joined tables in audit queries
-    
-  EXCEPTION
-    WHEN OTHERS THEN
-      -- Log error but don't fail - stats gathering is not critical
-      RAISE_APPLICATION_ERROR(-20001, 
-        'Error in gather_stats_auditref_tables: ' || SQLERRM);
+    cursor c_tab
+    is
+      select segment_name table_name from dba_segments where owner like 'AUDITREF'
+      and segment_type='TABLE' and segment_name not like 'BIN$%' and segment_name not like 'SYS_IMPORT%'
+      UNION
+      select table_name from dba_tables where cluster_name is not null and owner like 'AUDITREF'
+      UNION
+      select table_name from dba_tables where partitioned='YES'
+      and owner like 'AUDITREF'
+      order by 1;
+  begin
+    dbms_output.put_line(systimestamp||' - Starting statistics gathering');
+    for c_rec in c_tab
+    loop
+      begin
+        dbms_stats.unlock_table_stats(ownname => 'AUDITREF',tabname=>c_rec.table_name);
+        dbms_stats.gather_table_stats(ownname => 'AUDITREF',
+            tabname=>c_rec.table_name,
+            estimate_percent => dbms_stats.auto_sample_size,
+            granularity => 'AUTO',
+            method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+            cascade => TRUE,
+            degree => dbms_stats.auto_degree
+        );
+        dbms_stats.lock_table_stats(ownname => 'AUDITREF',tabname=>c_rec.table_name);
+        dbms_output.put_line(systimestamp||' - Statistics gathered for '||c_rec.table_name);
+      EXCEPTION
+      WHEN OTHERS THEN
+        -- Log error but don't fail - stats gathering is not critical
+        dbms_output.put_line('Error in gather_stats_auditref_tables for table: ' || c_rec.table_name || ' - ' || SQLERRM);
+      end;
+    end loop;
   END gather_stats_auditref_tables;
 
 

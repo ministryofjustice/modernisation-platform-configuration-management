@@ -114,6 +114,10 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
         -- create stop points table if it doesn't exist (will be empty if just created, so no risk of setting stop points inappropriately)
         ADD_MIS_STOP_POINTS_TABLE;
 
+        -- pause briefly to ensure any prior operations are settled before adding stop point.
+        -- avoids the stop point date being earlier than the latest financial transaction created time.
+        dbms_lock.sleep(5);
+
         -- Get the stop point for goldengate process to know when to stop processing records for the current MIS batch
         v_stop_scn := ADD_MIS_STOP_POINT;
 
@@ -123,7 +127,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_group.source.schema_owner }}
             execute immediate v_plsql into v_chk;
         exception
             when others then
-                raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure.');
+                raise_application_error(-20001, 'Database link CNOM_MIS_LINK is not accessible. Ensure the link is created and the remote database is accessible before running this procedure. Error: ' || SQLERRM);
         end;
 
         -- Initiate MIS stop-point processing using the exact SCN created above.
