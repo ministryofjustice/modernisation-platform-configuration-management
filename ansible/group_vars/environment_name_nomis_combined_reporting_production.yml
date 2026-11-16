@@ -156,6 +156,7 @@ sap_bip_confs:
   pd:
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_web_cmc_label: "Central Management Console - NOMIS - PROD"
     sap_bip_control_app_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Stopped,Disabled
@@ -199,7 +200,7 @@ sap_bip_confs:
         - dswsbobje
         - webi-websetup
     webadmin:
-      sap_web_java_opts: "-Xms8192m -Xmx8192m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup"
+      sap_web_java_opts: "-Xms10240m -Xmx10240m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup -Djavax.net.debug=all"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
 sap_bip_control_public_lb_name: public-lb
@@ -212,6 +213,7 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 ncr_bip_confs:
   pd:
