@@ -58,6 +58,9 @@ database_locked_statistics:
 database_parameters:
   db_recovery_file_dest_size: 900G
   compatible: 19.14.0
+  sga_max_size: 25G
+  sga_target: 25G
+  pga_aggregate_limit: 20G
 # Baseline SQL_cc61b358b26dd4dd is only required temporarily whilst data in Stage is very old
 sql_plan_baselines:
      - SQL_23485ac04e2c7ed0
