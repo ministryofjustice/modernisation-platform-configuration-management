@@ -18,14 +18,14 @@ $GlobalConfig = @{
   "delius-mis-stage-dis-1" = @{
     "Path"             = "D:\LMIS"
     "ShareName"        = "LMIS"
-    "FullControlUsers" = @("BUILTIN\Administrators", "NT AUTHORITY\SYSTEM", "delius-mis-stage\SVC_DIS_NDL")
+    "FullControlUsers" = @("BUILTIN\Administrators", "NT AUTHORITY\SYSTEM", "delius-mis-stag\SVC_DIS_NDL")
     "ModifyUsers"      = @()
     "ReadOnlyUsers"    = @()
   }
   "delius-mis-preprod-dis-1"= @{
     "Path"             = "D:\LMIS"
     "ShareName"        = "LMIS"
-    "FullControlUsers" = @("BUILTIN\Administrators", "NT AUTHORITY\SYSTEM", "delius-mis-preprod\SVC_DIS_NDL")
+    "FullControlUsers" = @("BUILTIN\Administrators", "NT AUTHORITY\SYSTEM", "delius-mis-prep\SVC_DIS_NDL")
     "ModifyUsers"      = @()
     "ReadOnlyUsers"    = @()
   }
