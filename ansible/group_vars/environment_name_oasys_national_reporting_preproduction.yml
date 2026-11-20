@@ -78,6 +78,7 @@ oracle_client_sqlnet_ora_source_filename: sqlnet.ora
 sap_bip_confs:
   pp:
     sap_web_java_mem: "4096"
+    sap_web_cmc_label: "Central Management Console - ONR - PREPROD"
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://preproduction.reporting.oasys.service.justice.gov.uk/biprws"
     sap_bip_auditing_db_server: PPBOAUD
@@ -113,3 +114,4 @@ sap_bip_auditing_db_server: "{{ sap_bip_conf.sap_bip_auditing_db_server }}"
 sap_bip_auditing_db_user: "{{ sap_bip_conf.sap_bip_auditing_db_user }}"
 sap_bip_cms_db_server: "{{ sap_bip_conf.sap_bip_cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_conf.sap_bip_cms_db_user }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
