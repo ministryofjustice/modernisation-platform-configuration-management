@@ -19,7 +19,7 @@
       ansible.builtin.lineinfile:
         path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/context.xml"
         regexp: "cacheMaxSize="
-        line: '       <Resources cachingAllowed="true" cacheMaxSize="{{ sap_web_context_cachemaxsize }}" />'
+        line: '       <Resources cachingAllowed="true" cacheMaxSize="{{ sap_web_context_cachemaxsize }}" cacheObjectMaxSize="10240" cacheTtl="1000" />'
       when: sap_web_context_cachemaxsize is defined
 
     - name: Update connector port settings in server.xml
