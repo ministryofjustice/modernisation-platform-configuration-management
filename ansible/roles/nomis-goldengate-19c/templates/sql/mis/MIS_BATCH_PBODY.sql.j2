@@ -124,6 +124,41 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     return l_timestamp;
   END;
 
+  FUNCTION get_stop_point_date(
+    p_staging_owner IN VARCHAR2,
+    p_after_scn IN NUMBER
+  ) RETURN DATE IS
+    l_stop_point_date DATE;
+    e_null_stop_point_date EXCEPTION;
+  BEGIN
+    SELECT stop_point_date
+      INTO l_stop_point_date
+      FROM {{ oracle_goldengate_group.source.schema_owner }}.MIS_STOP_POINTS@{{ oracle_goldengate_group.source.tns_alias }}
+     WHERE after_scn = p_after_scn;
+
+    IF l_stop_point_date IS NULL THEN
+      RAISE e_null_stop_point_date;
+    END IF;
+
+    RETURN l_stop_point_date;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'No MIS_STOP_POINTS row found for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+    WHEN TOO_MANY_ROWS THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'Multiple MIS_STOP_POINTS rows found for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+    WHEN e_null_stop_point_date THEN
+      mis_gen_pkg.log_strm_error(p_staging_owner, 'get_stop_point_date',
+        p_err_code => SQLCODE,
+        p_text => 'STOP_POINT_DATE is null for AFTER_SCN=' || TO_CHAR(p_after_scn));
+      RAISE;
+  END;
+
 
   PROCEDURE update_batch_record(
     p_batch_number   IN     number,
@@ -217,6 +252,274 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
         RAISE;
 
   END;
+
+  PROCEDURE recover_saved_batches(
+    p_tgt_owner         IN VARCHAR2,
+    p_from_batch_number IN NUMBER,
+    p_historical        IN BOOLEAN
+  ) IS
+    TYPE number_list IS TABLE OF NUMBER;
+    TYPE date_list IS TABLE OF DATE;
+    l_scns             number_list;
+    l_dates            date_list;
+    l_old_ids          number_list;
+    l_old_scns         number_list;
+    l_new_ids          number_list := number_list();
+    l_tables           mis_gen_pkg.object_list;
+    l_owner            VARCHAR2(30);
+    l_log_owner        VARCHAR2(30);
+    l_link             VARCHAR2(255);
+    l_sql              VARCHAR2(4000);
+    l_location         VARCHAR2(40);
+    l_anchor_scn       NUMBER;
+    l_max_id           NUMBER;
+    l_old_max_id       NUMBER;
+    l_latest_scn       NUMBER;
+    l_count            NUMBER;
+    l_match            PLS_INTEGER;
+    l_changed          NUMBER;
+  BEGIN
+    l_location := CASE WHEN p_historical THEN 'recover_historical_batches'
+                       ELSE 'recover_batches' END;
+    SAVEPOINT mis_batch_recovery;
+    l_owner := DBMS_ASSERT.SCHEMA_NAME(p_tgt_owner);
+    l_log_owner := DBMS_ASSERT.SCHEMA_NAME(mis_gen_pkg.get_etl_load_log_owner);
+    l_link := DBMS_ASSERT.QUALIFIED_SQL_NAME(mis_gen_pkg.get_source_database_name);
+    IF p_from_batch_number IS NULL OR p_from_batch_number <= 1
+       OR p_from_batch_number <> TRUNC(p_from_batch_number) THEN
+      RAISE_APPLICATION_ERROR(-20001, 'An existing SCN-based starting batch is required.');
+    END IF;
+
+    -- Serializes these recovery calls; normal rollover must be suspended separately.
+    EXECUTE IMMEDIATE 'lock table ' || l_log_owner || '.ETL_LOAD_LOG in exclusive mode nowait';
+    l_sql := 'select staged_start_scn from ' || l_log_owner ||
+             '.ETL_LOAD_LOG where repository_name = :owner and load_id = :id';
+    EXECUTE IMMEDIATE l_sql INTO l_anchor_scn USING l_owner, p_from_batch_number;
+    IF l_anchor_scn IS NULL OR l_anchor_scn <= 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Starting batch must have a genuine, positive start SCN.');
+    END IF;
+
+    l_sql := 'select after_scn, stop_point_date from ' ||
+             '{{ oracle_goldengate_group.source.schema_owner }}.MIS_STOP_POINTS@' || l_link ||
+             ' where after_scn >= :scn or (after_scn is null and stop_scn >= :scn)' ||
+             ' order by after_scn nulls first';
+    EXECUTE IMMEDIATE l_sql BULK COLLECT INTO l_scns, l_dates
+      USING l_anchor_scn, l_anchor_scn;
+    IF l_scns.count = 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Starting boundary is not retained in source MIS_STOP_POINTS.');
+    END IF;
+    FOR i IN 1..l_scns.count LOOP
+      IF l_scns(i) IS NULL OR l_dates(i) IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Source boundary has a missing AFTER_SCN or date.');
+      END IF;
+      IF i > 1 THEN
+        IF l_scns(i) <= l_scns(i-1) OR l_dates(i) < l_dates(i-1) THEN
+          RAISE_APPLICATION_ERROR(-20001, 'Source boundaries must have unique SCNs and ordered dates.');
+        END IF;
+      END IF;
+    END LOOP;
+    IF l_scns(1) <> l_anchor_scn THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Starting boundary is not retained in source MIS_STOP_POINTS.');
+    END IF;
+
+    l_sql := 'select load_id, staged_start_scn from ' || l_log_owner ||
+             '.ETL_LOAD_LOG where repository_name = :owner and load_id >= :id order by load_id';
+    EXECUTE IMMEDIATE l_sql BULK COLLECT INTO l_old_ids, l_old_scns
+      USING l_owner, p_from_batch_number;
+    l_old_max_id := l_old_ids(l_old_ids.count);
+    l_latest_scn := l_anchor_scn;
+    FOR i IN 1..l_old_ids.count LOOP
+      IF l_old_scns(i) IS NULL OR l_old_scns(i) < l_anchor_scn THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Recovery range contains a legacy or out-of-order batch.');
+      END IF;
+      IF i > 1 THEN
+        IF l_old_scns(i) <= l_old_scns(i-1) THEN
+          RAISE_APPLICATION_ERROR(-20001, 'Existing batch IDs must follow unique SCN boundaries.');
+        END IF;
+      END IF;
+      l_match := 0;
+      FOR j IN 1..l_scns.count LOOP
+        IF l_old_scns(i) = l_scns(j) THEN
+          l_match := j;
+          EXIT;
+        END IF;
+      END LOOP;
+      IF l_match = 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Existing batch boundary is absent from saved source boundaries.');
+      END IF;
+      l_latest_scn := l_old_scns(i);
+    END LOOP;
+    l_sql := 'select count(*) from ' || l_log_owner ||
+             '.ETL_LOAD_LOG where repository_name = :owner and load_id < :id' ||
+             ' and staged_start_scn >= :scn';
+    EXECUTE IMMEDIATE l_sql INTO l_count USING l_owner, p_from_batch_number, l_anchor_scn;
+    IF l_count > 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Earlier batch IDs overlap the recovery SCN range.');
+    END IF;
+    EXECUTE IMMEDIATE 'select max(load_id) from ' || l_log_owner || '.ETL_LOAD_LOG'
+      INTO l_max_id;
+
+    l_new_ids.extend(l_scns.count);
+    FOR i IN 1..l_scns.count LOOP
+      l_match := 0;
+      FOR j IN 1..l_old_ids.count LOOP
+        IF l_scns(i) = l_old_scns(j) THEN
+          l_match := j;
+          EXIT;
+        END IF;
+      END LOOP;
+      IF p_historical THEN
+        l_new_ids(i) := p_from_batch_number + i - 1;
+        IF l_match > 0 THEN
+          IF l_new_ids(i) < l_old_ids(l_match) THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Historical recovery cannot compact existing batch ID gaps.');
+          END IF;
+        END IF;
+        l_sql := 'select count(*) from ' || l_log_owner ||
+                 '.ETL_LOAD_LOG where load_id = :id and (repository_name <> :owner or repository_name is null)';
+        EXECUTE IMMEDIATE l_sql INTO l_count USING l_new_ids(i), l_owner;
+        IF l_count > 0 THEN
+          RAISE_APPLICATION_ERROR(-20001, 'Historical destination ID belongs to another repository.');
+        END IF;
+      ELSIF l_match > 0 THEN
+        l_new_ids(i) := l_old_ids(l_match);
+      ELSE
+        IF l_scns(i) < l_latest_scn THEN
+          RAISE_APPLICATION_ERROR(-20001, 'Historical gap detected; use recover_historical_batches.');
+        END IF;
+        l_max_id := l_max_id + 1;
+        l_new_ids(i) := l_max_id;
+      END IF;
+    END LOOP;
+
+    l_sql := 'select count(*) from ' || l_owner || '.STRM_TAB_CONTROL s ' ||
+             'where instr(nvl(s.proc_flags,''NONE''),''REF'') = 0 and ' ||
+             '(not exists (select 1 from all_tables t where t.owner = :owner and t.table_name = s.tgt_table) ' ||
+             'or (select count(*) from all_tab_columns c where c.owner = :owner ' ||
+             'and c.table_name = s.tgt_table and c.column_name in (''MIS_LOAD_ID'',''MIS_SCN'')) <> 2)';
+    EXECUTE IMMEDIATE l_sql INTO l_count USING l_owner, l_owner;
+    IF l_count > 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Registered non-reference targets are missing recovery tables or columns.');
+    END IF;
+
+    -- Include registered non-reference targets and otherwise unregistered STG tables.
+    l_sql := 'select distinct t.table_name from all_tab_columns t ' ||
+             'where t.owner = :owner and t.column_name = ''MIS_LOAD_ID'' ' ||
+             'and exists (select 1 from all_tables a where a.owner = t.owner ' ||
+             'and a.table_name = t.table_name) ' ||
+             'and exists (select 1 from all_tab_columns c where c.owner = t.owner ' ||
+             'and c.table_name = t.table_name and c.column_name = ''MIS_SCN'') ' ||
+             'and (exists (select 1 from ' || l_owner || '.STRM_TAB_CONTROL s ' ||
+             'where s.tgt_table = t.table_name and instr(nvl(s.proc_flags,''NONE''),''REF'') = 0) ' ||
+             'or (t.table_name like ''STG\_%'' escape ''\'' and not exists ' ||
+             '(select 1 from ' || l_owner || '.STRM_TAB_CONTROL s where s.tgt_table = t.table_name))) ' ||
+             'order by t.table_name';
+    EXECUTE IMMEDIATE l_sql BULK COLLECT INTO l_tables USING l_owner;
+    IF l_tables.count = 0 THEN
+      RAISE_APPLICATION_ERROR(-20001, 'No recovery staging tables with MIS_LOAD_ID and MIS_SCN found.');
+    END IF;
+    FOR i IN 1..l_tables.count LOOP
+      l_tables(i) := DBMS_ASSERT.SIMPLE_SQL_NAME(l_tables(i));
+      EXECUTE IMMEDIATE 'lock table ' || l_owner || '.' || l_tables(i) ||
+                        ' in exclusive mode nowait';
+      l_sql := 'select count(*) from ' || l_owner || '.' || l_tables(i) ||
+               ' where MIS_LOAD_ID between :first_id and :last_id' ||
+               ' and (MIS_SCN is null or MIS_SCN < :scn)';
+      EXECUTE IMMEDIATE l_sql INTO l_count
+        USING p_from_batch_number, l_old_max_id, l_anchor_scn;
+      IF l_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, l_tables(i) || ' has affected rows without a mappable SCN.');
+      END IF;
+    END LOOP;
+
+    IF p_historical THEN
+      -- Move higher IDs first so a destination cannot still contain a lower batch.
+      FOR j IN REVERSE 1..l_old_ids.count LOOP
+        FOR i IN 1..l_scns.count LOOP
+          IF l_scns(i) = l_old_scns(j) AND l_new_ids(i) <> l_old_ids(j) THEN
+            l_sql := 'update ' || l_log_owner || '.ETL_LOAD_LOG set load_id = :new_id ' ||
+                     'where repository_name = :owner and load_id = :old_id';
+            EXECUTE IMMEDIATE l_sql USING l_new_ids(i), l_owner, l_old_ids(j);
+            l_sql := 'update ' || l_owner || '.STRM_ERROR_LOG set MIS_BATCH_ID = :new_id ' ||
+                     'where MIS_BATCH_ID = :old_id';
+            EXECUTE IMMEDIATE l_sql USING l_new_ids(i), l_old_ids(j);
+          END IF;
+        END LOOP;
+      END LOOP;
+    END IF;
+
+    FOR i IN 1..l_scns.count LOOP
+      l_match := 0;
+      FOR j IN 1..l_old_scns.count LOOP
+        IF l_scns(i) = l_old_scns(j) THEN
+          l_match := j;
+          EXIT;
+        END IF;
+      END LOOP;
+      IF l_match = 0 THEN
+        l_sql := 'insert into ' || l_log_owner || '.ETL_LOAD_LOG ' ||
+                 '(load_id, job_name, repository_name, staged_start_datetime, staged_start_scn, message) ' ||
+                 'values (:id, :job, :owner, :start_date, :scn, ''Recovered saved source boundary'')';
+        EXECUTE IMMEDIATE l_sql USING l_new_ids(i), mis_gen_pkg.g_apply_queue_name || '_APPLY',
+          l_owner, l_dates(i), l_scns(i);
+      END IF;
+      IF i < l_scns.count THEN
+        l_sql := 'update ' || l_log_owner || '.ETL_LOAD_LOG set staged_end_datetime = :end_date ' ||
+                 'where repository_name = :owner and load_id = :id';
+        EXECUTE IMMEDIATE l_sql USING l_dates(i+1), l_owner, l_new_ids(i);
+      END IF;
+    END LOOP;
+
+    FOR i IN 1..l_tables.count LOOP
+      l_sql := 'update ' || l_owner || '.' || l_tables(i) || ' t set MIS_LOAD_ID = ' ||
+               '(select max(b.load_id) from ' || l_log_owner || '.ETL_LOAD_LOG b ' ||
+               'where b.repository_name = :owner and b.staged_start_scn <= t.MIS_SCN) ' ||
+               'where t.MIS_LOAD_ID between :first_id and :last_id ' ||
+               'and t.MIS_LOAD_ID <> (select max(b.load_id) from ' || l_log_owner || '.ETL_LOAD_LOG b ' ||
+               'where b.repository_name = :owner and b.staged_start_scn <= t.MIS_SCN)';
+      EXECUTE IMMEDIATE l_sql USING l_owner, p_from_batch_number, l_old_max_id, l_owner;
+      l_changed := SQL%ROWCOUNT;
+      l_sql := 'select count(*) from ' || l_owner || '.' || l_tables(i) || ' t ' ||
+               'where t.MIS_LOAD_ID between :first_id and :last_id ' ||
+               'and t.MIS_LOAD_ID <> (select max(b.load_id) from ' || l_log_owner || '.ETL_LOAD_LOG b ' ||
+               'where b.repository_name = :owner and b.staged_start_scn <= t.MIS_SCN)';
+      EXECUTE IMMEDIATE l_sql INTO l_count
+        USING p_from_batch_number, l_new_ids(l_new_ids.count), l_owner;
+      IF l_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, l_tables(i) || ' still has incorrectly assigned recovery rows.');
+      END IF;
+      mis_gen_pkg.log_strm_message(l_owner, l_location,
+        l_tables(i) || ': ' || l_changed || ' rows reassigned (pending caller commit).');
+    END LOOP;
+    FOR i IN 1..l_scns.count LOOP
+      mis_gen_pkg.log_strm_message(l_owner, l_location,
+        'Boundary ' || l_scns(i) || ' mapped to batch ' || l_new_ids(i) ||
+        ' (pending caller commit).');
+    END LOOP;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK TO mis_batch_recovery;
+      mis_gen_pkg.log_strm_error(p_tgt_owner, l_location,
+        p_batch_id => p_from_batch_number, p_err_code => SQLCODE,
+        p_text => SQLERRM || ' Error line: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+      RAISE;
+  END recover_saved_batches;
+
+  PROCEDURE recover_batches(
+    p_tgt_owner         IN VARCHAR2,
+    p_from_batch_number IN NUMBER
+  ) IS
+  BEGIN
+    recover_saved_batches(p_tgt_owner, p_from_batch_number, FALSE);
+  END recover_batches;
+
+  PROCEDURE recover_historical_batches(
+    p_tgt_owner         IN VARCHAR2,
+    p_from_batch_number IN NUMBER
+  ) IS
+  BEGIN
+    recover_saved_batches(p_tgt_owner, p_from_batch_number, TRUE);
+  END recover_historical_batches;
 
   FUNCTION apply_hi_scn(
     p_staging_owner   IN     varchar2 DEFAULT NULL
@@ -524,17 +827,28 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
 
     -- set new start date
     IF v_staged_end_datetime IS NULL THEN
-        BEGIN
-            v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
-        EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+        IF p_staged_start_scn IS NOT NULL THEN
+            -- The source stop-point date is the authoritative batch boundary;
+            -- SCN_TO_TIMESTAMP can differ from the source transaction commit time.
+            v_date := get_stop_point_date(v_staging_owner, p_staged_start_scn);
             log_debug (v_staging_owner, 'create_new_batch',
-                            v_apply_scn || ' is not a currently valid system change number at source;' ||
-                            ' will check registered log dates instead.', -1);
-            -- get the next date (end of log) of the archive logs
-            -- registered to the capture process containing data for a given SCN
-            v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
-        END;
+                'Batch boundary: AFTER_SCN=' || TO_CHAR(p_staged_start_scn) ||
+                ', STOP_POINT_DATE=' || TO_CHAR(v_date, 'YYYY-MM-DD HH24:MI:SS'));
+        ELSE
+            BEGIN
+                v_date := nvl(get_scn_timestamp(v_apply_scn),trunc(sysdate));
+            EXCEPTION WHEN mis_gen_pkg.invalid_scn THEN
+                log_debug (v_staging_owner, 'create_new_batch',
+                                v_apply_scn || ' is not a currently valid system change number at source;' ||
+                                ' will check registered log dates instead.', -1);
+                -- get the next date (end of log) of the archive logs
+                -- registered to the capture process containing data for a given SCN
+                v_date := nvl(capture_log_date(v_staging_owner, v_apply_scn),trunc(sysdate));
+            END;
+        END IF;
     ELSE
+        -- An existing end date is already the recorded prior boundary; retain it
+        -- rather than replacing it with a new source lookup.
         v_date := v_staged_end_datetime;
     END IF;
 
@@ -786,7 +1100,7 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_BATCH_PKG A
     -- delete rows for any tables not listed in the STRM_TAB_CONTROL table that have a MIS_LOAD_ID column.
     -- The auditref version of the tables don't have the MIS_LOAD_ID columns so won't be picked up here.
     l_plsql :=
-      'SELECT o.OBJECT_NAME, null proc_flags FROM dba_objects o '||
+      'SELECT o.OBJECT_NAME FROM dba_objects o '||
       'WHERE o.OWNER = ''' || l_tgt_owner || ''' AND o.OBJECT_NAME LIKE ''STG_%'' AND o.OBJECT_TYPE = ''TABLE'' '||
       'AND EXISTS (SELECT 1 FROM DBA_TAB_COLS dtc WHERE dtc.TABLE_NAME = o.OBJECT_NAME AND dtc.OWNER = o.OWNER AND dtc.COLUMN_NAME = ''MIS_LOAD_ID'' ) '||
       'and not exists (select 1 from ' || l_tgt_owner || '.strm_tab_control stc where stc.tgt_table = o.OBJECT_NAME)';

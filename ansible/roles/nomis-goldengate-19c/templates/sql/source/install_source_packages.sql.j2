@@ -1,6 +1,6 @@
 spool /tmp/{{ oracle_goldengate_group_name }}_packages.log
 
-WHENEVER SQLERROR EXIT SUCCESS
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 PROMPT Compiling packages as {{ oracle_goldengate_group.source.schema_owner }}:
 @MIS_END_OF_DAY_PKG.sql

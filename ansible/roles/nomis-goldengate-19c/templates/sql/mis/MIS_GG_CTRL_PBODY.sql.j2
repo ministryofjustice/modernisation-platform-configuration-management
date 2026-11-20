@@ -141,8 +141,8 @@ CREATE OR REPLACE PACKAGE BODY {{ oracle_goldengate_sql_owner }}.MIS_GG_CTRL_PKG
             p_points_set := TRUE;
         END IF;
     ELSE
-        -- stop_scn was passed in, so we consider points set
-        p_points_set := TRUE;
+        -- stop_scn was passed in for goldengate mode so no need to stop, just return false so the caller knows no stop points were set.
+        p_points_set := FALSE;
     END IF;
 
   EXCEPTION

@@ -1,0 +1,64 @@
+CREATE OR REPLACE PACKAGE BODISTAGING.etl_mis AUTHID CURRENT_USER
+AS
+/* Author: David Potter (MOJ)
+   Date Created: 22/02/2011
+*/
+
+PROCEDURE build_table_indexes (
+  p_table_name IN VARCHAR2,
+  p_max_slaves IN PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE truncate_table (
+  p_table_name IN VARCHAR2
+);
+
+PROCEDURE alter_table_indexes (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE alter_table (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE alter_unique_constraints (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE drop_sub_partition (
+  p_table_name IN VARCHAR2,
+  p_part_value IN PLS_INTEGER,
+  p_sub_value IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE drop_partition (
+  p_table_name IN VARCHAR2,
+  p_part_value IN PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE maintain_foahb (
+  p_action IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+);
+
+-- For manual preparation, stop ETL first. Partition DDL commits implicitly.
+PROCEDURE prepare_foahb_partitions (
+  p_return_output OUT VARCHAR2
+);
+
+PROCEDURE maintain_booking_seq (
+  p_row_count OUT PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+);
+
+END etl_mis;
+/
