@@ -38,6 +38,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 sap_bip_confs:
   stage:
     sap_env_name: "STAGE (00{{ ec2_name.split('-')[-1] }})"
+    sap_web_cmc_label: "Central Management Console - NDelius - STAGE"
     sap_bip_config_secret_id: delius-mis-stage-sap-boe-config
     sap_bip_passwords_secret_id: delius-mis-stage-sap-boe-passwords
     sap_bip_sysdb_secret_id: delius-mis-stage-oracle-boe-db-application-passwords
@@ -83,6 +84,7 @@ sap_bip_confs:
     sap_bip_control_cms_server_2:
   preprod:
     sap_env_name: "PREPROD (00{{ ec2_name.split('-')[-1] }})"
+    sap_web_cmc_label: "Central Management Console - NDelius - PREPROD"
     sap_bip_config_secret_id: delius-mis-preprod-sap-boe-config
     sap_bip_passwords_secret_id: delius-mis-preprod-sap-boe-passwords
     sap_bip_sysdb_secret_id: delius-mis-preprod-oracle-boe-db-application-passwords
@@ -151,6 +153,7 @@ sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 bip_filesystems_domains_by_env:
   stage:

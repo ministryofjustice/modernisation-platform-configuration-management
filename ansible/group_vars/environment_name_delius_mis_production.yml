@@ -22,6 +22,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_conf:
   sap_env_name: "PROD (00{{ ec2_name.split('-')[-1] }})"
+  sap_web_cmc_label: "Central Management Console - NDelius - PROD"
   sap_bip_config_secret_id: delius-mis-prod-sap-boe-config
   sap_bip_passwords_secret_id: delius-mis-prod-sap-boe-passwords
   sap_bip_sysdb_secret_id: delius-mis-prod-oracle-boe-db-application-passwords
@@ -88,6 +89,7 @@ sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 bip_filesystems_domains:
   azure.hmpp.root:
