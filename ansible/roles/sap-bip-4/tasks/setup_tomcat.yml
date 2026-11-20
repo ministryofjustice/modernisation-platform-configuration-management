@@ -64,30 +64,6 @@
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/PlatformServices.properties
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/global.properties
 
-    - name: Create CMC Branding directory
-      ansible.builtin.file:
-        path: "{{ sap_bip_installation_directory }}/{{ item }}"
-        state: directory
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/com/businessobjects/cmc
-      when:
-        - sap_web_cmc_label is defined
-        - sap_web_disable_cmcapp != "true"
-
-    - name: Copy CMC Branding
-      ansible.builtin.template:
-        src: "web/{{ item }}"
-        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/com/businessobjects/cmc/CmcLabelStrings_en.properties
-      when:
-        - sap_web_cmc_label is defined
-        - sap_web_disable_cmcapp != "true"
-
     - name: Recursively unused files and dirs
       ansible.builtin.file:
         path: "{{ sap_bip_installation_directory }}/{{ item }}"

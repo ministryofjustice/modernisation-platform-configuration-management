@@ -1,0 +1,9 @@
+---
+- block:
+    - name: Start tomcat
+      ansible.builtin.service:
+        name: sapbobj
+        state: started
+
+  #  block
+  when: sap_bip_is_web
