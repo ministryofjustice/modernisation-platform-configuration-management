@@ -116,7 +116,7 @@ disks_mount:
     fstype: swap
 
 timezone: "Europe/London"
-filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
+filesystems_mount: "{{ bip_app_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_responsefile: response.app.ini
 

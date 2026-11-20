@@ -97,12 +97,29 @@
         path: "{{ database_home }}/lib/osbws_linux64.zip"
       register: osbws_lib_zip
 
+    # Download osbws_linux64.zip from bucket if not found
+    - name: Download osbws_linux64.zip from bucket if not found
+      amazon.aws.aws_s3:
+        bucket: "{{ artefacts_s3_bucket_name }}"
+        object: "{{ artefacts_s3_bucket_path }}/{{ item }}"
+        dest: "{{ database_home }}/lib/{{ item }}"
+        mode: get
+        overwrite: latest
+      loop:
+        - osbws_linux64.zip
+      when: not osbws_lib_zip.stat.exists
+
+    - name: Check again for {{ database_home }}/lib/osbws_linux64.zip
+      stat:
+        path: "{{ database_home }}/lib/osbws_linux64.zip"
+      register: osbws_s3lib_zip
+
     # Starting with Oracle Database 19c Release Update version 27 (19.27), the backup module library files
     # are available in the Oracle home directory after you install the Oracle Database.
     - name: Fail if osbws_linux64.zip not found
       fail:
         msg: "Failed to find osbws_linux64.zip"
-      when: not osbws_lib_zip.stat.exists
+      when: not osbws_s3lib_zip.stat.exists
       
     - name: Unzip OSBWS Library bundled with software
       become: true

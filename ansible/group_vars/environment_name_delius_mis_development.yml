@@ -83,6 +83,14 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
+bip_filesystems_domains:
+  delius-mis-dev.internal:
+    secret_name: delius-mis-dev-sap-dis-passwords
+    mount_fs_username: SVC_DIS_NDL
+
+bip_filesystems_domain_name_fqdns:
+  - delius-mis-dev.internal
+
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
@@ -94,3 +102,9 @@ bip_filesystems_mount:
     fstype: efs
     opts: "_netdev,iam,tls,accesspoint=fsap-078f9af6b89311437,nofail"
     src: fs-92b7c763.efs.eu-west-2.amazonaws.com
+  - dir: /NDMIS-DEV-DIS-1/LMIS
+    uid: root
+    gid: root
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-dev.internal.creds
+    src: "//ndmis-dev-dis-1.delius-mis-dev.internal/LMIS"

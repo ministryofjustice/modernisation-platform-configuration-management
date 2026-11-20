@@ -152,17 +152,31 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
-filesystems_domains_by_env:
+bip_filesystems_domains_by_env:
   stage:
     azure.hmpp.root:
       secret_name: delius-mis-stage-sap-boe-passwords
       mount_fs_username: svc_fsx_nart
+    delius-mis-stage.internal:
+      secret_name: delius-mis-stage-sap-dis-passwords
+      mount_fs_username: SVC_DIS_NDL
   preprod:
     azure.hmpp.root:
       secret_name: delius-mis-preprod-sap-boe-passwords
       mount_fs_username: svc_fsx_nart
-filesystems_domains: "{{ filesystems_domains_by_env[sap_environment] }}"
+    delius-mis-preprod.internal:
+      secret_name: delius-mis-preprod-sap-dis-passwords
+      mount_fs_username: SVC_DIS_NDL
+bip_filesystems_domains: "{{ bip_filesystems_domains_by_env[sap_environment] }}"
+
+bip_filesystems_domain_name_fqdns_by_env:
+  stage:
+    - azure.hmpp.root
+    - delius-mis-stage.internal
+  preprod:
+    - azure.hmpp.root
+    - delius-mis-preprod.internal
+bip_filesystems_domain_name_fqdns: "{{ bip_filesystems_domain_name_fqdns_by_env[sap_environment] }}"
 
 bip_filesystems_mount_by_env:
   stage:
@@ -184,6 +198,12 @@ bip_filesystems_mount_by_env:
       src: //fslinux.azure.hmpp.root/NART$
       maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
       autofs_mount: true
+    - dir: /NDMIS-STG-DIS-1/LMIS
+      uid: root
+      gid: root
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-stage.internal.creds
+      src: "//ndmis-stg-dis-1.delius-mis-stage.internal/LMIS"
   preprod:
     - dir: /opt/data/BusinessObjects
       fstype: nfs
@@ -203,4 +223,10 @@ bip_filesystems_mount_by_env:
       src: //fslinux.azure.hmpp.root/NART$
       maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
       autofs_mount: true
+    - dir: /NDMIS-PRE-DIS-1/LMIS
+      uid: root
+      gid: root
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-preprod.internal.creds
+      src: "//ndmis-pre-dis-1.delius-mis-preprod.internal/LMIS"
 bip_filesystems_mount: "{{ bip_filesystems_mount_by_env[sap_environment] }}"

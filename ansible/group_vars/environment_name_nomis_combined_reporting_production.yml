@@ -224,13 +224,15 @@ ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
 ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
 filesystems_domains:
   azure.hmpp.root:
     secret_name: /sap/bip/pd/passwords
     mount_fs_username: svc_fsx_nart
 
-bip_filesystems_mount:
+filesystems_domain_name_fqdns:
+  - azure.hmpp.root
+
+bip_cms_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
     uid: bobj
@@ -247,7 +249,7 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
   - dir: /mnt/AO
     uid: root
@@ -257,7 +259,27 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/AO
     # metric_dimension: AO
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
+    autofs_mount: true
+
+bip_app_filesystems_mount:
+  - dir: /opt/data/BusinessObjects
+    fstype: nfs
+    uid: bobj
+    gid: binstall
+    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+    src: "fs-030a75a6d02aa86ef.efs.eu-west-2.amazonaws.com:/"
+    metric_dimension: pd_ncr_sap_share
+    maintenance_window:
+  - dir: /NART
+    uid: bobj
+    gid: binstall
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+    src: //fslinux.azure.hmpp.root/NART$
+    # metric_dimension: NART
+    maintenance_window: "4.0400-4.0430" # Thu 4am UTC
+    state: present
     autofs_mount: true
 
 webadmin_filesystems_mount:
@@ -269,7 +291,7 @@ webadmin_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
 
 rclone_secretsmanager_app_registrations:

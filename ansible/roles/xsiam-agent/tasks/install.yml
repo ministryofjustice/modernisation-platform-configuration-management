@@ -74,6 +74,16 @@
     - cortex.conf
   when: not ansible_check_mode
 
+# Set endpoint tags for the XSIAM agent in the cortex.conf file
+- name: Set xsiam agent endpoint tags
+  ansible.builtin.lineinfile:
+    path: /etc/panw/cortex.conf
+    regexp: '^--endpoint-tags'
+    line: "--endpoint-tags {{ xsiam_agent_endpoint_tags }}"
+  when:
+    - not ansible_check_mode
+    - xsiam_agent_endpoint_tags | length > 0
+
 # RPM must be installed after selinux re-enabled
 - name: Install xsiam agent RPM
   ansible.builtin.yum:

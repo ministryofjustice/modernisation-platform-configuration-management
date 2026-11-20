@@ -53,20 +53,26 @@ filesystems_mount:
 
 Since the FSX windows file shares is joined to a domain, it is assumed
 there is a SecretsManager Secret (in json key-pair format) containing
-username and password to use for join. The creds are stored  on the server
+username and password to use for join. The creds are stored on the server
 so ensure this service user has minimal permissions.
 
-The secret configuration must be included in `defaults/main.yml` for
-the given domain.
+Set `filesystems_domain_name_fqdns` to an array of domain names to set
+credentials for.
 
-Then, in appropriate `group_vars`, define `filesystem_mount` and `filesystems_domain_name_fqdn`
+The `filesystems_domains` dictionary contains details of where to find
+the credentials from SecretsManager secret. Either add the domain
+name into the default value in `defaults/main.yml` or overwrite the value
+per environment.
+
+Then, in appropriate `group_vars`, define `filesystem_mount` and `filesystems_domain_name_fqdns`
 
 ```
-filesystems_domain_name_fqdn: azure.noms.root
+filesystems_domain_name_fqdns:
+  - azure.noms.root
 filesystems_mount:
   - dir: /test2
     fstype: cifs
-    opts: vers=3.1.1,rsize=130048,wsize=130048,cache=none,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
+    opts: vers=3.1.1,rsize=130048,wsize=130048,cache=none,credentials=/root/.filesystems/azure.noms.root.creds
     src: //amznfsxgnktcz6b.azure.noms.root/share
     metric_dimension: amznfsxgnktcz6b
 ```
@@ -77,7 +83,8 @@ This is more or less the same as FSX. This example uses a secret configured in t
 rather than cross-account access.
 
 ```
-filesystems_domain_name_fqdn: azure.hmpp.root
+filesystems_domain_name_fqdns:
+  - azure.hmpp.root
 filesystems_domains:
   azure.hmpp.root:
     secret_name: /ndh/pd/shared
@@ -87,7 +94,7 @@ filesystems_mount:
     uid: 10002
     gid: 10002
     fstype: cifs
-    opts: vers=3.0,_netdev,nofail,uid=10002,gid=10002,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
+    opts: vers=3.0,_netdev,nofail,uid=10002,gid=10002,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
     src: //PDPDW00057.azure.hmpp.root/NOMS_Extracts_PD$
     metric_dimension: NOMS_Extracts_PD
 ```
