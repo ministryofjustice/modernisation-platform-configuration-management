@@ -89,12 +89,17 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
-
-filesystems_domains:
+bip_filesystems_domains:
   azure.hmpp.root:
     secret_name: delius-mis-prod-sap-boe-passwords
     mount_fs_username: svc_fsx_nart
+  delius-mis-prod.internal:
+    secret_name: delius-mis-prod-sap-dis-passwords
+    mount_fs_username: SVC_DIS_NDL
+
+bip_filesystems_domain_name_fqdns:
+  - azure.hmpp.root
+  - delius-mis-prod.internal
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
@@ -115,6 +120,12 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
     autofs_mount: true
+  - dir: /NDMIS-PRD-DIS-1/LMIS
+    uid: root
+    gid: root
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-prod.internal.creds
+    src: "//ndmis-prd-dis-1.delius-mis-prod.internal/LMIS"
 
 rclone_secretsmanager_app_registrations:
   rclone_1:

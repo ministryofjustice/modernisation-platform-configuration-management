@@ -5,22 +5,6 @@ dns_zone_internal: nomis-data-hub.hmpps-production.modernisation-platform.intern
 ndelius_proxy_pass: interface.probation.service.justice.gov.uk
 winrm_domain_name_fqdn: azure.hmpp.root
 
-app_filesystems_domain_name_fqdn: azure.hmpp.root
-app_filesystems_mount:
-  - dir: /opt/data/interfaces/extract
-    uid: 10002
-    gid: 10002
-    fstype: cifs
-    opts: vers=3.0,_netdev,nofail,uid=10002,gid=10002,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds
-    src: //PDPDW00057.azure.hmpp.root/NOMS_Extracts_PD$
-    metric_dimension: NOMS_Extracts_PD
-    state: absent
-
-filesystems_domains:
-  azure.hmpp.root:
-    secret_name: /ndh/pd/shared
-    mount_fs_username: svc_noms_ndh_pd
-
 ndh_cdecopy_confs:
   pd:
     ndh_cdecopy_s3_bucket_name: offloc-upload20240517094139820400000001

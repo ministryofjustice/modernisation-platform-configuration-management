@@ -3,11 +3,13 @@ ansible_aws_ssm_bucket_name: s3-bucket20240321144721125500000001
 dns_zone_internal: oasys-national-reporting.hmpps-preproduction.modernisation-platform.internal
 onr_environment: "{{ ec2.tags['oasys-national-reporting-environment'] }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
 filesystems_domains:
   azure.hmpp.root:
     secret_name: /sap/bip/pp/passwords
     mount_fs_username: svc_fsx_nart
+
+filesystems_domain_name_fqdns:
+  - azure.hmpp.root
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
@@ -26,7 +28,7 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
 
 sap_web_filesystems_mount:
@@ -38,7 +40,7 @@ sap_web_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
 
 db_configs:

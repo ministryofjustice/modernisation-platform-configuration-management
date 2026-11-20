@@ -200,7 +200,7 @@ ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
 ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
-bip_filesystems_mount:
+bip_cms_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
     uid: bobj
@@ -209,3 +209,5 @@ bip_filesystems_mount:
     src: "eu-west-2a.fs-0a9a52ec4ffec21cc.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: t1_ncr_sap_share
     maintenance_window:
+
+bip_app_filesystems_mount: "{{ bip_cms_filesystems_mount }}"

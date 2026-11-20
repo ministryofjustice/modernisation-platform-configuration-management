@@ -1,19 +1,28 @@
 ---
-- name: Fail if filesystems_domain not defined
-  fail:
-    msg: "Please ensure filesystems_domain_name_fqdn is defined and contained within filesystems_domains dictionary"
-  when: filesystems_domains[filesystems_domain_name_fqdn] is not defined
+- name: Fail if any domain in filesystems_domain_name_fqdns is not defined
+  ansible.builtin.fail:
+    msg: "{{ item }} must be defined within the filesystems_domains dictionary"
+  when: filesystems_domains[item] is not defined
+  loop: "{{ filesystems_domain_name_fqdns }}"
+
+- name: Build secretsmanager_passwords dictionary
+  ansible.builtin.set_fact:
+    filesystems_secretsmanager_passwords: "{{ filesystems_secretsmanager_passwords | default({}) | combine({ item: filesystems_secretsmanager_password }) }}"
+  vars:
+    filesystems_domain: "{{ filesystems_domains[item] }}"
+    filesystems_secretsmanager_password:
+      account_name: "{{ filesystems_domain.secret_account_name | default(omit) }}"
+      assume_role_name: "{{ filesystems_domain.secret_role_name | default(omit) }}"
+      secret: "{{ filesystems_domain.secret_name }}"
+      users:
+        - "{{ { filesystems_domain.mount_fs_username: None } }}"
+  loop: "{{ filesystems_domain_name_fqdns }}"
 
 - name: Get secretsmanager passwords
   import_role:
     name: secretsmanager-passwords
   vars:
     secretsmanager_passwords: "{{ filesystems_secretsmanager_passwords }}"
-
-- name: Set secretsmanager facts
-  set_fact:
-    mount_fs_username: "{{ filesystems_domain.mount_fs_username }}"
-    mount_fs_password: "{{ secretsmanager_passwords_dict['filesystems_shared_passwords'].passwords[filesystems_domain.mount_fs_username] }}"
 
 - name: Create creds directory
   ansible.builtin.file:
@@ -23,10 +32,15 @@
     state: directory
     mode: "0700"
 
-- name: Create creds file
+- name: Create creds files for each domain
   ansible.builtin.template:
     src: domain.creds
-    dest: "/root/.filesystems/{{ filesystems_domain_name_fqdn }}.creds"
+    dest: "/root/.filesystems/{{ item }}.creds"
     mode: "0600"
     owner: root
     group: root
+  vars:
+    current_username: "{{ filesystems_domains[item].mount_fs_username }}"
+    mount_fs_username: "{{ current_username }}"
+    mount_fs_password: "{{ secretsmanager_passwords_dict[item].passwords[current_username] }}"
+  loop: "{{ filesystems_domain_name_fqdns }}"
