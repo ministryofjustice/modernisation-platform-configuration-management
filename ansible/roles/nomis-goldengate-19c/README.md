@@ -46,6 +46,9 @@ Note: AUDITREF and MIS processes share the same database package code but differ
 
 ## Features
 
+For operational steps after a wrong business date or a missed overnight load, see
+the [MIS load recovery guide](MIS_LOAD_RECOVERY.md).
+
 ### Recovering MIS batch boundaries
 
 `MIS_BATCH_PKG` provides two opt-in recovery procedures. Existing rollover procedures
