@@ -139,6 +139,12 @@
         - sap_bip_customise_webapps
         - sap_bip_redeploy_tomcat
 
+    - import_tasks: install_theme_designer.yml
+      tags:
+        - ec2provision
+        - sap_bip_install_theme_designer
+        - sap_bip_redeploy_tomcat
+
     - import_tasks: start_tomcat.yml
       tags:
         - ec2provision
