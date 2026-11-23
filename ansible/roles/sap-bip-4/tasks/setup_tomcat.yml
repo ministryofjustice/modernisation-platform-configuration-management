@@ -19,7 +19,7 @@
       ansible.builtin.lineinfile:
         path: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/conf/context.xml"
         regexp: "cacheMaxSize="
-        line: '       <Resources cachingAllowed="true" cacheMaxSize="{{ sap_web_context_cachemaxsize }}" />'
+        line: '       <Resources cachingAllowed="true" cacheMaxSize="{{ sap_web_context_cachemaxsize }}" cacheObjectMaxSize="10240" cacheTtl="1000" />'
       when: sap_web_context_cachemaxsize is defined
 
     - name: Update connector port settings in server.xml
@@ -63,30 +63,6 @@
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/OpenDocument.properties
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/PlatformServices.properties
         - sap_bobj/enterprise_xi40/warfiles/webapps/BOE/WEB-INF/config/custom/global.properties
-
-    - name: Create CMC Branding directory
-      ansible.builtin.file:
-        path: "{{ sap_bip_installation_directory }}/{{ item }}"
-        state: directory
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/com/businessobjects/cmc
-      when:
-        - sap_web_cmc_label is defined
-        - sap_web_disable_cmcapp != "true"
-
-    - name: Copy CMC Branding
-      ansible.builtin.template:
-        src: "web/{{ item }}"
-        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
-        owner: bobj
-        group: binstall
-      loop:
-        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/com/businessobjects/cmc/CmcLabelStrings_en.properties
-      when:
-        - sap_web_cmc_label is defined
-        - sap_web_disable_cmcapp != "true"
 
     - name: Recursively unused files and dirs
       ansible.builtin.file:
