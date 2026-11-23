@@ -107,24 +107,24 @@ db_configs:
     tns_name: PPCNMAUD
     service:
       - { name: CNMAUD_TAF, role: PRIMARY }
-  PPMISGG:
-    db_name: PPMISGG
-    db_unique_name: PPMISGG
-    instance_name: PPMISGG
+  PPMISG:
+    db_name: PPMISG
+    db_unique_name: PPMISG
+    instance_name: PPMISG
     host_name: preprod-nomis-db-3-a.preproduction.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: PPMISGG
+    tns_name: PPMISG
     service:
-      - { name: MISGG_TAF, role: PRIMARY }
-  PPCNMAUDGG:
-    db_name: PPCNMAUDGG
-    db_unique_name: PPCNMAUDGG
-    instance_name: PPCNMAUDGG
+      - { name: MISG_TAF, role: PRIMARY }
+  PPCAUDG:
+    db_name: PPCAUDG
+    db_unique_name: PPCAUDG
+    instance_name: PPCAUDG
     host_name: preprod-nomis-db-3-a.preproduction.nomis.service.justice.gov.uk
     port: 1521
-    tns_name: PPCNMAUDGG
+    tns_name: PPCAUDG
     service:
-      - { name: CNMAUDGG_TAF, role: PRIMARY }
+      - { name: CNMAUDG_TAF, role: PRIMARY }
   RCVCAT:
     rcvcat_db_name: PPRCVCAT
 
@@ -143,8 +143,8 @@ oracle_goldengate_group_overrides:
   source:
     tns_alias: PPCNOM
   auditdata:
-    tns_alias: PPCNMAUDGG
+    tns_alias: PPCAUDG
   auditref:
-    tns_alias: PPCNMAUDGG
+    tns_alias: PPCAUDG
   mis:
-    tns_alias: PPMISGG
+    tns_alias: PPMISG
