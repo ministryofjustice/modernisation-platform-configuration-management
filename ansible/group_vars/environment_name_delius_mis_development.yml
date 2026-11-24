@@ -22,6 +22,7 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_conf:
   sap_env_name: "DEV (00{{ ec2_name.split('-')[-1] }})"
+  sap_web_cmc_label: "Central Management Console - nDelius - DEV"
   sap_bip_config_secret_id: delius-mis-dev-sap-boe-config
   sap_bip_passwords_secret_id: delius-mis-dev-sap-boe-passwords
   sap_bip_sysdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
@@ -82,6 +83,7 @@ sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 bip_filesystems_domains:
   delius-mis-dev.internal:

@@ -47,6 +47,7 @@
         - sap_bip_setup_tomcat
         - sap_bip_setup_provisioning
         - sap_bip_redeploy_tomcat
+        - sap_bip_customise_webapps
 
     - import_tasks: setup_archived_logs.yml
       tags:
@@ -105,6 +106,14 @@
         - ec2provision
         - sap_bip_update_jdbc
 
+    - import_tasks: stop_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_undeploy_tomcat
+        - sap_bip_redeploy_tomcat
+        - sap_bip_stop_tomcat
+        - never
+
     - import_tasks: undeploy_tomcat.yml
       tags:
         - ec2provision
@@ -123,6 +132,25 @@
         - ec2provision
         - sap_bip_deploy_tomcat
         - sap_bip_redeploy_tomcat
+
+    - import_tasks: customise_webapps.yml
+      tags:
+        - ec2provision
+        - sap_bip_customise_webapps
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: install_theme_designer.yml
+      tags:
+        - ec2provision
+        - sap_bip_install_theme_designer
+        - sap_bip_redeploy_tomcat
+
+    - import_tasks: start_tomcat.yml
+      tags:
+        - ec2provision
+        - sap_bip_redeploy_tomcat
+        - sap_bip_start_tomcat
+        - never
 
     - import_tasks: setup_tomcat_restart.yml
       tags:

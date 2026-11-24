@@ -29,10 +29,5 @@
       when: not item in deployed_apps
       loop: "{{ sap_web_apps }}"
 
-    - name: Start tomcat
-      ansible.builtin.service:
-        name: sapbobj
-        state: started
-
   #  block
   when: sap_bip_is_web
