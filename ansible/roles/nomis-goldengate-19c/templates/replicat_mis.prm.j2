@@ -43,16 +43,7 @@ MAP #SOURCE_TABLE, TARGET #TARGET_TABLE, &
       MIS_LOAD_ID = 0);
 END;
 
--- Exclude tables whose target names do not follow the standard STG_<source>
--- naming convention.
-{% for line in oms_owner_mis_mapexclude_lines %}
-{{ line }}
-{% endfor %}
-
--- Explicit mappings for tables with different target names.
+-- Explicit mappings for all MIS staging tables
 {% for line in oms_owner_mis_mapinclude_lines %}
 {{ line }}
 {% endfor %}
-
--- Standard mapping for all remaining MIS staging tables.
-#MIS_MAP ("{{ oracle_goldengate_group.source.schema_owner }}"."*", "{{ oracle_goldengate_group.mis.schema_owner }}"."STG_*")
