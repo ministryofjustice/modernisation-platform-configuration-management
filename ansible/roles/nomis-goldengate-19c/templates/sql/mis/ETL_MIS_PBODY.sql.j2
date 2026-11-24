@@ -1,0 +1,712 @@
+CREATE OR REPLACE PACKAGE BODY BODISTAGING.ETL_MIS
+AS
+  g_number PLS_INTEGER;
+  g_user CONSTANT all_users.username%TYPE := SYS_CONTEXT('USERENV', 'CURRENT_USER');
+
+PROCEDURE build_table_indexes (
+  p_table_name IN VARCHAR2,
+  p_max_slaves IN PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+)
+AS
+BEGIN
+  dbms_index_utl.build_table_indexes (
+    list => UPPER(p_table_name),
+    just_unusable => TRUE,
+    locality => 'ALL',
+    concurrent => TRUE,
+    cont_after_err => TRUE,
+    max_slaves => p_max_slaves,
+    num_errors => g_number
+  );
+  IF COALESCE(g_number, 0) <> 0 THEN
+    p_return_output := 'WARNING: Oracle index build errors for table ' || UPPER(p_table_name) || ': ' || to_char(g_number);
+--    dbms_output.put_line(p_return_output);
+  END IF;
+
+END build_table_indexes;
+
+PROCEDURE truncate_table (
+  p_table_name IN VARCHAR2
+)
+AS
+BEGIN
+  EXECUTE IMMEDIATE ('TRUNCATE TABLE ' || p_table_name);
+END truncate_table;
+
+PROCEDURE alter_table_indexes (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+)
+AS
+  l_table_name user_tables.table_name%TYPE;
+BEGIN
+  l_table_name := UPPER(p_table_name);
+
+  SELECT COUNT(*) INTO g_number
+  FROM user_tables
+  WHERE table_name = l_table_name;
+
+  IF g_number = 0 THEN
+    p_return_output := 'WARNING: Oracle table ' || l_table_name || ' not found';
+--    dbms_output.put_line(p_return_output);
+    RAISE_APPLICATION_ERROR(-20001, p_return_output);
+  END IF;
+
+  g_number := 0;
+  FOR rec IN (
+    SELECT * FROM user_indexes
+    WHERE table_name = l_table_name
+  )
+  LOOP
+    g_number := g_number + 1;
+    -- Unique indexes cannot be unusable for a direct path insert
+    IF NOT (p_alter_command = 'UNUSABLE' AND rec.uniqueness = 'UNIQUE') THEN
+--      dbms_output.put_line('Altering Index ' || rec.index_name || ' for Table ' || l_table_name || ': ' || p_alter_command);
+      EXECUTE IMMEDIATE ('ALTER INDEX ' || rec.index_name || ' ' || p_alter_command);
+    END IF;
+  END LOOP;
+
+  IF g_number = 0 THEN
+    p_return_output := 'WARNING: No indexes found on table ' || l_table_name;
+--    dbms_output.put_line(p_return_output);
+  END IF;
+
+END alter_table_indexes;
+
+PROCEDURE alter_table (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+)
+AS
+  l_table_name user_tables.table_name%TYPE;
+  part_exists_exception EXCEPTION;
+  -- ORA-14074: partition bound must collate higher than that of the last partition
+  -- If the ETL is re-run, then there is a chance that the partition has already been created
+  PRAGMA EXCEPTION_INIT(part_exists_exception, -14074);
+  part_interval_exception EXCEPTION;
+  -- ORA-14757: Table is already a range partitioned table
+  -- If the ETL is re-run, then there is a chance that the SET INTERVAL() is run twice, which causes the error
+  -- Howeber, SET INTERVAL(1) can be run multiple times without error
+  PRAGMA EXCEPTION_INIT(part_interval_exception, -14757);
+BEGIN
+  l_table_name := UPPER(p_table_name);
+
+  SELECT COUNT(*) INTO g_number
+  FROM user_tables
+  WHERE table_name = l_table_name;
+
+  IF g_number = 0 THEN
+    p_return_output := 'WARNING: Oracle table ' || l_table_name || ' not found';
+--    dbms_output.put_line(p_return_output);
+    RAISE_APPLICATION_ERROR(-20001, p_return_output);
+  END IF;
+
+--  dbms_output.put_line('Altering Table ' || l_table_name || ': ' || p_alter_command);
+  EXECUTE IMMEDIATE ('ALTER TABLE ' || l_table_name || ' ' || p_alter_command);
+
+EXCEPTION
+  WHEN part_exists_exception THEN
+    NULL;
+  WHEN part_interval_exception THEN
+    NULL;
+  WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20001, 'FAILED - ' || SQLERRM);
+
+END alter_table;
+
+PROCEDURE alter_unique_constraints (
+  p_table_name IN VARCHAR2,
+  p_alter_command IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+)
+AS
+  l_table_name user_tables.table_name%TYPE;
+  l_constraint_name user_constraints.constraint_name%TYPE;
+  duplicate_key_exception EXCEPTION;
+  PRAGMA EXCEPTION_INIT(duplicate_key_exception, -02299);
+BEGIN
+  l_table_name := UPPER(p_table_name);
+
+  SELECT COUNT(*) INTO g_number
+  FROM user_tables
+  WHERE table_name = l_table_name;
+
+  IF g_number = 0 THEN
+    p_return_output := 'WARNING: Oracle Table ' || l_table_name || ' not found';
+--    dbms_output.put_line(p_return_output);
+    RAISE_APPLICATION_ERROR(-20001, p_return_output);
+  END IF;
+
+  g_number := 0;
+  FOR rec IN (
+    SELECT * FROM user_constraints
+    WHERE table_name = l_table_name
+    AND constraint_type = 'U'
+  )
+  LOOP
+    g_number := g_number + 1;
+    l_constraint_name := rec.constraint_name;
+    EXECUTE IMMEDIATE ('ALTER TABLE ' || l_table_name || ' MODIFY CONSTRAINT ' || rec.constraint_name || ' ' || p_alter_command);
+  END LOOP;
+
+  IF g_number = 0 THEN
+    p_return_output := 'WARNING: No unique constraints found on table ' || l_table_name;
+--    dbms_output.put_line(p_return_output);
+  END IF;
+
+EXCEPTION
+  WHEN duplicate_key_exception THEN
+    p_return_output := 'WARNING: Duplicate keys found on unqiue constraint for table ' || g_user || '.' || l_table_name || ' constraint ' || l_constraint_name;
+  WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20001, 'FAILED - ' || SQLERRM);
+
+END alter_unique_constraints;
+
+PROCEDURE drop_sub_partition (
+  p_table_name IN VARCHAR2,
+  p_part_value IN PLS_INTEGER,
+  p_sub_value IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+)
+AS
+  -- ORA-14702: The partition number is invalid or out-of-range
+  -- If the ETL is re-run, then there is a chance that the subpartition has already been dropped
+  no_subpartition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(no_subpartition, -14702);
+  -- ORA-02149: Specified partition does not exist
+  -- If the ETL is re-run, then there is a chance that the partition has already been dropped
+  no_partition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(no_partition, -02149);
+  -- ORA-14629: cannot drop the only subpartition of a partition
+  -- Should never happen, but in theory a zero balance subpartition (the one to be dropped), could be the only
+  -- partition - if so, then the partition will be dropped
+  single_subpartition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(single_subpartition, -14629);
+BEGIN
+
+  EXECUTE IMMEDIATE 'ALTER TABLE ' || p_table_name || ' DROP SUBPARTITION FOR (' || p_part_value || ', ''' || p_sub_value || ''') UPDATE INDEXES';
+
+EXCEPTION
+  WHEN no_subpartition THEN
+    p_return_output := 'WARNING: Oracle subpartition for table ' || g_user || '.' || p_table_name || ' values (' || p_part_value || ', ''' || p_sub_value || ''') not found';
+  WHEN no_partition THEN
+    p_return_output := 'WARNING: Oracle partition for table ' || g_user || '.' || p_table_name || ' values (' || p_part_value || ') not found';
+  WHEN single_subpartition THEN
+    etl_mis.drop_partition (
+      p_table_name => p_table_name,
+      p_part_value => p_part_value,
+      p_return_output => p_return_output
+    );
+  WHEN OTHERS THEN
+    RAISE_APPLICATION_ERROR(-20001, 'FAILED - ' || SQLERRM);
+
+END drop_sub_partition;
+
+PROCEDURE drop_partition (
+  p_table_name IN VARCHAR2,
+  p_part_value IN PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+)
+AS
+  -- ORA-14702: The partition number is invalid or out-of-range
+  -- If the ETL is re-run, then there is a chance that the subpartition has already been dropped
+  invalid_partition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(invalid_partition, -14702);
+  -- ORA-02149: Specified partition does not exist
+  -- If the ETL is re-run, then there is a chance that the partition has already been dropped
+  no_partition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(no_partition, -02149);
+  l_interval PLS_INTEGER;
+BEGIN
+
+  SELECT interval
+  INTO l_interval
+  FROM user_part_tables
+  WHERE table_name = p_table_name;
+
+  IF l_interval IS NOT NULL THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE ' || p_table_name || ' SET INTERVAL ()';
+  END IF;
+
+  BEGIN
+    EXECUTE IMMEDIATE 'ALTER TABLE ' || p_table_name || ' DROP PARTITION FOR (' || p_part_value || ') UPDATE INDEXES';
+    EXCEPTION
+      WHEN invalid_partition THEN
+        p_return_output := 'WARNING: Oracle partition for table ' || g_user || '.' || p_table_name || ' values (' || p_part_value || ') invalid';
+      WHEN no_partition THEN
+        p_return_output := 'WARNING: Oracle partition for table ' || g_user || '.' || p_table_name || ' values (' || p_part_value || ') not found';
+      WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20001, 'FAILED - ' || SQLERRM);
+  END;
+
+  IF l_interval IS NOT NULL THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE ' || p_table_name || ' SET INTERVAL (' || l_interval || ')';
+  END IF;
+
+END drop_partition;
+
+PROCEDURE get_foahb_context (
+  p_owner IN VARCHAR2,
+  p_source_table IN VARCHAR2,
+  p_business_date_sk OUT PLS_INTEGER,
+  p_business_date OUT DATE,
+  p_log_table OUT VARCHAR2
+)
+AS
+BEGIN
+  SELECT param_value
+  INTO p_business_date_sk
+  FROM bodistaging.etl_param
+  WHERE param_name = 'BUSINESS_DATE_SK';
+
+  SELECT log_table
+  INTO p_log_table
+  FROM all_mview_logs
+  WHERE log_owner = p_owner
+  AND master = p_source_table;
+
+  SELECT day_date
+  INTO p_business_date
+  FROM bodimis.dim_date
+  WHERE date_sk = p_business_date_sk;
+END get_foahb_context;
+
+PROCEDURE prepare_foahb_partitions (
+  p_return_output OUT VARCHAR2
+)
+AS
+  l_owner all_mview_logs.log_owner%TYPE := 'BODIMIS';
+  l_source_table all_mview_logs.master%TYPE := 'FACT_OFF_ACC_BALANCE_AGG';
+  l_log_table all_mview_logs.log_table%TYPE;
+  l_business_date DATE;
+  l_business_date_sk PLS_INTEGER;
+  l_table_name VARCHAR2(261);
+  l_partition_name all_tab_partitions.partition_name%TYPE;
+  l_previous_partition all_tab_partitions.partition_name%TYPE;
+  l_position PLS_INTEGER;
+  l_count PLS_INTEGER;
+  l_date_sk NUMBER;
+  l_ddl_count PLS_INTEGER := 0;
+
+  FUNCTION partition_name(p_offset IN PLS_INTEGER) RETURN VARCHAR2
+  IS
+  BEGIN
+    RETURN 'MLOG_FOABA_P' || TO_CHAR(l_business_date + p_offset, 'yyyymmdd');
+  END;
+
+  FUNCTION partition_bound(p_partition_name IN VARCHAR2) RETURN NUMBER
+  IS
+    l_high_value LONG;
+  BEGIN
+    SELECT high_value
+    INTO l_high_value
+    FROM all_tab_partitions
+    WHERE table_owner = l_owner
+    AND table_name = l_log_table
+    AND partition_name = p_partition_name;
+
+    IF TRIM(l_high_value) IS NULL OR NOT REGEXP_LIKE(TRIM(l_high_value), '^-?[0-9]+$') THEN
+      RAISE_APPLICATION_ERROR(-20001,
+        'Unsupported partition bound on ' || l_log_table || '.' || p_partition_name);
+    END IF;
+    RETURN TO_NUMBER(TRIM(l_high_value));
+  END;
+
+  PROCEDURE run_ddl(p_sql IN VARCHAR2)
+  IS
+  BEGIN
+    dbms_output.put_line(p_sql);
+    EXECUTE IMMEDIATE p_sql;
+    l_ddl_count := l_ddl_count + 1;
+  END;
+
+  PROCEDURE ensure_partition(p_offset IN PLS_INTEGER)
+  IS
+    l_name all_tab_partitions.partition_name%TYPE := partition_name(p_offset);
+    l_existing_name all_tab_partitions.partition_name%TYPE;
+    l_bound NUMBER;
+    l_target_bound NUMBER := l_business_date_sk + p_offset;
+    l_bound_sql VARCHAR2(40) := TO_CHAR(l_target_bound, 'FM9999999990');
+  BEGIN
+    FOR rec IN (
+      SELECT partition_name
+      FROM all_tab_partitions
+      WHERE table_owner = l_owner
+      AND table_name = l_log_table
+      ORDER BY partition_position
+    )
+    LOOP
+      l_bound := partition_bound(rec.partition_name);
+      IF l_bound >= l_target_bound THEN
+        l_existing_name := rec.partition_name;
+        EXIT;
+      END IF;
+    END LOOP;
+
+    IF l_existing_name IS NULL THEN
+      run_ddl('ALTER TABLE ' || l_table_name || ' ADD PARTITION ' || l_name ||
+        ' VALUES LESS THAN (' || l_bound_sql || ')');
+    ELSIF l_bound = l_target_bound THEN
+      IF l_existing_name <> l_name THEN
+        run_ddl('ALTER TABLE ' || l_table_name || ' RENAME PARTITION ' ||
+          dbms_assert.enquote_name(l_existing_name, FALSE) || ' TO ' || l_name);
+      END IF;
+    ELSE
+      -- Split rather than truncate a partition spanning historical and current dates.
+      run_ddl('ALTER TABLE ' || l_table_name || ' SPLIT PARTITION ' ||
+        dbms_assert.enquote_name(l_existing_name, FALSE) || ' AT (' || l_bound_sql ||
+        ') INTO (PARTITION ' || l_name || ', PARTITION ' ||
+        dbms_assert.enquote_name(l_existing_name, FALSE) || ') UPDATE INDEXES');
+    END IF;
+  END;
+BEGIN
+  get_foahb_context(l_owner, l_source_table, l_business_date_sk, l_business_date, l_log_table);
+  l_table_name := dbms_assert.enquote_name(l_owner, FALSE) || '.' ||
+    dbms_assert.enquote_name(l_log_table, FALSE);
+
+  SELECT COUNT(*)
+  INTO l_count
+  FROM all_part_tables
+  WHERE owner = l_owner
+  AND table_name = l_log_table
+  AND partitioning_type = 'RANGE'
+  AND subpartitioning_type = 'NONE'
+  AND interval IS NULL;
+
+  IF l_count <> 1 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'Expected a non-interval range-partitioned log: ' || l_table_name);
+  END IF;
+
+  SELECT COUNT(*)
+  INTO l_count
+  FROM all_part_key_columns
+  WHERE owner = l_owner
+  AND name = l_log_table
+  AND object_type = 'TABLE';
+
+  IF l_count <> 1 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'Expected one partition key column on ' || l_table_name);
+  END IF;
+
+  SELECT COUNT(*)
+  INTO l_count
+  FROM all_part_key_columns
+  WHERE owner = l_owner
+  AND name = l_log_table
+  AND object_type = 'TABLE'
+  AND column_name = 'BALANCE_DATE_SK';
+
+  IF l_count <> 1 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'Expected BALANCE_DATE_SK partition key on ' || l_table_name);
+  END IF;
+
+  -- Complete validation before any DDL, since Oracle DDL commits implicitly.
+  FOR i IN 0..3 LOOP
+    SELECT COUNT(*), MIN(date_sk)
+    INTO l_count, l_date_sk
+    FROM bodimis.dim_date
+    WHERE day_date = l_business_date + i;
+
+    IF l_count <> 1 OR l_date_sk <> l_business_date_sk + i THEN
+      RAISE_APPLICATION_ERROR(-20001,
+        'Missing or non-consecutive DIM_DATE key for ' || TO_CHAR(l_business_date + i, 'yyyy-mm-dd'));
+    END IF;
+
+    l_partition_name := partition_name(i);
+    SELECT COUNT(*)
+    INTO l_count
+    FROM all_tab_partitions
+    WHERE table_owner = l_owner
+    AND table_name = l_log_table
+    AND partition_name = l_partition_name;
+
+    IF l_count > 0 THEN
+      IF partition_bound(l_partition_name) <> l_business_date_sk + i THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Incorrect upper bound for ' || l_partition_name);
+      END IF;
+    END IF;
+  END LOOP;
+
+  FOR rec IN (
+    SELECT partition_name
+    FROM all_tab_partitions
+    WHERE table_owner = l_owner
+    AND table_name = l_log_table
+  )
+  LOOP
+    IF partition_bound(rec.partition_name) > l_business_date_sk + 3 THEN
+      RAISE_APPLICATION_ERROR(-20001,
+        'Log partitions extend beyond the requested window; check for a backwards business-date change.');
+    END IF;
+  END LOOP;
+
+  FOR i IN 0..3 LOOP
+    ensure_partition(i);
+  END LOOP;
+
+  -- Keep all old deltas in the historical bucket consumed by maintain_foahb.
+  -- Merely appending daily partitions would strand the old log rows outside its cleanup window.
+  l_partition_name := partition_name(0);
+  LOOP
+    SELECT partition_position
+    INTO l_position
+    FROM all_tab_partitions
+    WHERE table_owner = l_owner
+    AND table_name = l_log_table
+    AND partition_name = l_partition_name;
+
+    EXIT WHEN l_position = 1;
+
+    SELECT partition_name
+    INTO l_previous_partition
+    FROM all_tab_partitions
+    WHERE table_owner = l_owner
+    AND table_name = l_log_table
+    AND partition_position = l_position - 1;
+
+    run_ddl('ALTER TABLE ' || l_table_name || ' MERGE PARTITIONS ' ||
+      dbms_assert.enquote_name(l_previous_partition, FALSE) || ', ' || l_partition_name ||
+      ' INTO PARTITION ' || l_partition_name || ' UPDATE INDEXES');
+  END LOOP;
+
+  p_return_output := 'Prepared ' || l_table_name || ' for business date ' ||
+    TO_CHAR(l_business_date, 'yyyy-mm-dd') || '; DDL statements: ' || l_ddl_count ||
+    '. Existing log rows preserved. DDL commits implicitly.';
+END prepare_foahb_partitions;
+
+PROCEDURE maintain_foahb (
+  p_action IN VARCHAR2,
+  p_return_output OUT VARCHAR2
+)
+AS
+  l_owner all_mview_logs.log_owner%TYPE := 'BODIMIS';
+  l_source_table all_mview_logs.master%TYPE := 'FACT_OFF_ACC_BALANCE_AGG';
+  l_target_table all_tables.table_name%TYPE := 'FACT_OFF_ACC_HIST_BALANCE';
+  l_part_name all_tab_partitions.partition_name%TYPE := 'mlog_foaba_p';
+  l_log_table all_mview_logs.log_table%TYPE;
+  l_business_date DATE;
+  l_business_date_sk PLS_INTEGER;
+  l_partition_output VARCHAR2(4000);
+  -- ORA-02149: The specified partition does not exist
+  -- If the ETL is re-run, then there is a chance that the partition has already been dropped
+  no_partition EXCEPTION;
+  PRAGMA EXCEPTION_INIT(no_partition, -02149);
+BEGIN
+
+  get_foahb_context(l_owner, l_source_table, l_business_date_sk, l_business_date, l_log_table);
+  prepare_foahb_partitions(l_partition_output);
+
+  -- NOTE:  Partition syntax HIGH_VALUE actually means values less than, so during partition maintenance
+  --        a day will be added to the Balance Date to identify the correct partition
+
+  IF p_action = 'FAST' THEN
+    -- Truncate partition discarding the current day balances - data not required
+    EXECUTE IMMEDIATE '
+      ALTER TABLE ' || l_owner || '.' || l_log_table || ' TRUNCATE PARTITION (' || l_part_name || TO_CHAR(l_business_date+2, 'yyyymmdd') || ')
+    ';
+
+    -- Gather statistics for log table prior to load
+    dbms_stats.gather_table_stats (
+      ownname => l_owner,
+      tabname => l_log_table,
+      method_opt => 'FOR ALL COLUMNS SIZE AUTO',
+      estimate_percent => dbms_stats.auto_sample_size,
+      granularity => 'ALL'
+    );
+
+    -- Precautionary truncate of the current partition against the target table in case of ETL failure and re-run
+    BEGIN
+      EXECUTE IMMEDIATE '
+        ALTER TABLE ' || l_owner || '.' || l_target_table || ' TRUNCATE PARTITION FOR (' || TO_CHAR(l_business_date_sk+1) || ')
+      ';
+      EXCEPTION
+        WHEN no_partition THEN
+          NULL;
+    END;
+
+    -- Delete the historical record deltas against the target Balance table prior to re-loading
+    EXECUTE IMMEDIATE '
+      DELETE /*+ USE_NL(m f) */ FROM ' || l_owner || '.' || l_target_table || ' f
+      WHERE (alias_offender_sk, establishment_sk, account_code_sk) IN (
+        SELECT alias_offender_sk, establishment_sk, account_code_sk
+        FROM (
+          SELECT alias_offender_sk, establishment_sk, account_code_sk, MIN(balance_date_sk) balance_date_sk
+          FROM (
+            SELECT
+              alias_offender_sk, establishment_sk, account_code_sk, balance_date_sk,
+              COALESCE(SUM(CASE WHEN old_new$$ <> ''N'' THEN transaction_entry_amount END), 0) - COALESCE(SUM(CASE WHEN old_new$$ = ''N'' then transaction_entry_amount END), 0) trans_var,
+              COALESCE(SUM(CASE WHEN old_new$$ <> ''N'' THEN hold_transaction_entry_amount END), 0) - COALESCE(SUM(CASE WHEN old_new$$ = ''N'' then hold_transaction_entry_amount END), 0) hold_var
+            FROM ' || l_owner || '.' || l_log_table || '
+            GROUP BY alias_offender_sk, establishment_sk, account_code_sk, balance_date_sk
+          )
+          WHERE NOT (trans_var = 0 AND hold_var = 0)
+          GROUP BY alias_offender_sk, establishment_sk, account_code_sk
+        ) m
+        WHERE f.balance_date_sk BETWEEN m.balance_date_sk AND :1
+      )
+    ' USING l_business_date_sk;
+
+    COMMIT;
+
+    -- Load the historical record deltas against the target Balance table following the deletions
+    EXECUTE IMMEDIATE '
+      INSERT /*+ APPEND */ INTO ' || l_owner || '.' || l_target_table || '
+      WITH m AS (
+        SELECT /*+ MATERIALIZE */ alias_offender_sk, establishment_sk, account_code_sk, MIN(balance_date_sk) min_balance_date_sk
+        FROM (
+          SELECT
+            alias_offender_sk, establishment_sk, account_code_sk, balance_date_sk,
+            COALESCE(SUM(CASE WHEN old_new$$ <> ''N'' THEN transaction_entry_amount END), 0) - COALESCE(SUM(CASE WHEN old_new$$ = ''N'' then transaction_entry_amount END), 0) trans_var,
+            COALESCE(SUM(CASE WHEN old_new$$ <> ''N'' THEN hold_transaction_entry_amount END), 0) - COALESCE(SUM(CASE WHEN old_new$$ = ''N'' then hold_transaction_entry_amount END), 0) hold_var
+          FROM ' || l_owner || '.' || l_log_table || '
+          GROUP BY alias_offender_sk, establishment_sk, account_code_sk, balance_date_sk
+        )
+        WHERE NOT (trans_var = 0 AND hold_var = 0)
+        GROUP BY alias_offender_sk, establishment_sk, account_code_sk
+      )
+      SELECT /*+ USE_NL(v d) */
+        d.date_sk balance_date_sk, v.alias_offender_sk, v.establishment_sk, v.account_code_sk,
+        v.gross_balance, v.hold_balance
+      FROM (
+        SELECT
+          CASE WHEN gross_balance = 0 AND hold_balance = 0
+            THEN balance_date_sk
+            ELSE business_date_sk
+          END business_date_sk,
+          min_balance_date_sk, balance_date_sk, alias_offender_sk, establishment_sk, account_code_sk,
+          gross_balance, hold_balance
+        FROM (
+          SELECT
+            f.min_balance_date_sk, f.balance_date_sk,
+            COALESCE(LEAD(f.balance_date_sk)
+              OVER (PARTITION BY f.alias_offender_sk, f.account_code_sk, f.establishment_sk ORDER BY f.balance_date_sk)-1,
+              :1
+            ) business_date_sk,
+            f.alias_offender_sk, f.establishment_sk, f.account_code_sk,
+            SUM(COALESCE(f.gross_balance, 0) + COALESCE(f.transaction_entry_amount, 0)) OVER (PARTITION BY f.alias_offender_sk, f.account_code_sk, f.establishment_sk ORDER BY f.balance_date_sk) gross_balance,
+            SUM(COALESCE(f.hold_transaction_entry_amount, 0) + COALESCE(f.hold_balance, 0)) OVER (PARTITION BY f.alias_offender_sk, f.account_code_sk, f.establishment_sk ORDER BY f.balance_date_sk) hold_balance
+          FROM (
+            SELECT /*+ USE_NL(agg m) */
+              m.min_balance_date_sk, agg.balance_date_sk, agg.alias_offender_sk, agg.establishment_sk, agg.account_code_sk,
+              agg.transaction_entry_amount, agg.hold_transaction_entry_amount, 0 gross_balance, 0 hold_balance
+            FROM m
+            INNER JOIN bodimis.fact_off_acc_balance_agg agg
+              ON agg.alias_offender_sk = m.alias_offender_sk
+             AND agg.establishment_sk = m.establishment_sk
+             AND agg.account_code_sk = m.account_code_sk
+             AND agg.balance_date_sk BETWEEN m.min_balance_date_sk AND :2
+            WHERE NOT (agg.transaction_entry_amount = 0 AND agg.hold_transaction_entry_amount = 0)
+            UNION ALL
+            SELECT /*+ USE_NL(b m) */
+              m.min_balance_date_sk, b.balance_date_sk, b.alias_offender_sk, b.establishment_sk, b.account_code_sk,
+              0 transaction_entry_amount, 0 hold_transaction_entry_amount, b.gross_balance, b.hold_balance
+            FROM m
+            INNER JOIN bodimis.fact_off_acc_hist_balance b
+              ON b.alias_offender_sk = m.alias_offender_sk
+             AND b.establishment_sk = m.establishment_sk
+             AND b.account_code_sk = m.account_code_sk
+             AND b.balance_date_sk = m.min_balance_date_sk-1
+            WHERE NOT (b.gross_balance = 0 AND b.hold_balance = 0)
+          ) f
+        )
+      ) v
+      INNER JOIN bodimis.dim_date d
+        ON d.date_sk BETWEEN v.balance_date_sk AND v.business_date_sk
+      WHERE d.date_sk >= min_balance_date_sk
+    ' USING l_business_date_sk, l_business_date_sk;
+
+    COMMIT;
+
+    -- Add the new transactions to the current balances
+    INSERT /*+ APPEND */ INTO bodimis.fact_off_acc_hist_balance
+    SElECT
+      l_business_date_sk + 1 balance_date_sk,
+      COALESCE(bal.alias_offender_sk, trans.alias_offender_sk) alias_offender_sk,
+      COALESCE(bal.establishment_sk, trans.establishment_sk) establishment_sk,
+      COALESCE(bal.account_code_sk, trans.account_code_sk) account_code_sk,
+      COALESCE(bal.gross_balance, 0) + COALESCE(trans.gross_balance, 0) gross_balance,
+      COALESCE(bal.hold_balance, 0) + COALESCE(trans.hold_balance, 0) hold_balance
+    FROM (
+      SELECT * FROM bodimis.fact_off_acc_hist_balance
+      WHERE balance_date_sk = l_business_date_sk
+      AND NOT (gross_balance = 0 AND hold_balance = 0)
+    ) bal
+    FULL OUTER JOIN (
+      SELECT *
+      FROM (
+        SELECT
+          alias_offender_sk, establishment_sk, account_code_sk,
+          SUM(transaction_entry_amount) gross_balance,
+          SUM(hold_transaction_entry_amount) hold_balance
+        FROM bodimis.fact_off_acc_balance_agg
+        WHERE balance_date_sk = l_business_date_sk + 1
+        GROUP BY alias_offender_sk, account_code_sk, establishment_sk
+      )
+      WHERE NOT (gross_balance = 0 AND hold_balance = 0)
+    ) trans
+      ON bal.alias_offender_sk = trans.alias_offender_sk
+     AND bal.account_code_sk = trans.account_code_sk
+     AND bal.establishment_sk = trans.establishment_sk;
+
+    COMMIT;
+
+    EXECUTE IMMEDIATE '
+      ALTER TABLE ' || l_owner || '.' || l_log_table || ' TRUNCATE PARTITION (' || l_part_name || TO_CHAR(l_business_date+1, 'yyyymmdd') || ')
+    ';
+
+  ELSE
+    -- If a complete refresh is required, then truncate log table - should be empty,
+    -- but if the ETL has been re-run, could contain rows
+    EXECUTE IMMEDIATE 'TRUNCATE TABLE ' || l_owner || '.' || l_log_table;
+
+  END IF;
+
+  -- Preparation retained old deltas below the business-date boundary and created
+  -- the three daily partitions that remain after this historical bucket is dropped.
+  BEGIN
+    EXECUTE IMMEDIATE '
+      ALTER TABLE ' || l_owner || '.' || l_log_table || ' DROP PARTITION (' || l_part_name || TO_CHAR(l_business_date, 'yyyymmdd') || ')
+    ';
+    EXCEPTION
+      WHEN no_partition THEN
+        NULL;
+  END;
+
+END maintain_foahb;
+
+PROCEDURE maintain_booking_seq (
+  p_row_count OUT PLS_INTEGER,
+  p_return_output OUT VARCHAR2
+)
+AS
+BEGIN
+
+  EXECUTE IMMEDIATE '
+    MERGE INTO bodimis.dim_offender_booking ob
+    USING (
+      SELECT * FROM bodistaging.vw_offender_booking_seq
+    ) u
+    ON (ob.offender_booking_id_nk = u.offender_book_id)
+    WHEN MATCHED THEN
+    UPDATE SET
+      ob.booking_seq = u.row_seq
+    WHERE ob.offender_booking_sk > 0
+    AND ob.booking_seq <> u.row_seq
+  ';
+
+  p_row_count := SQL%ROWCOUNT;
+  IF p_row_count = 0 THEN
+    p_return_output := 'WARNING: Unique key remedial work failed to correct DIM_OFFENDER_BOOKING.BOOKING_SEQ';
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    p_return_output := 'WARNING: ' || SQLERRM;
+
+END maintain_booking_seq;
+
+END etl_mis;
+/
