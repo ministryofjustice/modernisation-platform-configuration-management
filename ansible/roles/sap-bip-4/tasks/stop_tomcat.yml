@@ -1,0 +1,17 @@
+---
+- block:
+    - name: Stop tomcat
+      ansible.builtin.service:
+        name: sapbobj
+        state: stopped
+
+    - name: Cleanup folders
+      ansible.builtin.file:
+        path: "{{ sap_bip_installation_directory }}/{{ item }}"
+        state: absent
+      failed_when: false # don't stop installation if this fails
+      loop:
+        - sap_bobj/tomcat/work/Catalina
+
+  #  block
+  when: sap_bip_is_web

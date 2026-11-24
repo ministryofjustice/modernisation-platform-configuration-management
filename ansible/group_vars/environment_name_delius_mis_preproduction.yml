@@ -1,4 +1,8 @@
 ---
+ec2_user_app_authorized_keys: |
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKIZHfMOrxWAnHMPL/eXTsbOCmHAhGTtNFpNktwQDaXJ
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHB2AdQr84V8HW4RGJocVBmOnX2WMD48N+7p0PtVrUbg
+
 sap_bip_environment_tag: delius-environment
 sap_environment: "{{ ec2.tags['delius-environment'] }}"
 
@@ -33,6 +37,8 @@ sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_confs:
   stage:
+    sap_env_name: "STAGE (00{{ ec2_name.split('-')[-1] }})"
+    sap_web_cmc_label: "Central Management Console - nDelius - STAGE"
     sap_bip_config_secret_id: delius-mis-stage-sap-boe-config
     sap_bip_passwords_secret_id: delius-mis-stage-sap-boe-passwords
     sap_bip_sysdb_secret_id: delius-mis-stage-oracle-boe-db-application-passwords
@@ -41,8 +47,8 @@ sap_bip_confs:
     sap_bip_rws_url: "https://stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_sso_rws_url: "https://sso.stage.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_filesystem_destination_allowlist:
-      - /samba.delius-stage.internal/secure/NPS/
-      - //samba.delius-stage.internal/secure/NPS/
+      - /samba.delius-stage.internal/secure/
+      - //samba.delius-stage.internal/secure/
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
@@ -77,6 +83,8 @@ sap_bip_confs:
     sap_bip_control_cms_server_1:
     sap_bip_control_cms_server_2:
   preprod:
+    sap_env_name: "PREPROD (00{{ ec2_name.split('-')[-1] }})"
+    sap_web_cmc_label: "Central Management Console - nDelius - PREPROD"
     sap_bip_config_secret_id: delius-mis-preprod-sap-boe-config
     sap_bip_passwords_secret_id: delius-mis-preprod-sap-boe-passwords
     sap_bip_sysdb_secret_id: delius-mis-preprod-oracle-boe-db-application-passwords
@@ -85,8 +93,8 @@ sap_bip_confs:
     sap_bip_rws_url: "https://preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_sso_rws_url: "https://sso.preprod.delius-mis.hmpps-preproduction.modernisation-platform.service.justice.gov.uk/biprws"
     sap_bip_filesystem_destination_allowlist:
-      - /samba.delius-pre-prod.internal/secure/NPS/
-      - //samba.delius-pre-prod.internal/secure/NPS/
+      - /samba.delius-pre-prod.internal/secure/
+      - //samba.delius-pre-prod.internal/secure/
     web:
       sap_web_java_opts: "-Xms22528m -Xmx22528m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
@@ -145,18 +153,33 @@ sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
-filesystems_domains_by_env:
+bip_filesystems_domains_by_env:
   stage:
     azure.hmpp.root:
       secret_name: delius-mis-stage-sap-boe-passwords
       mount_fs_username: svc_fsx_nart
+    delius-mis-stage.internal:
+      secret_name: delius-mis-stage-sap-dis-passwords
+      mount_fs_username: SVC_DIS_NDL
   preprod:
     azure.hmpp.root:
       secret_name: delius-mis-preprod-sap-boe-passwords
       mount_fs_username: svc_fsx_nart
-filesystems_domains: "{{ filesystems_domains_by_env[sap_environment] }}"
+    delius-mis-preprod.internal:
+      secret_name: delius-mis-preprod-sap-dis-passwords
+      mount_fs_username: SVC_DIS_NDL
+bip_filesystems_domains: "{{ bip_filesystems_domains_by_env[sap_environment] }}"
+
+bip_filesystems_domain_name_fqdns_by_env:
+  stage:
+    - azure.hmpp.root
+    - delius-mis-stage.internal
+  preprod:
+    - azure.hmpp.root
+    - delius-mis-preprod.internal
+bip_filesystems_domain_name_fqdns: "{{ bip_filesystems_domain_name_fqdns_by_env[sap_environment] }}"
 
 bip_filesystems_mount_by_env:
   stage:
@@ -166,7 +189,7 @@ bip_filesystems_mount_by_env:
       gid: binstall
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
       src: "eu-west-2a.fs-0e6f80027b87246cf.efs.eu-west-2.amazonaws.com:/"
-    - dir: /samba.delius-stage.internal/secure/NPS
+    - dir: /samba.delius-stage.internal/secure
       fstype: efs
       opts: "_netdev,iam,tls,accesspoint=fsap-049609431928ef571,nofail"
       src: fs-aaef805b.efs.eu-west-2.amazonaws.com
@@ -178,6 +201,12 @@ bip_filesystems_mount_by_env:
       src: //fslinux.azure.hmpp.root/NART$
       maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
       autofs_mount: true
+    - dir: /NDMIS-STG-DIS-1/LMIS
+      uid: root
+      gid: root
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-stage.internal.creds
+      src: "//ndmis-stg-dis-1.delius-mis-stage.internal/LMIS"
   preprod:
     - dir: /opt/data/BusinessObjects
       fstype: nfs
@@ -185,7 +214,7 @@ bip_filesystems_mount_by_env:
       gid: binstall
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
       src: "eu-west-2a.fs-0a16ce697adb719d6.efs.eu-west-2.amazonaws.com:/"
-    - dir: /samba.delius-pre-prod.internal/secure/NPS
+    - dir: /samba.delius-pre-prod.internal/secure
       fstype: efs
       opts: "_netdev,iam,tls,accesspoint=fsap-094368b141f48485c,nofail"
       src: fs-1ef14cef.efs.eu-west-2.amazonaws.com
@@ -197,4 +226,10 @@ bip_filesystems_mount_by_env:
       src: //fslinux.azure.hmpp.root/NART$
       maintenance_window: "4.0400-4.0430"  # Thu 4am UTC
       autofs_mount: true
+    - dir: /NDMIS-PRE-DIS-1/LMIS
+      uid: root
+      gid: root
+      fstype: cifs
+      opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-preprod.internal.creds
+      src: "//ndmis-pre-dis-1.delius-mis-preprod.internal/LMIS"
 bip_filesystems_mount: "{{ bip_filesystems_mount_by_env[sap_environment] }}"

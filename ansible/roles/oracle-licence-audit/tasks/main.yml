@@ -9,6 +9,9 @@
           - account_name is defined
           - account_name | string | trim | length > 0
         fail_msg: "account_name must be passed in (for example: -e account_name='delius-core-test')."
+      tags:
+        - always
+      run_once: yes
 
     - import_tasks: get-kms-key.yml
       tags:

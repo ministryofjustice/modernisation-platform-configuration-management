@@ -1,0 +1,61 @@
+---
+- block:
+    - name: Extract jars for CMC Branding
+      ansible.builtin.unarchive:
+        src: "{{ sap_bip_installation_directory }}/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item | dirname }}"
+        remote_src: true
+        keep_newer: true
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/CmcLabelStrings_en.jar
+      when:
+        - sap_web_cmc_label is defined
+        - sap_web_disable_cmcapp != "true"
+      register: sap_bip_jar_unarchive
+
+    - name: Update CMC Branding
+      ansible.builtin.template:
+        src: "web/{{ item }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+      loop:
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/com/businessobjects/cmc/CmcLabelStrings_en.properties
+      when:
+        - sap_web_cmc_label is defined
+        - sap_web_disable_cmcapp != "true"
+
+    - name: Repackage jars
+      community.general.archive:
+        path: "{{ sap_bip_installation_directory }}/{{ item | dirname }}/*"
+        dest: "/tmp/.ansible-{{ item | basename }}"
+        exclude_path:
+          - "{{ sap_bip_installation_directory }}/{{ item }}"
+        format: zip
+        owner: bobj
+        group: binstall
+        mode: "0644"
+      loop:
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/CmcLabelStrings_en.jar
+      when:
+        - sap_web_cmc_label is defined
+        - sap_web_disable_cmcapp != "true"
+
+    - name: Copy repackaged jars
+      ansible.builtin.copy:
+        remote_src: yes
+        src: "/tmp/.ansible-{{ item | basename }}"
+        dest: "{{ sap_bip_installation_directory }}/{{ item }}"
+        owner: bobj
+        group: binstall
+        mode: "0644"
+      loop:
+        - sap_bobj/tomcat/webapps/BOE/WEB-INF/eclipse/plugins/webpath.CmcAppBranding_lang.en/web/WEB-INF/lib/CmcLabelStrings_en.jar
+      when:
+        - sap_web_cmc_label is defined
+        - sap_web_disable_cmcapp != "true"
+
+  #  block
+  when: sap_bip_is_web

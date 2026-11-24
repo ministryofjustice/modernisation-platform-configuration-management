@@ -5,7 +5,7 @@
     - ec2provision
     - ec2patch
     - filesystems_domain_creds
-  when: filesystems_domain_name_fqdn is defined and filesystems_domain_name_fqdn|length > 0
+  when: filesystems_domain_name_fqdns is defined and filesystems_domain_name_fqdns|length > 0
 
 - import_tasks: monitoring.yml
   tags:

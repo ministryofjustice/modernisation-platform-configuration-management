@@ -11,7 +11,6 @@ server_type_roles_list:
   - sshd-config
   - users-and-groups
   - sudoers
-  - filesystems
   - ndh-app
   - azure-cli
   - winrm-scripts
@@ -30,9 +29,6 @@ packages_yum_install:
   - jq
   - zip
   - git
-
-filesystems_domain_name_fqdn: "{{ app_filesystems_domain_name_fqdn|default('') }}"
-filesystems_mount: "{{ app_filesystems_mount|default([]) }}"
 
 collectd_monitored_services_servertype_ndh_app:
   - metric_name: service_status_os

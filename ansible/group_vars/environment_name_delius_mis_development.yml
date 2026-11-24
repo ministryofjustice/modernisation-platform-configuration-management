@@ -1,4 +1,8 @@
 ---
+ec2_user_app_authorized_keys: |
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQClAqwJZHxCxeu1qan+2SbLgcDazHT2V9stj84ogU3pMmQlPHLmJzuvW2ux5nALY5g+dC1d/2zGIw63WpPTYbM7WOIr45k9BJXLc5/WhPSZUEN7XiuCv38qXZ6dc8yrbPjqLvaP6Utd2O0alBo1RQGi3NVRMiMsRvqK0SvnSAdw84Wvp4snX2BhcKDyD+0oYYJXdShdX1b9Ex6T06foXJyMTCHQFJxPBAr6IbLm+iJ0MdNu5ITydwr5vS9o/momgzgx5ykpERqRyp/0DgX9GC8YaERdXNB2enfRIUpNV9Klqv5N0an4c9r0d7QbdbJ+j2kldsiRZFn9nd+brVZgOkT+L+nyKVpKjcNTZhBMvbTrPQdwnxkhGA5kdpe1U34xY+2zp0G3iUxh1OmL0bOnLJNtMZvoT0wYgfI9IOOs9WvER85hGTaVOKyV1cTQuwwc31ed/GemZlepJuqMydLuqlQtVBQ0ZBrphVx/AApQb76dA++kf2uxxNo8b6opUgn6rD8=
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO2wiCwqhxlN192JxuKylbQ68Yj1gQeHAK2DMbdJQFpL
+
 sap_bip_environment_tag: delius-environment
 
 sap_bip_oracle_client_conf:
@@ -17,6 +21,8 @@ sap_bip_cms_db_server: "{{ sap_bip_db_conf.cms_db_server }}"
 sap_bip_cms_db_user: "{{ sap_bip_db_conf.cms_db_user }}"
 
 sap_bip_conf:
+  sap_env_name: "DEV (00{{ ec2_name.split('-')[-1] }})"
+  sap_web_cmc_label: "Central Management Console - nDelius - DEV"
   sap_bip_config_secret_id: delius-mis-dev-sap-boe-config
   sap_bip_passwords_secret_id: delius-mis-dev-sap-boe-passwords
   sap_bip_sysdb_secret_id: delius-mis-dev-oracle-boe-db-application-passwords
@@ -25,8 +31,8 @@ sap_bip_conf:
   sap_bip_rws_url: "https://dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/biprws"
   sap_bip_sso_rws_url: "https://sso.dev.delius-mis.hmpps-development.modernisation-platform.service.justice.gov.uk/biprws"
   sap_bip_filesystem_destination_allowlist:
-    - /samba.delius-mis-dev.internal/secure/NPS/
-    - //samba.delius-mis-dev.internal/secure/NPS/
+    - /samba.delius-mis-dev.internal/secure/
+    - //samba.delius-mis-dev.internal/secure/
   web:
     sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
     sap_web_disable_cmcapp: "false"
@@ -77,6 +83,15 @@ sap_bip_control_cms_server_2: "{{ sap_bip_conf.sap_bip_control_cms_server_2 }}"
 sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_filesystem_destination_allowlist: "{{ sap_bip_conf.sap_bip_filesystem_destination_allowlist }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
+
+bip_filesystems_domains:
+  delius-mis-dev.internal:
+    secret_name: delius-mis-dev-sap-dis-passwords
+    mount_fs_username: SVC_DIS_NDL
+
+bip_filesystems_domain_name_fqdns:
+  - delius-mis-dev.internal
 
 bip_filesystems_mount:
   - dir: /opt/data/BusinessObjects
@@ -85,7 +100,13 @@ bip_filesystems_mount:
     gid: binstall
     opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
     src: "eu-west-2a.fs-0606a915262398ef9.efs.eu-west-2.amazonaws.com:/"
-  - dir: /samba.delius-mis-dev.internal/secure/NPS
+  - dir: /samba.delius-mis-dev.internal/secure
     fstype: efs
     opts: "_netdev,iam,tls,accesspoint=fsap-078f9af6b89311437,nofail"
     src: fs-92b7c763.efs.eu-west-2.amazonaws.com
+  - dir: /NDMIS-DEV-DIS-1/LMIS
+    uid: root
+    gid: root
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,soft,uid=1201,gid=1201,dir_mode=0755,file_mode=0644,echo_interval=10,actimeo=1,credentials=/root/.filesystems/delius-mis-dev.internal.creds
+    src: "//ndmis-dev-dis-1.delius-mis-dev.internal/LMIS"

@@ -13,6 +13,30 @@ get_misload_status() {
 EOF
 }
 
+mark_misload_failed() {
+  sqlplus -L -s / as sysdba << EOF >&2
+  whenever oserror exit failure rollback
+  whenever sqlerror exit failure rollback
+  set head off feedback off serveroutput on
+  begin
+    update bodimis.etl_load_log
+    set error_flag = 'Y'
+    where load_start_datetime >= trunc(sysdate)
+      and load_start_datetime < trunc(sysdate) + 1
+      and load_end_datetime is null;
+
+    if sql%rowcount = 0 then
+      dbms_output.put_line('WARNING: No unfinished MIS load records found for today.');
+    else
+      dbms_output.put_line('Marked ' || sql%rowcount || ' MIS load record(s) as failed.');
+    end if;
+    commit;
+  end;
+/
+  exit success
+EOF
+}
+
 trigger_misload() {
   secret_data=$(aws secretsmanager get-secret-value --secret-id "{{ misload_secret_name }}" --query SecretString --output text)
   target=$(echo $secret_data | jq -r .target)
@@ -37,7 +61,8 @@ export ORAENV_ASK=NO
 . oraenv
 
 trigger_misload
-misload_status=$?
+misload_exit_status=$?
+misload_status=$misload_exit_status
 echo "misload_status $misload_status" > /opt/textfile_monitoring/misload_status.prom
 
 if [[ "$misload_status" == "0" ]]; then
@@ -47,6 +72,11 @@ if [[ "$misload_status" == "0" ]]; then
   elif [[ "$misload_status" != 0 ]]; then
     echo "misload_status $misload_status" > /opt/textfile_monitoring/misload_status.prom
   fi
+else
+  if ! mark_misload_failed; then
+    echo "Failed to set ERROR_FLAG=Y in BODIMIS.ETL_LOAD_LOG; trigger exit status: $misload_exit_status" >&2
+  fi
 fi
 
 rm -f /opt/textfile_monitoring/misload_triggered.prom
+exit "$misload_exit_status"

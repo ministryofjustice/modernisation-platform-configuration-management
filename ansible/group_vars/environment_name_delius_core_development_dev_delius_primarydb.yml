@@ -38,12 +38,13 @@ delius_users:
   pteegala_ro:
   jphillips_ro:
   dbelton_rw:
+  xsiam_ro:
 oracle_software:
-  version: "19.28"
-  combo_patch: p37952382_190000_Linux-x86-64.zip
+  version: "19.33"
+  combo_patch: p40121665_190000_Linux-x86-64.zip
   opatch:
-    version: 12.2.0.1.46
-    filename: p6880880_190000_Linux-x86-64.12.2.0.1.46.zip
+    version: 12.2.0.1.55
+    filename: p6880880_190000_Linux-x86-64.12.2.0.1.55.zip
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
 database_locked_statistics:
@@ -110,7 +111,9 @@ sql_plan_baselines:
   - SQL_55297a64b8f91421
   - SQL_f4e4e1bdd96476db
   - SQL_c65a90a3e1b2ea62
-
+  - SQL_cc61b358b26dd4dd
+  - SQL_97f8a450dedb828b
+  
 dbms_scheduler:
   delius_audit_archive:
     repeat_interval: 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI;BYHOUR=8;BYMINUTE=0;BYSECOND=0'

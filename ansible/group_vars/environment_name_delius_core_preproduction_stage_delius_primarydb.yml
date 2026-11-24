@@ -41,6 +41,7 @@ delius_users:
   svalmonte_ro:
   dbelton_dba:
   hmpps_data_hub_ro:
+    drop_user: true
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
 oracle_software:
@@ -58,6 +59,9 @@ database_locked_statistics:
 database_parameters:
   db_recovery_file_dest_size: 900G
   compatible: 19.14.0
+  sga_max_size: 25G
+  sga_target: 25G
+  pga_aggregate_limit: 32G
 # Baseline SQL_cc61b358b26dd4dd is only required temporarily whilst data in Stage is very old
 sql_plan_baselines:
      - SQL_23485ac04e2c7ed0
@@ -66,6 +70,8 @@ sql_plan_baselines:
      - SQL_55297a64b8f91421
      - SQL_f4e4e1bdd96476db
      - SQL_c65a90a3e1b2ea62
+     - SQL_cc61b358b26dd4dd
+     - SQL_97f8a450dedb828b
 
 # For Delius databases *only*, allow the DELIUS_APP_SCHEMA.PRF_COLL_JOB to run for up to the
 # period described in the ND_PARAMETERS table:  PRF_MT_MASTER_ITERATIONS * PRF_MT_MASTER_INTERVAL 

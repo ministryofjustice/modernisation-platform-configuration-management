@@ -156,6 +156,7 @@ sap_bip_confs:
   pd:
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://admin.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_web_cmc_label: "Central Management Console - NOMIS - PROD"
     sap_bip_control_app_servers: |
       AdaptiveJobServer,Running,Enabled
       AdaptiveProcessingServer,Stopped,Disabled
@@ -199,7 +200,7 @@ sap_bip_confs:
         - dswsbobje
         - webi-websetup
     webadmin:
-      sap_web_java_opts: "-Xms8192m -Xmx8192m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup"
+      sap_web_java_opts: "-Xms10240m -Xmx10240m -XX:MaxMetaspaceSize=2048m -Dbobje.disable_audit_ip_lookup -Djavax.net.debug=all"
 
 sap_bip_conf: "{{ sap_bip_confs[ncr_environment] }}"
 sap_bip_control_public_lb_name: public-lb
@@ -212,6 +213,7 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 ncr_bip_confs:
   pd:
@@ -222,13 +224,15 @@ ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
 ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
-filesystems_domain_name_fqdn: azure.hmpp.root
 filesystems_domains:
   azure.hmpp.root:
     secret_name: /sap/bip/pd/passwords
     mount_fs_username: svc_fsx_nart
 
-bip_filesystems_mount:
+filesystems_domain_name_fqdns:
+  - azure.hmpp.root
+
+bip_cms_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
     uid: bobj
@@ -245,7 +249,7 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
   - dir: /mnt/AO
     uid: root
@@ -255,7 +259,27 @@ bip_filesystems_mount:
     src: //fslinux.azure.hmpp.root/AO
     # metric_dimension: AO
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
+    autofs_mount: true
+
+bip_app_filesystems_mount:
+  - dir: /opt/data/BusinessObjects
+    fstype: nfs
+    uid: bobj
+    gid: binstall
+    opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,nofail
+    src: "fs-030a75a6d02aa86ef.efs.eu-west-2.amazonaws.com:/"
+    metric_dimension: pd_ncr_sap_share
+    maintenance_window:
+  - dir: /NART
+    uid: bobj
+    gid: binstall
+    fstype: cifs
+    opts: vers=3.0,_netdev,nofail,uid=1201,gid=1201,dir_mode=0755,file_mode=0755,credentials=/root/.filesystems/azure.hmpp.root.creds
+    src: //fslinux.azure.hmpp.root/NART$
+    # metric_dimension: NART
+    maintenance_window: "4.0400-4.0430" # Thu 4am UTC
+    state: present
     autofs_mount: true
 
 webadmin_filesystems_mount:
@@ -267,7 +291,7 @@ webadmin_filesystems_mount:
     src: //fslinux.azure.hmpp.root/NART$
     # metric_dimension: NART
     maintenance_window: "4.0400-4.0430" # Thu 4am UTC
-    state: absent
+    state: present
     autofs_mount: true
 
 rclone_secretsmanager_app_registrations:
@@ -291,19 +315,27 @@ rclone_sharepoint_config:
     drive_ids_ansible_key: rclone_1
     drive_ids_secret_key: HMPPS-HQ-PS-CC-CMgt
 
+rclone_sync_readme_frequency_interval: 3600
+rclone_sync_readme_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 1800 }}"
+rclone_sync_report_frequency_interval: 1800
+rclone_sync_report_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 900 }}"
+rclone_sync_delete_frequency_interval: 86400
+rclone_sync_delete_frequency_offset: "{{ 0 if (ec2_name.split('-')[-1]|int) == 1 else 3600 }}"
 rclone_sync_timer_frequency_minutes: 2  # runs at alternatve minutes on each CMS
 rclone_sync_config:
   shared_lock: "/opt/data/BusinessObjects/.rclone-sync.lock"
   rclone_args:
-    - "--verbose"
-    - "--stats=0"
-    - "--retries=0"  # don't retry as script runs every few minutes
-    - "--low-level-retries=0"
+    - "--verbose"               # ensure copies are logged
+    - "--stats=0"               # suppress stats
+    - "--stats-log-level=DEBUG" # suppress stats even on error
+    - "--retries=0"             # don't retry as script runs every few minutes
+    - "--low-level-retries=0"   # ditto
     - "--fast-list"
+  rclone_sync_args:
+    - "--rclone-error-backoff=600"
+    - "--rclone-alarm-after-consecutive-error-count=6" # sometimes we get Service Unavailable
   dirs:
     cc-readme:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
       rclone_cmd:
         - "copy"
         - "/var/lib/rclone-sync/sharepoint"
@@ -311,10 +343,10 @@ rclone_sync_config:
       rclone_args:
         - "--checksum"
         - "--min-age=1m"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_readme_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_readme_frequency_offset }}"
     cc-ao:
-      frequency_interval_seconds: 3600
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 1800 }}"
-      maintenance_window: "4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
       rclone_cmd:
         - "copy"
         - "/mnt/AO"
@@ -325,12 +357,17 @@ rclone_sync_config:
         - "--max-age=7d"
         - "--include=AO*.zip"
         - "--max-depth=1"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_report_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_report_frequency_offset|int + 60 }}"
+        - "--rclone-sync-maintenance-window=4.0330-4.0430" # FSx maintenance is at Thu 4am UTC but allow an extra 30 mins for autofs to unmount
     cc-delete-old:
-      frequency_interval_seconds: 86400
-      frequency_offset_seconds: "{{ 0 if (ec2_name.split('-')[-1] | int) == 1 else 3600 }}"
       rclone_cmd:
         - "delete"
         - "cc-ao:_NART - Automated Uploads"
       rclone_args:
         - "--min-age=30d"
         - "--exclude=README.md"
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval={{ rclone_sync_delete_frequency_interval }}"
+        - "--rclone-sync-frequency-offset={{ rclone_sync_delete_frequency_offset }}"

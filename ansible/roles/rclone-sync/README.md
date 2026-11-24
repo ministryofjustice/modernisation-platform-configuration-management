@@ -28,21 +28,27 @@ rclone_sync_config:
         - "rcloneconfig:sharepoint/path"
       rclone_args:
         - "--min-age=2m"
+        - "--max-age=1d"
         - "--include=*.xlsx"
-        - "--ignore-size"  # because MS365 immediately updates xlsx files
+        - "--ignore-size"      # because MS365 immediately updates xlsx files
         - "--ignore-checksum"  # ditto
-        - "--max-depth=1"
+        - "--max-depth=1"      # only sync top-level dir
+      rclone_sync_args:
+        - "--rclone-sync-frequency-interval=3600"              # run every hour
+        - "--rclone-sync-frequency-offset=900"                 # run 15 minutes past the hour
+        - "--rclone-sync-maintenance-window=1.0400-1.0430"     # don't run during maintenance window, day.HHMM where 1=Monday in UTC
+        - "--rclone-error-backoff=600"                         # wait before retrying on error
+        - "--rclone-alarm-after-consecutive-error-count=10"    # only alarm after this number of consecutive errors
+        - "--rclone-sync-move-after-consecutive-error-count=3" # workaround using moveto if copy/sync repeatedly fails
 ```
 
 Where
-- `shared lock`: set this if you are enabling on multiple machines and
+- `shared_lock`: set this if you are enabling on multiple machines and
    the source directory is on a file share. It is a directory on the
    file share that will be created/removed by the script to manage locking
-- `frequency_interval_seconds`: if set, don't run more frequently than this value
-- `frequency_offset_seconds`: if set, align the time the command runs to the nearest frequency interval + offset seconds
-- `maintenance_window`: if set, don't sync during this UTC period in format `start-end`, where both `start` and `end` are in `day.HHMM`, day=0-6 with 0 being Sunday
 - `rclone_cmd`: the rclone cmd and associated args
 - `rclone_args`: default rclone args to apply on every rclone command
+- `rclone_sync_args`: args specific to the rclone-sync.sh wrapper script
 - `dirs`: a dictionary of directories to sync using rclone.
    The dictionary key is used in syslog logs. Then specify the rclone cmd,
    e.g. copy or sync, and any additional `rclone_args`.

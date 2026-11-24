@@ -16,6 +16,7 @@ rman_level_0_backup_duration_target: "21:00"
 rman_uncompressed_backup: Y
 rman_retention_policy: RECOVERY WINDOW OF 41 DAYS
 cfo_database_directory: "/u01/app/oracle/admin/{{ database_global_database }}/cfo/shared_files/National/cfo"
+cfo_efs_endpoint_ip: 10.160.2.13
 delius_users:
   amarke_ro:
   jstanley_ro:
@@ -82,6 +83,7 @@ delius_users:
   himitiaz_rw:
   jdundon_rw:
   maspin_rw:
+  xsiam_ro:
 fsfo_mode: disabled
 # OFFENDER_DELTA and DOMAIN_EVENT are dynamic tables cleared down by Integration Services.
 # Prevent changing these to unrepresentative statistics.
@@ -105,3 +107,5 @@ sql_plan_baselines:
   - SQL_55297a64b8f91421
   - SQL_f4e4e1bdd96476db
   - SQL_c65a90a3e1b2ea62
+  - SQL_cc61b358b26dd4dd
+  - SQL_97f8a450dedb828b

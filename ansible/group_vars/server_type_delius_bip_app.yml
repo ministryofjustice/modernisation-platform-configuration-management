@@ -1,6 +1,8 @@
 ---
 ansible_python_interpreter: /usr/bin/python3.9
 
+ec2_user_authorized_keys: "{{ ec2_user_app_authorized_keys }}"
+
 users_and_groups_regular:
   - group: studio-webops
   - group: nart
@@ -105,6 +107,8 @@ disks_mount:
     fstype: swap
 
 timezone: "Europe/London"
+filesystems_domain_name_fqdns: "{{ bip_filesystems_domain_name_fqdns }}"
+filesystems_domains: "{{ bip_filesystems_domains }}"
 filesystems_mount: "{{ bip_filesystems_mount|default([]) }}"
 oracle_client_conf: "{{ sap_bip_oracle_client_conf }}"
 sap_bip_responsefile: response.app.ini

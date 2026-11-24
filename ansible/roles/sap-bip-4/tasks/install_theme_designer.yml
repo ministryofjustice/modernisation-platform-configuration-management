@@ -1,0 +1,15 @@
+---
+- block:
+    - name: Copy themedesigner jars
+      ansible.builtin.copy:
+        remote_src: yes
+        src: "{{ sap_bip_extraction_directory }}/Collaterals/themeDesigner/ThemeDesigner.war"
+        dest: "{{ sap_bip_installation_directory }}/sap_bobj/tomcat/webapps/ThemeDesigner.war"
+        owner: bobj
+        group: binstall
+        mode: "0644"
+
+  #  block
+  when:
+    - sap_bip_is_web
+    - sap_web_enable_themedesigner

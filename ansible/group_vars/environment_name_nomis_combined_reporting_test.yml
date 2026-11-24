@@ -127,6 +127,7 @@ sap_bip_confs:
   t1:
     sap_bip_rar_base: "BIPLATS4304P_500-70002683"
     sap_bip_rws_url: "https://t1.test.reporting.nomis.service.justice.gov.uk/biprws"
+    sap_web_cmc_label: "Central Management Console - NOMIS - TEST"
     web:
       sap_web_java_opts: "-Xms4096m -Xmx4096m -Dbobje.disable_audit_ip_lookup"
       sap_web_disable_cmcapp: "false"
@@ -188,6 +189,7 @@ sap_bip_rar_base: "{{ sap_bip_conf.sap_bip_rar_base }}"
 sap_bip_rws_url: "{{ sap_bip_conf.sap_bip_rws_url }}"
 sap_web_conf: "{{ sap_bip_conf.web }}"
 sap_webadmin_conf: "{{ sap_bip_conf.webadmin }}"
+sap_web_cmc_label: "{{ sap_bip_conf.sap_web_cmc_label }}"
 
 ncr_bip_confs:
   t1:
@@ -198,7 +200,7 @@ ncr_bip_conf: "{{ ncr_bip_confs[ncr_environment] }}"
 ncr_bip_sso_url: "{{ ncr_bip_conf.ncr_bip_sso_url }}"
 ncr_bip_provisioning_database_hostname: "{{ ncr_bip_conf.ncr_bip_provisioning_database_hostname }}"
 
-bip_filesystems_mount:
+bip_cms_filesystems_mount:
   - dir: /opt/data/BusinessObjects
     fstype: nfs
     uid: bobj
@@ -207,3 +209,5 @@ bip_filesystems_mount:
     src: "eu-west-2a.fs-0a9a52ec4ffec21cc.efs.eu-west-2.amazonaws.com:/"
     metric_dimension: t1_ncr_sap_share
     maintenance_window:
+
+bip_app_filesystems_mount: "{{ bip_cms_filesystems_mount }}"
