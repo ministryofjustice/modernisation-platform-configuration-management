@@ -377,7 +377,7 @@ info "Execute $THISUSER bash profile"
 . $HOME/.bash_profile
 validate backuptype
 validate catalog
-if [ ! -f /etc/db_backup_exclude_sids ]
+if [ ! -s /etc/db_backup_exclude_sids ]
 then
 	        DB_LIST=$(ps -fu $THISUSER | grep ora_smon | grep -v grep | awk -F_ '{print $NF}')
 else
