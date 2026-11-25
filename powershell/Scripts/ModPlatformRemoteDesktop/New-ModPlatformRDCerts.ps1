@@ -66,4 +66,3 @@ if (aws s3 ls "${S3CertDir}${CertFilename}" | Out-Null) {
   Write-Output "Uploading to ${S3CertDir}${CertFilename}"
   aws s3 sync $LocalCertDir $S3CertDir --exclude "*" --include "$CertFilename"
 }
-
