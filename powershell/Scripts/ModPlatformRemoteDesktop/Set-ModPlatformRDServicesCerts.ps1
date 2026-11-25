@@ -3,7 +3,7 @@ $GlobalConfig = @{
     "CertSelfSigned" = $true
     "CertName"       = "test-rds-1-a.azure.noms.root"
     "CertFilename"   = "test-rds-1-a-azure-noms-root.pfx" # Update filename to force new cert to be generated
-    "S3CertDir"      = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/",
+    "S3CertDir"      = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/"
   }
   "pp-rds-1-a"   = @{
     "CertSelfSigned" = $false
