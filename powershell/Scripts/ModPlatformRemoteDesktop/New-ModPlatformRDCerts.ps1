@@ -19,7 +19,7 @@
 param (
   [string]$CertDNSName,
   [string]$CertFilename,
-  [string] $S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/",
+  [string]$S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/",
   [int]$ExpiryYears = 5
 )
 
@@ -37,8 +37,7 @@ if (-not $CertFilename) {
   Write-Output "Using $CertFilename as cert filename"
 }
 
-$LocalCertDir  = "C:\ProgramData\PlatformOperations\pfx"
-$S3CertDir     = "s3://mod-platform-image-artefact-bucket20230203091453221500000001/hmpps/dso-certificates/ca-signed/pfx/"
+$LocalCertDir = "C:\ProgramData\PlatformOperations\pfx"
 
 New-Item -ItemType Directory -Path $LocalCertDir -Force | Out-Null
 $LocalCertPath = Join-Path $LocalCertDir -ChildPath $CertFilename
