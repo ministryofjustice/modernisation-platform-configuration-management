@@ -19,7 +19,7 @@
 param (
   [string]$CertDNSName,
   [string]$CertFilename,
-  [string] $S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/"
+  [string] $S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/",
   [int]$ExpiryYears = 5
 )
 
