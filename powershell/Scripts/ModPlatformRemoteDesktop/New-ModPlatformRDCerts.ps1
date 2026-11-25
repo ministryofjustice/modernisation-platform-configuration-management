@@ -17,7 +17,7 @@
 
 [CmdletBinding()]
 param (
-  [string]$CertDNSName,
+  [string]$CertName,
   [string]$CertFilename,
   [string]$S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/",
   [int]$ExpiryYears = 5
@@ -26,14 +26,14 @@ param (
 Import-Module ModPlatformAD -Force
 Import-Module ModPlatformRemoteDesktop -Force
 
-if (-not $CertDNSName) {
+if (-not $CertName) {
   $ComputerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
-  $CertDNSName = "$($ComputerSystem.Name.ToLower()).$($ComputerSystem.Domain.ToLower())"
-  Write-Output "Using $CertDNSName as cert DNS name"
+  $CertName = "$($ComputerSystem.Name.ToLower()).$($ComputerSystem.Domain.ToLower())"
+  Write-Output "Using $CertName as cert DNS name"
 }
 
 if (-not $CertFilename) {
-  $CertFilename = "$($CertDNSName.Replace('.', '-')).pfx"
+  $CertFilename = "$($CertName.Replace('.', '-')).pfx"
   Write-Output "Using $CertFilename as cert filename"
 }
 
@@ -56,8 +56,8 @@ if (aws s3 ls "${S3CertDir}${CertFilename}" | Out-Null) {
   }
   $CertPasswordSecureString = ConvertTo-SecureString $CertPasswords[$CertFilename] -AsPlainText -Force
 
-  Write-Output "Generating self-signed cert for $CertDNSName"
-  $Cert = New-SelfSignedCertificate -DnsName $CertDNSName -CertStoreLocation "Cert:\LocalMachine\My" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears($ExpiryYears)
+  Write-Output "Generating self-signed cert for $CertName"
+  $Cert = New-SelfSignedCertificate -DnsName $CertName -CertStoreLocation "Cert:\LocalMachine\My" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears($ExpiryYears)
 
   Write-Output "Exporting cert to $LocalCertPath"
   Export-PfxCertificate -Cert $Cert -FilePath $LocalCertPath -Password $CertPasswordSecureString
