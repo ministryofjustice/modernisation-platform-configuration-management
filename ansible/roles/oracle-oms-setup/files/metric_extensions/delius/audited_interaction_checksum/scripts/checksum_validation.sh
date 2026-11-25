@@ -74,6 +74,28 @@ if [ "$table_exists" -eq 0 ]; then
     exit 0
 fi
 
+# Grant SELECT permission to DBSNMP on the audited interaction checksum table
+# (only if DBSNMP user exists and we're using it)
+if [[ -n "$DBSNMP_PASSWORD" && "$DBSNMP_PASSWORD" != "null" ]]; then
+  $ORACLE_HOME/bin/sqlplus -S / as sysdba <<EOGRANT >/dev/null 2>&1
+BEGIN
+  FOR priv IN (
+    SELECT 1 FROM DBA_TAB_PRIVS 
+    WHERE GRANTEE='DBSNMP' 
+    AND TABLE_NAME='AUDITED_INTERACTION_CHECKSUM' 
+    AND OWNER='DELIUS_AUDIT_DMS_POOL' 
+    AND PRIVILEGE='SELECT'
+  )
+  LOOP
+    RETURN;
+  END LOOP;
+  EXECUTE IMMEDIATE 'GRANT SELECT ON DELIUS_AUDIT_DMS_POOL.AUDITED_INTERACTION_CHECKSUM TO DBSNMP';
+END;
+/
+EXIT;
+EOGRANT
+fi
+
 $ORACLE_HOME/bin/sqlplus -S "$CONNECTION_STRING" <<EOSQL
 SET HEADING OFF
 SET PAGES 0
