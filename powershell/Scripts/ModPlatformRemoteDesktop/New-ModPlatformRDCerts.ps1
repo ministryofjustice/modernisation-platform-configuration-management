@@ -42,7 +42,7 @@ $LocalCertDir = "C:\ProgramData\PlatformOperations\pfx"
 New-Item -ItemType Directory -Path $LocalCertDir -Force | Out-Null
 $LocalCertPath = Join-Path $LocalCertDir -ChildPath $CertFilename
 
-if (aws s3 ls "${S3CertDir}${CertFilename}" | Out-Null) {
+if (aws s3 ls "${S3CertDir}${CertFilename}") {
   Write-Output "Cert already exists on S3 ${S3CertDir}${CertFilename} - delete on S3 to force re-generation - skipping"
 } elseif (Test-Path $LocalCertPath) {
   Write-Output "Local cert already exists at $LocalCertPath - uploading to ${S3CertDir}${CertFilename}"
