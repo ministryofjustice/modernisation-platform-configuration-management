@@ -60,7 +60,7 @@ if (-not $CurrentBrokerCert -or ($CurrentBrokerCert.Thumbprint -ne $Thumbprint))
     Write-Verbose "RDWebClientBrokerCert already matches active Broker thumbprint ($Thumbprint)"
 }
 
-$PublishedProd = Get-RDWebClientPackage | Where-Object { $_.Published -eq $true -and $_.Type -eq 'Production' }
+$PublishedProd = Get-RDWebClientPackage | Where-Object { $_.publishedAs -contains 'Production' }
 if (-not $PublishedProd -or $NeedsPublish) {
     Write-Output "Publishing RDWebClientPackage"
     Publish-RDWebClientPackage -Type Production -Latest
