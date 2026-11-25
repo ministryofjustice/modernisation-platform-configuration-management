@@ -19,6 +19,7 @@
 param (
   [string]$CertDNSName,
   [string]$CertFilename,
+  [string] $S3CertDir = "s3://s3-bucket20230824125932809600000001/self-signed-certs/pfx/"
   [int]$ExpiryYears = 5
 )
 
@@ -27,13 +28,13 @@ Import-Module ModPlatformRemoteDesktop -Force
 
 if (-not $CertDNSName) {
   $ComputerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
-  $CertDNSName = "$($ComputerSystem.Name).$($ComputerSystem.Domain)"
+  $CertDNSName = "$($ComputerSystem.Name.ToLower()).$($ComputerSystem.Domain.ToLower())"
   Write-Output "Using $CertDNSName as cert DNS name"
 }
 
 if (-not $CertFilename) {
   $CertFilename = "$($CertDNSName.Replace('.', '-')).pfx"
-  Write-Output "Using $CertFilename as cert DNS name"
+  Write-Output "Using $CertFilename as cert filename"
 }
 
 $LocalCertDir  = "C:\ProgramData\PlatformOperations\pfx"
@@ -44,7 +45,7 @@ $LocalCertPath = Join-Path $LocalCertDir -ChildPath $CertFilename
 
 if (aws s3 ls "${S3CertDir}${CertFilename}" | Out-Null) {
   Write-Output "Cert already exists on S3 ${S3CertDir}${CertFilename} - delete on S3 to force re-generation - skipping"
-} elseif (Test-Path $LocalCertPath)) {
+} elseif (Test-Path $LocalCertPath) {
   Write-Output "Local cert already exists at $LocalCertPath - uploading to ${S3CertDir}${CertFilename}"
   aws s3 sync $LocalCertDir $S3CertDir --exclude "*" --include "$CertFilename"
 } else {
@@ -62,6 +63,7 @@ if (aws s3 ls "${S3CertDir}${CertFilename}" | Out-Null) {
   Write-Output "Exporting cert to $LocalCertPath"
   Export-PfxCertificate -Cert $Cert -FilePath $LocalCertPath -Password $CertPasswordSecureString
 
-  Write-Output "Uploading to S3 ${S3CertDir}${CertFilename}"
+  Write-Output "Uploading to ${S3CertDir}${CertFilename}"
   aws s3 sync $LocalCertDir $S3CertDir --exclude "*" --include "$CertFilename"
 }
+
