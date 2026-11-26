@@ -68,6 +68,7 @@ if (-not $PublishedProd -or $NeedsPublish) {
     Write-Verbose "RDWebClientPackage is already published and up to date"
 }
 
+# Use RDP file method as this is what end-users are familiar with
 $LaunchInBrowserSetting = Get-RDWebClientDeploymentSetting -Name "LaunchResourceInBrowser" -ErrorAction SilentlyContinue
 if (-not $LaunchInBrowserSetting -or $LaunchInBrowserSetting.Value -ne $false) {
     Write-Output "Setting LaunchResourceInBrowser to false"
