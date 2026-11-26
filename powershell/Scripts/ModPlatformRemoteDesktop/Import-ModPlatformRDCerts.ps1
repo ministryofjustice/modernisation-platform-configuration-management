@@ -17,14 +17,14 @@
 [CmdletBinding()]
 param (
   [string]$DomainNameFQDN,
-  [string]$CertFilename = "star-azure-hmpp-root.pfx"
+  [string]$CertFilename = "star-azure-hmpp-root.pfx",
+  [string]$S3CertDir    = "s3://mod-platform-image-artefact-bucket20230203091453221500000001/hmpps/dso-certificates/ca-signed/pfx/"
 )
 
 Import-Module ModPlatformAD -Force
 Import-Module ModPlatformRemoteDesktop -Force
 
 $LocalCertDir  = "C:\ProgramData\PlatformOperations\pfx"
-$S3CertDir     = "s3://mod-platform-image-artefact-bucket20230203091453221500000001/hmpps/dso-certificates/ca-signed/pfx/"
 $ADConfig      = Get-ModPlatformADConfig -DomainNameFQDN $DomainNameFQDN
 $CertPasswords = Get-ModPlatformADSecret -ModPlatformADConfig $ADConfig -ADConfigSecretKey "CertificatePasswordsSecretName"
 

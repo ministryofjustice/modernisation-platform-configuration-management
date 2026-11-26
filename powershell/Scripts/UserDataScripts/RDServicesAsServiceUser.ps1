@@ -1,6 +1,8 @@
 $Scripts = @(
     "../ModPlatformRemoteDesktop/Add-ModPlatformRDServices.ps1",
-    "../ModPlatformRemoteDesktop/Set-RDWebPasswordReset.ps1"
+    "../ModPlatformRemoteDesktop/Set-RDWebPasswordReset.ps1",
+    "../ModPlatformRemoteDesktop/Set-ModPlatformRDServicesCerts.ps1",
+    "../ModPlatformRemoteDesktop/Add-RDWebHTML5Interface.ps1"
 )
 
 $ErrorActionPreference = "Stop"
